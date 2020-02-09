@@ -7,7 +7,7 @@ import {
 } from './projections'
 import { DetailedChange } from '../../../core/plan'
 
-const { concatArrayCustomizer } = collections.array
+const { makeArray } = collections.array
 
 export interface RoutedChanges {
     primarySource?: DetailedChange[]
@@ -106,7 +106,9 @@ export const routeChanges = async (
     secondarySources: _.mergeWith(
       {},
       ...routedChanges.map(r => r.secondarySources || {}),
-      concatArrayCustomizer
+      (objValue: DetailedChange[], srcValue: DetailedChange[]) => (
+        _.concat(makeArray(objValue), srcValue)
+      )
     ),
   }
 }

@@ -46,10 +46,11 @@ import {
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { changeValidator } from './change_validator'
 
-const { makeArray, concatArrayCustomizer } = collections.array
+const { makeArray } = collections.array
 const log = logger(module)
 
-export const RECORDS_CHUNK_SIZE = 10000
+export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
+const RECORDS_CHUNK_SIZE = 10000
 
 const absoluteIDMetadataTypes: Record<string, string[]> = {
   CustomLabels: ['labels'],
@@ -132,7 +133,7 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
 type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
 type RetrieveMember = {
   type: string
-  filename: string
+  name: string
 }
 
 export default class SalesforceAdapter {
@@ -714,13 +715,6 @@ export default class SalesforceAdapter {
 
   private async retrieveMetadata(metadataTypes: string[]):
     Promise<Record<string, NamespaceAndInstances[]>> {
-    const fromRetrieveResults = async (retrieveResults: RetrieveResult[]):
-      Promise<Record<string, MetadataInfo[]>> => {
-      const typesToInstances = await Promise.all(retrieveResults
-        .map(async retrieveResult => fromRetrieveResult(retrieveResult, metadataTypes)))
-      return _.mergeWith({}, ...typesToInstances, concatArrayCustomizer)
-    }
-
     const getFolders = async (typeToRetrieve: string): Promise<FileProperties[]> => {
       const folderType = this.metadataToRetrieveAndDeploy[typeToRetrieve]
       if (folderType) {
@@ -748,9 +742,10 @@ export default class SalesforceAdapter {
     ).then(pairs => _(pairs).fromPairs().value())
 
     const retrieveMembers: RetrieveMember[] = _.flatten(retrieveMetadataTypes
-      .map(type => retrieveTypeToFiles[type].map(file => ({ type, filename: file.fullName }))))
-    const retrieveResults = await this.retrieveChunked(retrieveMembers)
-    const typeToInstanceInfos = await fromRetrieveResults(retrieveResults)
+      .map(type =>
+        _.uniqBy(retrieveTypeToFiles[type], 'fullName')
+          .map(file => ({ type, name: file.fullName }))))
+    const typeToInstanceInfos = await this.retrieveChunked(retrieveMembers, metadataTypes)
     const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
       .flatten()
       .map(file => [file.fullName, file.namespacePrefix])
@@ -764,7 +759,17 @@ export default class SalesforceAdapter {
       .value()
   }
 
-  private retrieveChunked(retrieveMembers: RetrieveMember[]): Promise<RetrieveResult[]> {
+  private async retrieveChunked(retrieveMembers: RetrieveMember[], metadataTypes: string[]):
+    Promise<Record<string, MetadataInfo[]>> {
+    const fromRetrieveResults = async (retrieveResults: RetrieveResult[]):
+      Promise<Record<string, MetadataInfo[]>> => {
+      const typesToInstances = await Promise.all(retrieveResults
+        .map(async retrieveResult => fromRetrieveResult(retrieveResult, metadataTypes)))
+      return _.mergeWith({}, ...typesToInstances,
+        (objValue: MetadataInfo[], srcValue: MetadataInfo[]) =>
+          _.concat(makeArray(objValue), srcValue))
+    }
+
     const createRetrieveRequest = (typeToMembers: Record<string, RetrieveMember[]>):
       RetrieveRequest => ({
       apiVersion: API_VERSION,
@@ -773,19 +778,26 @@ export default class SalesforceAdapter {
         types: Object.entries(typeToMembers).map(([type, members]) =>
           ({
             name: type,
-            members: members.map(member => member.filename),
+            members: members.map(member => member.name),
           })),
       },
     })
-    const membersChunks = _.chunk(retrieveMembers, RECORDS_CHUNK_SIZE)
-    return Promise.all(membersChunks.map(async chunk => {
-      const typeToMembers = _.groupBy(chunk, retrieveMember => retrieveMember.type)
-      const retrieveRequest = createRetrieveRequest(typeToMembers)
-      const retrieveResult = await this.client.retrieve(retrieveRequest)
-      // we trigger serial requests to avoid passing the rate limit for slow concurrent calls
-      // https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_api.htm
-      return retrieveResult
-    }))
+
+    // we trigger serial retrieve requests to avoid passing the rate limit for slow concurrent calls
+    // https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/salesforce_app_limits_platform_api.htm
+    const retrieveChunksSerially = async (): Promise<RetrieveResult[]> => {
+      const membersChunks = _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
+      return membersChunks.reduce(async (retrieveResults, membersChunk) => {
+        const typeToMembers = _.groupBy(membersChunk, retrieveMember => retrieveMember.type)
+        const retrieveRequest = createRetrieveRequest(typeToMembers)
+        return retrieveResults.then(async results => {
+          results.push(await this.client.retrieve(retrieveRequest))
+          return results
+        })
+      }, Promise.resolve([] as RetrieveResult[]))
+    }
+    const retrieveResults = retrieveChunksSerially()
+    return fromRetrieveResults(await retrieveResults)
   }
 
   @logDuration('fetching instances')

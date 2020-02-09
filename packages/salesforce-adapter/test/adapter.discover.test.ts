@@ -3,7 +3,7 @@ import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
 } from 'adapter-api'
 import { MetadataInfo } from 'jsforce'
-import SalesforceAdapter, { RECORDS_CHUNK_SIZE } from '../src/adapter'
+import SalesforceAdapter, { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
 import { createEncodedZipContent, findElements, ZipFile } from './utils'
@@ -512,13 +512,13 @@ describe('SalesforceAdapter fetch', () => {
       }])
 
       const generateInstancesMocks = (numberOfInstances: number): MetadataInfo[] =>
-        _.fill(Array(numberOfInstances), { fullName: 'dummyApexClass' })
+        Array.from(Array(numberOfInstances), (_x, index) => ({ fullName: `dummy${index}` }))
 
-      const metadataInfos = generateInstancesMocks(RECORDS_CHUNK_SIZE * 2)
+      const metadataInfos = generateInstancesMocks(MAX_ITEMS_IN_RETRIEVE_REQUEST * 2)
       connection.metadata.list = jest.fn()
         .mockImplementation(async () => metadataInfos)
 
-      const mockRetrieve = jest.fn().mockImplementationOnce(() =>
+      const mockRetrieve = jest.fn().mockReturnValueOnce(
         ({ complete: async () => ({ zipFile: await createEncodedZipContent(
           [{ path: 'unpackaged/classes/MyApexClass.cls-meta.xml',
             content: '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -531,7 +531,8 @@ describe('SalesforceAdapter fetch', () => {
               + '        System.debug(\'Instance1\');\n'
               + '    }\n'
               + '}' }]
-        ) }) })).mockImplementationOnce(() =>
+        ) }) })
+      ).mockReturnValueOnce(
         ({ complete: async () => ({ zipFile: await createEncodedZipContent(
           [{ path: 'unpackaged/classes/MyApexClass2.cls-meta.xml',
             content: '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -544,7 +545,8 @@ describe('SalesforceAdapter fetch', () => {
               + '        System.debug(\'Instance2\');\n'
               + '    }\n'
               + '}' }]
-        ) }) }))
+        ) }) })
+      )
       connection.metadata.retrieve = mockRetrieve
 
       const result = await adapter.fetch()

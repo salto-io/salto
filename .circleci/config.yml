@@ -114,7 +114,7 @@ jobs:
                   console.log(\`/*\${license_head.rules['header/header'][2].join('\n')}*/\`)")
             src_files_without_license_header=""
             for f in $(find . -type f -name '*.js' -not -path '*node_modules*' -not -path '*dist\/*' ); do
-              if grep -q "$license_header" "$f"; then
+              if grep -qFx "$license_header" "$f"; then
                 src_files_without_license_header+="$f\n"
               fi
             done

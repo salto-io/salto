@@ -5,8 +5,8 @@ import {
   DataModificationResult, Values,
 } from 'adapter-api'
 import {
-  SaveResult, MetadataInfo, QueryResult, FileProperties,
-  BatchResultInfo, BulkLoadOperation, Record as SfRecord, ListMetadataQuery, UpsertResult,
+  SaveResult, MetadataInfo, QueryResult, FileProperties, BatchResultInfo, BulkLoadOperation,
+  Record as SfRecord, ListMetadataQuery, UpsertResult, RetrieveResult, RetrieveRequest,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto/logging'
@@ -49,6 +49,7 @@ import { changeValidator } from './change_validator'
 const { makeArray } = collections.array
 const log = logger(module)
 
+export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 const RECORDS_CHUNK_SIZE = 10000
 
 const absoluteIDMetadataTypes: Record<string, string[]> = {
@@ -130,6 +131,10 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   )
 
 type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
+type RetrieveMember = {
+  type: string
+  name: string
+}
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
@@ -735,15 +740,16 @@ export default class SalesforceAdapter {
           return [type, [...(await this.client.listMetadataObjects(listMetadataQuery)), ...folders]]
         })
     ).then(pairs => _(pairs).fromPairs().value())
-    const retrieveRequest = {
-      apiVersion: API_VERSION,
-      singlePackage: false,
-      unpackaged: { types: retrieveMetadataTypes.map(type =>
-        ({ name: type,
-          members: retrieveTypeToFiles[type].map(file => file.fullName) })) },
-    }
-    const retrieveResult = await this.client.retrieve(retrieveRequest)
-    const typeToInstanceInfos = await fromRetrieveResult(retrieveResult, metadataTypes)
+
+    const retrieveMembers: RetrieveMember[] = _(retrieveTypeToFiles)
+      .entries()
+      .map(([type, files]) => _(files)
+        .map(constants.INSTANCE_FULL_NAME_FIELD).uniq().map(name => ({ type, name }))
+        .value())
+      .flatten()
+      .value()
+
+    const typeToInstanceInfos = await this.retrieveChunked(retrieveMembers, metadataTypes)
     const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
       .flatten()
       .map(file => [file.fullName, file.namespacePrefix])
@@ -755,6 +761,42 @@ export default class SalesforceAdapter {
           ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))])
       .fromPairs()
       .value()
+  }
+
+  private async retrieveChunked(retrieveMembers: RetrieveMember[], metadataTypes: string[]):
+    Promise<Record<string, MetadataInfo[]>> {
+    const fromRetrieveResults = async (retrieveResults: RetrieveResult[]):
+      Promise<Record<string, MetadataInfo[]>> => {
+      const typesToInstances = await Promise.all(retrieveResults
+        .map(async retrieveResult => fromRetrieveResult(retrieveResult, metadataTypes)))
+      return _.mergeWith({}, ...typesToInstances,
+        (objValue: MetadataInfo[], srcValue: MetadataInfo[]) =>
+          _.concat(makeArray(objValue), srcValue))
+    }
+
+    const createRetrieveRequest = (membersChunk: RetrieveMember[]): RetrieveRequest => {
+      const typeToMembers = _.groupBy(membersChunk, retrieveMember => retrieveMember.type)
+      return {
+        apiVersion: API_VERSION,
+        singlePackage: false,
+        unpackaged: {
+          types: Object.entries(typeToMembers).map(([type, members]) =>
+            ({
+              name: type,
+              members: members.map(member => member.name),
+            })),
+        },
+      }
+    }
+
+    const retrieveResults = await _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
+      .reduce(async (prevResults, membersChunk) => {
+        // Wait for prev results before triggering another request to avoid passing the API limit
+        const results = await prevResults
+        return [...results, await this.client.retrieve(createRetrieveRequest(membersChunk))]
+      },
+      Promise.resolve<RetrieveResult[]>([]))
+    return fromRetrieveResults(retrieveResults)
   }
 
   @logDuration('fetching instances')

@@ -1,5 +1,6 @@
 import _ from 'lodash'
 import { Element, ElemID, findElements as findElementsByID, Values } from 'adapter-api'
+import JSZip from 'jszip'
 import * as constants from '../src/constants'
 
 export const findElements = (
@@ -28,3 +29,15 @@ export const createValueSetEntry = (
   },
   _.isUndefined
 )
+
+export type ZipFile = {
+  path: string
+  content: string
+}
+
+export const createEncodedZipContent = async (files: ZipFile[], encoding = 'base64'):
+  Promise<string> => {
+  const zip = new JSZip()
+  files.forEach(file => zip.file(file.path, file.content))
+  return (await zip.generateAsync({ type: 'nodebuffer' })).toString(encoding)
+}

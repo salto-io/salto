@@ -1,4 +1,5 @@
 import Connection, { Metadata, Soap } from '../src/client/jsforce'
+import { createEncodedZipContent } from './utils'
 
 const mockJsforce: () => Connection = () => ({
   login: () => Promise.resolve(),
@@ -10,7 +11,8 @@ const mockJsforce: () => Connection = () => ({
     upsert: jest.fn().mockImplementation(() => Promise.resolve([])),
     delete: jest.fn().mockImplementation(() => Promise.resolve([])),
     update: jest.fn().mockImplementation(() => Promise.resolve([])),
-    retrieve: jest.fn().mockImplementation(() => ({ complete: async () => ({ zipFile: 'UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==' }) })), // encoded empty zipFile
+    retrieve: jest.fn().mockImplementation(() =>
+      ({ complete: async () => ({ zipFile: createEncodedZipContent([]) }) })),
     deploy: jest.fn().mockImplementation(() => Promise.resolve({})),
   } as Metadata,
   soap: {

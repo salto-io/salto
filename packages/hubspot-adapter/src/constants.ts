@@ -220,14 +220,14 @@ export const CONTACT_PROPERTY_FIELDS = {
   TYPE: 'type',
   FIELDTYPE: 'fieldType',
   OPTIONS: PROPERTY_OPTIONS,
-  DELETED: 'deteled',
+  DELETED: 'deleted',
   FORMFIELD: 'formField',
   DISPLAYORDER,
   READONLYVALUE: 'readOnlyValue',
   READONLYDEFINITION: 'readOnlyDefinition',
   MUTABLEDEFINITIONNOTDELETABLE: 'mutableDefinitionNotDeletable',
   HIDDEN: 'hidden',
-  CALCULATED: 'calculcated',
+  CALCULATED: 'calculated',
   EXTERNALOPTIONS: 'externalOptions',
 }
 

@@ -7,11 +7,11 @@ import mockAdapter from './mock'
 import {
   formsMockArray, workflowsMockArray, marketingEmailMockArray, workflowsCreateResponse,
   workflowsMock, marketingEmailMock, marketingEmailCreateResponse, beforeFormMock,
-  afterFormMock,
+  afterFormMock, contactPropertyMock, contactPropertyCreateResponse, contactPropertyMocks,
 } from './common/mock_elements'
 import HubspotClient from '../src/client/client'
 import {
-  Form, HubspotMetadata, MarketingEmail, Workflows,
+  Form, HubspotMetadata, MarketingEmail, Workflows, ContactProperty,
 } from '../src/client/types'
 import { Types } from '../src/transformers/transformer'
 import {
@@ -38,6 +38,12 @@ describe('Hubspot Adapter Operations', () => {
     workflowsMock
   )
 
+  const contactPropertyInstance = new InstanceElement(
+    'contactPropertyInstance',
+    Types.hubspotObjects.contactProperty,
+    contactPropertyMock
+  )
+
   beforeEach(() => {
     ({ client, adapter } = mockAdapter({
       adapterParams: {
@@ -59,6 +65,9 @@ describe('Hubspot Adapter Operations', () => {
         if (type === OBJECTS_NAMES.MARKETINGEMAIL) {
           return marketingEmailMockArray as unknown as Promise<MarketingEmail[]>
         }
+        if (type === OBJECTS_NAMES.CONTACT_PROPERTY) {
+          return contactPropertyMocks as unknown as Promise<ContactProperty[]>
+        }
         return (
           [] as unknown as Promise<HubspotMetadata[]>)
       }
@@ -69,7 +78,7 @@ describe('Hubspot Adapter Operations', () => {
 
     it('should fetch basic', async () => {
       const result = await adapter.fetch()
-      expect(result).toHaveLength(33)
+      expect(result).toHaveLength(36)
     })
   })
 
@@ -153,6 +162,53 @@ describe('Hubspot Adapter Operations', () => {
           // Filtered out unsupported fields
           expect(result.value.method).toBeUndefined()
           expect(result.value.followUpId).toBeUndefined()
+        })
+      })
+
+      describe('ContactProperty instance', () => {
+        beforeEach(async () => {
+          const createResult = (): Promise<ContactProperty> =>
+            Promise.resolve(
+              contactPropertyCreateResponse as unknown as ContactProperty
+            )
+          mockCreateInstance = jest.fn().mockImplementation(createResult)
+          client.createInstance = mockCreateInstance
+        })
+
+        it('should return the new ContactProperty', async () => {
+          const res = await adapter.add(contactPropertyInstance)
+
+          // Fields from the creation
+          expect(res.value.name).toEqual(contactPropertyInstance.value.name)
+          expect(res.value.label).toEqual(contactPropertyInstance.value.label)
+          expect(res.value.description).toEqual(contactPropertyInstance.value.description)
+          expect(res.value.groupName).toEqual(contactPropertyInstance.value.groupName)
+          expect(res.value.type).toEqual(contactPropertyInstance.value.type)
+          expect(res.value.fieldType).toEqual(contactPropertyInstance.value.fieldType)
+          expect(res.value.deleted).toEqual(contactPropertyInstance.value.deleted)
+          expect(res.value.formField).toEqual(contactPropertyInstance.value.formField)
+          expect(res.value.displayOrder).toEqual(contactPropertyInstance.value.displayOrder)
+          expect(res.value.readOnlyValue).toEqual(contactPropertyInstance.value.readOnlyValue)
+          expect(res.value.readOnlyDefinition)
+            .toEqual(contactPropertyInstance.value.readOnlyDefinition)
+          expect(res.value.hidden).toEqual(contactPropertyInstance.value.hidden)
+          expect(res.value.mutableDefinitionNotDeletable)
+            .toEqual(contactPropertyInstance.value.mutableDefinitionNotDeletable)
+          expect(res.value.calculated).toEqual(contactPropertyInstance.value.calculated)
+          expect(res.value.externalOption).toEqual(contactPropertyInstance.value.externalOption)
+
+          // Options
+          expect(res.value.options).toBeDefined()
+          expect(res.value.options).toHaveLength(contactPropertyInstance.value.options.length)
+          expect(res.value.options[0].label).toEqual(contactPropertyInstance.value.options[0].label)
+          expect(res.value.options[0].value).toEqual(contactPropertyInstance.value.options[0].value)
+          expect(res.value.options[0].description)
+            .toEqual(contactPropertyInstance.value.options[0].description)
+          expect(res.value.options[0].hidden)
+            .toEqual(contactPropertyInstance.value.options[0].hidden)
+
+          // Filtered out unsupported fields
+          expect(res.value.unsupported).toBeUndefined()
         })
       })
 
@@ -309,6 +365,11 @@ describe('Hubspot Adapter Operations', () => {
 
       it('should return 204 response (MarketingEmail type)', async () => {
         const res = await adapter.remove(marketingEmailInstance)
+        expect(res).toBeUndefined()
+      })
+
+      it('should return 204 response (ContactProperty type', async () => {
+        const res = await adapter.remove(contactPropertyInstance)
         expect(res).toBeUndefined()
       })
     })

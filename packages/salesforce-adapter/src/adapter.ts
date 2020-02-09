@@ -791,7 +791,7 @@ export default class SalesforceAdapter {
 
     const retrieveResults = await _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
       .reduce(async (prevResults, membersChunk) => {
-      // Wait for previous results before triggering another request to avoid passing the API limit
+        // Wait for prev results before triggering another request to avoid passing the API limit
         const results = await prevResults
         return [...results, await this.client.retrieve(createRetrieveRequest(membersChunk))]
       },

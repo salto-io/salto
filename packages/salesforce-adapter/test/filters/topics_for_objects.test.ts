@@ -1,6 +1,6 @@
 import {
   ObjectType, ElemID, Field,
-  InstanceElement, isObjectType, isInstanceElement, BuiltinTypes,
+  InstanceElement, isObjectType, BuiltinTypes,
 } from 'adapter-api'
 import { metadataType } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
@@ -66,7 +66,7 @@ describe('Field Permissions filter', () => {
     client.update = mockUpdate
   })
 
-  it('should add topics_for_objects to object types and remove it from topics type & instances',
+  it('should add topics_for_objects to object types and remove topics type & instances',
     async () => {
       const elements = [mockObject.clone(), mockTopicForObject, mockTopic]
       await filter().onFetch(elements)
@@ -76,17 +76,9 @@ describe('Field Permissions filter', () => {
       const topicForObject = objectTypes[0].annotations[TOPICS_FOR_OBJECTS_ANNOTATION]
       expect(topicForObject[ENABLE_TOPICS]).toBeTruthy()
 
-      // Check topic instances' enable topics were deleted
-      elements.filter(isInstanceElement)
-        .filter(elem => metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
-        .forEach(topicInstance => expect(topicInstance.value[ENABLE_TOPICS])
-          .toBeUndefined())
-
-      // Check TopicForObject type's enable_topics field was deleted
-      const topicType = elements.filter(isObjectType)
-        .filter(elem => metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)[0]
-      expect(topicType).toBeDefined()
-      expect(topicType.fields[ENABLE_TOPICS]).toBeUndefined()
+      // Check topic instances' and type were deleted
+      expect(elements
+        .filter(elem => metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)).toHaveLength(0)
     })
 
   it('should set default value upon add', async () => {

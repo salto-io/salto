@@ -70,7 +70,7 @@ describe('workspace', () => {
     })
     it('should be merged', () => {
       const lead = elemMap['salesforce.lead'] as ObjectType
-      expect(_.keys(lead.fields)).toHaveLength(4)
+      expect(_.keys(lead.fields)).toHaveLength(5)
     })
   })
 
@@ -223,12 +223,11 @@ describe('workspace', () => {
         action: 'remove',
         data: { before: 'foo' },
       },
-      // TODO: figure if it's ok to mark this
-      // { // Add value to empty scope
-      //  id: new ElemID('external', 'file', 'attr', CORE_ANNOTATIONS.DEFAULT),
-      //  action: 'add',
-      //  data: { after: 'some value' },
-      // },
+      { // Add value to empty scope
+        id: new ElemID('salesforce', 'lead', 'field', 'empty', 'test'),
+        action: 'add',
+        data: { after: 'some value' },
+      },
       // TODO: this is currently not supported
       // { // Add value to one liner scope
       //   id: new ElemID('one', 'liner', 'label'),
@@ -338,6 +337,11 @@ describe('workspace', () => {
     it('should add annotations under correct field', () => {
       expect(lead.fields.base_field.annotations).toHaveProperty('complex')
       expect(lead.fields.base_field.annotations.complex).toEqual({ key: 'value' })
+    })
+
+    it('should add value to empty scope', () => {
+      expect(lead.fields.empty.annotations).toHaveProperty('test')
+      expect(lead.fields.empty.annotations.test).toEqual('some value')
     })
     it('should add annotation types block when having new annotation type changes', () => {
       expect(lead.annotationTypes).toHaveProperty('newAnnoType1')

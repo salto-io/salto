@@ -20,6 +20,7 @@ list number list_field {
 number not_a_list_yet_field {
 
 }
+salesforce_text empty {}
 }
 
 type salesforce_WithAnnotationsBlock {

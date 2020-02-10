@@ -153,12 +153,6 @@ export const updateBlueprintData = (
     start: number
     end: number
   }
-  const addLeadingLineBreak = (data: string): string =>
-    // We need a leading line break if we are in an empty scope (otherwise we get values
-    // in the same line as the opening bracket), since finding out whether we are in an empty
-    // scope isn't easy and adding a line break where we don't need it doesn't actually do
-    // harm, we add the leading line break anyway
-    `\n${data}`
 
   const toBufferChange = (change: DetailedChangeWithSource): BufferChange => {
     const elem = change.action === 'remove' ? undefined : change.data.after
@@ -172,7 +166,6 @@ export const updateBlueprintData = (
         } else {
           newData = dumpAnnotationTypes(elem)
         }
-        newData = addLeadingLineBreak(newData)
       } else if (isElement(elem)) {
         newData = dumpElements([elem])
       } else if (isListElement) {

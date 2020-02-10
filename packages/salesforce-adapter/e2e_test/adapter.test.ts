@@ -981,6 +981,31 @@ describe('Salesforce adapter E2E with real account', () => {
       } as MetadataInfo)
     }
 
+    const verifyApexPageAndClassExist = async (): Promise<void> => {
+      await client.deploy(await toMetadataPackageZip(
+        'ApexClassForProfile',
+        'ApexClass',
+        {
+          apiVersion: API_VERSION,
+          content: "public class ApexClassForProfile {\n    public void printLog() {\n        System.debug('Created');\n    }\n}",
+          fullName: 'ApexClassForProfile',
+        },
+        false,
+      ) as Buffer)
+
+      await client.deploy(await toMetadataPackageZip(
+        'ApexPageForProfile',
+        'ApexPage',
+        {
+          apiVersion: API_VERSION,
+          content: '<apex:page >Created by e2e test for profile test!</apex:page>',
+          fullName: 'ApexPageForProfile',
+          label: 'ApexPageForProfile',
+        },
+        false,
+      ) as Buffer)
+    }
+
     await Promise.all([
       addCustomObjectWithVariousFields(),
       verifyEmailTemplateAndFolderExist(),
@@ -990,6 +1015,7 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyLeadWorkflowInnerTypesExist(),
       verifyFlowExists(),
       verifyRolesExist(),
+      verifyApexPageAndClassExist(),
     ])
     result = await adapter.fetch()
   })
@@ -1667,7 +1693,13 @@ describe('Salesforce adapter E2E with real account', () => {
         ],
         pageAccesses: [
           {
-            apexPage: 'AnswersHome',
+            apexPage: 'ApexPageForProfile',
+            enabled: 'false',
+          },
+        ],
+        classAccesses: [
+          {
+            apexClass: 'ApexClassForProfile',
             enabled: 'false',
           },
         ],
@@ -1740,7 +1772,13 @@ describe('Salesforce adapter E2E with real account', () => {
         ],
         pageAccesses: [
           {
-            apexPage: 'AnswersHome',
+            apexPage: 'ApexPageForProfile',
+            enabled: 'true',
+          },
+        ],
+        classAccesses: [
+          {
+            apexClass: 'ApexClassForProfile',
             enabled: 'true',
           },
         ],
@@ -1786,6 +1824,7 @@ describe('Salesforce adapter E2E with real account', () => {
       savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
       savedInstance.userPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
       savedInstance.pageAccesses.forEach((f: Value) => valuesMap.set(f.apexPage, f))
+      savedInstance.classAccesses.forEach((f: Value) => valuesMap.set(f.apexClass, f))
 
       expect((newValues.fieldPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()
@@ -1804,6 +1843,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
       expect((newValues.pageAccesses as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.apexPage)))).toBeTruthy()
+
+      expect((newValues.classAccesses as []).some((v: Value) =>
+        _.isEqual(v, valuesMap.get(v.apexClass)))).toBeTruthy()
 
       expect(newValues.loginHours).toEqual(savedInstance.loginHours)
 

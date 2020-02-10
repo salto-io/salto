@@ -998,7 +998,7 @@ describe('Salesforce adapter E2E with real account', () => {
         'ApexPage',
         {
           apiVersion: API_VERSION,
-          content: '<apex:page >Created by e2e test for profile test!</apex:page>',
+          content: '<apex:page>Created by e2e test for profile test!</apex:page>',
           fullName: 'ApexPageForProfile',
           label: 'ApexPageForProfile',
         },
@@ -3985,7 +3985,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex page manipulation', () => {
           const apexPageInstance = createInstanceElement('MyApexPage', 'ApexPage',
-            '<apex:page >Created by e2e test!</apex:page>')
+            '<apex:page>Created by e2e test!</apex:page>')
           apexPageInstance.value.label = 'MyApexPage'
 
           beforeAll(async () => {

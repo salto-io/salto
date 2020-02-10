@@ -100,11 +100,9 @@ jobs:
       - run:
           name: verify that the NOTICES files should not be changed
           command: |
-            temp_notices=$(mktemp)
-            yarn licenses generate-disclaimer > $temp_notices
-            diff_out=$(diff NOTICES $temp_notices)
-            if [ ! -z "$diff_out" ]; then
-              echo "NOTICES file should be regenerated; please run yarn licenses generate-disclaimer > NOTICES"
+            yarn run generate-notices-file
+            if ! git diff --quiet  --exit-code codecov.yml; then
+              echo "NOTICES file need to be regenerated; please run yarn run generate-notices-file and add the NOTICES file to the pull request"
               exit 1
             fi
       - run:

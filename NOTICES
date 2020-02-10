@@ -1,4 +1,4 @@
-THE FOLLOWING SETS FORTH ATTRIBUTION NOTICES FOR THIRD PARTY SOFTWARE THAT MAY BE CONTAINED IN PORTIONS OF THE WORKSPACE AGGREGATOR B625611D F10B 4AB0 A289 81D79ED405EE PRODUCT.
+THE FOLLOWING SETS FORTH ATTRIBUTION NOTICES FOR THIRD PARTY SOFTWARE THAT MAY BE CONTAINED IN PORTIONS OF THE SALTO PRODUCT.
 
 -----
 
@@ -922,7 +922,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 -----
 
-The following software may be included in this product: @xtuc/long, spdx-correct, validate-npm-package-license, workspace-aggregator-b625611d-f10b-4ab0-a289-81d79ed405ee. A copy of the source code may be downloaded from https://github.com/dcodeIO/long.js.git (@xtuc/long), https://github.com/jslicense/spdx-correct.js.git (spdx-correct), https://github.com/kemitchell/validate-npm-package-license.js.git (validate-npm-package-license). This software contains the following license and notice below:
+The following software may be included in this product: @xtuc/long, spdx-correct, validate-npm-package-license, salto. A copy of the source code may be downloaded from https://github.com/dcodeIO/long.js.git (@xtuc/long), https://github.com/jslicense/spdx-correct.js.git (spdx-correct), https://github.com/kemitchell/validate-npm-package-license.js.git (validate-npm-package-license). This software contains the following license and notice below:
 
 Apache License
                            Version 2.0, January 2004

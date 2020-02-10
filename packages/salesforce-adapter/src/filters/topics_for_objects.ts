@@ -1,5 +1,5 @@
 import {
-  ObjectType, Element, Values, isObjectType, Change, getAnnotationValue, isInstanceElement,
+  ObjectType, Element, Values, isObjectType, Change, getAnnotationValue,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
@@ -8,7 +8,7 @@ import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, API_NAME,
 import { isCustomObject, apiName, metadataType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
-import { getCustomObjects, boolValue, removeFieldsFromInstanceAndType, getInstancesOfMetadataType } from './utils'
+import { getCustomObjects, boolValue, getInstancesOfMetadataType } from './utils'
 
 const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 

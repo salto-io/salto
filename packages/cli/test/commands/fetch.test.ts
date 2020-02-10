@@ -48,7 +48,7 @@ describe('fetch command', () => {
           getWorkspaceErrors: mocks.getWorkspaceErrors,
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-        result = await command('', true, false, cliOutput, spinnerCreator, services)
+        result = await command('', true, false, cliOutput, spinnerCreator, services, false)
           .execute()
       })
 
@@ -63,8 +63,14 @@ describe('fetch command', () => {
       beforeAll(async () => {
         mockLoadWorkspace.mockResolvedValue({ workspace: mocks.mockLoadWorkspace(workspaceDir),
           errored: false })
-        result = await command(workspaceDir, true, false, cliOutput, spinnerCreator, services)
-          .execute()
+        result = await command(
+          workspaceDir,
+          true, false,
+          cliOutput,
+          spinnerCreator,
+          services,
+          false
+        ).execute()
       })
 
       it('should return success code', () => {

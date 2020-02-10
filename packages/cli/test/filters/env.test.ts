@@ -17,7 +17,7 @@ describe('test env command filter', () => {
 
     builder = createCommandBuilder({
       options: {
-        command: 'env [command] [name]',
+        command: 'env <command> [name]',
         description: 'tests the env command filter',
       },
       filters: [envsCmdFilter],
@@ -25,17 +25,9 @@ describe('test env command filter', () => {
     })
   })
 
-  it('should forward the command when command is undefined', async () => {
-    await runCli('env')
-    expect(buildFunc.mock.calls[0][0]).toEqual(
-      expect.objectContaining({
-        args: {
-          $0: 'salto',
-          _: ['env'],
-        },
-        stdin: {},
-      })
-    )
+  it('should fail the command when command is undefined', async () => {
+    const output = await runCli('env')
+    expect(output.err.search('command')).toBeGreaterThan(0)
   })
 
   it('should fail on an unknown command', async () => {

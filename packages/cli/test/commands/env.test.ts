@@ -37,7 +37,7 @@ describe('env commands', () => {
 
   describe('current enviornment command', () => {
     it('should display the current enviornment', async () => {
-      await command('.', undefined, cliOutput, spinner).execute()
+      await command('.', 'current', cliOutput, spinner).execute()
       expect(cliOutput.stdout.content.search('active')).toBeGreaterThan(0)
     })
   })

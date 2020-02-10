@@ -122,7 +122,7 @@ export const command = (
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
   inputServices: string[],
-  strict?: boolean
+  strict: boolean
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${

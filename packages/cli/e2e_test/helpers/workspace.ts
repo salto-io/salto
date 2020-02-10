@@ -38,7 +38,7 @@ export const editBlueprint = async (filename: string, replacements: Pair[]): Pro
 }
 
 export const runFetch = async (fetchOutputDir: string): Promise<void> => {
-  await fetch(fetchOutputDir, true, false, mockCliOutput(), mockSpinnerCreator([]), services)
+  await fetch(fetchOutputDir, true, false, mockCliOutput(), mockSpinnerCreator([]), services, false)
     .execute()
 }
 

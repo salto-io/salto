@@ -50,7 +50,7 @@ describe('Data migration operations E2E', () => {
       await mkdirp(`${fetchOutputDir}/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
       await runSalesforceLogin(fetchOutputDir)
-      await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator, services).execute()
+      await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator, services, false).execute()
     })
 
     it('should save the data in csv file when running export', async () => {

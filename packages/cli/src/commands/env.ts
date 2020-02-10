@@ -66,7 +66,7 @@ export const command = (
         return setEnviornment(envName as string, output, workspace.config)
       case 'list':
         return listEnvs(output, workspace.config)
-      case undefined:
+      case 'current':
         return getCurrentEnv(output, workspace.config)
       default:
         throw new Error('Unknown enviornment management command')
@@ -80,7 +80,7 @@ type EnvsParsedCliInput = ParsedCliInput<EnvsArgs>
 
 const envsBuilder = createCommandBuilder({
   options: {
-    command: 'env [command] [name]',
+    command: 'env <command> [name]',
     description: 'Manage your workspace enviornments',
   },
 

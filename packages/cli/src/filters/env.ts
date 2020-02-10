@@ -20,13 +20,13 @@ export const envsCmdFilter: EnvsCmdFilter = {
       .positional('command',
         {
           type: 'string',
-          choices: ['create', 'set', 'list'],
+          choices: ['create', 'set', 'list', 'current'],
           description: 'The enviornment management command',
         })
       .positional('name',
         {
           type: 'string',
-          desc: 'The name of the enviornment',
+          desc: 'The name of the enviornment (required for create & set)',
         }).check((args: yargs.Arguments<{
           command?: string
           name?: string

@@ -180,7 +180,6 @@ export const updateBlueprintData = (
       } else {
         // When dumping values (attributes) we need to dump the key as well
         newData = dumpValues({ [changeKey]: elem })
-        newData = addLeadingLineBreak(newData)
       }
       if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
         // Trim trailing newline (the original value already has one)

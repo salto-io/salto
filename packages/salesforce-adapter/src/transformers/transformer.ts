@@ -23,7 +23,6 @@ import {
   CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS,
   VALUE_SET_DEFINITION_FIELDS,
 } from '../constants'
 import SalesforceClient from '../client/client'
@@ -892,7 +891,6 @@ export const toCustomObject = (
     API_NAME, // we use it as fullName
     METADATA_TYPE, // internal annotation
     LABEL, // we send it in CustomObject constructor to enable default for pluralLabels
-    ...Object.values(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS), // done in custom_objects filter
   ]
 
   const isAllowed = (annotationName: string): boolean => (

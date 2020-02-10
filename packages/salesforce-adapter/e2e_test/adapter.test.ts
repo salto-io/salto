@@ -1823,8 +1823,8 @@ describe('Salesforce adapter E2E with real account', () => {
       savedInstance.applicationVisibilities.forEach((f: Value) => valuesMap.set(f.application, f))
       savedInstance.objectPermissions.forEach((f: Value) => valuesMap.set(f.object, f))
       savedInstance.userPermissions.forEach((f: Value) => valuesMap.set(f.name, f))
-      savedInstance.pageAccesses.forEach((f: Value) => valuesMap.set(f.apexPage, f))
-      savedInstance.classAccesses.forEach((f: Value) => valuesMap.set(f.apexClass, f))
+      makeArray(savedInstance.pageAccesses).forEach((f: Value) => valuesMap.set(f.apexPage, f))
+      makeArray(savedInstance.classAccesses).forEach((f: Value) => valuesMap.set(f.apexClass, f))
 
       expect((newValues.fieldPermissions as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.field)))).toBeTruthy()

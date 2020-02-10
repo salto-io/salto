@@ -1,11 +1,11 @@
 import {
-  ObjectType, Element, Values, isObjectType, Change, getAnnotationValue,
+  ObjectType, Element, Values, isObjectType, Change, getAnnotationValue, isInstanceElement,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, API_NAME,
   TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../constants'
-import { isCustomObject, apiName } from '../transformers/transformer'
+import { isCustomObject, apiName, metadataType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
 import { getCustomObjects, boolValue, removeFieldsFromInstanceAndType, getInstancesOfMetadataType } from './utils'
@@ -49,9 +49,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
       }
     })
 
-    // Remove enable topic field from TopicsForObjects Instances & Type
-    // to avoid information duplication
-    removeFieldsFromInstanceAndType(elements, [ENABLE_TOPICS], TOPICS_FOR_OBJECTS_METADATA_TYPE)
+    // Remove TopicsForObjects Instances & Type to avoid information duplication
+    _.remove(elements, elem => (metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE))
   },
 
   onAdd: async (after: Element): Promise<SaveResult[]> => {

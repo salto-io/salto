@@ -1,30 +1,45 @@
 import _ from 'lodash'
+import { logger } from '@salto/logging'
+import { collections } from '@salto/lowerdash'
 import {
   Element, isObjectType, ElemID, findInstances, InstanceElement, ReferenceExpression,
+  INSTANCE_ANNOTATIONS, isReferenceExpression, ObjectType,
 } from 'adapter-api'
-import { apiName } from '../transformers/transformer'
+import { apiName, isCustomObject, bpCase } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-import { SALESFORCE, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
+import { SALESFORCE } from '../constants'
 import { id } from './utils'
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'Layout')
 export const LAYOUT_ANNOTATION = 'layouts'
-export const LAYOUT_SUFFIX = 'Layout'
+export const LAYOUT_SUFFIX = ' Layout'
+
+const { makeArray } = collections.array
+const log = logger(module)
 
 const MIN_NAME_LENGTH = 4
 
+export const specialLayoutObjects = new Map([
+  ['CaseClose', 'Case'],
+  ['UserAlt', 'User'],
+])
+
 // Layout full name starts with related sobject and then '-'
-const layoutObj = (layout: InstanceElement): string => apiName(layout).split('-')[0]
+const layoutObjAndName = (layout: InstanceElement): [string, string] => {
+  const [obj, ...name] = apiName(layout).split('-')
+  return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
+}
+
+const defaultLayoutName = (layout: InstanceElement): string => bpCase(apiName(layout))
 
 const fixNames = (layouts: InstanceElement[]): void => {
-  const name = (elem: Element): string => elem.elemID.name
   let names = layouts.map(id)
 
   const updateElemID = (layout: InstanceElement, newName: string): void => {
     if (newName.length < MIN_NAME_LENGTH) {
       return
     }
-    const newId = layout.type.elemID.createNestedID('instance', newName)
+    const newId = layout.type.elemID.createNestedID('instance', bpCase(newName))
     if (!names.includes(newId.getFullName())) {
       names = _.without(names, id(layout))
       names.push(newId.getFullName())
@@ -32,21 +47,28 @@ const fixNames = (layouts: InstanceElement[]): void => {
     }
   }
 
-  layouts.forEach(l => {
-    if (name(l).endsWith(LAYOUT_SUFFIX)) {
-      updateElemID(l, _.trimEnd(name(l).slice(0, -1 * LAYOUT_SUFFIX.length), '_'))
-    }
-    const objName = layoutObj(l)
-    const objNameNoSuffix = objName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-      ? objName.slice(0, -1 * SALESFORCE_CUSTOM_SUFFIX.length)
-      : objName
-    if (name(l).startsWith(`${objName}_${objNameNoSuffix}`)) {
-      updateElemID(l, _.trimStart(name(l).slice(objName.length), '_'))
-    }
-    if (l.path) {
-      l.path = [...l.path.slice(0, -1), name(l)]
-    }
-  })
+  layouts
+    .filter(layout => layout.elemID.name === defaultLayoutName(layout))
+    .forEach(layout => updateElemID(layout, layoutObjAndName(layout)[1]))
+}
+
+const addObjectReference = (layout: InstanceElement, { elemID: objectID }: ObjectType): void => {
+  const layoutDeps = makeArray(layout.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON])
+  if (layoutDeps.filter(isReferenceExpression).some(ref => ref.elemId.isEqual(objectID))) {
+    return
+  }
+  layoutDeps.push(new ReferenceExpression(objectID))
+  layout.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON] = layoutDeps
+}
+
+const fixLayoutPath = (
+  layout: InstanceElement,
+  { path: objectPath }: ObjectType,
+): void => {
+  if (objectPath === undefined) {
+    return
+  }
+  layout.path = [...objectPath.slice(0, -1), layout.elemID.typeName, layout.elemID.name]
 }
 
 /**
@@ -54,7 +76,7 @@ const fixNames = (layouts: InstanceElement[]): void => {
 */
 const filterCreator: FilterCreator = () => ({
   /**
-   * Upon fetch, add layout annotations to relevant sobjects.
+   * Upon fetch, shorten layout ID and add reference to layout sobjects.
    *
    * @param elements the already fetched elements
    */
@@ -62,22 +84,20 @@ const filterCreator: FilterCreator = () => ({
     const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
     fixNames(layouts)
 
-    const obj2layout = _(layouts)
-      .groupBy(layoutObj)
-      .value()
+    const customObjects = new Map(
+      elements.filter(isObjectType).filter(isCustomObject).map(obj => [apiName(obj), obj]),
+    )
 
-    elements
-      .filter(isObjectType)
-      .forEach(obj => {
-        const objName = apiName(obj)
-        if (objName) {
-          const objLayouts = obj2layout[objName]
-          if (objLayouts) {
-            obj.annotate({ [LAYOUT_ANNOTATION]: _.sortBy(objLayouts, id).map(layout =>
-              new ReferenceExpression(layout.elemID)) })
-          }
-        }
-      })
+    layouts.forEach(layout => {
+      const [layoutObjName, layoutName] = layoutObjAndName(layout)
+      const layoutObj = customObjects.get(layoutObjName)
+      if (layoutObj === undefined) {
+        log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
+        return
+      }
+      addObjectReference(layout, layoutObj)
+      fixLayoutPath(layout, layoutObj)
+    })
   },
 })
 

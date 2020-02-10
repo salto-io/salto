@@ -89,7 +89,7 @@ export const FIELD_PERMISSIONS = 'fieldPermissions'
 export const OBJECT_PERMISSIONS = 'objectPermissions'
 export const FIELD_LEVEL_SECURITY_ANNOTATION = 'fieldLevelSecurity'
 export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'objectLevelSecurity'
-export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topics_for_objects'
+export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topicsForObjects'
 
 // Salesforce annotations
 export const LABEL = 'label'

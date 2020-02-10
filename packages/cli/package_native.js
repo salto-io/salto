@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -13,7 +15,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-#!/usr/bin/env node
 const fs = require('fs')
 const path = require('path')
 const webpack = require('webpack')

@@ -86,7 +86,7 @@ describe('Salto parser', () => {
         }
       }
       settings salesforce_path_assistant_settings {
-         metadata_type = "PathAssistantSettings"
+         metadataType = "PathAssistantSettings"
          string full_name {
            _required = false
          }

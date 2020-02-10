@@ -87,7 +87,7 @@ export const API_NAME = 'apiName'
 export const METADATA_TYPE = 'metadataType'
 export const FIELD_PERMISSIONS = 'fieldPermissions'
 export const OBJECT_PERMISSIONS = 'objectPermissions'
-export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
+export const FIELD_LEVEL_SECURITY_ANNOTATION = 'fieldLevelSecurity'
 export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'object_level_security'
 export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topics_for_objects'
 

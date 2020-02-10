@@ -33,7 +33,7 @@ describe('Salto parser', () => {
         }
 
         salesforce_phone fax {
-          field_level_security = {
+          fieldLevelSecurity = {
             all_profiles = {
               visible = false
               read_only = false
@@ -185,8 +185,7 @@ describe('Salto parser', () => {
         })
         it('should have the correct value', () => {
           expect(model.fields.fax.annotations).toEqual({
-            // eslint-disable-next-line @typescript-eslint/camelcase
-            field_level_security: {
+            fieldLevelSecurity: {
               // eslint-disable-next-line @typescript-eslint/camelcase
               all_profiles: {
                 visible: false,

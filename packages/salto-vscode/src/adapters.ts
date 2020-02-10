@@ -19,7 +19,7 @@ export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   col: pos.character,
 })
 
-const AUTO_FOLD_ELEMENT_NAMES = ['field_level_security']
+const AUTO_FOLD_ELEMENT_NAMES = ['fieldLevelSecurity']
 
 const kindMap: {[key in SaltoSymbolKind]: vscode.SymbolKind} = {
   [SaltoSymbolKind.Field]: vscode.SymbolKind.Field,

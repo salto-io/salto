@@ -144,7 +144,7 @@ describe('Object Permissions filter', () => {
     mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
     client.update = mockUpdate
   })
-  it('should add object_level_security to object types and remove it from profile type & instances',
+  it('should add objectLevelSecurity to object types and remove it from profile type & instances',
     async () => {
       const elements = [mockObject.clone(), mockExtendObject.clone(), mockAdmin, mockStandard,
         mockProfile]

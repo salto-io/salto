@@ -107,6 +107,10 @@ export default class HubspotClient {
     }
   }
 
+  getAllContacts(): RequestPromise {
+    return this.conn.contacts.get()
+  }
+
   /**
    * Returning the appropriate HubspotObjectAPI for using HubSpot CRUD API operations
    * @param typeName

@@ -16,11 +16,12 @@ export interface MarketingEmail extends HubspotObjectAPI {
   update(id: string, data: {}): RequestPromise
 }
 
-export interface ContactProperty extends HubspotObjectAPI {
+interface ContactProperty extends HubspotObjectAPI {
   update(id: string, data: {}): RequestPromise
 }
 
 export interface Contact extends HubspotObjectAPI {
+  get(opts?: {}): RequestPromise
   properties: ContactProperty
 }
 

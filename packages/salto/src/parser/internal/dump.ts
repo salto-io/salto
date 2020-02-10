@@ -115,6 +115,5 @@ export const dump = (body: DumpedHclBody): string => {
   return [
     ...attributesLines,
     ...blockLines,
-    '\n',
-  ].join('\n')
+  ].join('\n').concat('\n')
 }

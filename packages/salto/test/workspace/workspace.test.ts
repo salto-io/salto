@@ -85,7 +85,7 @@ describe('workspace', () => {
     })
     it('should be merged', () => {
       const lead = elemMap['salesforce.lead'] as ObjectType
-      expect(_.keys(lead.fields)).toHaveLength(4)
+      expect(_.keys(lead.fields)).toHaveLength(5)
     })
   })
 
@@ -238,18 +238,16 @@ describe('workspace', () => {
         action: 'remove',
         data: { before: 'foo' },
       },
-      // TODO: figure if it's ok to mark this
-      // { // Add value to empty scope
-      //  id: new ElemID('external', 'file', 'attr', CORE_ANNOTATIONS.DEFAULT),
-      //  action: 'add',
-      //  data: { after: 'some value' },
-      // },
-      // TODO: this is currently not supported
-      // { // Add value to one liner scope
-      //   id: new ElemID('one', 'liner', 'label'),
-      //   action: 'add',
-      //   data: { after: 'label' },
-      // },
+      { // Add value to empty scope
+        id: new ElemID('salesforce', 'lead', 'field', 'empty', 'test'),
+        action: 'add',
+        data: { after: 'some value' },
+      },
+      { // Add value to one liner scope
+        id: new ElemID('one', 'liner', 'attr', 'label'),
+        action: 'add',
+        data: { after: 'label' },
+      },
       { // Remove element from multiple locations
         id: new ElemID('multi', 'loc'),
         action: 'remove',
@@ -354,6 +352,11 @@ describe('workspace', () => {
       expect(lead.fields.base_field.annotations).toHaveProperty('complex')
       expect(lead.fields.base_field.annotations.complex).toEqual({ key: 'value' })
     })
+
+    it('should add value to empty scope', () => {
+      expect(lead.fields.empty.annotations).toHaveProperty('test')
+      expect(lead.fields.empty.annotations.test).toEqual('some value')
+    })
     it('should add annotation types block when having new annotation type changes', () => {
       expect(lead.annotationTypes).toHaveProperty('newAnnoType1')
       expect(lead.annotationTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
@@ -369,6 +372,12 @@ describe('workspace', () => {
     })
     it('should remove all definitions in remove', () => {
       expect(Object.keys(elemMap)).not.toContain('multi_loc')
+    })
+
+    it('should add one liner value', () => {
+      const oneLiner = elemMap['one.liner'] as ObjectType
+      expect(oneLiner.annotations).toHaveProperty('label')
+      expect(oneLiner.annotations.label).toEqual('label')
     })
     it('should update value in list', () => {
       expect(lead.fields.list_field

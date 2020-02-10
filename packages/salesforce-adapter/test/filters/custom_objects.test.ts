@@ -449,12 +449,16 @@ describe('Custom Objects filter', () => {
 
     it('should fetch packaged custom SObjects', async () => {
       const namespaceName = 'namespaceName'
+      const fieldWithNamespaceName = `${namespaceName}${NAMESPACE_SEPARATOR}WithNamespace__c`
       mockSingleSObject(`${namespaceName}${NAMESPACE_SEPARATOR}Test__c`, [
         {
           name: 'dummy', label: 'dummy', type: 'string',
         },
         {
           name: 'CustomField__c', label: 'custom field', type: 'string', custom: true,
+        },
+        {
+          name: fieldWithNamespaceName, label: 'custom field', type: 'string', custom: true,
         },
       ], false, true, true)
 
@@ -469,6 +473,7 @@ describe('Custom Objects filter', () => {
       expect(annotationsObj.annotations[API_NAME]).toBeDefined()
       expect(annotationsObj.fields.dummy).toBeUndefined()
       expect(annotationsObj.fields.CustomField__c).toBeUndefined()
+      expect(annotationsObj.fields[fieldWithNamespaceName]).toBeUndefined()
 
       const standardFieldsObj = testElements.find(obj =>
         _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, namespaceName, OBJECTS_PATH,
@@ -476,6 +481,7 @@ describe('Custom Objects filter', () => {
       expect(standardFieldsObj).toBeDefined()
       expect(standardFieldsObj.fields.dummy).toBeDefined()
       expect(standardFieldsObj.fields.CustomField__c).toBeUndefined()
+      expect(standardFieldsObj.fields[fieldWithNamespaceName]).toBeUndefined()
       expect(standardFieldsObj.annotations[API_NAME]).toBeUndefined()
 
       const customFieldsObj = testElements.find(obj =>
@@ -484,6 +490,7 @@ describe('Custom Objects filter', () => {
       expect(customFieldsObj).toBeDefined()
       expect(customFieldsObj.fields.dummy).toBeUndefined()
       expect(customFieldsObj.fields.CustomField__c).toBeDefined()
+      expect(customFieldsObj.fields[fieldWithNamespaceName]).toBeDefined()
       expect(customFieldsObj.annotations[API_NAME]).toBeUndefined()
     })
 

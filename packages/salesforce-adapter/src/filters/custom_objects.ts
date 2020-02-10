@@ -91,15 +91,6 @@ const getFieldName = (annotations: Values): string =>
 const getFieldType = (type: string): TypeElement =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
 
-const createObjectWithFields = (objectName: string, serviceIds: ServiceIds,
-  fields: Field[]): ObjectType => {
-  const obj = Types.get(objectName, true, false, serviceIds) as ObjectType
-  fields.forEach(field => {
-    obj.fields[field.name] = field
-  })
-  return obj
-}
-
 export const annotationsFileName = (objectName: string): string => `${objectName}Annotations`
 export const standardFieldsFileName = (objectName: string): string => `${objectName}StandardFields`
 export const customFieldsFileName = (objectName: string): string => `${objectName}CustomFields`
@@ -113,21 +104,28 @@ const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] =
 
 const createCustomFieldsObjects = (customFields: Field[], objectName: string,
   serviceIds: ServiceIds, objNamespace?: string): ObjectType[] => {
+  const createObjectWithFields = (fields: Field[], namespace?: string): ObjectType => {
+    const obj = Types.get(objectName, true, false, serviceIds) as ObjectType
+    fields.forEach(field => {
+      obj.fields[field.name] = field
+    })
+    obj.path = [...getObjectDirectoryPath(obj, namespace), customFieldsFileName(obj.elemID.name)]
+    return obj
+  }
+
+  if (!_.isUndefined(objNamespace) && !_.isEmpty(customFields)) {
+    // When having an object with namespace, all of its custom fields go to the same object
+    return [createObjectWithFields(customFields, objNamespace)]
+  }
   const [packagedFields, regularCustomFields] = _.partition(customFields, f => hasNamespace(f))
   const namespaceToFields: Record<string, Field[]> = _.groupBy(packagedFields, f => getNamespace(f))
   // Custom fields that belong to a package go in a separate element
   const customFieldsObjects = Object.entries(namespaceToFields)
-    .map(([namespace, packageFields]) => {
-      const packageObj = createObjectWithFields(objectName, serviceIds, packageFields)
-      packageObj.path = [...getObjectDirectoryPath(packageObj, namespace),
-        customFieldsFileName(packageObj.elemID.name)]
-      return packageObj
-    })
+    .map(([namespace, packageFields]) => createObjectWithFields(packageFields, namespace))
+
   if (!_.isEmpty(regularCustomFields)) {
-    // Custom fields go in a separate element
-    const customPart = createObjectWithFields(objectName, serviceIds, regularCustomFields)
-    customPart.path = [...getObjectDirectoryPath(customPart, objNamespace),
-      customFieldsFileName(customPart.elemID.name)]
+    // Custom fields that has no namespace go in a separate element
+    const customPart = createObjectWithFields(regularCustomFields)
     customFieldsObjects.push(customPart)
   }
   return customFieldsObjects

@@ -41,7 +41,7 @@ describe('Salto parser', () => {
           }
         }
 
-        lead_convert_settings = {
+        LeadConvertSettings = {
           account = [
             {
               input = "bla"
@@ -51,7 +51,7 @@ describe('Salto parser', () => {
         }
         
         annotations {
-          salesforce_lead_convert_settings convert_settings {}
+          salesforce_LeadConvertSettings convertSettings {}
         }
       }
 
@@ -200,10 +200,10 @@ describe('Salto parser', () => {
 
       describe('model annotations', () => {
         it('should exist', () => {
-          expect(model.annotations).toHaveProperty('lead_convert_settings')
+          expect(model.annotations).toHaveProperty('LeadConvertSettings')
         })
         it('should have the correct value', () => {
-          expect(model.annotations.lead_convert_settings).toEqual({
+          expect(model.annotations.LeadConvertSettings).toEqual({
             account: [
               {
                 input: 'bla',
@@ -216,11 +216,11 @@ describe('Salto parser', () => {
 
       describe('annotation types', () => {
         it('should exist', () => {
-          expect(model.annotationTypes).toHaveProperty('convert_settings')
+          expect(model.annotationTypes).toHaveProperty('convertSettings')
         })
         it('should have the correct type', () => {
-          expect(model.annotationTypes.convert_settings.elemID.adapter).toEqual('salesforce')
-          expect(model.annotationTypes.convert_settings.elemID.name).toEqual('lead_convert_settings')
+          expect(model.annotationTypes.convertSettings.elemID.adapter).toEqual('salesforce')
+          expect(model.annotationTypes.convertSettings.elemID.name).toEqual('LeadConvertSettings')
         })
       })
     })
@@ -368,7 +368,7 @@ describe('Salto parser', () => {
       it('should contain nested attribute values', () => {
         const nestedAttrId = model.elemID
           .createNestedID('attr')
-          .createNestedID('lead_convert_settings')
+          .createNestedID('LeadConvertSettings')
           .createNestedID('account')
           .createNestedID('0')
           .createNestedID('input')
@@ -384,7 +384,7 @@ describe('Salto parser', () => {
       it('should contain a single annotation type', () => {
         const annotationTypeId = model.elemID
           .createNestedID('annotation')
-          .createNestedID('convert_settings')
+          .createNestedID('convertSettings')
         const annotationTypeSource = sourceMap.get(annotationTypeId.getFullName())
         expect(annotationTypeSource).toHaveLength(1)
       })

@@ -14,7 +14,7 @@ const { makeArray } = collections.array
 
 export const LEAD_CONVERT_SETTINGS_TYPE_ID = new ElemID(SALESFORCE, 'LeadConvertSettings')
 export const LEAD_TYPE_ID = new ElemID(SALESFORCE, 'Lead')
-export const CONVERT_SETTINGS_ANNOTATION = 'convert_settings'
+export const CONVERT_SETTINGS_ANNOTATION = 'convertSettings'
 export const OBJECT_MAPPING_FIELD = 'objectMapping'
 export const MAPPING_FIELDS_FIELD = 'mappingFields'
 export const INPUT_FIELD = 'inputField'
@@ -23,14 +23,14 @@ export const OUTPUT_OBJECT = 'outputObject'
 export const INSTANCE_FULL_NAME = 'LeadConvertSettings'
 
 /**
-* Declare the lead convert settings filter, this filter add lead_convert_setting annotation
+* Declare the lead convert settings filter, this filter add LeadConvertSettings annotation
 * to Lead.
 * Annotation value will be the single lead convert settings instance and instance will be removed
 * from the fetched elements list.
 */
 const filterCreator: FilterCreator = ({ client }) => ({
   /**
-   * Upon fetch, add lead_convert_setting annotation.
+   * Upon fetch, add LeadConvertSettings annotation.
    *
    * @param elements the already fetched elements
    */

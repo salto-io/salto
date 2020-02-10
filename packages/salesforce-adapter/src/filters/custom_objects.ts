@@ -319,9 +319,9 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         return []
       }
       return nestedInstances.map(nestedInstance => {
-        const fullName = [objectDirectoryPath.slice(-1)[0],
-          nestedInstance[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPERATOR)
-        const elemIdName = fullName.replace(API_NAME_SEPERATOR, '_')
+        const fullName = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
+          .join(API_NAME_SEPERATOR)
+        const elemIdName = bpCase(fullName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
         return new InstanceElement(elemIdName, type, nestedInstance,
           [...objectDirectoryPath, type.elemID.name, elemIdName])
@@ -407,8 +407,7 @@ const createFromSObjectsAndInstances = (
 ): Element[] =>
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
     const { serviceIds, object, namespace } = createObjectTypeWithBaseAnnotations(name, label)
-    const objects = [object, ...createSObjectTypesWithFields(name, fields,
-      serviceIds, namespace)]
+    const objects = [object, ...createSObjectTypesWithFields(name, fields, serviceIds, namespace)]
     const instance = instances[name]
     if (!instance) {
       return objects

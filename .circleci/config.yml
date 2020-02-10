@@ -97,6 +97,39 @@ jobs:
           name: fix eslint cache
           command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
 
+      - run:
+          name: verify that the NOTICES files should not be changed
+          command: |
+            yarn run generate-notices-file
+            if ! git diff --quiet  --exit-code codecov.yml; then
+              echo "NOTICES file need to be regenerated; please run yarn run generate-notices-file and add the NOTICES file to the pull request"
+              exit 1
+            fi
+      - run:
+          # eslint will verify that the license header exists on the linted source files, this step is
+          # to verify that other non-linted files also contains the license header (and therefore this is
+          # in the 'build' job)
+          name: verify that the license header is prepend to the non eslint'd source files
+          command: |
+            # get the license header from the eslintrc configuration
+            set -e
+            if [ ! -f 'eslintrc.js' ]; then
+              echo 'cannot find eslintrc.js file'
+              exit 1
+            fi
+            license_header=$(node -e "var license_head = require('./eslintrc.js'); console.log(\`/*\${license_head.rules['header/header'][2].join('\n')}*/\`)")
+            src_files_without_license_header=""
+            for f in $(find . -type f -name '*.js' -not -path '*node_modules*' -not -path '*dist\/*' ); do
+              if ! grep -qFx "$license_header" "$f"; then
+                src_files_without_license_header+="$f\n"
+              fi
+            done
+
+            if [ ! -z "$src_files_without_license_header" ]; then
+              echo -e "the following source files do not contain license header:\n${src_files_without_license_header}"
+              exit 1
+            fi
+
       - run: yarn build
 
       - run:

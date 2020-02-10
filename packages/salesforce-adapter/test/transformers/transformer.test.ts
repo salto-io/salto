@@ -946,7 +946,7 @@ describe('transformer', () => {
   })
 
   describe('type definitions', () => {
-    it('should include api_name annotation with service_id type', async () => {
+    it('should include apiName annotation with service_id type', async () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
         expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
       })

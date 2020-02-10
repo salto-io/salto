@@ -40,7 +40,7 @@ describe('package change validator', () => {
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change errors when adding an object without api_name', async () => {
+      it('should have no change errors when adding an object without apiName', async () => {
         const changeErrors = await packageValidator.onAdd(obj)
         expect(changeErrors).toHaveLength(0)
       })
@@ -94,7 +94,7 @@ describe('package change validator', () => {
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change errors when removing an object without api_name', async () => {
+      it('should have no change errors when removing an object without apiName', async () => {
         const changeErrors = await packageValidator.onRemove(obj)
         expect(changeErrors).toHaveLength(0)
       })
@@ -145,7 +145,7 @@ describe('package change validator', () => {
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change error when adding a field without api_name to an object', async () => {
+      it('should have no change error when adding a field without apiName to an object', async () => {
         const newField = new Field(obj.elemID, 'field', BuiltinTypes.STRING, {})
         const changeErrors = await packageValidator.onUpdate([{
           action: 'add',
@@ -178,7 +178,7 @@ describe('package change validator', () => {
         expect(changeErrors).toHaveLength(0)
       })
 
-      it('should have no change error when removing a field without api_name from an object', async () => {
+      it('should have no change error when removing a field without apiName from an object', async () => {
         const oldField = new Field(obj.elemID, 'field', BuiltinTypes.STRING, {})
         const changeErrors = await packageValidator.onUpdate([{
           action: 'remove',

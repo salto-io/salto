@@ -285,7 +285,7 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.NumberField.type.elemID.name).toBe('Number')
     })
 
-    it('should fetch sobject with api_name and metadata_type service ids', async () => {
+    it('should fetch sobject with apiName and metadata_type service ids', async () => {
       mockSingleSObject('Lead', [])
       await filter().onFetch(result)
 

@@ -83,7 +83,7 @@ export enum ANNOTATION_TYPE_NAMES {
 }
 
 // Salto annotations
-export const API_NAME = 'api_name'
+export const API_NAME = 'apiName'
 export const METADATA_TYPE = 'metadata_type'
 export const FIELD_PERMISSIONS = 'fieldPermissions'
 export const OBJECT_PERMISSIONS = 'objectPermissions'

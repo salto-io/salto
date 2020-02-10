@@ -228,12 +228,11 @@ describe('workspace', () => {
         action: 'add',
         data: { after: 'some value' },
       },
-      // TODO: this is currently not supported
-      // { // Add value to one liner scope
-      //   id: new ElemID('one', 'liner', 'label'),
-      //   action: 'add',
-      //   data: { after: 'label' },
-      // },
+      { // Add value to one liner scope
+        id: new ElemID('one', 'liner', 'attr', 'label'),
+        action: 'add',
+        data: { after: 'label' },
+      },
       { // Remove element from multiple locations
         id: new ElemID('multi', 'loc'),
         action: 'remove',
@@ -358,6 +357,12 @@ describe('workspace', () => {
     })
     it('should remove all definitions in remove', () => {
       expect(Object.keys(elemMap)).not.toContain('multi_loc')
+    })
+
+    it('should add one liner value', () => {
+      const oneLiner = elemMap['one.liner'] as ObjectType
+      expect(oneLiner.annotations).toHaveProperty('label')
+      expect(oneLiner.annotations.label).toEqual('label')
     })
     it('should update value in list', () => {
       expect(lead.fields.list_field

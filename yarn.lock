@@ -5380,10 +5380,10 @@ https-proxy-agent@^2.2.1, https-proxy-agent@^2.2.3, https-proxy-agent@^2.2.4:
     agent-base "^4.3.0"
     debug "^3.1.0"
 
-hubspot@^2.3.7:
-  version "2.3.7"
-  resolved "https://registry.yarnpkg.com/hubspot/-/hubspot-2.3.7.tgz#4e36248f009b108a01db99d49c916d1428ad15bb"
-  integrity sha512-cDcge5wC//mVpmu6nLKI0kVyA6GtfAGVS5CNmywLb2qwRxH+zZlV6puOdsPqFgS/IZpq5Qcg8aXjHuwW2Mf2fw==
+hubspot@^2.3.8:
+  version "2.3.8"
+  resolved "https://registry.yarnpkg.com/hubspot/-/hubspot-2.3.8.tgz#c955b4ab0bbb7e142a2d2791b589a7ff76bbe947"
+  integrity sha512-EWSiDKJfzItMl2szkCJrDK1oMW4U+3sGLKbUnKrQQwQ1BmAvaKwUbaElqeF2udLM2eCLnMGLG0CFVYpb594GYA==
   dependencies:
     bottleneck "^2.19.5"
     debug "^4.1.1"

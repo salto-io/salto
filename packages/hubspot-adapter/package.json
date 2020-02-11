@@ -33,7 +33,7 @@
     "adapter-api": "0.1.0",
     "buffer": "^5.2.1",
     "events": "^3.0.0",
-    "hubspot": "^2.3.7",
+    "hubspot": "^2.3.8",
     "lodash": "^4.17.11",
     "requestretry": "^4.0.2",
     "stream": "0.0.2",

@@ -68,6 +68,7 @@ export interface ContactProperty extends HubspotMetadata {
   // Boolean; For system properties,
   // true indicates that the options are stored
   // Has no effect on custom properties
+  createdAt: number
 }
 
 export interface Form extends HubspotMetadata {

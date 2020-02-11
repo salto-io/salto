@@ -62,6 +62,18 @@ const mockMadKu: () => Connection = () => ({
       ([] as unknown as RequestPromise)),
     create: jest.fn().mockImplementation((): RequestPromise =>
       ({} as unknown as RequestPromise)),
+    delete: jest.fn().mockImplementation((): RequestPromise =>
+      ({} as unknown as RequestPromise)),
+    properties: {
+      update: jest.fn().mockImplementation((): RequestPromise =>
+        ({} as unknown as RequestPromise)),
+      create: jest.fn().mockImplementation((): RequestPromise =>
+        ({} as unknown as RequestPromise)),
+      getAll: jest.fn().mockImplementation((): RequestPromise =>
+        ([] as unknown as RequestPromise)),
+      delete: jest.fn().mockImplementation((): RequestPromise =>
+        ({} as unknown as RequestPromise)),
+    },
   } as Contact,
 })
 

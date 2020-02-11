@@ -20,11 +20,12 @@ export const NAME = 'name'
 const LABEL = 'label'
 const PROPERTY_OPTIONS = 'options'
 const DISPLAYORDER = 'displayOrder'
+const CREATEDAT = 'createdAt'
 
 export const OBJECTS_NAMES = {
   FORM: 'form',
-  WORKFLOWS: 'workflows',
   MARKETINGEMAIL: 'marketingEmail',
+  WORKFLOWS: 'workflows',
 
   // Subtypes
   PROPERTYGROUP: 'propertyGroup',
@@ -68,7 +69,7 @@ export const FORM_FIELDS = {
   IGNORECURRENTVALUES: 'ignoreCurrentValues',
   DELETABLE: 'deletable',
   INLINEMESSAGE: 'inlineMessage',
-  CREATEDAT: 'createdAt',
+  CREATEDAT,
   CAPTCHAENABLED: 'captchaEnabled',
   CLONEABLE: 'cloneable',
   EDITABLE: 'editable',
@@ -235,14 +236,15 @@ export const CONTACT_PROPERTY_FIELDS = {
   TYPE: 'type',
   FIELDTYPE: 'fieldType',
   OPTIONS: PROPERTY_OPTIONS,
-  DELETED: 'deteled',
+  DELETED: 'deleted',
   FORMFIELD: 'formField',
+  CREATEDAT,
   DISPLAYORDER,
   READONLYVALUE: 'readOnlyValue',
   READONLYDEFINITION: 'readOnlyDefinition',
   MUTABLEDEFINITIONNOTDELETABLE: 'mutableDefinitionNotDeletable',
   HIDDEN: 'hidden',
-  CALCULATED: 'calculcated',
+  CALCULATED: 'calculated',
   EXTERNALOPTIONS: 'externalOptions',
 }
 
@@ -252,6 +254,7 @@ export const OPTIONS_FIELDS = {
   VALUE: 'value',
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
+  READONLY: 'readOnly',
   DISPLAYORDER,
 }
 
@@ -324,9 +327,9 @@ export const CONTACTLISTIDS_FIELDS = {
   SUCCEEDED: 'succeeded',
 }
 
-export const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration']
+export const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration', 'bool', 'phone_number']
 export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select',
-  'radio', 'checkbox', 'booleancheckbox']
+  'radio', 'checkbox', 'booleancheckbox', 'calculation_score', 'phonenumber', 'calculation_read_time']
 
 export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)

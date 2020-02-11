@@ -85,7 +85,7 @@ describe('Field Permissions filter', () => {
 
   const mockProfileElemID = new ElemID(SALESFORCE, PROFILE_METADATA_TYPE)
   const mockFieldPermissions = new ObjectType({
-    elemID: new ElemID(constants.SALESFORCE, 'profile_field_level_security'),
+    elemID: new ElemID(constants.SALESFORCE, 'ProfileFieldLevelSecurity'),
     fields: {},
     annotations: { [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity' },
   })
@@ -185,7 +185,7 @@ describe('Field Permissions filter', () => {
     mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
     client.update = mockUpdate
   })
-  it('should add field_level_security to object types and remove it from profile type & instances',
+  it('should add fieldLevelSecurity to object types and remove it from profile type & instances',
     async () => {
       const elements = [mockObject.clone(), mockExtendedObject.clone(), mockAdmin, mockStandard,
         mockNoFieldPerm, mockProfile]

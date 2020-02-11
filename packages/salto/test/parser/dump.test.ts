@@ -67,8 +67,7 @@ describe('Salto Dump', () => {
   })
 
   model.annotate({
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    lead_convert_settings: {
+    LeadConvertSettings: {
       account: [
         {
           input: 'bla',
@@ -142,7 +141,7 @@ describe('Salto Dump', () => {
       })
       it('has complex attributes', () => {
         expect(body).toMatch(
-          /lead_convert_settings = {\s*account = \[\s*{\s*input\s*=\s*"bla",\s*output\s*=\s*"foo",*\s*},*\s*\],*\s*}/m,
+          /LeadConvertSettings = {\s*account = \[\s*{\s*input\s*=\s*"bla",\s*output\s*=\s*"foo",*\s*},*\s*\],*\s*}/m,
         )
       })
       it('has fields', () => {

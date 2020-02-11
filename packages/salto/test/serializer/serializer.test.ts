@@ -45,8 +45,7 @@ describe('State serialization', () => {
   model.fields.list = new Field(model.elemID, 'list', strType, {}, true)
 
   model.annotate({
-    // eslint-disable-next-line @typescript-eslint/camelcase
-    lead_convert_settings: {
+    LeadConvertSettings: {
       account: [
         {
           input: 'bla',

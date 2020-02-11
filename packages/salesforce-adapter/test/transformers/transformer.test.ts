@@ -961,13 +961,13 @@ describe('transformer', () => {
   })
 
   describe('type definitions', () => {
-    it('should include api_name annotation with service_id type', async () => {
+    it('should include apiName annotation with service_id type', async () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
         expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
       })
     })
 
-    it('should include field_level_security annotation with appropriate type', async () => {
+    it('should include fieldLevelSecurity annotation with appropriate type', async () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
         expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
         const fieldLevelSecurityType = type.annotationTypes[FIELD_LEVEL_SECURITY_ANNOTATION]

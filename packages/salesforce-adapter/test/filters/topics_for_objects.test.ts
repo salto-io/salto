@@ -16,7 +16,7 @@ const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 describe('Field Permissions filter', () => {
   const { client } = mockClient()
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-  const mockTopicElemID = new ElemID(constants.SALESFORCE, 'topicsForObjects')
+  const mockTopicElemID = new ElemID(constants.SALESFORCE, constants.TOPICS_FOR_OBJECTS_ANNOTATION)
   const mockObject = new ObjectType({
     elemID: mockElemID,
     annotations: {

@@ -49,7 +49,7 @@ describe('Object Permissions filter', () => {
 
   const mockProfileElemID = new ElemID(constants.SALESFORCE, PROFILE_METADATA_TYPE)
   const mockObjectPermissions = new ObjectType({
-    elemID: new ElemID(constants.SALESFORCE, 'profile_object_level_security'),
+    elemID: new ElemID(constants.SALESFORCE, 'ProfileObjectLevelSecurity'),
     annotations: { [constants.METADATA_TYPE]: 'ProfileObjectLevelSecurity' },
   })
   const mockProfile = new ObjectType({

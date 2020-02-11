@@ -70,7 +70,7 @@ describe('Field Permissions filter', () => {
 
   const mockProfileElemID = new ElemID(SALESFORCE, PROFILE_METADATA_TYPE)
   const mockFieldPermissions = new ObjectType({
-    elemID: new ElemID(constants.SALESFORCE, 'profile_field_level_security'),
+    elemID: new ElemID(constants.SALESFORCE, 'ProfileFieldLevelSecurity'),
     fields: {},
     annotations: { [constants.METADATA_TYPE]: 'ProfileFieldLevelSecurity' },
   })

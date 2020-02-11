@@ -155,6 +155,12 @@ export const parse = (src: Buffer, filename: string): HclParseReturn => {
   const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
   startParse(filename)
   const [blockItems, errors] = parseBuffer(src.toString(), hclParser, filename)
+  if (!_.isEmpty(errors)) {
+    // eslint-disable-next-line no-console
+    console.log(`filename: ${filename}`)
+    // eslint-disable-next-line no-console
+    console.log(`buffer: ${src.toString()}`)
+  }
   if (blockItems !== undefined) {
     return {
       body: convertMain(blockItems),

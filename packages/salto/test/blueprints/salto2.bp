@@ -1,4 +1,4 @@
-type salesforce_test2 {
+type salesforce.test2 {
 	string name {
 	  label = "Name"
 	  _required = true

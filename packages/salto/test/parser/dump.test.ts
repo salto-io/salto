@@ -106,21 +106,21 @@ describe('Salto Dump', () => {
     })
 
     it('dumps primitive types', () => {
-      expect(body).toMatch(/type salesforce_string is string {/)
-      expect(body).toMatch(/type salesforce_number is number {/)
-      expect(body).toMatch(/type salesforce_bool is boolean {/)
+      expect(body).toMatch(/type salesforce.string is string {/)
+      expect(body).toMatch(/type salesforce.number is number {/)
+      expect(body).toMatch(/type salesforce.bool is boolean {/)
     })
 
     it('dumps primitive field type annotations', () => {
-      expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?number alice {/s)
-      expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?number bob {/s)
-      expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?boolean tom {/s)
-      expect(body).toMatch(/type salesforce_field is number {.*?annotations {.*?string jerry {/s)
+      expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?number alice {/s)
+      expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?number bob {/s)
+      expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?boolean tom {/s)
+      expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?string jerry {/s)
     })
 
     describe('dumped instance elements', () => {
       it('has instance block', () => {
-        expect(body).toMatch(/salesforce_test me {/)
+        expect(body).toMatch(/salesforce.test me {/)
       })
       it('has annotation values', () => {
         expect(body).toMatch(new RegExp(`${INSTANCE_ANNOTATIONS.DEPENDS_ON}\\s+=\\s+"test"`))
@@ -128,12 +128,12 @@ describe('Salto Dump', () => {
     })
 
     it('dumps config elements', () => {
-      expect(body).toMatch(/salesforce_test {/)
+      expect(body).toMatch(/salesforce.test {/)
     })
 
     describe('dumped model', () => {
       it('has correct block type and label', () => {
-        expect(body).toMatch(/type salesforce_test {/)
+        expect(body).toMatch(/type salesforce.test {/)
       })
       it('has annotations block', () => {
         expect(body).toMatch(/annotations {/)
@@ -146,18 +146,18 @@ describe('Salto Dump', () => {
       })
       it('has fields', () => {
         expect(body).toMatch(
-          /salesforce_string name {\s+label = "Name"\s+}/m,
+          /salesforce.string name {\s+label = "Name"\s+}/m,
         )
         expect(body).toMatch(
-          /salesforce_number num {/m,
+          /salesforce.number num {/m,
         )
         expect(body).toMatch(
-          /list salesforce_string list {/m
+          /list salesforce.string list {/m
         )
       })
     })
     it('dumped instance with name that starts with number', () => {
-      expect(body).toMatch(/salesforce_test "3me"/)
+      expect(body).toMatch(/salesforce.test "3me"/)
     })
 
     it('can be parsed back', () => {
@@ -182,7 +182,7 @@ describe('Salto Dump', () => {
     })
 
     it('should contain only field', () => {
-      expect(body).toMatch(/^salesforce_string name {\s+label = "Name"\s+}$/m)
+      expect(body).toMatch(/^salesforce.string name {\s+label = "Name"\s+}$/m)
     })
   })
   describe('dump attribute', () => {

@@ -19,8 +19,8 @@ import { DirectoryStore, File } from 'src/workspace/dir_store'
 
 const workspaceFiles = {
   'file.bp': `
-type salesforce_lead {
-salesforce_text base_field {
+type salesforce.lead {
+salesforce.text base_field {
   ${CORE_ANNOTATIONS.DEFAULT} = "asd"
 }
 list number list_field {
@@ -35,30 +35,30 @@ list number list_field {
 number not_a_list_yet_field {
 
 }
-salesforce_text empty {}
+salesforce.text empty {}
 }
 
-type salesforce_WithAnnotationsBlock {
+type salesforce.WithAnnotationsBlock {
   annotations {
     string firstAnnotation {
     }
   }
 }
 
-type multi_loc { a = 1 }
-type one_liner { a = 1 }`,
+type multi.loc { a = 1 }
+type one.liner { a = 1 }`,
   'subdir/file.bp': `
-type salesforce_lead {
-salesforce_text ext_field {
+type salesforce.lead {
+salesforce.text ext_field {
   ${CORE_ANNOTATIONS.DEFAULT} = "foo"
 }
 }
-type multi_loc { b = 1 }`,
+type multi.loc { b = 1 }`,
 
   'error.bp': 'invalid syntax }}',
 
   'dup.bp': `
-type salesforce_lead {
+type salesforce.lead {
 string base_field {}
 }`,
 

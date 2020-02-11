@@ -32,7 +32,7 @@ describe('Test go to definitions', () => {
   })
 
   it('should give all fields usages of a type', async () => {
-    const token = 'vs_str'
+    const token = 'vs.str'
     const defs = await provideWorkspaceReferences(workspace, token)
     expect(getRefLines(defs)).toEqual(
       [33, 37, 50, 67, 114, 126, 138, 141, 144, 147, 150, 153, 156, 159]
@@ -40,13 +40,13 @@ describe('Test go to definitions', () => {
   })
 
   it('should give all instance usages of a type', async () => {
-    const token = 'vs_loan'
+    const token = 'vs.loan'
     const defs = await provideWorkspaceReferences(workspace, token)
     expect(getRefLines(defs)).toEqual([87, 107])
   })
 
   it('should give all instance AND field usages of a type', async () => {
-    const token = 'vs_person'
+    const token = 'vs.person'
     const defs = await provideWorkspaceReferences(workspace, token)
     expect(getRefLines(defs)).toEqual([47, 64, 75, 81, 131])
   })

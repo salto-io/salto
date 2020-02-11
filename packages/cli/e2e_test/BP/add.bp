@@ -1,20 +1,20 @@
-type salesforce_NewObjectName {
+type salesforce.NewObjectName {
   annotations {
     serviceid metadataType {
     }
   }
   metadataType = "CustomObject"
-  salesforce_Text Alpha {
+  salesforce.Text Alpha {
     label = "Alpha"
     _required = false
   }
-  salesforce_Text Beta {
+  salesforce.Text Beta {
     label = "Beta"
     _required = false
   }
 }
 
-salesforce_Role NewInstanceName {
+salesforce.Role NewInstanceName {
   description = "To Be Modified"
   name = "New Role Instance"
 }

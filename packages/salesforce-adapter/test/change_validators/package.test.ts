@@ -42,7 +42,7 @@ describe('package change validator', () => {
       it('should have change error when adding an object containing field with namespace', async () => {
         obj.annotate({ [API_NAME]: 'ObjectName__c' })
         obj.fields.field = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
-          { [API_NAME]: 'MyNamespace__FieldName__c' })
+          { [API_NAME]: `${obj.annotations[API_NAME]}.MyNamespace__FieldName__c` })
         const changeErrors = await packageValidator.onAdd(obj)
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -96,7 +96,7 @@ describe('package change validator', () => {
       it('should have change error when removing an object containing field with namespace', async () => {
         obj.annotate({ [API_NAME]: 'ObjectName__c' })
         obj.fields.field = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
-          { [API_NAME]: 'MyNamespace__FieldName__c' })
+          { [API_NAME]: `${obj.annotations[API_NAME]}.MyNamespace__FieldName__c` })
         const changeErrors = await packageValidator.onRemove(obj)
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -140,7 +140,7 @@ describe('package change validator', () => {
     describe('add field', () => {
       it('should have change error when adding a field with namespace to an object', async () => {
         const newField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
-          { [API_NAME]: 'MyNamespace__FieldName__c' })
+          { [API_NAME]: 'ObjectName__c.MyNamespace__FieldName__c' })
         const changeErrors = await packageValidator.onUpdate([{
           action: 'add',
           data: { after: newField },
@@ -152,7 +152,17 @@ describe('package change validator', () => {
 
       it('should have no change error when adding a field without namespace to an object', async () => {
         const newField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
-          { [API_NAME]: 'FieldName__c' })
+          { [API_NAME]: 'ObjectName__c.FieldName__c' })
+        const changeErrors = await packageValidator.onUpdate([{
+          action: 'add',
+          data: { after: newField },
+        }])
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have no change error when adding a field without namespace to a packaged object', async () => {
+        const newField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
+          { [API_NAME]: 'MyNamespace__ObjectName__c.FieldName' })
         const changeErrors = await packageValidator.onUpdate([{
           action: 'add',
           data: { after: newField },
@@ -173,7 +183,7 @@ describe('package change validator', () => {
     describe('remove field', () => {
       it('should have change error when removing a field with namespace from an object', async () => {
         const oldField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
-          { [API_NAME]: 'MyNamespace__FieldName__c' })
+          { [API_NAME]: 'ObjectName__c.MyNamespace__FieldName__c' })
         const changeErrors = await packageValidator.onUpdate([{
           action: 'remove',
           data: { before: oldField },
@@ -185,7 +195,17 @@ describe('package change validator', () => {
 
       it('should have no change error when removing a field without namespace from an object', async () => {
         const oldField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
-          { [API_NAME]: 'FieldName__c' })
+          { [API_NAME]: 'ObjectName__c.FieldName__c' })
+        const changeErrors = await packageValidator.onUpdate([{
+          action: 'remove',
+          data: { before: oldField },
+        }])
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have no change error when removing a custom field from a packaged object', async () => {
+        const oldField = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
+          { [API_NAME]: 'MyNamespace__ObjectName__c.FieldName' })
         const changeErrors = await packageValidator.onUpdate([{
           action: 'remove',
           data: { before: oldField },

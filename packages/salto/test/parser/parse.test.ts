@@ -25,29 +25,29 @@ describe('Salto parser', () => {
     let sourceMap: SourceMap
 
     const body = `
-      type salesforce_string is string {
+      type salesforce.string is string {
       }
 
-      type salesforce_number is number {
+      type salesforce.number is number {
       }
 
-      type salesforce_boolean is boolean {
+      type salesforce.boolean is boolean {
       }
 
-      type salesforce_obj is object {
-        salesforce_number num {}
+      type salesforce.obj is object {
+        salesforce.number num {}
       }
 
-      type salesforce_test {
-        salesforce_string name {
+      type salesforce.test {
+        salesforce.string name {
           label = "Name"
           _required = true
         }
 
-        list salesforce_string nicknames {
+        list salesforce.string nicknames {
         }
 
-        salesforce_phone fax {
+        salesforce.phone fax {
           fieldLevelSecurity = {
             all_profiles = {
               visible = false
@@ -66,11 +66,11 @@ describe('Salto parser', () => {
         }
         
         annotations {
-          salesforce_LeadConvertSettings convertSettings {}
+          salesforce.LeadConvertSettings convertSettings {}
         }
       }
 
-      salesforce_test inst {
+      salesforce.test inst {
         _depends_on = "fake1"
         name = "me"
       }
@@ -79,18 +79,18 @@ describe('Salto parser', () => {
         username = "foo"
       }
 
-      type salesforce_type {
-        salesforce_number num {}
+      type salesforce.type {
+        salesforce.number num {}
       }
 
-      type salesforce_type {
+      type salesforce.type {
         update num {
           label = "Name"
           _required = true
         }
       }
 
-      type salesforce_field is number {
+      type salesforce.field is number {
         annotations {
           number scale {
           }
@@ -100,7 +100,7 @@ describe('Salto parser', () => {
           }
         }
       }
-      settings salesforce_path_assistant_settings {
+      settings salesforce.path_assistant_settings {
          metadataType = "PathAssistantSettings"
          string full_name {
            _required = false
@@ -109,7 +109,7 @@ describe('Salto parser', () => {
            _required = false
          }
       }
-      salesforce_path_assistant_settings {
+      salesforce.path_assistant_settings {
         full_name              = "PathAssistant"
         path_assistant_enabled = false
       }
@@ -408,7 +408,7 @@ describe('Salto parser', () => {
   describe('error tests', () => {
     it('fails on invalid inheritance syntax', async () => {
       const body = `
-      type salesforce_string string {}
+      type salesforce.string string {}
       `
       expect(() => parse(Buffer.from(body), 'none')).toThrow()
     })

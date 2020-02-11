@@ -1108,7 +1108,7 @@ export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
       // todo: currently this field is populated with the referenced object's API name,
       //  should be modified to elemID reference once we'll use HIL
       // there are some SF reference fields without related fields
-      // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
+      // e.g. salesforce.user_app_menu_item.ApplicationId, salesforce.login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
     }
     if (field.filteredLookupInfo) {

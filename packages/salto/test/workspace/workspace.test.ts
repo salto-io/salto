@@ -34,8 +34,8 @@ import { mockBpsStore } from '../common/blueprint_store'
 
 const changedBP = {
   filename: 'file.bp',
-  buffer: `type salesforce_lead {
-    salesforce_text new_base {}
+  buffer: `type salesforce.lead {
+    salesforce.text new_base {}
   }`,
 }
 const emptyBP = {
@@ -44,7 +44,7 @@ const emptyBP = {
 }
 const newBP = {
   filename: 'new.bp',
-  buffer: 'type salesforce_new {}',
+  buffer: 'type salesforce.new {}',
 }
 const services = ['salesforce']
 
@@ -138,7 +138,7 @@ describe('workspace', () => {
       expect(firstSourceFragment.sourceRange.filename).toBe('file.bp')
       expect(firstSourceFragment.sourceRange.start).toEqual({ byte: 24, col: 1, line: 3 })
       expect(firstSourceFragment.sourceRange.end).toEqual({ byte: 73, col: 2, line: 5 })
-      expect(firstSourceFragment.fragment).toContain('salesforce_text base_field')
+      expect(firstSourceFragment.fragment).toContain('salesforce.text base_field')
     })
   })
 
@@ -371,7 +371,7 @@ describe('workspace', () => {
       expect(objWithAnnotationsBlock.annotationTypes.secondAnnotation).toEqual(BuiltinTypes.NUMBER)
     })
     it('should remove all definitions in remove', () => {
-      expect(Object.keys(elemMap)).not.toContain('multi_loc')
+      expect(Object.keys(elemMap)).not.toContain('multi.loc')
     })
 
     it('should add one liner value', () => {

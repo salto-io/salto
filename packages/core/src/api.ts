@@ -124,11 +124,11 @@ export const deploy = async (
         ? workspace.state.remove(element.elemID)
         : workspace.state.set(element)
           .then(() => { changedElements.push(element) }))
-    let errors: DeployError[]
+    let errors: DeployError[] = []
     try {
       errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
-    } finally {
-      await workspace.flush()
+    } catch (_err) {
+      log.error('An error occurred during deploy')
     }
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
@@ -172,7 +172,6 @@ export const fetch: fetchFunc = async (
   const overrideState = async (elements: Element[]): Promise<void> => {
     await workspace.state.remove(await workspace.state.list())
     await workspace.state.set(elements)
-    await workspace.state.flush()
     log.debug(`finish to override state with ${elements.length} elements`)
   }
   log.debug('fetch starting..')

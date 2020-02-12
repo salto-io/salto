@@ -24,16 +24,17 @@ import { Plan, FetchChange, Workspace } from '@salto-io/core'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatConfigHeader,
-  formatConfigFieldInput,
+  formatConfigFieldInput, formatShouldFlushWithValidationError,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
 
-const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
+const getUserBooleanInput = async (prompt: string, defaultValue = true): Promise<boolean> => {
   const question = {
     name: 'userInput',
     message: prompt,
     type: 'confirm',
+    default: defaultValue,
   }
   const answers = await inquirer.prompt(question)
   return answers.userInput
@@ -64,6 +65,15 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
     stdout.write(formatCancelCommand)
   }
   return shouldContinue
+}
+
+export const shouldFlushWorkspaceInCaseOfValidationError = async (numErrors: number,
+  { stdout }: CliOutput, abortCommand: string): Promise<boolean> => {
+  stdout.write(abortCommand)
+  return getUserBooleanInput(
+    formatShouldFlushWithValidationError(numErrors),
+    false,
+  )
 }
 
 export const getApprovedChanges = async (

@@ -463,6 +463,9 @@ export const formatWorkspaceAbort = (numErrors: number): string =>
 export const formatShouldContinueWithWarning = (numWarnings: number): string =>
   warn(Prompts.SHOULDCONTINUE(numWarnings))
 
+export const formatShouldFlushWithValidationError = (numErrors: number): string =>
+  error(Prompts.SHOULDFLUSH(numErrors))
+
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 
 export const formatLoginUpdated = [

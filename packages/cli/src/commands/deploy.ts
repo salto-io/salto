@@ -132,16 +132,15 @@ export class DeployCommand implements CliCommand {
     const nonErroredActions = [...this.actions.keys()]
       .filter(action => !result.errors.map(error => error.elementId).includes(action))
     this.stdout.write(deployPhaseEpilogue(nonErroredActions.length, result.errors.length))
+    this.stdout.write(EOL)
 
     if (result.changes) {
       const changes = [...result.changes]
-      this.stdout.write(EOL)
       return await updateWorkspace(workspace, { stderr: this.stderr, stdout: this.stdout },
         ...changes)
         ? CliExitCode.Success
         : CliExitCode.AppError
     }
-    this.stdout.write(EOL)
     return result.success ? CliExitCode.Success : CliExitCode.AppError
   }
 }

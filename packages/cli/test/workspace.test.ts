@@ -33,7 +33,7 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 jest.mock('inquirer', () => ({
-  prompt: jest.fn().mockImplementation(() => Promise.resolve({ 0: 'yes', 1: 'no' })),
+  prompt: jest.fn().mockImplementation(() => Promise.resolve({ userInput: false })),
 }))
 describe('workspace', () => {
   let cliOutput: { stderr: MockWriteStream; stdout: MockWriteStream }
@@ -142,8 +142,13 @@ describe('workspace', () => {
   })
 
   describe('updateWorkspace', () => {
+    beforeEach(() => {
+      mockWs.flush = jest.fn()
+    })
+
     it('no changes', async () => {
       const result = await updateWorkspace(mockWs, cliOutput)
+      expect(mockWs.flush).toHaveBeenCalledTimes(1)
       expect(result).toBeTruthy()
     })
 
@@ -155,6 +160,22 @@ describe('workspace', () => {
       expect(result).toBeTruthy()
       expect(mockWs.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
+      expect(mockWs.hasErrors).toHaveBeenCalled()
+    })
+
+    it('with validation errors', async () => {
+      mockWs.hasErrors = jest.fn().mockResolvedValue(true)
+      mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([{
+        sourceFragments: [],
+        message: 'Error BLA',
+        severity: 'Error',
+      }]))
+      const result = await updateWorkspace(mockWs, cliOutput,
+        ...dummyChanges.map((change: DetailedChange): FetchChange =>
+          ({ change, serviceChange: change })))
+      expect(result).toBe(false)
+      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+      expect(mockWs.flush).not.toHaveBeenCalled()
       expect(mockWs.hasErrors).toHaveBeenCalled()
     })
   })

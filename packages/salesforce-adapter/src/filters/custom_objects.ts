@@ -18,7 +18,7 @@ import { collections } from '@salto/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType, InstanceElement,
   isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, findObjectType,
-  Values,
+  Values, bpCase,
 } from 'adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
@@ -32,7 +32,7 @@ import {
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
-  getSObjectFieldElement, Types, isCustomObject, bpCase, apiName, transformPrimitive,
+  getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive,
   formulaTypeName, metadataType,
 } from '../transformers/transformer'
 import { id, addApiName, addMetadataType, addLabel, hasNamespace,

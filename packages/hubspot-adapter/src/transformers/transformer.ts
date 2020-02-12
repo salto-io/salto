@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType,
   PrimitiveType, PrimitiveTypes, Field as TypeField, BuiltinTypes, InstanceElement, TypeElement,
-  CORE_ANNOTATIONS, transform, TypeMap, Values, TransformValueFunc, isPrimitiveType,
+  CORE_ANNOTATIONS, transform, TypeMap, Values, TransformValueFunc, isPrimitiveType, bpCase,
 } from 'adapter-api'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
@@ -1787,7 +1787,7 @@ export class Types {
 
 export const createInstanceName = (
   name: string
-): string => name.trim().split(' ').join('_')
+): string => bpCase(name.trim())
 
 const transformPrimitive: TransformValueFunc = (val, field) => {
   // remove values that are just an empty string or null

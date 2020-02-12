@@ -15,7 +15,7 @@
 */
 import { Values } from 'adapter-api'
 import {
-  createInstanceName, fromHubspotObject, Types,
+  fromHubspotObject, Types, createInstanceName,
 } from '../../src/transformers/transformer'
 import {
   HubspotMetadata,

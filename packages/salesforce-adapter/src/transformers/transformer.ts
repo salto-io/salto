@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
-  Field as TypeField, TypeMap, TransformValueFunc,
+  Field as TypeField, TypeMap, TransformValueFunc, bpCase,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
@@ -43,13 +43,6 @@ import {
 import SalesforceClient from '../client/client'
 
 const { makeArray } = collections.array
-
-export const bpCase = (name?: string): string => (
-  // unescape changes HTML escaped parts (&gt; for example), then the regex
-  // replaces url escaped chars as well as any special character to keep names blueprint friendly
-  // Match multiple consecutive chars to compact names and avoid repeated _
-  name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
-)
 
 export const metadataType = (element: Element): string => (
   isInstanceElement(element)

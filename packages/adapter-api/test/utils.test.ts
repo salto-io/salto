@@ -21,7 +21,7 @@ import { Values } from '../src/values'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
 import {
-  transform, resolvePath, TransformValueFunc, isPrimitiveType,
+  transform, resolvePath, TransformValueFunc, isPrimitiveType, bpCase,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -121,6 +121,24 @@ describe('Test utils.ts', () => {
       ],
     },
   )
+
+  describe('bpCase', () => {
+    describe('names without special characters', () => {
+      const normalNames = [
+        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
+        'CRMFusionDBR101__Scenario__C',
+      ]
+      it('should remain the same', () => {
+        normalNames.forEach(name => expect(bpCase(name)).toEqual(name))
+      })
+    })
+
+    describe('names with spaces', () => {
+      it('should be replaced with _', () => {
+        expect(bpCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
+      })
+    })
+  })
 
   describe('transform func', () => {
     let resp: Values

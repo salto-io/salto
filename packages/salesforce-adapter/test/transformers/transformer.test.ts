@@ -21,7 +21,7 @@ import {
 import { collections } from '@salto/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
-  bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
+  getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements,
   transformReferences, restoreReferences,
 } from '../../src/transformers/transformer'
@@ -54,24 +54,6 @@ import { createValueSetEntry } from '../utils'
 const { makeArray } = collections.array
 
 describe('transformer', () => {
-  describe('bpCase', () => {
-    describe('names without special characters', () => {
-      const normalNames = [
-        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
-        'CRMFusionDBR101__Scenario__C',
-      ]
-      it('should remain the same', () => {
-        normalNames.forEach(name => expect(bpCase(name)).toEqual(name))
-      })
-    })
-
-    describe('names with spaces', () => {
-      it('should be replaced with _', () => {
-        expect(bpCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
-      })
-    })
-  })
-
   describe('getValueTypeFieldElement', () => {
     const salesforceValueTypeFieldBase: ValueTypeField = {
       fields: [],

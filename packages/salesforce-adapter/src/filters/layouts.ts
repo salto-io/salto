@@ -18,9 +18,9 @@ import { logger } from '@salto/logging'
 import { collections } from '@salto/lowerdash'
 import {
   Element, isObjectType, ElemID, findInstances, InstanceElement, ReferenceExpression,
-  INSTANCE_ANNOTATIONS, isReferenceExpression, ObjectType,
+  INSTANCE_ANNOTATIONS, isReferenceExpression, ObjectType, bpCase,
 } from 'adapter-api'
-import { apiName, isCustomObject, bpCase } from '../transformers/transformer'
+import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import { id } from './utils'

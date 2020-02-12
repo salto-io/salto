@@ -17,9 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
-  findObjectType,
-  TypeElement,
-  isObjectType,
+  findObjectType, bpCase, TypeElement, isObjectType,
 } from 'adapter-api'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto/lowerdash'
@@ -37,7 +35,7 @@ import {
   TopicsForObjectsInfo,
 } from '../src/client/types'
 import {
-  Types, fromMetadataInfo, metadataType, apiName, bpCase, formulaTypeName,
+  Types, fromMetadataInfo, metadataType, apiName, formulaTypeName,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import { findElements } from '../test/utils'

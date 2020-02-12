@@ -16,12 +16,12 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
-  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement,
+  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, bpCase,
 } from 'adapter-api'
 import { collections } from '@salto/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
-  bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
+  getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements,
   transformReferences, restoreReferences,
 } from '../../src/transformers/transformer'

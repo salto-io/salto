@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
+  ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression, bpCase,
 } from 'adapter-api'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import { bpCase } from '../../src/transformers/transformer'
 
 describe('Test layout filter', () => {
   const { client } = mockClient()

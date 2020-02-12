@@ -160,9 +160,15 @@ AnnoRef => {
   return { annoName, annoType }
 }
 
-
 export const getAnnotationValue = (element: Element, annotation: string): Values =>
   (element.annotations[annotation] || {})
+
+export const bpCase = (name?: string): string => (
+  // unescape changes HTML escaped parts (&gt; for example), then the regex
+  // replaces url escaped chars as well as any special character to keep names blueprint friendly
+  // Match multiple consecutive chars to compact names and avoid repeated _
+  name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
+)
 
 type TransformValueType = PrimitiveValue | Expression
 export type TransformValueFunc = (

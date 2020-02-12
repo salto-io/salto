@@ -16,7 +16,7 @@
 import {
   ObjectType, Element, Field, isObjectType, InstanceElement, isField, Change,
   getChangeElement, getAnnotationValue, ElemID, Values, findElement,
-  ReferenceExpression, CORE_ANNOTATIONS, isExpression,
+  ReferenceExpression, CORE_ANNOTATIONS, isExpression, bpCase,
 } from 'adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
@@ -29,7 +29,7 @@ import {
   OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE,
 } from '../constants'
 import {
-  isCustomObject, Types, apiName, bpCase,
+  isCustomObject, Types, apiName,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissionsOptions,

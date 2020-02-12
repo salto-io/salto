@@ -15,7 +15,7 @@
 */
 import os from 'os'
 import { Writable } from 'stream'
-import { dynamoDbRepo, Repo } from '@salto/persistent-pool'
+import { dynamoDbRepo, Repo } from '@salto-io/persistent-pool'
 import argparser from './argparser'
 import { Adapter } from '../types'
 import REPO_PARAMS from '../repo_params'

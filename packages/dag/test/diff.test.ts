@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { DataNodeMap } from '../src/nodemap'
 import { removeEqualNodes, DiffNode, DiffGraph, mergeNodesToModify, ModificationDiff } from '../src/diff'
 

@@ -16,7 +16,7 @@
 import {
   Change, Element, Field, getChangeElement, InstanceElement, isAdditionDiff, isField,
   isInstanceElement, isModificationDiff, isObjectType, isRemovalDiff, ChangeError,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { apiName, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR, SALESFORCE_CUSTOM_SUFFIX } from '../constants'

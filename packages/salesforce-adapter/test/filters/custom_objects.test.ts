@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, ServiceIds, BuiltinTypes, Element,
   InstanceElement, isObjectType, CORE_ANNOTATIONS, Value, FieldMap, Field, isInstanceElement,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import {

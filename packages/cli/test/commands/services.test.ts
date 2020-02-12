@@ -13,15 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { LoginStatus, updateLoginConfig, Workspace } from 'salto'
-import { ObjectType } from 'adapter-api'
+import { LoginStatus, updateLoginConfig, Workspace } from '@salto-io/core'
+import { ObjectType } from '@salto-io/adapter-api'
 import { CliExitCode } from '../../src/types'
 import { command } from '../../src/commands/services'
 import * as mocks from '../mocks'
 import * as workspace from '../../src/workspace'
 
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   addAdapter: jest.fn().mockImplementation((
     _workspaceDir: string,
     adapterName: string

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   isObjectType, ElemID,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import { id } from './utils'

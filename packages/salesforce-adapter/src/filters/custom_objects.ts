@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto/logging'
-import { collections } from '@salto/lowerdash'
+import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType, InstanceElement,
   isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, findObjectType,
   Values, bpCase,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'

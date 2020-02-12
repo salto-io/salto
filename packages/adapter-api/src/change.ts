@@ -15,7 +15,7 @@
 */
 import {
   AdditionDiff, ModificationDiff, RemovalDiff, ActionName,
-} from '@salto/dag'
+} from '@salto-io/dag'
 import {
   ObjectType, InstanceElement, Field, PrimitiveType,
 } from './elements'

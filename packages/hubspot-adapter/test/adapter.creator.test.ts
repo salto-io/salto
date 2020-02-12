@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement } from 'adapter-api'
+import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { creator } from '../src/adapter_creator'
 import HubspotClient from '../src/client/client'
 

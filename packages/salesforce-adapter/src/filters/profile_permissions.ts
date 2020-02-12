@@ -17,12 +17,12 @@ import {
   ObjectType, Element, Field, isObjectType, InstanceElement, isField, Change,
   getChangeElement, getAnnotationValue, ElemID, Values, findElement,
   ReferenceExpression, CORE_ANNOTATIONS, isExpression, bpCase,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import wu from 'wu'
-import { collections } from '@salto/lowerdash'
-import { logger } from '@salto/logging'
+import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import {
   FIELD_PERMISSIONS, FIELD_LEVEL_SECURITY_ANNOTATION,
   PROFILE_METADATA_TYPE, ADMIN_PROFILE,

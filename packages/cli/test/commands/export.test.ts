@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace, exportToCsv } from 'salto'
-import { DataModificationResult } from 'adapter-api'
+import { Workspace, exportToCsv } from '@salto-io/core'
+import { DataModificationResult } from '@salto-io/adapter-api'
 import Prompts from '../../src/prompts'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/export'
 import { CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
 
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   exportToCsv: jest.fn().mockImplementation(() => Promise.resolve({
     successfulRows: 5,
     failedRows: 0,

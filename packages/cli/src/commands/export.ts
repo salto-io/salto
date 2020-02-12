@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import path from 'path'
-import { exportToCsv } from 'salto'
 import wu from 'wu'
+import { exportToCsv } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'

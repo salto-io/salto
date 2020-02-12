@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, Element,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import filterCreator, { ASSIGNMENT_RULES_TYPE_ID } from '../../src/filters/assignment_rules'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

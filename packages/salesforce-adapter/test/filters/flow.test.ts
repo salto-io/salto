@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import filterCreator, { FLOW_METADATA_TYPE_ID } from '../../src/filters/flow'
 
 describe('flow filter', () => {

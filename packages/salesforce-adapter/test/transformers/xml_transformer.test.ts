@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import jszip from 'jszip'
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from 'adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { fromRetrieveResult, toMetadataPackageZip } from '../../src/transformers/xml_transformer'

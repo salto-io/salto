@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace, file, deleteFromCsvFile } from 'salto'
-import { DataModificationResult } from 'adapter-api'
+import { DataModificationResult } from '@salto-io/adapter-api'
+import { Workspace, file, deleteFromCsvFile } from '@salto-io/core'
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import * as mocks from '../mocks'
 
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   deleteFromCsvFile: jest.fn().mockImplementation(() => Promise.resolve({
     successfulRows: 5,
     failedRows: 0,

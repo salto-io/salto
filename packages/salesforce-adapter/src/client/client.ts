@@ -15,15 +15,15 @@
 */
 import _ from 'lodash'
 import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
-import { collections, decorators } from '@salto/lowerdash'
+import { collections, decorators } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, QueryResult, DeployResult,
   BatchResultInfo, Record as SfRecord, RecordResult, BulkLoadOperation, RetrieveRequest,
   RetrieveResult, ListMetadataQuery, UpsertResult,
 } from 'jsforce'
-import { Value } from 'adapter-api'
-import { logger } from '@salto/logging'
+import { Value } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { CompleteSaveResult } from './types'
 import Connection from './jsforce'

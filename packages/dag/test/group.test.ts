@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { isString } from 'util'
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { buildGroupedGraph, GroupedNodeMap, Group } from '../src/group'
 import { DataNodeMap } from '../src/nodemap'
 

@@ -15,7 +15,7 @@
 */
 import {
   ElemID, InstanceElement, ObjectType, Field, CORE_ANNOTATIONS,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/value_set'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'

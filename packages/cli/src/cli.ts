@@ -15,8 +15,8 @@
 */
 import { EOL } from 'os'
 import chalk from 'chalk'
-import { compareLogLevels, LogLevel, logger } from '@salto/logging'
-import { streams } from '@salto/lowerdash'
+import { compareLogLevels, LogLevel, logger } from '@salto-io/logging'
+import { streams } from '@salto-io/lowerdash'
 import { CliInput, CliOutput, CliExitCode, SpinnerCreator } from './types'
 import { YargsCommandBuilder } from './command_builder'
 import parse, { ERROR_STYLE } from './argparser'

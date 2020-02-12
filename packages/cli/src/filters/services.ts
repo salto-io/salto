@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { loadConfig } from 'salto'
 import yargs from 'yargs'
+import { loadConfig } from '@salto-io/core'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 
@@ -50,7 +50,7 @@ export const serviceCmdFilter: ServiceCmdFilter = {
         }>): true => {
         if (args.command && nameRequiredCommands.includes(args.command)) {
           if (_.isEmpty(args.name)) {
-            throw new Error(`Missing required argument: name\n\nExample usage: salto services ${args.command} salesforce`)
+            throw new Error(`Missing required argument: name\n\nExample usage: @salto-io/core services ${args.command} salesforce`)
           }
         }
         return true
@@ -90,7 +90,7 @@ export const servicesFilter: ServicesFilter = {
     const args = input.args as yargs.Arguments<ServicesArgs>
     const workspaceServices = (await loadConfig('.')).services
     if (workspaceServices.length === 0) {
-      throw new Error('No services are configured for this workspace. Use \'salto services add\'.')
+      throw new Error('No services are configured for this workspace. Use \'@salto-io/core services add\'.')
     }
     // This assumes the default value for input services is all configured
     // so use the default (workspace services) if nothing was inputted

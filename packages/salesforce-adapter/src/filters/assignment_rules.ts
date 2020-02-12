@@ -16,7 +16,7 @@
 import wu from 'wu'
 import {
   Element, ElemID, findInstances,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'

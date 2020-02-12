@@ -21,9 +21,9 @@ import {
   FetchChange,
   FetchProgressEvents,
   StepEmitter,
-} from 'salto'
+} from '@salto-io/core'
 import { EventEmitter } from 'pietile-eventemitter'
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'

@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression, bpCase,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

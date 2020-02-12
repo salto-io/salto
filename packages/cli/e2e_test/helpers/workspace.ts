@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { file, Plan, Workspace } from 'salto'
+import { file, Plan, Workspace } from '@salto-io/core'
 import _ from 'lodash'
 import {
   ActionName, Change, ElemID, findElement, getChangeElement, InstanceElement, ObjectType, Values,
   Element, TypeMap,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
 import adapterConfigs from '../adapter_configs'

@@ -17,7 +17,7 @@ import path from 'path'
 import tmp from 'tmp-promise'
 import {
   dumpCsv, file, readAllCsvContents, SALTO_HOME_VAR,
-} from 'salto'
+} from '@salto-io/core'
 import { Spinner } from '../src/types'
 import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
 import { command as fetch } from '../src/commands/fetch'

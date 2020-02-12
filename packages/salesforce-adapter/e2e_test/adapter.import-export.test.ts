@@ -19,7 +19,7 @@ import {
   Field,
   InstanceElement,
   Values,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import * as constants from '../src/constants'
 import { Types, apiName } from '../src/transformers/transformer'
 import SalesforceClient from '../src/client/client'

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import yargs from 'yargs'
-import { promises } from '@salto/lowerdash'
+import { promises } from '@salto-io/lowerdash'
 import builders from './commands/index'
 import { CommandBuilder, YargsCommandBuilder } from './command_builder'
 

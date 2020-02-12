@@ -15,7 +15,7 @@
 */
 import {
   Element, ElemID, findInstances, findObjectType,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 

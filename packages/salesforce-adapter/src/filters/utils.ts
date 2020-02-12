@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
-  isField, TypeElement, BuiltinTypes, ElemID, BuiltinAnnotationTypes, TypeMap } from 'adapter-api'
+  isField, TypeElement, BuiltinTypes, ElemID, BuiltinAnnotationTypes, TypeMap } from '@salto-io/adapter-api'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
   METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { JSONBool } from '../client/types'

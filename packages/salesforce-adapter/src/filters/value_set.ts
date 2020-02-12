@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import wu from 'wu'
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import {
   Element, Field, isObjectType, Change, getChangeElement,
   isField, isModificationDiff, ChangeDataType, isInstanceElement, ReferenceExpression,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { SaveResult } from 'jsforce'
 import { FilterWith } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'

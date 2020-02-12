@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, Element, Values, isObjectType, Change, getAnnotationValue,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, API_NAME,

@@ -17,7 +17,7 @@ import {
   SalesforceClient,
   testHelpers as salesforceTestHelpers,
   testTypes as salesforceTestTypes,
-} from 'salesforce-adapter'
+} from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
 
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],

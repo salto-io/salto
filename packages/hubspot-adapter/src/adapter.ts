@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   Element, InstanceElement, ObjectType,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import {
   HubspotMetadata,
 } from './client/types'

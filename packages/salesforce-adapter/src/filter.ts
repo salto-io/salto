@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change } from 'adapter-api'
+import { Element, Change } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce-types'
-import { types } from '@salto/lowerdash'
+import { types } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 
 // Filter interface, filters will be activated upon adapter fetch, add, update and remove

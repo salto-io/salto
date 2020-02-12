@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { hostname } from 'os'
-import { retry } from '@salto/lowerdash'
-import { Logger } from '@salto/logging'
+import { retry } from '@salto-io/lowerdash'
+import { Logger } from '@salto-io/logging'
 import {
   Pool, dynamoDbRepo, RenewedLease, Lease,
-} from '@salto/persistent-pool'
+} from '@salto-io/persistent-pool'
 import REPO_PARAMS from '../repo_params'
 import createEnvUtils from './process_env'
 import { SuspendCredentialsError } from '../types'

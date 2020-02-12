@@ -15,11 +15,11 @@
 */
 import {
   InstanceElement, ElemID,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import {
   creator as salesforceAdapterCreator,
   testHelpers as salesforceTestHelpers,
-} from 'salesforce-adapter'
+} from '@salto-io/salesforce-adapter'
 
 export default {
   salesforce: (): InstanceElement => {

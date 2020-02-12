@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID } from 'adapter-api'
+import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import SalesforceAdapter from '../../src/adapter'
 import { FilterWith, FilterCreator } from '../../src/filter'
 import { API_NAME } from '../../src/constants'

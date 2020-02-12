@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { types } from '@salto/lowerdash'
+import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElemID } from './element_id'
 

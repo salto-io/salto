@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import filterCreator, { CANVAS_METADATA_TYPE_ID, SAML_INIT_METHOD_FIELD_NAME }
   from '../../src/filters/saml_initiation_method'
 import { FilterWith } from '../../src/filter'

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID } from 'adapter-api'
+import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { creator } from '../src/adapter'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 

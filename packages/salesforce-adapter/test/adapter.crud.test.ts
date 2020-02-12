@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
-  CORE_ANNOTATIONS } from 'adapter-api'
+  CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult, DeployDetails,
 } from 'jsforce'

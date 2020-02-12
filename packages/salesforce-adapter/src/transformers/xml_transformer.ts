@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Value, Values } from 'adapter-api'
+import { Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import JSZip, { JSZipObject } from 'jszip'
 import parser from 'fast-xml-parser'
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import { API_VERSION, METADATA_NAMESPACE } from '../client/client'
 import { toMetadataInfo } from './transformer'
 import { MetadataWithContent } from '../client/types'

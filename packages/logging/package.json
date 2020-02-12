@@ -1,5 +1,5 @@
 {
-  "name": "@salto/logging",
+  "name": "@salto-io/logging",
   "version": "0.1.0",
   "description": "Salto Logging library",
   "repository": {
@@ -27,7 +27,7 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto/lowerdash": "0.1.0",
+    "@salto-io/lowerdash": "0.1.0",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",
     "logform": "^2.1.2",

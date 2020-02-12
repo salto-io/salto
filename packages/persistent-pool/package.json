@@ -1,5 +1,5 @@
 {
-  "name": "@salto/persistent-pool",
+  "name": "@salto-io/persistent-pool",
   "version": "0.1.0",
   "description": "Keeps a persistent pool of objects",
   "repository": {
@@ -22,7 +22,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto/lowerdash": "0.1.0",
+    "@salto-io/lowerdash": "0.1.0",
     "aws-sdk": "^2.573.0",
     "uuid": "^3.3.3"
   },

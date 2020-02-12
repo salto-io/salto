@@ -17,8 +17,8 @@ import _ from 'lodash'
 import {
   isObjectType, Field, Values, TypeElement, isType, BuiltinTypes, ElemID, Element,
   CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, TypeMap,
-} from 'adapter-api'
-import { logger } from '@salto/logging'
+} from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
   CUSTOM_FIELD, CUSTOM_OBJECT, FIELD_TYPE_NAME_VALUES, SALESFORCE, WORKFLOW_METADATA_TYPE,

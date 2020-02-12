@@ -16,7 +16,7 @@
 import {
   ObjectType, ElemID, Field,
   InstanceElement, isObjectType, BuiltinTypes,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { metadataType } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

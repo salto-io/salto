@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { Namespace, NamespaceOrModule, normalizeNamespaceOrModule } from './namespace'
 import { LOG_LEVELS, LogLevel } from './level'
 import { Config, mergeConfigs, NamespaceFilter, stringToNamespaceFilter } from './config'

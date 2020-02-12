@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ChangeError, Change, isInstanceElement, Element,
-  BuiltinTypes, getChangeElement, isModificationDiff, InstanceElement, isPrimitiveType } from 'adapter-api'
+  BuiltinTypes, getChangeElement, isModificationDiff, InstanceElement, isPrimitiveType } from '@salto-io/adapter-api'
 
 const getJsonValidationErrorsFromAfter = async (after: Element):
   Promise<ReadonlyArray<ChangeError>> => {

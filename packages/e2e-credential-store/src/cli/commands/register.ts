@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Writable } from 'stream'
-import { Pool } from '@salto/persistent-pool'
+import { Pool } from '@salto-io/persistent-pool'
 import { Argv, CommandModule, Arguments } from 'yargs'
 import { Adapter, PoolOpts, GlobalArgs } from '../../types'
 import { AsyncCommandHandler } from '../types'

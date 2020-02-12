@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Writable } from 'stream'
-import { Pool, LeaseWithStatus } from '@salto/persistent-pool'
+import { Pool, LeaseWithStatus } from '@salto-io/persistent-pool'
 import { Argv, CommandModule } from 'yargs'
 import humanizeDuration from 'humanize-duration'
 import Table from 'easy-table'

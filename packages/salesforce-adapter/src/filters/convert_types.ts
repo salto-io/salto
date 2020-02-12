@@ -16,7 +16,7 @@
 import {
   Element, isObjectType, ObjectType,
   isInstanceElement, transform,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { transformPrimitive } from '../transformers/transformer'
 

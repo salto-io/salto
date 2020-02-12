@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
 import SalesforceAdapter, { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/adapter'
 import Connection from '../src/client/jsforce'

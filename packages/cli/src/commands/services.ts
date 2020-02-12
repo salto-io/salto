@@ -22,9 +22,9 @@ import {
   LoginStatus,
   updateLoginConfig,
   Workspace,
-} from 'salto'
+} from '@salto-io/core'
 
-import { InstanceElement, ObjectType } from 'adapter-api'
+import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
 import { loadWorkspace } from '../workspace'

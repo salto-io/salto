@@ -18,7 +18,7 @@ import { Writable } from 'stream'
 import memoryStream from 'memory-streams'
 import {
   dynamoDbRepo, Pool, Lease, InstanceNotLeasedError, Repo,
-} from '@salto/persistent-pool'
+} from '@salto-io/persistent-pool'
 import cli from '../../src/cli'
 import { Adapter } from '../../src/types'
 import REPO_PARAMS from '../../src/repo_params'

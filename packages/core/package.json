@@ -1,12 +1,12 @@
 {
   "name": "@salto-io/core",
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "description": "Salto core",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto"
   },
-  "private": true,
   "files": [
     "bin/**/*",
     "dist/**/*"

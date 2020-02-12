@@ -1,6 +1,7 @@
 {
   "name": "@salto-io/persistent-pool",
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "description": "Keeps a persistent pool of objects",
   "repository": {
     "type": "git",

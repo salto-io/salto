@@ -1,12 +1,12 @@
 {
   "name": "@salto-io/lowerdash",
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "description": "Salto utils - stuff that isn't in lodash",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto_monorepo"
   },
-  "private": true,
   "files": [
     "dist/src/**/*"
   ],

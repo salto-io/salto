@@ -1,6 +1,7 @@
 {
   "name": "@salto-io/e2e-credentials-store",
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "description": "Salto E2E tests credentials store",
   "repository": {
     "type": "git",

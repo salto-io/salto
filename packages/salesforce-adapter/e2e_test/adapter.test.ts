@@ -48,6 +48,7 @@ import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
 } from '../src/filters/workflow'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
+import { LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID } from '../src/filters/lead_convert_settings'
 
 const { makeArray } = collections.array
 const { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } = constants
@@ -168,6 +169,7 @@ describe('Salesforce adapter E2E with real account', () => {
         ],
       } as MetadataInfo)
     }
+
     const addCustomObjectWithVariousFields = async (): Promise<void> => {
       const objectToAdd = {
         deploymentStatus: 'Deployed',
@@ -1014,6 +1016,24 @@ describe('Salesforce adapter E2E with real account', () => {
       ) as Buffer)
     }
 
+    const verifyLeadHasConvertSettings = async (): Promise<void> => {
+      await client.upsert('LeadConvertSettings', {
+        fullName: 'LeadConvertSettings',
+        allowOwnerChange: 'true',
+        objectMapping: {
+          inputObject: 'Lead',
+          mappingFields: [
+            {
+              inputField: 'CurrentGenerators__c',
+              outputField: 'Active__c',
+            },
+          ],
+          outputObject: 'Account',
+        },
+        opportunityCreationOptions: 'VisibleOptional',
+      } as MetadataInfo)
+    }
+
     await Promise.all([
       addCustomObjectWithVariousFields(),
       verifyEmailTemplateAndFolderExist(),
@@ -1024,6 +1044,7 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyFlowExists(),
       verifyRolesExist(),
       verifyApexPageAndClassExist(),
+      verifyLeadHasConvertSettings(),
     ])
     result = await adapter.fetch()
   })
@@ -1195,6 +1216,16 @@ describe('Salesforce adapter E2E with real account', () => {
         .pop() as InstanceElement
 
       expect(quoteSettings).toBeUndefined()
+    })
+
+    it('should fetch LeadConvertSettings instance with correct path', () => {
+      const convertSettingsInstance = findElements(result, LEAD_CONVERT_SETTINGS_TYPE_ID.name,
+        LEAD_CONVERT_SETTINGS_TYPE_ID.name).pop() as InstanceElement
+
+      expect(convertSettingsInstance).toBeDefined()
+      expect(convertSettingsInstance.path)
+        .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, LEAD_TYPE_ID.name,
+          LEAD_CONVERT_SETTINGS_TYPE_ID.name])
     })
 
     it('should retrieve EmailTemplate instance', () => {

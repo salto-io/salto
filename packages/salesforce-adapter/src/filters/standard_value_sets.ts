@@ -17,9 +17,9 @@ import _ from 'lodash'
 import { MetadataInfo } from 'jsforce'
 import {
   Element, ObjectType, InstanceElement, isObjectType, Field, ReferenceExpression,
-} from 'adapter-api'
-import { collections } from '@salto/lowerdash'
-import { logger } from '@salto/logging'
+} from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import SalesforceClient from '../client/client'
 import { FilterCreator } from '../filter'
 import {

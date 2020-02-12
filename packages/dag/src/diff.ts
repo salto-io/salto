@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import wu, { WuIterable } from 'wu'
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { NodeId, DataNodeMap } from './nodemap'
 
 const { iterable } = collections

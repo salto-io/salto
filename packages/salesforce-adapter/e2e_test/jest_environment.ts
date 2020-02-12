@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import {
   JestEnvironment, createEnvUtils, CredsSpec, SuspendCredentialsError,
-} from '@salto/e2e-credentials-store'
+} from '@salto-io/e2e-credentials-store'
 import { Credentials, validateCredentials, ApiLimitsTooLowError } from '../src/client/client'
 
 const MIN_API_REQUESTS_NEEDED = 500

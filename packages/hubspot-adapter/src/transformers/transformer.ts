@@ -18,7 +18,7 @@ import {
   ElemID, ObjectType,
   PrimitiveType, PrimitiveTypes, Field as TypeField, BuiltinTypes, InstanceElement, TypeElement,
   CORE_ANNOTATIONS, transform, TypeMap, Values, TransformValueFunc, isPrimitiveType, bpCase,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
   NURTURETIMERANGE_FIELDS, CONDITIONACTION_FIELDS, ANCHOR_SETTING_FIELDS,

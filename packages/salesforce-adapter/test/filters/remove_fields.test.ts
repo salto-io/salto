@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, Field, BuiltinTypes,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { makeFilter } from '../../src/filters/remove_fields'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

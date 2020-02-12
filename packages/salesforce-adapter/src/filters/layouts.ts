@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { logger } from '@salto/logging'
-import { collections } from '@salto/lowerdash'
+import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, ElemID, findInstances, InstanceElement, ReferenceExpression,
   INSTANCE_ANNOTATIONS, isReferenceExpression, ObjectType, bpCase,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'

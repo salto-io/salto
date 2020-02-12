@@ -1,5 +1,5 @@
 {
-  "name": "@salto/e2e-credentials-store",
+  "name": "@salto-io/e2e-credentials-store",
   "version": "0.1.0",
   "description": "Salto E2E tests credentials store",
   "repository": {
@@ -27,9 +27,9 @@
   },
   "dependencies": {
     "@jest/environment": "^24.0.0",
-    "@salto/logging": "0.1.0",
-    "@salto/lowerdash": "0.1.0",
-    "@salto/persistent-pool": "0.1.0",
+    "@salto-io/logging": "0.1.0",
+    "@salto-io/lowerdash": "0.1.0",
+    "@salto-io/persistent-pool": "0.1.0",
     "easy-table": "^1.1.1",
     "humanize-duration": "^3.21.0",
     "jest-circus": "^24.9.0",

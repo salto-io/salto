@@ -1,5 +1,5 @@
 {
-  "name": "@salto/cli",
+  "name": "@salto-io/cli",
   "version": "0.1.0",
   "description": "cli on top of salto core",
   "repository": {
@@ -30,10 +30,12 @@
     "package": "node ./package_native.js"
   },
   "dependencies": {
-    "@salto/dag": "0.1.0",
-    "@salto/logging": "0.1.0",
-    "@salto/lowerdash": "0.1.0",
-    "adapter-api": "0.1.0",
+    "@salto-io/dag": "0.1.0",
+    "@salto-io/logging": "0.1.0",
+    "@salto-io/lowerdash": "0.1.0",
+    "@salto-io/adapter-api": "0.1.0",
+    "@salto-io/core": "0.1.0",
+    "@salto-io/salesforce-adapter": "0.1.0",
     "chalk": "^2.4.2",
     "figlet": "^1.2.4",
     "inquirer": "^7.0.0",
@@ -43,8 +45,6 @@
     "pietile-eventemitter": "^1.0.0",
     "require-directory": "^2.1.1",
     "rimraf": "^3.0.0",
-    "salesforce-adapter": "0.1.0",
-    "salto": "0.1.0",
     "source-map-support": "^0.5.13",
     "wu": "^2.1.0",
     "yargonaut": "^1.1.4",

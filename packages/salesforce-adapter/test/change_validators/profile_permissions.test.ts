@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, ObjectType, CORE_ANNOTATIONS, InstanceElement } from 'adapter-api'
+import { BuiltinTypes, ElemID, Field, ObjectType, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import profilePermissionsValidator from '../../src/change_validators/profile_permissions'
 import { API_NAME, FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS } from '../../src/constants'
 

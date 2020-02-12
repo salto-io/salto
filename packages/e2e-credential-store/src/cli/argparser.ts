@@ -16,7 +16,7 @@
 import { Writable } from 'stream'
 import yargs from 'yargs/yargs'
 import { Arguments, CommandModule } from 'yargs'
-import { Pool, Repo } from '@salto/persistent-pool'
+import { Pool, Repo } from '@salto-io/persistent-pool'
 import { Adapter, PoolOpts } from '../types'
 import { terminalWidth, writeLine } from './stream'
 import { CliReturnCode } from './types'

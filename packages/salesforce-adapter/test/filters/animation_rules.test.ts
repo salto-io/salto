@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, Element, Field, BuiltinTypes, findElement, CORE_ANNOTATIONS,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import filterCreator, { ANIMATION_FREQUENCY, ANIMATION_RULE_TYPE_ID, RECORD_TYPE_CONTEXT } from '../../src/filters/animation_rules'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

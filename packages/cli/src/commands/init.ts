@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { init } from 'salto'
+import { init } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'

@@ -13,17 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { GroupedNodeMap } from '@salto/dag'
+import wu from 'wu'
+import { GroupedNodeMap } from '@salto-io/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement,
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
   DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError,
   DeployResult, Config,
-} from 'salto'
-import wu from 'wu'
+} from '@salto-io/core'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
 import { YargsCommandBuilder } from '../src/command_builder'

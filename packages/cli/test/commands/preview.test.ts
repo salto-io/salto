@@ -19,8 +19,8 @@ import { SpinnerCreator, Spinner, CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
 
 const mockPreview = preview
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   preview: jest.fn().mockImplementation(() => mockPreview()),
 }))
 jest.mock('../../src/workspace')

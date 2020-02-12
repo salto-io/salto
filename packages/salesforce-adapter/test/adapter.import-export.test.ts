@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, InstanceElement,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import wu from 'wu'
 import SalesforceAdapter from '../src/adapter'

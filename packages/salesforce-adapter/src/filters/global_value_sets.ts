@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   Element, ObjectType, isObjectType, Field, ReferenceExpression, isInstanceElement,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { FilterWith } from '../filter'
 import { VALUE_SET_FIELDS, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { metadataType, isCustomObject } from '../transformers/transformer'

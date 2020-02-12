@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   Element, Field, isObjectType, ObjectType, Change, getChangeElement,
   isField, Values,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { SaveResult } from 'jsforce'
 import { FilterCreator } from '../filter'
 import { CUSTOM_FIELD, FIELD_ANNOTATIONS } from '../constants'

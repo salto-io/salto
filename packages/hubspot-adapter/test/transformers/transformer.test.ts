@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values } from 'adapter-api'
+import { Values } from '@salto-io/adapter-api'
 import {
   fromHubspotObject, Types, createInstanceName,
 } from '../../src/transformers/transformer'

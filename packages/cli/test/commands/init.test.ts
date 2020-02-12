@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Config } from 'salto'
+import { Config } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
 
-jest.mock('salto', () => ({
+jest.mock('@salto-io/core', () => ({
   init: jest.fn().mockImplementation((workspaceName: string): {config: Config} => {
     if (workspaceName === 'error') throw new Error('failed')
     return { config: {

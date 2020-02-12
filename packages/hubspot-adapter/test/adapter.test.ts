@@ -15,7 +15,7 @@
 */
 import {
   InstanceElement,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import HubspotAdapter from '../src/adapter'
 
 import mockAdapter from './mock'

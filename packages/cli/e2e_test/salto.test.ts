@@ -16,14 +16,14 @@
 import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
-import { strings } from '@salto/lowerdash'
-import { testHelpers as salesforceTestHelpers, SalesforceClient } from 'salesforce-adapter'
-import { Plan, file, Workspace, SALTO_HOME_VAR, SourceMap } from 'salto'
+import { strings } from '@salto-io/lowerdash'
+import { testHelpers as salesforceTestHelpers, SalesforceClient } from '@salto-io/salesforce-adapter'
+import { Plan, file, Workspace, SALTO_HOME_VAR, SourceMap } from '@salto-io/core'
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE,
   SALESFORCE_CUSTOM_SUFFIX, API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE,
-} from 'salesforce-adapter/dist/src/constants'
-import { BuiltinTypes, ObjectType } from 'adapter-api'
+} from '@salto-io/salesforce-adapter/dist/src/constants'
+import { BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {
@@ -59,7 +59,7 @@ describe('cli e2e', () => {
   })
 
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
-  const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
+  const configFile = `${__dirname}/../../e2e_test/BP/@salto-io/core.config/config.bp`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 
@@ -85,8 +85,8 @@ describe('cli e2e', () => {
   beforeAll(async () => {
     homePath = tmp.dirSync().name
     fetchOutputDir = `${homePath}/BP/test_fetch`
-    localStorageDir = `${homePath}/.salto/test_fetch`
-    statePath = `${fetchOutputDir}/salto.config/state.bpc`
+    localStorageDir = `${homePath}/.@salto-io/core/test_fetch`
+    statePath = `${fetchOutputDir}/@salto-io/core.config/state.bpc`
     randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
@@ -98,9 +98,9 @@ describe('cli e2e', () => {
 
     process.env[SALTO_HOME_VAR] = homePath
     client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials })
-    await mkdirp(`${fetchOutputDir}/salto.config`)
+    await mkdirp(`${fetchOutputDir}/@salto-io/core.config`)
     await mkdirp(localStorageDir)
-    await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
+    await copyFile(configFile, `${fetchOutputDir}/@salto-io/core.config/config.bp`)
     await rm(fullPath(tmpBPRelativePath))
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)

@@ -20,11 +20,11 @@ import {
   isType, Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,
   SourceFragment, FetchChange, MergeError,
-} from 'salto'
+} from '@salto-io/core'
 import Prompts from './prompts'
 
 export const header = (txt: string): string => chalk.bold(txt)

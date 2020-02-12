@@ -16,7 +16,7 @@
 import {
   ObjectType, ElemID, Field, InstanceElement, isObjectType, BuiltinTypes,
   ReferenceExpression,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
 import { ObjectPermissions, ProfileInfo } from '../../src/client/types'

@@ -13,15 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace, file, importFromCsvFile } from 'salto'
+import { Workspace, file, importFromCsvFile } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/import'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
 
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   importFromCsvFile: jest.fn().mockImplementation(typeName =>
     (typeName === 'error-type'
       ? Promise.resolve({

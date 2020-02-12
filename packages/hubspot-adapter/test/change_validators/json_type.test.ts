@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, Field } from 'adapter-api'
+import { InstanceElement, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, Field } from '@salto-io/adapter-api'
 import jsonTypeValidator from '../../src/change_validators/json_type'
 
 describe('json type change validator', () => {

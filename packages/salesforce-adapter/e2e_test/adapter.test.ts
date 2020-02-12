@@ -18,9 +18,9 @@ import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
   findObjectType, bpCase, TypeElement, isObjectType,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import * as constants from '../src/constants'
 import {
   annotationsFileName, customFieldsFileName,

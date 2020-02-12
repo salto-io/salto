@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import { NodeId, DataNodeMap } from './nodemap'
 
 const log = logger(module)

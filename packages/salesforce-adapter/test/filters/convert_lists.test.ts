@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, Value,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

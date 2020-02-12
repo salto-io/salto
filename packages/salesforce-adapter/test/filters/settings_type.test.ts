@@ -15,7 +15,7 @@
 */
 import {
   ElemID, InstanceElement, isInstanceElement, isObjectType, ObjectType,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import filterCreator, { } from '../../src/filters/settings_type'
 import mockClient from '../client'
 import { FilterWith } from '../../src/filter'

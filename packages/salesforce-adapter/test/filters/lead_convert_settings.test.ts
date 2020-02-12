@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, InstanceElement, Element, findInstances } from 'adapter-api'
+import { ObjectType, InstanceElement, Element, findInstances } from '@salto-io/adapter-api'
 import filterCreator, {
   LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID,
 } from '../../src/filters/lead_convert_settings'

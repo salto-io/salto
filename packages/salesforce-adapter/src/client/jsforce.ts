@@ -22,7 +22,7 @@ import {
   Record as SfRecord,
   RecordResult, RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator,
 } from 'jsforce'
-import { Value } from 'adapter-api'
+import { Value } from '@salto-io/adapter-api'
 
 // This class is the interfaces we use from jsforce library
 // It's here so we will be able to mock jsforce efficiently

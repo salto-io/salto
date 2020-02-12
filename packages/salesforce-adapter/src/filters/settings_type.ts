@@ -17,8 +17,8 @@ import _ from 'lodash'
 import {
   Element, InstanceElement, isObjectType,
   ObjectType, TypeElement,
-} from 'adapter-api'
-import { logger } from '@salto/logging'
+} from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { MetadataInfo } from 'jsforce-types'
 import { FilterCreator } from '../filter'
 import {

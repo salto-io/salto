@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID } from 'adapter-api'
+import { ElemID } from '@salto-io/adapter-api'
 
 export const HUBSPOT = 'hubspot'
 export const NAME = 'name'

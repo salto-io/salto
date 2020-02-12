@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, Element, InstanceElement, Field, ReferenceExpression, CORE_ANNOTATIONS,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

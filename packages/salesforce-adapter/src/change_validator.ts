@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, ChangeValidator, ChangeError } from 'adapter-api'
-import { types } from '@salto/lowerdash'
+import { Change, Element, ChangeValidator, ChangeError } from '@salto-io/adapter-api'
+import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import packageValidator from './change_validators/package'
 import profilePermissionsValidator from './change_validators/profile_permissions'

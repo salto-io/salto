@@ -15,7 +15,7 @@
 */
 import {
   Element, CORE_ANNOTATIONS, ElemID, findObjectType, RESTRICTION_ANNOTATIONS,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
 

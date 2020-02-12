@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ServiceIds } from 'adapter-api'
+import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
 import realClient from './client'

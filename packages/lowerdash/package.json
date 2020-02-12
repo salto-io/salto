@@ -1,5 +1,5 @@
 {
-  "name": "@salto/lowerdash",
+  "name": "@salto-io/lowerdash",
   "version": "0.1.0",
   "description": "Salto utils - stuff that isn't in lodash",
   "repository": {

@@ -16,7 +16,7 @@
 import {
   AdapterCreator, BuiltinTypes, ElemID, Field,
   InstanceElement, ObjectType,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
 import { changeValidator } from './change_validator'

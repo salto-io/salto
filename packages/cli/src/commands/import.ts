@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { importFromCsvFile, file } from 'salto'
 import wu from 'wu'
+import { importFromCsvFile, file } from '@salto-io/core'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import Prompts from '../prompts'

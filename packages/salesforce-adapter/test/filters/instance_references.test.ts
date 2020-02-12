@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, ObjectType, ElemID, BuiltinTypes, Field, ReferenceExpression } from 'adapter-api'
+import { InstanceElement, ObjectType, ElemID, BuiltinTypes, Field, ReferenceExpression } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../../src/constants'
 import { replaceInstances, groupByAPIName } from '../../src/filters/instance_references'
 

@@ -19,8 +19,8 @@ import * as inquirer from 'inquirer'
 import {
   TypeElement, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
-} from 'adapter-api'
-import { Plan, FetchChange, Workspace } from 'salto'
+} from '@salto-io/adapter-api'
+import { Plan, FetchChange, Workspace } from '@salto-io/core'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatConfigHeader,

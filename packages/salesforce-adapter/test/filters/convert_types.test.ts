@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
   RESTRICTION_ANNOTATIONS,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

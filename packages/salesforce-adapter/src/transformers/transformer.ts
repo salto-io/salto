@@ -24,8 +24,8 @@ import {
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
   Field as TypeField, TypeMap, TransformValueFunc, bpCase,
-} from 'adapter-api'
-import { collections } from '@salto/lowerdash'
+} from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,

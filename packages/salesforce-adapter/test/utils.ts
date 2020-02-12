@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ElemID, findElements as findElementsByID, Values } from 'adapter-api'
+import { Element, ElemID, findElements as findElementsByID, Values } from '@salto-io/adapter-api'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
 

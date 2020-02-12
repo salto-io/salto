@@ -14,19 +14,19 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, ObjectType, Element } from 'adapter-api'
+import { EventEmitter } from 'pietile-eventemitter'
+import { ElemID, ObjectType, Element } from '@salto-io/adapter-api'
 import {
   Workspace, fetch, FetchChange, DetailedChange, FetchProgressEvents, StepEmitter,
-} from 'salto'
-import { EventEmitter } from 'pietile-eventemitter'
+} from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
 import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace'
 
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   fetch: jest.fn().mockImplementation(() => Promise.resolve({
     changes: [],
     mergeErrors: [],

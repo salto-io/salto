@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import * as mocks from './mocks'
 import deployBuilder from '../src/commands/deploy'
 import { CliExitCode } from '../src/types'

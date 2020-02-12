@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 
 const { update: updateSet, intersection, difference } = collections.set
 

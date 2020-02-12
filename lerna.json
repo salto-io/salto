@@ -5,5 +5,14 @@
   "version": "0.1.0",
   "npmClient": "yarn",
   "useWorkspaces": true,
-  "stream": true
+  "stream": true,
+  "command": {
+    "publish": {
+      "ignoreChanges": [
+        "ignored-file",
+        "*.md"
+      ],
+      "message": "chore(release): publish"
+    }
+  }
 }

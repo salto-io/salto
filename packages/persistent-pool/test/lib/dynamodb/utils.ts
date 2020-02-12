@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { DynamoDB } from 'aws-sdk'
-import { retry } from '@salto/lowerdash'
+import { retry } from '@salto-io/lowerdash'
 import { dbUtils } from '../../../src/lib/dynamodb/utils'
 
 const { withRetry } = retry

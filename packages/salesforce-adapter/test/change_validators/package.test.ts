@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from 'adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import packageValidator, {
   INSTALLED_PACKAGE_METADATA,
   PACKAGE_VERSION_NUMBER_FIELD_NAME,

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { retry } from '@salto/lowerdash'
+import { retry } from '@salto-io/lowerdash'
 
 export type InstanceId = string
 

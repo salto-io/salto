@@ -18,14 +18,14 @@ import {
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
   DataModificationResult, Values,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import {
   SaveResult, MetadataInfo, QueryResult, FileProperties, BatchResultInfo, BulkLoadOperation,
   Record as SfRecord, ListMetadataQuery, UpsertResult, RetrieveResult, RetrieveRequest,
 } from 'jsforce'
 import _ from 'lodash'
-import { logger } from '@salto/logging'
-import { decorators, collections } from '@salto/lowerdash'
+import { logger } from '@salto-io/logging'
+import { decorators, collections } from '@salto-io/lowerdash'
 import SalesforceClient, { API_VERSION, Credentials, validateCredentials } from './client/client'
 import * as constants from './constants'
 import {

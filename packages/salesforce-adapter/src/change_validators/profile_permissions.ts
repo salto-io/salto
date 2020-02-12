@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   Change, Field, getChangeElement, isField, isObjectType, ElemID, Element,
   isModificationDiff, ChangeError, ChangeDataType, CORE_ANNOTATIONS, isAdditionDiff,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { FIELD_LEVEL_SECURITY_ANNOTATION } from '../constants'
 
 const isRequiredFieldWithPermissions = (element: ChangeDataType): boolean =>

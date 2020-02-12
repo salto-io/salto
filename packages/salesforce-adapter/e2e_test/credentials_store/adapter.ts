@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter } from '@salto/e2e-credentials-store'
+import { Adapter } from '@salto-io/e2e-credentials-store'
 import { Credentials, validateCredentials } from '../../src/client/client'
 
 type Args = {

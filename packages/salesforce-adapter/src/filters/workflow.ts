@@ -16,9 +16,9 @@
 import {
   Change,
   Element, ElemID, InstanceElement, isInstanceElement, Value,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce'
-import { collections } from '@salto/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import {
   API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, WORKFLOW_METADATA_TYPE,

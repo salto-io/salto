@@ -18,8 +18,8 @@ import { CliExitCode } from '../../src/types'
 import { MockCliOutput, mockLoadConfig, cli } from '../mocks'
 import { servicesFilter } from '../../src/filters/services'
 
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
 }))
 

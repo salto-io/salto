@@ -16,15 +16,15 @@
 import wu from 'wu'
 import {
   Workspace, Plan, PlanItem,
-} from 'salto'
+} from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { deploy, preview, mockSpinnerCreator, MockWriteStream } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
 
 const mockDeploy = deploy
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   deploy: jest.fn().mockImplementation((
     ws: Workspace,
     shouldDeploy: (plan: Plan) => Promise<boolean>,

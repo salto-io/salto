@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace, FetchChange, DetailedChange } from 'salto'
+import { Workspace, FetchChange, DetailedChange } from '@salto-io/core'
 import { Spinner } from '../src/types'
 import { validateWorkspace, loadWorkspace, updateWorkspace } from '../src/workspace'
 import { MockWriteStream, dummyChanges } from './mocks'
@@ -25,8 +25,8 @@ const mockWs = {
   isEmpty: jest.fn(),
   flush: jest.fn(),
 } as unknown as Workspace
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   Workspace: jest.fn().mockImplementation(() => mockWs),
   loadConfig: jest.fn().mockImplementation(
     workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })

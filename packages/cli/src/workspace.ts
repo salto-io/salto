@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace, loadConfig, FetchChange, WorkspaceError } from 'salto'
-import { SaltoError } from 'adapter-api'
-import { logger } from '@salto/logging'
+import { Workspace, loadConfig, FetchChange, WorkspaceError } from '@salto-io/core'
+import { SaltoError } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { formatWorkspaceErrors, formatWorkspaceAbort, formatDetailedChanges } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
 import { shouldContinueInCaseOfWarnings } from './callbacks'

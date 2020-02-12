@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { deploy, PlanItem, ItemStatus } from 'salto'
+import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
 import { setInterval } from 'timers'
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
 import {

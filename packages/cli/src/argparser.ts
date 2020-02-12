@@ -17,7 +17,7 @@ import { EOL } from 'os'
 import yargonaut from 'yargonaut' // this must appear before the import from yargs
 import yargs from 'yargs/yargs'
 import { Argv, Arguments } from 'yargs'
-import { streams } from '@salto/lowerdash'
+import { streams } from '@salto-io/lowerdash'
 import chalk from 'chalk'
 import { WriteStream } from './types'
 import { YargsCommandBuilder, CommandBuilder } from './command_builder'

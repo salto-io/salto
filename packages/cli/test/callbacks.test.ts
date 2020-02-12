@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes } from 'adapter-api'
+import { BuiltinTypes } from '@salto-io/adapter-api'
 import { getFieldInputType, getApprovedChanges } from '../src/callbacks'
 import { dummyChanges } from './mocks'
 

@@ -15,14 +15,17 @@
 */
 import wu from 'wu'
 import { collections } from '@salto/lowerdash'
-import { Element, getChangeElement, transform, isInstanceElement, TransformValueFunc, isReferenceExpression } from 'adapter-api'
+import {
+  Element, getChangeElement, transformValues, isInstanceElement, TransformReferenceFunc,
+  isReferenceExpression,
+} from 'adapter-api'
 import {
   DependencyChanger, ChangeEntry, DependencyChange, addReferenceDependency,
 } from './common'
 
 const getAllReferencedIds = (elem: Element): Set<string> => {
   const allReferencedIds = new Set<string>()
-  const transformCallback: TransformValueFunc = val => {
+  const transformCallback: TransformReferenceFunc = val => {
     if (isReferenceExpression(val)) {
       allReferencedIds.add(val.elemId.getFullName())
     }
@@ -30,9 +33,19 @@ const getAllReferencedIds = (elem: Element): Set<string> => {
   }
 
   if (isInstanceElement(elem)) {
-    transform(elem.value, elem.type, transformCallback, false)
+    transformValues({
+      values: elem.value,
+      type: elem.type,
+      transformReferences: transformCallback,
+      strict: false,
+    })
   }
-  transform(elem.annotations, elem.annotationTypes, transformCallback, false)
+  transformValues({
+    values: elem.annotations,
+    type: elem.annotationTypes,
+    transformReferences: transformCallback,
+    strict: false,
+  })
   return allReferencedIds
 }
 

@@ -170,33 +170,59 @@ export const bpCase = (name?: string): string => (
   name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
 )
 
-type TransformValueType = PrimitiveValue | Expression
-export type TransformValueFunc = (
-  val: TransformValueType, field: Field,
-) => TransformValueType | undefined
+export type TransformPrimitiveFunc = (
+  val: PrimitiveValue, field: Field,
+) => PrimitiveValue | undefined
 
-export const transform = (
-  obj: Values,
-  type: ObjectType | TypeMap,
-  transformPrimitives: TransformValueFunc,
-  strict = true
+export type TransformReferenceFunc = (
+  val: Expression, path: string
+) => Expression
+
+export const transformValues = (
+  {
+    values,
+    type,
+    transformPrimitives = () => undefined,
+    transformReferences = v => v,
+    strict = true,
+    path = '',
+  }: {
+    values: Value
+    type: ObjectType | TypeMap
+    transformPrimitives?: TransformPrimitiveFunc
+    transformReferences?: TransformReferenceFunc
+    strict?: boolean
+    path?: string
+  }
 ): Values | undefined => {
-  const transformValue = (value: Value, field?: Field): Value => {
+  const transformValue = (value: Value, keyPath: string, field?: Field): Value => {
+    if (isExpression(value)) {
+      return transformReferences(value, keyPath)
+    }
+
     if (field === undefined) {
       return strict ? undefined : value
     }
     if (_.isArray(value)) {
       const transformed = value
-        .map(item => transformValue(item, field))
+        .map((item, index) => transformValue(item, keyPath.concat(`.${value[0]}.[${index}]`), field))
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
-    if (isPrimitiveType(field.type) || isExpression(value)) {
+
+    if (isPrimitiveType(field.type)) {
       return transformPrimitives(value, field)
     }
     if (isObjectType(field.type)) {
       const transformed = _.omitBy(
-        transform(value, field.type, transformPrimitives, strict),
+        transformValues({
+          values: value,
+          type: field.type,
+          transformPrimitives,
+          transformReferences,
+          strict,
+          path: keyPath,
+        }),
         _.isUndefined
       )
       return _.isEmpty(transformed) ? undefined : transformed
@@ -208,11 +234,102 @@ export const transform = (
     ? type.fields
     : _.mapValues(type, (fieldType, name) => new Field(new ElemID(''), name, fieldType))
 
-  const result = _(obj)
-    .mapValues((value, key) => transformValue(value, fieldMap[key]))
+  const result = _(values)
+    .mapValues((value, key) => transformValue(value, path.concat(path.length === 0 ? key : `.${key}`), fieldMap[key]))
     .omitBy(_.isUndefined)
     .value()
   return _.isEmpty(result) ? undefined : result
+}
+
+export const transformElement = <T extends Element>(
+  {
+    element,
+    transformPrimitives,
+    transformReference,
+  }: {
+    element: T
+    transformPrimitives?: TransformPrimitiveFunc
+    transformReference?: TransformReferenceFunc
+  }
+): T => {
+  if (isInstanceElement(element)) {
+    element.value = transformValues({
+      values: element.value,
+      type: element.type,
+      transformPrimitives,
+      transformReferences: transformReference,
+      strict: false,
+    }) || {}
+  }
+
+  if (isObjectType(element)) {
+    _(element.fields)
+      .forEach(f => {
+        f.annotations = transformValues({
+          values: f.annotations,
+          type: f.annotationTypes,
+          transformPrimitives,
+          transformReferences: transformReference,
+          strict: false,
+          path: 'fields.field.annotations',
+        }) || {}
+      })
+  }
+
+  element.annotations = transformValues({
+    values: element.annotations,
+    type: element.annotationTypes,
+    transformPrimitives,
+    transformReferences: transformReference,
+    strict: false,
+    path: 'annotations',
+  }) || {}
+
+  return element
+}
+
+export const transformReferences = <T extends Element>(
+  element: T,
+  getLookUpName: (v: Value) => Value
+): T => {
+  const referenceReplacer = (value: Value): Value => {
+    if (isReferenceExpression(value)) return getLookUpName(value.value)
+    return value
+  }
+  return transformElement({
+    element: element.clone() as T,
+    transformReference: referenceReplacer,
+  })
+}
+
+export const replicateReferences = <T extends Element>(
+  source: T,
+  targetElement: T,
+  getLookUpName: (v: Value) => Value
+): T => {
+  const allReferencesPaths = new Map<string, ReferenceExpression>()
+  const createPathMapCallback: TransformReferenceFunc = (val, path) => {
+    if (isReferenceExpression(val)) {
+      allReferencesPaths.set(path, val)
+    }
+    return val
+  }
+
+  transformElement({
+    element: source.clone() as T,
+    transformReference: createPathMapCallback,
+  })
+
+  const resp = targetElement.clone() as T
+
+  _(allReferencesPaths.forEach((value, key) => {
+    const refValue = _.get(resp, key)
+    if (refValue !== undefined) {
+      _.set(resp, key, _.isEqual(getLookUpName(value.value), refValue) ? value : refValue)
+    }
+  }))
+
+  return resp
 }
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (

@@ -200,7 +200,7 @@ jobs:
 
       - run:
           name: Build native executables
-          command: yarn workspace @salto/cli package
+          command: yarn workspace @salto-io/cli package
 
       - upload_pkg:
           workspace_dir: cli
@@ -216,10 +216,10 @@ jobs:
 
       - run:
           name: Create a VSIX file
-          command: yarn workspace salto-vscode package
+          command: yarn workspace @salto-io/vscode package
 
       - upload_pkg:
-          workspace_dir: salto-vscode
+          workspace_dir: vscode
           out_filename: vscode/salto.vsix
 
   sync_s3_pkg_latest:

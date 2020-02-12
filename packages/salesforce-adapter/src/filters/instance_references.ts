@@ -13,7 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, Element, isObjectType, isInstanceElement, Value, Values, ObjectType, ElemID, ReferenceExpression, TransformValueFunc, transform } from 'adapter-api'
+import {
+  Field, Element, isObjectType, isInstanceElement, Value, Values, ObjectType, ElemID,
+  ReferenceExpression, TransformPrimitiveFunc,
+  transformValues,
+} from 'adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -74,11 +78,16 @@ const replaceReferenceValues = (
     return _.isString(val) ? new ReferenceExpression(elemID) : val
   }
 
-  const transformReferences: TransformValueFunc = (val, field) => (
+  const transformPrimitive: TransformPrimitiveFunc = (val, field) => (
     shouldReplace(field) ? replacePrimitive(val, field) : val
   )
 
-  return transform(values, refElement, transformReferences, false) || values
+  return transformValues({
+    values,
+    type: refElement,
+    transformPrimitives: transformPrimitive,
+    strict: false,
+  }) || values
 }
 
 export const replaceInstances = (elements: Element[], fieldToTypeMap: Map<string, string>):

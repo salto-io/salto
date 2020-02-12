@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  Element, isObjectType, ElemID, findInstances, findObjectType, Change, ObjectType, transform,
+  Element, isObjectType, ElemID, findInstances, findObjectType, Change, ObjectType,
+  transformValues,
 } from 'adapter-api'
 import { SaveResult } from 'jsforce-types'
 import { collections } from '@salto/lowerdash'
@@ -77,11 +78,13 @@ const filterCreator: FilterCreator = ({ client }) => ({
           )
         })
 
-        lead.annotate({ [CONVERT_SETTINGS_ANNOTATION]: transform(
-          value,
-          convertType,
-          transformPrimitive,
-          false
+        lead.annotate({ [CONVERT_SETTINGS_ANNOTATION]: transformValues(
+          {
+            values: value,
+            type: convertType,
+            transformPrimitives: transformPrimitive,
+            strict: false,
+          }
         ) || {} })
 
         const index = elements.findIndex(e => e.elemID.isEqual(convertInstance.elemID))

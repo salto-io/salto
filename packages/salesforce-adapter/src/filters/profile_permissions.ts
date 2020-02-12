@@ -183,11 +183,7 @@ const toProfilePermissions = <T = PermissionsTypes>(element: ObjectType | Field,
   }
 
   const elementPermissions = getPermissionsValues(element, permissionsOptionsFields, annotationName)
-  _.union(...Object.values(elementPermissions)).forEach(profileOrReference => {
-    // todo remove that one After rebasing on top of Roi's reference fix !!!
-    const profile = (profileOrReference as unknown) instanceof ReferenceExpression
-      ? (profileOrReference as unknown as ReferenceExpression).traversalParts.slice(-2)[0]
-      : profileOrReference
+  _.union(...Object.values(elementPermissions)).forEach(profile => {
     if (_.isUndefined(permissions[profile])) {
       permissions[profile] = [] as T[]
     }

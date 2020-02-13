@@ -68,7 +68,6 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
 
 export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number,
   { stdout }: CliOutput): Promise<boolean> => {
-  stdout.write(`workspace has ${numErrors} errors - ABORT`)
   return getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
 }
 

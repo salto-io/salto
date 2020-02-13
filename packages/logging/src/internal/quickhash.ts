@@ -16,17 +16,14 @@
 
 /* eslint-disable no-bitwise */
 
+import wu from 'wu'
+
 export const MAX_HASH = 2 ** 31
 export const MIN_HASH = -MAX_HASH
 
 // Adapted from: https://github.com/darkskyapp/string-hash/blob/master/index.js
 // License is checked and legit
-export default (s: string): number => {
-  let hash = 5381
 
-  for (let i = s.length; i > 0; i -= 1) {
-    hash = (hash * 33) ^ s.charCodeAt(i)
-  }
-
-  return hash
-}
+export default (s: string): number => wu(s)
+  .map(c => c.charCodeAt(0))
+  .reduce((res, code) => (res * 33) ^ code, 5381)

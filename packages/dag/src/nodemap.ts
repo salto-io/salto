@@ -109,7 +109,6 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 
   clone(): this {
-    // https://stackoverflow.com/a/42347824
     return new (this.constructor as new(entries: Iterable<[NodeId, Set<NodeId>]>) => this)(
       wu(this).map(([k, v]) => [k, new Set<NodeId>(v)])
     )
@@ -278,7 +277,6 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return result
   }
 
-  // taken from: https://stackoverflow.com/a/32242282
   removeRedundantEdges(): this {
     const indirectReverseDepMap = new AbstractNodeMap()
     const reverse = this.reverse()

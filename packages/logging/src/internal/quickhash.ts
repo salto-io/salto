@@ -19,14 +19,13 @@
 export const MAX_HASH = 2 ** 31
 export const MIN_HASH = -MAX_HASH
 
-// taken from: https://stackoverflow.com/a/8831937
+// Adapted from: https://github.com/darkskyapp/string-hash/blob/master/index.js
+// License is checked and legit
 export default (s: string): number => {
-  let hash = 0
+  let hash = 5381
 
-  for (let i = 0; i < s.length; i += 1) {
-    const char = s.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash &= hash // Convert to 32bit integer
+  for (let i = s.length; i > 0; i -= 1) {
+    hash = (hash * 33) ^ s.charCodeAt(i)
   }
 
   return hash

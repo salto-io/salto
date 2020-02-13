@@ -19,7 +19,8 @@ import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { formatWorkspaceErrors, formatWorkspaceAbort, formatDetailedChanges } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
-import { shouldContinueInCaseOfWarnings } from './callbacks'
+import { shouldContinueInCaseOfWarnings,
+  shouldAbortWorkspaceInCaseOfValidationError } from './callbacks'
 import Prompts from './prompts'
 
 const log = logger(module)
@@ -76,8 +77,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
 export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   ...changes: FetchChange[]): Promise<boolean> => {
   if (changes.length > 0) {
-    log.info(`going to update workspace with ${changes.length} changes out of ${
-      changes.length} changes`)
+    log.info(`going to update workspace with ${changes.length} changes`)
     if (!await ws.isEmpty(true)) {
       formatDetailedChanges([changes.map(c => c.change)]).split('\n').forEach(s => log.info(s))
     }
@@ -85,12 +85,16 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
     await ws.updateBlueprints(...changes.map(c => c.change))
     if (await validateWorkspace(ws, cliOutput) === 'Error') {
       const wsErrors = await ws.getWorkspaceErrors()
-      log.warn('workspace has %d errors - ABORT', wsErrors.filter(isError).length)
+      const numErrors = wsErrors.filter(isError).length
+      const shouldAbort = await shouldAbortWorkspaceInCaseOfValidationError(numErrors)
+      if (!shouldAbort) {
+        await ws.flush()
+      }
       log.warn(formatWorkspaceErrors(wsErrors))
       return false
     }
-    await ws.flush()
-    log.debug('finished updating workspace blueprints')
   }
+  await ws.flush()
+  log.debug('finished updating workspace')
   return true
 }

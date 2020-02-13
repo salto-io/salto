@@ -103,6 +103,7 @@ describe('api.ts', () => {
 
     const stateElements = [{ elemID: new ElemID(SERVICES[0], 'test') }]
     const ws = mockWorkspace()
+    const mockFlush = ws.flush as jest.Mock
     ws.state.list = jest.fn().mockImplementation(() => Promise.resolve(stateElements))
 
     beforeAll(async () => {
@@ -115,6 +116,10 @@ describe('api.ts', () => {
     it('should override state', () => {
       expect(ws.state.remove).toHaveBeenCalledWith(stateElements)
       expect(ws.state.set).toHaveBeenCalledWith(fetchedElements)
+    })
+
+    it('should call flush', () => {
+      expect(mockFlush).not.toHaveBeenCalled()
     })
   })
 
@@ -160,6 +165,7 @@ describe('api.ts', () => {
     mockedToChangesWithPath.mockImplementation(() => (change: fetch.FetchChange) => [change])
 
     const ws = mockWorkspace(mockElements.getAllElements())
+    const mockFlush = ws.flush as jest.Mock
     let result: api.DeployResult
 
     beforeAll(async () => {
@@ -173,6 +179,10 @@ describe('api.ts', () => {
 
     it('should getPlan', async () => {
       expect(mockedGetPlan).toHaveBeenCalledTimes(2)
+    })
+
+    it('should not call flush', async () => {
+      expect(mockFlush).not.toHaveBeenCalled()
     })
 
     it('should ask for approval', async () => {

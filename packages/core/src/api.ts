@@ -124,12 +124,7 @@ export const deploy = async (
         ? workspace.state.remove(element.elemID)
         : workspace.state.set(element)
           .then(() => { changedElements.push(element) }))
-    let errors: DeployError[]
-    try {
-      errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
-    } finally {
-      await workspace.flush()
-    }
+    const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
     // Clone the elements because getDetailedChanges can change its input
@@ -172,7 +167,6 @@ export const fetch: fetchFunc = async (
   const overrideState = async (elements: Element[]): Promise<void> => {
     await workspace.state.remove(await workspace.state.list())
     await workspace.state.set(elements)
-    await workspace.state.flush()
     log.debug(`finish to override state with ${elements.length} elements`)
   }
   log.debug('fetch starting..')

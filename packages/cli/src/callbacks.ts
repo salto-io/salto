@@ -24,7 +24,7 @@ import { Plan, FetchChange, Workspace } from '@salto-io/core'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatConfigHeader,
-  formatConfigFieldInput,
+  formatConfigFieldInput, formatShouldAbortWithValidationError,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
@@ -65,6 +65,9 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
   }
   return shouldContinue
 }
+
+export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):
+Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
 
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,

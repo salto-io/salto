@@ -130,6 +130,10 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     `Workspace has ${numWarning === 1 ? 'a warning' : `${numWarning} warnings`
     } - do you want to continue?`
 
+  public static readonly SHOULDABORT = (numErrors: number): string =>
+    `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`
+    } - do you want to abort?`
+
   public static readonly CANCELED = 'Canceling...'
   public static readonly CONFIG_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`
   public static readonly SERVICE_HOW_ADD = (serviceName: string): string => `Use \`salto services add ${serviceName}\` to add the service to the workspace`

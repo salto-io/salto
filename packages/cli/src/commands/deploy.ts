@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
@@ -132,16 +133,15 @@ export class DeployCommand implements CliCommand {
     const nonErroredActions = [...this.actions.keys()]
       .filter(action => !result.errors.map(error => error.elementId).includes(action))
     this.stdout.write(deployPhaseEpilogue(nonErroredActions.length, result.errors.length))
+    this.stdout.write(EOL)
 
-    if (result.changes) {
+    if (!_.isUndefined(result.changes)) {
       const changes = [...result.changes]
-      this.stdout.write(EOL)
       return await updateWorkspace(workspace, { stderr: this.stderr, stdout: this.stdout },
         ...changes)
         ? CliExitCode.Success
         : CliExitCode.AppError
     }
-    this.stdout.write(EOL)
     return result.success ? CliExitCode.Success : CliExitCode.AppError
   }
 }

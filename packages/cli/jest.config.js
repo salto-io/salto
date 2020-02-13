@@ -22,10 +22,8 @@ module.exports = deepMerge(
     displayName: 'cli',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-        '!<rootDir>/dist/src/callbacks.js',
-        '!<rootDir>/dist/src/index.js',
-        '!<rootDir>/package_native.js',
-        '!<rootDir>/dist/bundle.js'
+      '!<rootDir>/dist/index.js',
+      '!<rootDir>/dist/src/callbacks.js',
     ],
     testEnvironment: process.env.RUN_E2E_TESTS
       ? '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'

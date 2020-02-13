@@ -39,6 +39,13 @@ E2E tests are run on CircleCI builds, and you should also run them locally befor
 
 **Important** E2E tests for the `cli` and `salesforce-adapter` need [valid SFDC credentials](packages/salesforce-adapter/README.md#E2E-tests) to run.
 
+### Publisn to NPM registery
+
+- Publish is done using user in salto-io organization in https://www.npmjs.com/
+- Publish need to be done from a clone and not a fork as the publish process tag the repo and commit the new versions
+- Run ```bash yarn lerna-publish```  from the root of the clone
+
+
 ### Usage instructions
 
 See READMEs of individual packages under the `packages` directory.

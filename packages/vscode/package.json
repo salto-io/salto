@@ -2,7 +2,7 @@
     "name": "@salto-io/vscode",
     "displayName": "Salto",
     "description": "Configure, preview and deploy Salto patches in vscode.",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "private": true,
     "icon": "icons/images/file_type_salto_opaque.png",
     "galleryBanner": {

@@ -66,10 +66,8 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
   return shouldContinue
 }
 
-export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number,
-  { stdout }: CliOutput): Promise<boolean> => {
-  return getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
-}
+export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):
+Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
 
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,

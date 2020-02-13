@@ -86,10 +86,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
     if (await validateWorkspace(ws, cliOutput) === 'Error') {
       const wsErrors = await ws.getWorkspaceErrors()
       const numErrors = wsErrors.filter(isError).length
-      const shouldAbort = await shouldAbortWorkspaceInCaseOfValidationError(
-        numErrors,
-        cliOutput,
-      )
+      const shouldAbort = await shouldAbortWorkspaceInCaseOfValidationError(numErrors)
       if (!shouldAbort) {
         await ws.flush()
       }

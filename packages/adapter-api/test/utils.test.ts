@@ -456,6 +456,10 @@ describe('Test utils.ts', () => {
           ', Rochelle Rochelle',
         ],
       }),
+      arrayValues: [
+        regValue,
+        valueRef,
+      ],
     })
     const instanceRef = new ReferenceExpression(instance.elemID, instance)
     const elementRef = new ReferenceExpression(element.elemID, element)
@@ -529,6 +533,13 @@ describe('Test utils.ts', () => {
       it('should transform instanceElement', () => {
         expect(resolvedInstance.value.name).toEqual(instance.value.name)
         expect(resolvedInstance.value.refValue).toEqual(regValue)
+        expect(resolvedInstance.value.arrayValues).toHaveLength(2)
+        expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
+        expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
+      })
+
+      it('should transform back to instance', () => {
+        expect(replicateReferences(instance, resolvedInstance, getName)).toEqual(instance)
       })
     })
   })

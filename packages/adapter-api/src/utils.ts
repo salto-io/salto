@@ -200,14 +200,15 @@ export const transformValues = (
       return transformReferences(value, keyPath)
     }
 
-    if (field === undefined) {
-      return strict ? undefined : value
-    }
     if (_.isArray(value)) {
       const transformed = value
-        .map((item, index) => transformValue(item, keyPath.concat(`.${value[0]}.[${index}]`), field))
+        .map((item, index) => transformValue(item, keyPath.concat(`[${index}]`), field)) // .${value[0]}
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
+    }
+
+    if (field === undefined) {
+      return strict ? undefined : value
     }
 
     if (isPrimitiveType(field.type)) {
@@ -259,6 +260,7 @@ export const transformElement = <T extends Element>(
       transformPrimitives,
       transformReferences: transformReference,
       strict: false,
+      path: 'value',
     }) || {}
   }
 

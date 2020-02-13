@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { formatWorkspaceErrors, formatWorkspaceAbort, formatDetailedChanges } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
 import { shouldContinueInCaseOfWarnings,
-  shouldFlushWorkspaceInCaseOfValidationError } from './callbacks'
+  shouldAbortWorkspaceInCaseOfValidationError } from './callbacks'
 import Prompts from './prompts'
 
 const log = logger(module)
@@ -86,12 +86,11 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
     if (await validateWorkspace(ws, cliOutput) === 'Error') {
       const wsErrors = await ws.getWorkspaceErrors()
       const numErrors = wsErrors.filter(isError).length
-      const shouldFlush = await shouldFlushWorkspaceInCaseOfValidationError(
+      const shouldAbort = await shouldAbortWorkspaceInCaseOfValidationError(
         numErrors,
         cliOutput,
-        `workspace has ${numErrors} errors - ABORT`,
       )
-      if (shouldFlush) {
+      if (!shouldAbort) {
         await ws.flush()
       }
       log.warn(formatWorkspaceErrors(wsErrors))

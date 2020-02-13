@@ -124,12 +124,7 @@ export const deploy = async (
         ? workspace.state.remove(element.elemID)
         : workspace.state.set(element)
           .then(() => { changedElements.push(element) }))
-    let errors: DeployError[] = []
-    try {
-      errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
-    } catch (_err) {
-      log.error('An error occurred during deploy')
-    }
+    const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
     // Clone the elements because getDetailedChanges can change its input

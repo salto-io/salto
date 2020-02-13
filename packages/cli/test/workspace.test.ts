@@ -175,7 +175,7 @@ describe('workspace', () => {
           ({ change, serviceChange: change })))
       expect(result).toBe(false)
       expect(mockWs.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
-      expect(mockWs.flush).not.toHaveBeenCalled()
+      expect(mockWs.flush).toHaveBeenCalledTimes(1)
       expect(mockWs.hasErrors).toHaveBeenCalled()
     })
   })

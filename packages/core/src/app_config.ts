@@ -36,11 +36,11 @@ const installationIDFullPath = (): string => (
   path.join(configHomeDir(), installationIDFilename)
 )
 
-export interface GlobalConfig {
+export interface AppConfig {
   installationID: string
 }
 
-export const loadFromDisk = async (): Promise<GlobalConfig> => {
+export const loadFromDisk = async (): Promise<AppConfig> => {
   if (!await exists(installationIDFullPath())) {
     throw Error('cannot find installation id file on disk')
   }
@@ -49,7 +49,7 @@ export const loadFromDisk = async (): Promise<GlobalConfig> => {
   return { installationID }
 }
 
-export const initOnDisk = async (): Promise<GlobalConfig> => {
+export const initOnDisk = async (): Promise<AppConfig> => {
   await mkdirp(configHomeDir())
 
   if (!await exists(installationIDFullPath())) {

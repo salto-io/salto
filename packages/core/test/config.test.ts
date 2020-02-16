@@ -16,12 +16,12 @@
 */
 
 import * as path from 'path'
-import * as conf from '../src/config'
+import * as conf from '../src/app_config'
 import * as file from '../src/file'
 
 const testSaltoHomeDir = path.join(__dirname, '../../test/salto_home')
 
-describe('global config', () => {
+describe('app config', () => {
   beforeEach(async () => {
     process.env[conf.SALTO_HOME_VAR] = testSaltoHomeDir
   })

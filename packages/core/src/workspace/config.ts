@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'
 import { mkdirp, exists, readFile, replaceContents } from '../file'
-import { getSaltoHome } from '../config'
+import { getSaltoHome } from '../app_config'
 
 const log = logger(module)
 

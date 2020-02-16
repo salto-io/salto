@@ -16,7 +16,7 @@
 import * as path from 'path'
 import os from 'os'
 import { loadConfig } from '../../src/workspace/config'
-import { SALTO_HOME_VAR } from '../../src/config'
+import { SALTO_HOME_VAR } from '../../src/app_config'
 
 const workspacesDir = path.join(__dirname, '../../../test/workspace/configs')
 const fullWorkspaceDir = path.resolve(workspacesDir, 'full')

@@ -17,8 +17,9 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field as TypeField,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, transform,
-  TypeMap, Values, TransformValueFunc, isPrimitiveType, bpCase,
+  TypeMap, Values, TransformValueFunc, isPrimitiveType, bpCase, Value,
 } from '@salto-io/adapter-api'
+import { isFormInstance } from '../filters/form_field'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
   NURTURETIMERANGE_FIELDS, CONDITIONACTION_FIELDS, ANCHOR_SETTING_FIELDS,
@@ -225,13 +226,6 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [FORM_PROPERTY_FIELDS.HIDDEN]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
-              name: FORM_PROPERTY_FIELDS.HIDDEN,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
           [FORM_PROPERTY_FIELDS.DEFAULTVALUE]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.DEFAULTVALUE, BuiltinTypes.STRING, {
               name: FORM_PROPERTY_FIELDS.DEFAULTVALUE,
@@ -269,27 +263,11 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             }
           ),
-          [FORM_PROPERTY_FIELDS.TYPE]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.TYPE,
-              _readOnly: true,
-              [CORE_ANNOTATIONS.REQUIRED]: true,
-              [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
-            }
-          ),
-          [FORM_PROPERTY_FIELDS.GROUPNAME]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.GROUPNAME,
+          [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY,
               _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: true,
-            },
-          ),
-          [FORM_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.FIELDTYPE,
-              _readOnly: true,
-              [CORE_ANNOTATIONS.REQUIRED]: true,
-              [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
             }
           ),
         },
@@ -1813,12 +1791,39 @@ export const fromHubspotObject = (
 ): Values =>
   transform(info as Values, infoType, transformPrimitive) || {}
 
+const mergeFormFieldAndContactProperty = (field: Value): Value => {
+  if (!field[FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]) {
+    return field
+  }
+  const merged = _.pick(_.merge(
+    field[FORM_PROPERTY_FIELDS.CONTACT_PROPERTY].resValue.value,
+    field
+  ),
+  ['name', 'label', 'type', 'fieldType', 'description', 'groupName', 'displayOrder',
+    'required', 'selectedOptions', 'options', 'enabled', 'hidden', 'defaultValue', 'isSmartField',
+    'placeholder', 'dependentFieldFilters', 'propertyObjectType'])
+
+  // TODO: Need to handle dependentFieldFilters
+  return merged
+}
+
 export const createHubspotMetadataFromInstanceElement = (element: InstanceElement):
   HubspotMetadata => {
   element.value = _.mapValues(element.value, (val, key) => {
     const fieldType = element.type.fields[key]?.type
     if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
       return JSON.parse(val)
+    }
+    if (isFormInstance(element) && key === FORM_FIELDS.FORMFIELDGROUPS) {
+      return val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
+        (formFieldGroupVal, formFieldGroupKey) => {
+          if (!(formFieldGroupKey === 'fields')) {
+            return formFieldGroupVal
+          }
+          return formFieldGroupVal.map((innerField: Value) =>
+            mergeFormFieldAndContactProperty(innerField))
+        })
+      ))
     }
     return val
   })

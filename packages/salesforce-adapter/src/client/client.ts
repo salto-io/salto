@@ -26,7 +26,7 @@ import {
 import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { CompleteSaveResult } from './types'
+import { CompleteSaveResult, SfError } from './types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -60,6 +60,11 @@ const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
   retryStrategy: RetryStrategies.NetworkError, // retry on network errors
 }
 
+const isAlreadyDeletedError = (error: SfError): boolean => (
+  error.statusCode === 'INVALID_CROSS_REFERENCE_KEY'
+  && error.message.match(/no.*named.*found/) !== null
+)
+
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
     async (original: decorators.OriginalCall): Promise<unknown> => {
@@ -74,7 +79,7 @@ const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorat
 
       const [silencedErrors, realErrors] = _.partition(
         errors,
-        err => isDelete && err.statusCode === 'INVALID_CROSS_REFERENCE_KEY',
+        err => isDelete && isAlreadyDeletedError(err),
       )
       if (silencedErrors.length > 0) {
         log.debug('ignoring errors:%s%s', EOL, silencedErrors.map(e => e.message).join(EOL))

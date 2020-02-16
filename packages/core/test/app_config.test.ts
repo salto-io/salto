@@ -22,28 +22,31 @@ import * as file from '../src/file'
 const testSaltoHomeDir = path.join(__dirname, '../../test/salto_home')
 
 describe('app config', () => {
-  beforeEach(async () => {
-    process.env[conf.SALTO_HOME_VAR] = testSaltoHomeDir
-  })
-
-  afterEach(() => {
+  afterAll(() => {
     delete process.env.SALTO_HOME
   })
 
   it('should load installation id from disk', async () => {
-    const globalConfig = await conf.loadFromDisk()
+    process.env[conf.SALTO_HOME_VAR] = testSaltoHomeDir
+    const appConfig = await conf.loadFromDisk()
     expect(conf.getSaltoHome()).toEqual(testSaltoHomeDir)
-    expect(globalConfig.installationID).toEqual('test_id')
+    expect(appConfig.installationID).toEqual('test_id')
   })
 
   it('should initialize config on disk', async () => {
+    process.env[conf.SALTO_HOME_VAR] = testSaltoHomeDir
     jest.mock('../src/file')
     jest.spyOn(file, 'mkdirp')
     jest.spyOn(file, 'writeFile')
     jest.spyOn(file, 'readTextFile').mockReturnValue(new Promise<string>((res, _rej) => res('1234')))
 
-    const globalConfig = await conf.initOnDisk()
+    const appConfig = await conf.initOnDisk()
     expect(conf.getSaltoHome()).toEqual(testSaltoHomeDir)
-    expect(globalConfig.installationID).toEqual('1234')
+    expect(appConfig.installationID).toEqual('1234')
+  })
+
+  it('should fail when loading config that was not initialized', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/a/b/c'
+    await expect(conf.loadFromDisk()).rejects.toThrow(/cannot find installation id/)
   })
 })

@@ -295,10 +295,10 @@ export class CustomObject implements MetadataInfo {
 
 export interface SfError {
   extendedErrorDetails: string[]
-  extendedErrorCode: number[]
+  extendedErrorCode: string
   fields: string[]
   message: string
-  statusCode: number
+  statusCode: string
 }
 
 export interface CompleteSaveResult extends SaveResult {

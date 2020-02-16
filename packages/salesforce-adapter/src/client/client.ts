@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
 import { collections, decorators } from '@salto-io/lowerdash'
 import {
@@ -25,7 +26,7 @@ import {
 import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { CompleteSaveResult } from './types'
+import { CompleteSaveResult, SfError } from './types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -59,23 +60,40 @@ const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
   retryStrategy: RetryStrategies.NetworkError, // retry on network errors
 }
 
-const validateSaveResult = decorators.wrapMethodWith(
-  async (original: decorators.OriginalCall): Promise<unknown> => {
-    const result = await original.call()
-
-    const errors = makeArray(result)
-      .filter(r => r)
-      .map(r => r as CompleteSaveResult)
-      .filter(r => r.errors)
-
-    if (errors.length > 0) {
-      const strErrors = errors.map(r => makeArray(r.errors).map(e => e.message).join('\n'))
-      throw new Error(strErrors.join('\n'))
-    }
-
-    return result
-  }
+const isAlreadyDeletedError = (error: SfError): boolean => (
+  error.statusCode === 'INVALID_CROSS_REFERENCE_KEY'
+  && error.message.match(/no.*named.*found/) !== null
 )
+
+const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
+  decorators.wrapMethodWith(
+    async (original: decorators.OriginalCall): Promise<unknown> => {
+      const result = await original.call()
+
+      const errors = _(makeArray(result))
+        .filter(r => r)
+        .map(r => r as CompleteSaveResult)
+        .map(r => makeArray(r.errors))
+        .flatten()
+        .value()
+
+      const [silencedErrors, realErrors] = _.partition(
+        errors,
+        err => isDelete && isAlreadyDeletedError(err),
+      )
+      if (silencedErrors.length > 0) {
+        log.debug('ignoring errors:%s%s', EOL, silencedErrors.map(e => e.message).join(EOL))
+      }
+      if (realErrors.length > 0) {
+        throw new Error(realErrors.map(e => e.message).join(EOL))
+      }
+
+      return result
+    }
+  )
+
+const validateDeleteResult = validateCRUDResult(true)
+const validateSaveResult = validateCRUDResult(false)
 
 const validateDeployResult = decorators.wrapMethodWith(
   async (original: decorators.OriginalCall): Promise<unknown> => {
@@ -322,7 +340,7 @@ export default class SalesforceClient {
    * @returns The save result of the requested deletion
    */
   @SalesforceClient.logDecorator
-  @validateSaveResult
+  @validateDeleteResult
   @SalesforceClient.requiresLogin
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
     const result = await sendChunked(fullNames, chunk => this.conn.metadata.delete(type, chunk))

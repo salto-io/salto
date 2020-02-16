@@ -37,6 +37,40 @@ describe('salesforce client', () => {
     retryStrategy: RetryStrategies.NetworkError, // retry on network errors
   } })
 
+  describe('with failed delete', () => {
+    it('should not fail if the element is already deleted', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: {
+          success: false,
+          fullName: 'bla',
+          errors: [{
+            statusCode: 'INVALID_CROSS_REFERENCE_KEY',
+            message: 'no bla named foo found',
+          }],
+        } } } } })
+
+      await expect(client.delete('bla', 'foo')).resolves.not.toThrow()
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
+
+    it('should fail delete error if it is not the specific error we filter out', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: {
+          success: false,
+          fullName: 'bla',
+          errors: [{
+            statusCode: 'CANNOT_DELETE_MANAGED_OBJECT',
+            message: 'bla',
+          }],
+        } } } } })
+
+      await expect(client.delete('bla', 'foo')).rejects.toThrow()
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
+
   describe('with network errors ', () => {
     it('fails if max attempts was reached ', async () => {
       const dodoScope = nock('http://dodo22')

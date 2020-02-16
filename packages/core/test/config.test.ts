@@ -16,29 +16,34 @@
 */
 
 import * as path from 'path'
-import * as os from 'os'
 import * as conf from '../src/config'
-// import * as file from '../src/file'
+import * as file from '../src/file'
 
-const testSaltoHomeDir = path.join(os.homedir(), '.salto')
-const testSaltoConfigDir = path.join(testSaltoHomeDir, 'salto.config')
+const testSaltoHomeDir = path.join(__dirname, '../../test/salto_home')
 
-describe('core config', () => {
+describe('global config', () => {
   beforeEach(async () => {
-    process.env.SALTO_HOME = testSaltoConfigDir
-    await conf.initConfig()
-    // spyMkdir = jest.spyOn(file, 'mkdirp').mockResolvedValue(true)
-    // jest.spyOn(file, 'exists').mockResolvedValue(false)
-  })
-
-  it('should override default salto home path', async () => {
     process.env[conf.SALTO_HOME_VAR] = testSaltoHomeDir
-    expect(conf.getSaltoHome()).toEqual(testSaltoHomeDir)
-    expect(await conf.getGlobalConfigDir()).toEqual(path.join(testSaltoHomeDir, 'salto.config'))
-    expect(await conf.getInstallationIDFile()).toEqual(path.join(testSaltoHomeDir, 'salto.config', '.installation_id'))
   })
 
-  it('should generate an installation id', async () => {
-    expect(await conf.getInstallationID()).toMatch(/^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$/)
+  afterEach(() => {
+    delete process.env.SALTO_HOME
+  })
+
+  it('should load installation id from disk', async () => {
+    const globalConfig = await conf.loadFromDisk()
+    expect(conf.getSaltoHome()).toEqual(testSaltoHomeDir)
+    expect(globalConfig.installationID).toEqual('test_id')
+  })
+
+  it('should initialize config on disk', async () => {
+    jest.mock('../src/file')
+    jest.spyOn(file, 'mkdirp')
+    jest.spyOn(file, 'writeFile')
+    jest.spyOn(file, 'readTextFile').mockReturnValue(new Promise<string>((res, _rej) => res('1234')))
+
+    const globalConfig = await conf.initOnDisk()
+    expect(conf.getSaltoHome()).toEqual(testSaltoHomeDir)
+    expect(globalConfig.installationID).toEqual('1234')
   })
 })

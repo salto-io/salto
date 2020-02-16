@@ -48,7 +48,7 @@ import {
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
 import Credentials from './workspace/credentials'
-import { initConfig } from './config'
+import { GlobalConfig } from './config'
 
 const log = logger(module)
 
@@ -262,8 +262,11 @@ export const deleteFromCsvFile = async (
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
-export const init = async (workspaceName?: string): Promise<Workspace> => {
-  await initConfig()
+export const init = async (
+  globalConfig: GlobalConfig,
+  workspaceName?: string
+): Promise<Workspace> => {
+  log.debug(`initializing workspace, installation id: ${globalConfig.installationID}`)
   return Workspace.init('.', workspaceName)
 }
 

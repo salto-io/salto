@@ -45,6 +45,6 @@ export { Config, loadConfig, addServiceToConfig } from './src/workspace/config'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dumpElements, dumpElemID } from './src/parser/dump'
 export { readAllCsvContents } from './test/common/helpers'
-export { SALTO_HOME_VAR } from './src/config'
+export { SALTO_HOME_VAR, GlobalConfig, loadFromDisk, initOnDisk } from './src/config'
 
 export const file = f

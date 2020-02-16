@@ -22,25 +22,40 @@ import { exists, writeFile, readTextFile, mkdirp } from './file'
 
 const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
 export const SALTO_HOME_VAR = 'SALTO_HOME'
+
 export const getSaltoHome = (): string =>
   process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
-export const getGlobalConfigDir = async (): Promise<string> => path.join(getSaltoHome(), 'salto.config')
-export const getInstallationIDFile = async (): Promise<string> => path.join(await getGlobalConfigDir(), '.installation_id')
 
-const createGlobalConfigDir = async (): Promise<unknown> => mkdirp(await getGlobalConfigDir())
+const globalConfigDirSuffix = 'salto.config'
+const installationIDFilename = '.installation_id'
 
-const generateInstallationID = async (): Promise<void> => (
-  await exists(await getInstallationIDFile())
-    ? undefined : writeFile(await getInstallationIDFile(), uuidv4())
+const configHomeDir = (): string => (
+  path.join(getSaltoHome(), globalConfigDirSuffix)
+)
+const installationIDFullPath = (): string => (
+  path.join(configHomeDir(), installationIDFilename)
 )
 
-export const initConfig = async (): Promise<void> => {
-  await createGlobalConfigDir()
-  await generateInstallationID()
-  return undefined
+export interface GlobalConfig {
+  installationID: string
 }
 
-export const getInstallationID = async (): Promise<string> => (
-  (await readTextFile(await getInstallationIDFile()))
-    .trim()
-)
+export const loadFromDisk = async (): Promise<GlobalConfig> => {
+  if (!await exists(installationIDFullPath())) {
+    throw Error('cannot find installation id file on disk')
+  }
+
+  const installationID = (await readTextFile(installationIDFullPath())).trim()
+  return { installationID }
+}
+
+export const initOnDisk = async (): Promise<GlobalConfig> => {
+  await mkdirp(configHomeDir())
+
+  if (!await exists(installationIDFullPath())) {
+    const installationID = uuidv4()
+    await writeFile(installationIDFullPath(), installationID)
+  }
+
+  return loadFromDisk()
+}

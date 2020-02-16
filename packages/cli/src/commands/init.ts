@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { init } from '@salto-io/core'
+import { init, initOnDisk } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
@@ -25,7 +25,8 @@ export const command = (
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     try {
-      const workspace = await init(workspaceName)
+      const globalConfig = await initOnDisk()
+      const workspace = await init(globalConfig, workspaceName)
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import os from 'os'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
@@ -22,14 +21,13 @@ import { logger } from '@salto-io/logging'
 import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'
 import { mkdirp, exists, readFile, replaceContents } from '../file'
+import { getSaltoHome } from '../config'
 
 const log = logger(module)
 
 const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
-const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
 const SALTO_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341'
-export const SALTO_HOME_VAR = 'SALTO_HOME'
 
 class NotAWorkspaceError extends Error {
   constructor() {
@@ -104,18 +102,17 @@ export interface Config {
   name: string
   services: string[]
   envs: EnvSettings[]
-  currentEnv? : string
+  currentEnv?: string
 }
 
 type EnvConfig = Pick<Config, 'services' | 'stateLocation' | 'credentialsLocation'>
 
 const createDefaultConfig = (
   baseDir: string,
-  workspaceName? : string,
-  existingUid? : string
+  workspaceName?: string,
+  existingUid?: string
 ): Config => {
   const name = workspaceName || path.basename(baseDir)
-  const saltoHome = process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
   const uid = existingUid || uuidv5(name, SALTO_NAMESPACE) // string based uuid
   return {
     uid,
@@ -123,7 +120,7 @@ const createDefaultConfig = (
     stateLocation: path.join(baseDir, CONFIG_DIR_NAME, 'state.bpc'),
     credentialsLocation: 'credentials',
     services: [],
-    localStorage: path.join(saltoHome, `${name}-${uid}`),
+    localStorage: path.join(getSaltoHome(), `${name}-${uid}`),
     name,
     envs: [],
   }
@@ -145,7 +142,7 @@ export const completeConfig = (baseDir: string, config: Partial<Config>): Config
   }
 }
 
-export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
+export const locateWorkspaceRoot = async (lookupDir: string): Promise<string | undefined> => {
   if (await exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
     return lookupDir
   }

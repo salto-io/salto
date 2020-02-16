@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
+import { deploy, PlanItem, ItemStatus, getPlanFromWorkspaceAndServices,
+  Plan, Workspace, DeployResult } from '@salto-io/core'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -25,10 +26,10 @@ import {
 import {
   formatActionStart, formatItemDone,
   formatCancelAction, formatActionInProgress,
-  formatItemError, deployPhaseEpilogue,
+  formatItemError, deployPhaseEpilogue, formatExecutionPlan,
 } from '../formatter'
-import { shouldDeploy } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
+import { shouldExecutePlan } from '../callbacks'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 
 const log = logger(module)
@@ -113,6 +114,17 @@ export class DeployCommand implements CliCommand {
     }
   }
 
+  async shouldDeploy(workspace: Workspace, actions: Plan): Promise<boolean> {
+    const planWorkspaceErrors = await Promise.all(
+      actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
+    )
+    this.stdout.write(await formatExecutionPlan(actions, planWorkspaceErrors))
+    if (_.isEmpty(actions)) {
+      return false
+    }
+    return shouldExecutePlan(this.stdout)
+  }
+
   async execute(): Promise<CliExitCode> {
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
@@ -121,14 +133,19 @@ export class DeployCommand implements CliCommand {
       return CliExitCode.AppError
     }
 
-    const result = await deploy(
-      workspace,
-      shouldDeploy(this.stdout, workspace),
-      (item: PlanItem, step: ItemStatus, details?: string) =>
-        this.updateAction(item, step, details),
-      this.inputServices,
-      this.force
-    )
+    const actionPlan = await getPlanFromWorkspaceAndServices(workspace, this.inputServices)
+    let result: DeployResult
+    if (this.force || await this.shouldDeploy(workspace, actionPlan)) {
+      result = await deploy(
+        workspace,
+        actionPlan,
+        (item: PlanItem, step: ItemStatus, details?: string) =>
+          this.updateAction(item, step, details),
+        this.inputServices,
+      )
+    } else {
+      result = { success: true, errors: [] }
+    }
 
     const nonErroredActions = [...this.actions.keys()]
       .filter(action => !result.errors.map(error => error.elementId).includes(action))

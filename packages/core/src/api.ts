@@ -77,14 +77,19 @@ const getChangeValidators = (): Record<string, ChangeValidator> =>
     .fromPairs()
     .value()
 
-export const preview = async (
+export const getPlanFromWorkspaceAndServices = async (
   workspace: Workspace,
-  services: string[] = workspace.config.services
+  services: string[] = workspace.config.services,
 ): Promise<Plan> => getPlan(
   filterElementsByServices(await workspace.state.getAll(), services),
   filterElementsByServices(await workspace.elements, services),
   getChangeValidators()
 )
+
+export const preview = async (
+  workspace: Workspace,
+  services: string[] = workspace.config.services
+): Promise<Plan> => getPlanFromWorkspaceAndServices(workspace, services)
 
 const getAdapters = async (
   credentials: Credentials,
@@ -105,45 +110,36 @@ export interface DeployResult {
 
 export const deploy = async (
   workspace: Workspace,
-  shouldDeploy: (plan: Plan) => Promise<boolean>,
+  actionPlan: Plan,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   services: string[] = workspace.config.services,
-  force = false
 ): Promise<DeployResult> => {
   const changedElements: Element[] = []
-  const actionPlan = await getPlan(
-    filterElementsByServices(await workspace.state.getAll(), services),
-    filterElementsByServices(await workspace.elements, services),
-    getChangeValidators()
-  )
-  if (force || await shouldDeploy(actionPlan)) {
-    const adapters = await getAdapters(workspace.credentials, services)
+  const adapters = await getAdapters(workspace.credentials, services)
 
-    const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
-      ((action === 'remove')
-        ? workspace.state.remove(element.elemID)
-        : workspace.state.set(element)
-          .then(() => { changedElements.push(element) }))
-    const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
+  const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
+    ((action === 'remove')
+      ? workspace.state.remove(element.elemID)
+      : workspace.state.set(element)
+        .then(() => { changedElements.push(element) }))
+  const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
-    const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
-    // Clone the elements because getDetailedChanges can change its input
-    const clonedElements = changedElements.map(e => e.clone())
-    const relevantWorkspaceElements = (await workspace.elements)
-      .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)
+  const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
+  // Clone the elements because getDetailedChanges can change its input
+  const clonedElements = changedElements.map(e => e.clone())
+  const relevantWorkspaceElements = (await workspace.elements)
+    .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)
 
-    const changes = wu(await getDetailedChanges(relevantWorkspaceElements, clonedElements))
-      .map(change => ({ change, serviceChange: change }))
-      .map(toChangesWithPath(name => changedElementMap[name] || []))
-      .flatten()
-    const errored = errors.length > 0
-    return {
-      success: !errored,
-      changes,
-      errors: errored ? errors : [],
-    }
+  const changes = wu(await getDetailedChanges(relevantWorkspaceElements, clonedElements))
+    .map(change => ({ change, serviceChange: change }))
+    .map(toChangesWithPath(name => changedElementMap[name] || []))
+    .flatten()
+  const errored = errors.length > 0
+  return {
+    success: !errored,
+    changes,
+    errors: errored ? errors : [],
   }
-  return { success: true, errors: [] }
 }
 
 export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>

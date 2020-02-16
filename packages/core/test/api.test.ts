@@ -142,7 +142,6 @@ describe('api.ts', () => {
   })
 
   describe('deploy', () => {
-    const mockShouldDeployYes = jest.fn().mockImplementation(() => Promise.resolve(true))
     const mockReportCurrentAction = jest.fn()
 
     const mockedGetPlan = plan.getPlan as jest.Mock
@@ -171,7 +170,7 @@ describe('api.ts', () => {
     beforeAll(async () => {
       result = await api.deploy(
         ws,
-        mockShouldDeployYes,
+        await api.getPlanFromWorkspaceAndServices(ws, SERVICES),
         mockReportCurrentAction,
         SERVICES
       )
@@ -183,10 +182,6 @@ describe('api.ts', () => {
 
     it('should not call flush', async () => {
       expect(mockFlush).not.toHaveBeenCalled()
-    })
-
-    it('should ask for approval', async () => {
-      expect(mockShouldDeployYes).toHaveBeenCalledTimes(1)
     })
 
     it('should deploy changes', async () => {

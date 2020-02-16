@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import wu from 'wu'
+// import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings } from '@salto-io/lowerdash'
 import { testHelpers as salesforceTestHelpers, SalesforceClient } from '@salto-io/salesforce-adapter'
@@ -49,12 +49,8 @@ describe('cli e2e', () => {
       lastPlan = p
       return 'plan'
     })
-    jest.spyOn(callbacksImpl, 'shouldDeploy').mockImplementation(
-      () => async (p: Plan): Promise<boolean> => {
-        lastPlan = p
-        const { length } = [...wu(p.itemsByEvalOrder())]
-        return length < 100 // Safety to avoid breaking the SF instance
-      }
+    jest.spyOn(callbacksImpl, 'shouldExecutePlan').mockImplementation(
+      async _stdout => true
     )
   })
 

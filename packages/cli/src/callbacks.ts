@@ -20,9 +20,9 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
-import { Plan, FetchChange, Workspace } from '@salto-io/core'
+import { FetchChange } from '@salto-io/core'
 import {
-  formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
+  formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatConfigHeader,
   formatConfigFieldInput, formatShouldAbortWithValidationError,
 } from './formatter'
@@ -39,24 +39,6 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   return answers.userInput
 }
 
-export const shouldDeploy = (stdout: WriteStream, workspace: Workspace) =>
-  async (actions: Plan): Promise<boolean> => {
-    const planWorkspaceErrors = await Promise.all(
-      actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
-    )
-    stdout.write(await formatExecutionPlan(actions, planWorkspaceErrors))
-    if (_.isEmpty(actions)) {
-      return false
-    }
-    const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTEPLAN)
-    if (shouldExecute) {
-      stdout.write(deployPhaseHeader)
-    } else {
-      stdout.write(cancelDeployOutput)
-    }
-    return shouldExecute
-  }
-
 export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
   { stdout }: CliOutput): Promise<boolean> => {
   const shouldContinue = await getUserBooleanInput(formatShouldContinueWithWarning(numWarnings))
@@ -64,6 +46,16 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
     stdout.write(formatCancelCommand)
   }
   return shouldContinue
+}
+
+export const shouldExecutePlan = async (stdout: WriteStream): Promise<boolean> => {
+  const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTEPLAN)
+  if (shouldExecute) {
+    stdout.write(deployPhaseHeader)
+  } else {
+    stdout.write(cancelDeployOutput)
+  }
+  return shouldExecute
 }
 
 export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):

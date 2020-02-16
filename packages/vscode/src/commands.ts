@@ -15,7 +15,7 @@
 */
 import * as vscode from 'vscode'
 import { SaltoError } from '@salto-io/adapter-api'
-import { preview, Plan, deploy, ItemStatus, PlanItem, DeployResult, WorkspaceError } from '@salto-io/core'
+import { preview, Plan, deploy, ItemStatus, PlanItem, DeployResult, WorkspaceError, getPlanFromWorkspaceAndServices } from '@salto-io/core'
 import wu from 'wu'
 import { EditorWorkspace } from './salto/workspace'
 import { displayError, getBooleanInput, displayHTML, hrefToUri, handleErrors } from './output'
@@ -112,12 +112,17 @@ export const deployCommand = async (
   }
 
   try {
-    deployProcess = deploy(
-      workspace.workspace,
-      shouldDeployCB,
-      updateActionCB
-    )
-    const result = await deployProcess
+    const actionPlan = await getPlanFromWorkspaceAndServices(workspace.workspace)
+    let result: DeployResult
+    if (await shouldDeployCB(actionPlan)) {
+      result = await deploy(
+        workspace.workspace,
+        actionPlan,
+        updateActionCB
+      )
+    } else {
+      result = { success: true, errors: [] }
+    }
     handleErrors(result.errors.map(e => e.message))
     await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
     if (await hasCriticalErrors(workspace)) {

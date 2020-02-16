@@ -25,11 +25,14 @@ import * as workspace from '../../src/workspace'
 const mockDeploy = deploy
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
+  getPlanFromWorkspaceAndServices: jest.fn().mockImplementation((
+    _ws: Workspace,
+    _services: string[],
+  ) => preview()),
   deploy: jest.fn().mockImplementation((
     ws: Workspace,
-    shouldDeploy: (plan: Plan) => Promise<boolean>,
+    actionPlan: Plan,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
-    force = false,
     services = ws.config.services as string[]
   ) =>
   // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
@@ -37,7 +40,7 @@ jest.mock('@salto-io/core', () => ({
   // out-of-scope variables."
   // Notice that blueprints are ignored in mockDeploy.
 
-    mockDeploy(ws, shouldDeploy, reportProgress, services, force)),
+    mockDeploy(ws, actionPlan, reportProgress, services)),
 }))
 jest.mock('../../src/workspace')
 describe('deploy command', () => {

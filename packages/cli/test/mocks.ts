@@ -347,18 +347,14 @@ export const preview = (): Plan => {
 
 export const deploy = async (
   _workspace: Workspace,
-  shouldDeploy: (plan: Plan) => Promise<boolean>,
+  actionPlan: Plan,
   reportProgress: (action: PlanItem, step: string, details?: string) => void,
   _services: string[],
-  force = false
 ): Promise<DeployResult> => {
-  const changes = preview()
-  if (force || await shouldDeploy(changes)) {
-    wu(changes.itemsByEvalOrder()).forEach(change => {
-      reportProgress(change, 'started')
-      reportProgress(change, 'finished')
-    })
-  }
+  wu(actionPlan.itemsByEvalOrder()).forEach(change => {
+    reportProgress(change, 'started')
+    reportProgress(change, 'finished')
+  })
 
   return {
     success: true,

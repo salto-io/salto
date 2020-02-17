@@ -20,7 +20,7 @@ import {
 import { logger } from '@salto-io/logging'
 import { Keywords } from '../../../parser/language'
 import {
-  MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
+  MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError, diffValueDuplicateDetector,
 } from './common'
 
 const log = logger(module)
@@ -110,10 +110,16 @@ const validateFieldBasesAndUpdates = (
     const extraBases = bases.slice(1)
     if (
       _.some(extraBases, f => !_.isEqual(f.type.elemID, base.type.elemID))
-      || _.some(extraBases, f =>  f.isList !== base.isList)
+      || _.some(extraBases, f => f.isList !== base.isList)
     ) {
       const error = new MultipleBaseDefinitionsMergeError({ elemID, parentID, fieldName, bases })
-      return { errors: [error], base, updates: [...bases.slice(1), ...updates], fieldName, parentID }
+      return {
+        errors: [error],
+        base,
+        updates: [...bases.slice(1), ...updates],
+        fieldName,
+        parentID,
+      }
     }
   }
 
@@ -140,11 +146,7 @@ const mergeFieldDefinitions = (
     key => new DuplicateAnnotationFieldDefinitionError({
       elemID, parentID, fieldName, annotationKey: key,
     }),
-    (existingValue, newValue, _k) => (
-      existingValue !== undefined
-      && newValue !== undefined
-      && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))
-    )
+    diffValueDuplicateDetector
   )
 
   const annotations = _.merge({}, base.annotations, mergedUpdates.merged)
@@ -186,11 +188,7 @@ const mergeObjectDefinitions = (
   const annotationTypesMergeResults = mergeNoDuplicates(
     objects.map(o => o.annotationTypes),
     key => new DuplicateAnnotationTypeError({ elemID, key }),
-    (existingValue, newValue, _k) => (
-      existingValue !== undefined
-      && newValue !== undefined
-      && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))
-    )
+    diffValueDuplicateDetector
   )
 
   // There are no rules in the spec on merging annotations and
@@ -198,11 +196,7 @@ const mergeObjectDefinitions = (
   const annotationsMergeResults = mergeNoDuplicates(
     objects.map(o => o.annotations),
     key => new DuplicateAnnotationError({ elemID, key }),
-    (existingValue, newValue, _k) => (
-      existingValue !== undefined
-      && newValue !== undefined
-      && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))
-    )
+    diffValueDuplicateDetector
   )
 
   return {

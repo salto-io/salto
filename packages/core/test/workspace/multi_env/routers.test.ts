@@ -238,17 +238,20 @@ describe('compact routing', () => {
       action: 'add',
       data: { after: commonObj },
       id: commonObj.elemID,
+      path: ['test', 'path']
     })
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual({
       action: 'remove',
       data: { before: commonObj },
       id: commonObj.elemID,
+      path: ['test', 'path']
     })
     expect(routedChanges.secondarySources?.sec
             && routedChanges.secondarySources?.sec[0]).toEqual({
       action: 'add',
       data: { after: commonObj },
       id: commonObj.elemID,
+      path: ['test', 'path']
     })
   })
   it('should route a removal diff to comon and env and revert the change in secondary envs', async () => {
@@ -276,12 +279,14 @@ describe('compact routing', () => {
       action: 'remove',
       data: { before: commonObj },
       id: commonObj.elemID,
+      path: ['test', 'path']
     })
     expect(routedChanges.secondarySources?.sec
             && routedChanges.secondarySources?.sec[0]).toEqual({
       action: 'add',
       data: { after: commonObj },
       id: commonObj.elemID,
+      path: ['test', 'path']
     })
   })
 })

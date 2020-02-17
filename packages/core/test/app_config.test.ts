@@ -25,16 +25,7 @@ jest.mock('../src/file', () => ({
     (_filename: string, _content: Buffer | string) => Promise.resolve()
   ),
   exists: jest.fn().mockImplementation(
-    (filename: string) => {
-      if (filename.search('exists') !== -1) {
-        // eslint-disable-next-line no-console
-        console.log('YAY', filename)
-        return Promise.resolve(true)
-      }
-      // eslint-disable-next-line no-console
-      console.log('NAY', filename)
-      return Promise.resolve(false)
-    }
+    (filename: string) => ((filename.search('exists') !== -1) ? Promise.resolve(true) : Promise.resolve(false))
   ),
   readTextFile: jest.fn().mockImplementation(
     (_filename: string) => Promise.resolve('1234')

@@ -1,13 +1,15 @@
 {
   "name": "@salto-io/e2e-credentials-store",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "Apache-2.0",
   "description": "Salto E2E tests credentials store",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto_monorepo"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist/src/**/*"
   ],
@@ -28,9 +30,9 @@
   },
   "dependencies": {
     "@jest/environment": "^24.0.0",
-    "@salto-io/logging": "0.1.0",
-    "@salto-io/lowerdash": "0.1.0",
-    "@salto-io/persistent-pool": "0.1.0",
+    "@salto-io/logging": "0.1.1",
+    "@salto-io/lowerdash": "0.1.1",
+    "@salto-io/persistent-pool": "0.1.1",
     "easy-table": "^1.1.1",
     "humanize-duration": "^3.21.0",
     "jest-circus": "^24.9.0",

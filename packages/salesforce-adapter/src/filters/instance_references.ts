@@ -75,7 +75,7 @@ const replaceReferenceValues = (
   }
 
   const transformReferences: TransformValueFunc = (val, field) => (
-    shouldReplace(field) ? replacePrimitive(val, field) : val
+    field !== undefined && shouldReplace(field) ? replacePrimitive(val, field) : val
   )
 
   return transform(values, refElement, transformReferences, false) || values

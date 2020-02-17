@@ -27,7 +27,7 @@ arrayItems ->
 object -> oObj _nl objectItems cObj {% d => converters.convertObject(d[0], d[2], d[3]) %}
 objectItems ->
 	  null {% () => [] %}
-	| attr _nl (",":? _nl attr _nl {% d=> d[2] %}):* ( "," _nl ):? {% d => _.flatten([d[0], d[2]||[]]) %}
+	| attr _nl (",":? _nl attr _nl {% d=> _.flatten([d[0], d[2]]) %}):* ( "," _nl {% d => d[0]%}):? {% d => _.flattenDeep([d[0], d[2]||[], d[3]]) %}
 value -> 
 	  primitive {% id %}
 	| array {% id %}

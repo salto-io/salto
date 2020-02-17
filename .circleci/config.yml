@@ -99,16 +99,6 @@ jobs:
           command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
 
       - run:
-          name: verify that the NOTICES files should not be changed
-          command: |
-            yarn run generate-notices-file
-            notices_diff=$(git diff NOTICES)
-            if [ ! -z "$notices_diff" ]; then
-              echo "NOTICES file need to be regenerated; please run yarn run generate-notices-file and add the NOTICES file to the pull request"
-              echo "$notices_diff"
-              exit 1
-            fi
-      - run:
           # eslint will verify that the license header exists on the linted source files, this step is
           # to verify that other non-linted files also contains the license header (and therefore this is
           # in the 'build' job)
@@ -134,6 +124,17 @@ jobs:
             fi
 
       - run: yarn build
+
+      - run:
+          name: verify that the NOTICES files should not be changed
+          command: |
+            yarn run generate-notices-file
+            notices_diff=$(git diff NOTICES)
+            if [ ! -z "$notices_diff" ]; then
+              echo "NOTICES file need to be regenerated; please run yarn run generate-notices-file and add the NOTICES file to the pull request"
+              echo "$notices_diff"
+              exit 1
+            fi
 
       - run:
           name: create packages_build_cache.tar.gz

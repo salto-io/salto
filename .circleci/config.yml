@@ -131,8 +131,9 @@ jobs:
             yarn run generate-notices-file
             notices_diff=$(git diff NOTICES)
             if [ ! -z "$notices_diff" ]; then
-              echo "NOTICES file need to be regenerated; please run yarn run generate-notices-file and add the NOTICES file to the pull request"
-              echo "$notices_diff"
+              echo "NOTICES file need to be regenerated;"
+              echo "please run 'docker run --rm -it -v$(greadlink -f .):/salto --workdir /salto circleci/node:12.12 yarn run generate-notices-file'"
+              echo -e "diff:\n$notices_diff"
               exit 1
             fi
 

@@ -13,49 +13,70 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, InstanceElement, Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { isInstanceElement, InstanceElement, Element, ReferenceExpression, Values, Value } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
-import { formElemID, contactPropertyElemID } from '../constants'
+import { formElemID, contactPropertyElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS } from '../constants'
 
 const { makeArray } = collections.array
 
 export const isFormInstance = (instance: InstanceElement): boolean =>
   instance.type.elemID.isEqual(formElemID)
 
+const contactPropertyOverrideFields = Object.values(CONTACT_PROPERTY_OVERRIDES_FIELDS)
+
 const filterCreator: FilterCreator = () => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    const findContactPropertyElemID = (contactPropertyName: string): ElemID | undefined => {
+    const findContactProperty = (contactPropertyName: string): InstanceElement | undefined => {
       const isContactPropertyInstance = (instance: InstanceElement): boolean =>
         instance.type.elemID.isEqual(contactPropertyElemID)
       const contactProperty = elements
         .filter(isInstanceElement)
         .filter(isContactPropertyInstance)
         .find(property => property.value.name === contactPropertyName)
-      return contactProperty ? contactProperty.elemID : undefined
+      return contactProperty
     }
+
+    const createPropertyOverrides = (fieldValues: Values, contactPropValues: Values): Values =>
+      // Includes only certain fields and ones with different value from origin contactProperty
+      _.pickBy(fieldValues, (val, fieldName): boolean => {
+        if (!contactPropertyOverrideFields.includes(fieldName)) {
+          return false
+        }
+        if (contactPropValues && val === contactPropValues[fieldName]) {
+          return false
+        }
+        return true
+      })
+
+    const tranformField = (field: Value, fieldsToRemove: Set<string>): void => {
+      const property = findContactProperty(field.name)
+      if (!property) {
+        fieldsToRemove.add(field.name)
+        return
+      }
+      field.contactProperty = new ReferenceExpression(property.elemID)
+      field.contactPropertyOverrides = createPropertyOverrides(field, property.value)
+      const { dependentFieldFilters } = field
+      // Only available at top level so there's no endless recursion
+      if (dependentFieldFilters && dependentFieldFilters.length > 0) {
+        makeArray(dependentFieldFilters).forEach(dependentFieldFilter => {
+          const { dependentFormField } = dependentFieldFilter
+          tranformField(dependentFormField, fieldsToRemove)
+        })
+      }
+    }
+
     const addContactPropertyRef = (formInstance: InstanceElement): void => {
       const { formFieldGroups } = formInstance.value
       makeArray(formFieldGroups).forEach(formFieldGroup => {
         const { fields } = formFieldGroup
+        const fieldsToRemove = new Set<string>()
         makeArray(fields).forEach(field => {
-          const contactPropertyName = field.name
-          const propertyElemID = findContactPropertyElemID(contactPropertyName)
-          if (propertyElemID) {
-            field.contactProperty = new ReferenceExpression(propertyElemID)
-          }
-          const { dependentFieldFilters } = field
-          if (dependentFieldFilters && dependentFieldFilters.length > 0) {
-            makeArray(dependentFieldFilters).forEach(dependentFieldFilter => {
-              const { dependentFormField } = dependentFieldFilter
-              const dependentPropName = dependentFormField.name
-              const dependentPropElemID = findContactPropertyElemID(dependentPropName)
-              if (dependentPropElemID) {
-                dependentFormField.contactProperty = new ReferenceExpression(dependentPropElemID)
-              }
-            })
-          }
+          tranformField(field, fieldsToRemove)
         })
+        fieldsToRemove.forEach(name => { delete fields[name] })
       })
     }
 

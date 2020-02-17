@@ -26,6 +26,7 @@ import {
 } from './transformers/transformer'
 import { FilterCreator, Filter, FilterWith, filtersWith } from './filter'
 import formFieldFilter from './filters/form_field'
+import instanceTranformFilter from './filters/instance_transform'
 
 const validateFormGuid = (
   before: InstanceElement,
@@ -54,6 +55,7 @@ export default class HubspotAdapter {
     client,
     filtersCreators = [
       formFieldFilter,
+      instanceTranformFilter,
     ],
   }: HubspotAdapterParams) {
     this.client = client

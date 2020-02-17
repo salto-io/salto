@@ -30,8 +30,9 @@ import {
   propertyGroupElemID, propertyElemID, dependeeFormPropertyElemID, optionsElemID,
   contactListIdsElemID, marketingEmailElemID, rssToEmailTimingElemID,
   nurtureTimeRangeElemID, anchorSettingElemID, actionElemID, eventAnchorElemID,
-  conditionActionElemID, contactPropertyElemID, dependentFormFieldFilterElemID,
+  conditionActionElemID, contactPropertyElemID, dependentFormFieldFiltersElemID,
   fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyFieldTypeValues,
+  CONTACT_PROPERTY_OVERRIDES_FIELDS, contactPropertyOverrideElemID,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -174,54 +175,73 @@ export class Types {
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        [FIELD_FILTER_FIELDS.NUMVALUES]: new TypeField(
-          fieldFilterElemID, FIELD_FILTER_FIELDS.NUMVALUES, BuiltinTypes.NUMBER, {
-            name: FIELD_FILTER_FIELDS.NUMVALUES,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
           true,
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', fieldFilterElemID.name],
     })
 
-    static createFormPropertyType = (elemID: ElemID, isFatherProperty: boolean): ObjectType => {
+    private static contactPropertyOverrideType: ObjectType =
+      new ObjectType({
+        elemID: contactPropertyOverrideElemID,
+        fields: {
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL]: new TypeField(
+            contactPropertyOverrideElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
+            BuiltinTypes.STRING, {
+              name: CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER]: new TypeField(
+            contactPropertyOverrideElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
+            BuiltinTypes.NUMBER,
+            {
+              name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION]: new TypeField(
+            contactPropertyOverrideElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
+            BuiltinTypes.STRING, {
+              name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            }
+          ),
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: new TypeField(
+            contactPropertyOverrideElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
+            Types.optionsType, {
+              name: CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+            true,
+          ),
+        },
+        path: [HUBSPOT, 'types', 'subtypes', contactPropertyOverrideElemID.name],
+      })
+
+    static createFormFieldType = (
+      elemID: ElemID,
+      isFatherProperty: boolean
+    ): ObjectType => {
       const formPropertyType = new ObjectType({
         elemID,
         fields: {
-          [FORM_PROPERTY_FIELDS.NAME]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.NAME,
+          [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]: new TypeField(
+            // TODO: This is not really a string
+            elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY,
               _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
+              [CORE_ANNOTATIONS.REQUIRED]: true,
+            }
           ),
-          [FORM_PROPERTY_FIELDS.LABEL]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.LABEL,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [FORM_PROPERTY_FIELDS.DESCRIPTION]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.DESCRIPTION,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
-              name: FORM_PROPERTY_FIELDS.ISSMARTFIELD,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [FORM_PROPERTY_FIELDS.REQUIRED]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
-              name: FORM_PROPERTY_FIELDS.REQUIRED,
+          [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES,
+            Types.contactPropertyOverrideType, {
+              name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
@@ -240,6 +260,13 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
+          [FORM_PROPERTY_FIELDS.REQUIRED]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
+              name: FORM_PROPERTY_FIELDS.REQUIRED,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            }
+          ),
           [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.SELECTEDOPTIONS, BuiltinTypes.STRING, {
               name: FORM_PROPERTY_FIELDS.SELECTEDOPTIONS,
@@ -248,27 +275,12 @@ export class Types {
             },
             true,
           ),
-          [FORM_PROPERTY_FIELDS.OPTIONS]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.OPTIONS, Types.optionsType, {
-              name: FORM_PROPERTY_FIELDS.OPTIONS,
+          [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: new TypeField(
+            elemID, FORM_PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
+              name: FORM_PROPERTY_FIELDS.ISSMARTFIELD,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
-            true,
-          ),
-          [FORM_PROPERTY_FIELDS.DISPLAYORDER]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
-              name: FORM_PROPERTY_FIELDS.DISPLAYORDER,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            }
-          ),
-          [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            }
           ),
         },
         path: [HUBSPOT, 'types', 'subtypes', elemID.name],
@@ -277,7 +289,7 @@ export class Types {
         Object.assign(formPropertyType.fields, {
           [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
-            Types.dependentFormFieldFilterType, {
+            Types.dependentFormFieldFiltersType, {
               name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -289,15 +301,17 @@ export class Types {
       return formPropertyType
     }
 
-  private static dependeeFormFieldType =
-    Types.createFormPropertyType(dependeeFormPropertyElemID, false)
+  private static dependeeFormFieldType = Types.createFormFieldType(
+    dependeeFormPropertyElemID,
+    false
+  )
 
-  private static dependentFormFieldFilterType: ObjectType =
+  private static dependentFormFieldFiltersType: ObjectType =
     new ObjectType({
-      elemID: dependentFormFieldFilterElemID,
+      elemID: dependentFormFieldFiltersElemID,
       fields: {
         [DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION]: new TypeField(
-          dependentFormFieldFilterElemID, DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
+          dependentFormFieldFiltersElemID, DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
           BuiltinTypes.STRING, {
             name: DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
             _readOnly: false,
@@ -306,7 +320,7 @@ export class Types {
           },
         ),
         [DEPENDENT_FIELD_FILTER_FIELDS.FILTERS]: new TypeField(
-          dependentFormFieldFilterElemID, DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
+          dependentFormFieldFiltersElemID, DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
           Types.fieldFilterType, {
             name: DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
             _readOnly: false,
@@ -315,7 +329,7 @@ export class Types {
           true,
         ),
         [DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD]: new TypeField(
-          dependentFormFieldFilterElemID, DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
+          dependentFormFieldFiltersElemID, DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
           Types.dependeeFormFieldType, {
             name: DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
             _readOnly: false,
@@ -323,10 +337,13 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', dependentFormFieldFilterElemID.name],
+      path: [HUBSPOT, 'types', 'subtypes', dependentFormFieldFiltersElemID.name],
     })
 
-  private static propertyType = Types.createFormPropertyType(propertyElemID, true)
+  private static dependentFormFieldType = Types.createFormFieldType(
+    propertyElemID,
+    true
+  )
 
   private static richTextType: ObjectType =
     new ObjectType({
@@ -355,7 +372,7 @@ export class Types {
           },
         ),
         [FORM_PROPERTY_GROUP_FIELDS.FIELDS]: new TypeField(
-          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.FIELDS, Types.propertyType, {
+          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.FIELDS, Types.dependentFormFieldType, {
             name: FORM_PROPERTY_GROUP_FIELDS.FIELDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1602,7 +1619,7 @@ export class Types {
         [CONTACT_PROPERTY_FIELDS.NAME]: new TypeField(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
             name: CONTACT_PROPERTY_FIELDS.NAME,
-            _readOnly: false,
+            _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
@@ -1737,15 +1754,15 @@ export class Types {
 
   public static hubspotSubTypes: ObjectType[] = [
     Types.propertyGroupType,
-    Types.propertyType,
     Types.optionsType,
     Types.contactListIdsType,
     Types.eventAnchorType,
     Types.nurtureTimeRangeType,
     Types.actionType,
     Types.anchorSettingType,
-    Types.dependentFormFieldFilterType,
     Types.fieldFilterType,
+    Types.dependentFormFieldFiltersType,
+    Types.dependentFormFieldType,
     Types.dependeeFormFieldType,
   ]
 
@@ -1767,7 +1784,7 @@ export const createInstanceName = (
   name: string
 ): string => bpCase(name.trim())
 
-const transformPrimitive: TransformValueFunc = (val, field) => {
+export const transformPrimitive: TransformValueFunc = (val, field) => {
   // remove values that are just an empty string or null
   if (val === '' || val === null) {
     return undefined
@@ -1797,13 +1814,20 @@ const mergeFormFieldAndContactProperty = (field: Value): Value => {
   }
   const merged = _.pick(_.merge(
     field[FORM_PROPERTY_FIELDS.CONTACT_PROPERTY].resValue.value,
-    field
-  ),
-  ['name', 'label', 'type', 'fieldType', 'description', 'groupName', 'displayOrder',
-    'required', 'selectedOptions', 'options', 'enabled', 'hidden', 'defaultValue', 'isSmartField',
-    'placeholder', 'dependentFieldFilters', 'propertyObjectType'])
+    _.merge(field, field[FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES])
+  ), Object.values(FORM_PROPERTY_FIELDS))
 
-  // TODO: Need to handle dependentFieldFilters
+  // Only available at top level so there's no endless recursion
+  if (merged.dependentFieldFilters) {
+    merged.dependentFieldFilters = merged.dependentFieldFilters.map(
+      (dependentFieldFilter: Value) => {
+        dependentFieldFilter.dependentFormField = mergeFormFieldAndContactProperty(
+          dependentFieldFilter.dependentFormField
+        )
+        return dependentFieldFilter
+      }
+    )
+  }
   return merged
 }
 
@@ -1840,12 +1864,11 @@ export const createHubspotInstanceElement = (
   type: ObjectType
 ): InstanceElement => {
   const typeName = type.elemID.name
-  const values = fromHubspotObject(hubspotMetadata, type)
   const instanceName = createInstanceName(hubspotMetadata.name)
   return new InstanceElement(
     new ElemID(HUBSPOT, instanceName).name,
     type,
-    values,
+    hubspotMetadata as Values,
     [HUBSPOT, 'records', typeName, instanceName],
   )
 }

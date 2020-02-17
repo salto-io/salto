@@ -41,10 +41,11 @@ export const OBJECTS_NAMES = {
   EVENTANCHOR: 'eventAnchor',
   CONDITIONACTION: 'conditionAction',
   CONTACT_PROPERTY: 'contactProperty',
-  DEPENDENT_FIELD_FILTER: 'dependentFieldFilter',
+  DEPENDENT_FIELD_FILTERS: 'dependentFieldFilters',
   FIELD_FILTER: 'fieldFilter',
-  DEPEDENT_FORM_PROPERTY: 'dependentFormProperty',
+  DEPENDEE_FORM_PROPERTY: 'dependeeFormProperty',
   RICHTEXT: 'richText',
+  CONTACTPROPERTYOVERRIDE: 'contactPropertyOverride',
 }
 
 export const FIELD_TYPES = {
@@ -195,22 +196,35 @@ export const RICHTEXT_FIELDS = {
 }
 
 export const FORM_PROPERTY_FIELDS = {
-  NAME,
-  LABEL,
-  DESCRIPTION: 'description',
+  // Specific
   REQUIRED: 'required',
-  HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
   DEFAULTVALUE: 'defaultValue',
   SELECTEDOPTIONS: 'selectedOptions',
-  OPTIONS: PROPERTY_OPTIONS,
   DEPENDENTFIELDFILTERS: 'dependentFieldFilters',
-  PLACEHOLDER: 'placeholder',
   CONTACT_PROPERTY: 'contactProperty',
-  DISPLAYORDER,
+  CONTACT_PROPERTY_OVERRIDES: 'contactPropertyOverrides',
+  PLACEHOLDER: 'placeholder',
+
+  // From contactProperty
+  NAME,
   GROUPNAME: 'groupName',
   TYPE: 'type',
   FIELDTYPE: 'fieldType',
+  HIDDEN: 'hidden',
+
+  // Override
+  DISPLAYORDER,
+  LABEL,
+  OPTIONS: PROPERTY_OPTIONS,
+  DESCRIPTION: 'description',
+}
+
+export const CONTACT_PROPERTY_OVERRIDES_FIELDS = {
+  LABEL,
+  DISPLAYORDER,
+  OPTIONS: PROPERTY_OPTIONS,
+  DESCRIPTION: 'description',
 }
 
 export const DEPENDENT_FIELD_FILTER_FIELDS = {
@@ -337,7 +351,7 @@ export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
 export const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
 export const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
-export const dependeeFormPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.DEPEDENT_FORM_PROPERTY)
+export const dependeeFormPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.DEPENDEE_FORM_PROPERTY)
 export const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
 export const contactListIdsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACTLISTIDS)
 export const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
@@ -348,7 +362,11 @@ export const actionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ACTION)
 export const eventAnchorElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.EVENTANCHOR)
 export const conditionActionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONDITIONACTION)
 export const contactPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACT_PROPERTY)
-export const dependentFormFieldFilterElemID = new ElemID(HUBSPOT,
-  OBJECTS_NAMES.DEPENDENT_FIELD_FILTER)
+export const dependentFormFieldFiltersElemID = new ElemID(HUBSPOT,
+  OBJECTS_NAMES.DEPENDENT_FIELD_FILTERS)
 export const fieldFilterElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FIELD_FILTER)
 export const richTextElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RICHTEXT)
+export const contactPropertyOverrideElemID = new ElemID(
+  HUBSPOT,
+  OBJECTS_NAMES.CONTACTPROPERTYOVERRIDE
+)

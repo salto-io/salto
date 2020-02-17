@@ -249,7 +249,11 @@ export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => 
   }
 
   if (isObjectType(rootElement) && fullElemID.idType === 'field') {
-    return _.get(rootElement.fields[path[0]]?.annotations, path.slice(1))
+    const fieldName = path[0]
+    const fieldAnnoPath = path.slice(1)
+    const field = rootElement.fields[fieldName]
+    if (_.isEmpty(fieldAnnoPath)) return field
+    return _.get(field?.annotations, fieldAnnoPath)
   }
 
   if (isType(rootElement) && fullElemID.idType === 'attr') {

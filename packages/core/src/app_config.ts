@@ -36,7 +36,7 @@ const installationIDFullPath = (): string => (
   path.join(configHomeDir(), installationIDFilename)
 )
 
-export interface AppConfig {
+export type AppConfig = {
   installationID: string
 }
 

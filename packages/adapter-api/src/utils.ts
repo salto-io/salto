@@ -172,7 +172,7 @@ export const bpCase = (name?: string): string => (
 
 type TransformValueType = PrimitiveValue | Expression
 export type TransformValueFunc = (
-  val: TransformValueType, field: Field,
+  val: TransformValueType, field?: Field,
 ) => TransformValueType | undefined
 
 export const transform = (
@@ -183,7 +183,7 @@ export const transform = (
 ): Values | undefined => {
   const transformValue = (value: Value, field?: Field): Value => {
     if (field === undefined) {
-      return strict ? undefined : value
+      return strict ? undefined : transformPrimitives(value)
     }
     if (_.isArray(value)) {
       const transformed = value

@@ -953,7 +953,7 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 }
 
 export const transformPrimitive: TransformValueFunc = (val, field) => {
-  const fieldType = field.type
+  const fieldType = field?.type
   if (!isPrimitiveType(fieldType)) {
     return val
   }

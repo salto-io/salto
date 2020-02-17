@@ -215,17 +215,4 @@ describe('filterInvalidChanges', () => {
     expect(planResult.changeErrors.every(v => v.severity === 'Error')).toBeTruthy()
     expect(planResult.size).toBe(0)
   })
-
-  it('should not remove object if having invalid field errors', async () => {
-    const beforeValidObj = new ObjectType({ elemID: new ElemID('salto', 'before_valid_obj') })
-    beforeValidObj.fields.invalid = new Field(beforeValidObj.elemID, 'invalid',
-      BuiltinTypes.STRING)
-    const planResult = await getPlan([...allElements, beforeValidObj],
-      allElements, { salto: mockChangeValidator })
-    expect(planResult.changeErrors).toHaveLength(1)
-    expect(planResult.changeErrors[0].elemID.isEqual(beforeValidObj.fields.invalid.elemID))
-      .toBeTruthy()
-    expect(planResult.changeErrors[0].severity === 'Error').toBeTruthy()
-    expect(planResult.size).toBe(0)
-  })
 })

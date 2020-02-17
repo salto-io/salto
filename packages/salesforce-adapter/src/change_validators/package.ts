@@ -81,14 +81,22 @@ export const changeValidator = {
       }]
     }
     if (isObjectType(before)) {
-      return Object.values(before.fields)
+      const fieldErrors = Object.values(before.fields)
         .filter(hasNamespace)
         .map(field => ({
           elemID: field.elemID,
           severity: 'Error',
           message: generateRemovePackageMessage(getNamespace(field)),
           detailedMessage: 'You cannot add or remove a field that is a part of a package',
-        }))
+        })) as ChangeError[]
+      if (fieldErrors.length > 0) {
+        return fieldErrors.concat({
+          elemID: before.elemID,
+          severity: 'Error',
+          message: fieldErrors[0].message,
+          detailedMessage: 'You cannot remove an object that contains fields from a package',
+        })
+      }
     }
     return []
   },

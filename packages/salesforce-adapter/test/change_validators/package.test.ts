@@ -98,9 +98,11 @@ describe('package change validator', () => {
         obj.fields.field = new Field(obj.elemID, 'field', BuiltinTypes.STRING,
           { [API_NAME]: `${obj.annotations[API_NAME]}.MyNamespace__FieldName__c` })
         const changeErrors = await packageValidator.onRemove(obj)
-        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors).toHaveLength(2)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(obj.fields.field.elemID)
+        expect(changeErrors[1].severity).toEqual('Error')
+        expect(changeErrors[1].elemID).toEqual(obj.elemID)
       })
 
       it('should have no change errors when removing an object without namespace', async () => {

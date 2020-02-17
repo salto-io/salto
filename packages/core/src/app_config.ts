@@ -49,7 +49,7 @@ const loadInstallatioIDFromDisk = async (): Promise<AppConfig> => {
   return { installationID }
 }
 
-export const fromDisk = async (): Promise<AppConfig> => {
+export const configFromDisk = async (): Promise<AppConfig> => {
   await mkdirp(configHomeDir())
 
   if (!await exists(installationIDFullPath())) {

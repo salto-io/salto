@@ -13,25 +13,31 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Config } from '@salto-io/core'
+import { Config, AppConfig } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
 
 jest.mock('@salto-io/core', () => ({
-  init: jest.fn().mockImplementation((workspaceName: string): {config: Config} => {
-    if (workspaceName === 'error') throw new Error('failed')
-    return { config: {
-      name: workspaceName,
-      localStorage: '',
-      baseDir: '',
-      stateLocation: '',
-      credentialsLocation: 'credentials',
-      services: ['salesforce'],
-      uid: '',
-      envs: [],
-    } }
-  }),
+  init: jest.fn().mockImplementation(
+    (_conf: AppConfig, workspaceName: string): { config: Config } => {
+      if (workspaceName === 'error') throw new Error('failed')
+      return {
+        config: {
+          name: workspaceName,
+          localStorage: '',
+          baseDir: '',
+          stateLocation: '',
+          credentialsLocation: 'credentials',
+          services: ['salesforce'],
+          uid: '',
+          envs: [],
+        },
+      }
+    }
+  ),
 }))
+
+const config: AppConfig = { installationID: '1234' }
 
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
@@ -41,12 +47,12 @@ describe('describe command', () => {
   })
 
   it('should invoke api\'s init', async () => {
-    await command('test', cliOutput).execute()
+    await command('test', config, cliOutput).execute()
     expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
   })
 
   it('should print errors', async () => {
-    await command('error', cliOutput).execute()
+    await command('error', config, cliOutput).execute()
     expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
   })
 })

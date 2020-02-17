@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import sourceMapSupport from 'source-map-support'
+import { configFromDisk } from '@salto-io/core'
 import cli from './cli'
+import { CliExitCode } from './types'
 import commandBuilders from './commands'
 import oraSpinner from './ora_spinner'
 
@@ -24,13 +26,17 @@ const {
   stdin, stdout, stderr, argv,
 } = process
 
-const oraSpinnerCreator = oraSpinner({ outputStream: stdout })
-
 const args = argv.slice(2)
 
-cli({
-  input: { args, stdin },
-  output: { stdout, stderr },
-  commandBuilders,
-  spinnerCreator: oraSpinnerCreator,
-}).then(exitCode => process.exit(exitCode))
+const main = async (): Promise<CliExitCode> => {
+  const oraSpinnerCreator = oraSpinner({ outputStream: stdout })
+  const config = await configFromDisk()
+  return cli({
+    input: { args, stdin, config },
+    output: { stdout, stderr },
+    commandBuilders,
+    spinnerCreator: oraSpinnerCreator,
+  })
+}
+
+main().then(exitCode => process.exit(exitCode))

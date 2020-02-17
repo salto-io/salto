@@ -80,11 +80,25 @@ jest.mock('../src/core/plan')
 jest.mock('../src/core/deploy')
 jest.mock('../src/core/records')
 jest.mock('../src/core/adapters/creators')
+jest.spyOn(Workspace, 'init').mockImplementation(
+  (
+    _baseDir: string,
+    workspaceName?: string
+  ):
+    Promise<Workspace> => Promise.resolve(mockWorkspace([], { name: workspaceName }))
+)
 
 describe('api.ts', () => {
   const initAdapters = adapters.initAdapters as jest.Mock
   initAdapters.mockReturnValue({
     [SERVICES[0]]: {} as unknown as Adapter,
+  })
+
+  describe('init', () => {
+    it('should call init', async () => {
+      const ws = api.init({ installationID: '1234' }, 'ws1')
+      expect((await ws).config.name).toEqual('ws1')
+    })
   })
 
   describe('fetch', () => {
@@ -289,8 +303,10 @@ describe('api.ts', () => {
 
     describe('validateConfig', () => {
       it('should throw if passed unknown adapter name', () => {
-        const newConfType = new ObjectType({ elemID: new ElemID('unknownService'),
-          fields: mockConfigType.fields })
+        const newConfType = new ObjectType({
+          elemID: new ElemID('unknownService'),
+          fields: mockConfigType.fields,
+        })
         const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType,
           mockConfigInstance.value)
         return expect(api.updateLoginConfig(ws, newConf)).rejects

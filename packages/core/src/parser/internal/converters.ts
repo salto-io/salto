@@ -142,23 +142,24 @@ export const convertObject = (
   cb: LexerToken
 ): HclExpression => {
   const res: Record<string, HclExpression[]> = {}
-  const repositionedAttrs: HclExpression[] = _.reduce(attrs, (acc, attr) => {
-    if (attr && attr.type === 'map'){
-      return [... acc, attr]
+  const repositionedAttrs: Token[] = _.reduce(attrs, (acc, attr) => {
+    if (attr && attr.type === 'map') {
+      return [...acc, attr]
     }
-    if (attr && attr.type === 'comma' && acc.length > 0){
-      const prevValue = acc[acc.length - 1].expressions[1]
+    if (attr && attr.type === 'comma' && acc.length > 0) {
+      const prevValue = (acc[acc.length - 1] as HclExpression).expressions[1]
       const sss = createSourceRange(prevValue, attr)
       prevValue.source = sss
     }
     return acc
-  }, [] as any[])
+  }, [] as Token[])
   repositionedAttrs.forEach(attr => {
-    const key = attr.expressions[0]
+    const expAttr = attr as HclExpression
+    const key = expAttr.expressions[0]
     if (res[key.value] !== undefined) {
       throw new NearleyError(key, key.source.start.byte, 'Attribute redefined')
     }
-    res[key.value] = attr.expressions
+    res[key.value] = expAttr.expressions
   })
   // throw new Error("STOP")
   return {

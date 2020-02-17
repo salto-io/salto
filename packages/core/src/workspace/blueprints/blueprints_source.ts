@@ -252,6 +252,6 @@ BlueprintsSource => {
     update,
     setBlueprints,
     getSourceMap,
-    getElementBlueprints
+    getElementBlueprints,
   }
 }

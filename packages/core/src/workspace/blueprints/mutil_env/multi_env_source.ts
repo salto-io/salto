@@ -220,6 +220,6 @@ export const multiEnvSource = (
       _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => (
           await source.getElementBlueprints(id)).map(p => buidFullPath(prefix, p)))))
-    )
+    ),
   }
 }

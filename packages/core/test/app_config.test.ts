@@ -15,11 +15,31 @@
 * limitations under the License.
 */
 
-import * as path from 'path'
 import * as conf from '../src/app_config'
-import * as file from '../src/file'
 
-const testSaltoHomeDir = path.join(__dirname, '../../test/salto_home')
+jest.mock('../src/file', () => ({
+  mkdirp: jest.fn().mockImplementation(
+    (_dir: string) => Promise.resolve()
+  ),
+  writeFile: jest.fn().mockImplementation(
+    (_filename: string, _content: Buffer | string) => Promise.resolve()
+  ),
+  exists: jest.fn().mockImplementation(
+    (filename: string) => {
+      if (filename.search('exists') !== -1) {
+        // eslint-disable-next-line no-console
+        console.log('YAY', filename)
+        return Promise.resolve(true)
+      }
+      // eslint-disable-next-line no-console
+      console.log('NAY', filename)
+      return Promise.resolve(false)
+    }
+  ),
+  readTextFile: jest.fn().mockImplementation(
+    (_filename: string) => Promise.resolve('1234')
+  ),
+}))
 
 describe('app config', () => {
   afterAll(() => {
@@ -27,26 +47,22 @@ describe('app config', () => {
   })
 
   it('should load installation id from disk', async () => {
-    process.env[conf.SALTO_HOME_VAR] = testSaltoHomeDir
+    process.env[conf.SALTO_HOME_VAR] = '/exists/home'
     const appConfig = await conf.loadFromDisk()
-    expect(conf.getSaltoHome()).toEqual(testSaltoHomeDir)
-    expect(appConfig.installationID).toEqual('test_id')
-  })
-
-  it('should initialize config on disk', async () => {
-    process.env[conf.SALTO_HOME_VAR] = testSaltoHomeDir
-    jest.mock('../src/file')
-    jest.spyOn(file, 'mkdirp')
-    jest.spyOn(file, 'writeFile')
-    jest.spyOn(file, 'readTextFile').mockReturnValue(new Promise<string>((res, _rej) => res('1234')))
-
-    const appConfig = await conf.initOnDisk()
-    expect(conf.getSaltoHome()).toEqual(testSaltoHomeDir)
+    expect(conf.getSaltoHome()).toEqual('/exists/home')
     expect(appConfig.installationID).toEqual('1234')
   })
 
   it('should fail when loading config that was not initialized', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/a/b/c'
     await expect(conf.loadFromDisk()).rejects.toThrow(/cannot find installation id/)
+  })
+
+  it('should initialize config on disk', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/exists'
+
+    const appConfig = await conf.initOnDisk()
+    expect(conf.getSaltoHome()).toEqual('/exists')
+    expect(appConfig.installationID).toEqual('1234')
   })
 })

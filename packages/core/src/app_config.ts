@@ -40,7 +40,7 @@ export interface AppConfig {
   installationID: string
 }
 
-export const loadFromDisk = async (): Promise<AppConfig> => {
+const loadInstallatioIDFromDisk = async (): Promise<AppConfig> => {
   if (!await exists(installationIDFullPath())) {
     throw Error('cannot find installation id file on disk')
   }
@@ -57,5 +57,5 @@ export const initOnDisk = async (): Promise<AppConfig> => {
     await writeFile(installationIDFullPath(), installationID)
   }
 
-  return loadFromDisk()
+  return loadInstallatioIDFromDisk()
 }

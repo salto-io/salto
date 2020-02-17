@@ -39,14 +39,14 @@ describe('app config', () => {
 
   it('should load installation id from disk', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'
-    const appConfig = await conf.loadFromDisk()
+    const appConfig = await conf.initOnDisk()
     expect(conf.getSaltoHome()).toEqual('/exists/home')
     expect(appConfig.installationID).toEqual('1234')
   })
 
   it('should fail when loading config that was not initialized', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/a/b/c'
-    await expect(conf.loadFromDisk()).rejects.toThrow(/cannot find installation id/)
+    await expect(conf.initOnDisk()).rejects.toThrow(/cannot find installation id/)
   })
 
   it('should initialize config on disk', async () => {

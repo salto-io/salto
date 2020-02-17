@@ -115,7 +115,7 @@ describe('merger', () => {
   const multipleBase = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base' }),
+      field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base' }, true),
     },
   })
 

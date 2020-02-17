@@ -48,6 +48,11 @@ describe('fetch', () => {
     fields: { base: new Field(newTypeID, 'base', BuiltinTypes.STRING) },
     path: ['path', 'base'],
   })
+  const newTypeBaseModified = new ObjectType({
+    elemID: newTypeID,
+    fields: { base: new Field(newTypeID, 'base', BuiltinTypes.STRING, {}, true) },
+    path: ['path', 'base'],
+  })
   const newTypeExt = new ObjectType({
     elemID: newTypeID,
     fields: { ext: new Field(newTypeID, 'ext', BuiltinTypes.STRING) },
@@ -73,7 +78,7 @@ describe('fetch', () => {
     describe('when the adapter returns elements with merge errors', () => {
       beforeEach(() => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve([newTypeBase, newTypeBase, typeWithField]),
+          Promise.resolve([newTypeBase, newTypeBaseModified, typeWithField]),
         )
       })
       it('should fail', async () => {

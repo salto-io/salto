@@ -100,8 +100,8 @@ const findNestedElementPath = (
         .find(e => _.has(e.annotationTypes, propName))?.path
     case 'instance':
       return originalParentElements
-      .filter(isInstanceElement)
-      .find(e => _.has(e.value, propName))?.path
+        .filter(isInstanceElement)
+        .find(e => _.has(e.value, propName))?.path
 
     default: return undefined
   }

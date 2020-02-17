@@ -297,8 +297,12 @@ export const fetchChanges = async (
     .filter(e => !e.elemID.isConfig()))
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
-    : await calcFetchChanges(serviceElements, processErrorsResult.keptElements, stateElements,
-      workspaceElements)
+    : await calcFetchChanges(
+      serviceElements,
+      processErrorsResult.keptElements,
+      _.isEmpty(stateElements) ? workspaceElements : stateElements,
+      workspaceElements
+    )
 
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {

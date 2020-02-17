@@ -77,6 +77,7 @@ export const cli = async ({
   const input = {
     args: _.isArray(args) ? args : args.split(' '),
     stdin: {},
+    config: { installationID: '1234' },
   }
 
   const output = {

@@ -35,8 +35,9 @@ jest.mock('@salto-io/core', () => ({
       }
     }
   ),
-  initOnDisk: jest.fn().mockImplementation((): string => 'mock'),
 }))
+
+const config: AppConfig = { installationID: '1234' }
 
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
@@ -46,12 +47,12 @@ describe('describe command', () => {
   })
 
   it('should invoke api\'s init', async () => {
-    await command('test', cliOutput).execute()
+    await command('test', config, cliOutput).execute()
     expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
   })
 
   it('should print errors', async () => {
-    await command('error', cliOutput).execute()
+    await command('error', config, cliOutput).execute()
     expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
   })
 })

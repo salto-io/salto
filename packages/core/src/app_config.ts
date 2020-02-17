@@ -27,7 +27,7 @@ export const getSaltoHome = (): string =>
   process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
 
 const globalConfigDirSuffix = 'salto.config'
-const installationIDFilename = '.installation_id'
+const installationIDFilename = 'installation_id'
 
 const configHomeDir = (): string => (
   path.join(getSaltoHome(), globalConfigDirSuffix)
@@ -49,7 +49,7 @@ const loadInstallatioIDFromDisk = async (): Promise<AppConfig> => {
   return { installationID }
 }
 
-export const initOnDisk = async (): Promise<AppConfig> => {
+export const fromDisk = async (): Promise<AppConfig> => {
   await mkdirp(configHomeDir())
 
   if (!await exists(installationIDFullPath())) {

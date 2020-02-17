@@ -102,15 +102,15 @@ export interface Config {
   name: string
   services: string[]
   envs: EnvSettings[]
-  currentEnv?: string
+  currentEnv? : string
 }
 
 type EnvConfig = Pick<Config, 'services' | 'stateLocation' | 'credentialsLocation'>
 
 const createDefaultConfig = (
   baseDir: string,
-  workspaceName?: string,
-  existingUid?: string
+  workspaceName? : string,
+  existingUid? : string
 ): Config => {
   const name = workspaceName || path.basename(baseDir)
   const uid = existingUid || uuidv5(name, SALTO_NAMESPACE) // string based uuid
@@ -142,7 +142,7 @@ export const completeConfig = (baseDir: string, config: Partial<Config>): Config
   }
 }
 
-export const locateWorkspaceRoot = async (lookupDir: string): Promise<string | undefined> => {
+export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
   if (await exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
     return lookupDir
   }

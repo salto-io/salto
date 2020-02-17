@@ -55,7 +55,12 @@ const mergeInstanceDefinitions = (
 ): MergeResult<InstanceElement> => {
   const valueMergeResult = instanceDefs.length > 1 ? mergeNoDuplicates(
     instanceDefs.map(i => i.value),
-    key => new DuplicateInstanceKeyError({ elemID, key })
+    key => new DuplicateInstanceKeyError({ elemID, key }),
+    (existingValue, newValue, _k) => (
+        existingValue !== undefined
+        && newValue !== undefined
+        && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))
+      )
   ) : {
     merged: instanceDefs[0].value,
     errors: [],

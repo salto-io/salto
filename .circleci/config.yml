@@ -102,8 +102,10 @@ jobs:
           name: verify that the NOTICES files should not be changed
           command: |
             yarn run generate-notices-file
-            if ! git diff --quiet  --exit-code NOTICES; then
+            notices_diff=$(git diff NOTICES)
+            if [ ! -z "$notices_diff" ]; then
               echo "NOTICES file need to be regenerated; please run yarn run generate-notices-file and add the NOTICES file to the pull request"
+              echo "$notices_diff"
               exit 1
             fi
       - run:

@@ -52,31 +52,18 @@ export type MergeResult<T> = {
   errors: MergeError[]
 }
 
-export const diffValueDuplicateDetector = (
-  existingValue: unknown,
-  newValue: unknown,
-  _k: string
-): boolean => (
-  existingValue !== undefined
-  && newValue !== undefined
-  && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))
-)
-
 export const mergeNoDuplicates = <T>(
   sources: T[],
   errorCreator: (key: string) => MergeError,
-  duplicateDetectionCustomiser?: (existingValue: unknown, newValue: unknown, key: string) => boolean
 ): MergeResult<T> => {
-  const defaultDuplicateDetector = (existingValue: unknown, _v: unknown, _k: string): boolean => (
-    existingValue !== undefined
-  )
-  const duplicatesDetector = duplicateDetectionCustomiser || defaultDuplicateDetector
   const errors: MergeError[] = []
   const merged: unknown = _.mergeWith(
     {},
     ...sources,
     (existingValue: unknown, newValue: unknown, key: string): unknown => {
-      if (duplicatesDetector(existingValue, newValue, key)) {
+      if (!_.isUndefined(existingValue)
+        && !_.isUndefined(newValue)
+        && !(_.isPlainObject(existingValue) && _.isPlainObject(newValue))) {
         errors.push(errorCreator(key))
         return existingValue
       }

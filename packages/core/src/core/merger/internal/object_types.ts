@@ -20,7 +20,7 @@ import {
 import { logger } from '@salto-io/logging'
 import { Keywords } from '../../../parser/language'
 import {
-  MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError, diffValueDuplicateDetector,
+  MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
 
 const log = logger(module)
@@ -107,10 +107,9 @@ const validateFieldBasesAndUpdates = (
   const { name: fieldName } = base
 
   if (bases.length > 1) {
-    const extraBases = bases.slice(1)
     if (
-      _.some(extraBases, f => !_.isEqual(f.type.elemID, base.type.elemID))
-      || _.some(extraBases, f => f.isList !== base.isList)
+      _.uniqBy(bases, 'type.elemID').length > 1
+      || _.uniqBy(bases, 'isList').length > 1
     ) {
       const error = new MultipleBaseDefinitionsMergeError({ elemID, parentID, fieldName, bases })
       return {
@@ -146,7 +145,6 @@ const mergeFieldDefinitions = (
     key => new DuplicateAnnotationFieldDefinitionError({
       elemID, parentID, fieldName, annotationKey: key,
     }),
-    diffValueDuplicateDetector
   )
 
   const annotations = _.merge({}, base.annotations, mergedUpdates.merged)
@@ -188,7 +186,6 @@ const mergeObjectDefinitions = (
   const annotationTypesMergeResults = mergeNoDuplicates(
     objects.map(o => o.annotationTypes),
     key => new DuplicateAnnotationTypeError({ elemID, key }),
-    diffValueDuplicateDetector
   )
 
   // There are no rules in the spec on merging annotations and
@@ -196,7 +193,6 @@ const mergeObjectDefinitions = (
   const annotationsMergeResults = mergeNoDuplicates(
     objects.map(o => o.annotations),
     key => new DuplicateAnnotationError({ elemID, key }),
-    diffValueDuplicateDetector
   )
 
   return {

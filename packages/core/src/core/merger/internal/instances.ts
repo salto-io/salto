@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
-  MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError, diffValueDuplicateDetector,
+  MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
 
 const log = logger(module)
@@ -56,7 +56,6 @@ const mergeInstanceDefinitions = (
   const valueMergeResult = instanceDefs.length > 1 ? mergeNoDuplicates(
     instanceDefs.map(i => i.value),
     key => new DuplicateInstanceKeyError({ elemID, key }),
-    diffValueDuplicateDetector
   ) : {
     merged: instanceDefs[0].value,
     errors: [],

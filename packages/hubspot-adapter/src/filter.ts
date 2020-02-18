@@ -15,7 +15,7 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
-import SalesforceClient from './client/client'
+import HubspotClient from './client/client'
 
 // Filter interface, filters will be activated upon adapter fetch, add, update and remove
 // operations. The filter will be responsible for specific business logic.
@@ -34,4 +34,4 @@ export const filtersWith = <M extends keyof Filter>(
   filters: Filter[],
 ): FilterWith<M>[] => types.filterHasMember<Filter, M>(m, filters)
 
-export type FilterCreator = (opts: { client: SalesforceClient }) => Filter
+export type FilterCreator = (opts: { client: HubspotClient }) => Filter

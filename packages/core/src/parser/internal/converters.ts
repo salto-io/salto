@@ -161,7 +161,6 @@ export const convertObject = (
     }
     res[key.value] = expAttr.expressions
   })
-  // throw new Error("STOP")
   return {
     type: 'map',
     expressions: _(res).values().flatten().value(), // TODO Is this correct?

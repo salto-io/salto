@@ -270,6 +270,7 @@ export const getChangesToUpdate = (
 ): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
     && dc.action === 'add'
+    && dc.id.idType !== 'instance'
     && dc.id.nestingLevel === (dc.id.idType === 'annotation' ? 2 : 1)
     && !parentElementExistsInPath(dc, elementsIndex)
 

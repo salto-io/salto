@@ -84,19 +84,24 @@ const findNestedElementPath = (
   originalParentElements: Element[]
 ): readonly string[] | undefined => {
   const { idType } = changeElemID
-  const propName = changeElemID.createTopLevelParentID().path[0]
+  const propPath = changeElemID.createTopLevelParentID().path
   switch (idType) {
     case 'field':
       return originalParentElements
         .filter(isObjectType)
-        .find(e => _.has(e.fields, propName))?.path
+        .find(e => _.has(e.fields, propPath))?.path
     case 'attr':
       return originalParentElements
-        .find(e => _.has(e.annotations, propName))?.path
+        .find(e => _.has(e.annotations, propPath))?.path
     case 'annotation':
       return originalParentElements
         .filter(isObjectType)
-        .find(e => _.has(e.annotationTypes, propName))?.path
+        .find(e => _.has(e.annotationTypes, propPath))?.path
+    case 'instance':
+      return originalParentElements
+        .filter(isInstanceElement)
+        .find(e => _.has(e.value, propPath))?.path
+
     default: return undefined
   }
 }

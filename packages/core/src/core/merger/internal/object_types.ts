@@ -107,12 +107,22 @@ const validateFieldBasesAndUpdates = (
   const { name: fieldName } = base
 
   if (bases.length > 1) {
-    // multiple bases - consider the first as base and the rest as updates
-    const error = new MultipleBaseDefinitionsMergeError({ elemID, parentID, fieldName, bases })
-    return { errors: [error], base, updates: [...bases.slice(1), ...updates], fieldName, parentID }
+    if (
+      _.uniqBy(bases, 'type.elemID').length > 1
+      || _.uniqBy(bases, 'isList').length > 1
+    ) {
+      const error = new MultipleBaseDefinitionsMergeError({ elemID, parentID, fieldName, bases })
+      return {
+        errors: [error],
+        base,
+        updates: [...bases.slice(1), ...updates],
+        fieldName,
+        parentID,
+      }
+    }
   }
 
-  return { errors: [], base, updates, fieldName, parentID }
+  return { errors: [], base, updates: [...bases.slice(1), ...updates], fieldName, parentID }
 }
 
 const mergeFieldDefinitions = (
@@ -134,7 +144,7 @@ const mergeFieldDefinitions = (
     updates.map(u => u.annotations),
     key => new DuplicateAnnotationFieldDefinitionError({
       elemID, parentID, fieldName, annotationKey: key,
-    })
+    }),
   )
 
   const annotations = _.merge({}, base.annotations, mergedUpdates.merged)

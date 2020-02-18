@@ -55,7 +55,7 @@ const mergeInstanceDefinitions = (
 ): MergeResult<InstanceElement> => {
   const valueMergeResult = instanceDefs.length > 1 ? mergeNoDuplicates(
     instanceDefs.map(i => i.value),
-    key => new DuplicateInstanceKeyError({ elemID, key })
+    key => new DuplicateInstanceKeyError({ elemID, key }),
   ) : {
     merged: instanceDefs[0].value,
     errors: [],

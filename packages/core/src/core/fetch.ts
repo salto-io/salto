@@ -297,8 +297,15 @@ export const fetchChanges = async (
     .filter(e => !e.elemID.isConfig()))
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
-    : await calcFetchChanges(serviceElements, processErrorsResult.keptElements, stateElements,
-      workspaceElements)
+    : await calcFetchChanges(
+      serviceElements,
+      processErrorsResult.keptElements,
+      // When we init a new env, state will be empty. We fallback to the workspace
+      // elements since they should be considered a part of the env and the diff
+      // should be calculated with them in mind.
+      _.isEmpty(stateElements) ? workspaceElements : stateElements,
+      workspaceElements
+    )
 
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {

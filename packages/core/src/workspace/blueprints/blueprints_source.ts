@@ -43,6 +43,7 @@ export type BlueprintsSource = ElementsSource & {
   update: (changes: DetailedChange[]) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
+  getElementBlueprints: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
   setBlueprints: (...blueprints: Blueprint[]) => Promise<void>
   removeBlueprints: (...names: string[]) => Promise<void>
@@ -251,5 +252,6 @@ BlueprintsSource => {
     update,
     setBlueprints,
     getSourceMap,
+    getElementBlueprints,
   }
 }

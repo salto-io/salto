@@ -138,7 +138,7 @@ export const multiEnvSource = (
   const flush = async (): Promise<void> => {
     await Promise.all([
       primarySource().flush(),
-      commonSource ? commonSource().flush() : undefined,
+      commonSource().flush(),
       ..._.values(secondarySources()).map(src => src.flush()),
     ])
   }
@@ -216,5 +216,10 @@ export const multiEnvSource = (
       const { source, relPath } = getSourceForBlueprint(filename)
       return source.getElements(relPath) ?? []
     },
+    getElementBlueprints: async (id: ElemID): Promise<string[]> => (
+      _.flatten(await Promise.all(_.entries(getActiveSources())
+        .map(async ([prefix, source]) => (
+          await source.getElementBlueprints(id)).map(p => buidFullPath(prefix, p)))))
+    ),
   }
 }

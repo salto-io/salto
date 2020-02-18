@@ -20,6 +20,7 @@ import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ElemIdGetter,
+  ElemIDType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
@@ -79,32 +80,48 @@ const getChangeMap = async (
       .toArray(),
   )
 
+const chooseOriginalParent = (
+  idType: ElemIDType,
+  originalParentElements: Element[],
+  path: readonly string[]
+): Element | undefined => {
+  const findParent = (): Element | undefined => {
+    switch (idType) {
+      case 'field':
+        return originalParentElements
+          .filter(isObjectType)
+          .find(e => _.has(e.fields, path))
+      case 'attr':
+        return originalParentElements
+          .find(e => _.has(e.annotations, path))
+      case 'annotation':
+        return originalParentElements
+          .filter(isObjectType)
+          .find(e => _.has(e.annotationTypes, path))
+      case 'instance':
+        return originalParentElements
+          .filter(isInstanceElement)
+          .find(e => _.has(e.value, path))
+
+      default: return undefined
+    }
+  }
+  if (_.isEmpty(path)) return undefined
+  const parent = findParent()
+  return parent || chooseOriginalParent(idType, originalParentElements, path.slice(0, -1))
+}
+
 const findNestedElementPath = (
   changeElemID: ElemID,
   originalParentElements: Element[]
 ): readonly string[] | undefined => {
   const { idType } = changeElemID
-  const propName = changeElemID.createTopLevelParentID().path[0]
-  switch (idType) {
-    case 'field':
-      return originalParentElements
-        .filter(isObjectType)
-        .find(e => _.has(e.fields, propName))?.path
-    case 'attr':
-      return originalParentElements
-        .find(e => e.annotations[propName] !== undefined)?.path
-    // This is still not supprted as we have no changes for annotation types ATM.
-    case 'annotation':
-      return originalParentElements
-        .filter(isObjectType)
-        .find(e => _.has(e.annotationTypes, propName))?.path
-    case 'instance':
-      return originalParentElements
-        .filter(isInstanceElement)
-        .find(e => _.has(e.value, propName))?.path
-
-    default: return undefined
-  }
+  const parent = chooseOriginalParent(
+    idType,
+    originalParentElements,
+    changeElemID.createTopLevelParentID().path
+  )
+  return parent?.path
 }
 
 type ChangeTransformFunction = (sourceChange: FetchChange) => FetchChange[]

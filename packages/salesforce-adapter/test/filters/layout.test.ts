@@ -57,7 +57,7 @@ describe('Test layout filter', () => {
       expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', bpCase(shortName)))
       expect(instance.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', instance.elemID.name])
 
-      expect(instance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toContainEqual(
+      expect(instance.annotations[INSTANCE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)
       )
     }

@@ -48,6 +48,7 @@ export const CORE_ANNOTATIONS = {
 
 export const INSTANCE_ANNOTATIONS = {
   DEPENDS_ON: '_depends_on',
+  PARENT: '_parent',
 }
 
 export const RESTRICTION_ANNOTATIONS = {

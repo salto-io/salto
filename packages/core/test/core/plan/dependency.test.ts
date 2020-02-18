@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import { DiffGraph, DataNodeMap, DiffNode } from '@salto-io/dag'
-import { ChangeDataType, Change, ObjectType, InstanceElement, ElemID, ReferenceExpression, Field, BuiltinTypes, PrimitiveType, PrimitiveTypes } from '@salto-io/adapter-api'
+import { ChangeDataType, Change, ObjectType, InstanceElement, ElemID, ReferenceExpression, Field, BuiltinTypes, PrimitiveType, PrimitiveTypes, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
 import {
   addNodeDependencies, addAfterRemoveDependency, addFieldToObjectDependency, addTypeDependency,
   addReferencesDependency,
@@ -207,10 +207,10 @@ describe('dependecy changers', () => {
         const inputChanges = new Map(objectAndFieldChanges('remove', saltoEmployee))
         dependencyChanges = [...await addFieldToObjectDependency(inputChanges, new Map())]
       })
-      it('should add depenency from element removal to each field', () => {
+      it('should add depenency from each field to element removal', () => {
         expect(dependencyChanges).toHaveLength(Object.values(saltoEmployee.fields).length)
         expect(dependencyChanges.every(change => change.action === 'add')).toBeTruthy()
-        expect(dependencyChanges.every(change => change.dependency.source === 0)).toBeTruthy()
+        expect(dependencyChanges.every(change => change.dependency.target === 0)).toBeTruthy()
       })
     })
 
@@ -262,6 +262,7 @@ describe('dependecy changers', () => {
     const testTypeId = new ElemID('test', 'type')
     let testAnnoType: PrimitiveType
     let testType: ObjectType
+    let testParent: InstanceElement
     let testInstance: InstanceElement
 
     beforeEach(() => {
@@ -275,10 +276,17 @@ describe('dependecy changers', () => {
         annotations: { annoRef: new ReferenceExpression(testAnnoType.elemID) },
         annotationTypes: { annoRef: testAnnoType },
       })
+      testParent = new InstanceElement(
+        'parent',
+        testType,
+        {},
+      )
       testInstance = new InstanceElement(
         'test',
         testType,
         { ref: new ReferenceExpression(testTypeId) },
+        undefined,
+        { [INSTANCE_ANNOTATIONS.PARENT]: [new ReferenceExpression(testParent.elemID)] }
       )
     })
 
@@ -288,11 +296,9 @@ describe('dependecy changers', () => {
           [0, toChange('add', testType)],
           [1, toChange('add', testInstance)],
           [2, toChange('add', testAnnoType)],
+          [3, toChange('add', testParent)],
         ])
         dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
-      })
-      it('should add dependency for references from values and from annotations', () => {
-        expect(dependencyChanges).toHaveLength(2)
       })
       it('should add dependency from value reference to target', () => {
         expect(dependencyChanges).toContainEqual(
@@ -304,20 +310,30 @@ describe('dependecy changers', () => {
           { action: 'add', dependency: { source: 0, target: 2 } }
         )
       })
+      it('should add dependency from instance to parent', () => {
+        expect(dependencyChanges).toContainEqual(
+          { action: 'add', dependency: { source: 1, target: 3 } }
+        )
+      })
     })
     describe('when reference and target are removed', () => {
       beforeEach(async () => {
         const inputChanges = new Map([
           [0, toChange('remove', testType)],
           [1, toChange('remove', testInstance)],
+          [2, toChange('remove', testParent)],
         ])
         dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
       })
       it('should add dependency from target to reference', () => {
-        expect(dependencyChanges).toHaveLength(1)
-        expect(dependencyChanges[0].action).toEqual('add')
-        expect(dependencyChanges[0].dependency.source).toEqual(0)
-        expect(dependencyChanges[0].dependency.target).toEqual(1)
+        expect(dependencyChanges).toContainEqual(
+          { action: 'add', dependency: { source: 0, target: 1 } }
+        )
+      })
+      it('should add dependency from instance to parent', () => {
+        expect(dependencyChanges).toContainEqual(
+          { action: 'add', dependency: { source: 1, target: 2 } }
+        )
       })
     })
     describe('when reference target is not an element', () => {

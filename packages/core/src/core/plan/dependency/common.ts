@@ -45,6 +45,13 @@ export const addReferenceDependency = (
   action === 'add' ? dependencyChange('add', src, target) : dependencyChange('add', target, src)
 )
 
+// Parent dependency means the source must be added after the target but the source cannot be
+// removed before the target, so in both cases the change to the target must happen before the
+// change to the source
+export const addParentDependency = (
+  src: ChangeId, target: ChangeId,
+): DependencyChange => dependencyChange('add', src, target)
+
 export type ChangeEntry<T = ChangeDataType> = [ChangeId, Change<T>]
 export const isFieldChange = (entry: ChangeEntry): entry is ChangeEntry<Field> => (
   isField(getChangeElement(entry[1]))

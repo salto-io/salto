@@ -68,12 +68,12 @@ const fixNames = (layouts: InstanceElement[]): void => {
 }
 
 const addObjectReference = (layout: InstanceElement, { elemID: objectID }: ObjectType): void => {
-  const layoutDeps = makeArray(layout.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON])
+  const layoutDeps = makeArray(layout.annotations[INSTANCE_ANNOTATIONS.PARENT])
   if (layoutDeps.filter(isReferenceExpression).some(ref => ref.elemId.isEqual(objectID))) {
     return
   }
   layoutDeps.push(new ReferenceExpression(objectID))
-  layout.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON] = layoutDeps
+  layout.annotations[INSTANCE_ANNOTATIONS.PARENT] = layoutDeps
 }
 
 const fixLayoutPath = (

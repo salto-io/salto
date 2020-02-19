@@ -17,13 +17,13 @@ import { getChangeElement, ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises } from '@salto-io/lowerdash'
+import { ElementsSource } from 'src/workspace/elements_source'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
 import { DetailedChange } from '../../../core/plan'
 import { wrapAdditions, DetailedAddition } from '../addition_wrapper'
 import { BlueprintsSource, BP_EXTENSION } from '../blueprints_source'
-import { ElementsSource } from 'src/workspace/elements_source'
 
 type RoutingMode = 'strict' | 'default'
 
@@ -245,7 +245,7 @@ export const routeChanges = async (
     ? routeNewEnv(c, primarySource, commonSource, secondarySources)
     : routeFetch(c, primarySource, commonSource, secondarySources))))
   const secondaryEnvsChanges = _.mergeWith(
-    {}, 
+    {},
     ...routedChanges.map(r => r.secondarySources || {}),
     (objValue: DetailedChange[], srcValue: DetailedChange[]) => (
       objValue ? [...objValue, ...srcValue] : srcValue
@@ -263,7 +263,7 @@ export const routeChanges = async (
       commonSource
     ),
     secondarySources: await promises.object.mapValuesAsync(
-      secondaryEnvsChanges, 
+      secondaryEnvsChanges,
       (srcChanges, srcName) => createUpdateChanges(
         srcChanges,
         commonSource,

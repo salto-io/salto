@@ -398,8 +398,8 @@ describe('fetch command', () => {
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(1)
               expect(calls[0][2][0]).toEqual(changes[0])
-              expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULDCONTINUE(1))
-              expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULDCONTINUE(1))
+              expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULD_CONTINUE(1))
+              expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULD_CONTINUE(1))
               expect(res).toBe(CliExitCode.Success)
             })
             it('should not update workspace if fetch failed', async () => {

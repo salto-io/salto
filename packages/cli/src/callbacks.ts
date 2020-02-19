@@ -48,7 +48,7 @@ export const shouldDeploy = (stdout: WriteStream, workspace: Workspace) =>
     if (_.isEmpty(actions)) {
       return false
     }
-    const shouldExecute = await getUserBooleanInput(Prompts.SHOULDEXECUTEPLAN)
+    const shouldExecute = await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN)
     if (shouldExecute) {
       stdout.write(deployPhaseHeader)
     } else {

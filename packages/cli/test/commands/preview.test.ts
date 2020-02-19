@@ -94,7 +94,7 @@ describe('preview command', () => {
     })
 
     it('should print summary', async () => {
-      expect(cliOutput.stdout.content.search(/Impacts.*2 types and 1 instance/)).toBeGreaterThan(0)
+      expect(cliOutput.stdout.content).toMatch(/Impacts.*2 types and 1 instance/)
     })
 
     it('should find all elements', async () => {
@@ -104,7 +104,7 @@ describe('preview command', () => {
     })
 
     it('should find instance change', async () => {
-      expect(cliOutput.stdout.content.search('name: "FirstEmployee" => "PostChange"')).toBeGreaterThan(0)
+      expect(cliOutput.stdout.content).toMatch(/M.*name/)
     })
 
     it('should have started spinner and it should succeed (and not fail)', async () => {

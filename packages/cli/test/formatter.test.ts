@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import {
-  Element, ObjectType, InstanceElement, PrimitiveType, ElemID,
-  PrimitiveTypes, BuiltinTypes, ChangeError, SaltoError,
+  Element, ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
+  PrimitiveTypes, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { WorkspaceError, FetchChange } from '@salto-io/core'
 import { formatSearchResults, formatExecutionPlan, formatChange, formatFetchChangeForApproval, formatWorkspaceErrors, formatChangeErrors } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
+import Prompts from '../src/prompts'
 
 describe('formatter', () => {
   const workspaceErrorWithSourceFragments: WorkspaceError<SaltoError> = {
@@ -190,67 +191,131 @@ describe('formatter', () => {
     const allElements = elements()
     const instance = allElements[4] as InstanceElement
     const objectType = allElements[2] as ObjectType
+    let output: string
 
-    describe('with instance value', () => {
-      const instanceChange = detailedChange('add', instance.elemID, undefined, instance)
-      const output = formatChange(instanceChange)
-      it('should have element id', () => {
-        expect(output).toContain(instance.elemID.name)
+    describe('without value', () => {
+      describe('with top level element', () => {
+        beforeAll(() => {
+          const instanceChange = detailedChange('add', instance.elemID, undefined, instance)
+          output = formatChange(instanceChange)
+        })
+        it('should have element id', () => {
+          expect(output).toContain(Prompts.MODIFIERS.add)
+          expect(output).toContain(instance.elemID.name)
+        })
       })
-      it('should have nested values', () => {
-        expect(output).toMatch(new RegExp(`${instance.elemID.name}.*office.*label: "bla"`, 's'))
+
+      describe('with nested element', () => {
+        const changedField = objectType.fields.name
+        beforeAll(() => {
+          const fieldChange = detailedChange('add', changedField.elemID, undefined, changedField)
+          output = formatChange(fieldChange)
+        })
+        it('should not contain the full id', () => {
+          expect(output).not.toContain(changedField.elemID.getFullName())
+        })
+        it('should contain element name', () => {
+          expect(output).toContain(Prompts.MODIFIERS.add)
+          expect(output).toContain(changedField.name)
+        })
+      })
+
+      describe('with nested value', () => {
+        const changedValueId = instance.elemID.createNestedID('nested', 'value')
+        beforeAll(() => {
+          const valueChange = detailedChange('add', changedValueId, undefined, 'bla')
+          output = formatChange(valueChange)
+        })
+        it('should not contain the full id', () => {
+          expect(output).not.toContain(changedValueId.getFullName())
+        })
+        it('should contain last part of value path', () => {
+          expect(output).toContain(Prompts.MODIFIERS.add)
+          expect(output).toContain(changedValueId.name)
+        })
+      })
+
+      describe('with dummy change', () => {
+        beforeAll(() => {
+          const dummyChange = detailedChange('modify', objectType.elemID, undefined, undefined)
+          output = formatChange(dummyChange)
+        })
+        it('should contain the dummy change ID as a header', () => {
+          expect(output).toContain(Prompts.MODIFIERS.eq)
+          expect(output).toContain(objectType.elemID.getFullName())
+        })
       })
     })
-    describe('with primitive type', () => {
-      const dummyType = new PrimitiveType({
-        elemID: new ElemID('salesforce', 'text'),
-        primitive: PrimitiveTypes.STRING,
-        annotations: { bla: 'foo' },
-        annotationTypes: { bla: BuiltinTypes.STRING },
+    describe('with value', () => {
+      describe('with instance value', () => {
+        beforeAll(() => {
+          const instanceChange = detailedChange('add', instance.elemID, undefined, instance)
+          output = formatChange(instanceChange, true)
+        })
+        it('should have element id', () => {
+          expect(output).toContain(instance.elemID.name)
+        })
+        it('should have nested values', () => {
+          expect(output).toMatch(new RegExp(`${instance.elemID.name}.*office.*label: "bla"`, 's'))
+        })
       })
-      const typeChange = detailedChange('add', dummyType.elemID, undefined, dummyType)
-      const output = formatChange(typeChange)
-      it('should have element id', () => {
-        expect(output).toContain(dummyType.elemID.name)
+      describe('with primitive type', () => {
+        const dummyType = new PrimitiveType({
+          elemID: new ElemID('salesforce', 'text'),
+          primitive: PrimitiveTypes.STRING,
+          annotations: { bla: 'foo' },
+          annotationTypes: { bla: BuiltinTypes.STRING },
+        })
+        beforeAll(() => {
+          const typeChange = detailedChange('add', dummyType.elemID, undefined, dummyType)
+          output = formatChange(typeChange, true)
+        })
+        it('should have element id', () => {
+          expect(output).toContain(dummyType.elemID.name)
+        })
+        it('should have type', () => {
+          expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*TYPE: string`, 's'))
+        })
+        it('should have annotations', () => {
+          expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*bla`, 's'))
+        })
+        it('should have annotation types', () => {
+          expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*annotations.*bla`, 's'))
+        })
       })
-      it('should have type', () => {
-        expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*TYPE: string`, 's'))
+      describe('with object type', () => {
+        beforeAll(() => {
+          const objTypeChange = detailedChange('add', objectType.elemID, undefined, objectType)
+          output = formatChange(objTypeChange, true)
+        })
+        it('should have element id', () => {
+          expect(output).toContain(objectType.elemID.name)
+        })
+        it('should have annotations', () => {
+          expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*description: "Office type in salto"`, 's'))
+        })
+        it('should have fields', () => {
+          expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*name`, 's'))
+          expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*name.*TYPE: string`, 's'))
+          expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location`, 's'))
+          expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*TYPE: salto.address`, 's'))
+          expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*label`, 's'))
+        })
+        it('should have annotation types', () => {
+          expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*annotations.*label.*TYPE: string`, 's'))
+        })
       })
-      it('should have annotations', () => {
-        expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*bla`, 's'))
-      })
-      it('should have annotation types', () => {
-        expect(output).toMatch(new RegExp(`${dummyType.elemID.name}.*annotations.*bla`, 's'))
-      })
-    })
-    describe('with object type', () => {
-      const objTypeChange = detailedChange('add', objectType.elemID, undefined, objectType)
-      const output = formatChange(objTypeChange)
-      it('should have element id', () => {
-        expect(output).toContain(objectType.elemID.name)
-      })
-      it('should have annotations', () => {
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*description: "Office type in salto"`, 's'))
-      })
-      it('should have fields', () => {
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*name`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*name.*TYPE: string`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*TYPE: salto.address`, 's'))
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*fields.*location.*label`, 's'))
-      })
-      it('should have annotation types', () => {
-        expect(output).toMatch(new RegExp(`${objectType.elemID.name}.*annotations.*label.*TYPE: string`, 's'))
-      })
-    })
-    describe('removal change', () => {
-      const instanceChange = detailedChange('remove', instance.elemID, instance, undefined)
-      const output = formatChange(instanceChange)
-      it('should have element id', () => {
-        expect(output).toContain(instance.elemID.name)
-      })
-      it('should not have nested values', () => {
-        expect(output).not.toContain('bla')
+      describe('removal change', () => {
+        beforeAll(() => {
+          const instanceChange = detailedChange('remove', instance.elemID, instance, undefined)
+          output = formatChange(instanceChange, true)
+        })
+        it('should have element id', () => {
+          expect(output).toContain(instance.elemID.name)
+        })
+        it('should not have nested values', () => {
+          expect(output).not.toContain('bla')
+        })
       })
     })
   })

@@ -118,7 +118,7 @@ export const multiEnvSource = (
   }
 
   const update = async (
-    changes: DetailedChange[], 
+    changes: DetailedChange[],
     mode: RoutingMode = 'default'
   ): Promise<void> => {
     const routedChanges = await routeChanges(

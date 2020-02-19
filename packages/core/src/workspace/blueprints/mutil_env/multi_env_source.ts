@@ -123,7 +123,7 @@ export const multiEnvSource = (
       primarySource(),
       commonSource(),
       secondarySources(),
-      newEnv
+      newEnv ? 'strict' : undefined
     )
     const secondaryChanges = routedChanges.secondarySources || {}
     await Promise.all([

@@ -13,12 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as object from './object'
-import * as state from './state'
-import * as array from './array'
-
-export {
-  object,
-  state,
-  array,
+export const asyncPartition = async <T>(
+  arr: T[],
+  partitioner: (item: T) => Promise<boolean>
+): Promise<[T[], T[]]> => {
+  const truthfull = []
+  const nonThruthfull = []
+  // eslint-disable-next-line no-restricted-syntax
+  for (const item of arr) {
+    // eslint-disable-next-line no-await-in-loop
+    if (await partitioner(item)) {
+      truthfull.push(item)
+    } else {
+      nonThruthfull.push(item)
+    }
+  }
+  return [truthfull, nonThruthfull]
 }

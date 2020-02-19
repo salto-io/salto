@@ -56,6 +56,9 @@ describe('cli e2e', () => {
         return length < 100 // Safety to avoid breaking the SF instance
       }
     )
+    jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
+      async (_currentName?: string): Promise<string> => 'default'
+    )
   })
 
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`

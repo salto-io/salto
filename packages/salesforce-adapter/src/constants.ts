@@ -1,3 +1,18 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
@@ -83,13 +98,13 @@ export enum ANNOTATION_TYPE_NAMES {
 }
 
 // Salto annotations
-export const API_NAME = 'api_name'
-export const METADATA_TYPE = 'metadata_type'
+export const API_NAME = 'apiName'
+export const METADATA_TYPE = 'metadataType'
 export const FIELD_PERMISSIONS = 'fieldPermissions'
 export const OBJECT_PERMISSIONS = 'objectPermissions'
-export const FIELD_LEVEL_SECURITY_ANNOTATION = 'field_level_security'
-export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'object_level_security'
-export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topics_for_objects'
+export const FIELD_LEVEL_SECURITY_ANNOTATION = 'fieldLevelSecurity'
+export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'objectLevelSecurity'
+export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topicsForObjects'
 
 // Salesforce annotations
 export const LABEL = 'label'
@@ -132,18 +147,6 @@ export const FIELD_ANNOTATIONS = {
   VALUE_SET: 'valueSet',
   DEFAULT_VALUE: 'defaultValue',
   FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
-}
-
-export const CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS = {
-  WEB_LINKS: 'webLinks',
-  VALIDATION_RULES: 'validationRules',
-  BUSINESS_PROCESSES: 'businessProcesses',
-  RECORD_TYPES: 'recordTypes',
-  LIST_VIEWS: 'listViews',
-  FIELD_SETS: 'fieldSets',
-  COMPACT_LAYOUTS: 'compactLayouts',
-  SHARING_REASONS: 'sharingReasons',
-  INDEXES: 'indexes',
 }
 
 export const VALUE_SET_FIELDS = {

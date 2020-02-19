@@ -1,3 +1,18 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
@@ -21,6 +36,10 @@ export class ElemID {
       return new ElemID(adapter, typeName, idType, ElemID.CONFIG_NAME)
     }
     return new ElemID(adapter, typeName, idType, ...name)
+  }
+
+  static fromFullNameParts(nameParts: string[]): ElemID {
+    return ElemID.fromFullName(nameParts.join(ElemID.NAMESPACE_SEPARATOR))
   }
 
   readonly adapter: string
@@ -50,6 +69,10 @@ export class ElemID {
     if (this.idType === 'instance') {
       // First name part is the instance name which is top level
       return this.nameParts.length - 1
+    }
+    if (this.idType === 'annotation') {
+      // annotation is already 1 level nested
+      return this.nameParts.length + 1
     }
     return this.nameParts.length
   }
@@ -110,6 +133,10 @@ export class ElemID {
     if (this.isTopLevel()) {
       // The parent of top level elements is the adapter
       return new ElemID(this.adapter)
+    }
+    if (this.idType === 'annotation' && this.nameParts.length === 1) {
+      // The parent of an annotationType is annotationTypes
+      return new ElemID(this.adapter, this.typeName, this.idType)
     }
     // The parent of all other id types is the type
     return new ElemID(this.adapter, this.typeName)

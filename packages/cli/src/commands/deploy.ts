@@ -1,6 +1,22 @@
-import { deploy, PlanItem, ItemStatus } from 'salto'
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import _ from 'lodash'
+import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
 import { setInterval } from 'timers'
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
 import {
@@ -117,16 +133,15 @@ export class DeployCommand implements CliCommand {
     const nonErroredActions = [...this.actions.keys()]
       .filter(action => !result.errors.map(error => error.elementId).includes(action))
     this.stdout.write(deployPhaseEpilogue(nonErroredActions.length, result.errors.length))
+    this.stdout.write(EOL)
 
-    if (result.changes) {
+    if (!_.isUndefined(result.changes)) {
       const changes = [...result.changes]
-      this.stdout.write(EOL)
       return await updateWorkspace(workspace, { stderr: this.stderr, stdout: this.stdout },
         changes)
         ? CliExitCode.Success
         : CliExitCode.AppError
     }
-    this.stdout.write(EOL)
     return result.success ? CliExitCode.Success : CliExitCode.AppError
   }
 }

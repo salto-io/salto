@@ -1,6 +1,18 @@
-/**
- * Forms Mock Instances
- */
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 const firstFormMock = {
   portalId: 6774238,
   guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
@@ -42,6 +54,8 @@ export const beforeFormMock = {
   cloneable: true,
   captchaEnabled: false,
   createdAt: 1500588456053,
+  inlineMessage: 'inline',
+  themeName: 'theme',
   formFieldGroups: [
     {
       fields: [
@@ -53,10 +67,47 @@ export const beforeFormMock = {
           description: '',
           required: false,
           hidden: false,
+          displayOrder: 1,
           defaultValue: '',
           isSmartField: false,
           selectedOptions: [],
           options: [],
+          dependentFieldFilters: [
+            {
+              filters: [
+                {
+                  operator: 'EQ',
+                  strValue: 'em@salto.io',
+                  boolValue: false,
+                  numberValue: 0,
+                  strValues: [],
+                  numberValues: [],
+                },
+              ],
+              dependentFormField: {
+                name: 'date_of_birth',
+                label: 'Date of birth',
+                type: 'string',
+                fieldType: 'text',
+                description: 'desc',
+                groupName: 'contactinformation',
+                displayOrder: -1,
+                required: false,
+                selectedOptions: [],
+                options: [],
+                enabled: true,
+                hidden: false,
+                isSmartField: false,
+                unselectedLabel: 'unselected',
+                placeholder: 'place',
+                dependentFieldFilters: [],
+                labelHidden: false,
+                propertyObjectType: 'CONTACT',
+                metaData: [],
+              },
+              formFieldAction: 'DISPLAY',
+            },
+          ],
         },
       ],
       default: true,
@@ -72,7 +123,9 @@ export const afterFormMock = {
   editable: true,
   cloneable: true,
   captchaEnabled: false,
+  inlineMessage: 'inline',
   redirect: 'google.com',
+  themeName: 'theme',
   createdAt: 9999999999999,
   formFieldGroups: [
     {
@@ -85,10 +138,47 @@ export const afterFormMock = {
           description: '',
           required: false,
           hidden: false,
+          displayOrder: 1,
           defaultValue: '',
           isSmartField: false,
           selectedOptions: [],
           options: [],
+          dependentFieldFilters: [
+            {
+              filters: [
+                {
+                  operator: 'EQ',
+                  strValue: 'em@salto.io',
+                  boolValue: false,
+                  numberValue: 0,
+                  strValues: [],
+                  numberValues: [],
+                },
+              ],
+              dependentFormField: {
+                name: 'date_of_birth',
+                label: 'Date of birth',
+                type: 'string',
+                fieldType: 'text',
+                description: 'desc',
+                groupName: 'contactinformation',
+                displayOrder: -1,
+                required: false,
+                selectedOptions: [],
+                options: [],
+                enabled: true,
+                hidden: false,
+                isSmartField: false,
+                unselectedLabel: 'unselected',
+                placeholder: 'place',
+                dependentFieldFilters: [],
+                labelHidden: false,
+                propertyObjectType: 'CONTACT',
+                metaData: [],
+              },
+              formFieldAction: 'DISPLAY',
+            },
+          ],
         },
       ],
       default: true,
@@ -129,7 +219,7 @@ export const afterFormMock = {
 const firstWorkflowMock = {
   id: 12345,
   name: 'workflowTest1',
-  type: 'PROPERTY_ANCHOR"',
+  type: 'PROPERTY_ANCHOR',
   unsupportedField: 'bla',
   enabled: true,
   insertedAt: 13423432,
@@ -202,7 +292,7 @@ const firstWorkflowMock = {
 const secondWorkflowMock = {
   id: 123456,
   name: 'workflowTest2',
-  type: 'PROPERTY_ANCHOR"',
+  type: 'PROPERTY_ANCHOR',
   unsupportedField: 'bla',
   enabled: true,
   insertedAt: 13423432,
@@ -275,7 +365,7 @@ const secondWorkflowMock = {
 export const workflowsMock = {
   id: 1234,
   name: 'workflowTest',
-  type: 'PROPERTY_ANCHOR"',
+  type: 'PROPERTY_ANCHOR',
   unsupportedField: 'bla',
   enabled: true,
   insertedAt: 13423432,
@@ -466,6 +556,228 @@ export const workflowsMockArray = [
   workflowsMock,
 ]
 
+/*
+* Contact Property
+*/
+export const contactPropertyMock = {
+  name: 'dropdownexample',
+  label: 'DropDownExample',
+  description: 'description',
+  groupName: 'contactinformation',
+  type: 'enumeration',
+  fieldType: 'select',
+  hidden: false,
+  options: [
+    {
+      description: 'desc A',
+      label: 'A',
+      hidden: false,
+      displayOrder: 0,
+      value: 'A',
+    },
+    {
+      description: 'desc B',
+      label: 'B2',
+      hidden: false,
+      displayOrder: 1,
+      value: 'B2',
+    },
+    {
+      description: 'desc C',
+      label: 'C22',
+      hidden: false,
+      displayOrder: 2,
+      value: 'C22',
+    },
+  ],
+  deleted: false,
+  createdAt: 1578482459242,
+  formField: true,
+  displayOrder: -1,
+  readOnlyValue: false,
+  readOnlyDefinition: false,
+  mutableDefinitionNotDeletable: false,
+  favorited: false,
+  favoritedOrder: -1,
+  calculated: false,
+  externalOptions: false,
+  displayMode: 'current_value',
+  updatedAt: 1580989573781,
+  hasUniqueValue: false,
+  createdUserId: 9379192,
+  searchableInGlobalSearch: false,
+  unsupported: 'lala',
+}
+
+const firstContactPropertyMock = {
+  name: 'dropdownexamplefirst',
+  label: 'DropDownExampleFirst',
+  description: 'description',
+  groupName: 'contactinformation',
+  type: 'enumeration',
+  fieldType: 'select',
+  hidden: false,
+  options: [
+    {
+      description: 'desc A',
+      label: 'A',
+      hidden: false,
+      displayOrder: 0,
+      value: 'A First',
+    },
+    {
+      description: 'desc B',
+      label: 'B',
+      hidden: false,
+      displayOrder: 1,
+      value: 'B First',
+    },
+    {
+      description: 'desc C',
+      label: 'C',
+      hidden: false,
+      displayOrder: 2,
+      value: 'C First',
+    },
+  ],
+  deleted: false,
+  createdAt: 1578482459242,
+  formField: true,
+  displayOrder: -1,
+  readOnlyValue: false,
+  readOnlyDefinition: false,
+  mutableDefinitionNotDeletable: false,
+  favorited: false,
+  favoritedOrder: -1,
+  calculated: false,
+  externalOptions: false,
+  displayMode: 'current_value',
+  updatedAt: 1580989573781,
+  hasUniqueValue: false,
+  createdUserId: 9379192,
+  searchableInGlobalSearch: false,
+}
+
+const secondContactPropertyMock = {
+  name: 'dropdownexampleSecond',
+  label: 'DropDownExampleSecond',
+  description: 'description',
+  groupName: 'contactinformation',
+  type: 'enumeration',
+  fieldType: 'select',
+  hidden: false,
+  options: [
+    {
+      description: 'desc A',
+      label: 'A',
+      hidden: false,
+      displayOrder: 0,
+      value: 'A Second',
+    },
+    {
+      description: 'desc B',
+      label: 'B',
+      hidden: false,
+      displayOrder: 1,
+      value: 'B Second',
+    },
+    {
+      description: 'desc C',
+      label: 'C',
+      hidden: false,
+      displayOrder: 2,
+      value: 'C Second',
+    },
+  ],
+  deleted: false,
+  createdAt: 1578482459242,
+  formField: true,
+  displayOrder: -1,
+  readOnlyValue: false,
+  readOnlyDefinition: false,
+  mutableDefinitionNotDeletable: false,
+  favorited: false,
+  favoritedOrder: -1,
+  calculated: false,
+  externalOptions: false,
+  displayMode: 'current_value',
+  updatedAt: 1580989573781,
+  hasUniqueValue: false,
+  createdUserId: 9379192,
+  searchableInGlobalSearch: false,
+}
+
+export const contactPropertyCreateResponse = {
+  calculated: false,
+  createdAt: 1581235926150,
+  createdUserId: null,
+  currencyPropertyName: null,
+  deleted: false,
+  description: 'description',
+  displayMode: 'current_value',
+  displayOrder: -1,
+  externalOptions: false,
+  favorited: false,
+  favoritedOrder: -1,
+  fieldType: 'select',
+  formField: true,
+  groupName: 'contactinformation',
+  hasUniqueValue: false,
+  hidden: false,
+  hubspotDefined: null,
+  isCustomizedDefault: false,
+  label: 'DropDownExample',
+  mutableDefinitionNotDeletable: false,
+  name: 'dropdownexample',
+  numberDisplayHint: null,
+  optionSortStrategy: null,
+  options: [
+    {
+      description: 'desc A',
+      displayOrder: 0,
+      doubleData: null,
+      hidden: false,
+      label: 'A',
+      readOnly: null,
+      value: 'A',
+    },
+    {
+      description: 'desc B',
+      displayOrder: 1,
+      doubleData: null,
+      hidden: false,
+      label: 'B2',
+      readOnly: null,
+      value: 'B2',
+    },
+    {
+      description: 'desc C',
+      displayOrder: 2,
+      doubleData: null,
+      hidden: false,
+      label: 'C22',
+      readOnly: null,
+      value: 'C22',
+    },
+  ],
+  optionsAreMutable: null,
+  readOnlyDefinition: false,
+  readOnlyValue: false,
+  referencedObjectType: null,
+  searchTextAnalysisMode: null,
+  searchableInGlobalSearch: false,
+  showCurrencySymbol: null,
+  textDisplayHint: null,
+  type: 'enumeration',
+  updatedAt: 1581235926150,
+  updatedUserId: null,
+}
+
+export const contactPropertyMocks = [
+  contactPropertyMock,
+  firstContactPropertyMock,
+  secondContactPropertyMock,
+] as unknown
 
 /**
  * MarketingEmail Mock Instances

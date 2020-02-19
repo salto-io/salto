@@ -1,0 +1,185 @@
+type vs.str is string {
+    annotations {
+        string label {
+
+        }
+
+        boolean _required {
+
+        }
+    }
+}
+
+type vs.num is number {
+    annotations {
+        string label {
+
+        }
+        number max_value {
+
+        }
+    }
+}
+
+type vs.bool is boolean {
+    annotations {
+        string label {
+
+        }
+    }
+}
+
+type vs.person {
+    vs.str first_name {
+        label = "First Name"
+        _required = true  
+    }
+    vs.str last_name {
+        label = "Last Name"
+    }
+    vs.num age {
+        label = "Age"
+        max_value = 99
+    }
+}
+
+type vs.car {
+    vs.person car.owner {
+
+    }
+    vs.str model {
+        label = "Car Model"
+        _required = false
+    }
+    vs.num year {
+        label = "Year"
+        max_value = 2020
+    }
+}
+
+type vs.loan {
+    vs.car propety {
+
+    }
+    vs.person loaner {
+    
+    }
+    vs.str reason {
+        label = "Why is the loan taking place"
+    }
+    vs.bool weekends_only {
+        label = "Is the car loaned only in weekends"
+    }
+}
+
+vs.person lavi {
+    first_name = "Lavi"
+    last_name = "Ronn Sharir"
+    age = 4
+}
+
+vs.person evyatar {
+    first_name = "Evyatar"
+    last_name = "Ronn Sharir"
+    age = 2
+}
+
+vs.loan weekend_car {
+    reason = "She likes me. I brought her her first grandson."
+    loaner = {
+        first_name = "Roi"
+        last_name = "Ronn"
+        age = 35
+    }
+    propety = {
+        car.owner = {
+            first_name = "Ruth"
+            last_name = "Ronn"
+            age = 61
+        }
+        model = "Honda Jazz"
+        year = 2016
+    }
+    weekends_only = true
+    risk = "ticket"
+}
+
+vs.loan not_a_loan {
+    nothing {
+        attr = "value"
+    }    
+}
+
+type vs.loan {
+    vs.str risk {
+        _values = [
+            "accident",
+            "car",
+            "plane",
+            "ticket",
+            "to much fun"
+        ]
+    }
+}
+
+type vs.person {
+    list vs.str nicknames {
+
+    }
+}
+
+vs.person hadar {
+    first_name = "hadar"
+    last_name = "sharir"
+    nicknames = ["You", "would", "have", "loved", "to", "know", "wouldn't", "you"]
+}
+
+type vs.ref_tester {
+    vs.str field_ref_simple {
+        label = vs.loan.instance.weekend_car.reason
+    }
+    vs.str field_ref_nested {
+        label = vs.loan.instance.weekend_car.propety.car_owner.first_name
+    }
+    vs.str anno_ref_simple {
+        label = vs.loan.field.reason.label
+    }
+    vs.str in_string {
+        label = "${vs.loan.field.reason.label}"
+    }
+    vs.str in_string_pre {
+        label = "pre_${vs.loan.field.reason.label}"
+    }
+    vs.str in_string_space {
+        label = "    ${vs.loan.field.reason.label}"
+    }
+    vs.str in_string_complex {
+        label = "X X ${vs.loan.field.reason.label}"
+    }
+    vs.str anno_complex {
+        label = vs.foo.field.fname.owner.first_name
+    }
+}
+
+type vs.name is string {
+    annotations {
+        vs.person owner {
+
+        }
+    }
+
+    owner {
+        first_name = "Roi"
+        last_name = "Ronn"
+        age= 35
+    }
+}
+
+type vs.foo {
+    vs.name fname {
+        owner = {
+            first_name = "OK"
+            last_name = "OKOK"
+        }
+    }
+}

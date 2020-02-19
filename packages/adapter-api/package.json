@@ -1,12 +1,15 @@
 {
-  "name": "adapter-api",
-  "version": "0.1.0",
+  "name": "@salto-io/adapter-api",
+  "version": "0.1.1",
+  "license": "Apache-2.0",
   "description": "Salto Adapter API",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto_monorepo"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "bin/**/*",
     "dist/**/*"
@@ -28,8 +31,8 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto/dag": "0.1.0",
-    "@salto/lowerdash": "0.1.0",
+    "@salto-io/dag": "0.1.1",
+    "@salto-io/lowerdash": "0.1.1",
     "lodash": "^4.17.11",
     "wu": "^2.1.0"
   },
@@ -44,6 +47,7 @@
     "@typescript-eslint/parser": "^2.6.1",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-header": "^3.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jest": "^22.6.4",
     "eslint-plugin-jsx-a11y": "^6.2.1",

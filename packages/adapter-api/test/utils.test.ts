@@ -1,3 +1,18 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import {
   Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
@@ -6,7 +21,7 @@ import { Values } from '../src/values'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
 import {
-  transform, resolvePath, TransformValueFunc, isPrimitiveType,
+  transform, resolvePath, TransformValueFunc, isPrimitiveType, bpCase,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -106,6 +121,24 @@ describe('Test utils.ts', () => {
       ],
     },
   )
+
+  describe('bpCase', () => {
+    describe('names without special characters', () => {
+      const normalNames = [
+        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
+        'CRMFusionDBR101__Scenario__C',
+      ]
+      it('should remain the same', () => {
+        normalNames.forEach(name => expect(bpCase(name)).toEqual(name))
+      })
+    })
+
+    describe('names with spaces', () => {
+      it('should be replaced with _', () => {
+        expect(bpCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
+      })
+    })
+  })
 
   describe('transform func', () => {
     let resp: Values
@@ -218,7 +251,7 @@ describe('Test utils.ts', () => {
     })
 
     const transformPrimitiveTest: TransformValueFunc = (val, field) => {
-      const fieldType = field.type
+      const fieldType = field?.type
       if (!isPrimitiveType(fieldType)) {
         return val
       }

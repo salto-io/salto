@@ -1,3 +1,18 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import wu from 'wu'
 import _ from 'lodash'
 import {
@@ -63,9 +78,18 @@ export function isEqualElements(first?: any, second?: any): boolean {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isExpression = (value: any): value is Expression => (
+export const isReferenceExpression = (value: any): value is ReferenceExpression => (
   value instanceof ReferenceExpression
-    || value instanceof TemplateExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isTemplateExpression = (value: any): value is TemplateExpression => (
+  value instanceof TemplateExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isExpression = (value: any): value is Expression => (
+  isReferenceExpression(value) || isTemplateExpression(value)
 )
 
 export const getSubElement = (baseType: TypeElement, pathParts: string[]):
@@ -136,13 +160,19 @@ AnnoRef => {
   return { annoName, annoType }
 }
 
-
 export const getAnnotationValue = (element: Element, annotation: string): Values =>
   (element.annotations[annotation] || {})
 
+export const bpCase = (name?: string): string => (
+  // unescape changes HTML escaped parts (&gt; for example), then the regex
+  // replaces url escaped chars as well as any special character to keep names blueprint friendly
+  // Match multiple consecutive chars to compact names and avoid repeated _
+  name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
+)
+
 type TransformValueType = PrimitiveValue | Expression
 export type TransformValueFunc = (
-  val: TransformValueType, field: Field,
+  val: TransformValueType, field?: Field,
 ) => TransformValueType | undefined
 
 export const transform = (
@@ -153,7 +183,7 @@ export const transform = (
 ): Values | undefined => {
   const transformValue = (value: Value, field?: Field): Value => {
     if (field === undefined) {
-      return strict ? undefined : value
+      return strict ? undefined : transformPrimitives(value)
     }
     if (_.isArray(value)) {
       const transformed = value
@@ -219,7 +249,11 @@ export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => 
   }
 
   if (isObjectType(rootElement) && fullElemID.idType === 'field') {
-    return _.get(rootElement.fields[path[0]]?.annotations, path.slice(1))
+    const fieldName = path[0]
+    const fieldAnnoPath = path.slice(1)
+    const field = rootElement.fields[fieldName]
+    if (_.isEmpty(fieldAnnoPath)) return field
+    return _.get(field?.annotations, fieldAnnoPath)
   }
 
   if (isType(rootElement) && fullElemID.idType === 'attr') {

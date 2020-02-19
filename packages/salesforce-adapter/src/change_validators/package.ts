@@ -1,7 +1,22 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   Change, Element, Field, getChangeElement, InstanceElement, isAdditionDiff, isField,
   isInstanceElement, isModificationDiff, isObjectType, isRemovalDiff, ChangeError,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { apiName, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
@@ -66,14 +81,22 @@ export const changeValidator = {
       }]
     }
     if (isObjectType(before)) {
-      return Object.values(before.fields)
+      const fieldErrors = Object.values(before.fields)
         .filter(hasNamespace)
         .map(field => ({
           elemID: field.elemID,
           severity: 'Error',
           message: generateRemovePackageMessage(getNamespace(field)),
           detailedMessage: 'You cannot add or remove a field that is a part of a package',
-        }))
+        })) as ChangeError[]
+      if (fieldErrors.length > 0) {
+        return fieldErrors.concat({
+          elemID: before.elemID,
+          severity: 'Error',
+          message: fieldErrors[0].message,
+          detailedMessage: 'You cannot remove an object that contains fields from a package',
+        })
+      }
     }
     return []
   },

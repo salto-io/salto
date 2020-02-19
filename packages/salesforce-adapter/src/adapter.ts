@@ -1,16 +1,31 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   BuiltinTypes, TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
-  DataModificationResult,
-} from 'adapter-api'
+  DataModificationResult, Values,
+} from '@salto-io/adapter-api'
 import {
-  SaveResult, MetadataInfo, QueryResult, FileProperties,
-  BatchResultInfo, BulkLoadOperation, Record as SfRecord, ListMetadataQuery, UpsertResult,
+  SaveResult, MetadataInfo, QueryResult, FileProperties, BatchResultInfo, BulkLoadOperation,
+  Record as SfRecord, ListMetadataQuery, UpsertResult, RetrieveResult, RetrieveRequest,
 } from 'jsforce'
 import _ from 'lodash'
-import { logger } from '@salto/logging'
-import { decorators } from '@salto/lowerdash'
+import { logger } from '@salto-io/logging'
+import { decorators, collections } from '@salto-io/lowerdash'
 import SalesforceClient, { API_VERSION, Credentials, validateCredentials } from './client/client'
 import * as constants from './constants'
 import {
@@ -27,6 +42,7 @@ import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
+import removeFieldsFilter from './filters/remove_fields'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
 import leadConvertSettingsFilter from './filters/lead_convert_settings'
@@ -37,7 +53,7 @@ import settingsFilter from './filters/settings_type'
 import workflowFilter from './filters/workflow'
 import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
-import serviceIdReferencesFilter from './filters/service_id_references'
+import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import {
   FilterCreator, Filter, FilterWith, filtersWith,
@@ -45,9 +61,24 @@ import {
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { changeValidator } from './change_validator'
 
+const { makeArray } = collections.array
 const log = logger(module)
 
+export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 const RECORDS_CHUNK_SIZE = 10000
+
+const absoluteIDMetadataTypes: Record<string, string[]> = {
+  CustomLabels: ['labels'],
+}
+
+const nestedIDMetadataTypes: Record<string, string[]> = {
+  AssignmentRules: ['assignmentRule'],
+  AutoResponseRules: ['autoresponseRule'],
+  EscalationRules: ['escalationRule'],
+  MatchingRules: ['matchingRules'],
+  SharingRules: ['sharingCriteriaRules', 'sharingGuestRules',
+    'sharingOwnerRules', 'sharingTerritoryRules'],
+}
 
 // Add elements defaults
 const addDefaults = (element: ObjectType): void => {
@@ -88,6 +119,9 @@ export interface SalesforceAdapterParams {
   // Metadata types that we should not use client.update but client.upsert upon instance update
   metadataTypesToUseUpsertUponUpdate?: string[]
 
+  // Metadata types that that include metadata types inside them
+  nestedMetadataTypes?: Record<string, string[]>
+
   // Filters to deploy to all adapter operations
   filterCreators?: FilterCreator[]
 
@@ -112,6 +146,10 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   )
 
 type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
+type RetrieveMember = {
+  type: string
+  name: string
+}
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
@@ -119,6 +157,7 @@ export default class SalesforceAdapter {
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
   private metadataTypesToUseUpsertUponUpdate: string[]
+  private nestedMetadataTypes: Record<string, string[]>
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
   private systemFields: string[]
@@ -162,9 +201,16 @@ export default class SalesforceAdapter {
     metadataTypesToUseUpsertUponUpdate = [
       'Flow', // update fails for Active flows
     ],
+    nestedMetadataTypes = {
+      ...absoluteIDMetadataTypes,
+      ...nestedIDMetadataTypes,
+    },
     filterCreators = [
       missingFieldsFilter,
+      settingsFilter,
+      // CustomObjectsFilter depends on missingFieldsFilter and settingsFilter
       CustomObjectsFilter,
+      removeFieldsFilter,
       profilePermissionsFilter,
       layoutFilter,
       assignmentRulesFilter,
@@ -174,7 +220,6 @@ export default class SalesforceAdapter {
       lookupFiltersFilter,
       animationRulesFilter,
       samlInitMethodFilter,
-      settingsFilter,
       workflowFilter,
       topicsForObjectsFilter,
       valueSetFilter,
@@ -182,7 +227,7 @@ export default class SalesforceAdapter {
       // The following filters should remain last in order to make sure they fix all elements
       convertListsFilter,
       convertTypeFilter,
-      serviceIdReferencesFilter,
+      instanceReferences,
     ],
     client,
     getElemIdFunc,
@@ -211,6 +256,7 @@ export default class SalesforceAdapter {
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
+    this.nestedMetadataTypes = nestedMetadataTypes
     this.filterCreators = filterCreators
     this.client = client
     this.systemFields = systemFields
@@ -542,13 +588,35 @@ export default class SalesforceAdapter {
     changes: ReadonlyArray<Change<Field | ObjectType>>): Promise<SaveResult[]> {
     if (changes.some(c => isObjectType(getChangeElement(c)))
       && !_.isEqual(toCustomObject(before, false), toCustomObject(clonedObject, false))) {
-      // Update object without independent annotations (handled in custom_objects filter) & fields
+      // Update object without its fields
       return this.client.update(
         metadataType(clonedObject),
         toCustomObject(clonedObject, false)
       )
     }
     return []
+  }
+
+  private async deleteRemovedMetadataObjects(oldInstance: InstanceElement,
+    newInstance: InstanceElement, fieldName: string, withObjectPrefix: boolean): Promise<void> {
+    const getDeletedObjectsNames = (oldObjects: Values[], newObjects: Values[]): string[] => {
+      const newObjectsNames = newObjects.map(o => o.fullName)
+      const oldObjectsNames = oldObjects.map(o => o.fullName)
+      return oldObjectsNames.filter(o => !newObjectsNames.includes(o))
+    }
+
+    const fieldType = newInstance.type.fields[fieldName]?.type
+    if (_.isUndefined(fieldType)) {
+      return
+    }
+    const metadataTypeName = metadataType(fieldType)
+    const deletedObjects = getDeletedObjectsNames(
+      makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
+    ).map(o => (withObjectPrefix ? [oldInstance.value.fullName, o] : [o])
+      .join(constants.API_NAME_SEPERATOR))
+    if (!_.isEmpty(deletedObjects)) {
+      await this.client.delete(metadataTypeName, deletedObjects)
+    }
   }
 
   /**
@@ -563,6 +631,18 @@ export default class SalesforceAdapter {
     const typeName = metadataType(newInstance)
     if (this.metadataTypesToSkipMutation.includes(typeName)) {
       return newInstance
+    }
+
+    if (Object.keys(this.nestedMetadataTypes).includes(typeName)) {
+      // Checks if we need to delete metadata objects
+      this.nestedMetadataTypes[typeName]
+        .forEach(fieldName =>
+          this.deleteRemovedMetadataObjects(
+            prevInstance,
+            newInstance,
+            fieldName,
+            Object.keys(nestedIDMetadataTypes).includes(typeName)
+          ))
     }
 
     if (this.isMetadataTypeToRetrieveAndDeploy(typeName)) {
@@ -675,15 +755,16 @@ export default class SalesforceAdapter {
           return [type, [...(await this.client.listMetadataObjects(listMetadataQuery)), ...folders]]
         })
     ).then(pairs => _(pairs).fromPairs().value())
-    const retrieveRequest = {
-      apiVersion: API_VERSION,
-      singlePackage: false,
-      unpackaged: { types: retrieveMetadataTypes.map(type =>
-        ({ name: type,
-          members: retrieveTypeToFiles[type].map(file => file.fullName) })) },
-    }
-    const retrieveResult = await this.client.retrieve(retrieveRequest)
-    const typeToInstanceInfos = await fromRetrieveResult(retrieveResult, metadataTypes)
+
+    const retrieveMembers: RetrieveMember[] = _(retrieveTypeToFiles)
+      .entries()
+      .map(([type, files]) => _(files)
+        .map(constants.INSTANCE_FULL_NAME_FIELD).uniq().map(name => ({ type, name }))
+        .value())
+      .flatten()
+      .value()
+
+    const typeToInstanceInfos = await this.retrieveChunked(retrieveMembers, metadataTypes)
     const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
       .flatten()
       .map(file => [file.fullName, file.namespacePrefix])
@@ -695,6 +776,42 @@ export default class SalesforceAdapter {
           ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))])
       .fromPairs()
       .value()
+  }
+
+  private async retrieveChunked(retrieveMembers: RetrieveMember[], metadataTypes: string[]):
+    Promise<Record<string, MetadataInfo[]>> {
+    const fromRetrieveResults = async (retrieveResults: RetrieveResult[]):
+      Promise<Record<string, MetadataInfo[]>> => {
+      const typesToInstances = await Promise.all(retrieveResults
+        .map(async retrieveResult => fromRetrieveResult(retrieveResult, metadataTypes)))
+      return _.mergeWith({}, ...typesToInstances,
+        (objValue: MetadataInfo[], srcValue: MetadataInfo[]) =>
+          _.concat(makeArray(objValue), srcValue))
+    }
+
+    const createRetrieveRequest = (membersChunk: RetrieveMember[]): RetrieveRequest => {
+      const typeToMembers = _.groupBy(membersChunk, retrieveMember => retrieveMember.type)
+      return {
+        apiVersion: API_VERSION,
+        singlePackage: false,
+        unpackaged: {
+          types: Object.entries(typeToMembers).map(([type, members]) =>
+            ({
+              name: type,
+              members: members.map(member => member.name),
+            })),
+        },
+      }
+    }
+
+    const retrieveResults = await _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
+      .reduce(async (prevResults, membersChunk) => {
+        // Wait for prev results before triggering another request to avoid passing the API limit
+        const results = await prevResults
+        return [...results, await this.client.retrieve(createRetrieveRequest(membersChunk))]
+      },
+      Promise.resolve<RetrieveResult[]>([]))
+    return fromRetrieveResults(retrieveResults)
   }
 
   @logDuration('fetching instances')

@@ -1,44 +1,18 @@
-//
-// defaultOpts wraps a function accepting an "opts" object and returns a function accepting
-// a partial opts object, allowing to specify the defaults.
-//
-// Examples:
-//
-// type MyOpts = { num: number; str: string }
-//
-// const myFunc = defaultOpts(
-//   ({ num, str }: MyOpts): void => {
-//     // actual function body accepting all opts' properties: both num and str are set.
-//   },
-//   { num: 42, str: 'def' },          // default values for all opts properties
-// )
-//
-// myFunc()                            // will receive: { num: 42, str: 'def' }
-// myFunc({ num: 43 })                 // will receive: { num: 43, str: 'def' }
-// myFunc({ num: 43, str: 'other' })   // will receive: { num: 43, str: 'other' }
-//
-// ------------------------------------------------------------------------------------------
-//
-// defaultOpts.withRequired is similar to defaultOpts, but returns a function accepting an "opts"
-// object where some of its properties are required (have no defaults)
-//
-// Example:
-//
-// type MyRequiredOpts = { reqNum: number; reqStr: string }
-// type MyPartialOpts = { optNum: number; optStr: string }
-// type MyOpts = MyRequiredOpts & MyPartialOpts
-//
-// const myFunc = defaultOpts.withRequired<MyPartialOpts, MyRequiredOpts, void>(
-//   ({ reqNum, reqStr, optNum, optlStr }: MyOpts): void => {
-//     // actual function body accepting all opts' properties: all are set
-//   },
-//   { optNum: 42, optStr: 'def' },                  // default values for all optional properties
-// )
-//
-// myFunc()                                          // DOES NOT COMPILE! opts arg is required
-// myFunc({ reqNum: 12, reqStr: 'req' })             // minimum opts - all required properties
-// myFunc({ reqNum: 12, reqStr: 'req', optNum: 43 }) // also override some optional properties
-//
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 
 import { OptsValidators, withOptsValidation } from './opts_validator'
 

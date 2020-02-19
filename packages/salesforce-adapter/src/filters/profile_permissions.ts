@@ -1,20 +1,35 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   ObjectType, Element, Field, isObjectType, InstanceElement, isField, Change,
   getChangeElement, getAnnotationValue, ElemID, Values, findElement,
-  ReferenceExpression, CORE_ANNOTATIONS, isExpression,
-} from 'adapter-api'
+  ReferenceExpression, CORE_ANNOTATIONS, isExpression, bpCase,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SaveResult } from 'jsforce'
 import wu from 'wu'
-import { collections } from '@salto/lowerdash'
-import { logger } from '@salto/logging'
+import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import {
   FIELD_PERMISSIONS, FIELD_LEVEL_SECURITY_ANNOTATION,
   PROFILE_METADATA_TYPE, ADMIN_PROFILE,
   OBJECT_LEVEL_SECURITY_ANNOTATION, OBJECT_PERMISSIONS, SALESFORCE,
 } from '../constants'
 import {
-  isCustomObject, Types, apiName, bpCase,
+  isCustomObject, Types, apiName,
 } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, FieldPermissionsOptions, ObjectPermissionsOptions,
@@ -168,11 +183,7 @@ const toProfilePermissions = <T = PermissionsTypes>(element: ObjectType | Field,
   }
 
   const elementPermissions = getPermissionsValues(element, permissionsOptionsFields, annotationName)
-  _.union(...Object.values(elementPermissions)).forEach(profileOrReference => {
-    // todo remove that one After rebasing on top of Roi's reference fix !!!
-    const profile = (profileOrReference as unknown) instanceof ReferenceExpression
-      ? (profileOrReference as unknown as ReferenceExpression).traversalParts.slice(-2)[0]
-      : profileOrReference
+  _.union(...Object.values(elementPermissions)).forEach(profile => {
     if (_.isUndefined(permissions[profile])) {
       permissions[profile] = [] as T[]
     }

@@ -1,3 +1,18 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import nock from 'nock'
 import { RetryStrategies } from 'requestretry'
 import SalesforceClient from '../src/client/client'
@@ -21,6 +36,40 @@ describe('salesforce client', () => {
     retryDelay: 100, // wait for 100ms before trying again
     retryStrategy: RetryStrategies.NetworkError, // retry on network errors
   } })
+
+  describe('with failed delete', () => {
+    it('should not fail if the element is already deleted', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: {
+          success: false,
+          fullName: 'bla',
+          errors: [{
+            statusCode: 'INVALID_CROSS_REFERENCE_KEY',
+            message: 'no bla named foo found',
+          }],
+        } } } } })
+
+      await expect(client.delete('bla', 'foo')).resolves.not.toThrow()
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
+
+    it('should fail delete error if it is not the specific error we filter out', async () => {
+      const dodoScope = nock('http://dodo22')
+        .post(/.*/)
+        .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: {
+          success: false,
+          fullName: 'bla',
+          errors: [{
+            statusCode: 'CANNOT_DELETE_MANAGED_OBJECT',
+            message: 'bla',
+          }],
+        } } } } })
+
+      await expect(client.delete('bla', 'foo')).rejects.toThrow()
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
 
   describe('with network errors ', () => {
     it('fails if max attempts was reached ', async () => {

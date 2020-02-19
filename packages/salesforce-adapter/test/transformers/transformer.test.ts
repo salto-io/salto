@@ -1,12 +1,27 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
   CORE_ANNOTATIONS, ReferenceExpression, InstanceElement,
-} from 'adapter-api'
-import { collections } from '@salto/lowerdash'
+} from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
-  bpCase, getSObjectFieldElement, Types, toCustomField, toCustomObject,
+  getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements,
   transformReferences, restoreReferences,
 } from '../../src/transformers/transformer'
@@ -29,7 +44,7 @@ import {
   CUSTOM_OBJECT,
   VALUE_SET_FIELDS,
   SUBTYPES_PATH,
-  INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS, DESCRIPTION,
+  INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -39,24 +54,6 @@ import { createValueSetEntry } from '../utils'
 const { makeArray } = collections.array
 
 describe('transformer', () => {
-  describe('bpCase', () => {
-    describe('names without special characters', () => {
-      const normalNames = [
-        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
-        'CRMFusionDBR101__Scenario__C',
-      ]
-      it('should remain the same', () => {
-        normalNames.forEach(name => expect(bpCase(name)).toEqual(name))
-      })
-    })
-
-    describe('names with spaces', () => {
-      it('should be replaced with _', () => {
-        expect(bpCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
-      })
-    })
-  })
-
   describe('getValueTypeFieldElement', () => {
     const salesforceValueTypeFieldBase: ValueTypeField = {
       fields: [],
@@ -144,12 +141,8 @@ describe('transformer', () => {
         salesforceReferenceField = _.cloneDeep(origSalesforceReferenceField)
       })
 
-      const dummyElem = new ObjectType({
-        elemID: new ElemID('adapter', 'dummy'),
-        annotations: {
-          [API_NAME]: 'Dummy',
-        },
-      })
+      const dummyElemID = new ElemID('adapter', 'dummy')
+      const serviceIds = { [API_NAME]: 'Dummy' }
 
       const assertReferenceFieldTransformation = (fieldElement: Field, expectedRelatedTo: string[],
         expectedType: TypeElement, expectedAllowLookupRecordDeletion: boolean | undefined,
@@ -170,19 +163,22 @@ describe('transformer', () => {
 
       it('should fetch lookup relationships with restricted deletion', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', true)
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, false, undefined)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete set to false', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', false)
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, undefined)
       })
 
       it('should fetch lookup relationships with allowed related record deletion when restrictedDelete is undefined', async () => {
         _.set(salesforceReferenceField, 'restrictedDelete', undefined)
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, undefined)
       })
 
@@ -190,7 +186,8 @@ describe('transformer', () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = true
         salesforceReferenceField.writeRequiresMasterRead = true
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail, undefined, undefined)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(true)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ]).toBe(true)
@@ -200,7 +197,7 @@ describe('transformer', () => {
         salesforceReferenceField.cascadeDelete = true
         salesforceReferenceField.updateable = false
         delete salesforceReferenceField.writeRequiresMasterRead
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField, {})
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.MasterDetail, undefined, undefined)
         expect(fieldElement.annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL]).toBe(false)
@@ -209,7 +206,8 @@ describe('transformer', () => {
 
       it('should fetch lookup filters and init its annotation', async () => {
         _.set(salesforceReferenceField, 'filteredLookupInfo', {})
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceReferenceField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceReferenceField,
+          serviceIds)
         assertReferenceFieldTransformation(fieldElement, ['Group', 'User'], Types.primitiveDataTypes.Lookup, true, {})
       })
     })
@@ -264,29 +262,28 @@ describe('transformer', () => {
         salesforceFieldDependencyField = _.cloneDeep(origFieldDependencyField)
       })
 
-      const dummyElem = new ObjectType({
-        elemID: new ElemID('adapter', 'dummy'),
-        annotations: {
-          [API_NAME]: 'Dummy',
-        },
-      })
+      const dummyElemID = new ElemID('adapter', 'dummy')
+      const serviceIds = { [API_NAME]: 'Dummy' }
 
       it('should fetch field dependency and init its annotation for picklist', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField,
+          serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Picklist)
       })
 
       it('should fetch field dependency and init its annotation for multi picklist', async () => {
         salesforceFieldDependencyField.type = 'multipicklist'
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField,
+          serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toEqual({})
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.MultiselectPicklist)
       })
 
       it('should not init field dependency annotation when having no field dependency ', async () => {
         salesforceFieldDependencyField.dependentPicklist = false
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceFieldDependencyField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceFieldDependencyField,
+          serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]).toBeUndefined()
       })
     })
@@ -337,21 +334,19 @@ describe('transformer', () => {
         salesforceRollupSummaryField = _.cloneDeep(origRollupSummaryField)
       })
 
-      const dummyElem = new ObjectType({
-        elemID: new ElemID('adapter', 'dummy'),
-        annotations: {
-          [API_NAME]: 'Dummy',
-        },
-      })
+      const dummyElemID = new ElemID('adapter', 'dummy')
+      const serviceIds = { [API_NAME]: 'Dummy' }
 
       it('should fetch rollup summary field', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceRollupSummaryField,
+          serviceIds)
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Summary)
       })
 
       it('should not fetch summary field if it is a calculated formula', async () => {
         salesforceRollupSummaryField.calculatedFormula = 'dummy formula'
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceRollupSummaryField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceRollupSummaryField,
+          serviceIds)
         expect(fieldElement.type).not.toEqual(Types.primitiveDataTypes.Summary)
       })
     })
@@ -400,19 +395,15 @@ describe('transformer', () => {
         salesforceNumberField = _.cloneDeep(origNumberField)
       })
 
-      const dummyElem = new ObjectType({
-        elemID: new ElemID('adapter', 'dummy'),
-        annotations: {
-          [API_NAME]: 'Dummy',
-        },
-      })
+      const dummyElemID = new ElemID('adapter', 'dummy')
+      const serviceIds = { [API_NAME]: 'Dummy' }
 
       it('should fetch double field and init its annotations', async () => {
         const precision = 9
         const scale = 6
         salesforceNumberField.precision = precision
         salesforceNumberField.scale = scale
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceNumberField, serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.SCALE]).toEqual(scale)
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
@@ -422,7 +413,7 @@ describe('transformer', () => {
         const precision = 8
         salesforceNumberField.type = 'int'
         salesforceNumberField.digits = precision
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNumberField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceNumberField, serviceIds)
         expect(fieldElement.annotations[FIELD_ANNOTATIONS.PRECISION]).toEqual(precision)
         expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Number)
       })
@@ -473,15 +464,11 @@ describe('transformer', () => {
         salesforceNameField = _.cloneDeep(origSalesforceNameField)
       })
 
-      const dummyElem = new ObjectType({
-        elemID: new ElemID('adapter', 'dummy'),
-        annotations: {
-          [API_NAME]: 'Dummy',
-        },
-      })
+      const dummyElemID = new ElemID('adapter', 'dummy')
+      const serviceIds = { [API_NAME]: 'Dummy' }
 
       it('should fetch name field with the right type', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, {})
+        const fieldElement = getSObjectFieldElement(dummyElemID, salesforceNameField, serviceIds)
         expect(fieldElement.type).toEqual(Types.compoundDataTypes.Name)
       })
     })
@@ -498,14 +485,12 @@ describe('transformer', () => {
           [API_NAME]: BuiltinTypes.SERVICE_ID,
           [METADATA_TYPE]: BuiltinTypes.STRING,
           [DESCRIPTION]: BuiltinTypes.STRING,
-          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: BuiltinTypes.STRING,
         },
         annotations: {
           [API_NAME]: 'Test__c',
           [notInAnnotationTypes]: 'Dummy',
           [METADATA_TYPE]: CUSTOM_OBJECT,
           [DESCRIPTION]: 'MyDescription',
-          [CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES]: 'Dummy',
         },
       })
 
@@ -521,8 +506,6 @@ describe('transformer', () => {
       it('should not transform blacklisted annotations', () => {
         expect(_.get(customObj, API_NAME)).toBeUndefined()
         expect(_.get(customObj, METADATA_TYPE)).toBeUndefined()
-        expect(_.get(customObj, CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS.VALIDATION_RULES))
-          .toBeUndefined()
       })
 
       it('should not transform annotations that are not in annotationTypes', () => {
@@ -960,13 +943,13 @@ describe('transformer', () => {
   })
 
   describe('type definitions', () => {
-    it('should include api_name annotation with service_id type', async () => {
+    it('should include apiName annotation with service_id type', async () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
         expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
       })
     })
 
-    it('should include field_level_security annotation with appropriate type', async () => {
+    it('should include fieldLevelSecurity annotation with appropriate type', async () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
         expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
         const fieldLevelSecurityType = type.annotationTypes[FIELD_LEVEL_SECURITY_ANNOTATION]

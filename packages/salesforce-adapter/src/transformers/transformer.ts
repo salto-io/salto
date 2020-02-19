@@ -1,3 +1,18 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import {
   ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult,
@@ -8,9 +23,9 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
-  Field as TypeField, TypeMap, TransformValueFunc,
-} from 'adapter-api'
-import { collections } from '@salto/lowerdash'
+  Field as TypeField, TypeMap, TransformValueFunc, bpCase,
+} from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
@@ -23,19 +38,11 @@ import {
   CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS,
   VALUE_SET_DEFINITION_FIELDS,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
 const { makeArray } = collections.array
-
-export const bpCase = (name?: string): string => (
-  // unescape changes HTML escaped parts (&gt; for example), then the regex
-  // replaces url escaped chars as well as any special character to keep names blueprint friendly
-  // Match multiple consecutive chars to compact names and avoid repeated _
-  name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
-)
 
 export const metadataType = (element: Element): string => (
   isInstanceElement(element)
@@ -401,7 +408,7 @@ export class Types {
     restrictedNumber('TextLength', 1, 255, false),
     restrictedNumber('TextAreaLength', 1, 131072),
     restrictedNumber('EncryptedTextLength', 1, 175),
-    restrictedNumber('Precision', 1, 18),
+    restrictedNumber('Precision', 1, 18, false),
     restrictedNumber('Scale', 0, 17),
     restrictedNumber('LocationScale', 0, 15),
     restrictedNumber('LongTextAreaVisibleLines', 2, 50),
@@ -892,7 +899,6 @@ export const toCustomObject = (
     API_NAME, // we use it as fullName
     METADATA_TYPE, // internal annotation
     LABEL, // we send it in CustomObject constructor to enable default for pluralLabels
-    ...Object.values(CUSTOM_OBJECT_INDEPENDENT_ANNOTATIONS), // done in custom_objects filter
   ]
 
   const isAllowed = (annotationName: string): boolean => (
@@ -947,7 +953,7 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 }
 
 export const transformPrimitive: TransformValueFunc = (val, field) => {
-  const fieldType = field.type
+  const fieldType = field?.type
   if (!isPrimitiveType(fieldType)) {
     return val
   }
@@ -998,9 +1004,9 @@ const getDefaultValue = (field: Field): PrimitiveValue | undefined => {
 
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the blueprint
-export const getSObjectFieldElement = (parent: Element, field: Field,
+export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
   parentServiceIds: ServiceIds): TypeField => {
-  const fieldApiName = [apiName(parent), field.name].join(API_NAME_SEPERATOR)
+  const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
     [API_NAME]: fieldApiName,
@@ -1095,7 +1101,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
       // todo: currently this field is populated with the referenced object's API name,
       //  should be modified to elemID reference once we'll use HIL
       // there are some SF reference fields without related fields
-      // e.g. salesforce_user_app_menu_item.ApplicationId, salesforce_login_event.LoginHistoryId
+      // e.g. salesforce.user_app_menu_item.ApplicationId, salesforce.login_event.LoginHistoryId
       annotations[FIELD_ANNOTATIONS.REFERENCE_TO] = field.referenceTo
     }
     if (field.filteredLookupInfo) {
@@ -1119,7 +1125,7 @@ export const getSObjectFieldElement = (parent: Element, field: Field,
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
-  return new TypeField(parent.elemID, fieldName, bpFieldType, annotations)
+  return new TypeField(parentElemID, fieldName, bpFieldType, annotations)
 }
 
 export const fromMetadataInfo = (info: MetadataInfo): Values => info

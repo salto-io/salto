@@ -1,3 +1,18 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
 import chalk from 'chalk'
 import wu from 'wu'
@@ -5,11 +20,11 @@ import {
   isType, Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,
   SourceFragment, FetchChange, MergeError,
-} from 'salto'
+} from '@salto-io/core'
 import Prompts from './prompts'
 
 export const header = (txt: string): string => chalk.bold(txt)
@@ -447,6 +462,9 @@ export const formatWorkspaceAbort = (numErrors: number): string =>
 
 export const formatShouldContinueWithWarning = (numWarnings: number): string =>
   warn(Prompts.SHOULDCONTINUE(numWarnings))
+
+export const formatShouldAbortWithValidationError = (numErrors: number): string =>
+  error(Prompts.SHOULDABORT(numErrors))
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 

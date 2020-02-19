@@ -1,12 +1,15 @@
 {
-  "name": "@salto/persistent-pool",
-  "version": "0.1.0",
+  "name": "@salto-io/persistent-pool",
+  "version": "0.1.1",
+  "license": "Apache-2.0",
   "description": "Keeps a persistent pool of objects",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto_monorepo"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist/src/**/*"
   ],
@@ -22,7 +25,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto/lowerdash": "0.1.0",
+    "@salto-io/lowerdash": "0.1.1",
     "aws-sdk": "^2.573.0",
     "uuid": "^3.3.3"
   },
@@ -35,6 +38,7 @@
     "@typescript-eslint/parser": "^2.6.1",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-header": "^3.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jest": "^22.6.4",
     "eslint-plugin-jsx-a11y": "^6.2.1",

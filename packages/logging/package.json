@@ -1,12 +1,15 @@
 {
-  "name": "@salto/logging",
-  "version": "0.1.0",
+  "name": "@salto-io/logging",
+  "version": "0.1.1",
+  "license": "Apache-2.0",
   "description": "Salto Logging library",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto_monorepo"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist/**/*"
   ],
@@ -27,13 +30,14 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto/lowerdash": "0.1.0",
+    "@salto-io/lowerdash": "0.1.1",
     "chalk": "^2.4.2",
     "lodash": "^4.17.11",
     "logform": "^2.1.2",
     "minimatch": "^3.0.4",
     "winston": "^3.2.1",
-    "winston-transport": "^4.3.0"
+    "winston-transport": "^4.3.0",
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.0",
@@ -41,10 +45,12 @@
     "@types/minimatch": "^3.0.3",
     "@types/node": "^12.7.1",
     "@types/tmp": "^0.1.0",
+    "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "^2.6.1",
     "@typescript-eslint/parser": "^2.6.1",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-header": "^3.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jest": "^22.6.4",
     "eslint-plugin-jsx-a11y": "^6.2.1",

@@ -1,0 +1,23 @@
+type salesforce.test {
+	string name {
+	  label = "Name
+	  _required = true
+	}
+
+	fax {
+	  fieldLevelSecurity = {
+	    all_profiles = {
+	      visible = false
+	      read_only = fals
+	    }
+	  }
+	}
+
+	leadConvertSettings =
+	  account = [
+	      {
+	        input = "bla"
+	        output = "foo"
+	      }
+	}
+}

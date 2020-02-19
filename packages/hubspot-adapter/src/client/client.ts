@@ -1,9 +1,24 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import Hubspot, { ApiOptions } from 'hubspot'
 import {
   RequestPromise,
 } from 'requestretry'
 import {
-  Form, HubspotMetadata, MarketingEmail, Workflows,
+  Form, HubspotMetadata, MarketingEmail, Workflows, ContactProperty,
 } from './types'
 import Connection, { HubspotObjectAPI, Workflow } from './madku'
 
@@ -60,8 +75,17 @@ const extractInstanceId = (hubspotMetadata: HubspotMetadata, typeName: string): 
   ): workflowMetadata is Workflows => (workflowMetadata as Workflows).id !== undefined
     && typeName === 'workflows'
 
+  const isContactProperty = (
+    contactPropertyMetadata: HubspotMetadata
+  ): contactPropertyMetadata is ContactProperty =>
+    (contactPropertyMetadata as ContactProperty).name !== undefined && typeName === 'contactProperty'
+
   if (isForm(hubspotMetadata)) {
     return hubspotMetadata.guid
+  }
+
+  if (isContactProperty(hubspotMetadata)) {
+    return hubspotMetadata.name
   }
 
   if (isMarketingEmail(hubspotMetadata) || isWorkflow(hubspotMetadata)) {
@@ -94,13 +118,13 @@ export default class HubspotClient {
       form: this.conn.forms,
       workflows: this.conn.workflows,
       marketingEmail: this.conn.marketingEmail,
+      contactProperty: this.conn.contacts.properties,
     }
   }
 
   getAllContacts(): RequestPromise {
     return this.conn.contacts.get()
   }
-
 
   /**
    * Returning the appropriate HubspotObjectAPI for using HubSpot CRUD API operations
@@ -175,7 +199,6 @@ export default class HubspotClient {
     if (objectAPI.update === undefined) {
       throw new Error(`${typeName} can't updated via API`)
     }
-
     const resp = objectAPI.update(
       extractInstanceId(hubspotMetadata, typeName),
       hubspotMetadata

@@ -1,12 +1,15 @@
 {
-  "name": "@salto/cli",
-  "version": "0.1.0",
+  "name": "@salto-io/cli",
+  "version": "0.1.1",
+  "license": "Apache-2.0",
   "description": "cli on top of salto core",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto"
   },
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "salto": "./bin/salto"
   },
@@ -30,10 +33,12 @@
     "package": "node ./package_native.js"
   },
   "dependencies": {
-    "@salto/dag": "0.1.0",
-    "@salto/logging": "0.1.0",
-    "@salto/lowerdash": "0.1.0",
-    "adapter-api": "0.1.0",
+    "@salto-io/adapter-api": "0.1.1",
+    "@salto-io/core": "0.1.1",
+    "@salto-io/dag": "0.1.1",
+    "@salto-io/logging": "0.1.1",
+    "@salto-io/lowerdash": "0.1.1",
+    "@salto-io/salesforce-adapter": "0.1.1",
     "chalk": "^2.4.2",
     "figlet": "^1.2.4",
     "inquirer": "^7.0.0",
@@ -43,17 +48,15 @@
     "pietile-eventemitter": "^1.0.0",
     "require-directory": "^2.1.1",
     "rimraf": "^3.0.0",
-    "salesforce-adapter": "0.1.0",
-    "salto": "0.1.0",
     "source-map-support": "^0.5.13",
     "wu": "^2.1.0",
     "yargonaut": "^1.1.4",
     "yargs": "^13.3.0"
   },
   "devDependencies": {
-    "@types/jest": "^24.0.0",
     "@types/figlet": "^1.2.0",
     "@types/inquirer": "0.0.35",
+    "@types/jest": "^24.0.0",
     "@types/mkdirp": "^0.5.2",
     "@types/require-directory": "^2.1.1",
     "@types/rimraf": "^2.0.3",
@@ -62,6 +65,7 @@
     "@types/yargs": "^13.0.4",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-header": "^3.0.0",
     "eslint-plugin-import": "^2.18.2",
     "eslint-plugin-jest": "^22.6.4",
     "eslint-plugin-jsx-a11y": "^6.2.1",

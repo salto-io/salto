@@ -1,7 +1,22 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   ObjectType, ElemID, Field, InstanceElement, isObjectType, BuiltinTypes,
   ReferenceExpression,
-} from 'adapter-api'
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { metadataType } from '../../src/transformers/transformer'
 import { ObjectPermissions, ProfileInfo } from '../../src/client/types'
@@ -49,7 +64,7 @@ describe('Object Permissions filter', () => {
 
   const mockProfileElemID = new ElemID(constants.SALESFORCE, PROFILE_METADATA_TYPE)
   const mockObjectPermissions = new ObjectType({
-    elemID: new ElemID(constants.SALESFORCE, 'profile_object_level_security'),
+    elemID: new ElemID(constants.SALESFORCE, 'ProfileObjectLevelSecurity'),
     annotations: { [constants.METADATA_TYPE]: 'ProfileObjectLevelSecurity' },
   })
   const mockProfile = new ObjectType({
@@ -144,7 +159,7 @@ describe('Object Permissions filter', () => {
     mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
     client.update = mockUpdate
   })
-  it('should add object_level_security to object types and remove it from profile type & instances',
+  it('should add objectLevelSecurity to object types and remove it from profile type & instances',
     async () => {
       const elements = [mockObject.clone(), mockExtendObject.clone(), mockAdmin, mockStandard,
         mockProfile]

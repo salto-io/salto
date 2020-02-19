@@ -1,7 +1,22 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import {
   ObjectType, ElemID, Field,
-  InstanceElement, isObjectType, isInstanceElement, BuiltinTypes,
-} from 'adapter-api'
+  InstanceElement, isObjectType, BuiltinTypes,
+} from '@salto-io/adapter-api'
 import { metadataType } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -16,7 +31,7 @@ const { ENABLE_TOPICS, ENTITY_API_NAME } = TOPICS_FOR_OBJECTS_FIELDS
 describe('Field Permissions filter', () => {
   const { client } = mockClient()
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
-  const mockTopicElemID = new ElemID(constants.SALESFORCE, 'topics_for_objects')
+  const mockTopicElemID = new ElemID(constants.SALESFORCE, constants.TOPICS_FOR_OBJECTS_ANNOTATION)
   const mockObject = new ObjectType({
     elemID: mockElemID,
     annotations: {
@@ -66,7 +81,7 @@ describe('Field Permissions filter', () => {
     client.update = mockUpdate
   })
 
-  it('should add topics_for_objects to object types and remove it from topics type & instances',
+  it('should add topicsForObjects to object types and remove topics type & instances',
     async () => {
       const elements = [mockObject.clone(), mockTopicForObject, mockTopic]
       await filter().onFetch(elements)
@@ -76,17 +91,9 @@ describe('Field Permissions filter', () => {
       const topicForObject = objectTypes[0].annotations[TOPICS_FOR_OBJECTS_ANNOTATION]
       expect(topicForObject[ENABLE_TOPICS]).toBeTruthy()
 
-      // Check topic instances' enable topics were deleted
-      elements.filter(isInstanceElement)
-        .filter(elem => metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)
-        .forEach(topicInstance => expect(topicInstance.value[ENABLE_TOPICS])
-          .toBeUndefined())
-
-      // Check TopicForObject type's enable_topics field was deleted
-      const topicType = elements.filter(isObjectType)
-        .filter(elem => metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)[0]
-      expect(topicType).toBeDefined()
-      expect(topicType.fields[ENABLE_TOPICS]).toBeUndefined()
+      // Check topic instances' and type were deleted
+      expect(elements
+        .filter(elem => metadataType(elem) === TOPICS_FOR_OBJECTS_METADATA_TYPE)).toHaveLength(0)
     })
 
   it('should set default value upon add', async () => {

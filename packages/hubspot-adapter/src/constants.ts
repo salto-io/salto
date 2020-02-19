@@ -1,13 +1,35 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { ElemID } from '@salto-io/adapter-api'
+
 export const HUBSPOT = 'hubspot'
+export const NAME = 'name'
+const LABEL = 'label'
+const PROPERTY_OPTIONS = 'options'
+const DISPLAYORDER = 'displayOrder'
+const CREATEDAT = 'createdAt'
 
 export const OBJECTS_NAMES = {
   FORM: 'form',
-  WORKFLOWS: 'workflows',
   MARKETINGEMAIL: 'marketingEmail',
+  WORKFLOWS: 'workflows',
 
   // Subtypes
-  PROPERTYGROUP: 'PropertyGroup',
-  PROPERTY: 'Property',
+  PROPERTYGROUP: 'propertyGroup',
+  PROPERTY: 'property',
   OPTIONS: 'options',
   CONTACTLISTIDS: 'contactListIds',
   RSSTOEMAILTIMING: 'rssToEmailTiming',
@@ -18,6 +40,11 @@ export const OBJECTS_NAMES = {
   CRITERIALIST: 'criteriaList',
   EVENTANCHOR: 'eventAnchor',
   CONDITIONACTION: 'conditionAction',
+  CONTACT_PROPERTY: 'contactProperty',
+  DEPENDENT_FIELD_FILTER: 'dependentFieldFilter',
+  FIELD_FILTER: 'fieldFilter',
+  DEPEDENT_FORM_PROPERTY: 'dependentFormProperty',
+  RICHTEXT: 'richText',
 }
 
 export const FIELD_TYPES = {
@@ -34,7 +61,7 @@ export const FIELD_TYPES = {
 
 export const FORM_FIELDS = {
   GUID: 'guid',
-  NAME: 'name',
+  NAME,
   CSSCLASS: 'cssClass',
   REDIRECT: 'redirect',
   SUBMITTEXT: 'submitText',
@@ -42,12 +69,13 @@ export const FORM_FIELDS = {
   IGNORECURRENTVALUES: 'ignoreCurrentValues',
   DELETABLE: 'deletable',
   INLINEMESSAGE: 'inlineMessage',
-  CREATEDAT: 'createdAt',
+  CREATEDAT,
   CAPTCHAENABLED: 'captchaEnabled',
   CLONEABLE: 'cloneable',
   EDITABLE: 'editable',
   STYLE: 'style',
   FORMFIELDGROUPS: 'formFieldGroups',
+  THEMENAME: 'themeName',
 }
 
 export const MARKETING_EMAIL_FIELDS = {
@@ -155,34 +183,79 @@ export const RSSTOEMAILTIMING_FIELDS = {
   TIME: 'time',
 }
 
-export const PROPERTY_GROUP_FIELDS = {
+export const FORM_PROPERTY_GROUP_FIELDS = {
   DEFAULT: 'default',
   FIELDS: 'fields',
   ISSMARTGROUP: 'isSmartGroup',
+  RICHTEXT: 'richText',
 }
 
-export const PROPERTY_FIELDS = {
-  NAME: 'name',
-  LABEL: 'label',
+export const RICHTEXT_FIELDS = {
+  CONTENT: 'content',
+}
+
+export const FORM_PROPERTY_FIELDS = {
+  NAME,
+  LABEL,
   DESCRIPTION: 'description',
-  GROUPNAME: 'groupName',
-  TYPE: 'type',
-  FIELDTYPE: 'fieldType',
   REQUIRED: 'required',
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
   DEFAULTVALUE: 'defaultValue',
   SELECTEDOPTIONS: 'selectedOptions',
-  OPTIONS: 'options',
+  OPTIONS: PROPERTY_OPTIONS,
+  DEPENDENTFIELDFILTERS: 'dependentFieldFilters',
+  PLACEHOLDER: 'placeholder',
+  CONTACT_PROPERTY: 'contactProperty',
+  DISPLAYORDER,
+  GROUPNAME: 'groupName',
+  TYPE: 'type',
+  FIELDTYPE: 'fieldType',
+}
+
+export const DEPENDENT_FIELD_FILTER_FIELDS = {
+  FILTERS: 'filters',
+  DEPEDENTFORMFIELD: 'dependentFormField',
+  FORMFIELDACTION: 'formFieldAction',
+}
+
+export const FIELD_FILTER_FIELDS = {
+  OPERATOR: 'operator',
+  STRVALUE: 'strValue',
+  NUMBERVALUE: 'numValue',
+  BOOLVALUE: 'boolValue',
+  STRVALUES: 'strValues',
+  NUMVALUES: 'mnumberValues',
+}
+
+export const CONTACT_PROPERTY_FIELDS = {
+  NAME,
+  LABEL,
+  DESCRIPTION: 'description',
+  GROUPNAME: 'groupName',
+  TYPE: 'type',
+  FIELDTYPE: 'fieldType',
+  OPTIONS: PROPERTY_OPTIONS,
+  DELETED: 'deleted',
+  FORMFIELD: 'formField',
+  CREATEDAT,
+  DISPLAYORDER,
+  READONLYVALUE: 'readOnlyValue',
+  READONLYDEFINITION: 'readOnlyDefinition',
+  MUTABLEDEFINITIONNOTDELETABLE: 'mutableDefinitionNotDeletable',
+  HIDDEN: 'hidden',
+  CALCULATED: 'calculated',
+  EXTERNALOPTIONS: 'externalOptions',
 }
 
 export const OPTIONS_FIELDS = {
-  LABEL: 'label',
+  LABEL,
   DESCRIPTION: 'description',
   VALUE: 'value',
   HIDDEN: 'hidden',
   ISSMARTFIELD: 'isSmartField',
-  DISPLAYORDER: 'displayOrder',
+  READONLY: 'readOnly',
+  DISPLAYORDER,
 }
 
 export const WORKFLOWS_FIELDS = {
@@ -253,3 +326,27 @@ export const CONTACTLISTIDS_FIELDS = {
   COMPLETED: 'completed',
   SUCCEEDED: 'succeeded',
 }
+
+export const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration', 'bool', 'phone_number']
+export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select',
+  'radio', 'checkbox', 'booleancheckbox', 'calculation_score', 'phonenumber', 'calculation_read_time']
+
+export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
+export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
+export const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
+export const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
+export const dependeeFormPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.DEPEDENT_FORM_PROPERTY)
+export const optionsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.OPTIONS)
+export const contactListIdsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACTLISTIDS)
+export const marketingEmailElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.MARKETINGEMAIL)
+export const rssToEmailTimingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RSSTOEMAILTIMING)
+export const nurtureTimeRangeElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.NURTURETIMERANGE)
+export const anchorSettingElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ANCHORSETTING)
+export const actionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.ACTION)
+export const eventAnchorElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.EVENTANCHOR)
+export const conditionActionElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONDITIONACTION)
+export const contactPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CONTACT_PROPERTY)
+export const dependentFormFieldFilterElemID = new ElemID(HUBSPOT,
+  OBJECTS_NAMES.DEPENDENT_FIELD_FILTER)
+export const fieldFilterElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FIELD_FILTER)
+export const richTextElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RICHTEXT)

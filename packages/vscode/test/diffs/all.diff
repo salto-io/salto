@@ -1,0 +1,38 @@
+Index: Step 0 - Delete salto.remove
+===================================================================
+--- Step 0 - Delete salto.remove
++++ Step 0 - Delete salto.remove
+@@ -1,6 +1,0 @@
+-type salto.remove {
+-  string unchanged {
+-  }
+-  string before {
+-  }
+-}
+\ No newline at end of file
+
+Index: Step 1 - Modify salto.modify
+===================================================================
+--- Step 1 - Modify salto.modify
++++ Step 1 - Modify salto.modify
+@@ -1,6 +1,6 @@
+ type salto.modify {
+   string unchanged {
+   }
+-  string before {
++  string after {
+   }
+ }
+
+Index: Step 2 - Add salto.add
+===================================================================
+--- Step 2 - Add salto.add
++++ Step 2 - Add salto.add
+@@ -1,0 +1,6 @@
+\ No newline at end of file
++type salto.add {
++  string unchanged {
++  }
++  string before {
++  }
++}

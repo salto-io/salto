@@ -1,5 +1,74 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 export interface HubspotMetadata {
   name: string
+}
+
+export interface ContactProperty extends HubspotMetadata {
+  name: string
+  // String; The internal name of the property.
+  // The name should be used when referencing the property through the API
+  label: string
+  // String; A human readable label for the property.
+  // The label is used to display the property in the HubSpot UI.
+  description: string
+  // String; A description of the property. May be an empty string.
+  groupName: string
+  // String; The property group that the property belongs to.
+  type: string
+  // String, one of string, number, date, datetime, or enumeration
+  // The data type of the property. See creating a property for more details.
+  fieldType: string
+  // String, one of textarea, text, date, file, number, select, radio, checkbox, or booleancheckbox
+  // Controls how the property appears in a form when the property is used as a form field.
+  options: Options[]
+
+  deleted: boolean
+  // Boolean; This will effectively be false for all properties,
+  // as deleted properties will not appear in the API
+  formField: boolean
+  // Boolean; controls whether or not the property will show up as an option to be used in forms.
+  displayOrder: number
+  // Integer; Properties are displayed based this value,
+  // properties with negative values appear in the order they're created
+  // after properties with positive values.
+  readOnlyValue: boolean
+  // Boolean; A value of true means that the value cannot be set manually,
+  // and that only the HubSpot system can update the property.
+  // Custom properties should always have this set to false,
+  // or the value can't be updated through the API.
+  readOnlyDefinition: boolean
+  // Boolean; A value of true means that the property settings can't be modified.
+  // Custom properties should always have this as false,
+  // or the property can't be updated or deleted.
+  hidden: boolean
+  // Boolean; Hidden fields do not appear in the HubSpot UI
+  mutableDefinitionNotDeletable: boolean
+  // Boolean; true indicates that the property settings can be modified,
+  // but the property cannot be deleted
+  // Custom properties should use false
+  calculated: boolean
+  // Boolean; For system properties,
+  // true indicates that the property is calculated by a HubSpot process
+  // Has no effect for custom properties
+  externalOptions: boolean
+  // Boolean; For system properties,
+  // true indicates that the options are stored
+  // Has no effect on custom properties
+  createdAt: number
 }
 
 export interface Form extends HubspotMetadata {
@@ -16,12 +85,18 @@ export interface Form extends HubspotMetadata {
   captchaEnabled: boolean
   cloneable: boolean
   editable: boolean
+  themeName: string
 }
 
 interface PropertyGroup {
-  fields: Property[]
+  fields: FormProperty[]
   default: boolean
   isSmartGroup: boolean
+  richText: RichText
+}
+
+interface RichText {
+  content: string
 }
 
 interface Options {
@@ -43,7 +118,7 @@ interface RssToEmailTiming {
   time: string // time the email should be sent at (9:00 am)
 }
 
-export interface Property {
+export interface FormProperty {
   name: string
   // String; The internal name of the property.
   // The name should be used when referencing the property through the API
@@ -70,7 +145,16 @@ export interface Property {
   defaultValue: string
   // The default value of the field
   selectedOptions: string[]
+  // For enumerated fields, this will be a list of Strings.
+  // Representing the options that will be selected by default
   options: Options[]
+  // For enumerated fields, this will be a list of Strings representing the options for the field
+  // Will be empty for non-enumerated fields.
+  placeholder: string
+  // String; The placeholder text for the field, which will display
+  displayOrder: number
+  // Integer; The order to display the fields in.
+  // If the values are negative, the fields appear in the order they appear in the 'fields' list
 }
 
 export interface Workflows extends HubspotMetadata {

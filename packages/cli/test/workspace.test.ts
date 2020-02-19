@@ -1,4 +1,19 @@
-import { Workspace, FetchChange, DetailedChange } from 'salto'
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { Workspace, FetchChange, DetailedChange } from '@salto-io/core'
 import { Spinner } from '../src/types'
 import { validateWorkspace, loadWorkspace, updateWorkspace } from '../src/workspace'
 import { MockWriteStream, dummyChanges } from './mocks'
@@ -20,8 +35,8 @@ const mockWs = {
     currentEnv: 'default',
   },
 } as unknown as Workspace
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   Workspace: jest.fn().mockImplementation(() => mockWs),
   loadConfig: jest.fn().mockImplementation(
     workspaceDir => ({
@@ -37,7 +52,7 @@ jest.mock('salto', () => ({
   ),
 }))
 jest.mock('inquirer', () => ({
-  prompt: jest.fn().mockImplementation(() => Promise.resolve({ 0: 'yes', 1: 'no' })),
+  prompt: jest.fn().mockImplementation(() => Promise.resolve({ userInput: false })),
 }))
 describe('workspace', () => {
   let cliOutput: { stderr: MockWriteStream; stdout: MockWriteStream }
@@ -146,6 +161,10 @@ describe('workspace', () => {
   })
 
   describe('updateWorkspace', () => {
+    beforeEach(() => {
+      mockWs.flush = jest.fn()
+    })
+
     it('no changes', async () => {
       const result = await updateWorkspace(mockWs, cliOutput, [])
       expect(result).toBeTruthy()
@@ -158,6 +177,22 @@ describe('workspace', () => {
           ({ change, serviceChange: change })))
       expect(result).toBeTruthy()
       expect(mockWs.updateBlueprints).toHaveBeenCalledWith(dummyChanges, undefined)
+      expect(mockWs.flush).toHaveBeenCalledTimes(1)
+      expect(mockWs.hasErrors).toHaveBeenCalled()
+    })
+
+    it('with validation errors', async () => {
+      mockWs.hasErrors = jest.fn().mockResolvedValue(true)
+      mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([{
+        sourceFragments: [],
+        message: 'Error BLA',
+        severity: 'Error',
+      }]))
+      const result = await updateWorkspace(mockWs, cliOutput,
+        dummyChanges.map((change: DetailedChange): FetchChange =>
+          ({ change, serviceChange: change })))
+      expect(result).toBe(false)
+      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
       expect(mockWs.hasErrors).toHaveBeenCalled()
     })

@@ -1,12 +1,27 @@
-import { LoginStatus, updateLoginConfig, Workspace } from 'salto'
-import { ObjectType } from 'adapter-api'
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import { LoginStatus, updateLoginConfig, Workspace } from '@salto-io/core'
+import { ObjectType } from '@salto-io/adapter-api'
 import { CliExitCode } from '../../src/types'
 import { command } from '../../src/commands/services'
 import * as mocks from '../mocks'
 import * as workspace from '../../src/workspace'
 
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   addAdapter: jest.fn().mockImplementation((
     _workspaceDir: string,
     adapterName: string

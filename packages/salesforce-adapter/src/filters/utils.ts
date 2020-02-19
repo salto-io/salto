@@ -1,7 +1,22 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
-import { logger } from '@salto/logging'
+import { logger } from '@salto-io/logging'
 import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
-  isField, TypeElement, BuiltinTypes, ElemID, BuiltinAnnotationTypes } from 'adapter-api'
+  isField, TypeElement, BuiltinTypes, ElemID, BuiltinAnnotationTypes, TypeMap } from '@salto-io/adapter-api'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
   METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { JSONBool } from '../client/types'
@@ -90,10 +105,10 @@ export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIEL
   values.map(v => v[INSTANCE_FULL_NAME_FIELD])
 
 
-export const buildAnnotationsObjectType = (fieldType: TypeElement): ObjectType => {
+export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType => {
   const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
   return new ObjectType({ elemID: annotationTypesElemID,
-    fields: Object.assign({}, ...Object.entries(fieldType.annotationTypes)
+    fields: Object.assign({}, ...Object.entries(annotationTypes)
       .concat(Object.entries(BuiltinAnnotationTypes))
       .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
 }

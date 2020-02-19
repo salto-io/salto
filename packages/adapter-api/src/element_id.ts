@@ -38,6 +38,10 @@ export class ElemID {
     return new ElemID(adapter, typeName, idType, ...name)
   }
 
+  static fromFullNameParts(nameParts: string[]): ElemID {
+    return ElemID.fromFullName(nameParts.join(ElemID.NAMESPACE_SEPARATOR))
+  }
+
   readonly adapter: string
   readonly typeName: string
   readonly idType: ElemIDType

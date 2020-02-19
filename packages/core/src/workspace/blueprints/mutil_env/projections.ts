@@ -31,7 +31,7 @@ const projectValue = (src: Value, target: Value): Value => {
   if (_.isPlainObject(src) && _.isPlainObject(target)) {
     const projection: Values = {}
     _.keys(src).forEach(key => {
-      if (target[key] !== undefined) {
+      if (_.has(target, key)) {
         projection[key] = projectValue(src[key], target[key])
       }
     })
@@ -89,8 +89,8 @@ const projectInstance = (
     )
 }
 
-export const projectElementToEnv = async (
-  value: Value,
+export const projectElementOrValueToEnv = async (
+  value: Element | Value,
   id: ElemID,
   env: ElementsSource
 ): Promise<Element | undefined> => {
@@ -107,27 +107,31 @@ export const projectElementToEnv = async (
   return projectValue(value, targetElement)
 }
 
-export const createAddChange = (element: Element, id: ElemID, path?: string[]): DetailedChange => ({
-  data: { after: element },
+export const createAddChange = (
+  value: Element | Value,
+  id: ElemID,
+  path?: string[]
+): DetailedChange => ({
+  data: { after: value },
   action: 'add',
   id,
   path,
 })
 
 export const createRemoveChange = (
-  element: Element,
+  value: Element | Value,
   id: ElemID,
   path?: string[]
 ): DetailedChange => ({
-  data: { before: element },
+  data: { before: value },
   action: 'remove',
   id,
   path,
 })
 
 export const createModifyChange = (
-  before: Element,
-  after: Element,
+  before: Element | Value,
+  after: Element | Value,
   id: ElemID,
   path?: string[]
 ): DetailedChange => ({
@@ -142,13 +146,13 @@ export const projectChange = async (
   env: ElementsSource
 ): Promise<DetailedChange[]> => {
   const beforeProjection = change.action !== 'add'
-    ? await projectElementToEnv(change.data.before, change.id, env)
+    ? await projectElementOrValueToEnv(change.data.before, change.id, env)
     : undefined
   const afterProjection = change.action !== 'remove'
-    ? await projectElementToEnv(change.data.after, change.id, env)
+    ? await projectElementOrValueToEnv(change.data.after, change.id, env)
     : undefined
   if (change.action === 'add') {
-    if (afterProjection !== undefined) {
+    if (!_.isUndefined(afterProjection)) {
       throw new InvalidProjectionError(
         change,
         'can not project an add change to an existing env element.'
@@ -157,11 +161,11 @@ export const projectChange = async (
     return [change]
   }
 
-  if (change.action === 'modify' && beforeProjection !== undefined && afterProjection !== undefined) {
+  if (change.action === 'modify' && !_.isUndefined(beforeProjection) && !_.isUndefined(afterProjection)) {
     return [createModifyChange(beforeProjection, afterProjection, change.id, change.path)]
   }
 
-  if (change.action === 'remove' && beforeProjection !== undefined) {
+  if (change.action === 'remove' && !_.isUndefined(beforeProjection)) {
     return [createRemoveChange(beforeProjection, change.id, change.path)]
   }
   return []

@@ -19,10 +19,8 @@ import {
   Field, isObjectType, isInstanceElement, PrimitiveType, isField,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { ElementsSource } from '../../elements_source'
-import { DetailedChange } from '../../../core/plan'
 
-type DetailedAddition = AdditionDiff<Value> & {
+export type DetailedAddition = AdditionDiff<Value> & {
   id: ElemID
   path: string[]
 }
@@ -35,7 +33,7 @@ const addToField = (
   if (isField(addition.data.after)) return addition.data.after
   const { name } = commonField
   const { parent, path } = addition.id.createTopLevelParentID()
-  const annotations = { ...currentField?.annotations } || {}
+  const annotations = { ...currentField?.annotations }
   if (!_.isEmpty(path)) {
     _.set(annotations, path.slice(1), addition.data.after)
   }
@@ -148,7 +146,7 @@ const wrapAdditionElement = (
   )
 }
 
-const wrapAdditions = (
+export const wrapAdditions = (
   nestedAdditions: DetailedAddition[],
   commonElement: Element,
 ): DetailedAddition => {
@@ -162,40 +160,4 @@ const wrapAdditions = (
       after: wrapperElement as Element,
     },
   } as DetailedAddition
-}
-
-export const createUpdateChanges = async (
-  changes: DetailedChange[],
-  commonSource: ElementsSource,
-  targetSource: ElementsSource
-): Promise<DetailedChange[]> => {
-  const nestedAdditions = []
-  const otherChanges = []
-  // eslint-disable-next-line no-restricted-syntax
-  for (const change of changes) {
-    if (change.action === 'add'
-      && change.id.nestingLevel > 0
-      // eslint-disable-next-line no-await-in-loop
-      && !(await targetSource.get(change.id.createTopLevelParentID().parent))) {
-      nestedAdditions.push(change)
-    } else {
-      otherChanges.push(change)
-    }
-  }
-  const modifiedAdditions = await Promise.all(_(nestedAdditions)
-    .groupBy(addition => addition.id.createTopLevelParentID().parent.getFullName())
-    .entries()
-    .map(async ([parentID, elementAdditions]) => {
-      const commonElement = await commonSource.get(ElemID.fromFullName(parentID))
-      const targetElement = await targetSource.get(ElemID.fromFullName(parentID))
-      if (commonElement && !targetElement) {
-        return wrapAdditions(elementAdditions as DetailedAddition[], commonElement)
-      }
-      return elementAdditions
-    })
-    .value())
-  return [
-    ...otherChanges,
-    ..._.flatten(modifiedAdditions),
-  ]
 }

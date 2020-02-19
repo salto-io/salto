@@ -29,14 +29,13 @@ export interface RoutedChanges {
     secondarySources?: Record<string, DetailedChange[]>
 }
 
-const getMergeableParentID = (id: ElemID): {mergeableID: ElemID, path: string[]} => {
-  const firstListNamePart = id.getFullNameParts().findIndex(p => !isNaN(Number(p)))
-  if (firstListNamePart < 0) return { mergeableID: id, path: []}
+const getMergeableParentID = (id: ElemID): {mergeableID: ElemID; path: string[]} => {
+  const firstListNamePart = id.getFullNameParts().findIndex(p => !Number.isNaN(Number(p)))
+  if (firstListNamePart < 0) return { mergeableID: id, path: [] }
   const mergeableNameParts = id.getFullNameParts().slice(0, firstListNamePart)
-  const path = id.getFullNameParts().slice(firstListNamePart)
   return {
     mergeableID: ElemID.fromFullName(mergeableNameParts.join(ElemID.NAMESPACE_SEPARATOR)),
-    path
+    path: id.getFullNameParts().slice(firstListNamePart),
   }
 }
 const createMergeableChange = async (
@@ -48,7 +47,7 @@ const createMergeableChange = async (
   const { mergeableID } = getMergeableParentID(refChange.id)
   // If the mergeableID is a parent of the change id, we need to create
   // the mergeable change by manualy applying the change to the current
-  // existing element. 
+  // existing element.
   const base = await commonSource.get(mergeableID) || await primarySource.get(mergeableID)
   if (!_.isArrayLike(base)) throw new Error('MUST BE AN ARRAY')
   const baseAfter = _.cloneDeep(base)
@@ -59,10 +58,10 @@ const createMergeableChange = async (
     action: 'modify',
     id: mergeableID,
     path: refChange.path,
-    data : {
+    data: {
       before: base,
-      after: baseAfter
-    }
+      after: baseAfter,
+    },
   }
 }
 
@@ -100,8 +99,8 @@ const getChangePathHint = async (
   const refFilename = (await commonSource.getElementBlueprints(change.id))[0]
   return refFilename
     ? [
-      ...path.dirname(refFilename).split(path.sep), 
-      path.basename(refFilename).split('.').slice(0, -1).join('.')
+      ...path.dirname(refFilename).split(path.sep),
+      path.basename(refFilename).split('.').slice(0, -1).join('.'),
     ]
     : undefined
 }
@@ -117,7 +116,7 @@ export const routeNewEnv = async (
   if (change.action === 'add') {
     return { primarySource: [change] }
   }
-  
+
   // In remove and modify changes, we need to remove the current value from
   // common, add it to the inactive envs, and apply the actual change to the
   // active env.
@@ -137,7 +136,10 @@ export const routeNewEnv = async (
   }
   // Add the changed part of common to the target source
   const addCommonProjectionToCurrentChanges = change.action === 'modify' && commonChangeProjection
-    ? await projectChange(createAddChange(commonChangeProjection, change.id, pathHint), primarySource)
+    ? await projectChange(
+      createAddChange(commonChangeProjection, change.id, pathHint),
+      primarySource
+    )
     : []
   // Add the old value of common to the inactive sources
   const secondaryChanges = _.fromPairs(
@@ -162,17 +164,18 @@ const partitionMergeableChanges = async (
 ): Promise<[DetailedChange[], DetailedChange[]]> => {
   const mergeableChanges = []
   const nonMergeableChanges = []
+  // eslint-disable-next-line no-restricted-syntax
   for (const change of changes) {
-    const mergeableID = getMergeableParentID(change.id).mergeableID
+    const { mergeableID } = getMergeableParentID(change.id)
+    // eslint-disable-next-line no-await-in-loop
     if (!_.isEqual(change.id, mergeableID) && await commonSource.get(mergeableID)) {
       nonMergeableChanges.push(change)
-    }
-    else {
+    } else {
       mergeableChanges.push(change)
     }
   }
   return [mergeableChanges, nonMergeableChanges]
-} 
+}
 
 const toMergeableChanges = async (
   changes: DetailedChange[],
@@ -183,14 +186,17 @@ const toMergeableChanges = async (
   // We need to modify a change iff:
   // 1) It has a common projection
   // 2) It is inside an array
-  const [mergeableChanges, nonMergeableChanges] = await partitionMergeableChanges(changes, commonSource)
+  const [mergeableChanges, nonMergeableChanges] = await partitionMergeableChanges(
+    changes,
+    commonSource
+  )
   return [
-    ... mergeableChanges,
-    ... await Promise.all(_(nonMergeableChanges)
+    ...mergeableChanges,
+    ...await Promise.all(_(nonMergeableChanges)
       .groupBy(c => getMergeableParentID(c.id).mergeableID.getFullName())
       .values()
       .map(c => createMergeableChange(c, primarySource, commonSource))
-      .value())
+      .value()),
   ]
 }
 
@@ -201,7 +207,7 @@ export const routeChanges = async (
   secondarySources: Record<string, BlueprintsSource>,
   mode?: string
 ): Promise<RoutedChanges> => {
-  const changes = mode === 'strict' 
+  const changes = mode === 'strict'
     ? await toMergeableChanges(rawChanges, primarySource, commonSource)
     : rawChanges
   const routedChanges = await Promise.all(changes.map(c => (mode === 'strict'
@@ -211,14 +217,15 @@ export const routeChanges = async (
     ...routedChanges.map(r => r.secondarySources || {}),
     (objValue: DetailedChange[], srcValue: DetailedChange[]) => (
       objValue ? [...objValue, ...srcValue] : srcValue
-  ))
-  .toPairs()
-  .map(async ([srcName, srcChanges]) => [srcName, await createUpdateChanges(
-    srcChanges,
-    commonSource,
-    secondarySources[srcName]
-  )])
-  .value())
+    )
+  )
+    .toPairs()
+    .map(async ([srcName, srcChanges]) => [srcName, await createUpdateChanges(
+      srcChanges,
+      commonSource,
+      secondarySources[srcName]
+    )])
+    .value())
   return {
     primarySource: await createUpdateChanges(
       _.flatten(routedChanges.map(r => r.primarySource || [])),

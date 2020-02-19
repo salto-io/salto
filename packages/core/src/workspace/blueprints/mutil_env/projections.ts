@@ -52,7 +52,7 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement | undef
         annotationTypes,
         annotations,
         fields,
-        path: src.path
+        path: src.path,
       })
   }
   return _.isEmpty(annotations) && _.isEmpty(annotationTypes)
@@ -111,21 +111,30 @@ export const createAddChange = (element: Element, id: ElemID, path?: string[]): 
   data: { after: element },
   action: 'add',
   id,
-  path
+  path,
 })
 
-export const createRemoveChange = (element: Element, id: ElemID, path?: string[]): DetailedChange => ({
+export const createRemoveChange = (
+  element: Element,
+  id: ElemID,
+  path?: string[]
+): DetailedChange => ({
   data: { before: element },
   action: 'remove',
   id,
-  path
+  path,
 })
 
-export const createModifyChange = (before: Element, after: Element, id: ElemID, path?: string[]): DetailedChange => ({
+export const createModifyChange = (
+  before: Element,
+  after: Element,
+  id: ElemID,
+  path?: string[]
+): DetailedChange => ({
   data: { before, after },
   action: 'modify',
   id,
-  path
+  path,
 })
 
 export const projectChange = async (

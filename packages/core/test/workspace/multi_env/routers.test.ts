@@ -61,7 +61,7 @@ describe('normal fetch routing', () => {
       data: { after: newObj },
       id: newObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, false)
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
@@ -74,7 +74,7 @@ describe('normal fetch routing', () => {
       data: { before: commonObj, after: commonObj },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, false)
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
@@ -86,7 +86,7 @@ describe('normal fetch routing', () => {
       data: { before: envObj, after: envObj },
       id: envObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, false)
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
@@ -98,7 +98,7 @@ describe('normal fetch routing', () => {
       data: { before: sharedObject, after: sharedObject },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, false)
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
     const commonChangeBeforeElement = routedChanges.commonSource
@@ -121,7 +121,7 @@ describe('normal fetch routing', () => {
       data: { before: commonObj },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, false)
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
     expect(routedChanges.primarySource).toHaveLength(0)
     expect(routedChanges.commonSource).toHaveLength(1)
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
@@ -133,7 +133,7 @@ describe('normal fetch routing', () => {
       data: { before: envObj },
       id: envObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, false)
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
@@ -145,7 +145,7 @@ describe('normal fetch routing', () => {
       data: { before: sharedObject },
       id: commonObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {}, false)
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
     const commonChangeElement = routedChanges.commonSource
@@ -170,7 +170,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      true
+      'strict'
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -188,7 +188,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      true
+      'strict'
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -206,7 +206,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      true
+      'strict'
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -224,7 +224,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      true
+      'strict'
     )
     expect(routedChanges.primarySource).toHaveLength(2)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -238,20 +238,20 @@ describe('compact routing', () => {
       action: 'add',
       data: { after: commonObj },
       id: commonObj.elemID,
-      path: ['test', 'path']
+      path: ['test', 'path'],
     })
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual({
       action: 'remove',
       data: { before: commonObj },
       id: commonObj.elemID,
-      path: ['test', 'path']
+      path: ['test', 'path'],
     })
     expect(routedChanges.secondarySources?.sec
             && routedChanges.secondarySources?.sec[0]).toEqual({
       action: 'add',
       data: { after: commonObj },
       id: commonObj.elemID,
-      path: ['test', 'path']
+      path: ['test', 'path'],
     })
   })
   it('should route a removal diff to comon and env and revert the change in secondary envs', async () => {
@@ -265,7 +265,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      true
+      'strict'
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -279,14 +279,14 @@ describe('compact routing', () => {
       action: 'remove',
       data: { before: commonObj },
       id: commonObj.elemID,
-      path: ['test', 'path']
+      path: ['test', 'path'],
     })
     expect(routedChanges.secondarySources?.sec
             && routedChanges.secondarySources?.sec[0]).toEqual({
       action: 'add',
       data: { after: commonObj },
       id: commonObj.elemID,
-      path: ['test', 'path']
+      path: ['test', 'path'],
     })
   })
 })

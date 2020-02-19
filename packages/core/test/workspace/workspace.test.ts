@@ -418,7 +418,7 @@ describe('workspace', () => {
 
     it('should init a basedir with no workspace name provided', async () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce(undefined)
-      const workspace = await Workspace.init(wsPath)
+      const workspace = await Workspace.init(wsPath, 'default')
       expect(dumpConfig).toHaveBeenCalled()
       expect(spyMkdir.mock.calls[0][0]).toMatch(path.join(saltoHome, wsPath))
       expect(workspace.config.name).toContain(path.basename(wsPath))
@@ -426,7 +426,7 @@ describe('workspace', () => {
     it('should init a basedir with workspace name provided', async () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce(undefined)
       const wsName = 'test-with-name'
-      const workspace = await Workspace.init(wsPath, wsName)
+      const workspace = await Workspace.init(wsPath, 'default', wsName)
       expect(dumpConfig).toHaveBeenCalled()
       // TODO: need to figure why this works with wsPath and not wsName
       expect(spyMkdir.mock.calls[0][0]).toMatch(path.join(saltoHome, wsPath))
@@ -434,7 +434,7 @@ describe('workspace', () => {
     })
     it('should fail when run inside an existing workspace', async () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce('found')
-      await expect(Workspace.init('bla')).rejects.toThrow()
+      await expect(Workspace.init('bla', 'default')).rejects.toThrow()
     })
   })
 

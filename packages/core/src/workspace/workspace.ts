@@ -137,8 +137,8 @@ export class Workspace {
 
   static async init(
     baseDir: string,
+    defaultEnvName: string,
     workspaceName?: string,
-    defaultEnvName = 'default'
   ): Promise<Workspace> {
     const absBaseDir = path.resolve(baseDir)
     const minimalConfig = {

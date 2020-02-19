@@ -264,11 +264,11 @@ export const deleteFromCsvFile = async (
 
 export const init = async (
   appConfig: AppConfig,
+  defaultEnvName: string,
   workspaceName?: string,
-  defaultEnvName = 'default'
 ): Promise<Workspace> => {
   log.debug(`initializing workspace, installation id: ${appConfig.installationID}`)
-  return Workspace.init('.', workspaceName, defaultEnvName)
+  return Workspace.init('.', defaultEnvName, workspaceName)
 }
 
 export const addAdapter = async (

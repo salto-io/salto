@@ -144,13 +144,13 @@ export const getConfigWithHeader = async (output: WriteStream, configType: Objec
   return getConfigFromUser(configType)
 }
 
-export const getEnvName = async (envName: string): Promise<string> => {
+export const getEnvName = async (currentName = 'default'): Promise<string> => {
   const questions = [{
     type: 'input',
     mask: '*',
-    message: `Enter a new name for the ${envName} enviornment (Press Enter to keep the current name)`,
-    name: envName,
-    default: 'default',
+    message: `Enter a new name for the ${currentName} enviornment`,
+    name: currentName,
+    default: currentName,
   }]
-  return (await inquirer.prompt(questions))[envName]
+  return (await inquirer.prompt(questions))[currentName]
 }

@@ -29,7 +29,7 @@ export const command = (
   async execute(): Promise<CliExitCode> {
     try {
       const defaultEnvName = await getEnvNameCallback('default')
-      const workspace = await init(config, workspaceName, defaultEnvName)
+      const workspace = await init(config, defaultEnvName, workspaceName)
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )

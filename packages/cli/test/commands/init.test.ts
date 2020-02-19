@@ -19,7 +19,7 @@ import { command } from '../../src/commands/init'
 
 jest.mock('@salto-io/core', () => ({
   init: jest.fn().mockImplementation(
-    (_conf: AppConfig, workspaceName: string): { config: Config } => {
+    (_conf: AppConfig, _defaultEnvName: string, workspaceName: string): { config: Config } => {
       if (workspaceName === 'error') throw new Error('failed')
       return {
         config: {

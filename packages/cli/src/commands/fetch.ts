@@ -187,7 +187,8 @@ const fetchBuilder = createCommandBuilder({
       },
       strict: {
         alias: ['t'],
-        describe: 'Apply the fetch changes to the active enviornment only',
+        describe: 'Restrict fetch from modifing common configuration '
+                  + '(might result in changes in other env folders)',
         boolean: true,
         default: false,
         demandOption: false,

@@ -44,7 +44,7 @@ describe.skip('extension e2e', () => {
     })
     bps.forEach(bp => { copyFile(bp.fullPath, `${wsPath}/${bp.basename}`) })
 
-    workspace = new EditorWorkspace(await Workspace.init(wsPath))
+    workspace = new EditorWorkspace(await Workspace.init(wsPath, 'default'))
   })
 
   afterAll(async () => {

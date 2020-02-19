@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, CORE_ANNOTATIONS,
+  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
 import SalesforceAdapter, { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/adapter'
@@ -39,6 +39,8 @@ describe('SalesforceAdapter fetch', () => {
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
+        metadataTypeBlacklist: ['Test1', 'Ignored1'],
+        instancesBlacklist: ['Test2.instance1', 'Test1.Ignored1'],
       },
     }))
   })
@@ -659,6 +661,48 @@ describe('SalesforceAdapter fetch', () => {
         [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespaceName,
           constants.RECORDS_PATH, 'Test', 'asd__Test']
       )
+    })
+
+    describe('should not fetch blacklist metadata types and instance', () => {
+      let result: Element[] = []
+      beforeEach(async () => {
+        connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
+        connection.metadata.describe = jest.fn().mockImplementation(async () => ({
+          metadataObjects: [{ xmlName: 'Test1' }, { xmlName: 'Test2' }, { xmlName: 'Test3' }],
+        }))
+        connection.metadata.describeValueType = jest.fn().mockImplementation(
+          async (typeName: string) => {
+            if (typeName.endsWith('Test1')) {
+              throw new Error('fake error')
+            }
+            return { valueTypeFields: [] }
+          }
+        )
+        connection.metadata.list = jest.fn().mockImplementation(
+          async () => [{ fullName: 'instance1' }]
+        )
+        connection.metadata.read = jest.fn().mockImplementation(
+          async (typeName: string, fullNames: string | string[]) => {
+            if (typeName === 'Test2') {
+              throw new Error('fake error')
+            }
+            return { fullName: Array.isArray(fullNames) ? fullNames[0] : fullNames }
+          }
+        )
+
+        result = await adapter.fetch()
+      })
+
+      it('should skip blacklist types', () => {
+        expect(findElements(result, 'Test1')).toHaveLength(0)
+        expect(findElements(result, 'Test2')).toHaveLength(1)
+        expect(findElements(result, 'Test3')).toHaveLength(1)
+      })
+
+      it('should skip blacklist instances', () => {
+        expect(findElements(result, 'Test2', 'instance1')).toHaveLength(0)
+        expect(findElements(result, 'Test3', 'instance1')).toHaveLength(1)
+      })
     })
   })
 })

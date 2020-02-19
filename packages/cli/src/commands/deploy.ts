@@ -30,6 +30,7 @@ import {
 import { shouldDeploy } from '../callbacks'
 import { loadWorkspace, updateWorkspace } from '../workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
+import { versionString } from '../version'
 
 const log = logger(module)
 
@@ -114,6 +115,7 @@ export class DeployCommand implements CliCommand {
   }
 
   async execute(): Promise<CliExitCode> {
+    log.info(`Version: ${versionString}`)
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout }, this.spinnerCreator)

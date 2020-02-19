@@ -33,6 +33,7 @@ import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
 
 const COMMON_ENV_PREFIX = ''
+const MAX_ERROR_NUMBER = 10
 const log = logger(module)
 
 class ExistingWorkspaceError extends Error {
@@ -262,9 +263,12 @@ export class Workspace {
   async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
     const wsErrors = await this.errors
     return Promise.all(_.flatten([
-      wsErrors.parse.map(parseError => this.transformParseError(parseError)),
-      wsErrors.merge.map(mergeError => this.transformToWorkspaceError(mergeError)),
-      wsErrors.validation.map(validationError => this.transformToWorkspaceError(validationError)),
+      wsErrors.parse.slice(0, MAX_ERROR_NUMBER)
+        .map(parseError => this.transformParseError(parseError)),
+      wsErrors.merge.slice(0, MAX_ERROR_NUMBER)
+        .map(mergeError => this.transformToWorkspaceError(mergeError)),
+      wsErrors.validation.slice(0, MAX_ERROR_NUMBER)
+        .map(validationError => this.transformToWorkspaceError(validationError)),
     ]))
   }
 

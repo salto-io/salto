@@ -65,16 +65,10 @@ export const readFile = (filename: string): Promise<Buffer> => readFileP(filenam
 
 readFile.notFoundAsUndefined = notFoundAsUndefined(readFile)
 
-const contentsAsBuffer = (contents: Buffer | string): Buffer => (
-  typeof contents === 'string'
-    ? Buffer.from(contents, 'utf8')
-    : contents
-)
-
 export const writeFile = (
   filename: string,
   contents: Buffer | string,
-): Promise<void> => writeFileP(filename, contentsAsBuffer(contents))
+): Promise<void> => writeFileP(filename, contents, { encoding: 'utf8' })
 
 export const appendTextFile = (
   filename: string,

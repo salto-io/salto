@@ -35,6 +35,7 @@ import { getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
+import { versionString } from '../version'
 
 const log = logger(module)
 
@@ -138,6 +139,7 @@ export const command = (
   inputServices: string[],
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
+    log.info(`Version: ${versionString}`)
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
       interactive}]`)
     const { workspace, errored } = await loadWorkspace(workspaceDir, output, spinnerCreator)

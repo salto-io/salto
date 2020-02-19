@@ -8587,6 +8587,11 @@ q@^1.5.1:
   resolved "https://registry.yarnpkg.com/q/-/q-1.5.1.tgz#7e32f75b41381291d04611f1bf14109ac00651d7"
   integrity sha1-fjL3W0E4EpHQRhHxvxQQmsAGUdc=
 
+qs@^6.9.1:
+  version "6.9.1"
+  resolved "https://registry.yarnpkg.com/qs/-/qs-6.9.1.tgz#20082c65cb78223635ab1a9eaca8875a29bf8ec9"
+  integrity sha512-Cxm7/SS/y/Z3MHWSxXb8lIFqgqBowP5JMlTUFyJN88y0SGQhVmZnqFK/PeuMX9LzUyWsqqhNxIyg0jlzq946yA==
+
 qs@~6.5.2:
   version "6.5.2"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.5.2.tgz#cb3ae806e8740444584ef154ce8ee98d403f3e36"
@@ -10185,6 +10190,15 @@ typed-rest-client@1.2.0:
   resolved "https://registry.yarnpkg.com/typed-rest-client/-/typed-rest-client-1.2.0.tgz#723085d203f38d7d147271e5ed3a75488eb44a02"
   integrity sha512-FrUshzZ1yxH8YwGR29PWWnfksLEILbWJydU7zfIRkyH7kAEzB62uMAl2WY6EyolWpLpVHeJGgQm45/MaruaHpw==
   dependencies:
+    tunnel "0.0.4"
+    underscore "1.8.3"
+
+typed-rest-client@^1.7.1:
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/typed-rest-client/-/typed-rest-client-1.7.1.tgz#932e837fca4ab1ba64c23b1a67f2e11931c05c4f"
+  integrity sha512-fZRDWFtUp3J2E0jOiCJYZ9LDrYZHpjY95su//ekqXERS7C1qojP6movh7M4JGURJnBuTVsO0g2N4vEoW5o3Djw==
+  dependencies:
+    qs "^6.9.1"
     tunnel "0.0.4"
     underscore "1.8.3"
 

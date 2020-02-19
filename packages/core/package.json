@@ -38,6 +38,7 @@
     "@salto-io/logging": "0.1.1",
     "@salto-io/lowerdash": "0.1.1",
     "@salto-io/salesforce-adapter": "0.1.1",
+    "@types/rimraf": "^2.0.3",
     "async": "^3.1.0",
     "chalk": "^2.3.0",
     "csv-parser": "^2.3.2",
@@ -50,9 +51,9 @@
     "pietile-eventemitter": "^1.0.0",
     "readdirp": "^3.1.1",
     "rimraf": "^3.0.0",
+    "typed-rest-client": "^1.7.1",
     "uuid": "^3.3.3",
-    "wu": "^2.1.0",
-    "@types/rimraf": "^2.0.3"
+    "wu": "^2.1.0"
   },
   "devDependencies": {
     "@types/async": "^3.0.0",

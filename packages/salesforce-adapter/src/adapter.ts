@@ -67,10 +67,6 @@ const log = logger(module)
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 const RECORDS_CHUNK_SIZE = 10000
 
-// Exported for testing purposes
-export const METADATA_BLACKLIST_ENV = 'SF_METADATA_BLACKLIST'
-export const INSTANCES_BLACKLIST_ENV = 'SF_INSTANCES_BLACKLIST'
-
 const absoluteIDMetadataTypes: Record<string, string[]> = {
   CustomLabels: ['labels'],
 }
@@ -104,10 +100,6 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
     )
   }
 }
-const stringsArrayFromEnv = (envProp: string): string[] =>
-  (process.env[envProp] || '').split(',').map(s => s.trim())
-const additionalMetadataBlacklist = (): string[] => stringsArrayFromEnv(METADATA_BLACKLIST_ENV)
-const additionalInstancesBlacklist = (): string[] => stringsArrayFromEnv(INSTANCES_BLACKLIST_ENV)
 
 const INVALID_CUSTOM_OBJS = [
   'pse__Project_Task_Assignment__c',
@@ -260,9 +252,8 @@ export default class SalesforceAdapter {
       'NetworkBranding',
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
-    ].concat(additionalMetadataBlacklist()),
-    instancesBlacklist = INVALID_CUSTOM_OBJS.map(obj => `CustomObject.${obj}`)
-      .concat(additionalInstancesBlacklist()),
+    ],
+    instancesBlacklist = INVALID_CUSTOM_OBJS.map(obj => `CustomObject.${obj}`),
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content

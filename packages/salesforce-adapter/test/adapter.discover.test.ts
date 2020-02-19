@@ -660,52 +660,5 @@ describe('SalesforceAdapter fetch', () => {
           constants.RECORDS_PATH, 'Test', 'asd__Test']
       )
     })
-
-    describe('should fetch when there are errors', () => {
-      let result: Element[] = []
-
-      beforeAll(() => {
-        process.env[METADATA_BLACKLIST_ENV] = 'Test1,Ignored1'
-        process.env[INSTANCES_BLACKLIST_ENV] = 'Test2.instance1,Test1.Ignored1'
-      })
-
-      beforeEach(async () => {
-        connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
-        connection.metadata.describe = jest.fn().mockImplementation(async () => ({
-          metadataObjects: [{ xmlName: 'Test1' }, { xmlName: 'Test2' }, { xmlName: 'Test3' }],
-        }))
-        connection.metadata.describeValueType = jest.fn().mockImplementation(
-          async (typeName: string) => {
-            if (typeName.endsWith('Test1')) {
-              throw new Error('fake error')
-            }
-            return { valueTypeFields: [] }
-          }
-        )
-        connection.metadata.list = jest.fn().mockImplementation(
-          async () => [{ fullName: 'instance1' }]
-        )
-        connection.metadata.read = jest.fn().mockImplementation(
-          async (typeName: string, fullNames: string | string[]) => {
-            if (typeName === 'Test2') {
-              throw new Error('fake error')
-            }
-            return { fullName: Array.isArray(fullNames) ? fullNames[0] : fullNames }
-          }
-        )
-        result = await adapter.fetch()
-      })
-
-      it('should fetch types when there is failure in a type', () => {
-        expect(findElements(result, 'Test1')).toHaveLength(0)
-        expect(findElements(result, 'Test2')).toHaveLength(1)
-        expect(findElements(result, 'Test3')).toHaveLength(1)
-      })
-
-      it('should fetch instances when there is failure in an instance', () => {
-        expect(findElements(result, 'Test2', 'instance1')).toHaveLength(0)
-        expect(findElements(result, 'Test3', 'instance1')).toHaveLength(1)
-      })
-    })
   })
 })

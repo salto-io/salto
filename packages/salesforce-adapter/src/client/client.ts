@@ -178,14 +178,13 @@ const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
   const promises: Promise<TOut[]>[] = chunks
     .filter(chunk => !_.isEmpty(chunk))
     .map(chunk => sendChunk(chunk)
-      .catch(async err => {
-        log.error('failed to send chunk %o: %o, iterting each element separtly', chunk, err)
+      .catch(async _e => {
+        log.error('failed to send chunk - iterting each element separtly')
         const innerPromises = chunk.map(tin => sendChunk(makeArray(tin))
           .then(makeArray)
-          .catch(async innerErr => {
-            log.error('failed to run %s(%o): %o, iterting each element separtly',
-              sendChunk.toString(), tin, innerErr)
-            throw innerErr
+          .catch(e => {
+            log.error('failed to sendChunked on %o', tin)
+            throw e
           }))
         return _.flatten(await Promise.all(innerPromises))
       })
@@ -235,7 +234,7 @@ export default class SalesforceClient {
       try {
         return await log.time(call, desc)
       } catch (e) {
-        log.error('Failed to run SFDC client call %s: %s', desc, e.message)
+        log.error('failed to run SFDC client call %s: %s', desc, e.message)
         throw e
       }
     }

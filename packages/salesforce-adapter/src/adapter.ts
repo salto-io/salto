@@ -109,6 +109,84 @@ const stringsArrayFromEnv = (envProp: string): string[] =>
 const additionalMetadataBlacklist = (): string[] => stringsArrayFromEnv(METADATA_BLACKLIST_ENV)
 const additionalInstancesBlacklist = (): string[] => stringsArrayFromEnv(INSTANCES_BLACKLIST_ENV)
 
+const INVALID_CUSTOM_OBJS = [
+  'pse__Project_Task_Assignment__c',
+  'pse__Proj__c',
+  'DaScoopComposer__DaScoop_Snippet__c',
+  'pse__Resource_Actuals__c',
+  'pse__Schedule__c',
+  'pse__Vendor_Invoice_Item__c',
+  'pse__Missing_Timecard__c',
+  'pse__Est_Vs_Actuals__c',
+  'pse__Work_Calendar__c',
+  'pse__Task_Time__c',
+  'ffct__ClearDataState__c',
+  'pse__Team__c',
+  'pse__Region_Plan__c',
+  'pse__Version__c',
+  'pse__Project_Task__c',
+  'pse__fflib_BatchProcess__c',
+  'pse__Transaction__c',
+  'pse__Project_Phase__c',
+  'pse__Expense_Report__c',
+  'pse__Skill_Certification_Rating__c',
+  'pse__Timecard_Header__c',
+  'pse__Backlog_Calculation__c',
+  'pse__Forecast__c',
+  'pse__Rate_Card__c',
+  'pse__Assignment_Milestone__c',
+  'pse__Project_Methodology__c',
+  'pse__Budget__c',
+  'pse__Rate_Card_Set_Junction__c',
+  'pse__Transaction_Delta__c',
+  'pse__Budget_Header__c',
+  'pse__Skill__c',
+  'pse__Time_Period__c',
+  'pse__Permission_Control__c',
+  'pse__Schedule_Exception__c',
+  'pse__Vendor_Invoice__c',
+  'pse__Team_Schedule_Template_Slot__c',
+  'ffct__Bundle_Provision_State__c',
+  'pse__HolidayObj__c',
+  'pse__Timecard__c',
+  'pse__Region__c',
+  'pse__Team_Schedule_Slot__c',
+  'pse__Assignment_Project_Methodology__c',
+  'pse__Utilization_Detail__c',
+  'pse__Expense_Limit_Rate__c',
+  'pse__Project_Actuals__c',
+  'pse__Resource_Request__c',
+  'pse__Rate_Card_Set__c',
+  'pse__Utilization_Calculation__c',
+  'pse__Billing_Event__c',
+  'pse__Project_Task_Dependency__c',
+  'pse__Work_Queue__c',
+  'pse__Practice_Actuals__c',
+  'pse__Practice__c',
+  'pse__Group_Plan__c',
+  'pse__Skill_Certification_Zone__c',
+  'ffct__BundleComponent__c',
+  'pse__Risk__c',
+  'pse__Miscellaneous_Adjustment__c',
+  'pse__Assignment__c',
+  'pse__Milestone__c',
+  'pse__Practice_Plan__c',
+  'pse__Expense__c',
+  'pse__Resource_Skill_Request__c',
+  'pse__Billing_Event_Batch__c',
+  'pse__Group_Actuals__c',
+  'pse__Grp__c',
+  'pse__Assignment_Project_Phase__c',
+  'pse__Project_Location__c',
+  'pse__Regional_Actuals__c',
+  'pse__RR_Milestone__c',
+  'pse__Issue__c',
+  'DaScoopComposer__Tracked_Message__c',
+  'pse__Column_Preferences__c',
+  'DaScoopComposer__Tracked_Message_Event__c',
+  'pse__Hours_to_Days_Rule__c',
+]
+
 export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
   metadataAdditionalTypes?: string[]
@@ -183,7 +261,8 @@ export default class SalesforceAdapter {
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ].concat(additionalMetadataBlacklist()),
-    instancesBlacklist = ([] as string[]).concat(additionalInstancesBlacklist()),
+    instancesBlacklist = INVALID_CUSTOM_OBJS.map(obj => `CustomObject.${obj}`)
+      .concat(additionalInstancesBlacklist()),
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
@@ -900,6 +979,10 @@ export default class SalesforceAdapter {
     const instancesFullNames = objs.map(getFullName)
       .filter(name => !this.instancesBlacklist.includes(`${type}.${name}`))
     const instanceInfos = await this.client.readMetadata(type, instancesFullNames)
+      .catch(err => {
+        log.error('failed to read metadata for type %s', type)
+        throw err
+      })
     return instanceInfos.map(instanceInfo =>
       ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))
   }

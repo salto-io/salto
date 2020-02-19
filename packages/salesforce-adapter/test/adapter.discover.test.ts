@@ -15,12 +15,10 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
+  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
-import SalesforceAdapter, {
-  MAX_ITEMS_IN_RETRIEVE_REQUEST, METADATA_BLACKLIST_ENV, INSTANCES_BLACKLIST_ENV,
-} from '../src/adapter'
+import SalesforceAdapter, { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
 import { createEncodedZipContent, findElements, ZipFile } from './utils'

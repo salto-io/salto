@@ -18,7 +18,9 @@ import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
-import SalesforceAdapter, { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/adapter'
+import SalesforceAdapter, {
+  MAX_ITEMS_IN_RETRIEVE_REQUEST, METADATA_BLACKLIST_ENV, INSTANCES_BLACKLIST_ENV,
+} from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
 import { createEncodedZipContent, findElements, ZipFile } from './utils'
@@ -663,6 +665,12 @@ describe('SalesforceAdapter fetch', () => {
 
     describe('should fetch when there are errors', () => {
       let result: Element[] = []
+
+      beforeAll(() => {
+        process.env[METADATA_BLACKLIST_ENV] = 'Test1,Ignored1'
+        process.env[INSTANCES_BLACKLIST_ENV] = 'Test2.instance1,Test1.Ignored1'
+      })
+
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
         connection.metadata.describe = jest.fn().mockImplementation(async () => ({

@@ -159,7 +159,8 @@ export const validateCredentials = async (
   creds: Credentials,
   minApiRequestsRemaining = 0,
 ): Promise<void> => {
-  const conn = realConnection(creds.isSandbox, { maxAttempts: 1 })
+  const conn = realConnection(creds.isSandbox, { maxAttempts: 2,
+    retryStrategy: RetryStrategies.HTTPOrNetworkError })
   await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
   const limits = await conn.limits()
   if (limits.DailyApiRequests.Remaining < minApiRequestsRemaining) {

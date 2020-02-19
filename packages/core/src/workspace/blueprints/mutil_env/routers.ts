@@ -23,9 +23,7 @@ import {
 } from './projections'
 import { DetailedChange } from '../../../core/plan'
 import { wrapAdditions, DetailedAddition } from '../addition_wrapper'
-import { BlueprintsSource, BP_EXTENSION } from '../blueprints_source'
-
-type RoutingMode = 'strict' | 'default'
+import { BlueprintsSource, BP_EXTENSION, RoutingMode } from '../blueprints_source'
 
 export interface RoutedChanges {
     primarySource?: DetailedChange[]

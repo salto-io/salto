@@ -1,4 +1,4 @@
-import { Config, addEnvToConfig, setCurrentEnv } from 'salto'
+import { Config, addEnvToConfig, setCurrentEnv } from '@salto-io/core'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput, SpinnerCreator } from '../types'
 
 import { EnvsCmdArgs, envsCmdFilter } from '../filters/env'

@@ -26,7 +26,7 @@ import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
 import Credentials, { adapterCredentials } from './credentials'
 import State from './state'
 import { localState } from './local/state'
-import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, UpdateMode } from './blueprints/blueprints_source'
+import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
 import { parseResultCache } from './cache'
 import { localDirectoryStore } from './local/dir_store'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
@@ -233,7 +233,7 @@ export class Workspace {
     return this.blueprintsSource.removeBlueprints(...names)
   }
 
-  async updateBlueprints(changes: DetailedChange[], mode?: UpdateMode): Promise<void> {
+  async updateBlueprints(changes: DetailedChange[], mode?: RoutingMode): Promise<void> {
     this.resetMergedState()
     return this.blueprintsSource.update(changes, mode)
   }

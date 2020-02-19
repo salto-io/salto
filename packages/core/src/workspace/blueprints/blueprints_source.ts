@@ -31,7 +31,7 @@ import { Errors } from '../errors'
 
 const log = logger(module)
 
-export type UpdateMode = 'strict'
+export type RoutingMode = 'strict' | 'default'
 
 export const BP_EXTENSION = '.bp'
 
@@ -42,7 +42,7 @@ export type Blueprint = {
 }
 
 export type BlueprintsSource = ElementsSource & {
-  update: (changes: DetailedChange[], mode?: UpdateMode) => Promise<void>
+  update: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
   getElementBlueprints: (id: ElemID) => Promise<string[]>

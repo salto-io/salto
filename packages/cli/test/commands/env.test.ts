@@ -2,8 +2,8 @@ import * as mocks from '../mocks'
 import { command } from '../../src/commands/env'
 import * as workspace from '../../src/workspace'
 
-jest.mock('salto', () => ({
-  ...jest.requireActual('salto'),
+jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   setCurrentEnv: jest.fn().mockImplementation(),
   addEnvToConfig: jest.fn().mockImplementation(),
   loadConfig: jest.fn().mockImplementation((workspaceDir: string) =>

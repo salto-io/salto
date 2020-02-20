@@ -159,7 +159,8 @@ export const validateCredentials = async (
   creds: Credentials,
   minApiRequestsRemaining = 0,
 ): Promise<void> => {
-  const conn = realConnection(creds.isSandbox, { maxAttempts: 1 })
+  const conn = realConnection(creds.isSandbox, { maxAttempts: 2,
+    retryStrategy: RetryStrategies.HTTPOrNetworkError })
   await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
   const limits = await conn.limits()
   if (limits.DailyApiRequests.Remaining < minApiRequestsRemaining) {
@@ -174,22 +175,21 @@ const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST):
   Promise<TOut[]> => {
   const chunks = _.chunk(makeArray(input), chunkSize)
-  let lastException: Error | undefined
   const promises: Promise<TOut[]>[] = chunks
     .filter(chunk => !_.isEmpty(chunk))
     .map(chunk => sendChunk(chunk)
-      .then(makeArray)
-      .catch(e => {
-        log.error('failed to send chunk in %s %o: %o, returning empty list',
-          sendChunked.toString(), chunk, e)
-        lastException = e
-        return []
-      }))
-  const results = _.flatten(await Promise.all(promises))
-  if (_.isEmpty(results) && lastException) {
-    throw lastException
-  }
-  return results
+      .catch(async _e => {
+        log.error('failed to send chunk - iterting each element separtly')
+        const innerPromises = chunk.map(tin => sendChunk(makeArray(tin))
+          .then(makeArray)
+          .catch(e => {
+            log.error('failed to sendChunked on %o', tin)
+            throw e
+          }))
+        return _.flatten(await Promise.all(innerPromises))
+      })
+      .then(makeArray))
+  return _.flatten(await Promise.all(promises))
 }
 
 export default class SalesforceClient {
@@ -234,7 +234,7 @@ export default class SalesforceClient {
       try {
         return await log.time(call, desc)
       } catch (e) {
-        log.error('Failed to run SFDC client call %s: %s', desc, e.message)
+        log.error('failed to run SFDC client call %s: %s', desc, e.message)
         throw e
       }
     }

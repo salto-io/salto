@@ -148,6 +148,7 @@ BlueprintsSource => {
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedBp = (await state).parsedBlueprints[filename]
+    // TODO: lastModified might need to be checked on referenced files?
     const cachedParsedResult = await cache.get({ filename, lastModified: parsedBp.timestamp })
     if (_.isUndefined(cachedParsedResult)) {
       log.warn('expected to find source map for filename %s, going to re-parse', filename)

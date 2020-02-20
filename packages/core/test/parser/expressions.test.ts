@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, TemplateExpression, ElemID } from '@salto-io/adapter-api'
+import { StaticAssetExpression, ReferenceExpression, TemplateExpression, ElemID } from '@salto-io/adapter-api'
 import devaluate from './internal/devaluate'
 import evaluate from '../../src/parser/expressions'
 
@@ -59,5 +59,11 @@ describe('HCL Expression', () => {
     const templ = new TemplateExpression({ parts: [ref] })
     const exp = devaluate(templ)
     expect(evaluate(exp)).toEqual(templ)
+  })
+
+  it('should evaluate static asset reference', () => {
+    const ref = new StaticAssetExpression(new ElemID('a', 'b', 'type'))
+    const exp = devaluate(ref)
+    expect(evaluate(exp)).toEqual(ref)
   })
 })

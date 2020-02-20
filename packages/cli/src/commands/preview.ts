@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { preview } from '@salto-io/core'
-import { logger } from '@salto-io/logging'
 import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
@@ -23,9 +22,6 @@ import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { versionString } from '../version'
-
-const log = logger(module)
 
 export const command = (
   workspaceDir: string,
@@ -34,7 +30,6 @@ export const command = (
   inputServices: string[]
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    log.info(`Version: ${versionString}`)
     const { workspace, errored } = await loadWorkspace(workspaceDir,
       { stdout, stderr }, spinnerCreator)
     if (errored) {

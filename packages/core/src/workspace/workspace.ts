@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import uuidv4 from 'uuid/v4'
-import { Element, SaltoError, SaltoElementError, ElemID } from '@salto-io/adapter-api'
+import { Element, SaltoError, SaltoElementError, ElemID, SaltoErrorSeverity } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DetailedChange } from '../core/plan'
 import { validateElements } from '../core/validator'
@@ -33,7 +33,7 @@ import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
 
 const COMMON_ENV_PREFIX = ''
-const MAX_ERROR_NUMBER = 10
+const MAX_ERROR_NUMBER = 30
 const log = logger(module)
 
 class ExistingWorkspaceError extends Error {
@@ -260,16 +260,36 @@ export class Workspace {
     }
   }
 
+  private async getWorkspaceErrorsWithSpecificSeverity(
+    errors: Errors,
+    severity: SaltoErrorSeverity,
+    maxErrorsNumber: number,
+  ): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
+    const parseErrors = await Promise.all(errors.parse
+      .filter(e => e.severity === severity)
+      .slice(0, maxErrorsNumber)
+      .map(async parseError => this.transformParseError(parseError)))
+    const mergeErrors = await Promise.all(errors.merge
+      .filter(e => e.severity === severity)
+      .slice(0, maxErrorsNumber - parseErrors.length)
+      .map(async mergeError => this.transformToWorkspaceError(mergeError)))
+    const validationErrors = await Promise.all(errors.validation
+      .filter(e => e.severity === severity)
+      .slice(0, maxErrorsNumber - parseErrors.length - mergeErrors.length)
+      .map(async validationError => this.transformToWorkspaceError(validationError)))
+    return _.flatten([parseErrors, mergeErrors, validationErrors])
+  }
+
   async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
     const wsErrors = await this.errors
-    return Promise.all(_.flatten([
-      wsErrors.parse.slice(0, MAX_ERROR_NUMBER)
-        .map(parseError => this.transformParseError(parseError)),
-      wsErrors.merge.slice(0, MAX_ERROR_NUMBER)
-        .map(mergeError => this.transformToWorkspaceError(mergeError)),
-      wsErrors.validation.slice(0, MAX_ERROR_NUMBER)
-        .map(validationError => this.transformToWorkspaceError(validationError)),
-    ]))
+    const workspaceErrors = await this.getWorkspaceErrorsWithSpecificSeverity(
+      wsErrors, 'Error', MAX_ERROR_NUMBER,
+    )
+    return _.flatten([workspaceErrors,
+      await this.getWorkspaceErrorsWithSpecificSeverity(
+        wsErrors, 'Warning', MAX_ERROR_NUMBER - workspaceErrors.length,
+      ),
+    ])
   }
 
   async flush(): Promise<void> {

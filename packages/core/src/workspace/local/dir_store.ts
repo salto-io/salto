@@ -16,8 +16,13 @@
 import readdirp from 'readdirp'
 import path from 'path'
 import _ from 'lodash'
+import { promises } from '@salto-io/lowerdash'
 import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents } from '../../file'
 import { DirectoryStore, File } from '../dir_store'
+
+const { promiseAllChained } = promises.array
+
+const FILE_WRITE_RATE = 100
 
 type FileMap = {
   [key: string]: File
@@ -101,8 +106,8 @@ export const localDirectoryStore = (
     },
 
     flush: async (): Promise<void> => {
-      await Promise.all(Object.values(updated).map(writeFile))
-      await Promise.all(deleted.map(deleteFile))
+      await promiseAllChained(Object.values(updated).map(f => () => writeFile(f)), FILE_WRITE_RATE)
+      await promiseAllChained(deleted.map(f => () => deleteFile(f)), FILE_WRITE_RATE)
       updated = {}
       deleted = []
     },

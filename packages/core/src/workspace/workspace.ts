@@ -261,8 +261,6 @@ export class Workspace {
     }
   }
 
-  private async getWorkspaceErrorsWithSpecificSeverity(
-    errors: Errors,
   private async transformError(error: ParseError | MergeError | ValidationError):
   Promise<WorkspaceError<SaltoError>> {
     return (_.isUndefined((error as ParseError).subject)
@@ -276,7 +274,7 @@ export class Workspace {
       _.flatten(_.partition(
         [...wsErrors.parse, ...wsErrors.merge, ...wsErrors.validation],
         val => val.severity === 'Error'
-      )).slice(0, MAX_ERROR_NUMBER).map(async error => this.transformError(error))
+      )).slice(0, MAX_ERROR_NUMBER).map(error => this.transformError(error))
     )
   }
 

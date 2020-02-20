@@ -38,6 +38,12 @@ export const dependencyChange = (
   action: DependencyChange['action'], source: ChangeId, target: ChangeId
 ): DependencyChange => ({ action, dependency: { source, target } })
 
+export const isDependentChange = (
+  srcAction: Change['action'], targetAction: Change['action']
+): boolean => (
+  targetAction !== 'modify' && (srcAction === 'modify' || srcAction === targetAction)
+)
+
 // Reference dependency means source must be added after target and removed before target
 export const addReferenceDependency = (
   action: Change['action'], src: ChangeId, target: ChangeId,

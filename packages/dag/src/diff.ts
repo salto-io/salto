@@ -141,3 +141,12 @@ export const mergeNodesToModify = async <T>(target: DiffGraph<T>): Promise<DiffG
       target,
     )
 }
+
+export const removeEdges = async <T>(target: DiffGraph<T>): Promise<DiffGraph<T>> => (
+  new DataNodeMap<DiffNode<T>>(
+    wu(target.keys()).map(id => [id, new Set()]),
+    new Map<collections.set.SetId, DiffNode<T>>(
+      wu(target.keys()).map(id => [id, target.getData(id)]),
+    ),
+  )
+)

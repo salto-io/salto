@@ -186,7 +186,7 @@ const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
             log.error('failed to sendChunked on %o', tin)
             throw e
           }))
-        return _.flatten(await Promise.all(innerPromises))
+        return Promise.all(innerPromises).then(_.flatten)
       })
       .then(makeArray))
   return _.flatten(await Promise.all(promises))

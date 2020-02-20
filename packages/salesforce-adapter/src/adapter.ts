@@ -105,7 +105,9 @@ export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
   metadataAdditionalTypes?: string[]
 
-  // Instances that we don't want to call readMetadata for them
+  // Instances that we want to exclude from readMetadata
+  // This is expected to be a list of strings of format METADATA_TYPE.INSTANCE
+  // For example: CustomObject.Lead
   instancesBlacklist?: string[]
 
   // Metadata types that we do not want to fetch even though they are returned as top level

@@ -19,7 +19,7 @@ import uuidv4 from 'uuid/v4'
 import { Element, SaltoError, SaltoElementError, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DetailedChange } from '../core/plan'
-import { validateElements } from '../core/validator'
+import { validateElements, ValidationError } from '../core/validator'
 import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
@@ -31,8 +31,10 @@ import { parseResultCache } from './cache'
 import { localDirectoryStore } from './local/dir_store'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
+import { MergeError } from '../core/merger'
 
 const COMMON_ENV_PREFIX = ''
+const MAX_ERROR_NUMBER = 30
 const log = logger(module)
 
 class ExistingWorkspaceError extends Error {
@@ -259,13 +261,23 @@ export class Workspace {
     }
   }
 
+  private async transformError(error: ParseError | MergeError | ValidationError):
+  Promise<WorkspaceError<SaltoError>> {
+    const isParseError = (err: ParseError | MergeError | ValidationError): err is ParseError =>
+      _.has(err, 'subject')
+    return (isParseError(error))
+      ? this.transformParseError(error)
+      : this.transformToWorkspaceError(error)
+  }
+
   async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
     const wsErrors = await this.errors
-    return Promise.all(_.flatten([
-      wsErrors.parse.map(parseError => this.transformParseError(parseError)),
-      wsErrors.merge.map(mergeError => this.transformToWorkspaceError(mergeError)),
-      wsErrors.validation.map(validationError => this.transformToWorkspaceError(validationError)),
-    ]))
+    return Promise.all(
+      _.flatten(_.partition(
+        [...wsErrors.parse, ...wsErrors.merge, ...wsErrors.validation],
+        val => val.severity === 'Error'
+      )).slice(0, MAX_ERROR_NUMBER).map(error => this.transformError(error))
+    )
   }
 
   async flush(): Promise<void> {

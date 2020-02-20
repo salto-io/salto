@@ -58,8 +58,7 @@ export default async (
         increaseLoggingLogLevel()
       }
 
-      log.info('CLI started')
-      log.info(`Version: ${versionString}`)
+      log.info('CLI started. Version: %s', versionString)
 
       const parsedInput = { ...input, args: parsedArgs }
       const command = await commandBuilder(parsedInput, output, spinnerCreator)

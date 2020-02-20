@@ -23,6 +23,10 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'Role', 'field', 'parentRole'), 'Role'],
   [new ElemID(SALESFORCE, 'ProfileApplicationVisibility', 'field', 'application'), 'CustomApplication'],
   [new ElemID(SALESFORCE, 'ProfileLayoutAssignment', 'field', 'layout'), 'Layout'],
+  [new ElemID(SALESFORCE, 'ProfileFlowAccess', 'field', 'flow'), 'Flow'],
+  [new ElemID(SALESFORCE, 'ProfileRecordTypeVisibility', 'field', 'recordType'), 'RecordType'],
+  [new ElemID(SALESFORCE, 'CustomApplication', 'field', 'tabs'), 'CustomTab'],
+  [new ElemID(SALESFORCE, 'WorkspaceMapping', 'field', 'tab'), 'CustomTab'],
 ]
 
 export const fieldToTypeMapping = new Map(

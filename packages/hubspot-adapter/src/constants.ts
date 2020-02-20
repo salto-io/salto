@@ -45,7 +45,7 @@ export const OBJECTS_NAMES = {
   FIELD_FILTER: 'fieldFilter',
   DEPENDEE_FORM_PROPERTY: 'dependeeFormProperty',
   RICHTEXT: 'richText',
-  CONTACTPROPERTYOVERRIDE: 'contactPropertyOverride',
+  CONTACTPROPERTYOVERRIDES: 'contactPropertyOverrides',
 }
 
 export const FIELD_TYPES = {
@@ -366,7 +366,7 @@ export const dependentFormFieldFiltersElemID = new ElemID(HUBSPOT,
   OBJECTS_NAMES.DEPENDENT_FIELD_FILTERS)
 export const fieldFilterElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FIELD_FILTER)
 export const richTextElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.RICHTEXT)
-export const contactPropertyOverrideElemID = new ElemID(
+export const contactPropertyOverridesElemID = new ElemID(
   HUBSPOT,
-  OBJECTS_NAMES.CONTACTPROPERTYOVERRIDE
+  OBJECTS_NAMES.CONTACTPROPERTYOVERRIDES
 )

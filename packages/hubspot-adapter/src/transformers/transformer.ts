@@ -32,7 +32,7 @@ import {
   nurtureTimeRangeElemID, anchorSettingElemID, actionElemID, eventAnchorElemID,
   conditionActionElemID, contactPropertyElemID, dependentFormFieldFiltersElemID,
   fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyFieldTypeValues,
-  CONTACT_PROPERTY_OVERRIDES_FIELDS, contactPropertyOverrideElemID,
+  CONTACT_PROPERTY_OVERRIDES_FIELDS, contactPropertyOverridesElemID,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -181,12 +181,12 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', fieldFilterElemID.name],
     })
 
-    private static contactPropertyOverrideType: ObjectType =
+    private static contactPropertyOverridesType: ObjectType =
       new ObjectType({
-        elemID: contactPropertyOverrideElemID,
+        elemID: contactPropertyOverridesElemID,
         fields: {
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL]: new TypeField(
-            contactPropertyOverrideElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
+            contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
             BuiltinTypes.STRING, {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
               _readOnly: false,
@@ -194,7 +194,7 @@ export class Types {
             },
           ),
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER]: new TypeField(
-            contactPropertyOverrideElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
+            contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
             BuiltinTypes.NUMBER,
             {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
@@ -203,7 +203,7 @@ export class Types {
             },
           ),
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION]: new TypeField(
-            contactPropertyOverrideElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
+            contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
             BuiltinTypes.STRING, {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
               _readOnly: false,
@@ -211,7 +211,7 @@ export class Types {
             }
           ),
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: new TypeField(
-            contactPropertyOverrideElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
+            contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
             Types.optionsType, {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
               _readOnly: false,
@@ -220,7 +220,7 @@ export class Types {
             true,
           ),
         },
-        path: [HUBSPOT, 'types', 'subtypes', contactPropertyOverrideElemID.name],
+        path: [HUBSPOT, 'types', 'subtypes', contactPropertyOverridesElemID.name],
       })
 
     static createFormFieldType = (
@@ -240,7 +240,7 @@ export class Types {
           ),
           [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES,
-            Types.contactPropertyOverrideType, {
+            Types.contactPropertyOverridesType, {
               name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -686,7 +686,7 @@ export class Types {
           formElemID, FORM_FIELDS.GUID, BuiltinTypes.STRING, {
             name: FORM_FIELDS.GUID,
             _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         [FORM_FIELDS.NAME]: new TypeField(
@@ -1761,6 +1761,8 @@ export class Types {
     Types.actionType,
     Types.anchorSettingType,
     Types.fieldFilterType,
+    Types.richTextType,
+    Types.contactPropertyOverridesType,
     Types.dependentFormFieldFiltersType,
     Types.dependentFormFieldType,
     Types.dependeeFormFieldType,
@@ -1796,17 +1798,24 @@ export const transformPrimitive: TransformValueFunc = (val, field) => {
   return val
 }
 
-/**
- * This method generate (instance) values by iterating hubspot object fields.
- * Also ensure that only expected fields will shown
- * @param info
- * @param infoType
- */
-export const fromHubspotObject = (
-  info: HubspotMetadata,
-  infoType: ObjectType
-): Values =>
-  transform(info as Values, infoType, transformPrimitive) || {}
+export const transformAfterUpdateOrAdd = async (
+  instance: InstanceElement,
+  updateResult: HubspotMetadata,
+): Promise<InstanceElement> => {
+  const mergeCustomizer = (resultVal: Value, instanceVal: Value): Value | undefined => {
+    if (_.isArray(resultVal) && _.isArray(instanceVal)) {
+      return _.zip(resultVal, instanceVal).map((zipped: Value[]) =>
+        _.mergeWith(zipped[0], zipped[1], mergeCustomizer))
+    }
+    return undefined
+  }
+  // Add auto-generated fields to the before element
+  // If transform/filter moves auto-generated fields from being at the same
+  // "location" as it comes from the api then we need transform^-1 here before this merge
+  const mergedValues = _.mergeWith(updateResult as Values, instance.value, mergeCustomizer)
+  instance.value = transform(mergedValues, instance.type as ObjectType, transformPrimitive) || {}
+  return instance
+}
 
 const mergeFormFieldAndContactProperty = (field: Value): Value => {
   if (!field[FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]) {

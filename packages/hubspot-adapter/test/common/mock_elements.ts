@@ -126,7 +126,7 @@ export const afterFormMock = {
   inlineMessage: 'inline',
   redirect: 'google.com',
   themeName: 'theme',
-  createdAt: 9999999999999,
+  createdAt: 1500588456053,
   formFieldGroups: [
     {
       fields: [
@@ -1490,3 +1490,4 @@ export const marketingEmailMockArray = [
   thirdMarketingEmailMock,
   marketingEmailMock,
 ]
+

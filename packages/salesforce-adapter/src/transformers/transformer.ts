@@ -60,15 +60,19 @@ export const defaultApiName = (element: Element): string => {
     : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
 }
 
-export const apiName = (elem: Element, relative = false): string => {
+const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
     return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   const elemMetadataType = metadataType(elem)
-  const name = elemMetadataType === CUSTOM_OBJECT
+  return elemMetadataType === CUSTOM_OBJECT
     ? elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
     : elemMetadataType
-  return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) : name
+}
+
+export const apiName = (elem: Element, relative = false): string => {
+  const name = fullApiName(elem)
+  return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) as string : name
 }
 
 export const formulaTypeName = (baseTypeName: FIELD_TYPE_NAMES): string =>

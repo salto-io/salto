@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, isExpression, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
+import { Value, isExpression, ReferenceExpression, TemplateExpression, StaticAssetExpression } from '@salto-io/adapter-api'
 import { DumpedHclBlock, DumpedHclBody } from './types'
 
 const O_BLOCK = '{'
@@ -68,6 +68,9 @@ const dumpArray = (arr: Value): string[] => {
 
 const dumpExpresion = (exp: Value): string[] => {
   if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
+  if (exp instanceof StaticAssetExpression) {
+    return exp.value
+  }
   const { parts } = exp as TemplateExpression
   return [
     dumpPrimitive(parts

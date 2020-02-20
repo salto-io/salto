@@ -8,15 +8,15 @@
 %}
 
 # Pass your lexer object using the @lexer option:
-@lexer lexer 
+@lexer lexer
 
 main -> _nl (blockItem __nl:? {% d=> d[0] %}):* {% d=> _.flatten(d.filter(d => d)) %}
 block -> blockLabels oObj _nl (blockItem __nl {% id %}):* cObj {% d => converters.convertBlock(d[0], d[3], d[4]) %}
 blockLabels -> word __ (label __ {% d => d[0] %}):* {% d=> _.flatten([d[0], d[2]]) %}
-label -> 
+label ->
 	  %word {% id %}
 	| string {% id %}
-blockItem -> 
+blockItem ->
 	  block {% id %}
 	| attr {% id %}
 attr -> (word {% id %} | string {% id %}) _ eq _ value {% d => converters.convertAttr(d[0], d[4]) %}
@@ -28,7 +28,7 @@ object -> oObj _nl objectItems cObj {% d => converters.convertObject(d[0], d[2],
 objectItems ->
 	  null {% () => [] %}
 	| attr _nl (",":? _nl attr _nl {% d=> _.flatten([d[0], d[2]]) %}):* ( "," _nl {% d => d[0]%}):? {% d => _.flattenDeep([d[0], d[2]||[], d[3]]) %}
-value -> 
+value ->
 	  primitive {% id %}
 	| array {% id %}
 	| object {% id %}
@@ -37,6 +37,7 @@ primitive ->
 	  %number {% d => converters.convertNumber(d[0]) %}
 	| string {% id %}
 	| %boolean {% d => converters.convertBoolean(d[0]) %}
+  | %staticFileAsset {% d => converters.convertStaticFileAsset(d[0]) %}
 	| word {% d => converters.convertReference(d[0]) %}
 	| multilineString {% id %}
 	| %wildcard {% d => converters.convertWildcard(d[0]) %}

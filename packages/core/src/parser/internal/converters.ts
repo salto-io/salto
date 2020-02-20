@@ -246,3 +246,10 @@ export const convertWildcard = (wildcard: LexerToken): HclExpression => {
   if (allowWildcard) return exp
   throw new NearleyError(exp, wildcard.offset, 'Invalid wildcard token')
 }
+
+export const convertStaticFileAsset = (staticFileAsset: LexerToken): HclExpression => ({
+  type: 'staticFileAsset',
+  value: staticFileAsset.value,
+  expressions: [],
+  source: createSourceRange(staticFileAsset, staticFileAsset),
+})

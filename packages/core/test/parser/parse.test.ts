@@ -64,7 +64,7 @@ describe('Salto parser', () => {
             }
           ]
         }
-        
+
         annotations {
           salesforce.LeadConvertSettings convertSettings {}
         }
@@ -108,10 +108,15 @@ describe('Salto parser', () => {
          boolean path_assistant_enabled {
            _required = false
          }
+
       }
       salesforce.path_assistant_settings {
         full_name              = "PathAssistant"
         path_assistant_enabled = false
+      }
+
+      salesforce.test_static_something {
+         filepath               = @aaa.png
       }
       `
     beforeAll(() => {
@@ -120,7 +125,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(12)
+        expect(elements.length).toBe(13)
       })
     })
 
@@ -312,6 +317,18 @@ describe('Salto parser', () => {
         expect(numberType.annotationTypes.scale.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
         expect(numberType.annotationTypes.precision.elemID).toEqual(BuiltinTypes.NUMBER.elemID)
         expect(numberType.annotationTypes.unique.elemID).toEqual(BuiltinTypes.BOOLEAN.elemID)
+      })
+    })
+
+    describe('static file asset', () => {
+      let settingsType: InstanceElement
+
+      beforeAll(() => {
+        settingsType = elements[12] as InstanceElement
+      })
+
+      it('should have the correct path', () => {
+        expect(settingsType.value.filepath).toEqual('aaa.png')
       })
     })
 

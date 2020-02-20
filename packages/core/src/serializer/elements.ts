@@ -18,6 +18,7 @@ import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes,
   ObjectType, InstanceElement, isType, isElement, isExpression,
   ReferenceExpression, TemplateExpression, Expression, isInstanceElement, isReferenceExpression,
+  StaticAssetExpression
 } from '@salto-io/adapter-api'
 
 // There are two issues with naive json stringification:
@@ -104,6 +105,7 @@ export const deserialize = (data: string): Element[] => {
     ),
     [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
     [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
+    [StaticAssetExpression.serializedTypeName]: v => new StaticAssetExpression(v.value),
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

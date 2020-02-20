@@ -33,6 +33,7 @@ const lexer = moo.states({
     oCurly: '{',
     eq: '=',
     ws: /[ \t]+/,
+    staticFileAsset: { match: /@.+/, value: s => s.slice(1).trim() },
     comment: /\/\/[^\r\n]*/,
     newline: { match: /[\r\n]+/, lineBreaks: true },
     invalidSytax: { match: /[^ ]+/, error: true },

@@ -263,9 +263,11 @@ export class Workspace {
 
   private async transformError(error: ParseError | MergeError | ValidationError):
   Promise<WorkspaceError<SaltoError>> {
-    return (_.isUndefined((error as ParseError).subject)
-      ? this.transformToWorkspaceError(error as (MergeError | ValidationError))
-      : this.transformParseError(error as ParseError))
+    const isParseError = (err: ParseError | MergeError | ValidationError): err is ParseError =>
+      _.has(err, 'subject')
+    return (isParseError(error))
+      ? this.transformParseError(error)
+      : this.transformToWorkspaceError(error)
   }
 
   async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {

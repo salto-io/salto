@@ -37,8 +37,10 @@ const installationIDFullPath = (): string => (
   path.join(configHomeDir(), installationIDFilename)
 )
 
+const telemetryToken = process.env.SALTO_TELEMETRY_TOKEN || ''
+
 const getTelemetryHost = (): string => (
-  process.env.SALTO_TELEMETRY_HOST || 'http://127.0.0.1:5000'
+  process.env.SALTO_TELEMETRY_HOST || 'https://telemetry.salto.io'
 )
 
 const getTelemetryEnabled = (): boolean => (
@@ -48,6 +50,7 @@ const getTelemetryEnabled = (): boolean => (
 export type TelemetryConfig = {
   host: string
   enabled: boolean
+  token: string
 }
 
 export type AppConfig = {
@@ -78,6 +81,7 @@ export const configFromDisk = async (): Promise<AppConfig> => {
     telemetry: {
       host: getTelemetryHost(),
       enabled: getTelemetryEnabled(),
+      token: telemetryToken,
     },
   }
 }

@@ -46,5 +46,6 @@ export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dumpElements, dumpElemID } from './src/parser/dump'
 export { readAllCsvContents } from './test/common/helpers'
 export { SALTO_HOME_VAR, AppConfig, configFromDisk } from './src/app_config'
+export { Telemetry } from './src/telemetry'
 
 export const file = f

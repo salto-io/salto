@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { init, AppConfig } from '@salto-io/core'
+import { init, AppConfig, Telemetry } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
@@ -26,6 +26,8 @@ export const command = (
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     try {
+      Telemetry.init(config.telemetry, { installationID: config.installationID })
+      Telemetry.sendCountEvent('init', 1)
       const workspace = await init(config, workspaceName)
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))

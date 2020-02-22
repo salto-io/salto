@@ -37,7 +37,7 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 
-const config: AppConfig = { installationID: '1234' }
+const config: AppConfig = { installationID: '1234', telemetry: { host: '', enabled: false, token: '' } }
 
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }

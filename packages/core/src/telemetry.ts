@@ -28,6 +28,7 @@ export class NotInitializedError extends Error { }
 
 const log = logger(module)
 const eventsAPIPath = '/v1/events'
+const eventsFlushInterval = 1000
 
 export type RequiredTags = {
   installationID: string
@@ -51,29 +52,38 @@ type Event<T> = {
   timestamp: Date
 }
 
-
 export type CountEvent = Event<number> & { type: EVENT_TYPES.COUNTER }
 export type StackEvent = Event<Error> & { type: EVENT_TYPES.STACK }
 
 export class Telemetry {
   private static instance: Telemetry
   private enabled: boolean
+  private httpToken: string
   private commonTags: Tags
   private httpClient: DefaultUriUrlRequestApi<RequestPromise, RequestRetryOptions, OptionalUriUrl>
   private newEvents: Array<Event<unknown>> = []
   private queuedEvents: Array<Event<unknown>> = []
-  private flushEventsIntervalMs = 1000
+  private flushEventsIntervalMs = eventsFlushInterval
   private timeout: NodeJS.Timer = {} as NodeJS.Timer
 
   private constructor(config: TelemetryConfig, requiredTags: RequiredTags) {
     this.enabled = config.enabled
+    this.httpToken = config.token
     this.commonTags = {
       ...requiredTags,
       osArch: arch(),
       osRelease: release(),
       osPlatform: platform(),
     }
-    this.httpClient = requestretry.defaults({ baseUrl: config.host, url: eventsAPIPath, headers: { iko: 'lindo' }, json: true, maxAttempts: 1 })
+    this.httpClient = requestretry.defaults({
+      baseUrl: config.host,
+      url: eventsAPIPath,
+      headers: {
+        authentication: `Bearer ${this.httpToken}`,
+      },
+      json: true,
+      maxAttempts: 1,
+    })
     this.sendEventsLoop()
   }
 
@@ -106,7 +116,7 @@ export class Telemetry {
     this.getInstance().sendCountEvent(ev)
   }
 
-  public async sendCountEvent(event: CountEvent): Promise<void> {
+  private sendCountEvent(event: CountEvent): void {
     this.sendEvent(event)
   }
 
@@ -121,7 +131,7 @@ export class Telemetry {
     this.getInstance().sendStackEvent(ev)
   }
 
-  public async sendStackEvent(event: StackEvent): Promise<void> {
+  private sendStackEvent(event: StackEvent): void {
     if (_.isUndefined(event.value.stack)) {
       return
     }
@@ -136,37 +146,32 @@ export class Telemetry {
     this.sendEvent(ev)
   }
 
-  private async sendEvent<T>(event: Event<T>): Promise<void> {
-    if (!this.enabled) {
-      return Promise.resolve()
-    }
+  private sendEvent<T>(event: Event<T>): void {
     event.tags = _({ ...this.commonTags, ...event.tags }).mapKeys((_v, k) => _.snakeCase(k)).value()
     this.newEvents.push(event)
-
-    return Promise.resolve()
   }
 
   private sendEventsLoop(): void {
-    log.info('l')
     this.timeout = setTimeout(async () => {
       await this.sendEvents()
       this.sendEventsLoop()
     }, this.flushEventsIntervalMs)
   }
 
-  private async sendEvents(): Promise<void> {
+  private async sendEvents(timeoutMs = 1000): Promise<void> {
     const newEventsToQueue = _.remove(this.newEvents, _event => true)
     this.queuedEvents.push(...newEventsToQueue)
-    if (this.queuedEvents.length > 0) {
-      this.httpClient.post({ body: { events: this.queuedEvents }, timeout: 500 })
-        .then(() => { this.queuedEvents = [] })
-        .catch(e => log.debug(e))
+    if (this.queuedEvents.length > 0 && this.enabled) {
+      return this.httpClient.post({ body: { events: this.queuedEvents }, timeout: timeoutMs })
+        .then(_r => { this.queuedEvents = [] })
+        .catch(e => log.debug(`failed sending telemetry events: ${e}`))
     }
+    return Promise.resolve()
   }
 
-  public static async flush(): Promise<void> {
+  public static async flush(timeoutMs = 1000): Promise<void> {
     const telemetry = this.getInstance()
     clearTimeout(telemetry.timeout)
-    return telemetry.sendEvents()
+    return telemetry.sendEvents(timeoutMs)
   }
 }

@@ -22,7 +22,9 @@ import { DirectoryStore, File } from '../dir_store'
 
 const { promiseAllChained } = promises.array
 
-const FILE_WRITE_RATE = 100
+const READ_RATE = 100
+const WRITE_RATE = 100
+const DELETE_RATE = 100
 
 type FileMap = {
   [key: string]: File
@@ -74,6 +76,11 @@ export const localDirectoryStore = (
   const mtimestampFile = async (filename: string): Promise<number | undefined> =>
     (await stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
 
+  const get = async (filename: string): Promise<File | undefined> => {
+    const relFilename = getRelativeFileName(filename)
+    return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
+  }
+
   return {
     list: async (): Promise<string[]> =>
       _(await listDirFiles())
@@ -82,10 +89,7 @@ export const localDirectoryStore = (
         .uniq()
         .value(),
 
-    get: async (filename: string): Promise<File | undefined> => {
-      const relFilename = getRelativeFileName(filename)
-      return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
-    },
+    get,
 
     set: async (file: File): Promise<void> => {
       const relFilename = getRelativeFileName(file.filename)
@@ -106,10 +110,13 @@ export const localDirectoryStore = (
     },
 
     flush: async (): Promise<void> => {
-      await promiseAllChained(Object.values(updated).map(f => () => writeFile(f)), FILE_WRITE_RATE)
-      await promiseAllChained(deleted.map(f => () => deleteFile(f)), FILE_WRITE_RATE)
+      await promiseAllChained(Object.values(updated).map(f => () => writeFile(f)), WRITE_RATE)
+      await promiseAllChained(deleted.map(f => () => deleteFile(f)), DELETE_RATE)
       updated = {}
       deleted = []
     },
+
+    getFiles: async (filenames: string[]): Promise<(File | undefined) []> =>
+      promiseAllChained(filenames.map(f => () => get(f)), READ_RATE),
   }
 }

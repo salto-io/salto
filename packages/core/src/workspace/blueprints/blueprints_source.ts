@@ -35,9 +35,10 @@ const { promiseAllChained } = promises.array
 const log = logger(module)
 
 export const BP_EXTENSION = '.bp'
-
-const PARSE_RATE = 100
-const FILE_READ_RATE = 20
+const PARSE_RATE = 20
+const DUMP_RATE = 20
+// TODO: this should moved into cache implemenation
+const CACHE_RATE = 20
 
 export type Blueprint = {
   buffer: string
@@ -100,11 +101,11 @@ BlueprintsSource => {
       }
     }), PARSE_RATE)
 
-  const readAllBps = async (): Promise<Blueprint[]> => (
-    promiseAllChained((await blueprintsStore.list())
-      .map(filename => async () => blueprintsStore.get(filename)),
-    FILE_READ_RATE) as Promise<Blueprint[]>
-  )
+  const readAllBps = async (): Promise<Blueprint[]> =>
+    _.reject(
+      await blueprintsStore.getFiles(await blueprintsStore.list()),
+      _.isUndefined
+    ) as Blueprint[]
 
   const buildBlueprintsState = async (newBps: Blueprint[], current: ParsedBlueprintMap):
     Promise<BlueprintsState> => {
@@ -181,7 +182,7 @@ BlueprintsSource => {
       await promiseAllChained(bps
         .map(bp => async () => [parsedBlueprints[bp].filename,
           await getSourceMap(parsedBlueprints[bp].filename)]),
-      FILE_READ_RATE)
+      CACHE_RATE)
     )
 
     const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
@@ -205,7 +206,7 @@ BlueprintsSource => {
           }
         })
         .value(),
-      FILE_READ_RATE
+      DUMP_RATE
     )).filter(b => b !== undefined) as Blueprint[]
 
     log.debug('going to set the new blueprints')
@@ -250,7 +251,7 @@ BlueprintsSource => {
       const bps = await getElementBlueprints(elemID)
       const sourceRanges = await promiseAllChained(bps
         .map(bp => async () => (await getSourceMap(bp)).get(elemID.getFullName()) || []),
-      FILE_READ_RATE)
+      CACHE_RATE)
       return _.flatten(sourceRanges)
     },
 

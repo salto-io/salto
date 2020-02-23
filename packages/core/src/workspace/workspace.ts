@@ -22,7 +22,7 @@ import { DetailedChange } from '../core/plan'
 import { validateElements } from '../core/validator'
 import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
-import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType } from './config'
+import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType, currentEnvConfig } from './config'
 import Credentials, { adapterCredentials } from './credentials'
 import State from './state'
 import { localState } from './local/state'
@@ -64,7 +64,7 @@ const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
   const shouldNotExist = [
     configPath,
     config.localStorage,
-    config.stateLocation,
+    currentEnvConfig(config).stateLocation,
   ]
   const existenceMask = await Promise.all(shouldNotExist.map(exists))
   const existing = shouldNotExist.filter((_p, i) => existenceMask[i])
@@ -96,13 +96,13 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
   if (!config.currentEnv || _.isEmpty(config.envs)) {
     throw new Error('can not load a multi env source without envs and current env settings')
   }
-  const activeEnv = config.envs.find(env => env.name === config.currentEnv)
+  const activeEnv = config.envs[config.currentEnv]
   if (!activeEnv) {
     throw new Error('Unknown active env')
   }
 
   const sources = {
-    ..._.fromPairs(config.envs.map(env =>
+    ..._.fromPairs(_.values(config.envs).map(env =>
       [
         env.baseDir,
         loadBlueprintSource(
@@ -113,7 +113,7 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
     [COMMON_ENV_PREFIX]: loadBlueprintSource(
       config.baseDir,
       config.localStorage,
-      _.values(config.envs.map(env => path.join(config.baseDir, env.baseDir)))
+      _.values(_.values(config.envs).map(env => path.join(config.baseDir, env.baseDir)))
     ),
   }
   return multiEnvSource(sources, activeEnv.baseDir, COMMON_ENV_PREFIX)
@@ -129,9 +129,9 @@ export class Workspace {
     this.blueprintsSource = _.isEmpty(config.envs)
       ? loadBlueprintSource(config.baseDir, config.localStorage)
       : loadMultiEnvSource(config)
-    this.state = localState(config.stateLocation)
+    this.state = localState(currentEnvConfig(config).stateLocation)
     this.credentials = adapterCredentials(
-      localDirectoryStore(path.resolve(config.localStorage, config.credentialsLocation))
+      localDirectoryStore(currentEnvConfig(config).credentialsLocation)
     )
   }
 
@@ -144,11 +144,12 @@ export class Workspace {
     const minimalConfig = {
       uid: uuidv4(),
       name: workspaceName || path.basename(absBaseDir),
-      services: [],
-      envs: [{
-        name: defaultEnvName,
-        baseDir: path.join('envs', defaultEnvName),
-      }],
+      envs: {
+        [defaultEnvName]: {
+          baseDir: path.join('envs', defaultEnvName),
+          config: {},
+        },
+      },
       currentEnv: defaultEnvName,
     }
     const config = completeConfig(absBaseDir, minimalConfig)

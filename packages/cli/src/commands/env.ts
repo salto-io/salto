@@ -13,17 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Config, addEnvToConfig, setCurrentEnv } from '@salto-io/core'
-import { CliCommand, CliExitCode, ParsedCliInput, CliOutput, SpinnerCreator } from '../types'
+import { Config, addEnvToConfig, setCurrentEnv, loadConfig } from '@salto-io/core'
+import _ from 'lodash'
+import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
-import { EnvsCmdArgs, envsCmdFilter } from '../filters/env'
-import { loadWorkspace } from '../workspace'
 import { createCommandBuilder } from '../command_builder'
 import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv } from '../formatter'
 
 const outputLine = ({ stdout }: CliOutput, text: string): void => stdout.write(`${text}\n`)
 
-const setEnviornment = async (
+const setEnvironment = async (
   envName: string,
   output: CliOutput,
   config: Config
@@ -33,13 +32,13 @@ const setEnviornment = async (
   return CliExitCode.Success
 }
 
-const createEnviornment = async (
+const createEnvironment = async (
   envName: string,
   output: CliOutput,
   config: Config
 ): Promise<CliExitCode> => {
   const newConfig = await addEnvToConfig(config, envName)
-  await setEnviornment(envName, output, newConfig)
+  await setEnvironment(envName, output, newConfig)
   outputLine(output, formatCreateEnv(envName))
   return CliExitCode.Success
 }
@@ -56,52 +55,69 @@ const listEnvs = (
   output: CliOutput,
   config: Config
 ): CliExitCode => {
-  const list = formatEnvListItem(config.envs.map(env => env.name), config.currentEnv)
+  const list = formatEnvListItem(_.keys(config.envs), config.currentEnv)
   outputLine(output, list)
   return CliExitCode.Success
 }
 
+const nameRequiredCommands = ['create', 'set']
 export const command = (
   workspaceDir: string,
-  commandName: string | undefined,
+  commandName: string,
   output: CliOutput,
-  spinnerCreator: SpinnerCreator,
   envName?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const { workspace, errored } = await loadWorkspace(workspaceDir,
-      output, spinnerCreator)
-    if (errored) {
-      return CliExitCode.AppError
+    if (_.isEmpty(envName) && nameRequiredCommands.includes(commandName)) {
+      throw new Error('Missing required argument: name\n\n'
+        + `Example usage: salto env ${commandName} <envName>`)
     }
+    if (!_.isEmpty(envName) && !nameRequiredCommands.includes(commandName)) {
+      throw new Error(`Unknown argument: ${envName}\n\n`
+        + `Example usage: salto env ${commandName}`)
+    }
+
+    const workspaceConfig = await loadConfig(workspaceDir)
     switch (commandName) {
       case 'create':
-        return createEnviornment(envName as string, output, workspace.config)
+        return createEnvironment(envName as string, output, workspaceConfig)
       case 'set':
-        return setEnviornment(envName as string, output, workspace.config)
+        return setEnvironment(envName as string, output, workspaceConfig)
       case 'list':
-        return listEnvs(output, workspace.config)
+        return listEnvs(output, workspaceConfig)
       case 'current':
-        return getCurrentEnv(output, workspace.config)
+        return getCurrentEnv(output, workspaceConfig)
       default:
-        throw new Error('Unknown enviornment management command')
+        throw new Error('Unknown environment management command')
     }
   },
 })
 
-type EnvsArgs = {} & EnvsCmdArgs
+interface EnvsArgs {
+  command: string
+  name: string
+}
 
 type EnvsParsedCliInput = ParsedCliInput<EnvsArgs>
 
 const envsBuilder = createCommandBuilder({
   options: {
     command: 'env <command> [name]',
-    description: 'Manage your workspace enviornments',
+    description: 'Manage your workspace environments',
+    positional: {
+      command: {
+        type: 'string',
+        choices: ['create', 'set', 'list', 'current'],
+        description: 'The environment management command',
+      },
+      name: {
+        type: 'string',
+        desc: 'The name of the environment (required for create & set)',
+      },
+    },
   },
-
-  filters: [envsCmdFilter],
-  async build(input: EnvsParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', input.args.command, output, spinnerCreator, input.args.name)
+  async build(input: EnvsParsedCliInput, output: CliOutput) {
+    return command('.', input.args.command, output, input.args.name)
   },
 })
 

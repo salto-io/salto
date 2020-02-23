@@ -1,4 +1,4 @@
-salto {
-    state_location = "/states/test.bpc"
+salto.env default {
+    stateLocation = "/states/test.bpc"
     credentialsLocation = "/creds/default"
 }

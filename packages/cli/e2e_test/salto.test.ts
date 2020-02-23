@@ -57,12 +57,13 @@ describe('cli e2e', () => {
       }
     )
     jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
-      async (_currentName?: string): Promise<string> => 'default'
+      () => Promise.resolve('default')
     )
   })
 
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
   const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
+  const envConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/env.bp`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 
@@ -89,7 +90,7 @@ describe('cli e2e', () => {
     homePath = tmp.dirSync().name
     fetchOutputDir = `${homePath}/BP/test_fetch`
     localStorageDir = `${homePath}/.salto/test_fetch`
-    statePath = `${fetchOutputDir}/salto.config/state.bpc`
+    statePath = `${fetchOutputDir}/envs/default/salto.config/state.bpc`
     randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
@@ -102,8 +103,10 @@ describe('cli e2e', () => {
     process.env[SALTO_HOME_VAR] = homePath
     client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials })
     await mkdirp(`${fetchOutputDir}/salto.config`)
+    await mkdirp(`${fetchOutputDir}/envs/default/salto.config`)
     await mkdirp(localStorageDir)
     await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
+    await copyFile(envConfigFile, `${fetchOutputDir}/envs/default/salto.config/config.bp`)
     await rm(fullPath(tmpBPRelativePath))
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)

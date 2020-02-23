@@ -30,36 +30,35 @@ describe('env commands', () => {
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
   mockLoadWorkspace.mockImplementation(baseDir => ({ workspace: mocks.mockLoadWorkspace(baseDir) }))
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-  const spinner = mocks.mockSpinnerCreator([])
 
   beforeEach(async () => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
   })
 
-  describe('create enviornment command', () => {
-    it('should create a new enviornment', async () => {
-      await command('.', 'create', cliOutput, spinner, 'new-env').execute()
+  describe('create environment command', () => {
+    it('should create a new environment', async () => {
+      await command('.', 'create', cliOutput, 'new-env').execute()
       expect(cliOutput.stdout.content.search('new-env')).toBeGreaterThan(0)
     })
   })
 
-  describe('set enviornment command', () => {
-    it('should set an enviornment', async () => {
-      await command('.', 'set', cliOutput, spinner, 'active').execute()
+  describe('set environment command', () => {
+    it('should set an environment', async () => {
+      await command('.', 'set', cliOutput, 'active').execute()
       expect(cliOutput.stdout.content.search('active')).toBeGreaterThan(0)
     })
   })
 
-  describe('current enviornment command', () => {
-    it('should display the current enviornment', async () => {
-      await command('.', 'current', cliOutput, spinner).execute()
+  describe('current environment command', () => {
+    it('should display the current environment', async () => {
+      await command('.', 'current', cliOutput).execute()
       expect(cliOutput.stdout.content.search('active')).toBeGreaterThan(0)
     })
   })
 
-  describe('list enviornment command', () => {
-    it('should list all enviornments', async () => {
-      await command('.', 'list', cliOutput, spinner).execute()
+  describe('list environment command', () => {
+    it('should list all environments', async () => {
+      await command('.', 'list', cliOutput).execute()
       expect(cliOutput.stdout.content.search('active')).toBeGreaterThan(0)
       expect(cliOutput.stdout.content.search('inactive')).toBeGreaterThan(0)
     })

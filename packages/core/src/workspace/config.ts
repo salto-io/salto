@@ -18,6 +18,7 @@ import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
 import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'
 import { mkdirp, exists, readFile, replaceContents } from '../file'
@@ -60,12 +61,21 @@ class UnknownEnvError extends Error {
 }
 
 const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
-const saltoEnvConfigElemID = new ElemID('salto', 'env_config')
+const saltoEnvConfigElemID = new ElemID('salto', 'env')
 const saltoEnvConfigType = new ObjectType({
   elemID: saltoEnvConfigElemID,
   fields: {
     name: new Field(saltoEnvConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
-    baseDir: new Field(saltoEnvConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    baseDir: new Field(saltoEnvConfigElemID, 'baseDir', BuiltinTypes.STRING, requireAnno),
+    stateLocation: new Field(saltoEnvConfigElemID, 'stateLocation', BuiltinTypes.STRING),
+    credentialsLocation: new Field(saltoEnvConfigElemID, 'credentialsLocation', BuiltinTypes.STRING),
+    services: new Field(
+      saltoEnvConfigElemID,
+      'services',
+      BuiltinTypes.STRING,
+      {},
+      true
+    ),
   },
 })
 
@@ -74,19 +84,10 @@ export const saltoConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
     uid: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
-    baseDir: new Field(saltoConfigElemID, 'base_dir', BuiltinTypes.STRING),
-    stateLocation: new Field(saltoConfigElemID, 'state_location', BuiltinTypes.STRING),
-    credentialsLocation: new Field(saltoConfigElemID, 'state_location', BuiltinTypes.STRING),
-    localStorage: new Field(saltoConfigElemID, 'local_storage', BuiltinTypes.STRING),
+    baseDir: new Field(saltoConfigElemID, 'baseDir', BuiltinTypes.STRING),
+    localStorage: new Field(saltoConfigElemID, 'localStorage', BuiltinTypes.STRING),
     name: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
     currentEnv: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
-    services: new Field(
-      saltoConfigElemID,
-      'services',
-      BuiltinTypes.STRING,
-      {},
-      true
-    ),
     envs: new Field(
       saltoConfigElemID,
       'envs',
@@ -99,32 +100,33 @@ export const saltoConfigType = new ObjectType({
   annotations: {},
 })
 
-interface EnvSettings {
-  name: string
-  baseDir: string
+
+interface EnvConfig {
+  stateLocation: string
+  services: string[]
+  credentialsLocation: string
 }
 
 export interface Config {
   uid: string
   baseDir: string
-  stateLocation: string
-  credentialsLocation: string
   localStorage: string
   name: string
-  services: string[]
-  envs: EnvSettings[]
-  currentEnv? : string
+  envs: Record<string, {baseDir: string; config: EnvConfig}>
+  currentEnv: string
+}
+
+type PartialConfig = Required<Pick<Config, 'uid' | 'name' | 'currentEnv'>> & {
+  envs: Record<string, {baseDir: string; config: Partial<EnvConfig>}>
 }
 
 const ENV_CONFIG_FIELDS = ['services', 'stateLocation', 'credentialsLocation']
-type EnvConfig = Pick<Config, 'services' | 'stateLocation' | 'credentialsLocation'>
-type BaseConfig = Omit<Config, 'services' | 'stateLocation' | 'credentialsLocation'>
 
 const createDefaultBaseConfig = (
   baseDir: string,
   workspaceName? : string,
   existingUid? : string
-): BaseConfig => {
+): Config => {
   const name = workspaceName || path.basename(baseDir)
   const uid = existingUid || uuidv5(name, SALTO_NAMESPACE) // string based uuid
   return {
@@ -132,15 +134,18 @@ const createDefaultBaseConfig = (
     baseDir,
     localStorage: path.join(getSaltoHome(), `${name}-${uid}`),
     name,
-    envs: [],
+    envs: {},
+    currentEnv: '',
   }
 }
 
 const createDefaultEnvConfig = (
+  baseDir: string,
+  localStorage: string,
   envDir: string,
 ): EnvConfig => ({
-  stateLocation: path.join(envDir, CONFIG_DIR_NAME, 'state.bpc'),
-  credentialsLocation: path.join(envDir, 'credentials'),
+  stateLocation: path.join(baseDir, envDir, CONFIG_DIR_NAME, 'state.bpc'),
+  credentialsLocation: path.join(localStorage, envDir, 'credentials'),
   services: [],
 })
 
@@ -150,7 +155,7 @@ const resolvePath = (baseDir: string, pathToResolve: string): string => (
     : path.resolve(baseDir, pathToResolve)
 )
 
-const completeBaseConfig = (baseDir: string, baseConfig: Partial<BaseConfig>): BaseConfig => {
+const completeBaseConfig = (baseDir: string, baseConfig: Partial<Config>): Config => {
   const defaultBaseConfig = createDefaultBaseConfig(baseDir, baseConfig.name, baseConfig.uid)
   const fullBaseConfig = _.merge({}, defaultBaseConfig, baseConfig)
   return {
@@ -161,28 +166,26 @@ const completeBaseConfig = (baseDir: string, baseConfig: Partial<BaseConfig>): B
 
 const completeEnvConfig = (
   baseDir: string,
+  localStorage: string,
   envDir: string,
   envConfig: Partial<EnvConfig>
 ): EnvConfig => {
-  const defaultConfig = createDefaultEnvConfig(envDir)
-  const fullEnvConfig = _.merge({}, defaultConfig, envConfig)
-  return {
-    stateLocation: resolvePath(baseDir, fullEnvConfig.stateLocation),
-    credentialsLocation: resolvePath(baseDir, fullEnvConfig.credentialsLocation),
-    ...fullEnvConfig,
-  }
+  const defaultConfig = createDefaultEnvConfig(baseDir, localStorage, envDir)
+  return _.merge({}, defaultConfig, envConfig)
 }
 
-const getCurrentEnvPath = (baseConfig: BaseConfig): string => {
-  const currentEnv = baseConfig.envs.find(env => env.name === baseConfig.currentEnv)
-  return currentEnv ? currentEnv.baseDir : '.'
-}
-
-export const completeConfig = (baseDir: string, config: Partial<Config>): Config => {
-  const fullBaseConfig = completeBaseConfig(baseDir, config)
-  const envDir = getCurrentEnvPath(fullBaseConfig)
-  const fullEnvConfig = completeEnvConfig(baseDir, envDir, config)
-  return _.merge({}, fullBaseConfig, fullEnvConfig)
+export const completeConfig = (baseDir: string, patialConfig: PartialConfig): Config => {
+  const config = _.merge({}, completeBaseConfig(baseDir, patialConfig)) as Config
+  const envs = _.mapValues(config.envs, env => ({
+    ...env,
+    config: completeEnvConfig(
+      baseDir,
+      config.localStorage,
+      env.baseDir,
+      env.config || {}
+    ),
+  }))
+  return { ...config, envs }
 }
 
 export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
@@ -193,26 +196,48 @@ export const locateWorkspaceRoot = async (lookupDir: string): Promise<string|und
   return parentDir ? locateWorkspaceRoot(parentDir) : undefined
 }
 
+export const currentEnvConfig = (config: Config): EnvConfig => (
+  config.envs[config.currentEnv].config
+)
+
 export const getConfigPath = (baseDir: string): string => (
   path.join(baseDir, CONFIG_DIR_NAME, CONFIG_FILENAME)
 )
 
-const parseConfig = (buffer: Buffer): Partial<Config> => {
+const parseConfig = (buffer: Buffer): PartialConfig => {
   const parsedConfig = parse(buffer, '')
   const [configInstance] = [...findInstances(parsedConfig.elements, saltoConfigElemID)]
   if (!configInstance) throw new ConfigParseError()
-  return _.mapKeys(configInstance.value, (_v, k) => _.camelCase(k)) as unknown as Partial<Config>
+  const rawConfig = configInstance.value
+  return {
+    ...rawConfig,
+    envs: _.reduce(rawConfig.envs, (acc, env) => {
+      acc[env.name] = { baseDir: env.baseDir, config: {} }
+      return acc
+    }, {} as Record<string, {baseDir: string; config: Partial<EnvConfig>}>),
+  } as PartialConfig
 }
 
-const dumpEnvConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
-  const baseConfig = completeBaseConfig(baseDir, config)
-  const configPath = getConfigPath(getCurrentEnvPath(baseConfig))
-  const envConfig = _.pick(config, ENV_CONFIG_FIELDS)
+const parseEnvConfig = (buffer: Buffer): Partial<EnvConfig> => {
+  const parsedConfig = parse(buffer, '')
+  const [configInstance] = [...findInstances(parsedConfig.elements, saltoEnvConfigElemID)]
+  if (!configInstance) throw new ConfigParseError()
+  return configInstance.value as unknown as Partial<EnvConfig>
+}
+
+const dumpEnvConfig = async (
+  baseDir: string,
+  envDir: string,
+  envName: string,
+  config: Partial<EnvConfig>
+): Promise<void> => {
+  const configDir = path.join(baseDir, envDir)
+  const configPath = getConfigPath(configDir)
   await mkdirp(path.dirname(configPath))
   const configInstance = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    saltoConfigType,
-    _.mapKeys(envConfig as object, (_v, k) => _.snakeCase(k))
+    envName,
+    saltoEnvConfigType,
+    _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
   )
   return replaceContents(configPath, dumpElements([configInstance]))
 }
@@ -229,9 +254,14 @@ const dumpBaseConfig = async (baseDir: string, config: Partial<Config>): Promise
   return replaceContents(configPath, dumpElements([configInstance]))
 }
 
-export const dumpConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
+export const dumpConfig = async (baseDir: string, config: PartialConfig): Promise<void> => {
   await dumpBaseConfig(baseDir, config)
-  await dumpEnvConfig(baseDir, config)
+  await Promise.all(_.entries(config.envs).map(([name, env]) => dumpEnvConfig(
+    baseDir,
+    env.baseDir,
+    name,
+    env.config || {}
+  )))
 }
 
 const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
@@ -243,58 +273,50 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
   return baseDir
 }
 
-const loadBaseConfig = async (lookupDir: string): Promise<BaseConfig> => {
-  const baseDir = await baseDirFromLookup(lookupDir)
-  const baseConfig = parseConfig(await readFile(getConfigPath(baseDir)))
-  log.debug(`loaded raw base config ${JSON.stringify(baseConfig)}`)
-  return completeBaseConfig(baseDir, baseConfig)
-}
-
-const loadEnvConfig = async (baseConfig: BaseConfig): Promise<EnvConfig> => {
-  const envDir = getCurrentEnvPath(baseConfig)
-  const configPath = path.resolve(baseConfig.baseDir, getConfigPath(envDir))
-  const envConfig = await exists(configPath)
-    ? parseConfig(await readFile(configPath))
-    : {}
-  log.debug(`loaded raw env config ${JSON.stringify(envConfig)}`)
-  return completeEnvConfig(baseConfig.baseDir, envDir, envConfig)
-}
-
 export const loadConfig = async (lookupDir: string): Promise<Config> => {
-  const baseConfig = await loadBaseConfig(lookupDir)
-  const envConfig = await loadEnvConfig(baseConfig)
-  return _.merge({}, baseConfig, envConfig || {})
+  const baseDir = await baseDirFromLookup(lookupDir)
+  const config = parseConfig(await readFile(getConfigPath(baseDir)))
+  const envs = await mapValuesAsync(config.envs, async env => ({
+    ...env,
+    config: parseEnvConfig(await readFile(getConfigPath(path.join(baseDir, env.baseDir)))),
+  }))
+  log.debug(`loaded raw base config ${JSON.stringify(config)}`)
+  return completeConfig(baseDir, { ...config, envs })
 }
 
 export const addServiceToConfig = async (currentConfig: Config, service: string
 ): Promise<void> => {
-  const currentServices = currentConfig.services ? currentConfig.services : []
+  const envConfig = currentEnvConfig(currentConfig)
+  const currentServices = envConfig?.services || []
   if (currentServices.includes(service)) {
     throw new ServiceDuplicationError(service)
   }
   const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
-  config.services = [...currentServices, service]
-  await dumpEnvConfig(currentConfig.baseDir, config)
+  config.envs[currentConfig.currentEnv].config = {
+    ...envConfig,
+    services: [...currentServices, service],
+  } as EnvConfig
+  await dumpConfig(currentConfig.baseDir, config)
 }
 
 export const addEnvToConfig = async (currentConfig: Config, envName: string): Promise<Config> => {
-  if (currentConfig.envs.find(env => env.name === envName)) {
+  if (_.has(currentConfig.envs, envName)) {
     throw new EnvDuplicationError(envName)
   }
   const newEnvDir = path.join('envs', envName)
   await mkdirp(newEnvDir)
   const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
-  config.envs = [...currentConfig.envs, { name: envName, baseDir: newEnvDir }]
-  await dumpBaseConfig(currentConfig.baseDir, config)
+  config.envs = { [envName]: { baseDir: newEnvDir, config: {} }, ...config.envs }
+  await dumpConfig(currentConfig.baseDir, config)
   return completeConfig(currentConfig.baseDir, config)
 }
 
 export const setCurrentEnv = async (currentConfig: Config, envName: string): Promise<Config> => {
-  if (!currentConfig.envs.find(env => env.name === envName)) {
+  if (!_.has(currentConfig.envs, envName)) {
     throw new UnknownEnvError(envName)
   }
   const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
   config.currentEnv = envName
-  await dumpBaseConfig(currentConfig.baseDir, config)
+  await dumpConfig(currentConfig.baseDir, config)
   return completeConfig(currentConfig.baseDir, config)
 }

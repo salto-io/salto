@@ -51,27 +51,41 @@ describe('load proper configuration', () => {
         name: 'workspace',
         localStorage: '/.salto/workspace',
         baseDir: fullWorkspaceDir,
-        stateLocation: '/states/test.bpc',
-        credentialsLocation: '/creds/default',
-        services: [],
         uid: 'uid',
         currentEnv: 'default',
-        envs: [{ baseDir: 'default', name: 'default' }],
+        envs: {
+          default: {
+            baseDir: 'default',
+            config: {
+              credentialsLocation: '/creds/default',
+              services: [],
+              stateLocation: '/states/test.bpc',
+            },
+          },
+        },
       }
     )
   })
   it('should use default values', async () => {
     const config = await loadConfig(defaultsWorkspaceDir)
+    const localStorage = path.join(os.homedir(), '.salto', defaultLocalStorageName)
     expect(config).toEqual(
       {
         name: path.basename(defaultsWorkspaceDir),
-        localStorage: path.join(os.homedir(), '.salto', defaultLocalStorageName),
+        localStorage,
         baseDir: defaultsWorkspaceDir,
-        stateLocation: path.join('salto.config', 'state.bpc'),
-        credentialsLocation: 'credentials',
-        services: [],
         uid: defaultUUID,
-        envs: [],
+        currentEnv: 'default',
+        envs: {
+          default: {
+            baseDir: 'default',
+            config: {
+              credentialsLocation: path.join(localStorage, 'default', 'credentials'),
+              services: [],
+              stateLocation: path.join(defaultsWorkspaceDir, 'default', 'salto.config', 'state.bpc'),
+            },
+          },
+        },
       }
     )
   })
@@ -79,16 +93,24 @@ describe('load proper configuration', () => {
     const homeVar = path.join(os.homedir(), '.salto_home')
     process.env[SALTO_HOME_VAR] = homeVar
     const config = await loadConfig(defaultsWorkspaceDir)
+    const localStorage = path.join(homeVar, defaultLocalStorageName)
     expect(config).toEqual(
       {
         name: path.basename(defaultsWorkspaceDir),
-        localStorage: path.join(homeVar, defaultLocalStorageName),
+        localStorage,
         baseDir: defaultsWorkspaceDir,
-        stateLocation: path.join('salto.config', 'state.bpc'),
-        credentialsLocation: 'credentials',
-        services: [],
         uid: defaultUUID,
-        envs: [],
+        currentEnv: 'default',
+        envs: {
+          default: {
+            baseDir: 'default',
+            config: {
+              credentialsLocation: path.join(localStorage, 'default', 'credentials'),
+              services: [],
+              stateLocation: path.join(defaultsWorkspaceDir, 'default', 'salto.config', 'state.bpc'),
+            },
+          },
+        },
       }
     )
   })
@@ -104,17 +126,33 @@ describe('update environment settings', () => {
     services: [],
     uid: 'uid',
     currentEnv: 'default',
-    envs: [
-      { baseDir: 'default', name: 'default' },
-      { baseDir: 'other', name: 'other' },
-    ],
+    envs: {
+      default: { baseDir: 'default',
+        config: {
+          stateLocation: '/states/default.bpc',
+          credentialsLocation: '/creds/default',
+          services: [],
+        } },
+      other: { baseDir: 'other',
+        config: {
+          stateLocation: '/states/other.bpc',
+          credentialsLocation: '/creds/other',
+          services: [],
+        } },
+    },
   }
   describe('add new environment', () => {
     it('should add a new environment', async () => {
       const afterConfig = await addEnvToConfig(beforeConfig, 'newEnv')
-      expect(afterConfig.envs[2]).toEqual({
-        name: 'newEnv',
+      expect(afterConfig.envs.newEnv).toEqual({
         baseDir: path.join('envs', 'newEnv'),
+        config: {
+          credentialsLocation: path.join(beforeConfig.localStorage, 'envs', 'newEnv', 'credentials'),
+          services: [],
+          stateLocation: path.join(
+            beforeConfig.baseDir, 'envs', 'newEnv', 'salto.config', 'state.bpc'
+          ),
+        },
       })
     })
     it('should fail when an existing environment name is provided', async () => {

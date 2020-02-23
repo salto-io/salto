@@ -26,11 +26,18 @@ jest.mock('@salto-io/core', () => ({
           name: workspaceName,
           localStorage: '',
           baseDir: '',
-          stateLocation: '',
-          credentialsLocation: 'credentials',
-          services: ['salesforce'],
           uid: '',
-          envs: [],
+          envs: {
+            default: {
+              baseDir: '',
+              config: {
+                stateLocation: '',
+                credentialsLocation: 'credentials',
+                services: ['salesforce'],
+              },
+            },
+          },
+          currentEnv: 'default',
         },
       }
     }

@@ -194,15 +194,27 @@ export const mockLoadConfig = (workspaceDir: string): Config =>
   ({
     uid: '123',
     baseDir: workspaceDir,
-    services: ['salesforce', 'hubspot'],
     name: 'mock-ws',
     localStorage: '',
-    stateLocation: '',
-    credentialsLocation: 'credentials',
-    envs: [
-      { name: 'active', baseDir: 'active' },
-      { name: 'inactive', baseDir: 'inactive' },
-    ],
+    envs: {
+      active: {
+        baseDir: 'active',
+        config: {
+          stateLocation: '',
+          credentialsLocation: '',
+          services: ['salesforce', 'hubspot'],
+        },
+      },
+      inactive: {
+        baseDir: 'inactive',
+        config: {
+          stateLocation: '',
+          credentialsLocation: '',
+          services: ['salesforce', 'hubspot'],
+
+        },
+      },
+    },
     currentEnv: 'active',
   })
 
@@ -394,7 +406,7 @@ export const transformToWorkspaceError = (): Readonly<WorkspaceError<SaltoError>
 
 export const createMockEnvNameGetter = (
   newEnvName = 'default'
-): (oldEnvName: string
+): (
 ) => Promise<string> => (
-  (_oldEnvName: string) => Promise.resolve(newEnvName)
+  () => Promise.resolve(newEnvName)
 )

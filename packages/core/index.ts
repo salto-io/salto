@@ -42,7 +42,7 @@ export {
 export { Errors } from './src/workspace/errors'
 export { Blueprint } from './src/workspace/blueprints/blueprints_source'
 export {
-  Config, loadConfig, addServiceToConfig, addEnvToConfig, setCurrentEnv,
+  Config, loadConfig, addServiceToConfig, addEnvToConfig, setCurrentEnv, currentEnvConfig,
 } from './src/workspace/config'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dumpElements, dumpElemID } from './src/parser/dump'

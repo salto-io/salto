@@ -1,6 +1,6 @@
 salto {
   name = "workspace"
-  local_storage = "/.salto/workspace"
+  localStorage = "/.salto/workspace"
   uid = "uid"
   envs = [
       {
@@ -8,6 +8,6 @@ salto {
         name = "default",
       },
   ]
-  current_env = "default"
+  currentEnv = "default"
 }
 

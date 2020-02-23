@@ -24,11 +24,11 @@ export const command = (
   workspaceName: string | undefined,
   config: AppConfig,
   { stdout, stderr }: CliOutput,
-  getEnvNameCallback: (currentEnvName: string) => Promise<string>
+  getEnvNameCallback: (currentEnvName?: string) => Promise<string>
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     try {
-      const defaultEnvName = await getEnvNameCallback('default')
+      const defaultEnvName = await getEnvNameCallback()
       const workspace = await init(config, defaultEnvName, workspaceName)
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))

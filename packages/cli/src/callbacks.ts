@@ -148,7 +148,7 @@ export const getEnvName = async (currentName = 'default'): Promise<string> => {
   const questions = [{
     type: 'input',
     mask: '*',
-    message: `Enter a new name for the ${currentName} enviornment`,
+    message: `Enter a new name for the ${currentName} environment`,
     name: currentName,
     default: currentName,
   }]

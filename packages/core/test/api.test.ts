@@ -62,7 +62,18 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
 })
 const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Workspace => ({
   elements,
-  config: config || { stateLocation: '.', services: SERVICES },
+  config: config || {
+    currentEnv: 'default',
+    envs: {
+      default: {
+        config: {
+          stateLocation: '.',
+          services: SERVICES,
+        },
+        baseDir: 'default',
+      },
+    },
+  },
   state: mockState(),
   resolvePath: _.identity,
   updateBlueprints: jest.fn(),

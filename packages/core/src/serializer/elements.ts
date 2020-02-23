@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes,
-  ObjectType, InstanceElement, isType, isElement,
+  ObjectType, InstanceElement, isType, isElement, isExpression,
   ReferenceExpression, TemplateExpression, Expression, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 
@@ -42,13 +42,13 @@ interface ClassName {[SALTO_CLASS_FIELD]: string}
 export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
-    if (isElement(e)) {
-      const o = e as Element & ClassName
+    if (isReferenceExpression(e)) {
+      const o = new ReferenceExpression(e.elemId) as ReferenceExpression & ClassName
       o[SALTO_CLASS_FIELD] = e.constructor.name
       return o
     }
-    if (isReferenceExpression(e)) {
-      const o = new ReferenceExpression(e.elemId) as ReferenceExpression & ClassName
+    if (isElement(e) || isExpression(e)) {
+      const o = e as Element & ClassName
       o[SALTO_CLASS_FIELD] = e.constructor.name
       return o
     }

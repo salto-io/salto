@@ -71,34 +71,34 @@ export const deserialize = (data: string): Element[] => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const revivers: {[key: string]: (v: {[key: string]: any}) => Element|Expression} = {
-    [InstanceElement.name]: v => new InstanceElement(
+    [InstanceElement.serializedTypeName]: v => new InstanceElement(
       reviveElemID(v.elemID).name,
       v.type,
       v.value,
       undefined,
       v.annotations,
     ),
-    [ObjectType.name]: v => new ObjectType({
+    [ObjectType.serializedTypeName]: v => new ObjectType({
       elemID: reviveElemID(v.elemID),
       fields: v.fields,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
-    [PrimitiveType.name]: v => new PrimitiveType({
+    [PrimitiveType.serializedTypeName]: v => new PrimitiveType({
       elemID: reviveElemID(v.elemID),
       primitive: v.primitive,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
-    [Field.name]: v => new Field(
+    [Field.serializedTypeName]: v => new Field(
       reviveElemID(v.parentID),
       v.name,
       v.type,
       v.annotations,
       v.isList,
     ),
-    [TemplateExpression.name]: v => new TemplateExpression({ parts: v.parts }),
-    [ReferenceExpression.name]: v => new ReferenceExpression(reviveElemID(v.elemId)),
+    [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
+    [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

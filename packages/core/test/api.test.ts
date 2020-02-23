@@ -96,7 +96,7 @@ describe('api.ts', () => {
 
   describe('init', () => {
     it('should call init', async () => {
-      const ws = api.init({ installationID: '1234', telemetry: { host: '', enabled: false, token: '' } }, 'ws1')
+      const ws = api.init('ws1')
       expect((await ws).config.name).toEqual('ws1')
     })
   })

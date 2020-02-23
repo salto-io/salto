@@ -16,7 +16,6 @@
 */
 
 import os from 'os'
-import _ from 'lodash'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
 import { exists, writeFile, readTextFile, mkdirp } from './file'
@@ -44,7 +43,7 @@ const getTelemetryHost = (): string => (
 )
 
 const getTelemetryEnabled = (): boolean => (
-  !_.isUndefined(process.env.SALTO_TELEMETRY_DISABLE) || true
+  process.env.SALTO_TELEMETRY_DISABLE === undefined
 )
 
 export type TelemetryConfig = {

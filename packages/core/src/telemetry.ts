@@ -15,20 +15,16 @@
 * limitations under the License.
 */
 
-import _ from 'lodash'
-import requestretry, { RequestPromise, RequestRetryOptions } from 'requestretry'
-import { OptionalUriUrl, DefaultUriUrlRequestApi } from 'request'
+import axios from 'axios'
 import { platform, arch, release } from 'os'
 import { setTimeout, clearTimeout } from 'timers'
 import { logger } from '@salto-io/logging'
 import { TelemetryConfig } from './app_config'
 
-export class AlreadyInitializedError extends Error { }
-export class NotInitializedError extends Error { }
-
 const log = logger(module)
-const eventsAPIPath = '/v1/events'
-const eventsFlushInterval = 1000
+const MAX_EVENTS_PER_REQUEST = 20
+const EVENTS_API_PATH = '/v1/events'
+const EVENTS_FLUSH_INTERVAL = 1000
 
 export type RequiredTags = {
   installationID: string
@@ -43,135 +39,99 @@ export enum EVENT_TYPES {
   STACK = 'stack',
 }
 
-export type EventType = EVENT_TYPES.COUNTER | EVENT_TYPES.STACK
 type Event<T> = {
   name: string
-  type: EventType
   value: T
   tags: Tags
-  timestamp: Date
+  timestamp: string
 }
 
 export type CountEvent = Event<number> & { type: EVENT_TYPES.COUNTER }
 export type StackEvent = Event<Error> & { type: EVENT_TYPES.STACK }
 
-export class Telemetry {
-  private static instance: Telemetry
-  private enabled: boolean
-  private httpToken: string
-  private commonTags: Tags
-  private httpClient: DefaultUriUrlRequestApi<RequestPromise, RequestRetryOptions, OptionalUriUrl>
-  private newEvents: Array<Event<unknown>> = []
-  private queuedEvents: Array<Event<unknown>> = []
-  private flushEventsIntervalMs = eventsFlushInterval
-  private timeout: NodeJS.Timer = {} as NodeJS.Timer
+export type TelemetrySender = {
+  enabled: boolean
 
-  private constructor(config: TelemetryConfig, requiredTags: RequiredTags) {
-    this.enabled = config.enabled
-    this.httpToken = config.token
-    this.commonTags = {
-      ...requiredTags,
-      osArch: arch(),
-      osRelease: release(),
-      osPlatform: platform(),
-    }
-    this.httpClient = requestretry.defaults({
-      baseUrl: config.host,
-      url: eventsAPIPath,
-      headers: {
-        authentication: `Bearer ${this.httpToken}`,
-      },
-      json: true,
-      maxAttempts: 1,
-    })
-    this.sendEventsLoop()
+  sendCountEvent(name: string, value: number, extraTags: Tags): void
+  sendStackEvent(name: string, value: Error, extraTags: Tags): void
+  start(): void
+  stop(): void
+  flush(): Promise<void>
+}
+
+export const telemetrySender = (
+  config: TelemetryConfig,
+  tags: RequiredTags & Tags
+): TelemetrySender => {
+  const newEvents = [] as Array<Event<unknown>>
+  let queuedEvents = [] as Array<Event<unknown>>
+  const commonTags = {
+    ...tags,
+    osArch: arch(),
+    osRelease: release(),
+    osPlatform: platform(),
   }
-
-  public static init(config: TelemetryConfig, requiredTags: RequiredTags): void {
-    if (Telemetry.instance) {
-      throw new AlreadyInitializedError('telemetry instance already initiated')
-    }
-    Telemetry.instance = new Telemetry(config, requiredTags)
-  }
-
-  public static getInstance(): Telemetry {
-    if (!this.instance) {
-      throw new NotInitializedError('telemetry was not initialized, instance was not created')
-    }
-    return this.instance
-  }
-
-  public static setFlushInterval(ms: number): void {
-    this.getInstance().flushEventsIntervalMs = ms
-  }
-
-  public static sendCountEvent(name: string, value: number, extraTags: Tags = {}): void {
-    const ev: CountEvent = {
-      name,
-      value,
-      tags: extraTags,
-      type: EVENT_TYPES.COUNTER,
-      timestamp: new Date(),
-    }
-    this.getInstance().sendCountEvent(ev)
-  }
-
-  private sendCountEvent(event: CountEvent): void {
-    this.sendEvent(event)
-  }
-
-  public static sendStackEvent(name: string, value: Error, extraTags: Tags = {}): void {
-    const ev: StackEvent = {
-      name,
-      value,
-      tags: extraTags,
-      type: EVENT_TYPES.STACK,
-      timestamp: new Date(),
-    }
-    this.getInstance().sendStackEvent(ev)
-  }
-
-  private sendStackEvent(event: StackEvent): void {
-    if (_.isUndefined(event.value.stack)) {
-      return
-    }
-    const stackWithoutMessage = event.value.stack.replace(event.value.toString(), '').trim()
-    const ev = {
-      name: event.name,
-      value: stackWithoutMessage,
-      tags: event.tags,
-      type: EVENT_TYPES.STACK,
-      timestamp: new Date(),
-    }
-    this.sendEvent(ev)
-  }
-
-  private sendEvent<T>(event: Event<T>): void {
-    event.tags = _({ ...this.commonTags, ...event.tags }).mapKeys((_v, k) => _.snakeCase(k)).value()
-    this.newEvents.push(event)
-  }
-
-  private sendEventsLoop(): void {
-    this.timeout = setTimeout(async () => {
-      await this.sendEvents()
-      this.sendEventsLoop()
-    }, this.flushEventsIntervalMs)
-  }
-
-  private async sendEvents(timeoutMs = 1000): Promise<void> {
-    const newEventsToQueue = _.remove(this.newEvents, _event => true)
-    this.queuedEvents.push(...newEventsToQueue)
-    if (this.queuedEvents.length > 0 && this.enabled) {
-      return this.httpClient.post({ body: { events: this.queuedEvents }, timeout: timeoutMs })
-        .then(_r => { this.queuedEvents = [] })
-        .catch(e => log.debug(`failed sending telemetry events: ${e}`))
+  const httpClient = axios.create({
+    baseURL: config.host,
+    headers: {
+      Authorization: config.token,
+    },
+  })
+  const enabled = config.enabled || false
+  let timer = {} as NodeJS.Timer
+  const flush = async (): Promise<void> => {
+    queuedEvents.push(...newEvents.splice(0, MAX_EVENTS_PER_REQUEST - queuedEvents.length))
+    if (queuedEvents.length > 0 && enabled) {
+      try {
+        await httpClient.post(
+          EVENTS_API_PATH,
+          { events: queuedEvents },
+        )
+        queuedEvents = []
+      } catch (e) {
+        log.debug(`failed sending telemetry events: ${e}`)
+      }
     }
     return Promise.resolve()
   }
-
-  public static async flush(timeoutMs = 1000): Promise<void> {
-    const telemetry = this.getInstance()
-    clearTimeout(telemetry.timeout)
-    return telemetry.sendEvents(timeoutMs)
+  const start = (): void => {
+    timer = setTimeout(async () => {
+      await flush()
+      start()
+    }, EVENTS_FLUSH_INTERVAL)
   }
+
+  const stop = (): void => clearTimeout(timer)
+
+  const sendCountEvent = (name: string, value: number, extraTags: Tags): void => {
+    const newEvent = {
+      name,
+      value,
+      tags: { ...commonTags, ...extraTags },
+      type: EVENT_TYPES.COUNTER,
+      timestamp: new Date().toISOString(),
+    } as CountEvent
+    newEvents.push(newEvent)
+  }
+
+  const sendStackEvent = (name: string, value: Error, extraTags: Tags): void => {
+    const newEvent = {
+      name,
+      value,
+      tags: { ...commonTags, ...extraTags },
+      type: EVENT_TYPES.STACK,
+      timestamp: new Date().toISOString(),
+    } as StackEvent
+    newEvents.push(newEvent)
+  }
+
+  const sender = {
+    enabled,
+    sendCountEvent,
+    sendStackEvent,
+    start,
+    stop,
+    flush,
+  }
+  return Object.freeze(sender)
 }

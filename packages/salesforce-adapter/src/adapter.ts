@@ -172,6 +172,7 @@ export default class SalesforceAdapter {
       'Settings',
       'StaticResource',
       'NetworkBranding',
+      'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],

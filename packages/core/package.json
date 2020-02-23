@@ -13,6 +13,7 @@
   "files": [
     "dist",
     "src",
+    "test",
     "index.ts"
   ],
   "main": "dist/index.js",

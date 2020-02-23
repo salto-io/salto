@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import { Field, InstanceElement, isType, getChangeElement } from '@salto-io/adapter-api'
 import {
   ChangeEntry, isFieldChange, isInstanceChange, DependencyChanger, DependencyChange,
-  addReferenceDependency, isDependentChange,
+  addReferenceDependency, isDependentAction,
 } from './common'
 
 
@@ -36,7 +36,7 @@ export const addTypeDependency: DependencyChanger = async changes => {
   const addChangeTypeDependency = ([id, change]: FieldOrInstanceChange): DependencyChange[] => (
     (typeChanges.get(getChangeElement(change).type.elemID.getFullName()) ?? [])
       .filter(
-        ([_id, typeChange]) => isDependentChange(change.action, typeChange.action)
+        ([_id, typeChange]) => isDependentAction(change.action, typeChange.action)
       )
       .map(
         ([typeChangeId, typeChange]) => addReferenceDependency(typeChange.action, id, typeChangeId)

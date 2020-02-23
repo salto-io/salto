@@ -38,7 +38,7 @@ export const dependencyChange = (
   action: DependencyChange['action'], source: ChangeId, target: ChangeId
 ): DependencyChange => ({ action, dependency: { source, target } })
 
-export const isDependentChange = (
+export const isDependentAction = (
   srcAction: Change['action'], targetAction: Change['action']
 ): boolean => (
   targetAction !== 'modify' && (srcAction === 'modify' || srcAction === targetAction)

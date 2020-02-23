@@ -22,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   DependencyChanger, ChangeEntry, DependencyChange, addReferenceDependency, addParentDependency,
-  isDependentChange,
+  isDependentAction,
 } from './common'
 
 const getAllReferencedIds = (elem: Element): Set<string> => {
@@ -68,7 +68,7 @@ export const addReferencesDependency: DependencyChanger = async changes => {
     return (wu(getAllReferencedIds(elem))
       .map(targetId => changesById.get(targetId) ?? [])
       .flatten(true) as wu.WuIterable<ChangeEntry>)
-      .filter(([_id, targetChange]) => isDependentChange(change.action, targetChange.action))
+      .filter(([_id, targetChange]) => isDependentAction(change.action, targetChange.action))
       .map(([targetId, targetChange]) => (parents.has(getChangeElemId(targetChange))
         ? addParentDependency(id, targetId)
         : addReferenceDependency(targetChange.action, id, targetId)))

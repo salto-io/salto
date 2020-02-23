@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import { getChangeElement, Field } from '@salto-io/adapter-api'
 import {
   DependencyChanger, isObjectTypeChange, ChangeEntry, DependencyChange, addParentDependency,
-  isFieldChange, isDependentChange,
+  isFieldChange, isDependentAction,
 } from './common'
 
 export const addFieldToObjectDependency: DependencyChanger = async changes => {
@@ -29,7 +29,7 @@ export const addFieldToObjectDependency: DependencyChanger = async changes => {
 
   const addObjectDependency = ([id, change]: ChangeEntry<Field>): DependencyChange[] => (
     (objectChanges.get(getChangeElement(change).parentID.getFullName()) ?? [])
-      .filter(([_id, objectChange]) => isDependentChange(change.action, objectChange.action))
+      .filter(([_id, objectChange]) => isDependentAction(change.action, objectChange.action))
       .map(([objectChangeId]) => addParentDependency(id, objectChangeId))
   )
 

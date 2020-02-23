@@ -14,7 +14,9 @@
     "salto": "./bin/salto"
   },
   "files": [
-    "dist/**/*"
+    "bin",
+    "dist",
+    "src"
   ],
   "main": "./bin/salto",
   "types": "dist/index.d.ts",

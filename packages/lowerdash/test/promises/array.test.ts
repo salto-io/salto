@@ -22,7 +22,7 @@ describe('promiseAllChained', () => {
     const chunkSize = 7
     const func = (n: number): () => Promise<number> => () => {
       order.push(`start-${n}`)
-      return new Promise(resolve => setTimeout(resolve, 1)).then(_r => {
+      return new Promise(resolve => setTimeout(resolve, 0)).then(() => {
         order.push(`end-${n}`)
         return n
       })

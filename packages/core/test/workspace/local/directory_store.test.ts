@@ -96,4 +96,18 @@ describe('localDirectoryStore', () => {
       expect(mockReplaceContents).not.toHaveBeenCalled()
     })
   })
+
+  describe('getFiles', () => {
+    it('return multiple files', async () => {
+      mockFileExists.mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(true)
+      mockReadFile.mockResolvedValueOnce('bla1').mockResolvedValueOnce('bla2')
+      mockState.mockResolvedValue({ mtimeMs: 7 })
+      const files = await localDirectoryStore('').getFiles(['', '', ''])
+      expect(files[0]).toBeUndefined()
+      expect(files[1]?.buffer).toEqual('bla1')
+      expect(files[2]?.buffer).toEqual('bla2')
+    })
+  })
 })

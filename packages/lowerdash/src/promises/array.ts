@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
+
 export const asyncPartition = async <T>(
   arr: T[],
   partitioner: (item: T) => Promise<boolean>
@@ -30,3 +32,9 @@ export const asyncPartition = async <T>(
   }
   return [truthfull, nonThruthfull]
 }
+
+export const promiseAllChained = <T>(funcs: (() => Promise<T>)[], chunkSize = 1): Promise<T[]> =>
+  _.chunk(funcs, chunkSize).reduce<Promise<T[]>>((prevPromise, chunk) =>
+    prevPromise.then(prev => Promise.all(chunk.map(f => f()))
+      .then(chunkRes => [...prev, ...chunkRes])),
+  Promise.resolve([]))

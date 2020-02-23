@@ -253,8 +253,19 @@ export const transformElement = <T extends Element>(
     transformReference?: TransformReferenceFunc
   }
 ): T => {
+  let newElement: Element
+
+  const transformedAnnotations = transformValues({
+    values: element.annotations,
+    type: element.annotationTypes,
+    transformPrimitives,
+    transformReferences: transformReference,
+    strict: false,
+    path: 'annotations',
+  }) || {}
+
   if (isInstanceElement(element)) {
-    element.value = transformValues({
+    const transformedValues = transformValues({
       values: element.value,
       type: element.type,
       transformPrimitives,
@@ -262,10 +273,28 @@ export const transformElement = <T extends Element>(
       strict: false,
       path: 'value',
     }) || {}
+
+    newElement = new InstanceElement(
+      element.elemID.name,
+      element.type,
+      transformedValues,
+      element.path,
+      transformedAnnotations
+    )
+    return newElement as T
   }
 
   if (isObjectType(element)) {
-    _(element.fields)
+    newElement = new ObjectType({
+      elemID: element.elemID,
+      fields: element.fields,
+      annotationTypes: element.annotationTypes,
+      annotations: transformedAnnotations,
+      path: element.path,
+      isSettings: element.isSettings,
+    })
+
+    _((newElement as ObjectType).fields)
       .forEach(f => {
         f.annotations = transformValues({
           values: f.annotations,
@@ -276,18 +305,33 @@ export const transformElement = <T extends Element>(
           path: 'fields.field.annotations',
         }) || {}
       })
+    return newElement as T
   }
 
-  element.annotations = transformValues({
-    values: element.annotations,
-    type: element.annotationTypes,
-    transformPrimitives,
-    transformReferences: transformReference,
-    strict: false,
-    path: 'annotations',
-  }) || {}
+  if (isField(element)) {
+    newElement = new Field(
+      element.elemID,
+      element.name,
+      element.type,
+      transformedAnnotations,
+      element.isList
+    )
+    return newElement as T
+  }
 
-  return element
+  if (isPrimitiveType(element)) {
+    newElement = new PrimitiveType({
+      elemID: element.elemID,
+      primitive: element.primitive,
+      annotationTypes: element.annotationTypes,
+      path: element.path,
+      annotations: transformedAnnotations,
+    })
+
+    return newElement as T
+  }
+
+  throw Error('received unsupported (subtype) Element')
 }
 
 export const transformReferences = <T extends Element>(

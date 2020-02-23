@@ -113,7 +113,9 @@ describe('Data migration operations E2E', () => {
       await rm(exportOutputDir)
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
+      await mkdirp(`${fetchOutputDir}/envs/default/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
+      await copyFile(envConfigFile, `${fetchOutputDir}/envs/default/salto.config/config.bp`)
     })
 
     it('should fail when running export', async () => {

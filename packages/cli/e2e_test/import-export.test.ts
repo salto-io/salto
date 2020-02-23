@@ -37,6 +37,7 @@ let exportOutputDir: string
 let exportOutputFullPath: string
 
 const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
+const envConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/env.bp`
 const exportFile = 'export_test.csv'
 const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 
@@ -63,7 +64,9 @@ describe('Data migration operations E2E', () => {
       await rm(exportOutputDir)
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
+      await mkdirp(`${fetchOutputDir}/envs/default/salto.config`)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
+      await copyFile(envConfigFile, `${fetchOutputDir}/envs/default/salto.config/config.bp`)
       await runSalesforceLogin(fetchOutputDir)
       await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator, services, false).execute()
     })

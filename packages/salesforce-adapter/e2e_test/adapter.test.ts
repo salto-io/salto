@@ -2308,7 +2308,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
         expect(annotations[constants.FIELD_ANNOTATIONS.PRECISION]).toBe(18)
-        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual(25)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual('25')
       }
 
       const testAutoNumber = (annotations: Values): void => {
@@ -2475,7 +2475,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
         expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
-        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe(42)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('42')
       }
 
       const testText = (annotations: Values): void => {

@@ -23,7 +23,7 @@ import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
 
 const mockDeploy = deploy
-const mockServices = (ws: Workspace) => currentEnvConfig(ws.config).services as string[]
+const mockServices = (ws: Workspace): string[] => currentEnvConfig(ws.config).services as string[]
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   deploy: jest.fn().mockImplementation((

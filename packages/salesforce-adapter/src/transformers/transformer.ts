@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
-  Field as TypeField, TypeMap, TransformValueFunc, bpCase,
+  Field as TypeField, TypeMap, TransformValueFunc, bpCase, isField,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
@@ -39,16 +39,22 @@ import {
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
   VALUE_SET_DEFINITION_FIELDS,
+  CUSTOM_FIELD,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
 const { makeArray } = collections.array
 
-export const metadataType = (element: Element): string => (
-  isInstanceElement(element)
-    ? metadataType(element.type)
-    : element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
-)
+export const metadataType = (element: Element): string => {
+  if (isInstanceElement(element)) {
+    return metadataType(element.type)
+  }
+  // We expect to reach to this place only with field of CustomObject
+  if (isField(element)) {
+    return CUSTOM_FIELD
+  }
+  return element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
+}
 
 export const isCustomObject = (element: Element): boolean =>
   metadataType(element) === CUSTOM_OBJECT
@@ -65,7 +71,7 @@ const fullApiName = (elem: Element): string => {
     return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   const elemMetadataType = metadataType(elem)
-  return elemMetadataType === CUSTOM_OBJECT
+  return elemMetadataType === CUSTOM_OBJECT || CUSTOM_FIELD
     ? elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
     : elemMetadataType
 }

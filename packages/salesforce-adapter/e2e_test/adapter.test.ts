@@ -3129,7 +3129,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [constants.FIELD_ANNOTATIONS.SCALE]: 4,
             [constants.FIELD_ANNOTATIONS.PRECISION]: 17,
-            [constants.DEFAULT_VALUE_FORMULA]: 24,
+            [constants.DEFAULT_VALUE_FORMULA]: '24',
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.CURRENCY,
           },
           [autoNumberFieldName]: {

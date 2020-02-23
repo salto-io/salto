@@ -21,7 +21,7 @@ import { formElemID, contactPropertyElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS } 
 
 const { makeArray } = collections.array
 
-export const isFormInstance = (instance: InstanceElement): boolean =>
+export const isFormInstance = (instance: Readonly<InstanceElement>): boolean =>
   instance.type.elemID.isEqual(formElemID)
 
 const contactPropertyOverrideFields = Object.values(CONTACT_PROPERTY_OVERRIDES_FIELDS)

@@ -13,6 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
+import { HUBSPOT } from '../../src/constants'
+import { Types } from '../../src/transformers/transformer'
+
 const firstFormMock = {
   portalId: 6774238,
   guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
@@ -45,33 +49,78 @@ export const formsMockArray = [
   secondFormMock,
 ] as unknown
 
-export const beforeFormMock = {
+const g1PropInstance = new InstanceElement(
+  'g1',
+  Types.hubspotObjects.contactProperty,
+  {
+    name: 'g1',
+    label: 'g1',
+    type: 'string',
+    fieldType: 'text',
+    description: 'g1 property',
+    hidden: false,
+    displayOrder: 1,
+  },
+  [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'g1'],
+)
+
+const datePropInstance = new InstanceElement(
+  'date_of_birth',
+  Types.hubspotObjects.contactProperty,
+  {
+    name: 'date_of_birth',
+    label: 'Date of birth',
+    type: 'string',
+    fieldType: 'text',
+    description: 'date of birth',
+    hidden: false,
+    displayOrder: 1,
+  },
+  [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'date_of_birth'],
+)
+
+const valuePropInstance = new InstanceElement(
+  'value',
+  Types.hubspotObjects.contactProperty,
+  {
+    name: 'value',
+    label: 'Value',
+    type: 'string',
+    fieldType: 'text',
+    description: 'value property',
+    hidden: false,
+    options: [
+      {
+        label: 'opt',
+        value: 'val1',
+        hidden: true,
+        readOnly: true,
+      },
+    ],
+    displayOrder: 1,
+  },
+  [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'value'],
+)
+
+export const beforeFormInstanceValuesMock = {
   name: 'beforeUpdateInstance',
   guid: 'guid',
-  cssClass: 'abc',
   followUpId: 'DEPRECATED',
   editable: true,
   cloneable: true,
   captchaEnabled: false,
-  createdAt: 1500588456053,
   inlineMessage: 'inline',
+  redirect: 'google.com',
   themeName: 'theme',
+  createdAt: 1500588456053,
   formFieldGroups: [
     {
       fields: [
         {
-          name: 'g1',
-          label: 'g1',
-          type: 'string',
-          fieldType: 'text',
-          description: '',
-          required: false,
-          hidden: false,
-          displayOrder: 1,
-          defaultValue: '',
-          isSmartField: false,
-          selectedOptions: [],
-          options: [],
+          contactProperty: new ReferenceExpression(g1PropInstance.elemID, g1PropInstance),
+          contactProertyOverride: {
+            label: 'g1!',
+          },
           dependentFieldFilters: [
             {
               filters: [
@@ -85,25 +134,17 @@ export const beforeFormMock = {
                 },
               ],
               dependentFormField: {
-                name: 'date_of_birth',
-                label: 'Date of birth',
-                type: 'string',
-                fieldType: 'text',
-                description: 'desc',
-                groupName: 'contactinformation',
-                displayOrder: -1,
-                required: false,
-                selectedOptions: [],
-                options: [],
-                enabled: true,
-                hidden: false,
+                contactProperty: new ReferenceExpression(
+                  datePropInstance.elemID,
+                  datePropInstance
+                ),
+                contactPropertyOverrides: {
+                  label: 'Date of birth override',
+                  description: 'l',
+                },
                 isSmartField: false,
-                unselectedLabel: 'unselected',
+                required: false,
                 placeholder: 'place',
-                dependentFieldFilters: [],
-                labelHidden: false,
-                propertyObjectType: 'CONTACT',
-                metaData: [],
               },
               formFieldAction: 'DISPLAY',
             },
@@ -113,10 +154,35 @@ export const beforeFormMock = {
       default: true,
       isSmartGroup: false,
     },
+    {
+      fields: [
+        {
+          contactProperty: new ReferenceExpression(
+            valuePropInstance.elemID,
+            valuePropInstance
+          ),
+          contactPropertyOverrides: {
+            options: [
+              {
+                label: 'opt1',
+                value: 'val1',
+                hidden: true,
+                readOnly: true,
+              },
+            ],
+          },
+          isSmartField: false,
+          required: false,
+          selectedOptions: ['val1'],
+        },
+      ],
+      default: true,
+      isSmartGroup: false,
+    },
   ],
 }
 
-export const afterFormMock = {
+export const afterFormInstanceValuesMock = {
   name: 'afterUpdateInstance',
   guid: 'guid',
   followUpId: 'DEPRECATED',
@@ -131,18 +197,10 @@ export const afterFormMock = {
     {
       fields: [
         {
-          name: 'g1',
-          label: 'g1',
-          type: 'string',
-          fieldType: 'text',
-          description: '',
-          required: false,
-          hidden: false,
-          displayOrder: 1,
-          defaultValue: '',
-          isSmartField: false,
-          selectedOptions: [],
-          options: [],
+          contactProperty: new ReferenceExpression(g1PropInstance.elemID, g1PropInstance),
+          contactPropertyOverrides: {
+            label: 'g1!',
+          },
           dependentFieldFilters: [
             {
               filters: [
@@ -156,25 +214,17 @@ export const afterFormMock = {
                 },
               ],
               dependentFormField: {
-                name: 'date_of_birth',
-                label: 'Date of birth',
-                type: 'string',
-                fieldType: 'text',
-                description: 'desc',
-                groupName: 'contactinformation',
-                displayOrder: -1,
-                required: false,
-                selectedOptions: [],
-                options: [],
-                enabled: true,
-                hidden: false,
+                contactProperty: new ReferenceExpression(
+                  datePropInstance.elemID,
+                  datePropInstance
+                ),
+                contactPropertyOverrides: {
+                  label: 'Date of birth override',
+                  description: 'l',
+                },
                 isSmartField: false,
-                unselectedLabel: 'unselected',
+                required: false,
                 placeholder: 'place',
-                dependentFieldFilters: [],
-                labelHidden: false,
-                propertyObjectType: 'CONTACT',
-                metaData: [],
               },
               formFieldAction: 'DISPLAY',
             },
@@ -187,24 +237,23 @@ export const afterFormMock = {
     {
       fields: [
         {
-          name: 'state',
-          label: 'State/Region',
-          type: 'string',
-          fieldType: 'text',
-          description: '',
-          required: false,
-          hidden: false,
-          defaultValue: '',
+          contactProperty: new ReferenceExpression(
+            valuePropInstance.elemID,
+            valuePropInstance.value
+          ),
+          contactPropertyOverrides: {
+            options: [
+              {
+                label: 'opt1',
+                value: 'val1',
+                hidden: true,
+                readOnly: true,
+              },
+            ],
+          },
           isSmartField: false,
-          selectedOptions: [],
-          options: [
-            {
-              label: 'opt1',
-              value: 'val1',
-              hidden: true,
-              readOnly: true,
-            },
-          ],
+          required: false,
+          selectedOptions: ['val1'],
         },
       ],
       default: true,
@@ -1490,4 +1539,3 @@ export const marketingEmailMockArray = [
   thirdMarketingEmailMock,
   marketingEmailMock,
 ]
-

@@ -202,8 +202,6 @@ export const FORM_PROPERTY_FIELDS = {
   DEFAULTVALUE: 'defaultValue',
   SELECTEDOPTIONS: 'selectedOptions',
   DEPENDENTFIELDFILTERS: 'dependentFieldFilters',
-  CONTACT_PROPERTY: 'contactProperty',
-  CONTACT_PROPERTY_OVERRIDES: 'contactPropertyOverrides',
   PLACEHOLDER: 'placeholder',
 
   // From contactProperty
@@ -218,6 +216,11 @@ export const FORM_PROPERTY_FIELDS = {
   LABEL,
   OPTIONS: PROPERTY_OPTIONS,
   DESCRIPTION: 'description',
+}
+
+export const FORM_PROPERTY_INNER_FIELDS = {
+  CONTACT_PROPERTY: 'contactProperty',
+  CONTACT_PROPERTY_OVERRIDES: 'contactPropertyOverrides',
 }
 
 export const CONTACT_PROPERTY_OVERRIDES_FIELDS = {

@@ -155,6 +155,23 @@ export interface FormProperty {
   displayOrder: number
   // Integer; The order to display the fields in.
   // If the values are negative, the fields appear in the order they appear in the 'fields' list
+  dependentFieldFilters: DependentFieldFilter[]
+  // A list of filters that will be used to display dependent fields.
+}
+
+interface DependentFieldFilter {
+  filters: Filter[]
+  dependentFormField: FormProperty
+  formFieldAction: string
+}
+
+interface Filter {
+  operator: string
+  strValue: string
+  boolValue: boolean
+  numberValue: number
+  strValues: string[]
+  numberValues: number[]
 }
 
 export interface Workflows extends HubspotMetadata {

@@ -32,7 +32,7 @@ import {
   nurtureTimeRangeElemID, anchorSettingElemID, actionElemID, eventAnchorElemID,
   conditionActionElemID, contactPropertyElemID, dependentFormFieldFiltersElemID,
   fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyFieldTypeValues,
-  CONTACT_PROPERTY_OVERRIDES_FIELDS, contactPropertyOverridesElemID,
+  CONTACT_PROPERTY_OVERRIDES_FIELDS, contactPropertyOverridesElemID, FORM_PROPERTY_INNER_FIELDS,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -230,18 +230,18 @@ export class Types {
       const formPropertyType = new ObjectType({
         elemID,
         fields: {
-          [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]: new TypeField(
+          [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]: new TypeField(
             // TODO: This is not really a string
-            elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY,
+            elemID, FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY, BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: true,
             }
           ),
-          [FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES,
+          [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES]: new TypeField(
+            elemID, FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
             Types.contactPropertyOverridesType, {
-              name: FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES,
+              name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
@@ -1818,12 +1818,15 @@ export const transformAfterUpdateOrAdd = async (
 }
 
 const mergeFormFieldAndContactProperty = (field: Value): Value => {
-  if (!field[FORM_PROPERTY_FIELDS.CONTACT_PROPERTY]) {
+  if (!field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]) {
     return field
   }
+  const newField = _.clone(field)
+  const contactPropertyValues = _.clone(field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]
+    .resValue.value)
   const merged = _.pick(_.merge(
-    field[FORM_PROPERTY_FIELDS.CONTACT_PROPERTY].resValue.value,
-    _.merge(field, field[FORM_PROPERTY_FIELDS.CONTACT_PROPERTY_OVERRIDES])
+    contactPropertyValues,
+    _.merge(newField, field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES])
   ), Object.values(FORM_PROPERTY_FIELDS))
 
   // Only available at top level so there's no endless recursion
@@ -1840,28 +1843,29 @@ const mergeFormFieldAndContactProperty = (field: Value): Value => {
   return merged
 }
 
-export const createHubspotMetadataFromInstanceElement = (element: InstanceElement):
-  HubspotMetadata => {
-  element.value = _.mapValues(element.value, (val, key) => {
+export const createHubspotMetadataFromInstanceElement = (element: Readonly<InstanceElement>):
+  HubspotMetadata =>
+  (_.mapValues(element.value, (val, key) => {
     const fieldType = element.type.fields[key]?.type
     if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
       return JSON.parse(val)
     }
     if (isFormInstance(element) && key === FORM_FIELDS.FORMFIELDGROUPS) {
-      return val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
+      const newVal = val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
         (formFieldGroupVal, formFieldGroupKey) => {
-          if (!(formFieldGroupKey === 'fields')) {
+          if (!(formFieldGroupKey === FORM_PROPERTY_GROUP_FIELDS.FIELDS)) {
             return formFieldGroupVal
           }
-          return formFieldGroupVal.map((innerField: Value) =>
-            mergeFormFieldAndContactProperty(innerField))
+          return formFieldGroupVal.map((innerField: Value) => {
+            const mergedVal = mergeFormFieldAndContactProperty(innerField)
+            return mergedVal
+          })
         })
       ))
+      return newVal
     }
     return val
-  })
-  return element.value as HubspotMetadata
-}
+  }) as HubspotMetadata)
 
 /**
  * Creating all the instance for specific type

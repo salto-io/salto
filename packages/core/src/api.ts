@@ -32,7 +32,7 @@ import { promises } from '@salto-io/lowerdash'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
 import { getAdaptersConfigType, initAdapters } from './core/adapters/adapters'
-import { addServiceToConfig, loadConfig } from './workspace/config'
+import { addServiceToConfig, loadConfig, currentEnvConfig } from './workspace/config'
 import adapterCreators from './core/adapters/creators'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import { findElement, SearchResult } from './core/search'
@@ -80,7 +80,7 @@ const getChangeValidators = (): Record<string, ChangeValidator> =>
 
 export const preview = async (
   workspace: Workspace,
-  services: string[] = workspace.config.services
+  services: string[] = currentEnvConfig(workspace.config).services
 ): Promise<Plan> => getPlan(
   filterElementsByServices(await workspace.state.getAll(), services),
   filterElementsByServices(await workspace.elements, services),
@@ -108,7 +108,7 @@ export const deploy = async (
   workspace: Workspace,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  services: string[] = workspace.config.services,
+  services: string[] = currentEnvConfig(workspace.config).services,
   force = false
 ): Promise<DeployResult> => {
   const changedElements: Element[] = []
@@ -162,7 +162,7 @@ export type fetchFunc = (
 
 export const fetch: fetchFunc = async (
   workspace,
-  services = workspace.config.services,
+  services = currentEnvConfig(workspace.config).services,
   progressEmitter?
 ) => {
   const overrideState = async (elements: Element[]): Promise<void> => {
@@ -226,7 +226,7 @@ const getTypeFromState = async (ws: Workspace, typeId: string): Promise<Element>
 const getTypeForDataMigration = async (workspace: Workspace, typeId: string): Promise<Element> => {
   const type = await getTypeFromState(workspace, typeId)
   const typeAdapter = type.elemID.adapter
-  if (!workspace.config.services?.includes(typeAdapter)) {
+  if (!currentEnvConfig(workspace.config).services?.includes(typeAdapter)) {
     throw new Error(`The type is from a service (${typeAdapter}) that is not set up for this workspace`)
   }
   return type
@@ -264,10 +264,11 @@ export const deleteFromCsvFile = async (
 
 export const init = async (
   appConfig: AppConfig,
-  workspaceName?: string
+  defaultEnvName: string,
+  workspaceName?: string,
 ): Promise<Workspace> => {
   log.debug(`initializing workspace, installation id: ${appConfig.installationID}`)
-  return Workspace.init('.', workspaceName)
+  return Workspace.init('.', defaultEnvName, workspaceName)
 }
 
 export const addAdapter = async (
@@ -285,7 +286,7 @@ export const addAdapter = async (
 export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }
 export const getLoginStatuses = async (
   workspace: Workspace,
-  adapterNames = workspace.config.services,
+  adapterNames = currentEnvConfig(workspace.config).services,
 ): Promise<Record<string, LoginStatus>> => {
   const logins = _.mapValues(getAdaptersConfigType(adapterNames),
     async (config, adapter) =>

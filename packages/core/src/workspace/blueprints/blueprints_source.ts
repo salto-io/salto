@@ -34,6 +34,8 @@ const { promiseAllChained } = promises.array
 
 const log = logger(module)
 
+export type RoutingMode = 'strict' | 'default'
+
 export const BP_EXTENSION = '.bp'
 const PARSE_RATE = 20
 const DUMP_RATE = 20
@@ -47,7 +49,7 @@ export type Blueprint = {
 }
 
 export type BlueprintsSource = ElementsSource & {
-  update: (changes: DetailedChange[]) => Promise<void>
+  update: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
   getElementBlueprints: (id: ElemID) => Promise<string[]>

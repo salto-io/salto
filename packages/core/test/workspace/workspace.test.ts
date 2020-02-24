@@ -54,10 +54,17 @@ const createWorkspace = (bpStore?: DirectoryStore): Workspace => {
     name: 'test',
     localStorage: path.join(os.homedir(), '.salto', 'test'),
     baseDir: '/salto',
-    services,
-    stateLocation: '/salto/latest_state.bp',
-    credentialsLocation: 'credentials',
-    envs: [],
+    envs: {
+      default: {
+        baseDir: 'envs/default',
+        config: {
+          services,
+          stateLocation: '/salto/latest_state.bp',
+          credentialsLocation: 'credentials',
+        },
+      },
+    },
+    currentEnv: 'default',
   })
   _.set(ws, 'blueprintsSource', blueprintsSource(bpStore || mockBpsStore(),
     {
@@ -327,7 +334,7 @@ describe('workspace', () => {
     const bpStore = mockBpsStore()
     const workspace = createWorkspace(bpStore)
     beforeAll(async () => {
-      await workspace.updateBlueprints(...changes)
+      await workspace.updateBlueprints(changes)
       elemMap = getElemMap(await workspace.elements)
       lead = elemMap['salesforce.lead'] as ObjectType
     })
@@ -394,7 +401,7 @@ describe('workspace', () => {
       const fakeChange = _.cloneDeep(changes[0])
       fakeChange.id = new ElemID('salesforce', 'lead').createNestedID('field', 'fake')
 
-      await workspace.updateBlueprints(fakeChange, realChange)
+      await workspace.updateBlueprints([fakeChange, realChange])
       lead = findElement(await workspace.elements, new ElemID('salesforce', 'lead')) as ObjectType
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })
@@ -418,7 +425,7 @@ describe('workspace', () => {
 
     it('should init a basedir with no workspace name provided', async () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce(undefined)
-      const workspace = await Workspace.init(wsPath)
+      const workspace = await Workspace.init(wsPath, 'default')
       expect(dumpConfig).toHaveBeenCalled()
       expect(spyMkdir.mock.calls[0][0]).toMatch(path.join(saltoHome, wsPath))
       expect(workspace.config.name).toContain(path.basename(wsPath))
@@ -426,7 +433,7 @@ describe('workspace', () => {
     it('should init a basedir with workspace name provided', async () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce(undefined)
       const wsName = 'test-with-name'
-      const workspace = await Workspace.init(wsPath, wsName)
+      const workspace = await Workspace.init(wsPath, 'default', wsName)
       expect(dumpConfig).toHaveBeenCalled()
       // TODO: need to figure why this works with wsPath and not wsName
       expect(spyMkdir.mock.calls[0][0]).toMatch(path.join(saltoHome, wsPath))
@@ -434,7 +441,7 @@ describe('workspace', () => {
     })
     it('should fail when run inside an existing workspace', async () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce('found')
-      await expect(Workspace.init('bla')).rejects.toThrow()
+      await expect(Workspace.init('bla', 'default')).rejects.toThrow()
     })
   })
 

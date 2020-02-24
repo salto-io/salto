@@ -24,12 +24,31 @@ const mockWs = {
   updateBlueprints: jest.fn(),
   isEmpty: jest.fn(),
   flush: jest.fn(),
+  config: {
+    baseDir: '',
+    additionalBlueprints: [],
+    services: ['salesforce'],
+    cacheLocation: '',
+    envs: [
+      { name: 'default', baseDir: 'default' },
+    ],
+    currentEnv: 'default',
+  },
 } as unknown as Workspace
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   Workspace: jest.fn().mockImplementation(() => mockWs),
   loadConfig: jest.fn().mockImplementation(
-    workspaceDir => ({ baseDir: workspaceDir, additionalBlueprints: [], services: ['salesforce'], cacheLocation: '' })
+    workspaceDir => ({
+      baseDir: workspaceDir,
+      additionalBlueprints: [],
+      services: ['salesforce'],
+      cacheLocation: '',
+      envs: [
+        { name: 'default', baseDir: 'default' },
+      ],
+      currentEnv: 'default',
+    })
   ),
 }))
 jest.mock('inquirer', () => ({
@@ -147,18 +166,17 @@ describe('workspace', () => {
     })
 
     it('no changes', async () => {
-      const result = await updateWorkspace(mockWs, cliOutput)
-      expect(mockWs.flush).toHaveBeenCalledTimes(1)
+      const result = await updateWorkspace(mockWs, cliOutput, [])
       expect(result).toBeTruthy()
     })
 
     it('with changes', async () => {
       mockWs.hasErrors = jest.fn().mockResolvedValue(false)
       const result = await updateWorkspace(mockWs, cliOutput,
-        ...dummyChanges.map((change: DetailedChange): FetchChange =>
+        dummyChanges.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBeTruthy()
-      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(dummyChanges, undefined)
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
       expect(mockWs.hasErrors).toHaveBeenCalled()
     })
@@ -171,10 +189,10 @@ describe('workspace', () => {
         severity: 'Error',
       }]))
       const result = await updateWorkspace(mockWs, cliOutput,
-        ...dummyChanges.map((change: DetailedChange): FetchChange =>
+        dummyChanges.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBe(false)
-      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(...dummyChanges)
+      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(dummyChanges, undefined)
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
       expect(mockWs.hasErrors).toHaveBeenCalled()
     })

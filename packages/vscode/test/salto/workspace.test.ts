@@ -87,6 +87,6 @@ describe('workspace', () => {
   it('should not allow to update blueprints before all pending operations are done', async () => {
     const workspace = new EditorWorkspace(await mockWorkspace(bpFileName))
     workspace.setBlueprints({ filename: 'new', buffer: 'new content' })
-    await expect(workspace.updateBlueprints()).rejects.toThrow()
+    await expect(workspace.updateBlueprints([])).rejects.toThrow()
   })
 })

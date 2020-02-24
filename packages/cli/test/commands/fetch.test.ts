@@ -43,7 +43,7 @@ describe('fetch command', () => {
   const mockUpdateWorkspace = mockCliWorkspace.updateWorkspace as jest.Mock
   mockUpdateWorkspace.mockImplementation(ws =>
     Promise.resolve(ws.config.baseDir !== 'exist-on-error'))
-  const findWsUpdateCalls = (workspaceDir: string): unknown[][] =>
+  const findWsUpdateCalls = (workspaceDir: string): unknown[][][] =>
     mockUpdateWorkspace.mock.calls.filter(args => args[0].config.baseDir === workspaceDir)
 
   beforeEach(() => {
@@ -63,7 +63,7 @@ describe('fetch command', () => {
           getWorkspaceErrors: mocks.getWorkspaceErrors,
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-        result = await command('', true, false, cliOutput, spinnerCreator, services)
+        result = await command('', true, false, cliOutput, spinnerCreator, services, false)
           .execute()
       })
 
@@ -78,8 +78,14 @@ describe('fetch command', () => {
       beforeAll(async () => {
         mockLoadWorkspace.mockResolvedValue({ workspace: mocks.mockLoadWorkspace(workspaceDir),
           errored: false })
-        result = await command(workspaceDir, true, false, cliOutput, spinnerCreator, services)
-          .execute()
+        result = await command(
+          workspaceDir,
+          true, false,
+          cliOutput,
+          spinnerCreator,
+          services,
+          false
+        ).execute()
       })
 
       it('should return success code', () => {
@@ -198,7 +204,31 @@ describe('fetch command', () => {
           it('should deploy all changes', () => {
             const calls = findWsUpdateCalls(workspaceDir)
             expect(calls).toHaveLength(1)
-            expect(calls[0].slice(2)).toEqual(changes)
+            expect(calls[0].slice(2)).toEqual([changes, undefined])
+          })
+        })
+        describe('when called with strict', () => {
+          const workspaceDir = 'with-strict'
+          let workspace: Workspace
+          beforeEach(async () => {
+            workspace = mockWorkspace()
+            workspace.config.baseDir = workspaceDir
+            result = await fetchCommand({
+              workspace,
+              force: true,
+              interactive: false,
+              inputServices: services,
+              output: cliOutput,
+              fetch: mockFetchWithChanges,
+              getApprovedChanges: mockEmptyApprove,
+              strict: true,
+            })
+            expect(result).toBe(CliExitCode.Success)
+          })
+          it('should forward strict mode', () => {
+            const calls = findWsUpdateCalls(workspaceDir)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].slice(2)).toEqual([changes, true])
           })
         })
         describe('when initial workspace is empty', () => {
@@ -219,7 +249,7 @@ describe('fetch command', () => {
           it('should deploy all changes', () => {
             const calls = findWsUpdateCalls(workspaceDir)
             expect(calls).toHaveLength(1)
-            expect(calls[0].slice(2)).toEqual(changes)
+            expect(calls[0].slice(2)).toEqual([changes, undefined])
           })
         })
         describe('when initial workspace is not empty', () => {
@@ -262,7 +292,7 @@ describe('fetch command', () => {
               })
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(1)
-              expect(calls[0][2]).toEqual(changes[0])
+              expect(calls[0][2][0]).toEqual(changes[0])
             })
 
             it('should exit if errors identified in workspace after update', async () => {
@@ -287,7 +317,7 @@ describe('fetch command', () => {
               })
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(1)
-              expect(calls[0][2]).toEqual(changes[0])
+              expect(calls[0][2][0]).toEqual(changes[0])
               expect(res).toBe(CliExitCode.AppError)
             })
             it('should not exit if warning identified in workspace after update', async () => {
@@ -312,7 +342,7 @@ describe('fetch command', () => {
               })
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(1)
-              expect(calls[0][2]).toEqual(changes[0])
+              expect(calls[0][2][0]).toEqual(changes[0])
               expect(cliOutput.stderr.content).not.toContain(Prompts.SHOULDCONTINUE(1))
               expect(cliOutput.stdout.content).not.toContain(Prompts.SHOULDCONTINUE(1))
               expect(res).toBe(CliExitCode.Success)

@@ -19,18 +19,25 @@ import { command } from '../../src/commands/init'
 
 jest.mock('@salto-io/core', () => ({
   init: jest.fn().mockImplementation(
-    (_conf: AppConfig, workspaceName: string): { config: Config } => {
+    (_conf: AppConfig, _defaultEnvName: string, workspaceName: string): { config: Config } => {
       if (workspaceName === 'error') throw new Error('failed')
       return {
         config: {
           name: workspaceName,
           localStorage: '',
           baseDir: '',
-          stateLocation: '',
-          credentialsLocation: 'credentials',
-          services: ['salesforce'],
           uid: '',
-          envs: [],
+          envs: {
+            default: {
+              baseDir: '',
+              config: {
+                stateLocation: '',
+                credentialsLocation: 'credentials',
+                services: ['salesforce'],
+              },
+            },
+          },
+          currentEnv: 'default',
         },
       }
     }
@@ -47,12 +54,12 @@ describe('describe command', () => {
   })
 
   it('should invoke api\'s init', async () => {
-    await command('test', config, cliOutput).execute()
+    await command('test', config, cliOutput, mocks.createMockEnvNameGetter()).execute()
     expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
   })
 
   it('should print errors', async () => {
-    await command('error', config, cliOutput).execute()
+    await command('error', config, cliOutput, mocks.createMockEnvNameGetter()).execute()
     expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
   })
 })

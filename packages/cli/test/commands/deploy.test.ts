@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Workspace, Plan, PlanItem,
+  Workspace, Plan, PlanItem, currentEnvConfig,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { deploy, preview, mockSpinnerCreator, MockWriteStream } from '../mocks'
@@ -23,6 +23,7 @@ import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
 
 const mockDeploy = deploy
+const mockServices = (ws: Workspace): string[] => currentEnvConfig(ws.config).services as string[]
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   deploy: jest.fn().mockImplementation((
@@ -30,7 +31,7 @@ jest.mock('@salto-io/core', () => ({
     shouldDeploy: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
     force = false,
-    services = ws.config.services as string[]
+    services = mockServices(ws)
   ) =>
   // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any

@@ -112,7 +112,7 @@ const additionalRegexInstancesBlacklist = (): string[] =>
   stringsArrayFromEnv(REGEX_INSTANCES_BLACKLIST_ENV)
 
 const instanceNameMatchRegex = (name: string, regex: string[]): boolean =>
-  regex.map(re => new RegExp(re)).some(re => re.test(name))
+  regex.filter(re => !_.isEmpty(re)).map(re => new RegExp(re)).some(re => re.test(name))
 
 export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API

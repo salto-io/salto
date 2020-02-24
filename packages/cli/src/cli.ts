@@ -67,6 +67,7 @@ export default async (
     return CliExitCode.Success
   } catch (err) {
     log.error(`Caught exception: ${[err, err.stack].filter(n => n).join(EOL)}`)
+    input.telemetry.sendStackEvent('error', err, {})
 
     const errorStream = output.stderr
     const unstyledErrorString = `${[err].filter(n => n).join(EOL)}`
@@ -76,6 +77,8 @@ export default async (
     errorStream.write(EOL)
     return CliExitCode.AppError
   } finally {
+    input.telemetry.stop()
+    await input.telemetry.flush()
     await logger.end()
   }
 }

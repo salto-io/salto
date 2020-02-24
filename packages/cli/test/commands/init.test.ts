@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Config, TelemetrySender, telemetrySender } from '@salto-io/core'
+import { Config, telemetrySender } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
 
 jest.mock('@salto-io/core', () => ({
+  ...jest.requireActual('@salto-io/core'),
   init: jest.fn().mockImplementation(
     (workspaceName: string): { config: Config } => {
       if (workspaceName === 'error') throw new Error('failed')
@@ -37,7 +38,7 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 
-const telemetry: TelemetrySender = telemetrySender({ host: '', enabled: false, token: '' }, { installationID: '' })
+const telemetry = telemetrySender({ host: 'http://0.0.0.0', token: '1234', enabled: false }, { installationID: 'abcd' })
 
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }

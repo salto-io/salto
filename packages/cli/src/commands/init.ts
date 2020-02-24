@@ -14,27 +14,27 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { init, telemetrySender, TelemetrySender } from '@salto-io/core'
+import { init, Telemetry } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 
 export const command = (
   workspaceName: string | undefined,
-  telemetry: TelemetrySender,
+  telemetry: Telemetry,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     try {
-      telemetry.sendCountEvent('init', 1, { app: 'cli' })
       const workspace = await init(workspaceName)
+      telemetry.sendCountEvent('workspace.init', 1, { workspaceID: workspace.config.uid })
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )
-      telemetry.stop()
-      await telemetry.flush()
     } catch (e) {
+      stderr.write(`ERR ${e.stack}`)
       stderr.write(Prompts.initFailed(e.message))
+      telemetry.sendStackEvent('workspace.init.failure', e, {})
       return CliExitCode.AppError
     }
     return CliExitCode.Success
@@ -61,12 +61,7 @@ const initBuilder = createCommandBuilder({
   },
 
   async build(input: InitParsedCliInput, output: CliOutput) {
-    const telemetry = telemetrySender(
-      input.config.telemetry,
-      { installationID: input.config.installationID }
-    )
-    telemetry.start()
-    return command(input.args['workspace-name'], telemetry, output)
+    return command(input.args['workspace-name'], input.telemetry, output)
   },
 })
 

@@ -24,7 +24,7 @@ import { TelemetryConfig } from './app_config'
 const log = logger(module)
 const MAX_EVENTS_PER_REQUEST = 20
 const EVENTS_API_PATH = '/v1/events'
-const EVENTS_FLUSH_INTERVAL = 1000
+const EVENTS_FLUSH_INTERVAL = 100000
 
 export type RequiredTags = {
   installationID: string
@@ -49,7 +49,7 @@ type Event<T> = {
 export type CountEvent = Event<number> & { type: EVENT_TYPES.COUNTER }
 export type StackEvent = Event<Error> & { type: EVENT_TYPES.STACK }
 
-export type TelemetrySender = {
+export type Telemetry = {
   enabled: boolean
 
   sendCountEvent(name: string, value: number, extraTags: Tags): void
@@ -62,7 +62,7 @@ export type TelemetrySender = {
 export const telemetrySender = (
   config: TelemetryConfig,
   tags: RequiredTags & Tags
-): TelemetrySender => {
+): Telemetry => {
   const newEvents = [] as Array<Event<unknown>>
   let queuedEvents = [] as Array<Event<unknown>>
   const commonTags = {
@@ -81,7 +81,7 @@ export const telemetrySender = (
   let timer = {} as NodeJS.Timer
   const flush = async (): Promise<void> => {
     queuedEvents.push(...newEvents.splice(0, MAX_EVENTS_PER_REQUEST - queuedEvents.length))
-    if (queuedEvents.length > 0 && enabled) {
+    if (enabled && queuedEvents.length > 0) {
       try {
         await httpClient.post(
           EVENTS_API_PATH,
@@ -92,11 +92,10 @@ export const telemetrySender = (
         log.debug(`failed sending telemetry events: ${e}`)
       }
     }
-    return Promise.resolve()
   }
   const start = (): void => {
-    timer = setTimeout(async () => {
-      await flush()
+    timer = setTimeout(() => {
+      flush()
       start()
     }, EVENTS_FLUSH_INTERVAL)
   }
@@ -115,13 +114,17 @@ export const telemetrySender = (
   }
 
   const sendStackEvent = (name: string, value: Error, extraTags: Tags): void => {
+    if (value.stack === undefined) {
+      return
+    }
+    const stackWithoutMessage = value.stack.replace(value.toString(), '').trim()
     const newEvent = {
       name,
-      value,
+      value: stackWithoutMessage,
       tags: { ...commonTags, ...extraTags },
       type: EVENT_TYPES.STACK,
       timestamp: new Date().toISOString(),
-    } as StackEvent
+    }
     newEvents.push(newEvent)
   }
 
@@ -133,5 +136,5 @@ export const telemetrySender = (
     stop,
     flush,
   }
-  return Object.freeze(sender)
+  return sender
 }

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { streams } from '@salto-io/lowerdash'
-import { AppConfig, Telemetry } from '@salto-io/core'
+import { Telemetry } from '@salto-io/core'
 import yargs from 'yargs'
 
 export type WriteStream = streams.MaybeTty & {
@@ -57,7 +57,6 @@ export interface CliOutput {
 export interface CliInput {
   args: string[]
   stdin: ReadStream
-  config: AppConfig
   telemetry: Telemetry
 
   // TODO: Also belong here:

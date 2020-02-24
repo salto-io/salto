@@ -19,6 +19,7 @@ import os from 'os'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
 import { exists, writeFile, readTextFile, mkdirp } from './file'
+import { TelemetryConfig } from './telemetry'
 
 const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
 export const SALTO_HOME_VAR = 'SALTO_HOME'
@@ -38,19 +39,13 @@ const installationIDFullPath = (): string => (
 
 const telemetryToken = process.env.SALTO_TELEMETRY_TOKEN || ''
 
-const getTelemetryHost = (): string => (
-  process.env.SALTO_TELEMETRY_HOST || 'https://telemetry.salto.io'
+const getTelemetryURL = (): string => (
+  process.env.SALTO_TELEMETRY_URL || 'https://telemetry.salto.io'
 )
 
 const getTelemetryEnabled = (): boolean => (
   process.env.SALTO_TELEMETRY_DISABLE === undefined
 )
-
-export type TelemetryConfig = {
-  host: string
-  enabled: boolean
-  token: string
-}
 
 export type AppConfig = {
   installationID: string
@@ -78,7 +73,7 @@ export const configFromDisk = async (): Promise<AppConfig> => {
   return {
     installationID,
     telemetry: {
-      host: getTelemetryHost(),
+      url: getTelemetryURL(),
       enabled: getTelemetryEnabled(),
       token: telemetryToken,
     },

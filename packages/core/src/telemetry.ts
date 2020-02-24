@@ -20,12 +20,17 @@ import axios from 'axios'
 import { platform, arch, release } from 'os'
 import { setTimeout, clearTimeout } from 'timers'
 import { logger } from '@salto-io/logging'
-import { TelemetryConfig } from './app_config'
 
 const log = logger(module)
 const MAX_EVENTS_PER_REQUEST = 20
 const EVENTS_API_PATH = '/v1/events'
 const EVENTS_FLUSH_INTERVAL = 1000
+
+export type TelemetryConfig = {
+  url: string
+  enabled: boolean
+  token: string
+}
 
 export type RequiredTags = {
   installationID: string
@@ -55,7 +60,6 @@ export type Telemetry = {
 
   sendCountEvent(name: string, value: number, extraTags: Tags): void
   sendStackEvent(name: string, value: Error, extraTags: Tags): void
-  start(): void
   stop(timeoutMs: number): Promise<void>
   flush(): Promise<void>
 }
@@ -76,7 +80,7 @@ export const telemetrySender = (
     osPlatform: platform(),
   }
   const httpClient = axios.create({
-    baseURL: config.host,
+    baseURL: config.url,
     headers: {
       Authorization: config.token,
     },
@@ -145,9 +149,9 @@ export const telemetrySender = (
     enabled,
     sendCountEvent,
     sendStackEvent,
-    start,
     stop,
     flush,
   }
+  start()
   return sender
 }

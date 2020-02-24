@@ -77,8 +77,7 @@ export const cli = async ({
   const input = {
     args: _.isArray(args) ? args : args.split(' '),
     stdin: {},
-    config: { installationID: '1234', telemetry: { host: '', enabled: false, token: '' } },
-    telemetry: telemetrySender({ host: '', enabled: false, token: '' }, { installationID: '1234' }),
+    telemetry: telemetrySender({ url: '', enabled: false, token: '' }, { installationID: '1234' }),
   }
 
   const output = {

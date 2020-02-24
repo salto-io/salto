@@ -34,10 +34,14 @@ const main = async (): Promise<CliExitCode> => {
   const config = await configFromDisk()
   const telemetry = telemetrySender(
     config.telemetry,
-    { installationID: config.installationID, app: 'cli', version: versionString }
+    {
+      installationID: config.installationID,
+      app: 'cli',
+      version: versionString,
+    }
   )
   return cli({
-    input: { args, stdin, config, telemetry },
+    input: { args, stdin, telemetry },
     output: { stdout, stderr },
     commandBuilders,
     spinnerCreator: oraSpinnerCreator,

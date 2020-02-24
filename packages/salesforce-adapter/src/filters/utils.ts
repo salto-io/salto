@@ -15,14 +15,19 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement,
-  isField, TypeElement, BuiltinTypes, ElemID, BuiltinAnnotationTypes, TypeMap } from '@salto-io/adapter-api'
+import {
+  Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
+  TypeElement, BuiltinTypes, ElemID, BuiltinAnnotationTypes, TypeMap, INSTANCE_ANNOTATIONS,
+  isReferenceExpression, ReferenceExpression,
+} from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
   METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { JSONBool } from '../client/types'
 import { isCustomObject, metadataType, apiName, defaultApiName } from '../transformers/transformer'
 
 const log = logger(module)
+const { makeArray } = collections.array
 
 export const id = (elem: Element): string => elem.elemID.getFullName()
 
@@ -111,4 +116,17 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
     fields: Object.assign({}, ...Object.entries(annotationTypes)
       .concat(Object.entries(BuiltinAnnotationTypes))
       .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
+}
+
+export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
+  new Map(getCustomObjects(elements).map(obj => [apiName(obj), obj]))
+
+export const addObjectParentReference = (instance: InstanceElement,
+  { elemID: objectID }: ObjectType): void => {
+  const instanceDeps = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+  if (instanceDeps.filter(isReferenceExpression).some(ref => ref.elemId.isEqual(objectID))) {
+    return
+  }
+  instanceDeps.push(new ReferenceExpression(objectID))
+  instance.annotations[INSTANCE_ANNOTATIONS.PARENT] = instanceDeps
 }

@@ -25,7 +25,6 @@ import * as constants from '../src/constants'
 import { Types } from '../src/transformers/transformer'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
-import { ASSIGNMENT_RULES_TYPE_ID } from '../src/filters/assignment_rules'
 import { createValueSetEntry } from './utils'
 import { WORKFLOW_TYPE_ID } from '../src/filters/workflow'
 
@@ -1732,7 +1731,8 @@ describe('SalesforceAdapter CRUD', () => {
     })
 
     describe('update with deploy', () => {
-      const deployTypeId = ASSIGNMENT_RULES_TYPE_ID
+      const deployTypeId = new ElemID(constants.SALESFORCE,
+        constants.ASSIGNMENT_RULES_METADATA_TYPE)
       const deployType = new ObjectType({
         elemID: deployTypeId,
         annotations: {

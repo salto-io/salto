@@ -15,8 +15,9 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, ServiceIds, BuiltinTypes, Element,
-  InstanceElement, isObjectType, CORE_ANNOTATIONS, Value, FieldMap, Field, isInstanceElement,
+  ElemID, ObjectType, ServiceIds, BuiltinTypes, Element, InstanceElement, isObjectType,
+  CORE_ANNOTATIONS, Value, FieldMap, Field, isInstanceElement, INSTANCE_ANNOTATIONS,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -26,7 +27,9 @@ import {
   SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
   CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
-  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH,
+  OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
+  ASSIGNMENT_RULES_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE,
+  CUSTOM_TAB_METADATA_TYPE,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry } from '../utils'
@@ -1130,6 +1133,160 @@ describe('Custom Objects filter', () => {
             expect(leadListViewsInstance.value[INSTANCE_FULL_NAME_FIELD]).toEqual('Lead.PartialListViewFullName')
           })
         })
+      })
+    })
+  })
+
+  describe('fixDependentInstancesPathAndSetParent', () => {
+    const leadType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'Lead'),
+      annotations: {
+        [API_NAME]: 'Lead',
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+      },
+      path: [SALESFORCE, OBJECTS_PATH, 'Lead', 'BLA'],
+    })
+
+    describe('Workflow', () => {
+      const workflowType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
+        annotations: { [METADATA_TYPE]: WORKFLOW_METADATA_TYPE },
+      })
+      const workflowInstance = new InstanceElement('Lead',
+        workflowType, { [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
+
+      beforeEach(async () => {
+        await filter().onFetch([workflowInstance, workflowType, leadType])
+      })
+
+      it('should set workflow instance path correctly', async () => {
+        expect(workflowInstance.path)
+          .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'WorkflowRules'])
+      })
+
+      it('should add PARENT annotation to workflow instance', async () => {
+        expect(workflowInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          .toContainEqual(new ReferenceExpression(leadType.elemID))
+      })
+    })
+
+    describe('AssignmentRules', () => {
+      const assignmentRulesType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE),
+        annotations: { [METADATA_TYPE]: ASSIGNMENT_RULES_METADATA_TYPE },
+      })
+      const assignmentRulesInstance = new InstanceElement('LeadAssignmentRules',
+        assignmentRulesType, { [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
+
+      beforeEach(async () => {
+        await filter().onFetch([assignmentRulesInstance, assignmentRulesType, leadType])
+      })
+
+      it('should set assignmentRules instance path correctly', async () => {
+        expect(assignmentRulesInstance.path)
+          .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', ASSIGNMENT_RULES_METADATA_TYPE])
+      })
+
+      it('should add PARENT annotation to assignmentRules instance', async () => {
+        expect(assignmentRulesInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          .toContainEqual(new ReferenceExpression(leadType.elemID))
+      })
+    })
+
+    describe('LeadConvertSettings', () => {
+      const leadConvertSettingsType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, LEAD_CONVERT_SETTINGS_METADATA_TYPE),
+        annotations: { [METADATA_TYPE]: LEAD_CONVERT_SETTINGS_METADATA_TYPE },
+      })
+      const leadConvertSettingsInstance = new InstanceElement(LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+        leadConvertSettingsType,
+        { [INSTANCE_FULL_NAME_FIELD]: LEAD_CONVERT_SETTINGS_METADATA_TYPE })
+
+      beforeEach(async () => {
+        await filter().onFetch([leadConvertSettingsInstance, leadConvertSettingsType, leadType])
+      })
+
+      it('should set leadConvertSettings instance path correctly', async () => {
+        expect(leadConvertSettingsInstance.path)
+          .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', LEAD_CONVERT_SETTINGS_METADATA_TYPE])
+      })
+
+      it('should add PARENT annotation to leadConvertSettings instance', async () => {
+        expect(leadConvertSettingsInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          .toContainEqual(new ReferenceExpression(leadType.elemID))
+      })
+    })
+
+    describe('QuickAction', () => {
+      const createQuickActionInstance = (instanceName: string, instanceFullName: string):
+        InstanceElement => {
+        const quickActionType = new ObjectType({
+          elemID: new ElemID(SALESFORCE, QUICK_ACTION_METADATA_TYPE),
+          annotations: { [METADATA_TYPE]: QUICK_ACTION_METADATA_TYPE },
+        })
+        const quickActionInstance = new InstanceElement(instanceName,
+          quickActionType,
+          { [INSTANCE_FULL_NAME_FIELD]: instanceFullName },
+          [SALESFORCE, RECORDS_PATH, QUICK_ACTION_METADATA_TYPE, instanceName])
+        return quickActionInstance
+      }
+
+      describe('Related to a CustomObject', () => {
+        const instanceName = 'Lead_DoSomething'
+        const quickActionInstance = createQuickActionInstance(instanceName, 'Lead.DoSomething')
+        beforeEach(async () => {
+          await filter().onFetch([quickActionInstance, quickActionInstance.type, leadType])
+        })
+
+        it('should set quickAction instance path correctly', async () => {
+          expect(quickActionInstance.path)
+            .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', QUICK_ACTION_METADATA_TYPE, instanceName])
+        })
+
+        it('should add PARENT annotation to quickAction instance', async () => {
+          expect(quickActionInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+            .toContainEqual(new ReferenceExpression(leadType.elemID))
+        })
+      })
+
+      describe('Not related to a CustomObject', () => {
+        const instanceName = 'DoSomething'
+        const quickActionInstance = createQuickActionInstance(instanceName, 'DoSomething')
+        beforeEach(async () => {
+          await filter().onFetch([quickActionInstance, quickActionInstance.type, leadType])
+        })
+
+        it('should not edit quickAction instance path', async () => {
+          expect(quickActionInstance.path)
+            .toEqual([SALESFORCE, RECORDS_PATH, QUICK_ACTION_METADATA_TYPE, instanceName])
+        })
+
+        it('should not add PARENT annotation to quickAction instance', async () => {
+          expect(quickActionInstance.annotations).not.toHaveProperty(INSTANCE_ANNOTATIONS.PARENT)
+        })
+      })
+    })
+
+    describe('CustomTab', () => {
+      const customTabType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, CUSTOM_TAB_METADATA_TYPE),
+        annotations: { [METADATA_TYPE]: CUSTOM_TAB_METADATA_TYPE },
+      })
+      const customTabInstance = new InstanceElement('Lead',
+        customTabType, { [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
+
+      beforeEach(async () => {
+        await filter().onFetch([customTabInstance, customTabType, leadType])
+      })
+
+      it('should set customTab instance path correctly', async () => {
+        expect(customTabInstance.path)
+          .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', CUSTOM_TAB_METADATA_TYPE])
+      })
+
+      it('should add PARENT annotation to customTab instance', async () => {
+        expect(customTabInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          .toContainEqual(new ReferenceExpression(leadType.elemID))
       })
     })
   })

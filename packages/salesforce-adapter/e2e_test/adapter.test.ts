@@ -46,7 +46,6 @@ import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
 } from '../src/filters/workflow'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
-import { LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID } from '../src/filters/lead_convert_settings'
 
 const { makeArray } = collections.array
 const { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } = constants
@@ -1217,13 +1216,14 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should fetch LeadConvertSettings instance with correct path', () => {
-      const convertSettingsInstance = findElements(result, LEAD_CONVERT_SETTINGS_TYPE_ID.name,
-        LEAD_CONVERT_SETTINGS_TYPE_ID.name).pop() as InstanceElement
+      const convertSettingsInstance = findElements(result,
+        constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+        constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE).pop() as InstanceElement
 
       expect(convertSettingsInstance).toBeDefined()
       expect(convertSettingsInstance.path)
-        .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, LEAD_TYPE_ID.name,
-          LEAD_CONVERT_SETTINGS_TYPE_ID.name])
+        .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, 'Lead',
+          constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE])
     })
 
     it('should retrieve EmailTemplate instance', () => {
@@ -1318,8 +1318,7 @@ describe('Salesforce adapter E2E with real account', () => {
       it('should set workflow instance path correctly', async () => {
         const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
         expect(leadWorkflow.path)
-          .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'WorkflowRules',
-            'LeadWorkflowRules'])
+          .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, 'Lead', 'WorkflowRules'])
       })
     })
   })

@@ -22,7 +22,6 @@ import { apiName, isCustomObject, metadataType } from '../transformers/transform
 // ApiName -> MetadataType -> ElemID
 type ApiNameMapping = Record<string, Record<string, ElemID>>
 
-// Default ReferenceTarget will be InstanceElement
 const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'Role', 'field', 'parentRole'), 'Role'],
   [new ElemID(SALESFORCE, 'ProfileApplicationVisibility', 'field', 'application'), 'CustomApplication'],

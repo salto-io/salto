@@ -49,8 +49,8 @@ export const metadataType = (element: Element): string => {
   if (isInstanceElement(element)) {
     return metadataType(element.type)
   }
-  // We expect to reach to this place only with field of CustomObject
   if (isField(element)) {
+    // We expect to reach to this place only with field of CustomObject
     return CUSTOM_FIELD
   }
   return element.annotations[METADATA_TYPE] || CUSTOM_OBJECT

@@ -117,7 +117,7 @@ type PartialConfig = Required<Pick<Config, 'uid' | 'name' | 'currentEnv'>> & {
   envs: Record<string, {baseDir: string; config: Partial<EnvConfig>}>
 }
 
-const createDefaultBaseConfig = (
+const createDefaultWorkspaceConfig = (
   baseDir: string,
   workspaceName? : string,
   existingUid? : string
@@ -150,12 +150,16 @@ const resolvePath = (baseDir: string, pathToResolve: string): string => (
     : path.resolve(baseDir, pathToResolve)
 )
 
-const completeBaseConfig = (baseDir: string, baseConfig: Partial<Config>): Config => {
-  const defaultBaseConfig = createDefaultBaseConfig(baseDir, baseConfig.name, baseConfig.uid)
-  const fullBaseConfig = _.merge({}, defaultBaseConfig, baseConfig)
+const completeWorkspaceConfig = (baseDir: string, workspaceConfig: Partial<Config>): Config => {
+  const defaultWorkspaceConfig = createDefaultWorkspaceConfig(
+    baseDir,
+    workspaceConfig.name,
+    workspaceConfig.uid
+  )
+  const fullWorkspaceConfig = _.merge({}, defaultWorkspaceConfig, workspaceConfig)
   return {
-    localStorage: resolvePath(baseDir, fullBaseConfig.localStorage),
-    ...fullBaseConfig,
+    localStorage: resolvePath(baseDir, fullWorkspaceConfig.localStorage),
+    ...fullWorkspaceConfig,
   }
 }
 
@@ -170,7 +174,7 @@ const completeEnvConfig = (
 }
 
 export const completeConfig = (baseDir: string, patialConfig: PartialConfig): Config => {
-  const config = _.merge({}, completeBaseConfig(baseDir, patialConfig)) as Config
+  const config = _.merge({}, completeWorkspaceConfig(baseDir, patialConfig)) as Config
   const envs = _.mapValues(config.envs, env => ({
     ...env,
     config: completeEnvConfig(
@@ -237,7 +241,7 @@ const dumpEnvConfig = async (
   return replaceContents(configPath, dumpElements([configInstance]))
 }
 
-const dumpBaseConfig = async (baseDir: string, config: PartialConfig): Promise<void> => {
+const dumpWorkspaceConfig = async (baseDir: string, config: PartialConfig): Promise<void> => {
   const configPath = getConfigPath(baseDir)
   await mkdirp(path.dirname(configPath))
   const configInstance = new InstanceElement(
@@ -252,7 +256,7 @@ const dumpBaseConfig = async (baseDir: string, config: PartialConfig): Promise<v
 }
 
 export const dumpConfig = async (baseDir: string, config: PartialConfig): Promise<void> => {
-  await dumpBaseConfig(baseDir, config)
+  await dumpWorkspaceConfig(baseDir, config)
   await Promise.all(_.entries(config.envs).map(([name, env]) => dumpEnvConfig(
     baseDir,
     env.baseDir,

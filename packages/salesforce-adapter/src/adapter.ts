@@ -65,6 +65,11 @@ const log = logger(module)
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 const RECORDS_CHUNK_SIZE = 10000
 
+// Exported for testing purposes
+export const METADATA_BLACKLIST_ENV = 'SALTO_SF_METADATA_BLACKLIST'
+export const INSTANCES_BLACKLIST_ENV = 'SALTO_SF_INSTANCES_BLACKLIST'
+export const REGEX_INSTANCES_BLACKLIST_ENV = 'SALTO_SF_REGEX_INSTANCES_BLACKLIST'
+
 const absoluteIDMetadataTypes: Record<string, string[]> = {
   CustomLabels: ['labels'],
 }
@@ -99,6 +104,16 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
   }
 }
 
+const stringsArrayFromEnv = (envProp: string): string[] =>
+  (process.env[envProp] || '').split(';').map(s => s.trim())
+const additionalMetadataBlacklist = (): string[] => stringsArrayFromEnv(METADATA_BLACKLIST_ENV)
+const additionalInstancesBlacklist = (): string[] => stringsArrayFromEnv(INSTANCES_BLACKLIST_ENV)
+const additionalRegexInstancesBlacklist = (): string[] =>
+  stringsArrayFromEnv(REGEX_INSTANCES_BLACKLIST_ENV)
+
+const instanceNameMatchRegex = (name: string, regex: string[]): boolean =>
+  regex.map(re => new RegExp(re)).some(re => re.test(name))
+
 export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
   metadataAdditionalTypes?: string[]
@@ -111,6 +126,9 @@ export interface SalesforceAdapterParams {
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
   metadataTypeBlacklist?: string[]
+
+  // Regular expressions for instances we don't want to fetch
+  regexInstancesBlacklist?: string[]
 
   // Metadata types that we have to fetch using the retrieve API endpoint and add update or remove
   // using the deploy API endpoint
@@ -157,6 +175,7 @@ type RetrieveMember = {
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private instancesBlacklist: string[]
+  private regexInstancesBlacklist: string[]
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
@@ -174,8 +193,9 @@ export default class SalesforceAdapter {
       'NetworkBranding',
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
-    ],
-    instancesBlacklist = [],
+    ].concat(additionalMetadataBlacklist()),
+    instancesBlacklist = additionalInstancesBlacklist(),
+    regexInstancesBlacklist = additionalRegexInstancesBlacklist(),
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
@@ -256,6 +276,7 @@ export default class SalesforceAdapter {
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
     this.instancesBlacklist = instancesBlacklist
+    this.regexInstancesBlacklist = regexInstancesBlacklist
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
@@ -759,7 +780,10 @@ export default class SalesforceAdapter {
     const retrieveMembers: RetrieveMember[] = _(retrieveTypeToFiles)
       .entries()
       .map(([type, files]) => _(files)
-        .map(constants.INSTANCE_FULL_NAME_FIELD).uniq().map(name => ({ type, name }))
+        .map(constants.INSTANCE_FULL_NAME_FIELD)
+        .uniq()
+        .filter(name => !instanceNameMatchRegex(name, this.regexInstancesBlacklist))
+        .map(name => ({ type, name }))
         .value())
       .flatten()
       .value()
@@ -889,6 +913,7 @@ export default class SalesforceAdapter {
 
     const instancesFullNames = objs.map(getFullName)
       .filter(name => !this.instancesBlacklist.includes(`${type}.${name}`))
+      .filter(name => !instanceNameMatchRegex(name, this.regexInstancesBlacklist))
     const instanceInfos = await this.client.readMetadata(type, instancesFullNames)
       .catch(err => {
         log.error('failed to read metadata for type %s', type)

@@ -457,7 +457,7 @@ export class Types {
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
-        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     AutoNumber: new PrimitiveType({
@@ -508,7 +508,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
-        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Picklist: new PrimitiveType({
@@ -555,7 +555,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
-        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Phone: new PrimitiveType({

@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID,
-  isObjectType, InstanceElement, BuiltinTypes,
+  isObjectType, InstanceElement, BuiltinTypes, StaticAssetExpression,
 } from '@salto-io/adapter-api'
 import { SourceRange, SourceMap, parse } from '../../src/parser/parse'
 
@@ -116,7 +116,7 @@ describe('Salto parser', () => {
       }
 
       salesforce.test_static_something {
-         filepath               = @aaa.png
+         filepath              = file("aaa.png")
       }
       `
     beforeAll(() => {
@@ -328,7 +328,7 @@ describe('Salto parser', () => {
       })
 
       it('should have the correct path', () => {
-        expect(settingsType.value.filepath).toEqual('aaa.png')
+        expect(settingsType.value.filepath).toEqual(new StaticAssetExpression('aaa.png'))
       })
     })
 

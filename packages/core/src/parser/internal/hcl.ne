@@ -35,7 +35,7 @@ primitive ->
 	  %number {% d => converters.convertNumber(d[0]) %}
 	| string {% id %}
 	| %boolean {% d => converters.convertBoolean(d[0]) %}
-  | %staticFileAsset {% d => converters.convertStaticFileAsset(d[0]) %}
+	| %staticFileAsset {% d => converters.convertStaticFileAsset(d[0]) %}
 	| word {% d => converters.convertReference(d[0]) %}
 	| multilineString {% id %}
 	| %wildcard {% d => converters.convertWildcard(d[0]) %}

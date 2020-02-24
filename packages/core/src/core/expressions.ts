@@ -18,6 +18,7 @@ import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, isInstanceElement, Value,
   ReferenceExpression, TemplateExpression, resolvePath,
+  StaticAssetExpression,
 } from '@salto-io/adapter-api'
 
 type Resolver<T> = (
@@ -36,12 +37,17 @@ export class CircularReference {
 
 let resolveReferenceExpression: Resolver<ReferenceExpression>
 let resolveTemplateExpression: Resolver<TemplateExpression>
+let resolveStaticAssetExpression: Resolver<StaticAssetExpression>
 
 const resolveMaybeExpression: Resolver<Value> = (
   value: Value,
   contextElements: Record<string, Element[]>,
   visited: Set<string> = new Set<string>(),
 ): Value => {
+  if (value instanceof StaticAssetExpression) {
+    return resolveStaticAssetExpression(value, contextElements, visited)
+  }
+
   if (value instanceof ReferenceExpression) {
     return new ReferenceExpression(
       value.elemId,
@@ -55,6 +61,12 @@ const resolveMaybeExpression: Resolver<Value> = (
 
   return undefined
 }
+
+resolveStaticAssetExpression = (
+  expression: StaticAssetExpression,
+  contextElements: Record<string, Element[]>,
+  visited: Set<string> = new Set<string>(),
+): Value => expression.fileContent
 
 resolveReferenceExpression = (
   expression: ReferenceExpression,

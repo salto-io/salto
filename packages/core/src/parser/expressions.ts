@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Value, ElemID, TemplateExpression, ReferenceExpression,
+  Value, ElemID, TemplateExpression, ReferenceExpression, StaticAssetExpression,
 } from '@salto-io/adapter-api'
 import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
 
@@ -53,7 +53,7 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
         ElemID.fromFullName(traversalParts.join(ElemID.NAMESPACE_SEPARATOR))
       )
     },
-    staticFileAsset: exp => exp.value,
+    staticFileAsset: exp => new StaticAssetExpression(exp.value),
   }
 
   if (sourceMap && baseId && expression.source) {

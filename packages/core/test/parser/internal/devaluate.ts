@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ReferenceExpression, TemplateExpression,
+  ReferenceExpression, TemplateExpression, StaticAssetExpression,
 } from '@salto-io/adapter-api'
 import { SourceRange, HclExpression } from '../../../src/parser/internal/types'
 
@@ -64,6 +64,13 @@ const devaluate = (value: any): HclExpression => {
     source,
   })
 
+  const devaluateStaticAsset = (ref: StaticAssetExpression): HclExpression => ({
+    type: 'staticFileAsset',
+    value: ref.value,
+    expressions: [],
+    source,
+  })
+
   const devaluateTemplateExpression = (templateExp: TemplateExpression): HclExpression => ({
     type: 'template',
     expressions: templateExp.parts.map(p => (
@@ -83,6 +90,10 @@ const devaluate = (value: any): HclExpression => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return devaluateObject(value as Record<string, any>)
   }
+  if (value instanceof StaticAssetExpression) {
+    return devaluateStaticAsset(value)
+  }
+
   if (value instanceof ReferenceExpression) {
     return devaluateReference(value)
   }

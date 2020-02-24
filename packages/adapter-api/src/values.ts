@@ -28,18 +28,38 @@ export interface Values {
 
 // TODO: Actually implement (!)
 export class StaticAssetExpression {
-  constructor(
-    public readonly elemId: ElemID, private resValue?: Value
-  ) {}
+  private evaluatedHash: string | null
+  private evaluatedContent: string | null
 
-  get traversalParts(): string[] {
-    return this.elemId.getFullNameParts()
+  static get serializedTypeName(): string { return 'StaticAssetExpression' }
+
+  constructor(
+    public readonly filePath: string
+  ) {
+    this.evaluatedHash = null
+    this.evaluatedContent = null
+  }
+
+  /* NOTE: Not sure yet when to actually read the file */
+
+  get fileHash(): string {
+    if (this.evaluatedHash) {
+      return this.evaluatedHash
+    }
+    // TODO: Do magic here
+    return this.filePath
+  }
+
+  get fileContent(): string {
+    if (this.evaluatedContent) {
+      return this.evaluatedContent
+    }
+    // TODO: Do MOAR magic here
+    return this.filePath
   }
 
   get value(): Value {
-    return (this.resValue instanceof StaticAssetExpression)
-      ? this.resValue.value
-      : this.resValue
+    return this.filePath
   }
 }
 
@@ -74,8 +94,7 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
   second,
   (f, s) => {
     if (f instanceof StaticAssetExpression || s instanceof StaticAssetExpression) {
-      // TODO: Add logic with actual blob / hash
-      return undefined
+      return isEqualValues(f.fileHash, s.fileHash)
     }
     if (f instanceof ReferenceExpression || s instanceof ReferenceExpression) {
       const fValue = f instanceof ReferenceExpression ? f.value : f

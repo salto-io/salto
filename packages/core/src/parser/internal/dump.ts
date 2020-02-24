@@ -50,7 +50,7 @@ const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
 
 const dumpObject = (obj: Value): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const attributes = seperateByCommas(_.toPairs(obj).map(dumpAttr))
+  const attributes = _.toPairs(obj).map(dumpAttr)
   const res = [O_OBJ]
   attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(l)))
   res.push(C_OBJ)

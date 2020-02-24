@@ -19,12 +19,8 @@ import HubspotClient from './client/client'
 
 // Filter interface, filters will be activated upon adapter fetch, add, update and remove
 // operations. The filter will be responsible for specific business logic.
-// For example, replacing form's fields with contactProperties references
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<void>
-  // beforeUpdate(before: Element, after: Element, changes: Iterable<Change>):
-  //   Promise<(SaveResult| UpsertResult)[]>
-  // beforeRemove(before: Element): Promise<SaveResult[]>
 }>
 
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>

@@ -49,7 +49,7 @@ export const formsMockArray = [
   secondFormMock,
 ] as unknown
 
-const g1PropInstance = new InstanceElement(
+export const g1PropInstance = new InstanceElement(
   'g1',
   Types.hubspotObjects.contactProperty,
   {
@@ -64,7 +64,7 @@ const g1PropInstance = new InstanceElement(
   [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'g1'],
 )
 
-const datePropInstance = new InstanceElement(
+export const datePropInstance = new InstanceElement(
   'date_of_birth',
   Types.hubspotObjects.contactProperty,
   {
@@ -79,7 +79,7 @@ const datePropInstance = new InstanceElement(
   [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'date_of_birth'],
 )
 
-const valuePropInstance = new InstanceElement(
+export const valuePropInstance = new InstanceElement(
   'value',
   Types.hubspotObjects.contactProperty,
   {
@@ -118,7 +118,7 @@ export const beforeFormInstanceValuesMock = {
       fields: [
         {
           contactProperty: new ReferenceExpression(g1PropInstance.elemID, g1PropInstance),
-          contactProertyOverride: {
+          contactPropertyOverrides: {
             label: 'g1!',
           },
           dependentFieldFilters: [

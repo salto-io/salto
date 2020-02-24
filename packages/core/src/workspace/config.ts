@@ -120,8 +120,6 @@ type PartialConfig = Required<Pick<Config, 'uid' | 'name' | 'currentEnv'>> & {
   envs: Record<string, {baseDir: string; config: Partial<EnvConfig>}>
 }
 
-const ENV_CONFIG_FIELDS = ['services', 'stateLocation', 'credentialsLocation']
-
 const createDefaultBaseConfig = (
   baseDir: string,
   workspaceName? : string,
@@ -237,19 +235,21 @@ const dumpEnvConfig = async (
   const configInstance = new InstanceElement(
     envName,
     saltoEnvConfigType,
-    _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
+    config
   )
   return replaceContents(configPath, dumpElements([configInstance]))
 }
 
-const dumpBaseConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
+const dumpBaseConfig = async (baseDir: string, config: PartialConfig): Promise<void> => {
   const configPath = getConfigPath(baseDir)
   await mkdirp(path.dirname(configPath))
-  const baseConfig = _.omit(config, ENV_CONFIG_FIELDS)
   const configInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
     saltoConfigType,
-    _.mapKeys(baseConfig as object, (_v, k) => _.snakeCase(k))
+    {
+      ...config,
+      envs: _.entries(config.envs).map(([name, envData]) => ({ name, baseDir: envData.baseDir })),
+    }
   )
   return replaceContents(configPath, dumpElements([configInstance]))
 }

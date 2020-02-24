@@ -32,7 +32,6 @@ export const command = (
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )
     } catch (e) {
-      stderr.write(`ERR ${e.stack}`)
       stderr.write(Prompts.initFailed(e.message))
       telemetry.sendStackEvent('workspace.init.failure', e, {})
       return CliExitCode.AppError

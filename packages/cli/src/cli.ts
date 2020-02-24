@@ -22,6 +22,7 @@ import { YargsCommandBuilder } from './command_builder'
 import parse, { ERROR_STYLE } from './argparser'
 
 export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
+const EVENTS_FLUSH_WAIT_TIME = 1000
 
 const log = logger(module)
 
@@ -77,8 +78,7 @@ export default async (
     errorStream.write(EOL)
     return CliExitCode.AppError
   } finally {
-    input.telemetry.stop()
-    await input.telemetry.flush()
+    await input.telemetry.stop(EVENTS_FLUSH_WAIT_TIME)
     await logger.end()
   }
 }

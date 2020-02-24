@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 
+import _ from 'lodash'
 import axios from 'axios'
 import { platform, arch, release } from 'os'
 import { setTimeout, clearTimeout } from 'timers'
@@ -24,7 +25,7 @@ import { TelemetryConfig } from './app_config'
 const log = logger(module)
 const MAX_EVENTS_PER_REQUEST = 20
 const EVENTS_API_PATH = '/v1/events'
-const EVENTS_FLUSH_INTERVAL = 100000
+const EVENTS_FLUSH_INTERVAL = 1000
 
 export type RequiredTags = {
   installationID: string
@@ -55,7 +56,7 @@ export type Telemetry = {
   sendCountEvent(name: string, value: number, extraTags: Tags): void
   sendStackEvent(name: string, value: Error, extraTags: Tags): void
   start(): void
-  stop(): void
+  stop(timeoutMs: number): Promise<void>
   flush(): Promise<void>
 }
 
@@ -65,6 +66,9 @@ export const telemetrySender = (
 ): Telemetry => {
   const newEvents = [] as Array<Event<unknown>>
   let queuedEvents = [] as Array<Event<unknown>>
+  const enabled = config.enabled || false
+  let httpRequestTimeout = axios.defaults.timeout
+  let timer = {} as NodeJS.Timer
   const commonTags = {
     ...tags,
     osArch: arch(),
@@ -77,8 +81,11 @@ export const telemetrySender = (
       Authorization: config.token,
     },
   })
-  const enabled = config.enabled || false
-  let timer = {} as NodeJS.Timer
+
+  const transformTags = (extraTags: Tags): Tags => (
+    _({ ...commonTags, ...extraTags }).mapKeys((_v, k) => _.snakeCase(k)).value()
+  )
+
   const flush = async (): Promise<void> => {
     queuedEvents.push(...newEvents.splice(0, MAX_EVENTS_PER_REQUEST - queuedEvents.length))
     if (enabled && queuedEvents.length > 0) {
@@ -86,6 +93,7 @@ export const telemetrySender = (
         await httpClient.post(
           EVENTS_API_PATH,
           { events: queuedEvents },
+          { timeout: httpRequestTimeout },
         )
         queuedEvents = []
       } catch (e) {
@@ -93,6 +101,7 @@ export const telemetrySender = (
       }
     }
   }
+
   const start = (): void => {
     timer = setTimeout(() => {
       flush()
@@ -100,13 +109,17 @@ export const telemetrySender = (
     }, EVENTS_FLUSH_INTERVAL)
   }
 
-  const stop = (): void => clearTimeout(timer)
+  const stop = async (timeoutMs: number): Promise<void> => {
+    clearTimeout(timer)
+    httpRequestTimeout = timeoutMs
+    return flush()
+  }
 
   const sendCountEvent = (name: string, value: number, extraTags: Tags): void => {
     const newEvent = {
       name,
       value,
-      tags: { ...commonTags, ...extraTags },
+      tags: transformTags(extraTags),
       type: EVENT_TYPES.COUNTER,
       timestamp: new Date().toISOString(),
     } as CountEvent
@@ -121,7 +134,7 @@ export const telemetrySender = (
     const newEvent = {
       name,
       value: stackWithoutMessage,
-      tags: { ...commonTags, ...extraTags },
+      tags: transformTags(extraTags),
       type: EVENT_TYPES.STACK,
       timestamp: new Date().toISOString(),
     }

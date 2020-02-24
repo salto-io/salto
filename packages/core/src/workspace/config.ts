@@ -17,14 +17,11 @@ import * as path from 'path'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
 import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'
 import { mkdirp, exists, readFile, replaceContents } from '../file'
 import { getSaltoHome } from '../app_config'
-
-const log = logger(module)
 
 const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
@@ -273,15 +270,19 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
   return baseDir
 }
 
-export const loadConfig = async (lookupDir: string): Promise<Config> => {
-  const baseDir = await baseDirFromLookup(lookupDir)
+const readConfig = async (baseDir: string): Promise<PartialConfig> => {
   const config = parseConfig(await readFile(getConfigPath(baseDir)))
   const envs = await mapValuesAsync(config.envs, async env => ({
     ...env,
     config: parseEnvConfig(await readFile(getConfigPath(path.join(baseDir, env.baseDir)))),
   }))
-  log.debug(`loaded raw base config ${JSON.stringify(config)}`)
-  return completeConfig(baseDir, { ...config, envs })
+  return { ...config, envs }
+}
+
+export const loadConfig = async (lookupDir: string): Promise<Config> => {
+  const baseDir = await baseDirFromLookup(lookupDir)
+  const config = await readConfig(baseDir)
+  return completeConfig(baseDir, config)
 }
 
 export const addServiceToConfig = async (currentConfig: Config, service: string
@@ -291,11 +292,8 @@ export const addServiceToConfig = async (currentConfig: Config, service: string
   if (currentServices.includes(service)) {
     throw new ServiceDuplicationError(service)
   }
-  const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
-  config.envs[currentConfig.currentEnv].config = {
-    ...envConfig,
-    services: [...currentServices, service],
-  } as EnvConfig
+  const config = await readConfig(currentConfig.baseDir)
+  config.envs[currentConfig.currentEnv].config.services = [...currentServices, service]
   await dumpConfig(currentConfig.baseDir, config)
 }
 
@@ -305,7 +303,7 @@ export const addEnvToConfig = async (currentConfig: Config, envName: string): Pr
   }
   const newEnvDir = path.join('envs', envName)
   await mkdirp(newEnvDir)
-  const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
+  const config = await readConfig(currentConfig.baseDir)
   config.envs = { [envName]: { baseDir: newEnvDir, config: {} }, ...config.envs }
   await dumpConfig(currentConfig.baseDir, config)
   return completeConfig(currentConfig.baseDir, config)
@@ -315,7 +313,7 @@ export const setCurrentEnv = async (currentConfig: Config, envName: string): Pro
   if (!_.has(currentConfig.envs, envName)) {
     throw new UnknownEnvError(envName)
   }
-  const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
+  const config = await readConfig(currentConfig.baseDir)
   config.currentEnv = envName
   await dumpConfig(currentConfig.baseDir, config)
   return completeConfig(currentConfig.baseDir, config)

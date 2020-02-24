@@ -2647,7 +2647,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   bpCase(GLOBAL_VALUE_SET),
                   'instance',
                   bpCase(gvsName),
-                ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+                )
               ))
           })
 
@@ -2796,7 +2796,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
           // Resolve GVS valueSetName reference expression
           const normalizeGVSReference = (ref: ReferenceExpression): string | undefined => {
-            const elem = findElement(result, ref.elemId.createParentID())
+            const elem = findElement(result, ref.elemId)
             return elem ? apiName(elem) : undefined
           }
           Object.values(newCustomObject.fields)

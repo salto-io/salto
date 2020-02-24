@@ -87,8 +87,7 @@ describe('Global Value Sets filter', () => {
       const globalValueSetInstance = elements[0] as InstanceElement
       const customObjectType = elements[1] as ObjectType
       expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-        .toEqual(new ReferenceExpression(globalValueSetInstance.elemID
-          .createNestedID(constants.INSTANCE_FULL_NAME_FIELD)))
+        .toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
     })
 
     it('should not replace value set with references if value set name does not exist', async () => {

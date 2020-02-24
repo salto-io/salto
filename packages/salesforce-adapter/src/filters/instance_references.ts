@@ -19,7 +19,7 @@ import { FilterCreator } from '../filter'
 import { SALESFORCE, CUSTOM_OBJECT, CUSTOM_FIELD } from '../constants'
 import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
 
-// ApiName -> Type -> ElemID
+// ApiName -> MetadataType -> ElemID
 type ApiNameMapping = Record<string, Record<string, ElemID>>
 
 // Default ReferenceTarget will be InstanceElement

@@ -17,14 +17,11 @@ import * as path from 'path'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
 import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'
 import { mkdirp, exists, readFile, replaceContents } from '../file'
 import { getSaltoHome } from '../app_config'
-
-const log = logger(module)
 
 const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
@@ -120,9 +117,7 @@ type PartialConfig = Required<Pick<Config, 'uid' | 'name' | 'currentEnv'>> & {
   envs: Record<string, {baseDir: string; config: Partial<EnvConfig>}>
 }
 
-const ENV_CONFIG_FIELDS = ['services', 'stateLocation', 'credentialsLocation']
-
-const createDefaultBaseConfig = (
+const createDefaultWorkspaceConfig = (
   baseDir: string,
   workspaceName? : string,
   existingUid? : string
@@ -155,12 +150,16 @@ const resolvePath = (baseDir: string, pathToResolve: string): string => (
     : path.resolve(baseDir, pathToResolve)
 )
 
-const completeBaseConfig = (baseDir: string, baseConfig: Partial<Config>): Config => {
-  const defaultBaseConfig = createDefaultBaseConfig(baseDir, baseConfig.name, baseConfig.uid)
-  const fullBaseConfig = _.merge({}, defaultBaseConfig, baseConfig)
+const completeWorkspaceConfig = (baseDir: string, workspaceConfig: Partial<Config>): Config => {
+  const defaultWorkspaceConfig = createDefaultWorkspaceConfig(
+    baseDir,
+    workspaceConfig.name,
+    workspaceConfig.uid
+  )
+  const fullWorkspaceConfig = _.merge({}, defaultWorkspaceConfig, workspaceConfig)
   return {
-    localStorage: resolvePath(baseDir, fullBaseConfig.localStorage),
-    ...fullBaseConfig,
+    localStorage: resolvePath(baseDir, fullWorkspaceConfig.localStorage),
+    ...fullWorkspaceConfig,
   }
 }
 
@@ -175,7 +174,7 @@ const completeEnvConfig = (
 }
 
 export const completeConfig = (baseDir: string, patialConfig: PartialConfig): Config => {
-  const config = _.merge({}, completeBaseConfig(baseDir, patialConfig)) as Config
+  const config = _.merge({}, completeWorkspaceConfig(baseDir, patialConfig)) as Config
   const envs = _.mapValues(config.envs, env => ({
     ...env,
     config: completeEnvConfig(
@@ -237,25 +236,27 @@ const dumpEnvConfig = async (
   const configInstance = new InstanceElement(
     envName,
     saltoEnvConfigType,
-    _.mapKeys(config as object, (_v, k) => _.snakeCase(k))
+    config
   )
   return replaceContents(configPath, dumpElements([configInstance]))
 }
 
-const dumpBaseConfig = async (baseDir: string, config: Partial<Config>): Promise<void> => {
+const dumpWorkspaceConfig = async (baseDir: string, config: PartialConfig): Promise<void> => {
   const configPath = getConfigPath(baseDir)
   await mkdirp(path.dirname(configPath))
-  const baseConfig = _.omit(config, ENV_CONFIG_FIELDS)
   const configInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
     saltoConfigType,
-    _.mapKeys(baseConfig as object, (_v, k) => _.snakeCase(k))
+    {
+      ...config,
+      envs: _.entries(config.envs).map(([name, envData]) => ({ name, baseDir: envData.baseDir })),
+    }
   )
   return replaceContents(configPath, dumpElements([configInstance]))
 }
 
 export const dumpConfig = async (baseDir: string, config: PartialConfig): Promise<void> => {
-  await dumpBaseConfig(baseDir, config)
+  await dumpWorkspaceConfig(baseDir, config)
   await Promise.all(_.entries(config.envs).map(([name, env]) => dumpEnvConfig(
     baseDir,
     env.baseDir,
@@ -273,15 +274,19 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
   return baseDir
 }
 
-export const loadConfig = async (lookupDir: string): Promise<Config> => {
-  const baseDir = await baseDirFromLookup(lookupDir)
+const readConfig = async (baseDir: string): Promise<PartialConfig> => {
   const config = parseConfig(await readFile(getConfigPath(baseDir)))
   const envs = await mapValuesAsync(config.envs, async env => ({
     ...env,
     config: parseEnvConfig(await readFile(getConfigPath(path.join(baseDir, env.baseDir)))),
   }))
-  log.debug(`loaded raw base config ${JSON.stringify(config)}`)
-  return completeConfig(baseDir, { ...config, envs })
+  return { ...config, envs }
+}
+
+export const loadConfig = async (lookupDir: string): Promise<Config> => {
+  const baseDir = await baseDirFromLookup(lookupDir)
+  const config = await readConfig(baseDir)
+  return completeConfig(baseDir, config)
 }
 
 export const addServiceToConfig = async (currentConfig: Config, service: string
@@ -291,11 +296,8 @@ export const addServiceToConfig = async (currentConfig: Config, service: string
   if (currentServices.includes(service)) {
     throw new ServiceDuplicationError(service)
   }
-  const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
-  config.envs[currentConfig.currentEnv].config = {
-    ...envConfig,
-    services: [...currentServices, service],
-  } as EnvConfig
+  const config = await readConfig(currentConfig.baseDir)
+  config.envs[currentConfig.currentEnv].config.services = [...currentServices, service]
   await dumpConfig(currentConfig.baseDir, config)
 }
 
@@ -305,7 +307,7 @@ export const addEnvToConfig = async (currentConfig: Config, envName: string): Pr
   }
   const newEnvDir = path.join('envs', envName)
   await mkdirp(newEnvDir)
-  const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
+  const config = await readConfig(currentConfig.baseDir)
   config.envs = { [envName]: { baseDir: newEnvDir, config: {} }, ...config.envs }
   await dumpConfig(currentConfig.baseDir, config)
   return completeConfig(currentConfig.baseDir, config)
@@ -315,7 +317,7 @@ export const setCurrentEnv = async (currentConfig: Config, envName: string): Pro
   if (!_.has(currentConfig.envs, envName)) {
     throw new UnknownEnvError(envName)
   }
-  const config = parseConfig(await readFile(getConfigPath(currentConfig.baseDir)))
+  const config = await readConfig(currentConfig.baseDir)
   config.currentEnv = envName
   await dumpConfig(currentConfig.baseDir, config)
   return completeConfig(currentConfig.baseDir, config)

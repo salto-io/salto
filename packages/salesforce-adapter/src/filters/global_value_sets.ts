@@ -34,7 +34,7 @@ const getValueSetNameToRef = (elements: Element[]): GlobalValueSetsLookup => {
   return _.fromPairs(globalValueSets
     .map(gvs => [
       gvs.value[INSTANCE_FULL_NAME_FIELD],
-      new ReferenceExpression(gvs.elemID.createNestedID(INSTANCE_FULL_NAME_FIELD)),
+      new ReferenceExpression(gvs.elemID),
     ]))
 }
 

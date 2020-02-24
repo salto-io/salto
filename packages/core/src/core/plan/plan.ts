@@ -21,6 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph,
+  removeEdges,
 } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { resolve } from '../expressions'
@@ -144,11 +145,28 @@ const defaultDependencyChangers = [
   addReferencesDependency,
 ]
 
+const addModifyNodes = (
+  addDependencies: PlanTransformer
+): PlanTransformer => {
+  const runMergeStep: PlanTransformer = async stepGraph => {
+    const mergedGraph = await addDependencies(stepGraph).then(mergeNodesToModify)
+    if (stepGraph.size !== mergedGraph.size) {
+      // Some of the nodes were merged, this may enable other nodes to be merged
+      // Note that with each iteration that changes the size we merge at least one node pair
+      // so if we have N node pairs this recursion will run at most N times
+      return runMergeStep(await removeEdges(mergedGraph))
+    }
+    return mergedGraph
+  }
+  return runMergeStep
+}
+
+
 export const getPlan = async (
   beforeElements: readonly Element[],
   afterElements: readonly Element[],
   changeValidators: Record<string, ChangeValidator> = {},
-  dependecyChangers: ReadonlyArray<DependencyChanger> = defaultDependencyChangers,
+  dependencyChangers: ReadonlyArray<DependencyChanger> = defaultDependencyChangers,
 ): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
   const resolvedBefore = resolve(beforeElements)
@@ -158,8 +176,7 @@ export const getPlan = async (
     addElements(resolvedBefore, 'remove'),
     addElements(resolvedAfter, 'add'),
     removeEqualNodes(isEqualsNode),
-    addNodeDependencies(dependecyChangers),
-    mergeNodesToModify,
+    addModifyNodes(addNodeDependencies(dependencyChangers)),
   )
 
   // filter invalid changes from the graph and the after elements

@@ -148,7 +148,7 @@ describe('filterInvalidChanges', () => {
     expect(parentFields).not.toContain('invalid')
   })
 
-  it('should have onUpdate change error when modifying invalid object annotations and omit the creation of valid field', async () => {
+  it('should have onUpdate change error when modifying invalid object annotations and keep the creation of valid field', async () => {
     const invalidObjElemId = new ElemID('salto', 'invalid')
     const beforeInvalidObj = new ObjectType({ elemID: invalidObjElemId })
     const afterInvalidObj = beforeInvalidObj.clone()
@@ -160,7 +160,11 @@ describe('filterInvalidChanges', () => {
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(afterInvalidObj.elemID)).toBeTruthy()
-    expect(planResult.size).toBe(0)
+    expect(planResult.size).toBe(1)
+    const planItem = getFirstPlanItem(planResult)
+    const changes = [...planItem.changes()]
+    expect(changes).toHaveLength(1)
+    expect(getChangeElement(changes[0])).toEqual(afterInvalidObj.fields.valid)
   })
 
   it('should have onUpdate change errors when only some field removals are invalid', async () => {

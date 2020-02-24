@@ -2308,7 +2308,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
         expect(annotations[constants.FIELD_ANNOTATIONS.PRECISION]).toBe(18)
-        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual(25)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual('25')
       }
 
       const testAutoNumber = (annotations: Values): void => {
@@ -2475,7 +2475,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
         expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
-        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe(42)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('42')
       }
 
       const testText = (annotations: Values): void => {
@@ -2647,7 +2647,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   bpCase(GLOBAL_VALUE_SET),
                   'instance',
                   bpCase(gvsName),
-                ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+                )
               ))
           })
 
@@ -2796,7 +2796,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
           // Resolve GVS valueSetName reference expression
           const normalizeGVSReference = (ref: ReferenceExpression): string | undefined => {
-            const elem = findElement(result, ref.elemId.createParentID())
+            const elem = findElement(result, ref.elemId)
             return elem ? apiName(elem) : undefined
           }
           Object.values(newCustomObject.fields)
@@ -3129,7 +3129,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [constants.FIELD_ANNOTATIONS.SCALE]: 4,
             [constants.FIELD_ANNOTATIONS.PRECISION]: 17,
-            [constants.DEFAULT_VALUE_FORMULA]: 24,
+            [constants.DEFAULT_VALUE_FORMULA]: '24',
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.CURRENCY,
           },
           [autoNumberFieldName]: {

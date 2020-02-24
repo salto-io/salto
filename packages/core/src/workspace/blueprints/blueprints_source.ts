@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import {
   Element, ElemID, ElementMap, resolvePath, Value,
 } from '@salto-io/adapter-api'
+import { promises } from '@salto-io/lowerdash'
 import { mergeElements, MergeError } from '../../core/merger'
 import {
   getChangeLocations, updateBlueprintData, getChangesToUpdate, groupAnnotationTypeChanges,
@@ -29,11 +30,17 @@ import { DetailedChange } from '../../core/plan'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 
+const { promiseAllChained } = promises.array
+
 const log = logger(module)
 
 export type RoutingMode = 'strict' | 'default'
 
 export const BP_EXTENSION = '.bp'
+const PARSE_RATE = 20
+const DUMP_RATE = 20
+// TODO: this should moved into cache implemenation
+const CACHE_RATE = 20
 
 export type Blueprint = {
   buffer: string
@@ -86,7 +93,7 @@ BlueprintsSource => {
   }
 
   const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
-    Promise.all(blueprints.map(async bp => {
+    promiseAllChained(blueprints.map(bp => async () => {
       const parsed = await parseBlueprint(bp)
       return {
         timestamp: bp.timestamp || Date.now(),
@@ -94,12 +101,13 @@ BlueprintsSource => {
         elements: _.keyBy(parsed.elements, e => e.elemID.getFullName()),
         errors: parsed.errors,
       }
-    }))
+    }), PARSE_RATE)
 
-  const readAllBps = async (): Promise<Blueprint[]> => (
-    Promise.all((await blueprintsStore.list())
-      .map(async filename => blueprintsStore.get(filename))) as Promise<Blueprint[]>
-  )
+  const readAllBps = async (): Promise<Blueprint[]> =>
+    _.reject(
+      await blueprintsStore.getFiles(await blueprintsStore.list()),
+      _.isUndefined
+    ) as Blueprint[]
 
   const buildBlueprintsState = async (newBps: Blueprint[], current: ParsedBlueprintMap):
     Promise<BlueprintsState> => {
@@ -172,23 +180,25 @@ BlueprintsSource => {
       .map(elemID => getElementBlueprints(elemID))))
       .flatten().uniq().value()
     const { parsedBlueprints } = await state
-    const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(await Promise.all(
-      bps.map(async bp =>
-        [parsedBlueprints[bp].filename, await getSourceMap(parsedBlueprints[bp].filename)])
-    ))
+    const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(
+      await promiseAllChained(bps
+        .map(bp => async () => [parsedBlueprints[bp].filename,
+          await getSourceMap(parsedBlueprints[bp].filename)]),
+      CACHE_RATE)
+    )
 
     const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
-    const updatedBlueprints = (await Promise.all(
+    const updatedBlueprints = (await promiseAllChained(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
         .flatten()
         .groupBy(change => change.location.filename)
         .entries()
-        .map(async ([filename, fileChanges]) => {
+        .map(([filename, fileChanges]) => async () => {
           try {
             const updatedFileChanges = groupAnnotationTypeChanges(fileChanges,
               changedFileToSourceMap[filename])
-            const buffer = await updateBlueprintData(await getBlueprintData(filename),
+            const buffer = updateBlueprintData(await getBlueprintData(filename),
               updatedFileChanges)
             return { filename, buffer }
           } catch (e) {
@@ -197,7 +207,8 @@ BlueprintsSource => {
             return undefined
           }
         })
-        .value()
+        .value(),
+      DUMP_RATE
     )).filter(b => b !== undefined) as Blueprint[]
 
     log.debug('going to set the new blueprints')
@@ -240,8 +251,9 @@ BlueprintsSource => {
 
     getSourceRanges: async elemID => {
       const bps = await getElementBlueprints(elemID)
-      const sourceRanges = await Promise.all(bps
-        .map(async bp => (await getSourceMap(bp)).get(elemID.getFullName()) || []))
+      const sourceRanges = await promiseAllChained(bps
+        .map(bp => async () => (await getSourceMap(bp)).get(elemID.getFullName()) || []),
+      CACHE_RATE)
       return _.flatten(sourceRanges)
     },
 

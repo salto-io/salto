@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes,
   ObjectType, InstanceElement, isType, isElement, isExpression,
-  ReferenceExpression, TemplateExpression, Expression, isInstanceElement,
+  ReferenceExpression, TemplateExpression, Expression, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 
 // There are two issues with naive json stringification:
@@ -42,6 +42,11 @@ interface ClassName {[SALTO_CLASS_FIELD]: string}
 export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
+    if (isReferenceExpression(e)) {
+      const o = new ReferenceExpression(e.elemId) as ReferenceExpression & ClassName
+      o[SALTO_CLASS_FIELD] = e.constructor.name
+      return o
+    }
     if (isElement(e) || isExpression(e)) {
       const o = e as Element & ClassName
       o[SALTO_CLASS_FIELD] = e.constructor.name
@@ -71,34 +76,34 @@ export const deserialize = (data: string): Element[] => {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const revivers: {[key: string]: (v: {[key: string]: any}) => Element|Expression} = {
-    [InstanceElement.name]: v => new InstanceElement(
+    [InstanceElement.serializedTypeName]: v => new InstanceElement(
       reviveElemID(v.elemID).name,
       v.type,
       v.value,
       undefined,
       v.annotations,
     ),
-    [ObjectType.name]: v => new ObjectType({
+    [ObjectType.serializedTypeName]: v => new ObjectType({
       elemID: reviveElemID(v.elemID),
       fields: v.fields,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
-    [PrimitiveType.name]: v => new PrimitiveType({
+    [PrimitiveType.serializedTypeName]: v => new PrimitiveType({
       elemID: reviveElemID(v.elemID),
       primitive: v.primitive,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
-    [Field.name]: v => new Field(
+    [Field.serializedTypeName]: v => new Field(
       reviveElemID(v.parentID),
       v.name,
       v.type,
       v.annotations,
       v.isList,
     ),
-    [TemplateExpression.name]: v => new TemplateExpression({ parts: v.parts }),
-    [ReferenceExpression.name]: v => new ReferenceExpression(reviveElemID(v.elemId)),
+    [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
+    [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

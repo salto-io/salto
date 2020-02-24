@@ -31,6 +31,8 @@ export class ReferenceExpression {
     public readonly elemId: ElemID, private resValue?: Value
   ) {}
 
+  static get serializedTypeName(): string { return 'ReferenceExpression' }
+
   get traversalParts(): string[] {
     return this.elemId.getFullNameParts()
   }
@@ -42,7 +44,9 @@ export class ReferenceExpression {
   }
 }
 
-export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {}
+export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {
+  static get serializedTypeName(): string { return 'TemplateExpression' }
+}
 
 export type Expression = ReferenceExpression | TemplateExpression
 

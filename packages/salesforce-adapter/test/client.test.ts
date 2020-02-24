@@ -36,6 +36,7 @@ describe('salesforce client', () => {
     retryDelay: 100, // wait for 100ms before trying again
     retryStrategy: RetryStrategies.NetworkError, // retry on network errors
   } })
+  const headers = { 'content-type': 'application/json' }
 
   describe('with failed delete', () => {
     it('should not fail if the element is already deleted', async () => {
@@ -102,9 +103,7 @@ describe('salesforce client', () => {
         .post(/.*/)
         .reply(200, {
           'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } },
-        }, {
-          'content-type': 'application/json',
-        })
+        }, headers)
 
       const res = await client.listMetadataTypes()
       expect(dodoScope.isDone()).toBeTruthy()
@@ -120,7 +119,7 @@ describe('salesforce client', () => {
         .reply(500, 'server error')
         .post(/.*/)
         .reply(200, { 'a:Envelope': { 'a:Body': { a: { result: { metadataObjects: [] } } } } },
-          { 'content-type': 'application/json' })
+          headers)
 
       try {
         await client.listMetadataTypes()
@@ -132,30 +131,30 @@ describe('salesforce client', () => {
       expect(dodoScope.isDone()).toBeFalsy()
     })
 
-    it('continue in case of error in single chunk', async () => {
+    it('continue in case of error in chunk - run on each element separtly', async () => {
+      const workingReplay = {
+        'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
+      }
       const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
         .post(/.*/)
         .times(2)
-        .reply(200,
-          {
-            'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
-          },
-          {
-            'content-type': 'application/json',
-          })
+        .reply(200, workingReplay, headers)
         .post(/.*/)
         .times(1)
         .reply(500, 'server error')
+        .post(/.*/)
+        .times(10)
+        .reply(200, workingReplay, headers)
       // create an array with 30 names so we will have 3 calls (chunk size is 10 for readMetadata)
       const result = await client.readMetadata('FakeType', Array.from({ length: 30 }, () => 'FakeName'))
-      expect(result).toHaveLength(2)
+      expect(result).toHaveLength(12)
       expect(dodoScope.isDone()).toBeTruthy()
     })
 
-    it('fail in case of error in all chunk', async () => {
+    it('fail in case of error in all chunks', async () => {
       const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
         .post(/.*/)
-        .times(2)
+        .times(22)
         .reply(500, 'server error')
       // create an array with 20 names so we will have 2 calls
       await expect(client.readMetadata('FakeType', Array.from({ length: 20 }, () => 'FakeName')))

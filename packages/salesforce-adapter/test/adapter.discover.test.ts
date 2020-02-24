@@ -39,6 +39,8 @@ describe('SalesforceAdapter fetch', () => {
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
+        metadataTypeBlacklist: ['Test1', 'Ignored1'],
+        instancesBlacklist: ['Test2.instance1', 'Test1.Ignored1'],
       },
     }))
   })
@@ -661,7 +663,7 @@ describe('SalesforceAdapter fetch', () => {
       )
     })
 
-    describe('should fetch when there are errors', () => {
+    describe('should not fetch blacklist metadata types and instance', () => {
       let result: Element[] = []
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
@@ -687,16 +689,17 @@ describe('SalesforceAdapter fetch', () => {
             return { fullName: Array.isArray(fullNames) ? fullNames[0] : fullNames }
           }
         )
+
         result = await adapter.fetch()
       })
 
-      it('should fetch types when there is failure in a type', () => {
+      it('should skip blacklist types', () => {
         expect(findElements(result, 'Test1')).toHaveLength(0)
         expect(findElements(result, 'Test2')).toHaveLength(1)
         expect(findElements(result, 'Test3')).toHaveLength(1)
       })
 
-      it('should fetch instances when there is failure in an instance', () => {
+      it('should skip blacklist instances', () => {
         expect(findElements(result, 'Test2', 'instance1')).toHaveLength(0)
         expect(findElements(result, 'Test3', 'instance1')).toHaveLength(1)
       })

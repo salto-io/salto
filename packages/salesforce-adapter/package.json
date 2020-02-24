@@ -11,7 +11,10 @@
     "access": "public"
   },
   "files": [
-    "dist/**/*"
+    "dist",
+    "src",
+    "e2e_test",
+    "index.ts"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

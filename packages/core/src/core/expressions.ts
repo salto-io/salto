@@ -64,9 +64,19 @@ const resolveMaybeExpression: Resolver<Value> = (
 
 resolveStaticAssetExpression = (
   expression: StaticAssetExpression,
-  contextElements: Record<string, Element[]>,
+  // TODO: Remove these ts and lint ignores upon real implementation
+  // @ts-ignore
+  contextElements: Record<string, Element[]>, // tslint:disable
   visited: Set<string> = new Set<string>(),
-): Value => expression.fileContent
+): Value => {
+  const { value: filepath } = expression
+  if (visited.has(filepath)) {
+    return new CircularReference(filepath)
+  }
+  visited.add(filepath)
+
+  return expression.fileContent
+}
 
 resolveReferenceExpression = (
   expression: ReferenceExpression,

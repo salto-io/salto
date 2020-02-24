@@ -18,7 +18,7 @@ import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes,
   ObjectType, InstanceElement, isType, isElement, isExpression,
   ReferenceExpression, TemplateExpression, Expression, isInstanceElement, isReferenceExpression,
-  StaticAssetExpression
+  StaticAssetExpression,
 } from '@salto-io/adapter-api'
 
 // There are two issues with naive json stringification:

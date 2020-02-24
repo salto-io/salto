@@ -138,22 +138,11 @@ export const convertArray = (
 
 export const convertObject = (
   ob: LexerToken,
-  attrs: (HclExpression | LexerToken | null)[],
+  attrs: HclExpression[],
   cb: LexerToken
 ): HclExpression => {
   const res: Record<string, HclExpression[]> = {}
-  const repositionedAttrs: Token[] = _.reduce(attrs, (acc, attr) => {
-    if (attr && attr.type === 'map') {
-      return [...acc, attr]
-    }
-    if (attr && attr.type === 'comma' && acc.length > 0) {
-      const prevValue = (acc[acc.length - 1] as HclExpression).expressions[1]
-      const sss = createSourceRange(prevValue, attr)
-      prevValue.source = sss
-    }
-    return acc
-  }, [] as Token[])
-  repositionedAttrs.forEach(attr => {
+  attrs.forEach(attr => {
     const expAttr = attr as HclExpression
     const key = expAttr.expressions[0]
     if (res[key.value] !== undefined) {

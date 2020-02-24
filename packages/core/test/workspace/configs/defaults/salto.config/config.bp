@@ -1,8 +1,8 @@
 salto {
   envs = [
       {
-        baseDir = "default",
-        name = "default",
+        baseDir = "default"
+        name = "default"
       },
   ]
   currentEnv = "default"

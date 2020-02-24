@@ -3,8 +3,8 @@ salto {
     name = "e2e"
     envs = [
     {
-        name = "default",
-        baseDir = "envs/default",
+        name = "default"
+        baseDir = "envs/default"
     },
   ]
   currentEnv = "default"

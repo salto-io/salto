@@ -133,6 +133,11 @@ describe('Test Salto Expressions', () => {
       expect(element.value.test.value).toEqual('simple')
     })
 
+    it('should not mutate parameters to resolve function', () => {
+      expect(simpleRefInst.value.test).toBeInstanceOf(ReferenceExpression)
+      expect(simpleRefInst.value.test.resValue).toBeUndefined()
+    })
+
     it('should resolve nested references', () => {
       const element = findResolved<InstanceElement>(nestedRefInst)
       expect(element.value.test.value).toEqual('nested')

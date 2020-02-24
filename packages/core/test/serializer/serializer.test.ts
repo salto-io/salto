@@ -16,10 +16,11 @@
 import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement,
-  ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
+  ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Values,
 } from '@salto-io/adapter-api'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
+import { resolve } from '../../src/core/expressions'
 
 describe('State serialization', () => {
   const strType = new PrimitiveType({
@@ -90,6 +91,14 @@ describe('State serialization', () => {
     const deserialized = deserialize(serialized)
     const sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
     expect(deserialized).toEqual(sortedElements)
+  })
+
+  it('should not serialize resolved values', () => {
+    const serialized = JSON.parse(serialize(resolve(elements)))
+    const element = serialized
+      .find((e: Values) => e.elemID?.nameParts?.[0] === 'also_me') as InstanceElement
+    expect(element.value.num[SALTO_CLASS_FIELD]).toEqual('ReferenceExpression')
+    expect(Object.keys(element.value.num)).toEqual(['elemId', SALTO_CLASS_FIELD])
   })
   it('should create the same result for the same input regardless of elements order', () => {
     const serialized = serialize(elements)

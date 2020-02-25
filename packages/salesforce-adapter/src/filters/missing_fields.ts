@@ -431,6 +431,29 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
       },
     ],
   },
+  {
+    id: new ElemID(SALESFORCE, 'CustomObjectTranslation'),
+    fields: [
+      {
+        name: 'gender',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: [
+            'Masculine', 'Feminine', 'Neuter', 'AnimateMasculine', 'ClassI', 'ClassIII', 'ClassV',
+            'ClassVII', 'ClassIX', 'ClassXI', 'ClassXIV', 'ClassXV', 'ClassXVI', 'ClassXVII',
+            'ClassXVIII',
+          ],
+        },
+      },
+      {
+        name: 'startsWith',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Consonant', 'Vowel', 'Special'],
+        },
+      },
+    ],
+  },
 ]
 
 export const makeFilter = (

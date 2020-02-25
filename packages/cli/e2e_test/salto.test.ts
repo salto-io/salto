@@ -270,11 +270,23 @@ describe('cli e2e', () => {
       await rm(fullPath(tmpBPRelativePath))
       await rm(fullPath(newObjectAnnotationsRelativePath))
       await rm(fullPath(newObjectStandardFieldRelativePath))
+      // delete references from SearchSettings
+      await editBlueprint(fullPath('salesforce/Records/Settings/Search.bp'),
+        [
+          [`{
+            enhancedLookupEnabled = false,
+            lookupAutoCompleteEnabled = false,
+            name = salesforce.${newObjectElemName},
+            resultsPerPageCount = 0,
+          },`, ''],
+        ])
       await runDeploy(lastPlan, fetchOutputDir)
     })
     it('should have "remove" changes', async () => {
-      verifyChanges(lastPlan, [{ action: 'remove', element: newObjectElemName },
-        { action: 'remove', element: newInstanceElemName }])
+      verifyChanges(lastPlan, [
+        { action: 'remove', element: newObjectElemName },
+        { action: 'remove', element: newInstanceElemName },
+        { action: 'modify', element: 'SearchSettings' }])
     })
     it('should remove the object in salesforce', async () => {
       expect(await objectExists(client, newObjectApiName)).toBe(false)

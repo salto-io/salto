@@ -69,9 +69,10 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
     output,
     mockSpinnerCreator([])
   ).execute()
-  expect(result).toBe(CliExitCode.Success)
   const errs = (output.stderr as MockWriteStream).content
+  // This assert is before result assert so will see the error
   expect(errs).toHaveLength(0)
+  expect(result).toBe(CliExitCode.Success)
 }
 
 export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {

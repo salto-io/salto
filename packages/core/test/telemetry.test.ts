@@ -17,13 +17,13 @@
 
 import nock from 'nock'
 import _ from 'lodash'
-import { telemetrySender, CountEvent, StackEvent, EVENT_TYPES } from '../src/telemetry'
+import { telemetrySender, EVENT_TYPES, TelemetryEvent, StackEvent } from '../src/telemetry'
 
 describe('telemetry', () => {
   const eventByName = (
     name: string,
-    events: Array<CountEvent | StackEvent>
-  ): CountEvent | StackEvent | undefined => _(events).find(ev => ev.name === name)
+    events: Array<TelemetryEvent>
+  ): TelemetryEvent | undefined => _(events).find(ev => ev.name === name)
   const token = '12345'
   const url = 'http://telemetry.local'
   const installationID = '8113a616-bbe6-43cb-b51d-e2e3d4c1400d'
@@ -34,13 +34,13 @@ describe('telemetry', () => {
     enabled: true,
   }
   const requiredTags = { installationID, app }
-  let reqEvents = [] as Array<CountEvent | StackEvent>
+  let reqEvents = [] as Array<TelemetryEvent>
 
   beforeEach(() => {
     const s = nock(url, { reqheaders: { authorization: token } }).persist()
     // eslint-disable-next-line prefer-arrow-callback
     s.post(/.*/).reply(201, function reply(_url, body) {
-      const parsedBody = body as { events: Array<CountEvent | StackEvent> }
+      const parsedBody = body as { events: Array<TelemetryEvent> }
       reqEvents = parsedBody.events
     })
   })
@@ -55,6 +55,7 @@ describe('telemetry', () => {
     expect(telemetry.enabled).toBeTruthy()
     telemetry.sendCountEvent('ev1', 1, {})
     await telemetry.stop(1)
+
     expect(reqEvents[0].name).toEqual('ev1')
     expect(reqEvents[0].type).toEqual(EVENT_TYPES.COUNTER)
     expect(reqEvents[0].value).toEqual(1)
@@ -65,17 +66,18 @@ describe('telemetry', () => {
     expect(telemetry.enabled).toBeFalsy()
     telemetry.sendCountEvent('ev1', 1, {})
     await telemetry.stop(1)
+
     expect(reqEvents.length).toEqual(0)
   })
 
   it('should not send a stack event if an error stack is an empty string', async () => {
     const telemetry = telemetrySender(config, requiredTags)
-    const errMessage = 'error'
     Error.stackTraceLimit = -1
-    const err = new Error(errMessage)
+    const err = new Error('error')
     Error.stackTraceLimit = 10
     telemetry.sendStackEvent('err_ev', err, {})
     await telemetry.stop(1)
+
     expect(reqEvents.length).toEqual(0)
   })
 
@@ -86,6 +88,7 @@ describe('telemetry', () => {
     err.stack = undefined
     telemetry.sendStackEvent('err_ev', err, {})
     await telemetry.stop(1)
+
     expect(reqEvents.length).toEqual(0)
   })
 
@@ -95,10 +98,14 @@ describe('telemetry', () => {
     const err = new Error(errMessage)
     telemetry.sendStackEvent('err_ev', err, {})
     await telemetry.stop(1)
+
+    expect(reqEvents.length).toEqual(1)
     expect(reqEvents[0].name).toEqual('err_ev')
     expect(reqEvents[0].type).toEqual(EVENT_TYPES.STACK)
-    expect(reqEvents[0].value).not.toMatch(errMessage)
-    expect(reqEvents[0].value).toMatch(/at.*/)
+
+    const stackEvent = reqEvents[0] as StackEvent
+    expect(stackEvent.value.join('\n')).not.toMatch(errMessage)
+    expect(stackEvent.value[0]).toMatch(/at.*/)
   })
 
   it('should batch send multiple events with different types', async () => {
@@ -110,8 +117,11 @@ describe('telemetry', () => {
     await telemetry.stop(1)
 
     expect(reqEvents.length).toEqual(4)
-    expect(eventByName('err_ev_1', reqEvents)?.value).toMatch(/at.*/)
-    expect(eventByName('err_ev_2', reqEvents)?.value).toMatch(/at.*/)
+    const stackEvent1 = eventByName('err_ev_1', reqEvents) as StackEvent
+    const stackEvent2 = eventByName('err_ev_2', reqEvents) as StackEvent
+
+    expect(stackEvent1.value[0]).toMatch(/at.*/)
+    expect(stackEvent2.value[0]).toMatch(/at.*/)
     expect(eventByName('count_ev_1', reqEvents)?.value).toEqual(1)
     expect(eventByName('count_ev_2', reqEvents)?.value).toEqual(2)
   })
@@ -142,7 +152,7 @@ describe('telemetry', () => {
     setTimeout(async () => {
       expect(reqEvents.length).toEqual(1)
       await telemetry.stop(1)
-    }, 0)
+    }, 2)
   })
 
   it('should have os tags', async () => {

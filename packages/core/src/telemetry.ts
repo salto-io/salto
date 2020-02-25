@@ -17,7 +17,7 @@
 
 import _ from 'lodash'
 import axios from 'axios'
-import { platform, arch, release } from 'os'
+import { platform, arch, release, EOL } from 'os'
 import { setTimeout, clearTimeout } from 'timers'
 import { logger } from '@salto-io/logging'
 
@@ -55,7 +55,8 @@ type Event<T> = {
 }
 
 export type CountEvent = Event<number> & { type: EVENT_TYPES.COUNTER }
-export type StackEvent = Event<Error> & { type: EVENT_TYPES.STACK }
+export type StackEvent = Event<string[]> & { type: EVENT_TYPES.STACK }
+export type TelemetryEvent = CountEvent | StackEvent
 
 export type Telemetry = {
   enabled: boolean
@@ -70,8 +71,8 @@ export const telemetrySender = (
   config: TelemetryConfig,
   tags: RequiredTags & Tags
 ): Telemetry => {
-  const newEvents = [] as Array<Event<unknown>>
-  let queuedEvents = [] as Array<Event<unknown>>
+  const newEvents = [] as Array<TelemetryEvent>
+  let queuedEvents = [] as Array<TelemetryEvent>
   const enabled = config.enabled || false
   const flushInterval = config.flushInterval ? config.flushInterval : EVENTS_FLUSH_INTERVAL
   let httpRequestTimeout = axios.defaults.timeout
@@ -137,17 +138,23 @@ export const telemetrySender = (
     if (value.stack === undefined) {
       return
     }
-    const stackWithoutMessage = value.stack.replace(value.toString(), '').trim()
-    if (stackWithoutMessage.length === 0) {
+    const stackWithoutMessage = value.stack
+      .replace(value.toString(), '')
+    const stackArray = _(stackWithoutMessage)
+      .split(EOL)
+      .map(line => line.trim())
+      .compact()
+      .value()
+    if (stackArray.length === 0) {
       return
     }
     const newEvent = {
       name,
-      value: stackWithoutMessage,
+      value: stackArray,
       tags: transformTags(extraTags),
       type: EVENT_TYPES.STACK,
       timestamp: new Date().toISOString(),
-    }
+    } as StackEvent
     newEvents.push(newEvent)
   }
 

@@ -38,7 +38,10 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 
-const telemetry = telemetrySender({ url: 'http://0.0.0.0', token: '1234', enabled: false }, { installationID: 'abcd' })
+const telemetry = telemetrySender(
+  { url: 'http://0.0.0.0', token: '1234', enabled: false },
+  { installationID: 'abcd', app: 'test' },
+)
 
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }

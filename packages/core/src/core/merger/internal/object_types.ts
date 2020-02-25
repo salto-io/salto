@@ -108,8 +108,8 @@ const validateFieldBasesAndUpdates = (
 
   if (bases.length > 1) {
     if (
-      _.uniqBy(bases, 'type.elemID').length > 1
-      || _.uniqBy(bases, 'isList').length > 1
+      _.uniqBy(bases, b => b.type.elemID.getFullName()).length > 1
+      || _.uniqBy(bases, b => b.isList).length > 1
     ) {
       const error = new MultipleBaseDefinitionsMergeError({ elemID, parentID, fieldName, bases })
       return {

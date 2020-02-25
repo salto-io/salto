@@ -56,7 +56,7 @@ const replaceReferenceValues = (
   apiToIdMap: Record<string, Record<string, ElemID>>
 ): Values => {
   const shouldReplace = (element: Element): boolean => (
-    !_.isUndefined(element) && replaceTypes.has(element.elemID.getFullName())
+    replaceTypes.has(element.elemID.getFullName())
   )
 
   const replacePrimitive = (val: Value, field: Field): Value => {
@@ -78,8 +78,8 @@ const replaceReferenceValues = (
     return _.isString(val) ? new ReferenceExpression(elemID) : val
   }
 
-  const transformPrimitive: TransformPrimitiveFunc = (val, field) => (
-    shouldReplace(field) ? replacePrimitive(val, field) : val
+  const transformPrimitive: TransformPrimitiveFunc = (val, _path, field) => (
+    !_.isUndefined(field) && shouldReplace(field) ? replacePrimitive(val, field) : val
   )
 
   return transformValues({

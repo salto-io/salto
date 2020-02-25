@@ -952,8 +952,8 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
   'xsd:long': Number,
 }
 
-export const transformPrimitive: TransformPrimitiveFunc = (val, field) => {
-  const fieldType = field.type
+export const transformPrimitive: TransformPrimitiveFunc = (val, path, field) => {
+  const fieldType = field?.type
   if (!isPrimitiveType(fieldType)) {
     return val
   }
@@ -971,7 +971,7 @@ export const transformPrimitive: TransformPrimitiveFunc = (val, field) => {
   // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
   if (_.isObject(val) && Object.keys(val).includes('_')) {
     const convertFunc = convertXsdTypeFuncMap[_.get(val, ['$', 'xsi:type'])] || (v => v)
-    return transformPrimitive(convertFunc(_.get(val, '_')), field)
+    return transformPrimitive(convertFunc(_.get(val, '_')), path, field)
   }
   switch (fieldType.primitive) {
     case PrimitiveTypes.NUMBER:

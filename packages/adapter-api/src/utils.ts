@@ -171,48 +171,48 @@ export const bpCase = (name?: string): string => (
 )
 
 export type TransformPrimitiveFunc = (
-  val: PrimitiveValue, field: Field,
-) => PrimitiveValue | undefined
+  val: PrimitiveValue, path?: ElemID, type?: Field)
+  => PrimitiveValue | ReferenceExpression | undefined
 
 export type TransformReferenceFunc = (
-  val: Expression, path: string
+  val: Expression, path?: ElemID
 ) => Expression
 
 export const transformValues = (
   {
     values,
     type,
-    transformPrimitives = () => undefined,
+    transformPrimitives = v => v,
     transformReferences = v => v,
     strict = true,
-    path = '',
+    path = undefined,
   }: {
     values: Value
     type: ObjectType | TypeMap
     transformPrimitives?: TransformPrimitiveFunc
     transformReferences?: TransformReferenceFunc
     strict?: boolean
-    path?: string
+    path?: ElemID
   }
 ): Values | undefined => {
-  const transformValue = (value: Value, keyPath: string, field?: Field): Value => {
+  const transformValue = (value: Value, keyPath?: ElemID, field?: Field): Value => {
     if (isExpression(value)) {
       return transformReferences(value, keyPath)
     }
 
     if (_.isArray(value)) {
       const transformed = value
-        .map((item, index) => transformValue(item, keyPath.concat(`[${index}]`), field)) // .${value[0]}
+        .map((item, index) => transformValue(item, keyPath?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
 
     if (field === undefined) {
-      return strict ? undefined : value
+      return strict ? undefined : transformPrimitives(value, keyPath)
     }
 
     if (isPrimitiveType(field.type)) {
-      return transformPrimitives(value, field)
+      return transformPrimitives(value, keyPath, field)
     }
     if (isObjectType(field.type)) {
       const transformed = _.omitBy(
@@ -236,7 +236,7 @@ export const transformValues = (
     : _.mapValues(type, (fieldType, name) => new Field(new ElemID(''), name, fieldType))
 
   const result = _(values)
-    .mapValues((value, key) => transformValue(value, path.concat(path.length === 0 ? key : `.${key}`), fieldMap[key]))
+    .mapValues((value, key) => transformValue(value, path?.createNestedID(key), fieldMap[key]))
     .omitBy(_.isUndefined)
     .value()
   return _.isEmpty(result) ? undefined : result
@@ -261,7 +261,7 @@ export const transformElement = <T extends Element>(
     transformPrimitives,
     transformReferences: transformReference,
     strict: false,
-    path: 'annotations',
+    path: element.elemID.createNestedID('annotation'),
   }) || {}
 
   if (isInstanceElement(element)) {
@@ -271,7 +271,7 @@ export const transformElement = <T extends Element>(
       transformPrimitives,
       transformReferences: transformReference,
       strict: false,
-      path: 'value',
+      path: element.elemID.createNestedID('value'),
     }) || {}
 
     newElement = new InstanceElement(
@@ -302,7 +302,7 @@ export const transformElement = <T extends Element>(
           transformPrimitives,
           transformReferences: transformReference,
           strict: false,
-          path: 'fields.field.annotations',
+          path: f.elemID,
         }) || {}
       })
     return newElement as T
@@ -348,15 +348,15 @@ export const transformReferences = <T extends Element>(
   })
 }
 
-export const replicateReferences = <T extends Element>(
+export const restoreReferences = <T extends Element>(
   source: T,
   targetElement: T,
   getLookUpName: (v: Value) => Value
 ): T => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const createPathMapCallback: TransformReferenceFunc = (val, path) => {
-    if (isReferenceExpression(val)) {
-      allReferencesPaths.set(path, val)
+    if (isReferenceExpression(val) && path) {
+      allReferencesPaths.set(path.getFullName(), val)
     }
     return val
   }
@@ -366,16 +366,25 @@ export const replicateReferences = <T extends Element>(
     transformReference: createPathMapCallback,
   })
 
-  const resp = targetElement.clone() as T
-
-  _(allReferencesPaths.forEach((value, key) => {
-    const refValue = _.get(resp, key)
-    if (refValue !== undefined) {
-      _.set(resp, key, _.isEqual(getLookUpName(value.value), refValue) ? value : refValue)
+  const restoreReferencesFunc: TransformPrimitiveFunc = (val, path) => {
+    if (path === undefined) {
+      return val
     }
-  }))
 
-  return resp
+    const ref = allReferencesPaths.get(path.getFullName())
+    if (ref !== undefined) {
+      if (_.isEqual(getLookUpName(ref.value), val)) {
+        return ref
+      }
+    }
+
+    return val
+  }
+
+  return transformElement({
+    element: targetElement,
+    transformPrimitives: restoreReferencesFunc,
+  })
 }
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (

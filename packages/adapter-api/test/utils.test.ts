@@ -25,7 +25,7 @@ import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
 import {
   transformValues, resolvePath, TransformPrimitiveFunc, isPrimitiveType,
-  TransformReferenceFunc, replicateReferences, transformReferences,
+  TransformReferenceFunc, restoreReferences, transformReferences,
   bpCase,
 } from '../src/utils'
 
@@ -170,7 +170,7 @@ describe('Test utils.ts', () => {
           const primitiveFieldNames = ['str', 'bool', 'num']
           primitiveFieldNames.forEach(field => {
             expect(transformPrimitiveFunc).toHaveBeenCalledWith(
-              mockInstance.value[field], mockType.fields[field],
+              mockInstance.value[field], undefined, mockType.fields[field],
             )
           })
         })
@@ -179,7 +179,7 @@ describe('Test utils.ts', () => {
           const referenceFieldNames = ['ref']
           referenceFieldNames.forEach(field => {
             expect(transformReferenceFunc).toHaveBeenCalledWith(
-              mockInstance.value[field], field,
+              mockInstance.value[field], undefined,
             )
           })
         })
@@ -189,7 +189,8 @@ describe('Test utils.ts', () => {
           (mockInstance.value.numArray as string[]).forEach(
             val => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
               val,
-              mockType.fields.numArray
+              undefined,
+              mockType.fields.numArray,
             )
           )
         })
@@ -211,7 +212,7 @@ describe('Test utils.ts', () => {
           ]
           nestedPrimitivePaths.forEach(
             path => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
-              _.get(mockInstance.value, path), getField(mockType, path),
+              _.get(mockInstance.value, path), undefined, getField(mockType, path),
             )
           )
         })
@@ -256,7 +257,7 @@ describe('Test utils.ts', () => {
           const referenceAnnotationNames = ['annotationRef']
           referenceAnnotationNames.forEach(annotation => {
             expect(transformReferenceFunc).toHaveBeenCalledWith(
-              mockInstance.annotations[annotation], annotation,
+              mockInstance.annotations[annotation], undefined,
             )
           })
         })
@@ -292,12 +293,14 @@ describe('Test utils.ts', () => {
           primitiveTypes.forEach(
             name => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
               origValue[name],
+              undefined,
               mockField(name)
             )
           )
           origValue.nums.forEach(
             (val: string) => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
               val,
+              undefined,
               mockField('nums')
             )
           )
@@ -311,7 +314,7 @@ describe('Test utils.ts', () => {
       })
     })
 
-    const transformPrimitiveTest: TransformPrimitiveFunc = (val, field) => {
+    const transformPrimitiveTest: TransformPrimitiveFunc = (val, _path, field) => {
       const fieldType = field?.type
       if (!isPrimitiveType(fieldType)) {
         return val
@@ -509,7 +512,7 @@ describe('Test utils.ts', () => {
       })
 
       it('should transform back to sourceElement value', () => {
-        expect(replicateReferences(sourceElement, resolvedElement, getName)).toEqual(sourceElement)
+        expect(restoreReferences(sourceElement, resolvedElement, getName)).toEqual(sourceElement)
       })
 
       it('should maintain new values when transforming back to orig value', () => {
@@ -519,7 +522,7 @@ describe('Test utils.ts', () => {
         after.annotations.regValue = newValue
         after.fields.field.annotations.regValue = newValue
 
-        const restored = replicateReferences(sourceElement, after, getName)
+        const restored = restoreReferences(sourceElement, after, getName)
         expect(restored.annotations.new).toEqual(newValue)
         expect(restored.annotations.regValue).toEqual(newValue)
 
@@ -539,7 +542,7 @@ describe('Test utils.ts', () => {
       })
 
       it('should transform back to instance', () => {
-        expect(replicateReferences(instance, resolvedInstance, getName)).toEqual(instance)
+        expect(restoreReferences(instance, resolvedInstance, getName)).toEqual(instance)
       })
     })
   })

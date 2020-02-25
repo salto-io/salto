@@ -1790,12 +1790,12 @@ export const createInstanceName = (
   name: string
 ): string => bpCase(name.trim())
 
-const transformPrimitive: TransformPrimitiveFunc = (val, field) => {
+const transformPrimitive: TransformPrimitiveFunc = (val, _path, field) => {
   // remove values that are just an empty string or null
   if (val === '' || val === null) {
     return undefined
   }
-  const fieldType = field.type
+  const fieldType = field?.type
   if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
     return JSON.stringify(val)
   }

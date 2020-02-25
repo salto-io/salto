@@ -30,14 +30,16 @@ export type TelemetryConfig = {
   url: string
   enabled: boolean
   token: string
+  flushInterval?: number
 }
 
 export type RequiredTags = {
   installationID: string
+  app: string
 }
 
 export type Tags = {
-  [name: string]: string
+  [name: string]: string | number
 }
 
 export enum EVENT_TYPES {
@@ -58,8 +60,8 @@ export type StackEvent = Event<Error> & { type: EVENT_TYPES.STACK }
 export type Telemetry = {
   enabled: boolean
 
-  sendCountEvent(name: string, value: number, extraTags: Tags): void
-  sendStackEvent(name: string, value: Error, extraTags: Tags): void
+  sendCountEvent(name: string, value: number, extraTags?: Tags): void
+  sendStackEvent(name: string, value: Error, extraTags?: Tags): void
   stop(timeoutMs: number): Promise<void>
   flush(): Promise<void>
 }
@@ -71,6 +73,7 @@ export const telemetrySender = (
   const newEvents = [] as Array<Event<unknown>>
   let queuedEvents = [] as Array<Event<unknown>>
   const enabled = config.enabled || false
+  const flushInterval = config.flushInterval ? config.flushInterval : EVENTS_FLUSH_INTERVAL
   let httpRequestTimeout = axios.defaults.timeout
   let timer = {} as NodeJS.Timer
   const commonTags = {
@@ -110,7 +113,7 @@ export const telemetrySender = (
     timer = setTimeout(() => {
       flush()
       start()
-    }, EVENTS_FLUSH_INTERVAL)
+    }, flushInterval)
   }
 
   const stop = async (timeoutMs: number): Promise<void> => {
@@ -119,7 +122,7 @@ export const telemetrySender = (
     return flush()
   }
 
-  const sendCountEvent = (name: string, value: number, extraTags: Tags): void => {
+  const sendCountEvent = (name: string, value: number, extraTags: Tags = {}): void => {
     const newEvent = {
       name,
       value,
@@ -130,11 +133,14 @@ export const telemetrySender = (
     newEvents.push(newEvent)
   }
 
-  const sendStackEvent = (name: string, value: Error, extraTags: Tags): void => {
+  const sendStackEvent = (name: string, value: Error, extraTags: Tags = {}): void => {
     if (value.stack === undefined) {
       return
     }
     const stackWithoutMessage = value.stack.replace(value.toString(), '').trim()
+    if (stackWithoutMessage.length === 0) {
+      return
+    }
     const newEvent = {
       name,
       value: stackWithoutMessage,

@@ -176,7 +176,7 @@ describe('compact routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual({ ...change, path: ['test', 'path'] })
+      .toEqual(change)
   })
   it('should route an env modification change to env', async () => {
     const change: DetailedChange = {
@@ -195,7 +195,7 @@ describe('compact routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual({ ...change, path: ['test', 'path'] })
+      .toEqual(change)
   })
   it('should route an env remove diff to env', async () => {
     const change: DetailedChange = {
@@ -214,7 +214,7 @@ describe('compact routing', () => {
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
     expect(routedChanges.primarySource && routedChanges.primarySource[0])
-      .toEqual({ ...change, path: ['test', 'path'] })
+      .toEqual(change)
   })
   it('should route a common modification diff to comon and revert the change in secondary envs', async () => {
     const change: DetailedChange = {

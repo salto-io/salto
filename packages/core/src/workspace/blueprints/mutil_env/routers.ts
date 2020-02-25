@@ -144,7 +144,7 @@ export const routeNewEnv = async (
   const pathHint = await getChangePathHint(change, commonSource)
 
   if (change.action === 'add') {
-    return { primarySource: [{ ...change, path: pathHint }] }
+    return { primarySource: [change] }
   }
 
   // In remove and modify changes, we need to remove the current value from
@@ -160,7 +160,7 @@ export const routeNewEnv = async (
   // If the element is not in common, then we can apply the change to
   // the primary source
   if (_.isUndefined(commonChangeProjection)) {
-    return { primarySource: [{ ...change, path: pathHint }] }
+    return { primarySource: [change] }
   }
 
   const currentCommonElement = await commonSource.get(change.id)

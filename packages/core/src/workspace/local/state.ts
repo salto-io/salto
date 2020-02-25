@@ -66,7 +66,7 @@ export const localState = (filePath: string): State => {
       }
       const stateElements = await elements()
       await replaceContents(filePath, serialize(Object.values(stateElements)))
-      log.debug(`finish flushing state [#elements=${stateElements.length}]`)
+      log.debug(`finish flushing state [#elements=${Object.values(stateElements).length}]`)
     },
   }
 }

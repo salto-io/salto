@@ -29,6 +29,19 @@ import { GLOBAL_VALUE_SET, CUSTOM_VALUE } from './global_value_sets'
 
 const { makeArray } = collections.array
 
+export const isPicklistField = (changedElement: ChangeDataType): changedElement is Field =>
+  isField(changedElement)
+    && ([
+      Types.primitiveDataTypes.Picklist.elemID.getFullName(),
+      Types.primitiveDataTypes.MultiselectPicklist.elemID.getFullName(),
+    ]).includes(changedElement.type.elemID.getFullName())
+
+export const isStandardValueSetPicklistField = (field: Field): boolean =>
+  field.annotations[FIELD_ANNOTATIONS.VALUE_SET] instanceof ReferenceExpression
+
+const isGlobalValueSetPicklistField = (field: Field): boolean =>
+  !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
+
 /**
  * Adds inactive values after the deletion of the values in the following cases:
  *  - Global value set
@@ -40,11 +53,7 @@ const filterCreator = (): FilterWith<'onUpdate'> => ({
     const isRestrictedPicklistField = (
       changedElement: ChangeDataType
     ): changedElement is Field =>
-      isField(changedElement)
-      && ([
-        Types.primitiveDataTypes.Picklist.elemID.getFullName(),
-        Types.primitiveDataTypes.MultiselectPicklist.elemID.getFullName(),
-      ]).includes(changedElement.type.elemID.getFullName())
+      isPicklistField(changedElement)
       && Boolean(changedElement.annotations[FIELD_ANNOTATIONS.RESTRICTED])
 
     const isInstanceGlobalSetValue = (changedElement: ChangeDataType): boolean =>
@@ -89,12 +98,6 @@ const filterCreator = (): FilterWith<'onUpdate'> => ({
             const afterCustomValues = makeArray(
               c.data.after.annotations[FIELD_ANNOTATIONS.VALUE_SET]
             )
-            const isGlobalValueSetPicklistField = (field: Field): boolean =>
-              !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
-
-            const isStandardValueSetPicklistField = (field: Field): boolean =>
-              field.annotations[FIELD_ANNOTATIONS.VALUE_SET] instanceof ReferenceExpression
-
             const field = after.fields[changedElement.name]
             if (!isGlobalValueSetPicklistField(field)
               && !(isStandardValueSetPicklistField(field))) {

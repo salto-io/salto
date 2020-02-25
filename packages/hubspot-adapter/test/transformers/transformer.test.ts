@@ -160,8 +160,8 @@ describe('Transformer', () => {
 
     it('should add new values from result', () => {
       const resultValues = result as Values
-      expect(instance.value.autoGen).toEqual(resultValues.autoGen)
-      expect(instance.value.subType.autoGen).toEqual(resultValues.subType.autoGen)
+      expect(transformed.value.autoGen).toEqual(resultValues.autoGen)
+      expect(transformed.value.subType.autoGen).toEqual(resultValues.subType.autoGen)
       expect(transformed.value.listSubType).toBeDefined()
       expect(transformed.value.listSubType).toHaveLength(1)
       expect(transformed.value.listSubType[0].autoGen).toEqual(resultValues.listSubType[0].autoGen)

@@ -1799,22 +1799,29 @@ export const transformPrimitive: TransformValueFunc = (val, field) => {
 }
 
 export const transformAfterUpdateOrAdd = async (
-  instance: InstanceElement,
+  instance: Readonly<InstanceElement>,
   updateResult: HubspotMetadata,
 ): Promise<InstanceElement> => {
+  const clonedInstance = instance.clone()
   const mergeCustomizer = (resultVal: Value, instanceVal: Value): Value | undefined => {
     if (_.isArray(resultVal) && _.isArray(instanceVal)) {
-      return _.zip(resultVal, instanceVal).map((zipped: Value[]) =>
-        _.mergeWith(zipped[0], zipped[1], mergeCustomizer))
+      return _.zip(resultVal.slice(0, instanceVal.length), instanceVal).map((zipped: Value[]) => {
+        if (!_.isObject(zipped[1])) {
+          return zipped[1]
+        }
+        return _.mergeWith(zipped[0], zipped[1], mergeCustomizer)
+      })
     }
     return undefined
   }
   // Add auto-generated fields to the before element
   // If transform/filter moves auto-generated fields from being at the same
   // "location" as it comes from the api then we need transform^-1 here before this merge
-  const mergedValues = _.mergeWith(updateResult as Values, instance.value, mergeCustomizer)
-  instance.value = transform(mergedValues, instance.type as ObjectType, transformPrimitive) || {}
-  return instance
+  const mergedValues = _.mergeWith(updateResult as Values, clonedInstance.value, mergeCustomizer)
+  clonedInstance.value = transform(
+    mergedValues, clonedInstance.type as ObjectType, transformPrimitive
+  ) || {}
+  return clonedInstance
 }
 
 const mergeFormFieldAndContactProperty = (field: Value): Value => {

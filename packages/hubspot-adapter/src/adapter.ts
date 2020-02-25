@@ -107,7 +107,7 @@ export default class HubspotAdapter {
       instance.type.elemID.name,
       createHubspotMetadataFromInstanceElement(instance.clone())
     )
-    return transformAfterUpdateOrAdd(instance.clone(), resp)
+    return transformAfterUpdateOrAdd(instance, resp)
   }
 
   /**
@@ -137,7 +137,7 @@ export default class HubspotAdapter {
       after.type.elemID.name,
       createHubspotMetadataFromInstanceElement(after.clone())
     )
-    return transformAfterUpdateOrAdd(after.clone(), resp)
+    return transformAfterUpdateOrAdd(after, resp)
   }
 
   private filtersWith<M extends keyof Filter>(m: M): FilterWith<M>[] {

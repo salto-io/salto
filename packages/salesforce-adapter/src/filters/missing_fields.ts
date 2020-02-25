@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
   CUSTOM_FIELD, CUSTOM_OBJECT, FIELD_TYPE_NAME_VALUES, SALESFORCE, WORKFLOW_METADATA_TYPE,
-  LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+  LEAD_CONVERT_SETTINGS_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
 } from '../constants'
 import { id } from './utils'
 import {
@@ -432,7 +432,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: new ElemID(SALESFORCE, 'CustomObjectTranslation'),
+    id: new ElemID(SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE),
     fields: [
       {
         name: 'gender',

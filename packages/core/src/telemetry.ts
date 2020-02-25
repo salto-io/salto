@@ -93,6 +93,7 @@ export const telemetrySender = (
   const flushInterval = config.flushInterval ? config.flushInterval : EVENTS_FLUSH_INTERVAL
   let httpRequestTimeout = axios.defaults.timeout
   let timer = {} as NodeJS.Timer
+  let stopped = false
   const commonTags = {
     ...tags,
     osArch: arch(),
@@ -134,6 +135,10 @@ export const telemetrySender = (
   }
 
   const stop = async (timeoutMs: number): Promise<void> => {
+    if (stopped) {
+      return Promise.resolve()
+    }
+    stopped = true
     clearTimeout(timer)
     httpRequestTimeout = timeoutMs
     return flush()

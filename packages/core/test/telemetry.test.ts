@@ -19,6 +19,7 @@ import nock from 'nock'
 import _ from 'lodash'
 import { telemetrySender, EVENT_TYPES, TelemetryEvent, StackEvent, Tags } from '../src/telemetry'
 
+// jest.useFakeTimers()
 describe('telemetry', () => {
   const eventByName = (
     name: string,
@@ -153,7 +154,7 @@ describe('telemetry', () => {
     setTimeout(async () => {
       expect(reqEvents.length).toEqual(1)
       await telemetry.stop(1)
-    }, 2)
+    }, 1)
   })
 
   it('should have os tags', async () => {
@@ -172,5 +173,12 @@ describe('telemetry', () => {
     await telemetry.stop(1)
 
     expect(reqEvents.length).toEqual(0)
+  })
+
+  it('should not fail when calling telemetry.stop twice', async () => {
+    const telemetry = telemetrySender(config, requiredTags)
+    telemetry.sendCountEvent('ev1', 1)
+    await telemetry.stop(1)
+    await telemetry.stop(1)
   })
 })

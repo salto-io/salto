@@ -22,8 +22,8 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
   CUSTOM_FIELD, CUSTOM_OBJECT, FIELD_TYPE_NAME_VALUES, SALESFORCE, WORKFLOW_METADATA_TYPE,
+  LEAD_CONVERT_SETTINGS_METADATA_TYPE,
 } from '../constants'
-import { LEAD_CONVERT_SETTINGS_TYPE_ID } from './lead_convert_settings'
 import { id } from './utils'
 import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_FLOW_ACTIONS_FIELD,
@@ -59,7 +59,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: LEAD_CONVERT_SETTINGS_TYPE_ID,
+    id: new ElemID(SALESFORCE, LEAD_CONVERT_SETTINGS_METADATA_TYPE),
     fields: [
       {
         name: 'objectMapping',
@@ -427,6 +427,29 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         type: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.VALUES]: ['Omitted', 'Pipeline', 'BestCase', 'Forecast', 'Closed'],
+        },
+      },
+    ],
+  },
+  {
+    id: new ElemID(SALESFORCE, 'CustomObjectTranslation'),
+    fields: [
+      {
+        name: 'gender',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: [
+            'Masculine', 'Feminine', 'Neuter', 'AnimateMasculine', 'ClassI', 'ClassIII', 'ClassV',
+            'ClassVII', 'ClassIX', 'ClassXI', 'ClassXIV', 'ClassXV', 'ClassXVI', 'ClassXVII',
+            'ClassXVIII',
+          ],
+        },
+      },
+      {
+        name: 'startsWith',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.VALUES]: ['Consonant', 'Vowel', 'Special'],
         },
       },
     ],

@@ -84,19 +84,24 @@ const findNestedElementPath = (
   originalParentElements: Element[]
 ): readonly string[] | undefined => {
   const { idType } = changeElemID
-  const propName = changeElemID.createTopLevelParentID().path[0]
+  const propPath = changeElemID.createTopLevelParentID().path
   switch (idType) {
     case 'field':
       return originalParentElements
         .filter(isObjectType)
-        .find(e => _.has(e.fields, propName))?.path
+        .find(e => _.has(e.fields, propPath))?.path
     case 'attr':
       return originalParentElements
-        .find(e => _.has(e.annotations, propName))?.path
+        .find(e => _.has(e.annotations, propPath))?.path
     case 'annotation':
       return originalParentElements
         .filter(isObjectType)
-        .find(e => _.has(e.annotationTypes, propName))?.path
+        .find(e => _.has(e.annotationTypes, propPath))?.path
+    case 'instance':
+      return originalParentElements
+        .filter(isInstanceElement)
+        .find(e => _.has(e.value, propPath))?.path
+
     default: return undefined
   }
 }
@@ -297,8 +302,15 @@ export const fetchChanges = async (
     .filter(e => !e.elemID.isConfig()))
   const changes = isFirstFetch
     ? serviceElements.map(toAddFetchChange)
-    : await calcFetchChanges(serviceElements, processErrorsResult.keptElements, stateElements,
-      workspaceElements)
+    : await calcFetchChanges(
+      serviceElements,
+      processErrorsResult.keptElements,
+      // When we init a new env, state will be empty. We fallback to the workspace
+      // elements since they should be considered a part of the env and the diff
+      // should be calculated with them in mind.
+      _.isEmpty(stateElements) ? workspaceElements : stateElements,
+      workspaceElements
+    )
 
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {

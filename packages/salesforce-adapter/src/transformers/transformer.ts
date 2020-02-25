@@ -60,15 +60,19 @@ export const defaultApiName = (element: Element): string => {
     : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
 }
 
-export const apiName = (elem: Element, relative = false): string => {
+const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
     return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   const elemMetadataType = metadataType(elem)
-  const name = elemMetadataType === CUSTOM_OBJECT
+  return elemMetadataType === CUSTOM_OBJECT
     ? elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
     : elemMetadataType
-  return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) : name
+}
+
+export const apiName = (elem: Element, relative = false): string => {
+  const name = fullApiName(elem)
+  return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) as string : name
 }
 
 export const formulaTypeName = (baseTypeName: FIELD_TYPE_NAMES): string =>
@@ -453,7 +457,7 @@ export class Types {
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
         [FIELD_ANNOTATIONS.UNIQUE]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.EXTERNAL_ID]: BuiltinTypes.BOOLEAN,
-        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     AutoNumber: new PrimitiveType({
@@ -504,7 +508,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
-        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Picklist: new PrimitiveType({
@@ -551,7 +555,7 @@ export class Types {
         ...Types.commonAnnotationTypes,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.Scale,
         [FIELD_ANNOTATIONS.PRECISION]: Types.restrictedNumberTypes.Precision,
-        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.NUMBER,
+        [DEFAULT_VALUE_FORMULA]: BuiltinTypes.STRING,
       },
     }),
     Phone: new PrimitiveType({

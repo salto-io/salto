@@ -14,15 +14,24 @@
 * limitations under the License.
 */
 import wu from 'wu'
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { Element, getChangeElement, transform, isInstanceElement, TransformValueFunc, isReferenceExpression } from '@salto-io/adapter-api'
 import {
-  DependencyChanger, ChangeEntry, DependencyChange, addReferenceDependency,
+  Element, getChangeElement, transform, isInstanceElement, TransformValueFunc,
+  isReferenceExpression, ChangeDataType, INSTANCE_ANNOTATIONS, Change,
+} from '@salto-io/adapter-api'
+import {
+  DependencyChanger, ChangeEntry, DependencyChange, addReferenceDependency, addParentDependency,
+  isDependentAction,
 } from './common'
 
 const getAllReferencedIds = (elem: Element): Set<string> => {
   const allReferencedIds = new Set<string>()
   const transformCallback: TransformValueFunc = val => {
+    if (_.isArray(val)) {
+      val.forEach(item => transformCallback(item, undefined))
+      return val
+    }
     if (isReferenceExpression(val)) {
       allReferencedIds.add(val.elemId.getFullName())
     }
@@ -36,19 +45,34 @@ const getAllReferencedIds = (elem: Element): Set<string> => {
   return allReferencedIds
 }
 
+const isString = (val?: string): val is string => val !== undefined
+const getParentIds = (elem: ChangeDataType): Set<string> => new Set(
+  collections.array.makeArray(elem.annotations[INSTANCE_ANNOTATIONS.PARENT])
+    .map(val => (isReferenceExpression(val) ? val.elemId.getFullName() : undefined))
+    .filter(isString)
+)
+
+const getChangeElemId = (change: Change<ChangeDataType>): string => (
+  getChangeElement(change).elemID.getFullName()
+)
+
 export const addReferencesDependency: DependencyChanger = async changes => {
   const changesById = collections.iterable.groupBy(
-    wu(changes),
-    ([_id, change]) => getChangeElement(change).elemID.getFullName(),
+    changes,
+    ([_id, change]) => getChangeElemId(change),
   )
 
-  const addChangeDependency = ([id, change]: ChangeEntry): Iterable<DependencyChange> => (
-    (wu(getAllReferencedIds(getChangeElement(change)))
-      .map(referencedId => changesById.get(referencedId) ?? [])
+  const addChangeDependency = ([id, change]: ChangeEntry): Iterable<DependencyChange> => {
+    const elem = getChangeElement(change)
+    const parents = getParentIds(elem)
+    return (wu(getAllReferencedIds(elem))
+      .map(targetId => changesById.get(targetId) ?? [])
       .flatten(true) as wu.WuIterable<ChangeEntry>)
-      .filter(([_id, referencedChange]) => referencedChange.action === change.action)
-      .map(([referencedChangeId]) => addReferenceDependency(change.action, id, referencedChangeId))
-  )
+      .filter(([_id, targetChange]) => isDependentAction(change.action, targetChange.action))
+      .map(([targetId, targetChange]) => (parents.has(getChangeElemId(targetChange))
+        ? addParentDependency(id, targetId)
+        : addReferenceDependency(targetChange.action, id, targetId)))
+  }
 
   return wu(changes).map(addChangeDependency).flatten()
 }

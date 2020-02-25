@@ -15,8 +15,10 @@
 */
 import * as object from './object'
 import * as state from './state'
+import * as array from './array'
 
 export {
   object,
   state,
+  array,
 }

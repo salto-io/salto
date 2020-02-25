@@ -93,13 +93,6 @@ describe('Workflow filter', () => {
         .toEqual('MyWorkflowRule')
     })
 
-    it('should set workflow instances path correctly', async () => {
-      const workflowWithInnerTypes = generateWorkFlowInstance(true)
-      await filter.onFetch([workflowWithInnerTypes])
-      expect(workflowWithInnerTypes.path)
-        .toEqual([SALESFORCE, RECORDS_PATH, 'WorkflowRules', 'AccountWorkflowRules'])
-    })
-
     it('should set non workflow instances path correctly', async () => {
       const dummyInstance = generateWorkFlowInstance(true)
       dummyInstance.type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'dummy') })

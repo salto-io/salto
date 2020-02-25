@@ -122,6 +122,8 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
 
   public static readonly LOADING_WORKSPACE = 'Loading workspace...'
   public static readonly FINISHED_LOADING = 'Finished loading workspace'
+  public static readonly FINISHED_LOADING_FOR_ENV = `${Prompts.FINISHED_LOADING} for environment`
+
 
   public static readonly WORKSPACE_LOAD_FAILED = (numErrors: number): string =>
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`} - aborting!`
@@ -147,4 +149,8 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly CONFIGURED_SERVICES_TITLE = 'The configured services are:'
   public static readonly NO_CONFIGURED_SERVICES = 'There are not configured services in this workspace'
   public static readonly SERVICE_ALREADY_ADDED = (serviceName: string): string => `${serviceName} was already added to this workspace`
+  public static readonly WORKING_ON_ENV = 'The active environment is'
+  public static readonly NO_CURRENT_ENV = 'No active environment is currently set'
+  public static readonly SET_ENV = 'Active environment is set to'
+  public static readonly CREATED_ENV = 'Created environment'
 }

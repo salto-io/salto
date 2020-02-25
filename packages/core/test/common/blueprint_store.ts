@@ -76,5 +76,7 @@ export const mockBpsStore = (exclude: string[] = ['error.bp', 'dup.bp']): Direct
     delete: jest.fn().mockImplementation(() => Promise.resolve()),
     flush: jest.fn().mockImplementation(() => Promise.resolve()),
     mtimestamp: jest.fn(),
+    getFiles: jest.fn().mockImplementation((filenames: string[]) =>
+      Promise.resolve(filenames.map(f => bps[f]))),
   }
 )

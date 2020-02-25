@@ -119,7 +119,7 @@ export const deployCommand = async (
     )
     const result = await deployProcess
     handleErrors(result.errors.map(e => e.message))
-    await workspace.updateBlueprints(...wu(result.changes || []).map(c => c.change).toArray())
+    await workspace.updateBlueprints(wu(result.changes || []).map(c => c.change).toArray())
     if (await hasCriticalErrors(workspace)) {
       (await getCriticalErrors(workspace)).forEach(e => displayError(e.message))
     }

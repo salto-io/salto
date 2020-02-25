@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import yargs from 'yargs'
-import { loadConfig } from '@salto-io/core'
+import { loadConfig, currentEnvConfig } from '@salto-io/core'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 
@@ -88,7 +88,8 @@ export const servicesFilter: ServicesFilter = {
     input: ParsedCliInput<ServicesArgs>
   ): Promise<ParsedCliInput<ServicesArgs>> {
     const args = input.args as yargs.Arguments<ServicesArgs>
-    const workspaceServices = (await loadConfig('.')).services
+    const workspaceConfig = (await loadConfig('.'))
+    const workspaceServices = currentEnvConfig(workspaceConfig).services
     if (workspaceServices.length === 0) {
       throw new Error('No services are configured for this workspace. Use \'@salto-io/core services add\'.')
     }

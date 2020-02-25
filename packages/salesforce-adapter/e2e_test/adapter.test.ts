@@ -46,7 +46,6 @@ import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
 } from '../src/filters/workflow'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
-import { LEAD_CONVERT_SETTINGS_TYPE_ID, LEAD_TYPE_ID } from '../src/filters/lead_convert_settings'
 
 const { makeArray } = collections.array
 const { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } = constants
@@ -1217,13 +1216,14 @@ describe('Salesforce adapter E2E with real account', () => {
     })
 
     it('should fetch LeadConvertSettings instance with correct path', () => {
-      const convertSettingsInstance = findElements(result, LEAD_CONVERT_SETTINGS_TYPE_ID.name,
-        LEAD_CONVERT_SETTINGS_TYPE_ID.name).pop() as InstanceElement
+      const convertSettingsInstance = findElements(result,
+        constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+        constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE).pop() as InstanceElement
 
       expect(convertSettingsInstance).toBeDefined()
       expect(convertSettingsInstance.path)
-        .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, LEAD_TYPE_ID.name,
-          LEAD_CONVERT_SETTINGS_TYPE_ID.name])
+        .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, 'Lead',
+          constants.LEAD_CONVERT_SETTINGS_METADATA_TYPE])
     })
 
     it('should retrieve EmailTemplate instance', () => {
@@ -1318,8 +1318,7 @@ describe('Salesforce adapter E2E with real account', () => {
       it('should set workflow instance path correctly', async () => {
         const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
         expect(leadWorkflow.path)
-          .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'WorkflowRules',
-            'LeadWorkflowRules'])
+          .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, 'Lead', 'WorkflowRules'])
       })
     })
   })
@@ -2308,7 +2307,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
         expect(annotations[constants.FIELD_ANNOTATIONS.PRECISION]).toBe(18)
-        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual(25)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toEqual('25')
       }
 
       const testAutoNumber = (annotations: Values): void => {
@@ -2475,7 +2474,7 @@ describe('Salesforce adapter E2E with real account', () => {
         expect(annotations[constants.FIELD_ANNOTATIONS.SCALE]).toBe(3)
         expect(annotations[constants.FIELD_ANNOTATIONS.UNIQUE]).toBe(true)
         expect(annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(false)
-        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe(42)
+        expect(annotations[constants.DEFAULT_VALUE_FORMULA]).toBe('42')
       }
 
       const testText = (annotations: Values): void => {
@@ -2647,7 +2646,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   bpCase(GLOBAL_VALUE_SET),
                   'instance',
                   bpCase(gvsName),
-                ).createNestedID(constants.INSTANCE_FULL_NAME_FIELD)
+                )
               ))
           })
 
@@ -2796,7 +2795,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
           // Resolve GVS valueSetName reference expression
           const normalizeGVSReference = (ref: ReferenceExpression): string | undefined => {
-            const elem = findElement(result, ref.elemId.createParentID())
+            const elem = findElement(result, ref.elemId)
             return elem ? apiName(elem) : undefined
           }
           Object.values(newCustomObject.fields)
@@ -3129,7 +3128,7 @@ describe('Salesforce adapter E2E with real account', () => {
             [CORE_ANNOTATIONS.REQUIRED]: true,
             [constants.FIELD_ANNOTATIONS.SCALE]: 4,
             [constants.FIELD_ANNOTATIONS.PRECISION]: 17,
-            [constants.DEFAULT_VALUE_FORMULA]: 24,
+            [constants.DEFAULT_VALUE_FORMULA]: '24',
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.CURRENCY,
           },
           [autoNumberFieldName]: {

@@ -121,11 +121,6 @@ export const filterInvalidChanges = async (
       .value()
   }
 
-  const isParentInvalidObjectRemoval = (change: Change, nodeIdsToOmit: Set<string>): boolean => {
-    const parentId = getChangeElement(change).elemID.createTopLevelParentID().parent.getFullName()
-    return nodeIdsToOmit.has(parentId) && !afterElementsMap[parentId]
-  }
-
   const buildValidDiffGraph = (nodeIdsToOmit: Set<string>, validAfterElementsMap: ElementMap):
     DataNodeMap<Change<ChangeDataType>> => {
     const validDiffGraph = new DataNodeMap<Change<ChangeDataType>>()
@@ -133,11 +128,7 @@ export const filterInvalidChanges = async (
       diffGraph.walkSync(nodeId => {
         const change = diffGraph.getData(nodeId)
         const { elemID } = getChangeElement(change)
-        if (nodeIdsToOmit.has(elemID.getFullName())
-          // HACK until SALTO-447 is implemented - We want all fields to be omitted if the object is
-          // omitted. this doesn't work now because field removal has the wrong type of dependency
-          // on the object, once this is fixed we can remove this check
-          || isParentInvalidObjectRemoval(change, nodeIdsToOmit)) {
+        if (nodeIdsToOmit.has(elemID.getFullName())) {
           // in case this is an invalid node throw error so the walk will skip the dependent nodes
           throw new Error()
         }

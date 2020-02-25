@@ -38,12 +38,25 @@ export const dependencyChange = (
   action: DependencyChange['action'], source: ChangeId, target: ChangeId
 ): DependencyChange => ({ action, dependency: { source, target } })
 
+export const isDependentAction = (
+  srcAction: Change['action'], targetAction: Change['action']
+): boolean => (
+  targetAction !== 'modify' && (srcAction === 'modify' || srcAction === targetAction)
+)
+
 // Reference dependency means source must be added after target and removed before target
 export const addReferenceDependency = (
   action: Change['action'], src: ChangeId, target: ChangeId,
 ): DependencyChange => (
   action === 'add' ? dependencyChange('add', src, target) : dependencyChange('add', target, src)
 )
+
+// Parent dependency means the source must be added after the target but the source cannot be
+// removed before the target, so in both cases the change to the target must happen before the
+// change to the source
+export const addParentDependency = (
+  src: ChangeId, target: ChangeId,
+): DependencyChange => dependencyChange('add', src, target)
 
 export type ChangeEntry<T = ChangeDataType> = [ChangeId, Change<T>]
 export const isFieldChange = (entry: ChangeEntry): entry is ChangeEntry<Field> => (

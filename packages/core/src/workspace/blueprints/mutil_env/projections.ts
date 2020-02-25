@@ -15,7 +15,7 @@
 */
 import {
   Values, isObjectType, TypeElement, ObjectType, PrimitiveType, Field, InstanceElement,
-  Element, isType, isField, isInstanceElement, getChangeElement, Value,
+  Element, isType, isField, isInstanceElement, getChangeElement, Value, ElemID,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { DetailedChange } from 'src/core/plan'
@@ -31,7 +31,7 @@ const projectValue = (src: Value, target: Value): Value => {
   if (_.isPlainObject(src) && _.isPlainObject(target)) {
     const projection: Values = {}
     _.keys(src).forEach(key => {
-      if (target[key]) {
+      if (_.has(target, key)) {
         projection[key] = projectValue(src[key], target[key])
       }
     })
@@ -52,6 +52,7 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement | undef
         annotationTypes,
         annotations,
         fields,
+        path: src.path,
       })
   }
   return _.isEmpty(annotations) && _.isEmpty(annotationTypes)
@@ -64,6 +65,7 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement | undef
 }
 
 const projectField = (src: Field, target: Field): Field | undefined => {
+  if (src.isList !== target.isList) return src
   const annotations = projectValue(src.annotations, target.annotations)
   return _.isEmpty(annotations)
     ? undefined
@@ -75,48 +77,68 @@ const projectInstance = (
   target: InstanceElement
 ): InstanceElement | undefined => {
   const projectedValue = projectValue(src.value, target.value)
+  const projectedAnnotations = projectValue(src.annotations, target.annotations)
   return _.isEmpty(projectedValue)
     ? undefined
     : new InstanceElement(
       src.elemID.name,
       src.type,
-      projectedValue
+      projectedValue,
+      src.path,
+      projectedAnnotations
     )
 }
 
-export const projectElementToEnv = async (
-  element: Element,
+export const projectElementOrValueToEnv = async (
+  value: Element | Value,
+  id: ElemID,
   env: ElementsSource
 ): Promise<Element | undefined> => {
-  const targetElement = await env.get(element.elemID)
-  if (isType(element) && isType(targetElement)) {
-    return projectType(element, targetElement)
+  const targetElement = await env.get(id)
+  if (isType(value) && isType(targetElement)) {
+    return projectType(value, targetElement)
   }
-  if (isField(element) && isField(targetElement)) {
-    return projectField(element, targetElement)
+  if (isField(value) && isField(targetElement)) {
+    return projectField(value, targetElement)
   }
-  if (isInstanceElement(element) && isInstanceElement(targetElement)) {
-    return projectInstance(element as InstanceElement, targetElement)
+  if (isInstanceElement(value) && isInstanceElement(targetElement)) {
+    return projectInstance(value as InstanceElement, targetElement)
   }
-  return projectValue(element, targetElement)
+  return projectValue(value, targetElement)
 }
 
-export const createAddChange = (element: Element): DetailedChange => ({
-  data: { after: element },
+export const createAddChange = (
+  value: Element | Value,
+  id: ElemID,
+  path?: string[]
+): DetailedChange => ({
+  data: { after: value },
   action: 'add',
-  id: element.elemID,
+  id,
+  path,
 })
 
-export const createRemoveChange = (element: Element): DetailedChange => ({
-  data: { before: element },
+export const createRemoveChange = (
+  value: Element | Value,
+  id: ElemID,
+  path?: string[]
+): DetailedChange => ({
+  data: { before: value },
   action: 'remove',
-  id: element.elemID,
+  id,
+  path,
 })
 
-export const createModifyChange = (before: Element, after: Element): DetailedChange => ({
+export const createModifyChange = (
+  before: Element | Value,
+  after: Element | Value,
+  id: ElemID,
+  path?: string[]
+): DetailedChange => ({
   data: { before, after },
   action: 'modify',
-  id: before.elemID,
+  id,
+  path,
 })
 
 export const projectChange = async (
@@ -124,13 +146,13 @@ export const projectChange = async (
   env: ElementsSource
 ): Promise<DetailedChange[]> => {
   const beforeProjection = change.action !== 'add'
-    ? await projectElementToEnv(change.data.before, env)
+    ? await projectElementOrValueToEnv(change.data.before, change.id, env)
     : undefined
   const afterProjection = change.action !== 'remove'
-    ? await projectElementToEnv(change.data.after, env)
+    ? await projectElementOrValueToEnv(change.data.after, change.id, env)
     : undefined
   if (change.action === 'add') {
-    if (afterProjection) {
+    if (!_.isUndefined(afterProjection)) {
       throw new InvalidProjectionError(
         change,
         'can not project an add change to an existing env element.'
@@ -139,12 +161,12 @@ export const projectChange = async (
     return [change]
   }
 
-  if (change.action === 'modify' && beforeProjection && afterProjection) {
-    return [createModifyChange(beforeProjection, afterProjection)]
+  if (change.action === 'modify' && !_.isUndefined(beforeProjection) && !_.isUndefined(afterProjection)) {
+    return [createModifyChange(beforeProjection, afterProjection, change.id, change.path)]
   }
 
-  if (change.action === 'remove' && beforeProjection) {
-    return [createRemoveChange(beforeProjection)]
+  if (change.action === 'remove' && !_.isUndefined(beforeProjection)) {
+    return [createRemoveChange(beforeProjection, change.id, change.path)]
   }
   return []
 }

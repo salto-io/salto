@@ -62,7 +62,18 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
 })
 const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Workspace => ({
   elements,
-  config: config || { stateLocation: '.', services: SERVICES },
+  config: config || {
+    currentEnv: 'default',
+    envs: {
+      default: {
+        config: {
+          stateLocation: '.',
+          services: SERVICES,
+        },
+        baseDir: 'default',
+      },
+    },
+  },
   state: mockState(),
   resolvePath: _.identity,
   updateBlueprints: jest.fn(),
@@ -83,6 +94,7 @@ jest.mock('../src/core/adapters/creators')
 jest.spyOn(Workspace, 'init').mockImplementation(
   (
     _baseDir: string,
+    _defaultEnvName: string,
     workspaceName?: string
   ):
     Promise<Workspace> => Promise.resolve(mockWorkspace([], { name: workspaceName }))
@@ -96,7 +108,7 @@ describe('api.ts', () => {
 
   describe('init', () => {
     it('should call init', async () => {
-      const ws = api.init('ws1')
+      const ws = api.init('default', 'ws1')
       expect((await ws).config.name).toEqual('ws1')
     })
   })

@@ -18,14 +18,16 @@ import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { fromRetrieveResult, toMetadataPackageZip } from '../../src/transformers/xml_transformer'
-import { INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE } from '../../src/constants'
-import { ASSIGNMENT_RULES_TYPE_ID } from '../../src/filters/assignment_rules'
+import {
+  INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE,
+} from '../../src/constants'
 import { apiName, metadataType } from '../../src/transformers/transformer'
 import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
 
 
 describe('XML Transformer', () => {
+  const ASSIGNMENT_RULES_TYPE_ID = new ElemID(SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE)
   const PACKAGE = 'unpackaged'
 
   describe('toMetadataPackageZip in creation flow', () => {

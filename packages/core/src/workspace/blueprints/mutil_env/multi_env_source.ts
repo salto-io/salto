@@ -23,7 +23,7 @@ import wu from 'wu'
 import { mergeElements, MergeError } from '../../../core/merger'
 import { DetailedChange } from '../../../core/plan'
 import { routeChanges } from './routers'
-import { BlueprintsSource, Blueprint } from '../blueprints_source'
+import { BlueprintsSource, Blueprint, RoutingMode } from '../blueprints_source'
 import { Errors } from '../../errors'
 
 export class UnknownEnviornmentError extends Error {
@@ -117,13 +117,16 @@ export const multiEnvSource = (
     state = buildMutiEnvState()
   }
 
-  const update = async (changes: DetailedChange[], newEnv = false): Promise<void> => {
+  const update = async (
+    changes: DetailedChange[],
+    mode: RoutingMode = 'default'
+  ): Promise<void> => {
     const routedChanges = await routeChanges(
       changes,
       primarySource(),
       commonSource(),
       secondarySources(),
-      newEnv
+      mode
     )
     const secondaryChanges = routedChanges.secondarySources || {}
     await Promise.all([
@@ -138,7 +141,7 @@ export const multiEnvSource = (
   const flush = async (): Promise<void> => {
     await Promise.all([
       primarySource().flush(),
-      commonSource ? commonSource().flush() : undefined,
+      commonSource().flush(),
       ..._.values(secondarySources()).map(src => src.flush()),
     ])
   }
@@ -216,5 +219,10 @@ export const multiEnvSource = (
       const { source, relPath } = getSourceForBlueprint(filename)
       return source.getElements(relPath) ?? []
     },
+    getElementBlueprints: async (id: ElemID): Promise<string[]> => (
+      _.flatten(await Promise.all(_.entries(getActiveSources())
+        .map(async ([prefix, source]) => (
+          await source.getElementBlueprints(id)).map(p => buidFullPath(prefix, p)))))
+    ),
   }
 }

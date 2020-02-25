@@ -143,11 +143,12 @@ export const convertObject = (
 ): HclExpression => {
   const res: Record<string, HclExpression[]> = {}
   attrs.forEach(attr => {
-    const key = attr.expressions[0]
+    const expAttr = attr as HclExpression
+    const key = expAttr.expressions[0]
     if (res[key.value] !== undefined) {
       throw new NearleyError(key, key.source.start.byte, 'Attribute redefined')
     }
-    res[key.value] = attr.expressions
+    res[key.value] = expAttr.expressions
   })
   return {
     type: 'map',

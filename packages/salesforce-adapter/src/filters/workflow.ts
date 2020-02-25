@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import {
-  Change,
-  Element, ElemID, InstanceElement, isInstanceElement, Value,
+  Change, Element, ElemID, InstanceElement, isInstanceElement, Value,
 } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce'
 import { collections } from '@salto-io/lowerdash'
@@ -67,20 +66,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
             })
         })
 
-    const modifyPath = (workflowInstance: InstanceElement): void => {
-      if (workflowInstance.path) {
-        workflowInstance.path = [...workflowInstance.path.slice(0, -2),
-          'WorkflowRules',
-          `${workflowInstance.elemID.name}WorkflowRules`]
-      }
-    }
-
     elements
       .filter(isInstanceElement)
       .filter(isWorkflowInstance)
       .forEach(wfInst => {
         modifyInnerTypesFullName(wfInst)
-        modifyPath(wfInst)
       })
   },
 

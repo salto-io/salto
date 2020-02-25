@@ -36,16 +36,14 @@ import {
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
-import CustomObjectsFilter from './filters/custom_objects'
+import customObjectsFilter from './filters/custom_objects'
 import profilePermissionsFilter from './filters/profile_permissions'
-import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
 import removeFieldsFilter from './filters/remove_fields'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
-import leadConvertSettingsFilter from './filters/lead_convert_settings'
 import lookupFiltersFilter from './filters/lookup_filters'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
@@ -105,6 +103,11 @@ export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
   metadataAdditionalTypes?: string[]
 
+  // Instances that we want to exclude from readMetadata
+  // This is expected to be a list of strings of format METADATA_TYPE.INSTANCE
+  // For example: CustomObject.Lead
+  instancesBlacklist?: string[]
+
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
   metadataTypeBlacklist?: string[]
@@ -153,6 +156,7 @@ type RetrieveMember = {
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
+  private instancesBlacklist: string[]
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
@@ -168,9 +172,11 @@ export default class SalesforceAdapter {
       'Settings',
       'StaticResource',
       'NetworkBranding',
+      'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],
+    instancesBlacklist = [],
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
@@ -208,15 +214,13 @@ export default class SalesforceAdapter {
     filterCreators = [
       missingFieldsFilter,
       settingsFilter,
-      // CustomObjectsFilter depends on missingFieldsFilter and settingsFilter
-      CustomObjectsFilter,
+      // customObjectsFilter depends on missingFieldsFilter and settingsFilter
+      customObjectsFilter,
       removeFieldsFilter,
       profilePermissionsFilter,
       layoutFilter,
-      assignmentRulesFilter,
       standardValueSetFilter,
       flowFilter,
-      leadConvertSettingsFilter,
       lookupFiltersFilter,
       animationRulesFilter,
       samlInitMethodFilter,
@@ -252,6 +256,7 @@ export default class SalesforceAdapter {
     ],
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
+    this.instancesBlacklist = instancesBlacklist
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
@@ -712,11 +717,7 @@ export default class SalesforceAdapter {
       knownMetadataTypes.map(mdType => [apiName(mdType), mdType])
     )
     return _.flatten(await Promise.all((typeNames)
-      .map(typeName => this.fetchMetadataType(typeName, knownTypes, new Set(typeNames))
-        .catch(e => {
-          log.error('failed to fetch metadata for type %s reason: %o', typeName, e)
-          return []
-        }))))
+      .map(typeName => this.fetchMetadataType(typeName, knownTypes, new Set(typeNames)))))
   }
 
   private async fetchMetadataType(
@@ -822,13 +823,9 @@ export default class SalesforceAdapter {
       Promise<TypeAndInstances[]> =>
       Promise.all(metadataTypesToRead.map(async type => {
         let namespaceAndInstances: NamespaceAndInstances[] = []
-        try {
-          // Just fetch metadata instances of the types that we receive from the describe call
-          if (!this.metadataAdditionalTypes.includes(apiName(type))) {
-            namespaceAndInstances = await this.listMetadataInstances(apiName(type))
-          }
-        } catch (e) {
-          log.error('failed to fetch instances of type %s reason: %o', id(type), e)
+        // Just fetch metadata instances of the types that we receive from the describe call
+        if (!this.metadataAdditionalTypes.includes(apiName(type))) {
+          namespaceAndInstances = await this.listMetadataInstances(apiName(type))
         }
         return { type, namespaceAndInstances }
       }))
@@ -891,7 +888,13 @@ export default class SalesforceAdapter {
       .fromPairs()
       .value()
 
-    const instanceInfos = await this.client.readMetadata(type, objs.map(getFullName))
+    const instancesFullNames = objs.map(getFullName)
+      .filter(name => !this.instancesBlacklist.includes(`${type}.${name}`))
+    const instanceInfos = await this.client.readMetadata(type, instancesFullNames)
+      .catch(err => {
+        log.error('failed to read metadata for type %s', type)
+        throw err
+      })
     return instanceInfos.map(instanceInfo =>
       ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))
   }

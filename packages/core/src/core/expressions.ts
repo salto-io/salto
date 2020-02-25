@@ -16,7 +16,7 @@
 import _ from 'lodash'
 
 import {
-  ElemID, Element, isObjectType, isInstanceElement, isType, Value,
+  ElemID, Element, isObjectType, isInstanceElement, Value,
   ReferenceExpression, TemplateExpression, resolvePath,
 } from '@salto-io/adapter-api'
 
@@ -113,9 +113,7 @@ export const resolveElement = (
     element.fields = _.cloneDeepWith(element.fields, referenceCloner)
   }
 
-  if (isType(element)) {
-    element.annotate(_.cloneDeepWith(element.annotations, referenceCloner))
-  }
+  element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
 
   return element
 }

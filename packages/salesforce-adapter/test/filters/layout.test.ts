@@ -33,7 +33,7 @@ describe('Test layout filter', () => {
 
   describe('Test layout fetch', () => {
     const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
-      const testSobjPath = ['object', 'test', 'standard']
+      const testSobjPath = [constants.SALESFORCE, constants.OBJECTS_PATH, 'test', 'standard']
       const testSObj = mockSObject.clone()
       testSObj.annotate({ [constants.API_NAME]: apiName })
       testSObj.path = testSobjPath
@@ -57,7 +57,7 @@ describe('Test layout filter', () => {
       expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', bpCase(shortName)))
       expect(instance.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', instance.elemID.name])
 
-      expect(instance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toContainEqual(
+      expect(instance.annotations[INSTANCE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)
       )
     }

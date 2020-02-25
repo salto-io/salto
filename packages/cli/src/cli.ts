@@ -20,6 +20,7 @@ import { streams } from '@salto-io/lowerdash'
 import { CliInput, CliOutput, CliExitCode, SpinnerCreator } from './types'
 import { YargsCommandBuilder } from './command_builder'
 import parse, { ERROR_STYLE } from './argparser'
+import { versionString } from './version'
 
 export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 const EVENTS_FLUSH_WAIT_TIME = 1000
@@ -58,7 +59,7 @@ export default async (
         increaseLoggingLogLevel()
       }
 
-      log.info('CLI started')
+      log.info('CLI started. Version: %s', versionString)
 
       const parsedInput = { ...input, args: parsedArgs }
       const command = await commandBuilder(parsedInput, output, spinnerCreator)

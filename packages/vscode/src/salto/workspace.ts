@@ -86,9 +86,9 @@ export class EditorWorkspace {
     return this.runningSetOperation
   }
 
-  async updateBlueprints(...changes: DetailedChange[]): Promise<void> {
+  async updateBlueprints(changes: DetailedChange[]): Promise<void> {
     if (this.runningSetOperation === undefined) {
-      this.runningSetOperation = this.workspace.updateBlueprints(...changes)
+      this.runningSetOperation = this.workspace.updateBlueprints(changes)
       return this.runningSetOperation
     }
     throw new Error('Can not update blueprints during a running set operation')

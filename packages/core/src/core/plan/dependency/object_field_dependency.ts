@@ -17,8 +17,8 @@ import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import { getChangeElement, Field } from '@salto-io/adapter-api'
 import {
-  DependencyChanger, isObjectTypeChange, ChangeEntry, DependencyChange, addReferenceDependency,
-  isFieldChange,
+  DependencyChanger, isObjectTypeChange, ChangeEntry, DependencyChange, addParentDependency,
+  isFieldChange, isDependentAction,
 } from './common'
 
 export const addFieldToObjectDependency: DependencyChanger = async changes => {
@@ -29,8 +29,8 @@ export const addFieldToObjectDependency: DependencyChanger = async changes => {
 
   const addObjectDependency = ([id, change]: ChangeEntry<Field>): DependencyChange[] => (
     (objectChanges.get(getChangeElement(change).parentID.getFullName()) ?? [])
-      .filter(([_id, objectChange]) => objectChange.action === change.action)
-      .map(([objectChangeId]) => addReferenceDependency(change.action, id, objectChangeId))
+      .filter(([_id, objectChange]) => isDependentAction(change.action, objectChange.action))
+      .map(([objectChangeId]) => addParentDependency(id, objectChangeId))
   )
 
   return wu(changes)

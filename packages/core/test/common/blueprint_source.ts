@@ -15,6 +15,7 @@
 */
 import { ElemID, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import path from 'path'
 import { BlueprintsSource } from '../../src/workspace/blueprints/blueprints_source'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
@@ -42,4 +43,5 @@ export const createMockBlueprintSource = (
   getElements: jest.fn().mockImplementation(
     filename => Promise.resolve(blueprints[filename] || [])
   ),
+  getElementBlueprints: jest.fn().mockImplementation(() => Promise.resolve([path.join('test', 'path.bp')])),
 })

@@ -30,7 +30,7 @@ import {
   VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES, OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
   FORMULA, LEAD_CONVERT_SETTINGS_METADATA_TYPE, ASSIGNMENT_RULES_METADATA_TYPE,
   WORKFLOW_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
-  DUPLICATE_RULE_METADATA_TYPE,
+  DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -457,27 +457,31 @@ const removeIrrelevantElements = (elements: Element[]): void => {
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
 const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE_METADATA_TYPE,
   QUICK_ACTION_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
-  ASSIGNMENT_RULES_METADATA_TYPE])
+  ASSIGNMENT_RULES_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE])
 
 const hasCustomObjectParent = (instance: InstanceElement): boolean =>
   dependentMetadataTypes.has(metadataType(instance))
 
-const setDependingInstancePath = (instance: InstanceElement, customObject: ObjectType):
-  void => {
-  if (customObject.path) {
-    instance.path = [
-      ...customObject.path.slice(0, -1),
-      instance.elemID.typeName === 'Workflow' ? 'WorkflowRules' : instance.elemID.typeName,
-      ...(apiName(instance).includes(API_NAME_SEPERATOR) ? [instance.elemID.name] : []),
-    ]
-  }
-}
 
 const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
+  const apiNameParts = (instance: InstanceElement): string[] =>
+    apiName(instance).split(/\.|-/g)
+
+  const setDependingInstancePath = (instance: InstanceElement, customObject: ObjectType):
+    void => {
+    if (customObject.path) {
+      instance.path = [
+        ...customObject.path.slice(0, -1),
+        instance.elemID.typeName === 'Workflow' ? 'WorkflowRules' : instance.elemID.typeName,
+        ...(apiNameParts(instance).length > 1 ? [instance.elemID.name] : []),
+      ]
+    }
+  }
+
   const apiNameToCustomObject = generateApiNameToCustomObject(elements)
 
   const getDependentCustomObj = (instance: InstanceElement): ObjectType | undefined => {
-    const customObject = apiNameToCustomObject.get(apiName(instance).split(API_NAME_SEPERATOR)[0])
+    const customObject = apiNameToCustomObject.get(apiNameParts(instance)[0])
     if (_.isUndefined(customObject)
       && metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE) {
       return apiNameToCustomObject.get('Lead')

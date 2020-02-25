@@ -116,6 +116,7 @@ export interface LookupFilter {
 
 export class CustomField implements MetadataInfo {
   // Common field annotations
+  readonly label?: string
   readonly type: string
   readonly required?: boolean
   readonly defaultValue?: string
@@ -170,7 +171,6 @@ export class CustomField implements MetadataInfo {
   constructor(
     public fullName: string,
     type: string,
-    readonly label?: string,
     required = false,
     defaultVal?: string,
     defaultValFormula?: string,

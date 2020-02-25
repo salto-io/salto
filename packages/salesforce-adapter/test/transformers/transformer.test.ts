@@ -474,6 +474,23 @@ describe('transformer', () => {
     })
   })
 
+  describe('toCustomField', () => {
+    const elemID = new ElemID('salesforce', 'test')
+    const field = new Field(elemID, 'name', Types.primitiveDataTypes.Text, { [LABEL]: 'Labelo' })
+
+    it('should have label for custom field', () => {
+      field.annotations[API_NAME] = 'Custom__c'
+      const customField = toCustomField(field)
+      expect(customField.label).toEqual('Labelo')
+    })
+
+    it('should not have label for standard field', () => {
+      field.annotations[API_NAME] = 'Standard'
+      const customField = toCustomField(field)
+      expect(customField).not.toHaveProperty('label')
+    })
+  })
+
   describe('toCustomObject', () => {
     const elemID = new ElemID('salesforce', 'test')
 

@@ -839,11 +839,13 @@ export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Va
 export const toCustomField = (
   field: TypeField, fullname = false
 ): CustomField => {
+  const isCustomField = ({ fullName }: CustomField): boolean =>
+    (_.last(fullName.split(API_NAME_SEPERATOR)) as string).endsWith(SALESFORCE_CUSTOM_SUFFIX)
+
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const newField = new CustomField(
     apiName(field, !fullname),
     fieldTypeName(field.type.elemID.name),
-    field.annotations[LABEL],
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
     field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
     field.annotations[DEFAULT_VALUE_FORMULA],
@@ -876,6 +878,7 @@ export const toCustomField = (
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)
     && !blacklistedAnnotations.includes(annotationName)
+    && (annotationName !== LABEL || isCustomField(newField)) // Cant specify label on standard field
   )
 
   // Convert the annotations' names to the required API name

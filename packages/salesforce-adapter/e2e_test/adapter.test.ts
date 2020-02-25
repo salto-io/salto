@@ -3620,6 +3620,7 @@ describe('Salesforce adapter E2E with real account', () => {
         Types.primitiveDataTypes.Lookup,
         {
           [constants.API_NAME]: lookupFieldApiFullName,
+          [constants.LABEL]: fieldName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
           [FIELD_LEVEL_SECURITY_ANNOTATION]: {
             editable: [ADMIN],
@@ -3652,6 +3653,7 @@ describe('Salesforce adapter E2E with real account', () => {
         Types.primitiveDataTypes.Lookup,
         {
           [constants.API_NAME]: lookupFieldApiFullName,
+          [constants.LABEL]: fieldName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
           [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
             [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,

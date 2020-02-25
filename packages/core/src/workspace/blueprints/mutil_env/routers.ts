@@ -182,7 +182,7 @@ export const routeNewEnv = async (
       _.entries(secondarySources)
         .map(async ([name, source]) => [
           name,
-          await projectChange(createAddChange(commonChangeProjection, change.id, pathHint), source),
+          await projectChange(createAddChange(currentCommonElement, change.id, pathHint), source),
         ])
     )
   )

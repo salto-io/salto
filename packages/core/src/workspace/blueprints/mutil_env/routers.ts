@@ -126,7 +126,7 @@ const getChangePathHint = async (
   change: DetailedChange,
   commonSource: BlueprintsSource
 ): Promise<string[] | undefined> => {
-  if (change.path) return change.path
+  if (change.path) return change.path || getChangeElement(change).path
   const refFilename = (await commonSource.getElementBlueprints(change.id))[0]
   return refFilename
     ? _.trimEnd(refFilename, BP_EXTENSION).split(path.sep)
@@ -141,8 +141,10 @@ export const routeNewEnv = async (
 ): Promise<RoutedChanges> => {
   // This is an add change, which means the element is not in common.
   // so we will add it to the current action enviornment.
+  const pathHint = await getChangePathHint(change, commonSource)
+
   if (change.action === 'add') {
-    return { primarySource: [change] }
+    return { primarySource: [{ ...change, path: pathHint }] }
   }
 
   // In remove and modify changes, we need to remove the current value from
@@ -158,9 +160,9 @@ export const routeNewEnv = async (
   // If the element is not in common, then we can apply the change to
   // the primary source
   if (_.isUndefined(commonChangeProjection)) {
-    return { primarySource: [change] }
+    return { primarySource: [{ ...change, path: pathHint }] }
   }
-  const pathHint = await getChangePathHint(change, commonSource)
+
   const currentCommonElement = await commonSource.get(change.id)
   // Keeping the parser happy, this will never happen (see above)
   if (_.isUndefined(currentCommonElement)) {

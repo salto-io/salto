@@ -61,6 +61,19 @@ export type CountEvent = Event & { type: EVENT_TYPES.COUNTER; value: number }
 export type StackEvent = Event & { type: EVENT_TYPES.STACK; value: string[] }
 export type TelemetryEvent = CountEvent | StackEvent
 
+const stacktraceFromError = (err: Error): string[] => {
+  if (err.stack === undefined) {
+    return []
+  }
+  const stackWithoutMessage = err.stack
+    .replace(err.toString(), '')
+  return _(stackWithoutMessage)
+    .split(EOL)
+    .map(line => line.trim())
+    .compact()
+    .value()
+}
+
 export type Telemetry = {
   enabled: boolean
 
@@ -138,16 +151,7 @@ export const telemetrySender = (
   }
 
   const sendStackEvent = (name: string, value: Error, extraTags: Tags = {}): void => {
-    if (value.stack === undefined) {
-      return
-    }
-    const stackWithoutMessage = value.stack
-      .replace(value.toString(), '')
-    const stackArray = _(stackWithoutMessage)
-      .split(EOL)
-      .map(line => line.trim())
-      .compact()
-      .value()
+    const stackArray = stacktraceFromError(value)
     if (stackArray.length === 0) {
       return
     }

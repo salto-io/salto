@@ -22,8 +22,8 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import {
   CUSTOM_FIELD, CUSTOM_OBJECT, FIELD_TYPE_NAME_VALUES, SALESFORCE, WORKFLOW_METADATA_TYPE,
+  LEAD_CONVERT_SETTINGS_METADATA_TYPE,
 } from '../constants'
-import { LEAD_CONVERT_SETTINGS_TYPE_ID } from './lead_convert_settings'
 import { id } from './utils'
 import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_FLOW_ACTIONS_FIELD,
@@ -59,7 +59,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
     ],
   },
   {
-    id: LEAD_CONVERT_SETTINGS_TYPE_ID,
+    id: new ElemID(SALESFORCE, LEAD_CONVERT_SETTINGS_METADATA_TYPE),
     fields: [
       {
         name: 'objectMapping',

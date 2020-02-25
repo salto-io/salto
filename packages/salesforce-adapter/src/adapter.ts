@@ -36,16 +36,14 @@ import {
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
-import CustomObjectsFilter from './filters/custom_objects'
+import customObjectsFilter from './filters/custom_objects'
 import profilePermissionsFilter from './filters/profile_permissions'
-import assignmentRulesFilter from './filters/assignment_rules'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
 import missingFieldsFilter from './filters/missing_fields'
 import removeFieldsFilter from './filters/remove_fields'
 import standardValueSetFilter from './filters/standard_value_sets'
 import flowFilter from './filters/flow'
-import leadConvertSettingsFilter from './filters/lead_convert_settings'
 import lookupFiltersFilter from './filters/lookup_filters'
 import animationRulesFilter from './filters/animation_rules'
 import samlInitMethodFilter from './filters/saml_initiation_method'
@@ -215,15 +213,13 @@ export default class SalesforceAdapter {
     filterCreators = [
       missingFieldsFilter,
       settingsFilter,
-      // CustomObjectsFilter depends on missingFieldsFilter and settingsFilter
-      CustomObjectsFilter,
+      // customObjectsFilter depends on missingFieldsFilter and settingsFilter
+      customObjectsFilter,
       removeFieldsFilter,
       profilePermissionsFilter,
       layoutFilter,
-      assignmentRulesFilter,
       standardValueSetFilter,
       flowFilter,
-      leadConvertSettingsFilter,
       lookupFiltersFilter,
       animationRulesFilter,
       samlInitMethodFilter,

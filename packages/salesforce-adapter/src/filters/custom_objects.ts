@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType, InstanceElement,
   isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, findObjectType,
-  Values, bpCase,
+  Values, bpCase, INSTANCE_ANNOTATIONS, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
@@ -28,15 +28,19 @@ import {
   SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
   VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
   VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES, OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
-  FORMULA,
+  FORMULA, LEAD_CONVERT_SETTINGS_METADATA_TYPE, ASSIGNMENT_RULES_METADATA_TYPE,
+  WORKFLOW_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
+  DUPLICATE_RULE_METADATA_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive,
   formulaTypeName, metadataType,
 } from '../transformers/transformer'
-import { id, addApiName, addMetadataType, addLabel, hasNamespace,
-  getNamespace, boolValue, buildAnnotationsObjectType } from './utils'
+import {
+  id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue,
+  buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference,
+} from './utils'
 import { convertList } from './convert_lists'
 
 const log = logger(module)
@@ -323,7 +327,8 @@ const createObjectTypeWithBaseAnnotations = (name: string, label: string):
 }
 
 const createNestedMetadataInstances = (instance: InstanceElement,
-  nestedMetadataTypes: Record<string, ObjectType>, objectDirectoryPath: string[]):
+  { elemID: objElemID, path: objPath }: ObjectType,
+  nestedMetadataTypes: Record<string, ObjectType>):
   InstanceElement[] =>
   _.flatten(Object.entries(nestedMetadataTypes)
     .map(([name, type]) => {
@@ -337,7 +342,8 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         const elemIdName = bpCase(fullName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
         return new InstanceElement(elemIdName, type, nestedInstance,
-          [...objectDirectoryPath, type.elemID.name, elemIdName])
+          [...(objPath as string[]).slice(0, -1), type.elemID.name, elemIdName],
+          { [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(objElemID) })
       })
     }))
 
@@ -384,8 +390,8 @@ const createFromInstance = (instance: InstanceElement,
   const customFields = createFieldsFromInstanceFields(instanceCustomFields,
     annotationsObject.elemID, objectName)
   newElements.push(...createCustomFieldsObjects(customFields, objectName, serviceIds, namespace))
-  const nestedMetadataInstances = createNestedMetadataInstances(instance,
-    typesFromInstance.nestedMetadataTypes, getObjectDirectoryPath(annotationsObject, namespace))
+  const nestedMetadataInstances = createNestedMetadataInstances(instance, annotationsObject,
+    typesFromInstance.nestedMetadataTypes)
   newElements.push(...nestedMetadataInstances)
   return newElements
 }
@@ -434,8 +440,8 @@ const createFromSObjectsAndInstances = (
         ? typesFromInstance.customAnnotationTypes
         : typesFromInstance.standardAnnotationTypes
     ))
-    return [...objects, ...createNestedMetadataInstances(instance,
-      typesFromInstance.nestedMetadataTypes, getObjectDirectoryPath(object, namespace))]
+    return [...objects, ...createNestedMetadataInstances(instance, object,
+      typesFromInstance.nestedMetadataTypes)]
   }))
 
 const removeIrrelevantElements = (elements: Element[]): void => {
@@ -447,7 +453,50 @@ const removeIrrelevantElements = (elements: Element[]): void => {
   _.remove(elements, elem => (isObjectType(elem)
     && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(metadataType(elem))))
 }
-// ---
+
+// Instances metadataTypes that should be under the customObject folder and have a PARENT reference
+const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE_METADATA_TYPE,
+  QUICK_ACTION_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
+  ASSIGNMENT_RULES_METADATA_TYPE])
+
+const hasCustomObjectParent = (instance: InstanceElement): boolean =>
+  dependentMetadataTypes.has(metadataType(instance))
+
+const setDependingInstancePath = (instance: InstanceElement, customObject: ObjectType):
+  void => {
+  if (customObject.path) {
+    instance.path = [
+      ...customObject.path.slice(0, -1),
+      instance.elemID.typeName === 'Workflow' ? 'WorkflowRules' : instance.elemID.typeName,
+      ...(apiName(instance).includes(API_NAME_SEPERATOR) ? [instance.elemID.name] : []),
+    ]
+  }
+}
+
+const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
+  const apiNameToCustomObject = generateApiNameToCustomObject(elements)
+
+  const getDependentCustomObj = (instance: InstanceElement): ObjectType | undefined => {
+    const customObject = apiNameToCustomObject.get(apiName(instance).split(API_NAME_SEPERATOR)[0])
+    if (_.isUndefined(customObject)
+      && metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE) {
+      return apiNameToCustomObject.get('Lead')
+    }
+    return customObject
+  }
+
+  elements
+    .filter(isInstanceElement)
+    .filter(hasCustomObjectParent)
+    .forEach(instance => {
+      const customObj = getDependentCustomObj(instance)
+      if (_.isUndefined(customObj)) {
+        return
+      }
+      setDependingInstancePath(instance, customObj)
+      addObjectParentReference(instance, customObj)
+    })
+}
 
 /**
  * Custom objects filter.
@@ -530,6 +579,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     newElements
       .filter(newElem => !elementFullNames.has(id(newElem)))
       .forEach(newElem => elements.push(newElem))
+
+    fixDependentInstancesPathAndSetParent(elements)
   },
 })
 

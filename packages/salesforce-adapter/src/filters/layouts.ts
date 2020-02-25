@@ -15,21 +15,18 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import {
-  Element, isObjectType, ElemID, findInstances, InstanceElement, ReferenceExpression,
-  INSTANCE_ANNOTATIONS, isReferenceExpression, ObjectType, bpCase,
+  Element, ElemID, findInstances, InstanceElement, ObjectType, bpCase,
 } from '@salto-io/adapter-api'
-import { apiName, isCustomObject } from '../transformers/transformer'
+import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
-import { id } from './utils'
+import {
+  addObjectParentReference, generateApiNameToCustomObject, id,
+} from './utils'
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'Layout')
-export const LAYOUT_ANNOTATION = 'layouts'
-export const LAYOUT_SUFFIX = ' Layout'
 
-const { makeArray } = collections.array
 const log = logger(module)
 
 const MIN_NAME_LENGTH = 4
@@ -67,15 +64,6 @@ const fixNames = (layouts: InstanceElement[]): void => {
     .forEach(layout => updateElemID(layout, layoutObjAndName(layout)[1]))
 }
 
-const addObjectReference = (layout: InstanceElement, { elemID: objectID }: ObjectType): void => {
-  const layoutDeps = makeArray(layout.annotations[INSTANCE_ANNOTATIONS.PARENT])
-  if (layoutDeps.filter(isReferenceExpression).some(ref => ref.elemId.isEqual(objectID))) {
-    return
-  }
-  layoutDeps.push(new ReferenceExpression(objectID))
-  layout.annotations[INSTANCE_ANNOTATIONS.PARENT] = layoutDeps
-}
-
 const fixLayoutPath = (
   layout: InstanceElement,
   { path: objectPath }: ObjectType,
@@ -99,18 +87,16 @@ const filterCreator: FilterCreator = () => ({
     const layouts = [...findInstances(elements, LAYOUT_TYPE_ID)]
     fixNames(layouts)
 
-    const customObjects = new Map(
-      elements.filter(isObjectType).filter(isCustomObject).map(obj => [apiName(obj), obj]),
-    )
+    const apiNameToCustomObject = generateApiNameToCustomObject(elements)
 
     layouts.forEach(layout => {
       const [layoutObjName, layoutName] = layoutObjAndName(layout)
-      const layoutObj = customObjects.get(layoutObjName)
+      const layoutObj = apiNameToCustomObject.get(layoutObjName)
       if (layoutObj === undefined) {
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }
-      addObjectReference(layout, layoutObj)
+      addObjectParentReference(layout, layoutObj)
       fixLayoutPath(layout, layoutObj)
     })
   },

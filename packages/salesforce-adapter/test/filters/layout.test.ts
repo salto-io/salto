@@ -33,7 +33,7 @@ describe('Test layout filter', () => {
 
   describe('Test layout fetch', () => {
     const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {
-      const testSobjPath = ['object', 'test', 'standard']
+      const testSobjPath = [constants.SALESFORCE, constants.OBJECTS_PATH, 'test', 'standard']
       const testSObj = mockSObject.clone()
       testSObj.annotate({ [constants.API_NAME]: apiName })
       testSObj.path = testSobjPath

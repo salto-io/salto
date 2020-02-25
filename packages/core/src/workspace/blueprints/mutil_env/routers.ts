@@ -126,7 +126,7 @@ const getChangePathHint = async (
   change: DetailedChange,
   commonSource: BlueprintsSource
 ): Promise<string[] | undefined> => {
-  if (change.path) return change.path || getChangeElement(change).path
+  if (change.path) return change.path
   const refFilename = (await commonSource.getElementBlueprints(change.id))[0]
   return refFilename
     ? _.trimEnd(refFilename, BP_EXTENSION).split(path.sep)

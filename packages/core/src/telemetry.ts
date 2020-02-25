@@ -38,24 +38,27 @@ export type RequiredTags = {
   app: string
 }
 
-export type Tags = {
-  [name: string]: string | number
+type BaseTags = {
+  workspaceID?: string | number
 }
+
+export type Tags = {
+  [name: string]: string | number | undefined
+} & BaseTags
 
 export enum EVENT_TYPES {
   COUNTER = 'counter',
   STACK = 'stack',
 }
 
-type Event<T> = {
+type Event = {
   name: string
-  value: T
   tags: Tags
   timestamp: string
 }
 
-export type CountEvent = Event<number> & { type: EVENT_TYPES.COUNTER }
-export type StackEvent = Event<string[]> & { type: EVENT_TYPES.STACK }
+export type CountEvent = Event & { type: EVENT_TYPES.COUNTER; value: number }
+export type StackEvent = Event & { type: EVENT_TYPES.STACK; value: string[] }
 export type TelemetryEvent = CountEvent | StackEvent
 
 export type Telemetry = {

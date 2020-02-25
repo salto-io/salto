@@ -20,6 +20,9 @@ import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getEnvName } from '../callbacks'
 
+const eventBaseName = 'workspace.init'
+const eventFailureName = `${eventBaseName}.failure`
+
 export const command = (
   workspaceName: string | undefined,
   telemetry: Telemetry,
@@ -30,13 +33,14 @@ export const command = (
     try {
       const defaultEnvName = await getEnvNameCallback()
       const workspace = await init(defaultEnvName, workspaceName)
-      telemetry.sendCountEvent('workspace.init', 1, { workspaceID: workspace.config.uid })
+      telemetry.sendCountEvent(eventBaseName, 1, { workspaceID: workspace.config.uid })
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )
     } catch (e) {
       stderr.write(Prompts.initFailed(e.message))
-      telemetry.sendStackEvent('workspace.init.failure', e, {})
+      telemetry.sendCountEvent(eventFailureName, 1)
+      telemetry.sendStackEvent(eventFailureName, e)
       return CliExitCode.AppError
     }
     return CliExitCode.Success

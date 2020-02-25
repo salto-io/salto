@@ -17,7 +17,7 @@
 
 import nock from 'nock'
 import _ from 'lodash'
-import { telemetrySender, EVENT_TYPES, TelemetryEvent, StackEvent } from '../src/telemetry'
+import { telemetrySender, EVENT_TYPES, TelemetryEvent, StackEvent, Tags } from '../src/telemetry'
 
 describe('telemetry', () => {
   const eventByName = (
@@ -128,7 +128,7 @@ describe('telemetry', () => {
 
   it('should send events with custom tags', async () => {
     const telemetry = telemetrySender(config, requiredTags)
-    const customTags = { sometag: 'someval', somenumbertag: 1, shouldBeSnake: 'sssss' }
+    const customTags: Tags = { sometag: 'someval', somenumbertag: 1, shouldBeSnake: 'sssss', workspaceID: '1234' }
     telemetry.sendCountEvent('ev_with_custom_tags', 1, customTags)
     telemetry.sendCountEvent('ev_without_custom_tags', 1)
     await telemetry.stop(1)
@@ -138,6 +138,7 @@ describe('telemetry', () => {
     expect(eventCustomTags.sometag).toEqual(customTags.sometag)
     expect(eventCustomTags.somenumbertag).toEqual(customTags.somenumbertag)
     expect(eventCustomTags.should_be_snake).toEqual(customTags.shouldBeSnake)
+    expect(eventCustomTags.workspace_id).toEqual(customTags.workspaceID)
 
     const noCustomTags = eventByName('ev_without_custom_tags', reqEvents)?.tags || {}
     expect(Object.keys(noCustomTags).length)

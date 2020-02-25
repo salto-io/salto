@@ -36,6 +36,10 @@ describe('namespace', () => {
         expect(normalizeNamespaceOrModule(module))
           .toEqual('logging/test/internal/namespace.test')
       })
+      it('should stringfy id if module id is a number', () => {
+        expect(normalizeNamespaceOrModule({ ...module, id: 42 as unknown as string }))
+          .toEqual('42')
+      })
     })
 
     describe('when a string is specified', () => {

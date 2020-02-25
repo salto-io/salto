@@ -69,8 +69,9 @@ const fromId = (
 
 export const normalizeNamespaceOrModule = (
   namespace: NamespaceOrModule,
-): Namespace => (
-  isLoggingModule(namespace)
-    ? fromId(namespace.id)
-    : namespace
-)
+): Namespace => {
+  if (isLoggingModule(namespace)) {
+    return typeof namespace.id === 'number' ? `${namespace.id}` : fromId(namespace.id)
+  }
+  return namespace
+}

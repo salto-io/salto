@@ -83,9 +83,9 @@ const getChangeMap = async (
 const findNestedElementPath = (
   changeElemID: ElemID,
   originalParentElements: Element[]
-): readonly string[] | undefined => originalParentElements.find(
-  e => resolvePath(e, changeElemID)
-)?.path
+): readonly string[] | undefined => (
+  originalParentElements.find(e => !_.isUndefined(resolvePath(e, changeElemID)))?.path
+)
 
 type ChangeTransformFunction = (sourceChange: FetchChange) => FetchChange[]
 export const toChangesWithPath = (

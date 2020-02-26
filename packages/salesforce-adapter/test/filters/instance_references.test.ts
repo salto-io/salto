@@ -15,10 +15,10 @@
 */
 import _ from 'lodash'
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, Field, ReferenceExpression } from '@salto-io/adapter-api'
-import { INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../../src/constants'
+import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CUSTOM_FIELD } from '../../src/constants'
 import { replaceInstances, groupByAPIName } from '../../src/filters/instance_references'
 
-describe('instance_to_instance_reference filter', () => {
+describe('instance_reference filter', () => {
   // Definitions
   const parentObjFullName = 'parentFullName'
   const parentObjFieldName = 'parentObj'
@@ -33,6 +33,7 @@ describe('instance_to_instance_reference filter', () => {
     },
   })
   const objType = new ObjectType({
+    annotations: { [METADATA_TYPE]: 'obj' },
     elemID: objTypeID,
     fields: {
       reg: new Field(objTypeID, 'reg', BuiltinTypes.STRING),
@@ -139,6 +140,60 @@ describe('instance_to_instance_reference filter', () => {
         expect(_.keys(apiToTypesToElemIDs[apiName])).toContain(objTypeID.typeName)
         expect(apiToTypesToElemIDs[apiName][objTypeID.typeName]).toBeInstanceOf(ElemID)
       })
+    })
+  })
+
+  describe('reference CustomObject', () => {
+    const targetElemID = new ElemID(SALESFORCE, 'Target')
+    const fieldName = 'Field'
+    const targetCustomObject = new ObjectType({
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+        [API_NAME]: 'Target',
+      },
+      elemID: targetElemID,
+      fields: {
+        [fieldName]: new Field(targetElemID, fieldName, BuiltinTypes.STRING,
+          { [API_NAME]: 'Target.Field' }),
+      },
+    })
+
+    const srcId = new ElemID(SALESFORCE, 'src')
+    const srcObj = 'srcObj'
+    const srcField = 'srcField'
+    const srcType = new ObjectType({
+      annotations: { [METADATA_TYPE]: 'src' },
+      elemID: srcId,
+      fields: {
+        [srcObj]: new Field(srcId, srcObj, BuiltinTypes.STRING),
+        [srcField]: new Field(srcId, srcField, BuiltinTypes.STRING),
+      },
+    })
+
+    const srcInstance = new InstanceElement('srcInstace', srcType, {
+      [INSTANCE_FULL_NAME_FIELD]: `${srcType.annotations[METADATA_TYPE]}.srcInstance`,
+      [srcObj]: 'Target',
+      [srcField]: 'Target.Field',
+    })
+
+    const fieldToTypeMapForCustom = new Map<string, string>(
+      [
+        [new ElemID(SALESFORCE, srcType.elemID.typeName, 'field', srcObj).getFullName(), CUSTOM_OBJECT],
+        [new ElemID(SALESFORCE, srcType.elemID.typeName, 'field', srcField).getFullName(), CUSTOM_FIELD],
+      ]
+    )
+
+    const post = _.cloneDeep([targetCustomObject, srcType, srcInstance])
+    replaceInstances(post, fieldToTypeMapForCustom)
+
+    const srcPostReplace = post[2] as InstanceElement
+
+    it('should find reference to CustomObject', () => {
+      expect(srcPostReplace.value[srcObj]).toBeInstanceOf(ReferenceExpression)
+    })
+
+    it('should find reference to CustomField', () => {
+      expect(srcPostReplace.value[srcField]).toBeInstanceOf(ReferenceExpression)
     })
   })
 })

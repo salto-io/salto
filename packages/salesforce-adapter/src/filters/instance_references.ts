@@ -16,8 +16,11 @@
 import { Field, Element, isObjectType, isInstanceElement, Value, Values, ObjectType, ElemID, ReferenceExpression, TransformValueFunc, transform } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { SALESFORCE } from '../constants'
-import { apiName } from '../transformers/transformer'
+import { SALESFORCE, CUSTOM_OBJECT, CUSTOM_FIELD } from '../constants'
+import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
+
+// ApiName -> MetadataType -> ElemID
+type ApiNameMapping = Record<string, Record<string, ElemID>>
 
 const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'Role', 'field', 'parentRole'), 'Role'],
@@ -27,6 +30,12 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'ProfileRecordTypeVisibility', 'field', 'recordType'), 'RecordType'],
   [new ElemID(SALESFORCE, 'CustomApplication', 'field', 'tabs'), 'CustomTab'],
   [new ElemID(SALESFORCE, 'WorkspaceMapping', 'field', 'tab'), 'CustomTab'],
+  [new ElemID(SALESFORCE, 'FlowVariable', 'field', 'objectType'), CUSTOM_OBJECT],
+  [new ElemID(SALESFORCE, 'ObjectSearchSetting', 'field', 'name'), CUSTOM_OBJECT],
+  [new ElemID(SALESFORCE, 'ProfileFieldLevelSecurity', 'field', 'field'), CUSTOM_FIELD],
+  [new ElemID(SALESFORCE, 'ProfileObjectPermissions', 'field', 'object'), CUSTOM_OBJECT],
+
+  // [new ElemID(SALESFORCE, 'Role', 'field', 'parentRole'), 'WorkflowAlert'],
 ]
 
 export const fieldToTypeMapping = new Map(
@@ -35,14 +44,15 @@ export const fieldToTypeMapping = new Map(
 
 const mapElemTypeToElemID = (elements: Element[]): Record<string, ElemID> => (
   _(elements)
-    .map(e => [e.elemID.typeName, e.elemID])
+    .map(e => [metadataType(e), e.elemID])
     .fromPairs()
     .value()
 )
 
-export const groupByAPIName = (elements: Element[]): Record<string, Record<string, ElemID>> => (
+export const groupByAPIName = (elements: Element[]): ApiNameMapping => (
   _(elements)
-    .map<Element[]>(e => (isObjectType(e) ? [e, ..._.values(e.fields)] : [e]))
+    .map<Element[]>(e => ((isObjectType(e) && isCustomObject(e))
+      ? [e, ..._.values(e.fields)] : [e]))
     .flatten()
     .groupBy(apiName)
     .mapValues(mapElemTypeToElemID)
@@ -53,10 +63,10 @@ const replaceReferenceValues = (
   values: Values,
   refElement: ObjectType,
   replaceTypes: Map<string, string>,
-  apiToIdMap: Record<string, Record<string, ElemID>>
+  apiToIdMap: ApiNameMapping
 ): Values => {
-  const shouldReplace = (element: Element): boolean => (
-    !_.isUndefined(element) && replaceTypes.has(element.elemID.getFullName())
+  const shouldReplace = (field: Field): boolean => (
+    !_.isUndefined(field) && replaceTypes.has(field.elemID.getFullName())
   )
 
   const replacePrimitive = (val: Value, field: Field): Value => {
@@ -86,8 +96,8 @@ const replaceReferenceValues = (
 }
 
 export const replaceInstances = (elements: Element[], fieldToTypeMap: Map<string, string>):
-  void => {
-  const apiNameToElemIDs = groupByAPIName(elements.filter(isInstanceElement))
+void => {
+  const apiNameToElemIDs = groupByAPIName(elements)
   elements.filter(isInstanceElement).forEach(instance => {
     instance.value = replaceReferenceValues(
       instance.value,

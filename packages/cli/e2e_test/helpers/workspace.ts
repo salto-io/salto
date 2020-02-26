@@ -23,7 +23,7 @@ import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
 import adapterConfigs from '../adapter_configs'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
-import { CliOutput } from '../../src/types'
+import { CliOutput, CliExitCode } from '../../src/types'
 import { loadWorkspace } from '../../src/workspace'
 import { DeployCommand } from '../../src/commands/deploy'
 import { command as preview } from '../../src/commands/preview'
@@ -61,13 +61,18 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
   if (lastPlan) {
     lastPlan.clear()
   }
-  await new DeployCommand(
+  const output = mockCliOutput()
+  const result = await new DeployCommand(
     fetchOutputDir,
     false,
     services,
-    mockCliOutput(),
+    output,
     mockSpinnerCreator([])
   ).execute()
+  const errs = (output.stderr as MockWriteStream).content
+  // This assert is before result assert so will see the error
+  expect(errs).toHaveLength(0)
+  expect(result).toBe(CliExitCode.Success)
 }
 
 export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {

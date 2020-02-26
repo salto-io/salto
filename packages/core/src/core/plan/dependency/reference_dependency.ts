@@ -18,12 +18,9 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
   Element, getChangeElement, transform, isInstanceElement, TransformValueFunc,
-  isReferenceExpression, ChangeDataType, INSTANCE_ANNOTATIONS, Change,
+  isReferenceExpression, ChangeDataType, INSTANCE_ANNOTATIONS, Change, DependencyChanger,
+  ChangeEntry, DependencyChange, addReferenceDependency, addParentDependency, isDependentAction,
 } from '@salto-io/adapter-api'
-import {
-  DependencyChanger, ChangeEntry, DependencyChange, addReferenceDependency, addParentDependency,
-  isDependentAction,
-} from './common'
 
 const getAllReferencedIds = (elem: Element): Set<string> => {
   const allReferencedIds = new Set<string>()

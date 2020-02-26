@@ -15,12 +15,11 @@
 */
 import wu from 'wu'
 import { DiffGraph, DataNodeMap, DiffNode } from '@salto-io/dag'
-import { ChangeDataType, Change, ObjectType, InstanceElement, ElemID, ReferenceExpression, Field, BuiltinTypes, PrimitiveType, PrimitiveTypes, INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ChangeDataType, Change, ObjectType, InstanceElement, ElemID, ReferenceExpression, Field, BuiltinTypes, PrimitiveType, PrimitiveTypes, INSTANCE_ANNOTATIONS, DependencyChange, ChangeId } from '@salto-io/adapter-api'
 import {
   addNodeDependencies, addAfterRemoveDependency, addFieldToObjectDependency, addTypeDependency,
   addReferencesDependency,
 } from '../../../src/core/plan/dependency'
-import { DependencyChange, ChangeId } from '../../../src/core/plan/dependency/common'
 import { getAllElements } from '../../common/elements'
 
 describe('addNodeDependencies', () => {

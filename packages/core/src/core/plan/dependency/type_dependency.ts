@@ -15,12 +15,10 @@
 */
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { Field, InstanceElement, isType, getChangeElement } from '@salto-io/adapter-api'
 import {
-  ChangeEntry, isFieldChange, isInstanceChange, DependencyChanger, DependencyChange,
-  addReferenceDependency, isDependentAction,
-} from './common'
-
+  Field, InstanceElement, isType, getChangeElement, ChangeEntry, isFieldChange, isInstanceChange,
+  DependencyChanger, DependencyChange, addReferenceDependency, isDependentAction,
+} from '@salto-io/adapter-api'
 
 type FieldOrInstanceChange = ChangeEntry<Field | InstanceElement>
 const isFieldOrInstanceChange = (entry: ChangeEntry): entry is FieldOrInstanceChange => (

@@ -15,11 +15,10 @@
 */
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { getChangeElement, Field } from '@salto-io/adapter-api'
 import {
-  DependencyChanger, isObjectTypeChange, ChangeEntry, DependencyChange, addParentDependency,
-  isFieldChange, isDependentAction,
-} from './common'
+  getChangeElement, Field, DependencyChanger, isObjectTypeChange, ChangeEntry, DependencyChange,
+  addParentDependency, isFieldChange, isDependentAction,
+} from '@salto-io/adapter-api'
 
 export const addFieldToObjectDependency: DependencyChanger = async changes => {
   const objectChanges = collections.iterable.groupBy(

@@ -13,13 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Change, ChangeDataType, Field, isField, getChangeElement, InstanceElement, isInstanceElement,
-  ObjectType, isObjectType,
-} from '@salto-io/adapter-api'
-import { NodeId } from '@salto-io/dag'
+import { Change, ChangeDataType, getChangeElement } from './change'
+import { Field, InstanceElement, ObjectType } from './elements'
+import { isField, isInstanceElement, isObjectType } from './utils'
 
-export type ChangeId = NodeId
+export type ChangeId = string | number
 type Dependency = {
   source: ChangeId
   target: ChangeId
@@ -34,6 +32,7 @@ export type DependencyChanger = (
   changes: ReadonlyMap<ChangeId, Change>, dependencies: ReadonlyMap<ChangeId, ReadonlySet<ChangeId>>
 ) => Promise<Iterable<DependencyChange>>
 
+// Utility functions
 export const dependencyChange = (
   action: DependencyChange['action'], source: ChangeId, target: ChangeId
 ): DependencyChange => ({ action, dependency: { source, target } })
@@ -46,9 +45,9 @@ export const isDependentAction = (
 
 // Reference dependency means source must be added after target and removed before target
 export const addReferenceDependency = (
-  action: Change['action'], src: ChangeId, target: ChangeId,
+  targetAction: Change['action'], src: ChangeId, target: ChangeId,
 ): DependencyChange => (
-  action === 'add' ? dependencyChange('add', src, target) : dependencyChange('add', target, src)
+  targetAction === 'add' ? dependencyChange('add', src, target) : dependencyChange('add', target, src)
 )
 
 // Parent dependency means the source must be added after the target but the source cannot be

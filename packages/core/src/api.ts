@@ -24,6 +24,8 @@ import {
   ElemIdGetter,
   InstanceElement,
   ObjectType,
+  getChangeElement,
+  DependencyChanger,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -48,6 +50,7 @@ import {
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
 import Credentials from './workspace/credentials'
+import { defaultDependencyChangers } from './core/plan/plan'
 
 const log = logger(module)
 
@@ -77,13 +80,37 @@ const getChangeValidators = (): Record<string, ChangeValidator> =>
     .fromPairs()
     .value()
 
+type AdapterDependencyChanger = (name: string, changer: DependencyChanger) => DependencyChanger
+const adapterDependencyChanger: AdapterDependencyChanger = (name, changer) => (changes, deps) => {
+  const filteredChanges = new Map(
+    wu(changes.entries())
+      .filter(([_id, change]) => getChangeElement(change).elemID.adapter === name)
+  )
+  const filteredDeps = new Map(
+    wu(deps.entries())
+      .filter(([id]) => filteredChanges.has(id))
+      .map(([id, idDeps]) => [id, new Set(wu(idDeps).filter(dep => filteredChanges.has(dep)))])
+  )
+  return changer(filteredChanges, filteredDeps)
+}
+
+const getDependencyChangers = (): ReadonlyArray<DependencyChanger> => (
+  Object.entries(adapterCreators)
+    .map(([name, { dependencyChanger }]) => ({ name, dependencyChanger }))
+    .filter(({ dependencyChanger }) => dependencyChanger !== undefined)
+    .map(({ name, dependencyChanger }) => (
+      adapterDependencyChanger(name, dependencyChanger as DependencyChanger)
+    ))
+)
+
 export const preview = async (
   workspace: Workspace,
   services: string[] = currentEnvConfig(workspace.config).services
 ): Promise<Plan> => getPlan(
   filterElementsByServices(await workspace.state.getAll(), services),
   filterElementsByServices(await workspace.elements, services),
-  getChangeValidators()
+  getChangeValidators(),
+  defaultDependencyChangers.concat(getDependencyChangers()),
 )
 
 const getAdapters = async (
@@ -111,11 +138,7 @@ export const deploy = async (
   force = false
 ): Promise<DeployResult> => {
   const changedElements: Element[] = []
-  const actionPlan = await getPlan(
-    filterElementsByServices(await workspace.state.getAll(), services),
-    filterElementsByServices(await workspace.elements, services),
-    getChangeValidators()
-  )
+  const actionPlan = await preview(workspace, services)
   if (force || await shouldDeploy(actionPlan)) {
     const adapters = await getAdapters(workspace.credentials, services)
 

@@ -13,13 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/elements'
-export * from './src/element_id'
-export * from './src/values'
-export * from './src/builtins'
-export * from './src/adapter'
-export * from './src/change_validators'
-export * from './src/dependency_changer'
-export * from './src/change'
-export * from './src/utils'
-export * from './src/error'
+import wu from 'wu'
+import { DependencyChanger } from '@salto-io/adapter-api'
+import { fieldsByCustomTab } from './dependency_changers/fields_by_custom_tab'
+
+const dependencyChangers: ReadonlyArray<DependencyChanger> = [
+  fieldsByCustomTab,
+]
+
+
+export const dependencyChanger: DependencyChanger = async (changes, dependencies) => (
+  wu.chain(...await Promise.all(
+    dependencyChangers.map(changer => changer(changes, dependencies))
+  ))
+)

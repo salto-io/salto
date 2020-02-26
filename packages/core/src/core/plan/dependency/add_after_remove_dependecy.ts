@@ -15,10 +15,9 @@
 */
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { getChangeElement } from '@salto-io/adapter-api'
 import {
-  DependencyChanger, ChangeEntry, DependencyChange, dependencyChange,
-} from './common'
+  getChangeElement, DependencyChanger, ChangeEntry, DependencyChange, dependencyChange,
+} from '@salto-io/adapter-api'
 
 export const addAfterRemoveDependency: DependencyChanger = async changes => {
   const removeChanges = collections.iterable.groupBy(

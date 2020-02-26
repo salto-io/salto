@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import {
   Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
-  ChangeValidator, Change, ChangeError, ElementMap,
+  ChangeValidator, Change, ChangeError, ElementMap, DependencyChanger,
 } from '@salto-io/adapter-api'
 import {
   DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph,
@@ -34,7 +34,6 @@ import {
   addReferencesDependency,
 } from './dependency'
 import { PlanTransformer, changeId } from './common'
-import { DependencyChanger } from './dependency/common'
 
 const log = logger(module)
 
@@ -138,7 +137,7 @@ const buildDiffGraph = (
   )
 )
 
-const defaultDependencyChangers = [
+export const defaultDependencyChangers = [
   addAfterRemoveDependency,
   addTypeDependency,
   addFieldToObjectDependency,

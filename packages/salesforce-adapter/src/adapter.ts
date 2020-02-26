@@ -58,6 +58,7 @@ import {
 } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { changeValidator } from './change_validator'
+import { dependencyChanger } from './dependency_changer'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -981,4 +982,5 @@ export const creator: AdapterCreator = {
   },
   configType,
   changeValidator,
+  dependencyChanger,
 }

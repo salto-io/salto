@@ -17,10 +17,11 @@ import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { ChangeDataType } from '@salto-io/adapter-api'
+import {
+  ChangeDataType, ChangeId, DependencyChange, DependencyChanger,
+} from '@salto-io/adapter-api'
 import { DataNodeMap, DiffNode } from '@salto-io/dag'
 import { PlanTransformer } from '../common'
-import { DependencyChanger, DependencyChange, ChangeId } from './common'
 
 const log = logger(module)
 

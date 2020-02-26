@@ -38,10 +38,9 @@ const installationIDFullPath = (): string => (
 )
 
 const telemetryToken = process.env.SALTO_TELEMETRY_TOKEN || ''
-const defaultTelemetryURL = process.env.SALTO_TELEMETRY_DEFAULT_URL || 'https://telemetry.salto.io'
 
 const getTelemetryURL = (): string => (
-  process.env.SALTO_TELEMETRY_URL || defaultTelemetryURL
+  process.env.SALTO_TELEMETRY_URL || 'https://telemetry.salto.io'
 )
 
 const getTelemetryEnabled = (): boolean => (

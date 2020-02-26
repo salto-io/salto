@@ -39,12 +39,12 @@ export type RequiredTags = {
 }
 
 type BaseTags = {
-  workspaceID?: string | number
+  workspaceID?: string
 }
 
-export type Tags = {
+export type Tags = BaseTags & {
   [name: string]: string | number | undefined
-} & BaseTags
+}
 
 export enum EVENT_TYPES {
   COUNTER = 'counter',

@@ -18,8 +18,8 @@ const _ = require('lodash')
 const fs = require('fs')
 const path = require('path')
 
+const packagesDir = `${__dirname}/packages`
 const packageConfigs = (() => {
-  const packagesDir = `${__dirname}/packages`
   const packageDir = package => './' + path.relative(__dirname, `${packagesDir}/${package}`)
   const packages = fs.readdirSync(packagesDir)
 
@@ -37,6 +37,13 @@ const collectCoverageFrom = _(packageConfigs)
   .orderBy(p => p.startsWith('!')) // "include" patterns first, then "exclude"
   .value()
 
+const coverageThreshold = Object.assign({},
+  ..._(packageConfigs)
+    .map((config, dir) => ({
+      [`${path.join(packagesDir, dir)}/`]: (config.coverageThreshold || {}).global || {}
+    })),
+)
+
 module.exports = Object.assign(
   {},
   require('./jest.base.config.js'),
@@ -45,6 +52,7 @@ module.exports = Object.assign(
     coverageDirectory: '<rootDir>/coverage/',
     collectCoverageFrom,
     cacheDirectory: '.jest_cache',
+    coverageThreshold,
   }
 )
 

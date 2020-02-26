@@ -14,20 +14,11 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
-import { types } from '@salto-io/lowerdash'
-import HubspotClient from './client/client'
 
-// Filter interface, filters will be activated upon adapter fetch, add, update and remove
+// Filter interface, filters will be activated upon adapter fetch
 // operations. The filter will be responsible for specific business logic.
-export type Filter = Partial<{
+export type OnFetchFilter = {
   onFetch(elements: Element[]): Promise<void>
-}>
+}
 
-export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
-
-export const filtersWith = <M extends keyof Filter>(
-  m: M,
-  filters: Filter[],
-): FilterWith<M>[] => types.filterHasMember<Filter, M>(m, filters)
-
-export type FilterCreator = (opts: { client: HubspotClient }) => Filter
+export type FilterCreator = () => OnFetchFilter

@@ -25,7 +25,7 @@ import {
   Types, createHubspotInstanceElement, createHubspotMetadataFromInstanceElement,
   transformAfterUpdateOrAdd,
 } from './transformers/transformer'
-import { FilterCreator, Filter, FilterWith, filtersWith } from './filter'
+import { FilterCreator } from './filter'
 import formFieldFilter from './filters/form_field'
 import instanceTranformFilter from './filters/instance_transform'
 
@@ -140,14 +140,9 @@ export default class HubspotAdapter {
     return transformAfterUpdateOrAdd(after, resp)
   }
 
-  private filtersWith<M extends keyof Filter>(m: M): FilterWith<M>[] {
-    const allFilters = this.filtersCreators.map(f => f({ client: this.client }))
-    return filtersWith(m, allFilters)
-  }
-
   private async runFiltersOnFetch(elements: Element[]): Promise<void> {
     // Fetch filters order is important so they should run one after the other
-    return this.filtersWith('onFetch').reduce(
+    return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
       (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
       Promise.resolve(),
     )

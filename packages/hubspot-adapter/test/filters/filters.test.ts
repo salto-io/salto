@@ -14,17 +14,17 @@
 * limitations under the License.
 */
 import HubspotAdapter from '../../src/adapter'
-import { FilterWith } from '../../src/filter'
 import mockAdapter from '../mock'
 import { HubspotMetadata } from '../../src/client/types'
 import HubspotClient from '../../src/client/client'
+import { OnFetchFilter } from '../../src/filter'
 
 describe('HubspotAdapter filters', () => {
   let adapter: HubspotAdapter
   let client: HubspotClient
 
   describe('when filter methods are implemented', () => {
-    let filter: FilterWith<'onFetch'>
+    let filter: OnFetchFilter
 
     beforeEach(() => {
       filter = {

@@ -14,18 +14,21 @@
 * limitations under the License.
 */
 import {
-  Change, Element, ElemID, InstanceElement, isInstanceElement, Value,
+  Change, Element, ElemID, InstanceElement, isInstanceElement, Value, isObjectType,
 } from '@salto-io/adapter-api'
 import { SaveResult, UpsertResult } from 'jsforce'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
   API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, WORKFLOW_METADATA_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, toMetadataInfo } from '../transformers/transformer'
+import { apiName, toMetadataInfo, metadataType } from '../transformers/transformer'
 
 const { makeArray } = collections.array
+
+const log = logger(module)
 
 export const WORKFLOW_ALERTS_FIELD = 'alerts'
 export const WORKFLOW_FIELD_UPDATES_FIELD = 'fieldUpdates'
@@ -35,7 +38,7 @@ export const WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD = 'knowledgePublishes'
 export const WORKFLOW_TASKS_FIELD = 'tasks'
 export const WORKFLOW_RULES_FIELD = 'rules'
 
-const WORKFLOW_FIELD_TO_TYPE = {
+export const WORKFLOW_FIELD_TO_TYPE: Record<string, string> = {
   [WORKFLOW_ALERTS_FIELD]: 'WorkflowAlert',
   [WORKFLOW_FIELD_UPDATES_FIELD]: 'WorkflowFieldUpdate',
   [WORKFLOW_FLOW_ACTIONS_FIELD]: 'WorkflowFlowAction',
@@ -55,23 +58,36 @@ const filterCreator: FilterCreator = ({ client }) => ({
    * the workflow full_name (e.g. MyWorkflowAlert -> Lead.MyWorkflowAlert)
    */
   onFetch: async (elements: Element[]) => {
-    const modifyInnerTypesFullName = (workflowInstance: InstanceElement): void =>
-      Object.keys(WORKFLOW_FIELD_TO_TYPE)
-        .forEach(fieldName => {
-          const fieldValues = workflowInstance.value[fieldName]
-          makeArray(fieldValues)
-            .forEach(innerValue => {
-              innerValue[INSTANCE_FULL_NAME_FIELD] = [apiName(workflowInstance),
-                innerValue[INSTANCE_FULL_NAME_FIELD]].join(API_NAME_SEPERATOR)
-            })
-        })
+    const splitWorkflow = (workflowInstance: InstanceElement): InstanceElement[] => _.flatten(
+      Object.keys(WORKFLOW_FIELD_TO_TYPE).map(fieldName => {
+        const objType = elements.filter(isObjectType)
+          .find(e => metadataType(e) === WORKFLOW_FIELD_TO_TYPE[fieldName])
+        if (_.isUndefined(objType)) {
+          log.warn('failed to find object type for %s', WORKFLOW_FIELD_TO_TYPE[fieldName])
+          return []
+        }
+        const splitted = makeArray(workflowInstance.value[fieldName])
+          .map(innerValue => {
+            const instanceName = innerValue[INSTANCE_FULL_NAME_FIELD]
+            const fullApiName = [apiName(workflowInstance), instanceName].join(API_NAME_SEPERATOR)
+            innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName
+            return new InstanceElement(instanceName, objType, innerValue)
+          })
+        delete workflowInstance.value[fieldName]
+        return splitted
+      })
+    )
 
+    const newInstances: InstanceElement[] = []
     elements
       .filter(isInstanceElement)
       .filter(isWorkflowInstance)
       .forEach(wfInst => {
-        modifyInnerTypesFullName(wfInst)
+        // we use here "forEach" and not for as we are modifying the wsInstance and create
+        // new instances
+        newInstances.push(...splitWorkflow(wfInst))
       })
+    elements.push(...newInstances)
   },
 
   /**

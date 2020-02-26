@@ -42,6 +42,7 @@ import {
   buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference,
 } from './utils'
 import { convertList } from './convert_lists'
+import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -481,10 +482,15 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
 
   const setDependingInstancePath = (instance: InstanceElement, customObject: ObjectType):
     void => {
+    const typeNameToRelativePath = (typeName: string): string =>
+      ((['Workflow', ...Object.values(WORKFLOW_FIELD_TO_TYPE)].includes(typeName))
+        ? `Workflow/${typeName}`
+        : typeName)
+
     if (customObject.path) {
       instance.path = [
         ...customObject.path.slice(0, -1),
-        instance.elemID.typeName === 'Workflow' ? 'WorkflowRules' : instance.elemID.typeName,
+        typeNameToRelativePath(instance.elemID.typeName),
         ...(apiNameParts(instance).length > 1 ? [instance.elemID.name] : []),
       ]
     }

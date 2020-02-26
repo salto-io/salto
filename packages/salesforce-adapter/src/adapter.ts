@@ -215,6 +215,8 @@ export default class SalesforceAdapter {
     filterCreators = [
       missingFieldsFilter,
       settingsFilter,
+      // should run before customObjectsFilter
+      workflowFilter,
       // customObjectsFilter depends on missingFieldsFilter and settingsFilter
       customObjectsFilter,
       removeFieldsFilter,
@@ -225,7 +227,6 @@ export default class SalesforceAdapter {
       lookupFiltersFilter,
       animationRulesFilter,
       samlInitMethodFilter,
-      workflowFilter,
       topicsForObjectsFilter,
       valueSetFilter,
       globalValueSetFilter,

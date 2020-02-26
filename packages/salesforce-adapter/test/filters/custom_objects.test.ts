@@ -1161,7 +1161,7 @@ describe('Custom Objects filter', () => {
 
       it('should set workflow instance path correctly', async () => {
         expect(workflowInstance.path)
-          .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'WorkflowRules'])
+          .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', 'Workflow/Workflow'])
       })
 
       it('should add PARENT annotation to workflow instance', async () => {

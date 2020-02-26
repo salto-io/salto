@@ -41,5 +41,11 @@ describe('stack', () => {
           .toMatch(/node_modules\/jest/)
       })
     })
+
+    describe('when the specified partialFilename is not in the stack', () => {
+      it('should return the caller filename', () => {
+        expect(extractCallerFilename(new Error('hello'), 'NOSUCHFILE')).toBeUndefined()
+      })
+    })
   })
 })

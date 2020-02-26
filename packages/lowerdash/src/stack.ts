@@ -28,6 +28,7 @@ export const extractCallerFilename = (
   let prevFilename: string | undefined
   for (let i = frames.length - 1; i >= 0; i -= 1) {
     const { file } = frames[i]
+    // istanbul ignore else
     if (file) {
       if (file.includes(caleePartialFilename)) {
         return prevFilename

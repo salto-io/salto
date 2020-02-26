@@ -170,8 +170,10 @@ export const bpCase = (name?: string): string => (
   name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
 )
 
+type PrimitiveField = Field & {type: PrimitiveType}
+
 export type TransformPrimitiveFunc = (
-  val: PrimitiveValue, path?: ElemID, type?: Field)
+  val: PrimitiveValue, path?: ElemID, type?: PrimitiveField)
   => PrimitiveValue | ReferenceExpression | undefined
 
 export type TransformReferenceFunc = (
@@ -212,7 +214,7 @@ export const transformValues = (
     }
 
     if (isPrimitiveType(field.type)) {
-      return transformPrimitives(value, keyPath, field)
+      return transformPrimitives(value, keyPath, field as PrimitiveField)
     }
     if (isObjectType(field.type)) {
       const transformed = _.omitBy(

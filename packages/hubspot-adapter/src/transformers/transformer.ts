@@ -1795,8 +1795,8 @@ const transformPrimitive: TransformPrimitiveFunc = (val, _path, field) => {
   if (val === '' || val === null) {
     return undefined
   }
-  const fieldType = field?.type
-  if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
+
+  if (field?.type.isEqual(BuiltinTypes.JSON)) {
     return JSON.stringify(val)
   }
   return val

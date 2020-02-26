@@ -953,10 +953,6 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 }
 
 export const transformPrimitive: TransformPrimitiveFunc = (val, path, field) => {
-  const fieldType = field?.type
-  if (!isPrimitiveType(fieldType)) {
-    return val
-  }
   // We sometimes get empty strings that we want to filter out
   if (val === '') {
     return undefined
@@ -973,7 +969,7 @@ export const transformPrimitive: TransformPrimitiveFunc = (val, path, field) => 
     const convertFunc = convertXsdTypeFuncMap[_.get(val, ['$', 'xsi:type'])] || (v => v)
     return transformPrimitive(convertFunc(_.get(val, '_')), path, field)
   }
-  switch (fieldType.primitive) {
+  switch (field?.type.primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(val)
     case PrimitiveTypes.BOOLEAN:

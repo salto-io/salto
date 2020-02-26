@@ -328,7 +328,7 @@ export const CONTACTLISTIDS_FIELDS = {
 }
 
 export const contactPropertyTypeValues = ['string', 'number', 'date', 'datetime', 'enumeration', 'bool', 'phone_number']
-export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select',
+export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file', 'number', 'select', 'calculation_equation',
   'radio', 'checkbox', 'booleancheckbox', 'calculation_score', 'phonenumber', 'calculation_read_time']
 
 export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)

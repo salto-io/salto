@@ -25,7 +25,7 @@ import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
 import {
   transformValues, resolvePath, TransformPrimitiveFunc, isPrimitiveType,
-  TransformReferenceFunc, restoreReferences, transformReferences,
+  TransformReferenceFunc, restoreReferences, resolveReferences,
   bpCase,
 } from '../src/utils'
 
@@ -491,7 +491,7 @@ describe('Test utils.ts', () => {
       const sourceElementCopy = _.cloneDeep(sourceElement)
 
 
-      const resolvedElement = transformReferences(sourceElement, getName)
+      const resolvedElement = resolveReferences(sourceElement, getName)
 
       it('should not modify the source element', () => {
         expect(sourceElement).toEqual(sourceElementCopy)
@@ -532,7 +532,7 @@ describe('Test utils.ts', () => {
     })
 
     describe('transformReferences on instance', () => {
-      const resolvedInstance = transformReferences(instance, getName)
+      const resolvedInstance = resolveReferences(instance, getName)
       it('should transform instanceElement', () => {
         expect(resolvedInstance.value.name).toEqual(instance.value.name)
         expect(resolvedInstance.value.refValue).toEqual(regValue)

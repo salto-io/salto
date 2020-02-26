@@ -17,8 +17,11 @@ import wu from 'wu'
 import _ from 'lodash'
 import {
   TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType, TypeMap,
+  FieldMap,
 } from './elements'
-import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value } from './values'
+import {
+  Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value,
+} from './values'
 import { ElemID } from './element_id'
 
 interface AnnoRef {
@@ -287,26 +290,34 @@ export const transformElement = <T extends Element>(
   }
 
   if (isObjectType(element)) {
+    const clonedFields: FieldMap = {}
+
+    Object.entries(element.fields).forEach(([key, field]: [string, Field]) => {
+      clonedFields[key] = new Field(
+        field.parentID,
+        field.name,
+        field.type,
+        transformValues({
+          values: field.annotations,
+          type: field.annotationTypes,
+          transformPrimitives,
+          transformReferences: transformReference,
+          strict: false,
+          path: field.elemID,
+        }) || {},
+        field.isList,
+      )
+    })
+
     newElement = new ObjectType({
       elemID: element.elemID,
-      fields: element.fields,
+      fields: clonedFields,
       annotationTypes: element.annotationTypes,
       annotations: transformedAnnotations,
       path: element.path,
       isSettings: element.isSettings,
     })
 
-    _((newElement as ObjectType).fields)
-      .forEach(f => {
-        f.annotations = transformValues({
-          values: f.annotations,
-          type: f.annotationTypes,
-          transformPrimitives,
-          transformReferences: transformReference,
-          strict: false,
-          path: f.elemID,
-        }) || {}
-      })
     return newElement as T
   }
 
@@ -336,7 +347,7 @@ export const transformElement = <T extends Element>(
   throw Error('received unsupported (subtype) Element')
 }
 
-export const transformReferences = <T extends Element>(
+export const resolveReferences = <T extends Element>(
   element: T,
   getLookUpName: (v: Value) => Value
 ): T => {
@@ -345,7 +356,7 @@ export const transformReferences = <T extends Element>(
     return value
   }
   return transformElement({
-    element: element.clone() as T,
+    element,
     transformReference: referenceReplacer,
   })
 }
@@ -364,7 +375,7 @@ export const restoreReferences = <T extends Element>(
   }
 
   transformElement({
-    element: source.clone() as T,
+    element: source,
     transformReference: createPathMapCallback,
   })
 

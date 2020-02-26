@@ -180,8 +180,8 @@ export type TransformPrimitiveFunc = (
   => PrimitiveValue | ReferenceExpression | undefined
 
 export type TransformReferenceFunc = (
-  val: Expression, path?: ElemID
-) => Expression
+  val: ReferenceExpression, path?: ElemID
+) => Value | ReferenceExpression
 
 export const transformValues = (
   {
@@ -201,7 +201,7 @@ export const transformValues = (
   }
 ): Values | undefined => {
   const transformValue = (value: Value, keyPath?: ElemID, field?: Field): Value => {
-    if (isExpression(value)) {
+    if (isReferenceExpression(value)) {
       return transformReferences(value, keyPath)
     }
 
@@ -351,10 +351,8 @@ export const resolveReferences = <T extends Element>(
   element: T,
   getLookUpName: (v: Value) => Value
 ): T => {
-  const referenceReplacer = (value: Value): Value => {
-    if (isReferenceExpression(value)) return getLookUpName(value.value)
-    return value
-  }
+  const referenceReplacer: TransformReferenceFunc = ref => getLookUpName(ref.value)
+
   return transformElement({
     element,
     transformReference: referenceReplacer,

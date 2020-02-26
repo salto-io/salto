@@ -1105,11 +1105,12 @@ export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Va
   return results.map(res => new InstanceElement(res.Id, type, res))
 }
 
-export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
+export const createInstanceElementFromValues = (values: Values, type: ObjectType,
   namespacePrefix?: string): InstanceElement => {
+  const fullName = values[INSTANCE_FULL_NAME_FIELD]
   const getPackagePath = (): string[] => {
     if (namespacePrefix) {
-      if (namespacePrefix === 'standard' || mdInfo.fullName === namespacePrefix) {
+      if (namespacePrefix === 'standard' || fullName === namespacePrefix) {
         // InstalledPackage records should be under records and not within their package
         // Some CustomApplications have 'standard' namespace although they are not part of a package
         return [SALESFORCE]
@@ -1132,7 +1133,7 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
     }
 
     return {
-      [INSTANCE_FULL_NAME_FIELD]: mdInfo.fullName,
+      [INSTANCE_FULL_NAME_FIELD]: fullName,
       [ADAPTER]: SALESFORCE,
       [OBJECT_SERVICE_ID]: toServiceIdsString(typeServiceIds()),
     }
@@ -1140,17 +1141,20 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
 
   const typeName = type.elemID.name
   const name = (): string => (
-    Types.getElemId(bpCase(mdInfo.fullName), true, instanceServiceIds()).name
+    Types.getElemId(bpCase(fullName), true, instanceServiceIds()).name
   )
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : name(),
     type,
-    fromMetadataInfo(mdInfo),
+    values,
     [...getPackagePath(), RECORDS_PATH,
-      type.isSettings ? SETTINGS_PATH : typeName, bpCase(mdInfo.fullName)],
+      type.isSettings ? SETTINGS_PATH : typeName, bpCase(fullName)],
   )
 }
 
+export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
+  namespacePrefix?: string): InstanceElement =>
+  createInstanceElementFromValues(fromMetadataInfo(mdInfo), type, namespacePrefix)
 
 export const createMetadataTypeElements = async (
   objectName: string,

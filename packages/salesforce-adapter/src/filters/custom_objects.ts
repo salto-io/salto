@@ -470,7 +470,9 @@ const removeIrrelevantElements = (elements: Element[]): void => {
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
 const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE_METADATA_TYPE,
   QUICK_ACTION_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
-  ASSIGNMENT_RULES_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE])
+  ASSIGNMENT_RULES_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
+  ...Object.values(WORKFLOW_FIELD_TO_TYPE),
+])
 
 const hasCustomObjectParent = (instance: InstanceElement): boolean =>
   dependentMetadataTypes.has(metadataType(instance))
@@ -482,15 +484,10 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
 
   const setDependingInstancePath = (instance: InstanceElement, customObject: ObjectType):
     void => {
-    const typeNameToRelativePath = (typeName: string): string =>
-      ((['Workflow', ...Object.values(WORKFLOW_FIELD_TO_TYPE)].includes(typeName))
-        ? `Workflow/${typeName}`
-        : typeName)
-
     if (customObject.path) {
       instance.path = [
         ...customObject.path.slice(0, -1),
-        typeNameToRelativePath(instance.elemID.typeName),
+        instance.elemID.typeName,
         ...(apiNameParts(instance).length > 1 ? [instance.elemID.name] : []),
       ]
     }

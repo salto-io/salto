@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import {
-  Change, Element, ElemID, InstanceElement, isInstanceElement, Value, isObjectType,
+  Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
+  ObjectType, BuiltinTypes,
 } from '@salto-io/adapter-api'
-import { SaveResult, UpsertResult } from 'jsforce'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -24,7 +24,9 @@ import {
   API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, WORKFLOW_METADATA_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, toMetadataInfo, metadataType } from '../transformers/transformer'
+import {
+  apiName, metadataType, createInstanceElementFromValues,
+} from '../transformers/transformer'
 
 const { makeArray } = collections.array
 
@@ -49,10 +51,11 @@ export const WORKFLOW_FIELD_TO_TYPE: Record<string, string> = {
 }
 
 export const WORKFLOW_TYPE_ID = new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)
+export const isWorkflowType = (type: ObjectType): boolean => type.elemID.isEqual(WORKFLOW_TYPE_ID)
 export const isWorkflowInstance = (instance: InstanceElement): boolean =>
-  instance.type.elemID.isEqual(WORKFLOW_TYPE_ID)
+  isWorkflowType(instance.type)
 
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = () => ({
   /**
    * Upon fetch, modify the full_names of the inner types of the workflow to contain
    * the workflow full_name (e.g. MyWorkflowAlert -> Lead.MyWorkflowAlert)
@@ -71,12 +74,24 @@ const filterCreator: FilterCreator = ({ client }) => ({
             const instanceName = innerValue[INSTANCE_FULL_NAME_FIELD]
             const fullApiName = [apiName(workflowInstance), instanceName].join(API_NAME_SEPERATOR)
             innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName
-            return new InstanceElement(instanceName, objType, innerValue)
+            return createInstanceElementFromValues(innerValue, objType)
           })
-        delete workflowInstance.value[fieldName]
+        workflowInstance.value[fieldName] = splitted.map(s => new ReferenceExpression(s.elemID))
         return splitted
       })
     )
+
+    const changeTypeToRef = (type?: ObjectType): void => {
+      if (_.isUndefined(type)) {
+        return
+      }
+      Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(fieldName => {
+        const field = type.fields[fieldName]
+        if (!_.isUndefined(field)) {
+          field.type = BuiltinTypes.STRING
+        }
+      })
+    }
 
     const newInstances: InstanceElement[] = []
     elements
@@ -88,79 +103,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
         newInstances.push(...splitWorkflow(wfInst))
       })
     elements.push(...newInstances)
-  },
-
-  /**
-   * Upon update, create/update/delete each inner type of the workflow separately
-   */
-  onUpdate: async (before: Element, after: Element, _changes: ReadonlyArray<Change>):
-    Promise<(SaveResult| UpsertResult)[]> => {
-    if (!(isInstanceElement(before) && isInstanceElement(after) && isWorkflowInstance(after))) {
-      return []
-    }
-
-    const handleWorkflowChanges = async (fieldName: string, typeName: string):
-      Promise<(SaveResult | UpsertResult)[][]> => {
-      const getFullNameToFieldValue = (inst: InstanceElement): Record<string, Value> =>
-        _(makeArray(inst.value[fieldName]))
-          .map(val => [val[INSTANCE_FULL_NAME_FIELD], val])
-          .fromPairs()
-          .value()
-
-      const nameToBeforeVal = getFullNameToFieldValue(before)
-      const nameToAfterVal = getFullNameToFieldValue(after)
-      if (_.isEqual(nameToBeforeVal, nameToAfterVal)) {
-        return Promise.resolve([])
-      }
-      return Promise.all([
-        client.upsert(typeName,
-          Object.entries(nameToAfterVal)
-            .filter(([fullName, _val]) => _.isUndefined(nameToBeforeVal[fullName]))
-            .map(([fullName, val]) => toMetadataInfo(fullName, val))),
-        client.update(typeName,
-          Object.entries(nameToAfterVal)
-            .filter(([fullName, val]) => nameToBeforeVal[fullName]
-              && !_.isEqual(val, nameToBeforeVal[fullName]))
-            .map(([fullName, val]) => toMetadataInfo(fullName, val))),
-        client.delete(typeName,
-          Object.keys(nameToBeforeVal)
-            .filter(fullName => _.isUndefined(nameToAfterVal[fullName]))),
-      ])
-    }
-
-    return _.flatten(_.flatten((await Promise.all(
-      Object.entries(WORKFLOW_FIELD_TO_TYPE)
-        .map(([name, type]) => handleWorkflowChanges(name, type))
-    ))))
-  },
-
-  /**
-   * Upon add, create each inner type of the workflow separately
-   */
-  onAdd: async (after: Element): Promise<SaveResult[]> => {
-    if (!(isInstanceElement(after) && isWorkflowInstance(after))) {
-      return []
-    }
-    const afterWorkflowInstance = after as InstanceElement
-    return _.flatten(await Promise.all(Object.entries(WORKFLOW_FIELD_TO_TYPE)
-      .map(([name, type]) =>
-        client.upsert(type,
-          makeArray(afterWorkflowInstance.value[name])
-            .map(val => toMetadataInfo(val[INSTANCE_FULL_NAME_FIELD], val))))))
-  },
-
-  /**
-   * Upon remove, delete each inner type of the workflow separately
-   */
-  onRemove: async (before: Element): Promise<SaveResult[]> => {
-    if (!(isInstanceElement(before) && isWorkflowInstance(before))) {
-      return []
-    }
-    return _.flatten(await Promise.all(Object.entries(WORKFLOW_FIELD_TO_TYPE)
-      .map(([name, type]) =>
-        client.delete(type,
-          makeArray(before.value[name])
-            .map(val => val[INSTANCE_FULL_NAME_FIELD])))))
+    changeTypeToRef(elements.filter(isObjectType).find(isWorkflowType))
   },
 })
 

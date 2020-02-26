@@ -38,6 +38,7 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'ProfileFieldLevelSecurity', 'field', 'field'), CUSTOM_FIELD],
   [new ElemID(SALESFORCE, 'ProfileObjectPermissions', 'field', 'object'), CUSTOM_OBJECT],
   [new ElemID(SALESFORCE, 'FlowActionCall', 'field', 'actionName'), 'WorkflowAlert'],
+  [new ElemID(SALESFORCE, 'WorkflowAlert', 'field', 'template'), 'EmailTemplate'],
 ]
 
 export const fieldToTypeMapping = new Map(

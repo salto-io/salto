@@ -14,17 +14,14 @@
 * limitations under the License.
 */
 import path from 'path'
+import { stack } from '@salto-io/lowerdash'
 import { safe as safeColors } from './colors'
 import quickHash, { MIN_HASH, MAX_HASH } from './quickhash'
-// import {  } from './common.js'
 
 // Partial of ES6 Module
 export type LoggingModule = {
-  id: string
+  id: string | number // number when using webpack: https://webpack.js.org/api/module-variables/
 }
-
-export const isLoggingModule = (o: unknown): o is LoggingModule => typeof o === 'object'
-  && Object.prototype.hasOwnProperty.call(o, 'id')
 
 export type Namespace = string
 
@@ -60,17 +57,39 @@ export const toHexColor = (
   hashToNamespaceColorIndex(quickHash(namespace))
 ]
 
-const fromId = (
-  id: string
-): Namespace => path.relative(MONOREPO_PACKAGES_DIRNAME, id)
+const fromFilename = (
+  filename: string
+): Namespace => path.relative(MONOREPO_PACKAGES_DIRNAME, filename)
   .replace(/dist\/((src)\/)?/, '')
   .replace(/\.[^.]+$/, '') // remove extension
   .replace(/\/{2}/g, '/') // normalize double slashes to single
 
-export const normalizeNamespaceOrModule = (
+export type NamespaceNormalizer = (
   namespace: NamespaceOrModule,
-): Namespace => (
-  isLoggingModule(namespace)
-    ? fromId(namespace.id)
-    : namespace
-)
+) => Namespace
+
+export const namespaceNormalizer = (
+  lastLibraryFilename: string
+): NamespaceNormalizer => namespaceOrModule => {
+  if (typeof namespaceOrModule === 'string') {
+    return namespaceOrModule // it's an explicit namespace - best case!
+  }
+
+  const { id } = namespaceOrModule
+
+  if (typeof id === 'string') {
+    // id is the filename
+    return fromFilename(id)
+  }
+
+  // id is an arbitrary number by webpack, can't use it.
+  // try to extract the caller filename instead.
+  const callerFilename = stack.extractCallerFilename(new Error(), lastLibraryFilename)
+
+  if (callerFilename !== undefined) {
+    return fromFilename(callerFilename)
+  }
+
+  // last resort - not very meaningful
+  return String(id)
+}

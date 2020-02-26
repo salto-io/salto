@@ -13,28 +13,49 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import _ from 'lodash'
 
-export const asyncPartition = async <T>(
-  arr: T[],
+export const partition = async <T>(
+  iterable: Iterable<T>,
   partitioner: (item: T) => Promise<boolean>
 ): Promise<[T[], T[]]> => {
-  const truthfull = []
-  const nonThruthfull = []
-  // eslint-disable-next-line no-restricted-syntax
-  for (const item of arr) {
-    // eslint-disable-next-line no-await-in-loop
-    if (await partitioner(item)) {
-      truthfull.push(item)
-    } else {
-      nonThruthfull.push(item)
+  const i = iterable[Symbol.iterator]()
+  const truthfull: T[] = []
+  const nonThruthfull: T[] = []
+  const next = async (): Promise<[T[], T[]]> => {
+    const { done, value } = i.next()
+    if (done) {
+      return [truthfull, nonThruthfull]
     }
+    const resultArr = await partitioner(value) ? truthfull : nonThruthfull
+    resultArr.push(value)
+    return next()
   }
-  return [truthfull, nonThruthfull]
+
+  return next()
 }
 
-export const promiseAllChained = <T>(funcs: (() => Promise<T>)[], chunkSize = 1): Promise<T[]> =>
-  _.chunk(funcs, chunkSize).reduce<Promise<T[]>>((prevPromise, chunk) =>
-    prevPromise.then(prev => Promise.all(chunk.map(f => f()))
-      .then(chunkRes => [...prev, ...chunkRes])),
-  Promise.resolve([]))
+export const series = <T>(promises: Iterable<() => Promise<T>>): Promise<T[]> => {
+  const i = promises[Symbol.iterator]()
+  const result: T[] = []
+  const next = async (): Promise<T[]> => {
+    const { done, value } = i.next()
+    if (done) {
+      return result
+    }
+    result.push(await value())
+    return next()
+  }
+  return next()
+}
+
+export const chunkSeries = async <T>(
+  promises: Iterable<() => Promise<T>>, maxConcurrency: number
+): Promise<T[]> => _.flatten(
+  await series(
+    wu(promises)
+      .chunk(maxConcurrency)
+      .map(chunk => () => Promise.all(chunk.map(f => f())))
+  )
+)

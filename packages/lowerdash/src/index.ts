@@ -22,6 +22,7 @@ import * as strings from './strings'
 import * as functions from './functions'
 import * as retry from './retry'
 import * as validators from './validators'
+import * as stack from './stack'
 
 export {
   collections,
@@ -33,4 +34,5 @@ export {
   functions,
   retry,
   validators,
+  stack,
 }

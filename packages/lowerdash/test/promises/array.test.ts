@@ -13,26 +13,86 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { promiseAllChained } from '../../src/promises/array'
+import { promises, collections } from '../../src'
+import { MaxCounter, maxCounter } from '../max_counter'
 
-describe('promiseAllChained', () => {
-  it('should run in chunks', async () => {
-    const order: string[] = []
-    const chunkSize = 7
-    const func = (n: number): () => Promise<number> => () => {
-      order.push(`start-${n}`)
-      return new Promise(resolve => setTimeout(resolve, 0)).then(() => {
-        order.push(`end-${n}`)
-        return n
+const { arrayOf } = collections.array
+
+describe('array', () => {
+  describe('series and chunkSeries', () => {
+    const NUM_PROMISES = 5
+    let input: (() => Promise<number>)[]
+    let output: number[]
+    let concurrencyCounter: MaxCounter
+
+    beforeEach(() => {
+      concurrencyCounter = maxCounter()
+      input = arrayOf(NUM_PROMISES, i => () => new Promise<number>(resolve => {
+        concurrencyCounter.increment()
+        setTimeout(() => {
+          resolve(i)
+          concurrencyCounter.decrement()
+        }, 0)
+      }))
+    })
+
+    describe('series', () => {
+      const { series } = promises.array
+      beforeEach(async () => {
+        output = await series(input)
       })
-    }
-    const numbers = [...Array(100).keys()]
 
-    await promiseAllChained(numbers.map(n => func(n)), chunkSize)
+      it('resolves all promises', async () => {
+        expect(output).toEqual(arrayOf(NUM_PROMISES, i => i))
+      })
 
-    const expectedResult = _.flatten(_.chunk(numbers, chunkSize)
-      .map(chunk => [...chunk.map(n => `start-${n}`), ...chunk.map(n => `end-${n}`)]))
-    expect(order).toEqual(expectedResult)
+      it('creates all promises in series', async () => {
+        expect(concurrencyCounter.max).toBe(1)
+      })
+    })
+
+    describe('counter example: Promise.all', () => {
+      beforeEach(async () => {
+        output = await Promise.all(input.map(f => f()))
+      })
+
+      it('creates all promises in parallel', async () => {
+        expect(concurrencyCounter.max).toBe(NUM_PROMISES)
+      })
+    })
+
+    describe('chunkSeries', () => {
+      const { chunkSeries } = promises.array
+      const MAX_CONCURRENCY = 2
+
+      beforeEach(async () => {
+        output = await chunkSeries(input, MAX_CONCURRENCY)
+      })
+
+      it('resolves all promises', async () => {
+        expect(output).toEqual(arrayOf(NUM_PROMISES, i => i))
+      })
+
+      it('creates all promises with the specified maxConcurrency', async () => {
+        expect(concurrencyCounter.max).toBe(MAX_CONCURRENCY)
+      })
+    })
+  })
+
+  describe('partition', () => {
+    const { partition } = promises.array
+    const predicate = async (v: number): Promise<boolean> => v % 2 === 0
+
+    describe('when given an empty input iterable', () => {
+      it('returns an empty result', async () => {
+        expect(await partition<number>([], predicate)).toEqual([[], []])
+      })
+    })
+
+    describe('when given a non-empty input iterable', () => {
+      it('returns a correct result', async () => {
+        expect(await partition([1, 2, 3, 4], predicate)).toEqual([[2, 4], [1, 3]])
+      })
+    })
   })
 })

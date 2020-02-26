@@ -20,11 +20,11 @@ import { promises } from '@salto-io/lowerdash'
 import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents } from '../../file'
 import { DirectoryStore, File } from '../dir_store'
 
-const { promiseAllChained } = promises.array
+const { chunkSeries } = promises.array
 
-const READ_RATE = 100
-const WRITE_RATE = 100
-const DELETE_RATE = 100
+const READ_CONCURRENCY = 100
+const WRITE_CONCURRENCY = 100
+const DELETE_CONCURRENCY = 100
 
 type FileMap = {
   [key: string]: File
@@ -110,13 +110,13 @@ export const localDirectoryStore = (
     },
 
     flush: async (): Promise<void> => {
-      await promiseAllChained(Object.values(updated).map(f => () => writeFile(f)), WRITE_RATE)
-      await promiseAllChained(deleted.map(f => () => deleteFile(f)), DELETE_RATE)
+      await chunkSeries(Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY)
+      await chunkSeries(deleted.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
       updated = {}
       deleted = []
     },
 
     getFiles: async (filenames: string[]): Promise<(File | undefined) []> =>
-      promiseAllChained(filenames.map(f => () => get(f)), READ_RATE),
+      chunkSeries(filenames.map(f => () => get(f)), READ_CONCURRENCY),
   }
 }

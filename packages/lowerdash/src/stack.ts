@@ -13,25 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const deepMerge = require('../../build_utils/deep_merge')
+import { parse as parseStack } from 'stacktrace-parser'
 
-module.exports = deepMerge(
-  require('../../jest.base.config.js'),
-  {
-    name: 'lowerdash',
-    displayName: 'lowerdash',
-    rootDir: `${__dirname}`,
-    collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
-    ],
-    coverageThreshold: {
-      global: {
-        branches: 100,
-        functions: 100,
-        lines: 100,
-        statements: 100,
-      },
-    },
+export const extractCallerFilename = (
+  error: Error,
+  caleePartialFilename: string
+): string | undefined => {
+  const { stack } = error
+  if (stack === undefined) {
+    return undefined
   }
-)
 
+  const frames = parseStack(stack)
+  let prevFilename: string | undefined
+  for (let i = frames.length - 1; i >= 0; i -= 1) {
+    const { file } = frames[i]
+    if (file) {
+      if (file.includes(caleePartialFilename)) {
+        return prevFilename
+      }
+      prevFilename = file
+    }
+  }
+  return undefined
+}

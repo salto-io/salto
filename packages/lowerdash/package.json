@@ -21,7 +21,7 @@
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
     "build": "yarn run lint && tsc",
-    "test": "jest --verbose=false --coverage=false",
+    "test": "jest --verbose=false",
     "clean": "rm -rf ./dist",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",
@@ -32,6 +32,7 @@
   },
   "dependencies": {
     "lodash": "^4.17.11",
+    "stacktrace-parser": "^0.1.9",
     "wu": "^2.1.0"
   },
   "devDependencies": {

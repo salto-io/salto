@@ -36,7 +36,7 @@ const createUpdateChanges = async (
   commonSource: ElementsSource,
   targetSource: ElementsSource
 ): Promise<DetailedChange[]> => {
-  const [nestedAdditions, otherChanges] = await promises.array.asyncPartition(
+  const [nestedAdditions, otherChanges] = await promises.array.partition(
     changes,
     async change => (change.action === 'add'
         && change.id.nestingLevel > 0
@@ -197,7 +197,7 @@ const partitionMergeableChanges = async (
   changes: DetailedChange[],
   commonSource: BlueprintsSource
 ): Promise<[DetailedChange[], DetailedChange[]]> => (
-  promises.array.asyncPartition(
+  promises.array.partition(
     changes,
     async change => {
       const { mergeableID } = getMergeableParentID(change.id)

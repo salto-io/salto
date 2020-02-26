@@ -18,6 +18,7 @@ import tmp from 'tmp-promise'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
 import { Config, mergeConfigs } from '../../src/internal/config'
+import { namespaceNormalizer } from '../../src/internal/namespace'
 import { loggerRepo, Logger, LoggerRepo } from '../../src/internal/logger'
 import { loggerRepo as winstonLoggerRepo } from '../../src/internal/winston'
 import '../matchers'
@@ -31,7 +32,9 @@ describe('winston based logger', () => {
   let repo: LoggerRepo
 
   const createRepo = (): LoggerRepo => loggerRepo(
-    winstonLoggerRepo({ consoleStream }, initialConfig), initialConfig,
+    winstonLoggerRepo({ consoleStream }, initialConfig),
+    namespaceNormalizer('test/internal/winston_logger.test'),
+    initialConfig,
   )
 
   const createLogger = (): Logger => {
@@ -284,6 +287,22 @@ describe('winston based logger', () => {
           })
         })
       })
+
+      describe('when it is set to null', () => {
+        describe('when the console does not have a getColorDepth function', () => {
+          beforeEach(async () => {
+            consoleStream.supportsColor = true
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            delete (consoleStream as any).getColorDepth
+            logger = createLogger()
+            await logLine()
+          })
+
+          it('should not colorize the line', () => {
+            expect(line).not.toContainColors()
+          })
+        })
+      })
     })
   })
 
@@ -303,6 +322,52 @@ describe('winston based logger', () => {
         it('should log the message correctly', () => {
           expect(line).toContain(`${level} ${NAMESPACE} hello { world: true }`)
         })
+      })
+    })
+  })
+
+  describe('time', () => {
+    beforeEach(() => {
+      initialConfig.minLevel = 'debug'
+      initialConfig.colorize = false
+      logger = createLogger()
+    })
+
+    describe('when a sync method is given', () => {
+      const expectedResult = { hello: 'world' }
+      let result: unknown
+
+      beforeEach(async () => {
+        result = logger.time(() => expectedResult, 'hello func %o', 12)
+        await repo.end();
+        [line] = consoleStream.contents().split('\n')
+      })
+
+      it('should return the original value', () => {
+        expect(result).toBe(expectedResult)
+      })
+
+      it('should log the time correctly', () => {
+        expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
+      })
+    })
+
+    describe('when an async method is given', () => {
+      const expectedResult = { hello: 'world' }
+      let result: unknown
+
+      beforeEach(async () => {
+        result = await logger.time(async () => expectedResult, 'hello func %o', 12)
+        await repo.end();
+        [line] = consoleStream.contents().split('\n')
+      })
+
+      it('should return the original value', () => {
+        expect(result).toBe(expectedResult)
+      })
+
+      it('should log the time correctly', () => {
+        expect(line).toContain(`debug ${NAMESPACE} hello func 12 took`)
       })
     })
   })

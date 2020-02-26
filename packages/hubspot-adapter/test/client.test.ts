@@ -421,7 +421,6 @@ describe('Test HubSpot client', () => {
       name: 'deleteTestForm',
       submitText: 'Submit',
       deletable: true,
-
     } as Form
 
     describe('When id missing', () => {

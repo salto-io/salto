@@ -21,8 +21,9 @@ import HubspotAdapter from '../src/adapter'
 import mockAdapter from './mock'
 import {
   formsMockArray, workflowsMockArray, marketingEmailMockArray, workflowsCreateResponse,
-  workflowsMock, marketingEmailMock, marketingEmailCreateResponse, beforeFormMock,
-  afterFormMock, contactPropertyMock, contactPropertyCreateResponse, contactPropertyMocks,
+  workflowsMock, marketingEmailMock, marketingEmailCreateResponse,
+  afterFormInstanceValuesMock, contactPropertyMock, contactPropertyCreateResponse,
+  contactPropertyMocks, beforeFormInstanceValuesMock,
 } from './common/mock_elements'
 import HubspotClient from '../src/client/client'
 import {
@@ -93,7 +94,7 @@ describe('Hubspot Adapter Operations', () => {
 
     it('should fetch basic', async () => {
       const result = await adapter.fetch()
-      expect(result).toHaveLength(36)
+      expect(result).toHaveLength(38)
     })
   })
 
@@ -396,13 +397,13 @@ describe('Hubspot Adapter Operations', () => {
     const beforeUpdateInstance = new InstanceElement(
       'formInstance',
       Types.hubspotObjects.form,
-      beforeFormMock,
+      beforeFormInstanceValuesMock,
     )
 
     const afterUpdateInstance = new InstanceElement(
       'formInstance',
       Types.hubspotObjects.form,
-      afterFormMock,
+      afterFormInstanceValuesMock,
     )
 
     describe('When Update success', () => {
@@ -484,8 +485,8 @@ describe('Hubspot Adapter Operations', () => {
                   {
                     fields: [
                       {
-                        name: 'state',
-                        label: 'State/Region',
+                        name: 'value',
+                        label: 'Value',
                         type: 'string',
                         fieldType: 'text',
                         description: '',
@@ -494,7 +495,7 @@ describe('Hubspot Adapter Operations', () => {
                         defaultValue: '',
                         isSmartField: false,
                         displayOrder: 1,
-                        selectedOptions: [],
+                        selectedOptions: ['val1'],
                         options: [
                           {
                             label: 'opt1',
@@ -558,7 +559,10 @@ describe('Hubspot Adapter Operations', () => {
           expect(res.value.formFieldGroups[0].default).toEqual(true)
           expect(res.value.formFieldGroups[0].isSmartGroup).toEqual(false)
           expect(res.value.formFieldGroups[0].fields).toHaveLength(1)
-          expect(res.value.formFieldGroups[0].fields[0].label).toEqual('g1')
+
+          expect(res.value.formFieldGroups[0].fields[0].contactProperty).toEqual(
+            afterUpdateInstance.value.formFieldGroups[0].fields[0].contactProperty
+          )
           expect(res.value.formFieldGroups[0].fields[0].description).toBeUndefined()
           expect(res.value.formFieldGroups[0].fields[0].propertyObjectType).toBeUndefined()
           expect(res.value.formFieldGroups[0].fields[0].options).toBeUndefined()
@@ -577,36 +581,20 @@ describe('Hubspot Adapter Operations', () => {
           expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].formFieldAction).toEqual('DISPLAY')
           expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField)
             .toBeDefined()
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.name).toEqual('date_of_birth')
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.label).toEqual('Date of birth')
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.type).toEqual('string')
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.fieldType).toEqual('text')
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.description).toEqual('desc')
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField.groupName).toEqual('contactinformation')
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
-            .displayOrder).toEqual(-1)
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
-            .required).toEqual(false)
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
-            .hidden).toEqual(false)
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
-            .isSmartField).toEqual(false)
-          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
-            .placeholder).toEqual('place')
+          expect(res.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField)
+            .toEqual(
+              afterUpdateInstance.value.formFieldGroups[0].fields[0]
+                .dependentFieldFilters[0].dependentFormField
+            )
 
           // formFieldGroups[1]
           expect(res.value.formFieldGroups[1].default).toEqual(true)
           expect(res.value.formFieldGroups[1].isSmartGroup).toEqual(false)
           expect(res.value.formFieldGroups[1].richText).toBeUndefined()
           expect(res.value.formFieldGroups[1].fields).toHaveLength(1)
-          expect(res.value.formFieldGroups[1].fields[0].label).toEqual('State/Region')
-          expect(res.value.formFieldGroups[1].fields[0].description).toBeUndefined()
-          expect(res.value.formFieldGroups[1].fields[0].displayOrder).toEqual(1)
-          expect(res.value.formFieldGroups[1].fields[0].propertyObjectType).toBeUndefined()
-          expect(res.value.formFieldGroups[1].fields[0].options).toHaveLength(1)
-          expect(res.value.formFieldGroups[1].fields[0].options[0].label).toEqual('opt1')
-          expect(res.value.formFieldGroups[1].fields[0].options[0].hidden).toEqual(true)
-          expect(res.value.formFieldGroups[1].fields[0].options[0].description).toBeUndefined()
+          expect(res.value.formFieldGroups[1].fields[0]).toEqual(
+            afterUpdateInstance.value.formFieldGroups[1].fields[0]
+          )
         })
       })
     })

@@ -17,9 +17,11 @@ import { Change, Element, ChangeValidator, ChangeError } from '@salto-io/adapter
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import jsonTypeValidator from './change_validators/json_type'
+import formFieldsValidator from './change_validators/form_field'
 
 const changeValidators: Partial<ChangeValidator>[] = [
   jsonTypeValidator,
+  formFieldsValidator,
 ]
 
 const runOnUpdateValidators = async (changes: ReadonlyArray<Change>):

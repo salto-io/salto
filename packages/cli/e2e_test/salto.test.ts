@@ -239,7 +239,7 @@ describe('cli e2e', () => {
 
       await verifyTmpBpObjectSourceMap(await workspace.getSourceMap(tmpBPRelativePath), newObject,
         ['Alpha', 'Modified'])
-
+      const annotationObjSourceMap = await workspace.getSourceMap(newObjectAnnotationsRelativePath)
       const standardFieldsObjSourceMap = await workspace
         .getSourceMap(newObjectStandardFieldRelativePath)
       expect(standardFieldsObjSourceMap.has(newObject.elemID.getFullName())).toBeTruthy()
@@ -247,8 +247,6 @@ describe('cli e2e', () => {
         .getFullName())).toBeFalsy()
       expect(standardFieldsObjSourceMap.has(newObject.fields.IsDeleted.elemID.getFullName()))
         .toBeTruthy()
-
-      const annotationObjSourceMap = await workspace.getSourceMap(newObjectAnnotationsRelativePath)
       expect(annotationObjSourceMap.has(newObject.elemID.getFullName())).toBeTruthy()
       expect(annotationObjSourceMap.has(newObject.elemID.createNestedID('annotation').getFullName()))
         .toBeTruthy()

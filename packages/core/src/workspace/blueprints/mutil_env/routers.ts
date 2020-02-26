@@ -141,6 +141,8 @@ export const routeNewEnv = async (
 ): Promise<RoutedChanges> => {
   // This is an add change, which means the element is not in common.
   // so we will add it to the current action enviornment.
+  const pathHint = await getChangePathHint(change, commonSource)
+
   if (change.action === 'add') {
     return { primarySource: [change] }
   }
@@ -160,7 +162,7 @@ export const routeNewEnv = async (
   if (_.isUndefined(commonChangeProjection)) {
     return { primarySource: [change] }
   }
-  const pathHint = await getChangePathHint(change, commonSource)
+
   const currentCommonElement = await commonSource.get(change.id)
   // Keeping the parser happy, this will never happen (see above)
   if (_.isUndefined(currentCommonElement)) {
@@ -180,7 +182,7 @@ export const routeNewEnv = async (
       _.entries(secondarySources)
         .map(async ([name, source]) => [
           name,
-          await projectChange(createAddChange(commonChangeProjection, change.id, pathHint), source),
+          await projectChange(createAddChange(currentCommonElement, change.id, pathHint), source),
         ])
     )
   )

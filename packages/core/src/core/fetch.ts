@@ -20,6 +20,7 @@ import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ElemIdGetter,
+  resolvePath,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
@@ -82,29 +83,9 @@ const getChangeMap = async (
 const findNestedElementPath = (
   changeElemID: ElemID,
   originalParentElements: Element[]
-): readonly string[] | undefined => {
-  const { idType } = changeElemID
-  const propPath = changeElemID.createTopLevelParentID().path
-  switch (idType) {
-    case 'field':
-      return originalParentElements
-        .filter(isObjectType)
-        .find(e => _.has(e.fields, propPath))?.path
-    case 'attr':
-      return originalParentElements
-        .find(e => _.has(e.annotations, propPath))?.path
-    case 'annotation':
-      return originalParentElements
-        .filter(isObjectType)
-        .find(e => _.has(e.annotationTypes, propPath))?.path
-    case 'instance':
-      return originalParentElements
-        .filter(isInstanceElement)
-        .find(e => _.has(e.value, propPath))?.path
-
-    default: return undefined
-  }
-}
+): readonly string[] | undefined => (
+  originalParentElements.find(e => !_.isUndefined(resolvePath(e, changeElemID)))?.path
+)
 
 type ChangeTransformFunction = (sourceChange: FetchChange) => FetchChange[]
 export const toChangesWithPath = (

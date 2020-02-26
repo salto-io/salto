@@ -261,7 +261,11 @@ export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => 
   }
 
   if (isType(rootElement) && fullElemID.idType === 'annotation') {
-    return _.get(rootElement.annotationTypes[path[0]]?.annotations, path.slice(1))
+    const annoTypeName = path[0]
+    const annoTypePath = path.slice(1)
+    const anno = rootElement.annotationTypes[annoTypeName]
+    if (_.isEmpty(annoTypePath)) return anno
+    return _.get(anno?.annotations, annoTypePath)
   }
 
   return undefined

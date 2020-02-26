@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import { HUBSPOT } from '../../src/constants'
 import {
@@ -110,19 +110,18 @@ describe('Transformer', () => {
           },
         ),
         listSubType: new Field(
-          mockTypeElemID, 'listSubType', mockSubType, {
+          mockTypeElemID, 'listSubType', new ListType(mockSubType), {
             name: 'listSubType',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         list: new Field(
-          mockTypeElemID, 'list', BuiltinTypes.STRING, {
+          mockTypeElemID, 'list', new ListType(BuiltinTypes.STRING), {
             name: 'list',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         diff: new Field(
           mockTypeElemID, 'diff', BuiltinTypes.STRING, {

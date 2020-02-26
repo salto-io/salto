@@ -15,7 +15,7 @@
 */
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, PrimitiveType, PrimitiveTypes,
-  RESTRICTION_ANNOTATIONS, TypeElement,
+  RESTRICTION_ANNOTATIONS, TypeElement, ListType,
 } from '@salto-io/adapter-api'
 import {
   ENTITY_CUSTOM_FIELD, EXTERNAL_ID, FAMILY_TYPE, INTERNAL_ID, IS_ATTRIBUTE, METADATA_TYPE,
@@ -337,7 +337,7 @@ export class Types {
     elemID: fldFilterSelListElemID,
     fields: {
       fldFilterSel: new Field(fldFilterSelListElemID, 'fldFilterSel',
-        Types.recordRefSubType, {}, true),
+        new ListType(Types.recordRefSubType), {}),
     },
     path: [...subtypesFolderPath, fldFilterSelListElemID.name],
   })
@@ -363,7 +363,7 @@ export class Types {
     elemID: entityCustomFieldFilterListElemID,
     fields: {
       filter: new Field(entityCustomFieldFilterListElemID, 'filter',
-        Types.entityCustomFieldFilterSubType, {}, true),
+        new ListType(Types.entityCustomFieldFilterSubType), {}),
     },
     path: [...subtypesFolderPath, entityCustomFieldFilterListElemID.name],
   })
@@ -398,7 +398,7 @@ export class Types {
     elemID: customFieldRoleAccessListElemID,
     fields: {
       roleAccess: new Field(customFieldRoleAccessListElemID, 'roleAccess',
-        Types.customFieldRoleAccessSubType, {}, true),
+        new ListType(Types.customFieldRoleAccessSubType), {}),
     },
     path: [...subtypesFolderPath, customFieldRoleAccessListElemID.name],
   })
@@ -419,7 +419,7 @@ export class Types {
     elemID: customFieldDepartmentAccessListElemID,
     fields: {
       deptAccess: new Field(customFieldDepartmentAccessListElemID, 'deptAccess',
-        Types.customFieldDepartmentAccessSubType, {}, true),
+        new ListType(Types.customFieldDepartmentAccessSubType), {}),
     },
     path: [...subtypesFolderPath, customFieldDepartmentAccessListElemID.name],
   })
@@ -440,7 +440,7 @@ export class Types {
     elemID: customFieldSubAccessListElemID,
     fields: {
       subAccess: new Field(customFieldSubAccessListElemID, 'subAccess',
-        Types.customFieldSubAccessSubType, {}, true),
+        new ListType(Types.customFieldSubAccessSubType), {}),
     },
     path: [...subtypesFolderPath, customFieldSubAccessListElemID.name],
   })
@@ -568,7 +568,7 @@ export class Types {
     elemID: customFieldTranslationsListElemID,
     fields: {
       translations: new Field(customFieldTranslationsListElemID, 'translations',
-        Types.customFieldTranslationsSubType, {}, true),
+        new ListType(Types.customFieldTranslationsSubType), {}),
     },
     path: [...subtypesFolderPath, customFieldTranslationsListElemID.name],
   })

@@ -88,6 +88,7 @@ const getContextReference = (
   if (element) {
     const rangeContent = getText(fileContent, contextRange.range)
     const isList = _.last(rangeContent) === ']'
+      || _.takeRight(rangeContent, 2).join('') === '],'
     // The part of the range name which is not in the element name is the path
     const path = contextRange.name.slice(element.elemID.getFullName().length + 1)
     return { element, path, isList }

@@ -107,8 +107,32 @@ export enum PrimitiveTypes {
   BOOLEAN,
 }
 
-export type TypeElement = PrimitiveType | ObjectType
+export type TypeElement = PrimitiveType | ObjectType | ListType
 export type TypeMap = Record<string, TypeElement>
+
+export class ListType extends Element {
+  public constructor(
+   public innerType: TypeElement
+  ) {
+    super({
+      elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
+      annotations: innerType.annotations,
+      annotationTypes: innerType.annotationTypes,
+    })
+  }
+
+  static get serializedTypeName(): string { return 'ListType' }
+
+  isEqual(other: ListType): boolean {
+    return super.isEqual(other) && this.innerType === other.innerType
+  }
+
+  clone(): ListType {
+    return new ListType(
+      this.innerType
+    )
+  }
+}
 
 /**
  * Represents a field inside a type
@@ -119,7 +143,6 @@ export class Field extends Element {
     public name: string,
     public type: TypeElement,
     annotations: Values = {},
-    public isList: boolean = false,
   ) {
     super({ elemID: parentID.createNestedID('field', name), annotations })
   }
@@ -130,7 +153,6 @@ export class Field extends Element {
     return _.isEqual(this.type.elemID, other.type.elemID)
       && _.isEqual(this.elemID, other.elemID)
       && isEqualValues(this.annotations, other.annotations)
-      && this.isList === other.isList
   }
 
   /**
@@ -144,7 +166,6 @@ export class Field extends Element {
       this.name,
       this.type,
       _.cloneDeep(this.annotations),
-      this.isList,
     )
   }
 }

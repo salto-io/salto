@@ -22,8 +22,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
-  Field as TypeField, TypeMap,
-  isField,
+  Field as TypeField, TypeMap, ListType, isField,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -191,7 +190,7 @@ export class Types {
       ),
       [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: new TypeField(
         Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.FILTER_ITEMS,
-        Types.filterItemType, {}, true
+        new ListType(Types.filterItemType), {},
       ),
     },
     annotations: {
@@ -210,7 +209,7 @@ export class Types {
       ),
       [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: new TypeField(
         Types.valueSettingsElemID, VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE,
-        BuiltinTypes.STRING, {}, true
+        new ListType(BuiltinTypes.STRING), {},
       ),
     },
     annotations: {
@@ -257,7 +256,7 @@ export class Types {
       ),
       [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: new TypeField(
         Types.fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS,
-        Types.valueSettingsType, {}, true
+        new ListType(Types.valueSettingsType), {},
       ),
     },
   })

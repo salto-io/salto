@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, ListType } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser/dump'
 import { configSource } from '../../src/workspace/config_source'
@@ -25,7 +25,7 @@ describe('configs', () => {
   const configType = new ObjectType({
     elemID: configID,
     fields: {
-      field1: new Field(configID, 'field1', BuiltinTypes.STRING, {}, true),
+      field1: new Field(configID, 'field1', new ListType(BuiltinTypes.STRING), {}),
       field2: new Field(configID, 'field2', BuiltinTypes.STRING),
     },
   })

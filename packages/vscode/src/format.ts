@@ -59,7 +59,6 @@ const orderByAfterElement = (target: Element, ref: Element | undefined): Element
       target.name,
       target.type,
       orderMapBy(target.annotations, ref.annotations),
-      target.isList
     )
   }
 

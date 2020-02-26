@@ -18,7 +18,7 @@ import { types } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
-  ReferenceExpression, Values, isElement, RESTRICTION_ANNOTATIONS,
+  ReferenceExpression, Values, isElement, RESTRICTION_ANNOTATIONS, isListType,
 } from '@salto-io/adapter-api'
 import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -204,7 +204,8 @@ const validateAnnotationsValue = (
   }
 
   // Checking restrictions
-  if (isPrimitiveType(type) && shouldEnforceValue()) {
+  if ((isPrimitiveType(type)
+    || (isListType(type) && isPrimitiveType(type.innerType))) && shouldEnforceValue()) {
     return validateRestrictionsValue(value)
   }
 
@@ -224,13 +225,14 @@ const validateFieldAnnotations = (
     return errors
   }
 
+  const fieldType = field.type
   // Apply validateAnnotations for each element in our values list
-  if (field.isList) {
+  if (isListType(fieldType)) {
     return _.isArray(value)
       ? _.flatten(value.map((v, i) => validateAnnotations(
         elemID.createNestedID(String(i)),
         v,
-        field.type
+        fieldType.innerType
       )))
       : []
   }
@@ -264,10 +266,11 @@ const validateValue = (elemID: ElemID, value: Value,
   if (value instanceof CircularReference) {
     return [new CircularReferenceValidationError({ elemID, ref: value.ref })]
   }
+
   if (isPrimitiveType(type)) {
     if (!primitiveValidators[type.primitive](value)) {
       // NOTE: this area should be deleted as soon as
-      //  we complete the implementation of SALTO-484 (i.e. support container's type)
+      //  we complete the implementation of SALTO-228 (Support annotationTypes list) is implemented
       if (!isAnnotations || !_.isArray(value)) {
         return [new InvalidValueTypeValidationError({ elemID, value, type })]
       }
@@ -278,11 +281,16 @@ const validateValue = (elemID: ElemID, value: Value,
   if (isObjectType(type)) {
     if (!_.isObjectLike(value)) {
       // NOTE: this area should be deleted as soon as
-      //  we complete the implementation of SALTO-484 (i.e. support container's type)
+      //  we complete the implementation of SALTO-228 (Support annotationTypes list) is implemented
       return [new InvalidValueTypeValidationError({ elemID, value, type })]
     }
     if (_.isArray(value)) {
-      return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, isAnnotations)))
+      if (isAnnotations) {
+        // NOTE: this area should be deleted as soon as
+        //  we complete the implementation of SALTO-228 (Support annotationTypes list)
+        return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, isAnnotations)))
+      }
+      return [new InvalidValueTypeValidationError({ elemID, value, type })]
     }
     return _.flatten(Object.keys(value).filter(k => type.fields[k]).map(
       // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -290,19 +298,29 @@ const validateValue = (elemID: ElemID, value: Value,
     ))
   }
 
+  if (isListType(type)) {
+    if (!_.isArray(value)) {
+      return [new InvalidValueTypeValidationError({ elemID, value, type })]
+    }
+    return _.flatten(
+      value.map((val: Value) => validateValue(elemID, val, type.innerType, isAnnotations))
+    )
+  }
+
   return validateAnnotationsValue(elemID, value, type.annotations, type) || []
 }
 
 const validateFieldValue = (elemID: ElemID, value: Value, field: Field, isAnnotations: boolean):
   ValidationError[] => {
-  if (field.isList) {
+  const fieldType = field.type
+  if (isListType(fieldType)) {
     // todo remove the !isAnnotations once SALTO-228 (Support annotationTypes list) is implemented
     if (!_.isArray(value) && !isAnnotations) {
       return [new InvalidValueValidationError({ elemID, value, fieldName: field.name, expectedValue: 'a list' })]
     }
     return _.flatten(
       makeArray(value).map((v, i) =>
-        validateValue(elemID.createNestedID(String(i)), v, field.type, isAnnotations))
+        validateValue(elemID.createNestedID(String(i)), v, fieldType.innerType, isAnnotations))
     )
   }
   return validateValue(elemID, value, field.type, isAnnotations)

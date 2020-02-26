@@ -2335,7 +2335,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 }
                 return [
                   name,
-                  new Field(mockElemID, name, newField.type, newField.annotations, newField.isList),
+                  new Field(mockElemID, name, newField.type, newField.annotations),
                 ]
               })
               .fromPairs()

@@ -15,10 +15,10 @@
 */
 
 import {
-  isField,
+  isField, isListType, getDeepInnerType, isElement,
 } from '../src/utils'
 import {
-  Field, ObjectType,
+  Field, ObjectType, ListType,
 } from '../src/elements'
 import {
   ElemID,
@@ -28,32 +28,75 @@ import {
 } from '../src/builtins'
 
 describe('Test utils.ts', () => {
-  describe('isField func', () => {
-    const mockElemID = new ElemID('test-utils', 'obj')
-    const mockField = new Field(mockElemID, 'num_field', BuiltinTypes.NUMBER)
-
-    const mockObjectType = new ObjectType({
-      elemID: mockElemID,
-      fields: {
-        fieldTest: mockField,
-      },
-      annotationTypes: {},
-      annotations: {},
-    })
-
+  const mockElemID = new ElemID('test-utils', 'obj')
+  const mockField = new Field(mockElemID, 'num_field', BuiltinTypes.NUMBER)
+  const mockListField = new Field(mockElemID, 'list_field', new ListType(BuiltinTypes.NUMBER))
+  const mockListOfListsField = new Field(mockElemID, 'list_of_list_field', new ListType(new ListType(BuiltinTypes.NUMBER)))
+  const mockObjectType = new ObjectType({
+    elemID: mockElemID,
+    fields: {
+      fieldTest: mockField,
+      listFieldTest: mockListField,
+      listOfListFieldTest: mockListOfListsField,
+    },
+    annotationTypes: {},
+    annotations: {},
+  })
+  describe('isElement func', () => {
     it('should return false for undefined', () => {
-      expect(isField(undefined)).toEqual(false)
+      expect(isElement(undefined)).toBeFalsy()
+    })
+    it('should return true for objectType', () => {
+      expect(isElement(mockObjectType)).toBeTruthy()
+    })
+    it('should return true for field', () => {
+      expect(isElement(mockObjectType.fields.fieldTest)).toBeTruthy()
+    })
+    it('should return true for primitive field type', () => {
+      expect(isElement(mockObjectType.fields.fieldTest.type)).toBeTruthy()
+    })
+    it('should return true for list field type', () => {
+      expect(isElement(mockObjectType.fields.listFieldTest.type)).toBeTruthy()
+    })
+  })
+  describe('isField func', () => {
+    it('should return false for undefined', () => {
+      expect(isField(undefined)).toBeFalsy()
     })
     it('should return false for string', () => {
-      expect(isField('str')).toEqual(false)
+      expect(isField('str')).toBeFalsy()
     })
 
     it('should return false for object', () => {
-      expect(isField(mockObjectType)).toEqual(false)
+      expect(isField(mockObjectType)).toBeFalsy()
     })
 
-    it('should return true for field', () => {
-      expect(isField(mockField)).toEqual(true)
+    it('should return true for fields', () => {
+      expect(isField(mockObjectType.fields.fieldTest)).toBeTruthy()
+      expect(isField(mockObjectType.fields.listFieldTest)).toBeTruthy()
+      expect(isField(mockObjectType.fields.listOfListFieldTest)).toBeTruthy()
+    })
+  })
+
+  describe('isListType func', () => {
+    it('should recognize lists as ListType', () => {
+      expect(isListType(mockObjectType.fields.listFieldTest.type)).toBeTruthy()
+      expect(isListType(mockObjectType.fields.listOfListFieldTest.type)).toBeTruthy()
+    })
+
+    it('should return false for non-list types', () => {
+      expect(isListType(mockObjectType.fields.fieldTest.type)).toBeFalsy()
+    })
+  })
+
+  describe('getDeepInnerType func', () => {
+    it('should recognize getDeepInnerType in a list', () => {
+      expect(getDeepInnerType(mockObjectType.fields.listFieldTest.type as ListType))
+        .toEqual(BuiltinTypes.NUMBER)
+    })
+    it('should recognize getDeepInnerType in list of lists', () => {
+      expect(getDeepInnerType(mockObjectType.fields.listOfListFieldTest.type as ListType))
+        .toEqual(BuiltinTypes.NUMBER)
     })
   })
 })

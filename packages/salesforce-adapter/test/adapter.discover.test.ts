@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
+  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element,
+  CORE_ANNOTATIONS, isListType, ListType,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
@@ -387,7 +388,8 @@ describe('SalesforceAdapter fetch', () => {
       expect(layout.value.layoutSections[1].label).toBe('Additional Information')
       expect(layout.value.layoutSections[2].style).toBe('CustomLinks')
       expect(
-        (layout.type.fields.processMetadataValues.type as ObjectType).fields.name.type.elemID.name
+        ((layout.type.fields.processMetadataValues.type as ListType)
+          .innerType as ObjectType).fields.name.type.elemID.name
       ).toBe('string')
       expect(layout.value.processMetadataValues[1].name).toBe('leftHandSideReferenceTo')
       expect(layout.value.processMetadataValues[1].value).toBeUndefined()
@@ -438,7 +440,7 @@ describe('SalesforceAdapter fetch', () => {
       const result = (await adapter.fetch()).elements
       const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
-      expect((flow.type as ObjectType).fields.listTest.isList).toBe(true)
+      expect(isListType((flow.type as ObjectType).fields.listTest.type)).toBeTruthy()
 
       expect(flow.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow', 'instance', 'FlowInstance'))
       expect(flow.value.listTest[0].field).toEqual('Field1')

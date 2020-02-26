@@ -16,7 +16,7 @@
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
-  PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement,
+  PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, ListType,
 } from '@salto-io/adapter-api'
 import * as plan from '../../src/core/plan'
 import {
@@ -50,7 +50,7 @@ describe('fetch', () => {
   })
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,
-    fields: { base: new Field(newTypeID, 'base', BuiltinTypes.STRING, {}, true) },
+    fields: { base: new Field(newTypeID, 'base', new ListType(BuiltinTypes.STRING), {}) },
     path: ['path', 'base'],
   })
   const newTypeExt = new ObjectType({

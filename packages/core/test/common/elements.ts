@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import {
-  CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, Field, InstanceElement, PrimitiveType,
+  CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, Field, InstanceElement,
+  PrimitiveType, ListType,
 } from '@salto-io/adapter-api'
 
-type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType, ObjectType, InstanceElement]
+type AllElementsTypes = [PrimitiveType, ObjectType, ObjectType,
+    ObjectType, InstanceElement, ListType]
 export const getAllElements = (): AllElementsTypes => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
@@ -49,6 +51,7 @@ export const getAllElements = (): AllElementsTypes => {
   })
 
   const employeeElemID = new ElemID('salto', 'employee')
+  const stringListType = new ListType(BuiltinTypes.STRING)
   const saltoEmployee = new ObjectType({
     elemID: employeeElemID,
     fields: {
@@ -61,9 +64,8 @@ export const getAllElements = (): AllElementsTypes => {
       nicknames: new Field(
         employeeElemID,
         'nicknames',
-        BuiltinTypes.STRING,
+        stringListType,
         {},
-        true
       ),
       /* eslint-disable-next-line @typescript-eslint/camelcase */
       employee_resident: new Field(
@@ -106,5 +108,6 @@ export const getAllElements = (): AllElementsTypes => {
     { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo' } }
   )
 
-  return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
+  return [BuiltinTypes.STRING, saltoAddr, saltoOffice,
+    saltoEmployee, saltoEmployeeInstance, stringListType]
 }

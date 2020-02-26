@@ -17,7 +17,7 @@ import os from 'os'
 import path from 'path'
 import _ from 'lodash'
 import {
-  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes,
+  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes, ListType, isListType,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -209,16 +209,14 @@ describe('workspace', () => {
       'not_a_list_yet_field',
       BuiltinTypes.NUMBER,
       {},
-      false
     )
     const newField = oldField.clone()
-    newField.isList = true
+    newField.type = new ListType(newField.type)
     const anotherNewField = new Field(
       new ElemID('salesforce', 'lead'),
       'lala',
-      BuiltinTypes.NUMBER,
+      new ListType(BuiltinTypes.NUMBER),
       {},
-      false
     )
 
     const changes: DetailedChange[] = [
@@ -388,7 +386,7 @@ describe('workspace', () => {
         .annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual([1, 2, 3, 5, 5])
     })
     it('should change isList value in fields', () => {
-      expect(lead.fields.not_a_list_yet_field.isList).toBe(true)
+      expect(isListType(lead.fields.not_a_list_yet_field.type)).toBeTruthy()
     })
 
     it('shouldnt fail in case one of the changes fails', async () => {

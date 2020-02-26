@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
+  isListType, ListType,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -94,10 +95,11 @@ const markListRecursively = (
   type: ObjectType,
   values: Values,
 ): void => {
-  // Mark all lists as isList=true
+  // Mark all lists as ListType
   const markList = (field: Field, value: Value): Value => {
-    if (_.isArray(value)) {
-      field.isList = true
+    if (_.isArray(value) && !isListType(field.type)) {
+      // This assumes Salesforce does not have list of lists fields
+      field.type = new ListType(field.type)
     }
     return value
   }
@@ -114,13 +116,15 @@ const castListRecursively = (
   )
   // Cast all lists to list
   const castLists = (field: Field, value: Value): Value => {
-    if (field.isList && !_.isArray(value)) {
+    if (isListType(field.type) && !_.isArray(value)) {
       return [value]
     }
     // We get from sfdc api list with empty strings for empty object (possibly jsforce issue)
-    if (field.isList && _.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
+    if (isListType(field.type) && _.isArray(value) && _.isEmpty(value.filter(v => !_.isEmpty(v)))) {
       return []
     }
+
+    // TODO: Check this does not break
     const orderBy = listOrders[field.elemID.getFullName()]
     return orderBy ? _.orderBy(value, orderBy) : value
   }
@@ -131,7 +135,11 @@ const markHardcodedLists = (
   type: ObjectType,
   knownListIds: Set<string>,
 ): void => _.values(type.fields).filter(f => knownListIds.has(f.elemID.getFullName())).forEach(
-  f => { f.isList = true }
+  f => {
+    if (!isListType(f.type)) {
+      f.type = new ListType(f.type)
+    }
+  }
 )
 
 export const convertList = (type: ObjectType, values: Values): void => {

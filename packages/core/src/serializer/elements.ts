@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  PrimitiveType, ElemID, Field, Element, BuiltinTypes,
+  PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType,
   ObjectType, InstanceElement, isType, isElement, isExpression,
   ReferenceExpression, TemplateExpression, Expression,
   isInstanceElement, isReferenceExpression, FunctionExpression, StaticFileAssetExpression,
@@ -96,12 +96,14 @@ export const deserialize = (data: string): Element[] => {
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
+    [ListType.serializedTypeName]: v => new ListType(
+      v.innerType
+    ),
     [Field.serializedTypeName]: v => new Field(
       reviveElemID(v.parentID),
       v.name,
       v.type,
       v.annotations,
-      v.isList,
     ),
     [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
     [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),

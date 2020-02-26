@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType,
   isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement,
-  Values, INSTANCE_ANNOTATIONS, ReferenceExpression,
+  Values, INSTANCE_ANNOTATIONS, ReferenceExpression, ListType,
 } from '@salto-io/adapter-api'
 import {
   findObjectType,
@@ -546,14 +546,18 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const typesToMergeFromInstance = (): TypesFromInstance => {
       const fixTypesDefinitions = (typesFromInstance: TypeMap): void => {
         const listViewType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS] as ObjectType
-        listViewType.fields.columns.isList = true
-        listViewType.fields.filters.isList = true
+        listViewType.fields.columns.type = new ListType(listViewType.fields.columns.type)
+        listViewType.fields.filters.type = new ListType(listViewType.fields.filters.type)
         const fieldSetType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS] as ObjectType
-        fieldSetType.fields.availableFields.isList = true
-        fieldSetType.fields.displayedFields.isList = true
+        fieldSetType.fields.availableFields.type = new ListType(
+          fieldSetType.fields.availableFields.type
+        )
+        fieldSetType.fields.displayedFields.type = new ListType(
+          fieldSetType.fields.displayedFields.type
+        )
         const compactLayoutType = typesFromInstance[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS] as
           ObjectType
-        compactLayoutType.fields.fields.isList = true
+        compactLayoutType.fields.fields.type = new ListType(compactLayoutType.fields.fields.type)
       }
 
       const getAllTypesFromInstance = (): TypeMap => {

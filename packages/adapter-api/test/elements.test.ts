@@ -20,6 +20,7 @@ import {
   ObjectType,
   PrimitiveType,
   PrimitiveTypes,
+  ListType,
 } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import {
@@ -28,6 +29,7 @@ import {
   isObjectType,
   isPrimitiveType,
   isType,
+  isListType,
 } from '../src/utils'
 
 describe('Test elements.ts', () => {
@@ -62,6 +64,8 @@ describe('Test elements.ts', () => {
     annotationTypes: {},
     annotations: {},
   })
+
+  const lt = new ListType(primStr)
 
   it('should create a basic primitive type with all params passed to the constructor', () => {
     expect(primStr.elemID).toEqual(primID)
@@ -223,6 +227,11 @@ describe('Test elements.ts', () => {
     it('should identify object types', () => {
       expect(isObjectType(inst)).toBeFalsy()
       expect(isObjectType(ot)).toBeTruthy()
+    })
+
+    it('should identify list types', () => {
+      expect(isListType(inst)).toBeFalsy()
+      expect(isListType(lt)).toBeTruthy()
     })
 
     it('should identify instance elements', () => {

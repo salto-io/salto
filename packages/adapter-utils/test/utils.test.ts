@@ -19,7 +19,7 @@ import {
   ReferenceExpression, Values, TemplateExpression, Value,
   ElemID, InstanceAnnotationTypes,
   BuiltinTypes, INSTANCE_ANNOTATIONS,
-  isPrimitiveType, FunctionExpression,
+  isPrimitiveType, FunctionExpression, ListType, isListType,
 } from '@salto-io/adapter-api'
 
 import {
@@ -49,8 +49,8 @@ describe('Test utils.ts', () => {
       }),
       bool: new Field(mockElem, 'bool', BuiltinTypes.BOOLEAN),
       num: new Field(mockElem, 'num', BuiltinTypes.NUMBER),
-      numArray: new Field(mockElem, 'numArray', BuiltinTypes.NUMBER, {}, true),
-      obj: new Field(mockElem, 'obj', new ObjectType({
+      numArray: new Field(mockElem, 'numArray', new ListType(BuiltinTypes.NUMBER), {}),
+      obj: new Field(mockElem, 'obj', new ListType(new ObjectType({
         elemID: mockElem,
         fields: {
           field: new Field(mockElem, 'field', BuiltinTypes.STRING),
@@ -59,7 +59,7 @@ describe('Test utils.ts', () => {
             elemID: mockElem,
             fields: {
               name: new Field(mockElem, 'name', BuiltinTypes.STRING),
-              listOfNames: new Field(mockElem, 'listOfNames', BuiltinTypes.STRING, {}, true),
+              listOfNames: new Field(mockElem, 'listOfNames', new ListType(BuiltinTypes.STRING), {}),
               magical: new Field(mockElem, 'magical', new ObjectType({
                 elemID: mockElem,
                 fields: {
@@ -70,7 +70,7 @@ describe('Test utils.ts', () => {
             },
           })),
         },
-      }), {}, true),
+      })), {}),
     },
   })
 
@@ -190,24 +190,32 @@ describe('Test utils.ts', () => {
           })
         })
 
-
         it('should call transform on array elements', () => {
-          (mockInstance.value.numArray as string[]).forEach(
+          const numArrayFieldType = mockType.fields.numArray.type
+          expect(isListType(numArrayFieldType)).toBeTruthy()
+          const numArrayValues = (mockInstance.value.numArray as string[])
+          numArrayValues.forEach(
             val => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
               val,
               undefined,
-              mockType.fields.numArray,
+              new Field(
+                mockType.fields.numArray.elemID.createParentID(),
+                mockType.fields.numArray.name,
+                (numArrayFieldType as ListType).innerType,
+                mockType.fields.numArray.annotations,
+              )
             )
           )
         })
 
         it('should call transform on primitive types in nested objects', () => {
-          const getField = (type: ObjectType, path: (string | number)[]): Field => {
-            if (typeof path[0] === 'number') {
-              return getField(type, path.slice(1))
+          const getField = (type: ObjectType | ListType, path: (string | number)[]): Field => {
+            if (typeof path[0] === 'number' && isListType(type)) {
+              return getField((type.innerType as ObjectType | ListType), path.slice(1))
             }
-            const field = type.fields[path[0]]
-            return path.length === 1 ? field : getField(field.type as ObjectType, path.slice(1))
+            const field = (type as ObjectType).fields[path[0]]
+            return path.length === 1 ? field
+              : getField(field.type as ObjectType | ListType, path.slice(1))
           }
           const nestedPrimitivePaths = [
             ['obj', 0, 'field'],
@@ -279,7 +287,7 @@ describe('Test utils.ts', () => {
             str: BuiltinTypes.STRING,
             num: BuiltinTypes.NUMBER,
             bool: BuiltinTypes.BOOLEAN,
-            nums: BuiltinTypes.NUMBER,
+            nums: new ListType(BuiltinTypes.NUMBER),
           }
           const result = transformValues(
             {
@@ -294,20 +302,19 @@ describe('Test utils.ts', () => {
           resp = result as Values
         })
         it('should call transform func on all defined types', () => {
-          const mockField = (name: string): Field => new Field(new ElemID(''), name, typeMap[name])
           const primitiveTypes = ['str', 'num', 'bool']
           primitiveTypes.forEach(
             name => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
               origValue[name],
               undefined,
-              mockField(name)
+              new Field(new ElemID(''), name, typeMap[name])
             )
           )
           origValue.nums.forEach(
             (val: string) => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
               val,
               undefined,
-              mockField('nums')
+              new Field(new ElemID(''), 'nums', BuiltinTypes.NUMBER)
             )
           )
         })
@@ -423,7 +430,7 @@ describe('Test utils.ts', () => {
       },
       fields: {
         refValue: new Field(mockElem, 'refValue', BuiltinTypes.STRING),
-        arrayValues: new Field(mockElem, 'refValue', BuiltinTypes.STRING, {}, true),
+        arrayValues: new Field(mockElem, 'refValue', new ListType(BuiltinTypes.STRING), {}),
       },
     })
 
@@ -626,7 +633,6 @@ describe('Test utils.ts', () => {
         expect(resolvedField).not.toEqual(field)
 
         expect(resolvedField.type).toEqual(field.type)
-        expect(resolvedField.isList).toEqual(field.isList)
         expect(resolvedField.name).toEqual(field.name)
         expect(resolvedField.elemID).toEqual(field.elemID)
         expect(resolvedField.path).toEqual(field.path)

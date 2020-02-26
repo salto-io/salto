@@ -17,7 +17,7 @@ import wu from 'wu'
 import { GroupedNodeMap } from '@salto-io/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement,
-  ObjectType, CORE_ANNOTATIONS, SaltoError, Values,
+  ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
@@ -177,9 +177,8 @@ export const elements = (): Element[] => {
       nicknames: new Field(
         employeeElemID,
         'nicknames',
-        BuiltinTypes.STRING,
+        new ListType(BuiltinTypes.STRING),
         {},
-        true
       ),
       /* eslint-disable-next-line @typescript-eslint/camelcase */
       employee_resident: new Field(

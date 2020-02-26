@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, Field, BuiltinTypes,
+  ObjectType, ElemID, Field, BuiltinTypes, ListType,
 } from '@salto-io/adapter-api'
 import { makeFilter } from '../../src/filters/missing_fields'
 import * as constants from '../../src/constants'
@@ -39,9 +39,8 @@ describe('missing fields filter', () => {
     [mockObjId.getFullName()]: [
       {
         name: 'lst',
-        type: BuiltinTypes.STRING,
+        type: new ListType(BuiltinTypes.STRING),
         annotations: { dummy: true },
-        isList: true,
       },
       {
         name: 'complex',
@@ -69,15 +68,13 @@ describe('missing fields filter', () => {
     it('should add primitive list fields', () => {
       const [testType] = testElements
       expect(testType.fields.lst).toBeDefined()
-      expect(testType.fields.lst.isList).toBe(true)
       expect(testType.fields.lst.annotations).toEqual({ dummy: true })
-      expect(testType.fields.lst.type).toEqual(BuiltinTypes.STRING)
+      expect(testType.fields.lst.type).toEqual(new ListType(BuiltinTypes.STRING))
     })
 
     it('should add fields by type name', () => {
       const [testType] = testElements
       expect(testType.fields.complex).toBeDefined()
-      expect(testType.fields.complex.isList).toBe(false)
       expect(testType.fields.complex.annotations).toEqual({})
       expect(testType.fields.complex.type).toEqual(complexType)
     })

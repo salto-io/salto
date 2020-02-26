@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, Value,
+  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, Value, isListType,
 } from '@salto-io/adapter-api'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
@@ -127,8 +127,8 @@ describe('convert lists filter', () => {
     })
 
     it('should mark fields as list types', () => {
-      expect(type.fields.lst.isList).toBe(true)
-      expect(type.fields.single.isList).toBe(false)
+      expect(isListType(type.fields.lst.type)).toBeTruthy()
+      expect(isListType(type.fields.single.type)).toBeFalsy()
     })
 
     it('should convert lists in instances', () => {
@@ -142,29 +142,29 @@ describe('convert lists filter', () => {
     })
 
     it('should sort unordered lists', () => {
-      expect(type.fields.unordered.isList).toBe(true)
+      expect(isListType(type.fields.unordered.type)).toBeTruthy()
       expect(lstInst.value.unordered).toHaveLength(2)
       expect(lstInst.value.unordered.map((item: Value) => item.key)).toEqual(['a', 'b'])
     })
 
     it('should not reorder regular lists', () => {
-      expect(type.fields.ordered.isList).toBe(true)
+      expect(isListType(type.fields.ordered.type)).toBeTruthy()
       expect(lstInst.value.ordered).toHaveLength(2)
       expect(lstInst.value.ordered).toEqual(mockInstanceLst.value.ordered)
     })
 
     it('should convert hardcoded fields to lists', () => {
-      expect(type.fields.singleHardcoded.isList).toBe(true)
+      expect(isListType(type.fields.singleHardcoded.type)).toBeTruthy()
       expect(lstInst.value.singleHardcoded).toEqual(['val'])
     })
 
     it('should convert empty hardcoded fields to empty lists', () => {
-      expect(type.fields.emptyHardcoded.isList).toBe(true)
+      expect(isListType(type.fields.emptyHardcoded.type)).toBeTruthy()
       expect(lstInst.value.emptyHardcoded).toEqual([])
     })
 
     it('should convert hardcoded fields to lists even when there are no instances', () => {
-      expect(typeNoInstances.fields.single.isList).toBe(true)
+      expect(isListType(typeNoInstances.fields.single.type)).toBeTruthy()
     })
   })
 })

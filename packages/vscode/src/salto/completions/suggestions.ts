@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
-  CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+  CORE_ANNOTATIONS, isListType } from '@salto-io/adapter-api'
 import { dumpElemID, parseElemID } from '@salto-io/core'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { ContextReference } from '../context'
@@ -166,23 +166,25 @@ export const valueSuggestions = (
 
   if (!_.isEmpty(valueToken)) return []
 
-  if (isField(annotatingElem) && annotatingElem.isList && attrName) {
+  if (isListType(valueType) && attrName) {
     return [{ label: '[]', insertText: '[$0]' }]
   }
-
   // Now that we know we are in the actual value - lets use it!
   const restrictionValues = getRestrictionValues(annotatingElem, valueType)
   if (restrictionValues) {
     return restrictionValues.map(v => JSON.stringify(v))
   }
-
-  if (isObjectType(valueType)) {
+  const realValueType = isListType(valueType) ? valueType.innerType : valueType
+  if (isListType(realValueType)) {
+    return [{ label: '[]', insertText: '[$0]' }]
+  }
+  if (isObjectType(realValueType)) {
     return [{ label: '{}', insertText: '{$0}' }]
   }
-  if (isPrimitiveType(valueType) && valueType.primitive === PrimitiveTypes.STRING) {
+  if (isPrimitiveType(realValueType) && realValueType.primitive === PrimitiveTypes.STRING) {
     return [{ label: '""', insertText: '"$0"' }]
   }
-  if (isPrimitiveType(valueType) && valueType.primitive === PrimitiveTypes.BOOLEAN) {
+  if (isPrimitiveType(realValueType) && realValueType.primitive === PrimitiveTypes.BOOLEAN) {
     return ['true', 'false']
   }
   return []

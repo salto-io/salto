@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  InstanceElement, ElemID, ObjectType, TypeElement, Values, isObjectType, CORE_ANNOTATIONS,
+  InstanceElement, ElemID, ObjectType, TypeElement, Values, isObjectType,
+  CORE_ANNOTATIONS, isListType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -39,8 +40,7 @@ const buildDefaults = (
 ): Values | undefined => {
   const buildObjectDefaults = (object: ObjectType): Values | undefined => {
     const def = _(object.fields).mapValues(field =>
-      ((field.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined
-        && !field.isList)
+      ((field.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && !isListType(field.type))
         ? buildDefaults(field.type, knownTypes)
         : field.annotations[CORE_ANNOTATIONS.DEFAULT])).pickBy(v => v !== undefined).value()
     return _.isEmpty(def) ? undefined : def

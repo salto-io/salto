@@ -13,13 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import wu from 'wu'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType,
-  PrimitiveTypes,
-  Element,
-  DependencyChanger,
-  dependencyChange,
+  PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isInstanceElement,
 } from '@salto-io/adapter-api'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
@@ -94,11 +92,9 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
 
   planWithFieldIsListChanges: async () => {
     const afterElements = mock.getAllElements()
-    const saltoOffice = afterElements[2]
-    // Adding new field
-    saltoOffice.fields.name.isList = true
+    afterElements[2].fields.name.type = new ListType(afterElements[2].fields.name.type)
     const plan = await getPlan(allElements, afterElements)
-    return [plan, saltoOffice]
+    return [plan, afterElements[2]]
   },
 
   planWithSplitElem: async isAdd => {
@@ -156,12 +152,14 @@ describe('getPlan', () => {
 
   it('should create plan with remove change', async () => {
     const pre = allElements
-    const plan = await getPlan(pre, pre.slice(0, pre.length - 1))
+    const preFiltered = pre.filter(element => element.elemID.name !== 'instance')
+    const plan = await getPlan(pre, preFiltered)
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
-    const removed = pre[pre.length - 1]
-    expect(planItem.groupKey).toBe(removed.elemID.getFullName())
-    const removedChange = getChange(planItem, removed.elemID)
+    const removed = _.find(pre, element => element.elemID.name === 'instance')
+    expect(isInstanceElement(removed)).toBeTruthy()
+    expect(planItem.groupKey).toBe((removed as InstanceElement).elemID.getFullName())
+    const removedChange = getChange(planItem, (removed as InstanceElement).elemID)
     expect(removedChange.action).toBe('remove')
     if (removedChange.action === 'remove') {
       expect(removedChange.data.before).toEqual(removed)

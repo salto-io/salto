@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID,
-  isObjectType, InstanceElement, BuiltinTypes,
+  isObjectType, InstanceElement, BuiltinTypes, isListType, isType,
 } from '@salto-io/adapter-api'
 import { SourceRange, SourceMap, parse } from '../../src/parser/parse'
 
@@ -44,7 +44,7 @@ describe('Salto parser', () => {
           _required = true
         }
 
-        list salesforce.string nicknames {
+        "List<salesforce.string>" nicknames {
         }
 
         salesforce.phone fax {
@@ -138,7 +138,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(13)
+        expect(elements.length).toBe(14)
       })
     })
 
@@ -208,8 +208,7 @@ describe('Salto parser', () => {
           expect(model.fields).toHaveProperty('nicknames')
         })
         it('should have the correct type', () => {
-          expect(model.fields.nicknames.type.elemID).toEqual(new ElemID('salesforce', 'string'))
-          expect(model.fields.nicknames.isList).toBe(true)
+          expect(model.fields.nicknames.type.elemID).toEqual(new ElemID('', 'list<salesforce.string>'))
         })
       })
       describe('field annotations', () => {
@@ -375,7 +374,7 @@ describe('Salto parser', () => {
       })
 
       it('should contain all top level elements', () => {
-        elements.forEach(
+        elements.filter(elem => !(isType(elem) && isListType(elem))).forEach(
           elem => expect(sourceMap.get(elem.elemID.getFullName())).not.toHaveLength(0)
         )
       })

@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   Field, InstanceElement, isObjectType, ObjectType, TypeElement, Value, Values,
+  ListType, isListType,
 } from '@salto-io/adapter-api'
 import { Record } from 'node-suitetalk'
 import {
@@ -29,7 +30,6 @@ import { NetsuiteRecord, NetsuiteReference } from './client/client'
 import { recordRefElemID, Types } from './types'
 
 const { makeArray } = collections.array
-
 
 const fromNetsuiteRecord = (record: Values, type: ObjectType): Values => {
   // Netsuite Records are returned with ATTRIBUTES object that we should embed into its parent
@@ -66,15 +66,16 @@ const isAttribute = (field: Field): boolean =>
 
 const isListField = (fieldType: TypeElement): fieldType is ObjectType =>
   isObjectType(fieldType) && Object.values(fieldType.fields).length === 1
-    && Object.values(fieldType.fields)[0].isList
+    && isListType(Object.values(fieldType.fields)[0].type)
 
 const toLineField = (lineFieldDefinition: Field, lineValues: Values): Record.Fields.Line => {
-  const lineField = new Record.Fields.Line(lineFieldDefinition.type.elemID.name,
+  const lineFieldType = lineFieldDefinition.type as ListType
+  const lineField = new Record.Fields.Line(lineFieldType.innerType.elemID.name,
     lineFieldDefinition.name)
   lineField.bodyFieldList = Object.entries(lineValues)
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
     .map(([name, value]) => toNetsuiteField(name, value,
-      (lineFieldDefinition.type as ObjectType).fields[name].type))
+      (lineFieldType.innerType as ObjectType).fields[name].type))
   return lineField
 }
 

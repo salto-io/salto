@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import { getChangeElement } from '@salto-io/adapter-api'
+import { getChangeElement, isListType } from '@salto-io/adapter-api'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
 import { planGenerators } from './plan.test'
@@ -123,7 +123,7 @@ describe('PlanItem', () => {
       const [listChange] = changes
       expect(listChange.action).toEqual('modify')
       expect(listChange.id).toEqual(changedElem.fields.name.elemID)
-      expect(_.get(listChange.data, 'after').isList).toBe(true)
+      expect(isListType(_.get(listChange.data, 'after').type)).toBeTruthy()
     })
   })
 })

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { dumpElemID } from '@salto-io/core'
-import { Element, isObjectType, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, isObjectType, isInstanceElement, isListType, getDeepInnerType } from '@salto-io/adapter-api'
 import { getLocations, SaltoElemLocation } from './location'
 import { EditorWorkspace } from './workspace'
 
@@ -29,7 +29,11 @@ const getUsages = async (
   if (isObjectType(element)) {
     const locs = await Promise.all(_(element.fields)
       .values()
-      .filter(f => fullName === dumpElemID(f.type))
+      .filter(f => {
+        const fieldType = f.type
+        const nonGenericType = isListType(fieldType) ? getDeepInnerType(fieldType) : f.type
+        return fullName === dumpElemID(nonGenericType)
+      })
       .map(f => getLocations(workspace, f.elemID.getFullName()))
       .value())
     return _.flatten(locs)

@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement, CORE_ANNOTATIONS,
+  PrimitiveTypes, TypeElement, CORE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import {
   mergeElements,
@@ -115,7 +115,7 @@ describe('merger', () => {
   const multipleBase = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base' }, true),
+      field1: new Field(baseElemID, 'field1', new ListType(BuiltinTypes.STRING), { label: 'base' }),
     },
   })
 

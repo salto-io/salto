@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
-  RESTRICTION_ANNOTATIONS,
+  RESTRICTION_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import { validateElements, InvalidValueValidationError,
   InvalidValueRangeValidationError } from '../src/core/validator'
@@ -98,7 +98,9 @@ describe('Elements validation', () => {
       flatstr: new Field(nestedElemID, 'flatstr', BuiltinTypes.STRING),
       flatnum: new Field(nestedElemID, 'flatnum', BuiltinTypes.NUMBER),
       flatbool: new Field(nestedElemID, 'flatbool', BuiltinTypes.BOOLEAN),
-      list: new Field(nestedElemID, 'list', BuiltinTypes.STRING, {}, true),
+      list: new Field(nestedElemID, 'list', new ListType(BuiltinTypes.STRING), {}),
+      listOfList: new Field(nestedElemID, 'listOfList', new ListType(new ListType(BuiltinTypes.STRING))),
+      listOfObject: new Field(nestedElemID, 'listOfObject', new ListType(simpleType)),
       reqStr: new Field(nestedElemID, 'reqStr', BuiltinTypes.STRING),
       restrictStr: new Field(nestedElemID, 'restrictStr', BuiltinTypes.STRING, {
         _values: [
@@ -272,6 +274,12 @@ describe('Elements validation', () => {
         flatnum: 1,
         flatbool: true,
         list: ['item', 'item2'],
+        listOfList: [['item1', 'item2'], ['item3']],
+        listOfObject: [{
+          str: 'str',
+          num: 2,
+          bool: true,
+        }],
         restrictStr: 'restriction1',
       }
     )
@@ -367,7 +375,7 @@ describe('Elements validation', () => {
         it('should return error when lists elements missing required fields', () => {
           const extType = _.cloneDeep(nestedType)
 
-          extType.fields.reqNested.isList = true
+          extType.fields.reqNested.type = new ListType(extType.fields.reqNested.type)
           extInst.type = extType
           extInst.value.reqNested = [
             {
@@ -623,8 +631,51 @@ describe('Elements validation', () => {
       it('should return error list/object mismatch', () => {
         extInst.value = { nested: [] }
         const errors = validateElements([extInst])
+        expect(errors).toHaveLength(2)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested'))
+        // TODO: The second error is a stange UX and we should not have it
+        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
+      })
+
+      it('should not return an error when matching list item', () => {
+        extInst.value.list.push('abc')
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should return error in list of list item mismatch', () => {
+        extInst.value.listOfList[0].push(1)
+        const errors = validateElements([extInst])
         expect(errors).toHaveLength(1)
-        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'bool'))
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfList', '0'))
+      })
+
+      it('should not return an error when matching list object item', () => {
+        extInst.value.listOfObject.push({
+          str: 'str',
+          num: 3,
+          bool: false,
+        })
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should return an error when not matching list object item (missing req)', () => {
+        extInst.value.listOfObject.push({
+          abc: 'dsadas',
+        })
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1', 'bool'))
+      })
+
+      it('should return an error when primitive instead of list object item', () => {
+        extInst.value.listOfObject.push(1)
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(2)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1'))
+        // TODO: The second error is a stange UX and we should not have it
+        expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1', 'bool'))
       })
 
       it('should return error list item mismatch', () => {

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType,
+  TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType, ListType,
 } from './elements'
 import {
   Values, Expression, ReferenceExpression, TemplateExpression, FunctionExpression,
@@ -33,13 +33,13 @@ export function isElement(value: any): value is Element {
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isObjectType(element: any): element is ObjectType {
-  return element instanceof ObjectType
+export function isInstanceElement(element: any): element is InstanceElement {
+  return element instanceof InstanceElement
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isInstanceElement(element: any): element is InstanceElement {
-  return element instanceof InstanceElement
+export function isObjectType(element: any): element is ObjectType {
+  return element instanceof ObjectType
 }
 
 export function isPrimitiveType(
@@ -50,8 +50,13 @@ export function isPrimitiveType(
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isListType(element: any): element is ListType {
+  return element instanceof ListType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isType(element: any): element is TypeElement {
-  return isPrimitiveType(element) || isObjectType(element)
+  return isPrimitiveType(element) || isObjectType(element) || isListType(element)
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -69,6 +74,8 @@ export function isEqualElements(first?: any, second?: any): boolean {
   if (isPrimitiveType(first) && isPrimitiveType(second)) {
     return first.isEqual(second)
   } if (isObjectType(first) && isObjectType(second)) {
+    return first.isEqual(second)
+  } if (isListType(first) && isListType(second)) {
     return first.isEqual(second)
   } if (isField(first) && isField(second)) {
     return first.isEqual(second)
@@ -97,6 +104,14 @@ export const isFunctionExpression = (value: any): value is FunctionExpression =>
 export const isExpression = (value: any): value is Expression => (
   isReferenceExpression(value) || isTemplateExpression(value) || isFunctionExpression(value)
 )
+
+export const getDeepInnerType = (listType: ListType): ObjectType | PrimitiveType => {
+  const { innerType } = listType
+  if (!isListType(innerType)) {
+    return innerType
+  }
+  return getDeepInnerType(innerType)
+}
 
 export const getSubElement = (baseType: TypeElement, pathParts: string[]):
   Field | TypeElement | undefined => {

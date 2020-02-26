@@ -473,7 +473,8 @@ export const makeFilter = (
         log.warn('Failed to find type %s, omitting field %s', (f.type as ElemID).getFullName(), f.name)
         return undefined
       }
-      return new Field(elem.elemID, f.name, type, f.annotations, f.isList)
+      // TODO: Check if this breaks
+      return new Field(elem.elemID, f.name, type, f.annotations)
     }
 
     // Add missing fields to types

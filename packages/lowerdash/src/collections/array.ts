@@ -19,3 +19,13 @@ export const makeArray = <TIn>(input: TIn | TIn[] | undefined): TIn[] => {
   }
   return Array.isArray(input) ? input : [input]
 }
+
+export function arrayOf(n: number): undefined[]
+export function arrayOf<T>(n: number, initializer?: (i: number) => T): T[]
+export function arrayOf<T>(
+  n: number,
+  initializer?: (i: number) => T,
+): T[] | unknown[] {
+  const ar = Array.from({ length: n })
+  return initializer !== undefined ? ar.map((_v, i) => initializer(i)) : ar
+}

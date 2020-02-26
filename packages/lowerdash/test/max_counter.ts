@@ -13,25 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const deepMerge = require('../../build_utils/deep_merge')
+export type MaxCounter = {
+  increment(): void
+  decrement(): void
+  max: number
+}
 
-module.exports = deepMerge(
-  require('../../jest.base.config.js'),
-  {
-    name: 'lowerdash',
-    displayName: 'lowerdash',
-    rootDir: `${__dirname}`,
-    collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
-    ],
-    coverageThreshold: {
-      global: {
-        branches: 100,
-        functions: 100,
-        lines: 100,
-        statements: 100,
-      },
+export const maxCounter = (): MaxCounter => {
+  let current = 0
+  let max = current
+  return {
+    increment() {
+      current += 1
+      if (current > max) {
+        max = current
+      }
     },
+    decrement() { current -= 1 },
+    get max() { return max },
   }
-)
-
+}

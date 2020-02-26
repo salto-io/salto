@@ -157,6 +157,7 @@ export const loggerRepo = (
     async end(): Promise<void> {
       const transportsEnded = Promise.all(winstonLogger.transports.map(t => new Promise(resolve => {
         // Workaround for https://github.com/winstonjs/winston/issues/1504
+        // istanbul ignore next
         // eslint-disable-next-line no-underscore-dangle, @typescript-eslint/no-explicit-any
         const stream: Writable = (t as any)._stream || t
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { Namespace, NamespaceOrModule, normalizeNamespaceOrModule } from './namespace'
+import { Namespace, NamespaceOrModule, NamespaceNormalizer } from './namespace'
 import { LOG_LEVELS, LogLevel } from './level'
 import { Config, mergeConfigs, NamespaceFilter, stringToNamespaceFilter } from './config'
 
@@ -52,24 +52,34 @@ export const resolveConfig = (c: Config): ResolvedConfig => ({
     : c.namespaceFilter as NamespaceFilter,
 })
 
+function timeMethod<T>(
+  this: BaseLogger, inner: () => T, desc: string, ...descArgs: unknown[]
+): T
+
+function timeMethod<T>(
+  this: BaseLogger, inner: () => Promise<T>, desc: string, ...descArgs: unknown[]
+): Promise<T>
+
+function timeMethod<T>(
+  this: BaseLogger, inner: () => T| Promise<T>, desc: string, ...descArgs: unknown[]
+): T | Promise<T> {
+  const before = Date.now()
+  const log = (): void => {
+    this.log('debug', `${desc} took %o ms`, ...descArgs, Date.now() - before)
+  }
+
+  const result = inner()
+  if (result instanceof Promise) {
+    return result.finally(log)
+  }
+  log()
+  return result
+}
+
 const addLogMethods = (logger: BaseLogger): Logger => Object.assign(
   logger,
   ...LOG_LEVELS.map(level => ({ [level]: logger.log.bind(logger, level) })),
-  {
-    time<T>(inner: () => T, desc: string, ...descArgs: unknown[]): T {
-      const before = Date.now()
-      const log = (): void => {
-        logger.log('debug', `${desc} took %o ms`, ...descArgs, Date.now() - before)
-      }
-
-      const result = inner()
-      if (result instanceof Promise) {
-        return result.finally(log) as unknown as T
-      }
-      log()
-      return result
-    },
-  }
+  { time: timeMethod.bind(logger) },
 )
 
 export const logger = (
@@ -101,6 +111,7 @@ export type LoggerRepo = ((namespace: NamespaceOrModule) => Logger) & {
 
 export const loggerRepo = (
   baseLoggerRepo: BaseLoggerRepo,
+  namespaceNormalizer: NamespaceNormalizer,
   initialConfig: Readonly<Config>,
 ): LoggerRepo => {
   let config = Object.freeze(resolveConfig(initialConfig))
@@ -113,7 +124,7 @@ export const loggerRepo = (
 
   const getLogger = (
     namespace: NamespaceOrModule
-  ): Logger => loggers.get(normalizeNamespaceOrModule(namespace))
+  ): Logger => loggers.get(namespaceNormalizer(namespace))
 
   const result = Object.assign(getLogger, {
     configure(

@@ -52,6 +52,6 @@ describe('index', () => {
 
   it('calls repo.loggerRepo correctly', () => {
     expect(loggerRepo).toHaveBeenCalled()
-    expect(loggerRepo.mock.calls[0][1]).toEqual(mockConfig)
+    expect(loggerRepo.mock.calls[0][2]).toEqual(mockConfig)
   })
 })

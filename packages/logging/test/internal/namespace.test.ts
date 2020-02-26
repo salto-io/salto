@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  toHexColor, normalizeNamespaceOrModule,
+  toHexColor, namespaceNormalizer,
 } from '../../src/internal/namespace'
 
 describe('namespace', () => {
@@ -30,17 +30,36 @@ describe('namespace', () => {
     })
   })
 
-  describe('normalizeNamespaceOrModule', () => {
+  describe('namespaceNormalizer', () => {
+    const LAST_LIBRARY_FILENAME = 'logging/src/internal/namespace'
+    const normalizeNamespace = namespaceNormalizer(LAST_LIBRARY_FILENAME)
     describe('when a module is specified', () => {
-      it('should return its name as a string', () => {
-        expect(normalizeNamespaceOrModule(module))
-          .toEqual('logging/test/internal/namespace.test')
+      describe('when the id property is a string', () => {
+        it('should return the correct namespace', () => {
+          expect(normalizeNamespace(module))
+            .toEqual('logging/test/internal/namespace.test')
+        })
+      })
+
+      describe('when the id property is a number', () => {
+        describe('when the lastLibraryFilename is found in the stack', () => {
+          it('should return the correct namespace', () => {
+            expect(normalizeNamespace({ id: 12 }))
+              .toEqual('logging/test/internal/namespace.test')
+          })
+        })
+
+        describe('when the lastLibraryFilename is not found in the stack', () => {
+          it('should return the id as string', () => {
+            expect(namespaceNormalizer('NOSUCHFILENAME')({ id: 12 })).toEqual('12')
+          })
+        })
       })
     })
 
     describe('when a string is specified', () => {
       it('should return its name as a string', () => {
-        expect(normalizeNamespaceOrModule('my-namespace')).toEqual('my-namespace')
+        expect(normalizeNamespace('my-namespace')).toEqual('my-namespace')
       })
     })
   })

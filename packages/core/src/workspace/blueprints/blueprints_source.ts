@@ -30,17 +30,17 @@ import { DetailedChange } from '../../core/plan'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 
-const { promiseAllChained } = promises.array
+const { chunkSeries } = promises.array
 
 const log = logger(module)
 
 export type RoutingMode = 'strict' | 'default'
 
 export const BP_EXTENSION = '.bp'
-const PARSE_RATE = 20
-const DUMP_RATE = 20
+const PARSE_CONCURRENCY = 20
+const DUMP_CONCURRENCY = 20
 // TODO: this should moved into cache implemenation
-const CACHE_RATE = 20
+const CACHE_READ_CONCURRENCY = 20
 
 export type Blueprint = {
   buffer: string
@@ -93,7 +93,7 @@ BlueprintsSource => {
   }
 
   const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
-    promiseAllChained(blueprints.map(bp => async () => {
+    chunkSeries(blueprints.map(bp => async () => {
       const parsed = await parseBlueprint(bp)
       return {
         timestamp: bp.timestamp || Date.now(),
@@ -101,7 +101,7 @@ BlueprintsSource => {
         elements: _.keyBy(parsed.elements, e => e.elemID.getFullName()),
         errors: parsed.errors,
       }
-    }), PARSE_RATE)
+    }), PARSE_CONCURRENCY)
 
   const readAllBps = async (): Promise<Blueprint[]> =>
     _.reject(
@@ -181,14 +181,14 @@ BlueprintsSource => {
       .flatten().uniq().value()
     const { parsedBlueprints } = await state
     const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(
-      await promiseAllChained(bps
+      await chunkSeries(bps
         .map(bp => async () => [parsedBlueprints[bp].filename,
           await getSourceMap(parsedBlueprints[bp].filename)]),
-      CACHE_RATE)
+      CACHE_READ_CONCURRENCY)
     )
 
     const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
-    const updatedBlueprints = (await promiseAllChained(
+    const updatedBlueprints = (await chunkSeries(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
         .flatten()
@@ -208,7 +208,7 @@ BlueprintsSource => {
           }
         })
         .value(),
-      DUMP_RATE
+      DUMP_CONCURRENCY
     )).filter(b => b !== undefined) as Blueprint[]
 
     log.debug('going to set the new blueprints')
@@ -251,9 +251,9 @@ BlueprintsSource => {
 
     getSourceRanges: async elemID => {
       const bps = await getElementBlueprints(elemID)
-      const sourceRanges = await promiseAllChained(bps
+      const sourceRanges = await chunkSeries(bps
         .map(bp => async () => (await getSourceMap(bp)).get(elemID.getFullName()) || []),
-      CACHE_RATE)
+      CACHE_READ_CONCURRENCY)
       return _.flatten(sourceRanges)
     },
 

@@ -17,6 +17,7 @@ import { Config, mergeConfigs } from './internal/config'
 import { loggerRepo } from './internal/logger'
 import * as env from './internal/env'
 import * as winston from './internal/winston'
+import { namespaceNormalizer } from './internal/namespace'
 
 export { LogLevel, LOG_LEVELS } from './internal/level'
 export { Logger } from './internal/logger'
@@ -37,4 +38,11 @@ const config: Config = mergeConfigs(env.config(deps.env))
 
 const winstonRepo = winston.loggerRepo(deps, config)
 
-export const logger = loggerRepo(winstonRepo, config)
+// partial name of this filename as it appears on stack traces
+const THIS_FILENAME = 'logging/src/index'
+
+export const logger = loggerRepo(
+  winstonRepo,
+  namespaceNormalizer(THIS_FILENAME),
+  config,
+)

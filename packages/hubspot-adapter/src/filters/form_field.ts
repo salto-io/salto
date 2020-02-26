@@ -44,10 +44,7 @@ const filterCreator: FilterCreator = () => ({
         if (!contactPropertyOverrideFields.includes(fieldName)) {
           return false
         }
-        if (contactPropValues && val === contactPropValues[fieldName]) {
-          return false
-        }
-        return true
+        return !(contactPropValues && val === contactPropValues[fieldName])
       })
 
     const tranformField = (field: Value, fieldsToRemove: Set<string>): void => {

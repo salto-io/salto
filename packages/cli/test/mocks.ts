@@ -22,7 +22,7 @@ import {
 import _ from 'lodash'
 import {
   DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError,
-  DeployResult, Config,
+  DeployResult, Config, telemetrySender,
 } from '@salto-io/core'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
@@ -77,7 +77,10 @@ export const cli = async ({
   const input = {
     args: _.isArray(args) ? args : args.split(' '),
     stdin: {},
-    config: { installationID: '1234' },
+    telemetry: telemetrySender(
+      { url: '', enabled: false, token: '' },
+      { installationID: '1234', app: 'test' },
+    ),
   }
 
   const output = {

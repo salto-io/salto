@@ -19,6 +19,7 @@ import os from 'os'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
 import { exists, writeFile, readTextFile, mkdirp } from './file'
+import { TelemetryConfig } from './telemetry'
 
 const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
 export const SALTO_HOME_VAR = 'SALTO_HOME'
@@ -36,17 +37,28 @@ const installationIDFullPath = (): string => (
   path.join(configHomeDir(), installationIDFilename)
 )
 
+const telemetryToken = process.env.SALTO_TELEMETRY_TOKEN || ''
+
+const getTelemetryURL = (): string => (
+  process.env.SALTO_TELEMETRY_URL || 'https://telemetry.salto.io'
+)
+
+const getTelemetryEnabled = (): boolean => (
+  process.env.SALTO_TELEMETRY_DISABLE === undefined
+)
+
 export type AppConfig = {
   installationID: string
+  telemetry: TelemetryConfig
 }
 
-const loadInstallatioIDFromDisk = async (): Promise<AppConfig> => {
+const loadInstallatioIDFromDisk = async (): Promise<string> => {
   if (!await exists(installationIDFullPath())) {
     throw Error('cannot find installation id file on disk')
   }
 
-  const installationID = (await readTextFile(installationIDFullPath())).trim()
-  return { installationID }
+  const installationID = await readTextFile(installationIDFullPath())
+  return Promise.resolve(installationID.trim())
 }
 
 export const configFromDisk = async (): Promise<AppConfig> => {
@@ -57,5 +69,13 @@ export const configFromDisk = async (): Promise<AppConfig> => {
     await writeFile(installationIDFullPath(), installationID)
   }
 
-  return loadInstallatioIDFromDisk()
+  const installationID = await loadInstallatioIDFromDisk()
+  return {
+    installationID,
+    telemetry: {
+      url: getTelemetryURL(),
+      enabled: getTelemetryEnabled(),
+      token: telemetryToken,
+    },
+  }
 }

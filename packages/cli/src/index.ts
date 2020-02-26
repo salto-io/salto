@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import sourceMapSupport from 'source-map-support'
-import { configFromDisk } from '@salto-io/core'
+import { configFromDisk, telemetrySender } from '@salto-io/core'
+import { versionString } from './version'
 import cli from './cli'
 import { CliExitCode } from './types'
 import commandBuilders from './commands'
@@ -31,8 +32,16 @@ const args = argv.slice(2)
 const main = async (): Promise<CliExitCode> => {
   const oraSpinnerCreator = oraSpinner({ outputStream: stdout })
   const config = await configFromDisk()
+  const telemetry = telemetrySender(
+    config.telemetry,
+    {
+      installationID: config.installationID,
+      app: 'cli',
+      version: versionString,
+    }
+  )
   return cli({
-    input: { args, stdin, config },
+    input: { args, stdin, telemetry },
     output: { stdout, stderr },
     commandBuilders,
     spinnerCreator: oraSpinnerCreator,

@@ -23,6 +23,7 @@ import parse, { ERROR_STYLE } from './argparser'
 import { versionString } from './version'
 
 export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
+const EVENTS_FLUSH_WAIT_TIME = 1000
 
 const log = logger(module)
 
@@ -68,6 +69,7 @@ export default async (
     return CliExitCode.Success
   } catch (err) {
     log.error(`Caught exception: ${[err, err.stack].filter(n => n).join(EOL)}`)
+    input.telemetry.sendStackEvent('error', err, {})
 
     const errorStream = output.stderr
     const unstyledErrorString = `${[err].filter(n => n).join(EOL)}`
@@ -77,6 +79,7 @@ export default async (
     errorStream.write(EOL)
     return CliExitCode.AppError
   } finally {
+    await input.telemetry.stop(EVENTS_FLUSH_WAIT_TIME)
     await logger.end()
   }
 }

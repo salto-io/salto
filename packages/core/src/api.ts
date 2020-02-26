@@ -48,7 +48,6 @@ import {
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
 import Credentials from './workspace/credentials'
-import { AppConfig } from './app_config'
 
 const log = logger(module)
 
@@ -262,14 +261,9 @@ export const deleteFromCsvFile = async (
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
-export const init = async (
-  appConfig: AppConfig,
-  defaultEnvName: string,
-  workspaceName?: string,
-): Promise<Workspace> => {
-  log.debug(`initializing workspace, installation id: ${appConfig.installationID}`)
-  return Workspace.init('.', defaultEnvName, workspaceName)
-}
+export const init = async (defaultEnvName: string, workspaceName?: string): Promise<Workspace> => (
+  Workspace.init('.', defaultEnvName, workspaceName)
+)
 
 export const addAdapter = async (
   workspaceDir: string,

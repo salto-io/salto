@@ -185,6 +185,7 @@ jobs:
           environment:
             RUN_E2E_TESTS: '1'
             SALTO_LOG_LEVEL: 'warn'
+            SALTO_TELEMETRY_DISABLE: '1'
             JEST_JUNIT_OUTPUT: "reports/e2e/test-results.xml"
 
       - store_test_results:

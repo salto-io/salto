@@ -14,27 +14,33 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { init, AppConfig } from '@salto-io/core'
+import { init, Telemetry } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getEnvName } from '../callbacks'
 
+const eventBaseName = 'workspace.init'
+const eventFailureName = `${eventBaseName}.failure`
+
 export const command = (
   workspaceName: string | undefined,
-  config: AppConfig,
+  telemetry: Telemetry,
   { stdout, stderr }: CliOutput,
   getEnvNameCallback: (currentEnvName?: string) => Promise<string>
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     try {
       const defaultEnvName = await getEnvNameCallback()
-      const workspace = await init(config, defaultEnvName, workspaceName)
+      const workspace = await init(defaultEnvName, workspaceName)
+      telemetry.sendCountEvent(eventBaseName, 1, { workspaceID: workspace.config.uid })
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )
     } catch (e) {
       stderr.write(Prompts.initFailed(e.message))
+      telemetry.sendCountEvent(eventFailureName, 1)
+      telemetry.sendStackEvent(eventFailureName, e)
       return CliExitCode.AppError
     }
     return CliExitCode.Success
@@ -61,7 +67,7 @@ const initBuilder = createCommandBuilder({
   },
 
   async build(input: InitParsedCliInput, output: CliOutput) {
-    return command(input.args['workspace-name'], input.config, output, getEnvName)
+    return command(input.args['workspace-name'], input.telemetry, output, getEnvName)
   },
 })
 

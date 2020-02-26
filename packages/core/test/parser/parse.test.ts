@@ -328,7 +328,7 @@ describe('Salto parser', () => {
       })
 
       it('should have the correct path', () => {
-        expect(settingsType.value.filepath).toEqual(new StaticAssetExpression('aaa.png'))
+        expect(settingsType.value.filepath).toEqual(new StaticAssetExpression('aaa.png', 'file("aaa.png")', 'none'))
       })
     })
 

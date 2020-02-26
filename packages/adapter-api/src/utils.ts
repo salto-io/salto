@@ -18,7 +18,7 @@ import _ from 'lodash'
 import {
   TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType, TypeMap,
 } from './elements'
-import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value } from './values'
+import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value, StaticAssetExpression } from './values'
 import { ElemID } from './element_id'
 
 interface AnnoRef {
@@ -76,6 +76,11 @@ export function isEqualElements(first?: any, second?: any): boolean {
   }
   return false
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isStaticAssetExpression = (value: any): value is StaticAssetExpression => (
+  value instanceof StaticAssetExpression
+)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isReferenceExpression = (value: any): value is ReferenceExpression => (

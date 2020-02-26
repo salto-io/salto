@@ -66,7 +66,10 @@ const devaluate = (value: any): HclExpression => {
 
   const devaluateStaticAsset = (ref: StaticAssetExpression): HclExpression => ({
     type: 'staticFileAsset',
-    value: ref.value,
+    value: {
+      filePath: ref.filePath,
+      text: ref.text,
+    },
     expressions: [],
     source,
   })

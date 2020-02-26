@@ -53,7 +53,11 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
         ElemID.fromFullName(traversalParts.join(ElemID.NAMESPACE_SEPARATOR))
       )
     },
-    staticFileAsset: exp => new StaticAssetExpression(exp.value),
+    staticFileAsset: exp => new StaticAssetExpression(
+      exp.value.filePath,
+      exp.value.text,
+      exp.source.filename
+    ),
   }
 
   if (sourceMap && baseId && expression.source) {

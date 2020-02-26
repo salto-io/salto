@@ -15,7 +15,15 @@
 */
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import crypto from 'crypto'
+import { existsSync, readFileSync } from 'fs'
+import { dirname, isAbsolute } from 'path'
+
 import { ElemID } from './element_id'
+
+const sum = crypto.createHash('sha256')
+
+const RESOURCES_PREFIX_DIRNAME = 'static-resources'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -34,32 +42,64 @@ export class StaticAssetExpression {
   static get serializedTypeName(): string { return 'StaticAssetExpression' }
 
   constructor(
-    public readonly filePath: string
+    public readonly filePath: string,
+    public readonly text: string,
+    public readonly bpFileName: string,
   ) {
     this.evaluatedHash = null
     this.evaluatedContent = null
   }
 
-  /* NOTE: Not sure yet when to actually read the file */
+  public resolveFilePath(): string | null {
+    if (isAbsolute(this.filePath)) {
+      return this.filePath
+    }
+
+    const bpDir = dirname(this.bpFileName)
+
+    const assetPathInBpDir = `${bpDir}/${RESOURCES_PREFIX_DIRNAME}/${this.filePath}`
+
+    if (existsSync(assetPathInBpDir)) {
+      return assetPathInBpDir
+    }
+
+    const adapterRootFolder = this.bpFileName.split('/')[0]
+
+    const assetPathInAdapterStaticDir = `${adapterRootFolder}/${RESOURCES_PREFIX_DIRNAME}/${this.filePath}`
+
+    if (existsSync(assetPathInAdapterStaticDir)) {
+      return assetPathInAdapterStaticDir
+    }
+
+    return existsSync(this.filePath) ? this.filePath : null
+  }
 
   get fileHash(): string {
     if (this.evaluatedHash) {
       return this.evaluatedHash
     }
-    // TODO: Do magic here
-    return this.filePath
+    const content = this.fileContent
+
+    this.evaluatedHash = sum.update(content).digest('hex')
+
+    return this.evaluatedHash
   }
 
   get fileContent(): string {
-    if (this.evaluatedContent) {
-      return this.evaluatedContent
+    // TODO: Override this for non filesystem (like S3) ? Make Async?
+    if (!this.evaluatedContent) {
+      const resolvedFilePath = this.resolveFilePath()
+      if (!resolvedFilePath) {
+        throw new Error(`Unable to resolve static asset: '${this.filePath}'`)
+      }
+      this.evaluatedContent = readFileSync(resolvedFilePath, { encoding: 'utf-8' })
     }
-    // TODO: Do MOAR magic here
-    return this.filePath
+
+    return this.evaluatedContent
   }
 
   get value(): Value {
-    return this.filePath
+    return this.text
   }
 }
 
@@ -94,7 +134,7 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
   second,
   (f, s) => {
     if (f instanceof StaticAssetExpression || s instanceof StaticAssetExpression) {
-      return isEqualValues(f.fileHash, s.fileHash)
+      return f && s && isEqualValues(f.fileHash, s.fileHash)
     }
     if (f instanceof ReferenceExpression || s instanceof ReferenceExpression) {
       const fValue = f instanceof ReferenceExpression ? f.value : f

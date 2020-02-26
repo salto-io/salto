@@ -62,7 +62,7 @@ describe('HCL Expression', () => {
   })
 
   it('should evaluate static asset reference', () => {
-    const ref = new StaticAssetExpression('relative.file.path')
+    const ref = new StaticAssetExpression('relative.file.path', 'file("relative.file.path")', 'dummy')
     const exp = devaluate(ref)
     expect(evaluate(exp)).toEqual(ref)
   })

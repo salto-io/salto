@@ -69,7 +69,7 @@ const dumpArray = (arr: Value): string[] => {
 const dumpExpresion = (exp: Value): string[] => {
   if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
   if (exp instanceof StaticAssetExpression) {
-    return [`file("${exp.value}")`]
+    return [exp.text]
   }
   const { parts } = exp as TemplateExpression
   return [

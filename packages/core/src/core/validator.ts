@@ -18,7 +18,7 @@ import { types } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
-  ReferenceExpression, Values, isElement, RESTRICTION_ANNOTATIONS,
+  ReferenceExpression, Values, isElement, RESTRICTION_ANNOTATIONS, StaticAssetExpression,
 } from '@salto-io/adapter-api'
 import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -238,6 +238,20 @@ const validateFieldAnnotations = (
   return validateAnnotations(elemID, value, field.type)
 }
 
+export class InvalidStaticAssetMissingPathError extends ValidationError {
+  constructor({
+    elemID,
+    value,
+    type,
+  }: { elemID: ElemID; value: StaticAssetExpression; type: TypeElement }) {
+    super({
+      elemID,
+      error: `Missing static file asset ${type.elemID.getFullName()} : ${value.filePath}`,
+      severity: 'Error',
+    })
+  }
+}
+
 export class InvalidValueTypeValidationError extends ValidationError {
   readonly value: Value
   readonly type: TypeElement
@@ -255,6 +269,15 @@ export class InvalidValueTypeValidationError extends ValidationError {
 
 const validateValue = (elemID: ElemID, value: Value,
   type: TypeElement, isAnnotations = false): ValidationError[] => {
+  if (value instanceof StaticAssetExpression) {
+    const staticAssetValue = (value as StaticAssetExpression)
+    const hasPath = staticAssetValue.resolveFilePath()
+    return hasPath ? [] : [new InvalidStaticAssetMissingPathError({
+      elemID,
+      value: staticAssetValue,
+      type,
+    })]
+  }
   if (value instanceof ReferenceExpression) {
     return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
   }

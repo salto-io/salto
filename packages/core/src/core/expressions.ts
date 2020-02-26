@@ -75,7 +75,7 @@ resolveStaticAssetExpression = (
   }
   visited.add(filepath)
 
-  return expression.fileContent
+  return expression.text
 }
 
 resolveReferenceExpression = (

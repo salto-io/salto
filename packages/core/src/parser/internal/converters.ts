@@ -238,7 +238,10 @@ export const convertWildcard = (wildcard: LexerToken): HclExpression => {
 
 export const convertStaticFileAsset = (staticFileAsset: LexerToken): HclExpression => ({
   type: 'staticFileAsset',
-  value: staticFileAsset.value,
+  value: {
+    filePath: staticFileAsset.value,
+    text: staticFileAsset.text,
+  },
   expressions: [],
   source: createSourceRange(staticFileAsset, staticFileAsset),
 })

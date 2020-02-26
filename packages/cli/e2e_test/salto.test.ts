@@ -274,10 +274,10 @@ describe('cli e2e', () => {
       await editBlueprint(fullPath('salesforce/Records/Settings/Search.bp'),
         [
           [`{
-            enhancedLookupEnabled = false,
-            lookupAutoCompleteEnabled = false,
-            name = salesforce.${newObjectElemName},
-            resultsPerPageCount = 0,
+            enhancedLookupEnabled = false
+            lookupAutoCompleteEnabled = false
+            name = salesforce.${newObjectElemName}
+            resultsPerPageCount = 0
           },`, ''],
         ])
       await runDeploy(lastPlan, fetchOutputDir)
@@ -286,7 +286,8 @@ describe('cli e2e', () => {
       verifyChanges(lastPlan, [
         { action: 'remove', element: newObjectElemName },
         { action: 'remove', element: newInstanceElemName },
-        { action: 'modify', element: 'SearchSettings' }])
+        // modify on SearchSettings
+        { action: 'modify', element: '_config' }])
     })
     it('should remove the object in salesforce', async () => {
       expect(await objectExists(client, newObjectApiName)).toBe(false)

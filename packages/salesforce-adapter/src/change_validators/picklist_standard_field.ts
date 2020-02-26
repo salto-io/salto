@@ -41,7 +41,7 @@ const createChangeError = (elemID: ElemID, fieldName: string): ChangeError =>
 export const changeValidator = {
   onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> =>
     changes
-      .filter(change => isModificationDiff(change))
+      .filter(isModificationDiff)
       .filter(change => shouldCreateChangeError(getChangeElement(change)))
       .map(change => createChangeError(
         getChangeElement(change).elemID,

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement,
-  ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Values,
+  ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
@@ -68,13 +68,20 @@ describe('State serialization', () => {
     'also_me',
     model,
     {
+      num: new ReferenceExpression(instance.elemID.createNestedID('num')),
+    }
+  )
+
+  const templateRefInstance = new InstanceElement(
+    'also_me_template',
+    model,
+    {
       name: new TemplateExpression({
         parts: [
           'I am not',
           new ReferenceExpression(instance.elemID.createNestedID('name')),
         ],
       }),
-      num: new ReferenceExpression(instance.elemID.createNestedID('num')),
     }
   )
 
@@ -84,7 +91,8 @@ describe('State serialization', () => {
     { name: 'other', num: 5 },
   )
 
-  const elements = [strType, numType, boolType, model, instance, refInstance, config]
+  const elements = [strType, numType, boolType, model,
+    instance, refInstance, templateRefInstance, config]
 
   it('should serialize and deserialize all element types', () => {
     const serialized = serialize(elements)
@@ -94,11 +102,12 @@ describe('State serialization', () => {
   })
 
   it('should not serialize resolved values', () => {
-    const serialized = JSON.parse(serialize(resolve(elements)))
-    const element = serialized
-      .find((e: Values) => e.elemID?.nameParts?.[0] === 'also_me') as InstanceElement
-    expect(element.value.num[SALTO_CLASS_FIELD]).toEqual('ReferenceExpression')
-    expect(Object.keys(element.value.num)).toEqual(['elemId', SALTO_CLASS_FIELD])
+    // TemplateExpressions are discarded
+    const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
+    const serialized = serialize(resolve(elementsToSerialize))
+    const deserialized = deserialize(serialized)
+    const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
+    expect(deserialized).toEqual(sortedElements)
   })
   it('should create the same result for the same input regardless of elements order', () => {
     const serialized = serialize(elements)

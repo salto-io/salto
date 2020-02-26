@@ -18,7 +18,6 @@ import tmp from 'tmp-promise'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
 import { Config, mergeConfigs } from '../../src/internal/config'
-import { namespaceNormalizer } from '../../src/internal/namespace'
 import { loggerRepo, Logger, LoggerRepo } from '../../src/internal/logger'
 import { loggerRepo as winstonLoggerRepo } from '../../src/internal/winston'
 import '../matchers'
@@ -33,7 +32,6 @@ describe('winston based logger', () => {
 
   const createRepo = (): LoggerRepo => loggerRepo(
     winstonLoggerRepo({ consoleStream }, initialConfig),
-    namespaceNormalizer('test/internal/winston_logger.test'),
     initialConfig,
   )
 

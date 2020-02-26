@@ -60,6 +60,8 @@ export const toHexColor = (
 const fromFilename = (
   filename: string
 ): Namespace => path.relative(MONOREPO_PACKAGES_DIRNAME, filename)
+  .replace(/.*:/, '') // remove 'var/task/webpack:' prefix
+  .replace(/^\//, '') // remove '/' prefix
   .replace(/dist\/((src)\/)?/, '')
   .replace(/\.[^.]+$/, '') // remove extension
   .replace(/\/{2}/g, '/') // normalize double slashes to single

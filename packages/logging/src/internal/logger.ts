@@ -14,7 +14,11 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { Namespace, NamespaceOrModule, NamespaceNormalizer } from './namespace'
+import {
+  Namespace,
+  NamespaceOrModule,
+  namespaceNormalizer as createNamespaceNormalizer,
+} from './namespace'
 import { LOG_LEVELS, LogLevel } from './level'
 import { Config, mergeConfigs, NamespaceFilter, stringToNamespaceFilter } from './config'
 
@@ -109,9 +113,10 @@ export type LoggerRepo = ((namespace: NamespaceOrModule) => Logger) & {
   end(): Promise<void>
 }
 
+const namespaceNormalizer = createNamespaceNormalizer('src/internal/logger')
+
 export const loggerRepo = (
   baseLoggerRepo: BaseLoggerRepo,
-  namespaceNormalizer: NamespaceNormalizer,
   initialConfig: Readonly<Config>,
 ): LoggerRepo => {
   let config = Object.freeze(resolveConfig(initialConfig))

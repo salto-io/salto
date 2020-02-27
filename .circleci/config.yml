@@ -171,6 +171,7 @@ jobs:
       - run:
           name: Upload coverage to codecov.io
           command: npx codecov -F unit_test -f coverage/*.json
+          when: always
 
   e2e_test:
     docker:

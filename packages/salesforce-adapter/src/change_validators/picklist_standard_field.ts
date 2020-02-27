@@ -16,15 +16,11 @@
 import {
   Change, ChangeDataType, ChangeError, ElemID, Field, getChangeElement, isModificationDiff,
 } from '@salto-io/adapter-api'
-import { apiName } from '../transformers/transformer'
-import { SALESFORCE_CUSTOM_SUFFIX } from '../constants'
+import { apiName, isCustom } from '../transformers/transformer'
 import { isPicklistField, isStandardValueSetPicklistField } from '../filters/value_set'
 
-const isStandardField = (field: Field): boolean =>
-  !apiName(field, true).endsWith(SALESFORCE_CUSTOM_SUFFIX)
-
 const shouldCreateChangeError = (changeElement: ChangeDataType): changeElement is Field =>
-  isPicklistField(changeElement) && isStandardField(changeElement)
+  isPicklistField(changeElement) && !isCustom(apiName(changeElement))
   && !isStandardValueSetPicklistField(changeElement)
 
 const createChangeError = (elemID: ElemID, fieldName: string): ChangeError =>

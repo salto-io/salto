@@ -24,7 +24,7 @@ import Connection from '../../src/client/jsforce'
 import {
   FIELD_ANNOTATIONS, FILTER_ITEM_FIELDS, SALESFORCE, METADATA_TYPE,
   CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, LABEL, NAMESPACE_SEPARATOR,
-  SALESFORCE_CUSTOM_SUFFIX, API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
+  API_NAME, FORMULA, LOOKUP_FILTER_FIELDS,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, VALUE_SET_FIELDS,
   CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
   OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
@@ -38,6 +38,7 @@ import filterCreator, {
   CUSTOM_OBJECT_TYPE_ID, NESTED_INSTANCE_VALUE_NAME, NESTED_INSTANCE_TYPE_NAME,
 } from '../../src/filters/custom_objects'
 import { FilterWith } from '../../src/filter'
+import { isCustom } from '../../src/transformers/transformer'
 
 describe('Custom Objects filter', () => {
   let connection: Connection
@@ -325,8 +326,7 @@ describe('Custom Objects filter', () => {
       ({ connection, client } = mockAdapter({
         adapterParams: {
           getElemIdFunc: (adapterName: string, _serviceIds: ServiceIds, name: string):
-            ElemID => new ElemID(adapterName, name.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-            ? name.slice(0, -3) : name),
+            ElemID => new ElemID(adapterName, isCustom(name) ? name.slice(0, -3) : name),
         },
       }))
       mockSingleSObject('Custom__c', [

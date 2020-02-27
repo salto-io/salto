@@ -18,8 +18,8 @@ import {
   isInstanceElement, isModificationDiff, isObjectType, isRemovalDiff, ChangeError,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { apiName, metadataType } from '../transformers/transformer'
-import { NAMESPACE_SEPARATOR, SALESFORCE_CUSTOM_SUFFIX } from '../constants'
+import { apiName, isCustom, metadataType } from '../transformers/transformer'
+import { NAMESPACE_SEPARATOR } from '../constants'
 
 
 export const hasNamespace = (customElement: Element): boolean => {
@@ -28,7 +28,7 @@ export const hasNamespace = (customElement: Element): boolean => {
     return false
   }
   const partialFullName = apiNameResult.split('-')[0]
-  const cleanFullName = partialFullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+  const cleanFullName = isCustom(partialFullName)
     ? partialFullName.slice(0, -3) : partialFullName
   return cleanFullName.includes(NAMESPACE_SEPARATOR)
 }

@@ -15,7 +15,7 @@
 */
 import {
   Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
-  ObjectType, BuiltinTypes,
+  ObjectType, Values,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -54,6 +54,20 @@ export const WORKFLOW_TYPE_ID = new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)
 export const isWorkflowType = (type: ObjectType): boolean => type.elemID.isEqual(WORKFLOW_TYPE_ID)
 export const isWorkflowInstance = (instance: InstanceElement): boolean =>
   isWorkflowType(instance.type)
+const fullApiName = (workflow: string, relative: string): string =>
+  ([workflow, relative].join(API_NAME_SEPERATOR))
+
+type Tranformer = (workflowApiName: string, value: Values) => Values
+const transformers: Record<string, Tranformer> = {
+  [WORKFLOW_RULES_FIELD]: (workflowApiName: string, rule: Values): Values => {
+    makeArray(rule.actions).forEach(action => {
+      if (action.name) {
+        action.name = fullApiName(workflowApiName, action.name)
+      }
+    })
+    return rule
+  },
+}
 
 const filterCreator: FilterCreator = () => ({
   /**
@@ -71,27 +85,20 @@ const filterCreator: FilterCreator = () => ({
         }
         const splitted = makeArray(workflowInstance.value[fieldName])
           .map(innerValue => {
-            const instanceName = innerValue[INSTANCE_FULL_NAME_FIELD]
-            const fullApiName = [apiName(workflowInstance), instanceName].join(API_NAME_SEPERATOR)
-            innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName
-            return createInstanceElementFromValues(innerValue, objType)
+            innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName(apiName(workflowInstance),
+              innerValue[INSTANCE_FULL_NAME_FIELD])
+            const transformer = transformers[fieldName]
+            return createInstanceElementFromValues(
+              _.isUndefined(transformer)
+                ? innerValue
+                : transformer(apiName(workflowInstance), innerValue),
+              objType
+            )
           })
         workflowInstance.value[fieldName] = splitted.map(s => new ReferenceExpression(s.elemID))
         return splitted
       })
     )
-
-    const changeTypeToRef = (type?: ObjectType): void => {
-      if (_.isUndefined(type)) {
-        return
-      }
-      Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(fieldName => {
-        const field = type.fields[fieldName]
-        if (!_.isUndefined(field)) {
-          field.type = BuiltinTypes.STRING
-        }
-      })
-    }
 
     const newInstances: InstanceElement[] = []
     elements
@@ -103,7 +110,6 @@ const filterCreator: FilterCreator = () => ({
         newInstances.push(...splitWorkflow(wfInst))
       })
     elements.push(...newInstances)
-    changeTypeToRef(elements.filter(isObjectType).find(isWorkflowType))
   },
 })
 

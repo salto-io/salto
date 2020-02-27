@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { NodeId } from '@salto-io/dag'
 import { Change, ChangeDataType, getChangeElement } from './change'
 import { Field, InstanceElement, ObjectType } from './elements'
 import { isField, isInstanceElement, isObjectType } from './utils'
 
-export type ChangeId = string | number
+export type ChangeId = NodeId
 type Dependency = {
   source: ChangeId
   target: ChangeId

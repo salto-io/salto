@@ -17,15 +17,12 @@ import wu from 'wu'
 import {
   ActionName,
   Adapter,
-  ChangeValidator,
   DataModificationResult,
   Element,
   ElemID,
   ElemIdGetter,
   InstanceElement,
   ObjectType,
-  getChangeElement,
-  DependencyChanger,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -33,9 +30,11 @@ import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
-import { getAdaptersConfigType, initAdapters } from './core/adapters/adapters'
+import {
+  adapterCreators, getAdaptersConfigType, initAdapters, getAdapterChangeValidators,
+  getAdapterDependencyChangers,
+} from './core/adapters'
 import { addServiceToConfig, loadConfig, currentEnvConfig } from './workspace/config'
-import adapterCreators from './core/adapters/creators'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import { findElement, SearchResult } from './core/search'
 import {
@@ -73,44 +72,14 @@ const filterElementsByServices = (
   services: string[]
 ): Element[] => elements.filter(e => services.includes(e.elemID.adapter))
 
-const getChangeValidators = (): Record<string, ChangeValidator> =>
-  _(adapterCreators)
-    .entries()
-    .map(([name, creator]) => [name, creator.changeValidator])
-    .fromPairs()
-    .value()
-
-type AdapterDependencyChanger = (name: string, changer: DependencyChanger) => DependencyChanger
-const adapterDependencyChanger: AdapterDependencyChanger = (name, changer) => (changes, deps) => {
-  const filteredChanges = new Map(
-    wu(changes.entries())
-      .filter(([_id, change]) => getChangeElement(change).elemID.adapter === name)
-  )
-  const filteredDeps = new Map(
-    wu(deps.entries())
-      .filter(([id]) => filteredChanges.has(id))
-      .map(([id, idDeps]) => [id, new Set(wu(idDeps).filter(dep => filteredChanges.has(dep)))])
-  )
-  return changer(filteredChanges, filteredDeps)
-}
-
-const getDependencyChangers = (): ReadonlyArray<DependencyChanger> => (
-  Object.entries(adapterCreators)
-    .map(([name, { dependencyChanger }]) => ({ name, dependencyChanger }))
-    .filter(({ dependencyChanger }) => dependencyChanger !== undefined)
-    .map(({ name, dependencyChanger }) => (
-      adapterDependencyChanger(name, dependencyChanger as DependencyChanger)
-    ))
-)
-
 export const preview = async (
   workspace: Workspace,
   services: string[] = currentEnvConfig(workspace.config).services
 ): Promise<Plan> => getPlan(
   filterElementsByServices(await workspace.state.getAll(), services),
   filterElementsByServices(await workspace.elements, services),
-  getChangeValidators(),
-  defaultDependencyChangers.concat(getDependencyChangers()),
+  getAdapterChangeValidators(),
+  defaultDependencyChangers.concat(getAdapterDependencyChangers()),
 )
 
 const getAdapters = async (

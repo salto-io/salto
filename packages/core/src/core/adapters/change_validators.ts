@@ -13,16 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
-import { DependencyChanger } from '@salto-io/adapter-api'
-import { fieldsByCustomTab } from './dependency_changers/fields_by_custom_tab'
+import _ from 'lodash'
+import { ChangeValidator } from '@salto-io/adapter-api'
+import adapterCreators from './creators'
 
-const dependencyChangers: ReadonlyArray<DependencyChanger> = [
-  fieldsByCustomTab,
-]
-
-export const dependencyChanger: DependencyChanger = async (changes, dependencies) => (
-  wu.chain(...await Promise.all(
-    dependencyChangers.map(changer => changer(changes, dependencies))
-  ))
-)
+export const getAdapterChangeValidators = (): Record<string, ChangeValidator> =>
+  _(adapterCreators)
+    .entries()
+    .map(([name, creator]) => [name, creator.changeValidator])
+    .fromPairs()
+    .value()

@@ -1096,7 +1096,7 @@ export const toMetadataInfo = (fullName: string, values: Values):
 
 export const createInstanceElementFromValues = (values: Values, type: ObjectType,
   namespacePrefix?: string): InstanceElement => {
-  const fullName = values[INSTANCE_FULL_NAME_FIELD]
+  const { fullName } = values
   const getPackagePath = (): string[] => {
     if (namespacePrefix) {
       if (namespacePrefix === 'standard' || fullName === namespacePrefix) {

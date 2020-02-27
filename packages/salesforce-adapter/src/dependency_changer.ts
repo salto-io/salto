@@ -21,8 +21,11 @@ const dependencyChangers: ReadonlyArray<DependencyChanger> = [
   fieldsByCustomTab,
 ]
 
-export const dependencyChanger: DependencyChanger = async (changes, dependencies) => (
-  wu.chain(...await Promise.all(
-    dependencyChangers.map(changer => changer(changes, dependencies))
-  ))
+type DependencyChangersRunner = (changers: ReadonlyArray<DependencyChanger>) => DependencyChanger
+export const dependencyChangersRunner: DependencyChangersRunner = changers => (
+  async (changes, dependencies) => (
+    wu.chain(...await Promise.all(changers.map(changer => changer(changes, dependencies))))
+  )
 )
+
+export const dependencyChanger = dependencyChangersRunner(dependencyChangers)

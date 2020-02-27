@@ -22,7 +22,7 @@ import { collections } from '@salto-io/lowerdash'
 import { CUSTOM_TAB_METADATA_TYPE } from '../constants'
 import { metadataType } from '../transformers/transformer'
 
-const FIELDS_CREATED_BY_CUSTOM_TAB = [
+export const FIELDS_CREATED_BY_CUSTOM_TAB = [
   'LastReferencedDate',
   'LastViewedDate',
 ]

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { DependencyChanger, getChangeElement } from '@salto-io/adapter-api'
+import { DependencyChanger, getChangeElement, AdapterCreator } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
 
 type AdapterDependencyChanger = (name: string, changer: DependencyChanger) => DependencyChanger
@@ -31,8 +31,10 @@ const adapterDependencyChanger: AdapterDependencyChanger = (name, changer) => (c
   return changer(filteredChanges, filteredDeps)
 }
 
-export const getAdapterDependencyChangers = (): ReadonlyArray<DependencyChanger> => (
-  Object.entries(adapterCreators)
+export const getAdapterDependencyChangers = (
+  creators: Record<string, AdapterCreator> = adapterCreators,
+): ReadonlyArray<DependencyChanger> => (
+  Object.entries(creators)
     .map(([name, { dependencyChanger }]) => ({ name, dependencyChanger }))
     .filter(({ dependencyChanger }) => dependencyChanger !== undefined)
     .map(({ name, dependencyChanger }) => (

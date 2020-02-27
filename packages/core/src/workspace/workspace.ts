@@ -27,6 +27,7 @@ import Credentials, { adapterCredentials } from './credentials'
 import State from './state'
 import { localState } from './local/state'
 import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
+import { loadStaticAssetSource, loadMultienvStaticAssetSource, StaticAssetSource, StaticAsset } from './static-assets/static_asset_source'
 import { parseResultCache } from './cache'
 import { localDirectoryStore } from './local/dir_store'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
@@ -80,6 +81,19 @@ type MergedState = {
   readonly errors: Errors
 }
 
+const loadStaticAssetSource = (
+  sourceBaseDir: string,
+  localStorage: string
+): StaticAssetSource => {
+  const blueprintsStore = localDirectoryStore(
+    sourceBaseDir,
+    `*${BP_EXTENSION}`,
+    (dirParh: string) => !excludeDirs.includes(dirParh),
+  )
+  const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
+  return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
+}}
+
 const loadBlueprintSource = (
   sourceBaseDir: string,
   localStorage: string,
@@ -125,12 +139,17 @@ export class Workspace {
   readonly state: State
   readonly credentials: Credentials
   private readonly blueprintsSource: BlueprintsSource
+  private readonly staticAssetSource: StaticAssetSource
   private mergedStatePromise?: Promise<MergedState>
 
   constructor(public config: Config) {
     this.blueprintsSource = _.isEmpty(config.envs)
       ? loadBlueprintSource(config.baseDir, config.localStorage)
       : loadMultiEnvSource(config)
+    this.staticAssetSource = _.isEmpty(config.envs)
+      ? loadStaticAssetSource(config.baseDir, config.localStorage)
+      : loadMultiEnvStaticAssetSource(config)
+
     this.state = localState(currentEnvConfig(config).stateLocation)
     this.credentials = adapterCredentials(
       localDirectoryStore(currentEnvConfig(config).credentialsLocation)

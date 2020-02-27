@@ -59,6 +59,7 @@ export const serialize = (elements: Element[]): string => {
         .value()
     }
     if (isStaticAssetExpression(e)) {
+      // TODO: Serialize entire fields needed including hash
       return e.text
     }
     return e

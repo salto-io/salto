@@ -71,6 +71,7 @@ export class StaticAssetExpression {
       return assetPathInAdapterStaticDir
     }
 
+    // TODO: Undefined > null
     return existsSync(this.filePath) ? this.filePath : null
   }
 

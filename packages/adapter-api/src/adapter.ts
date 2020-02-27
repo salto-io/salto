@@ -19,6 +19,7 @@ import {
 import { ElemID } from './element_id'
 import { Change } from './change'
 import { ChangeValidator } from './change_validators'
+import { DependencyChanger } from './dependency_changer'
 
 export interface DataModificationResult {
   successfulRows: number
@@ -54,4 +55,5 @@ export type AdapterCreator = {
   validateConfig: (config: Readonly<InstanceElement>) => Promise<void>
   configType: ObjectType
   changeValidator?: ChangeValidator
+  dependencyChanger?: DependencyChanger
 }

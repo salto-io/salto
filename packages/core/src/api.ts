@@ -17,7 +17,6 @@ import wu from 'wu'
 import {
   ActionName,
   Adapter,
-  ChangeValidator,
   DataModificationResult,
   Element,
   ElemID,
@@ -31,9 +30,11 @@ import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
-import { getAdaptersConfigType, initAdapters } from './core/adapters/adapters'
+import {
+  adapterCreators, getAdaptersConfigType, initAdapters, getAdapterChangeValidators,
+  getAdapterDependencyChangers,
+} from './core/adapters'
 import { addServiceToConfig, loadConfig, currentEnvConfig } from './workspace/config'
-import adapterCreators from './core/adapters/creators'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import { findElement, SearchResult } from './core/search'
 import {
@@ -48,6 +49,7 @@ import {
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
 import Credentials from './workspace/credentials'
+import { defaultDependencyChangers } from './core/plan/plan'
 
 const log = logger(module)
 
@@ -70,20 +72,14 @@ const filterElementsByServices = (
   services: string[]
 ): Element[] => elements.filter(e => services.includes(e.elemID.adapter))
 
-const getChangeValidators = (): Record<string, ChangeValidator> =>
-  _(adapterCreators)
-    .entries()
-    .map(([name, creator]) => [name, creator.changeValidator])
-    .fromPairs()
-    .value()
-
 export const preview = async (
   workspace: Workspace,
   services: string[] = currentEnvConfig(workspace.config).services
 ): Promise<Plan> => getPlan(
   filterElementsByServices(await workspace.state.getAll(), services),
   filterElementsByServices(await workspace.elements, services),
-  getChangeValidators()
+  getAdapterChangeValidators(),
+  defaultDependencyChangers.concat(getAdapterDependencyChangers()),
 )
 
 const getAdapters = async (
@@ -111,11 +107,7 @@ export const deploy = async (
   force = false
 ): Promise<DeployResult> => {
   const changedElements: Element[] = []
-  const actionPlan = await getPlan(
-    filterElementsByServices(await workspace.state.getAll(), services),
-    filterElementsByServices(await workspace.elements, services),
-    getChangeValidators()
-  )
+  const actionPlan = await preview(workspace, services)
   if (force || await shouldDeploy(actionPlan)) {
     const adapters = await getAdapters(workspace.credentials, services)
 

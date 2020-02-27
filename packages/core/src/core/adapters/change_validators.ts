@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/elements'
-export * from './src/element_id'
-export * from './src/values'
-export * from './src/builtins'
-export * from './src/adapter'
-export * from './src/change_validators'
-export * from './src/dependency_changer'
-export * from './src/change'
-export * from './src/utils'
-export * from './src/error'
+import _ from 'lodash'
+import { ChangeValidator } from '@salto-io/adapter-api'
+import adapterCreators from './creators'
+
+export const getAdapterChangeValidators = (): Record<string, ChangeValidator> =>
+  _(adapterCreators)
+    .entries()
+    .map(([name, creator]) => [name, creator.changeValidator])
+    .fromPairs()
+    .value()

@@ -168,7 +168,7 @@ describe('api.ts', () => {
   })
 
   describe('deploy', () => {
-    const mockShouldDeployYes = jest.fn().mockImplementation(() => Promise.resolve(true))
+    const mockShouldDeploy = jest.fn().mockResolvedValue(true)
     const mockReportCurrentAction = jest.fn()
 
     const mockedGetPlan = plan.getPlan as jest.Mock
@@ -194,36 +194,50 @@ describe('api.ts', () => {
     const mockFlush = ws.flush as jest.Mock
     let result: api.DeployResult
 
-    beforeAll(async () => {
-      result = await api.deploy(
-        ws,
-        mockShouldDeployYes,
-        mockReportCurrentAction,
-        SERVICES
-      )
-    })
+    describe('when approved', () => {
+      beforeAll(async () => {
+        result = await api.deploy(
+          ws,
+          mockShouldDeploy,
+          mockReportCurrentAction,
+          SERVICES
+        )
+      })
 
-    it('should getPlan', async () => {
-      expect(mockedGetPlan).toHaveBeenCalledTimes(2)
-    })
+      it('should getPlan', async () => {
+        expect(mockedGetPlan).toHaveBeenCalledTimes(2)
+      })
 
-    it('should not call flush', async () => {
-      expect(mockFlush).not.toHaveBeenCalled()
-    })
+      it('should not call flush', async () => {
+        expect(mockFlush).not.toHaveBeenCalled()
+      })
 
-    it('should ask for approval', async () => {
-      expect(mockShouldDeployYes).toHaveBeenCalledTimes(1)
-    })
+      it('should ask for approval', async () => {
+        expect(mockShouldDeploy).toHaveBeenCalledTimes(1)
+      })
 
-    it('should deploy changes', async () => {
-      expect(mockedDeployActions).toHaveBeenCalledTimes(1)
-    })
-    it('should get detailed changes', async () => {
-      expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(1)
-    })
+      it('should deploy changes', async () => {
+        expect(mockedDeployActions).toHaveBeenCalledTimes(1)
+      })
+      it('should get detailed changes', async () => {
+        expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(1)
+      })
 
-    it('should return fetch changes', async () => {
-      expect(wu(result.changes || []).toArray()).toHaveLength(1)
+      it('should return fetch changes', async () => {
+        expect(wu(result.changes || []).toArray()).toHaveLength(1)
+      })
+    })
+    describe('when aborted', () => {
+      beforeAll(async () => {
+        mockShouldDeploy.mockResolvedValueOnce(false)
+        result = await api.deploy(ws, mockShouldDeploy, mockReportCurrentAction)
+      })
+      it('should not deploy', () => {
+        expect(mockedDeployActions).not.toHaveBeenCalledWith()
+      })
+      it('should return success', () => {
+        expect(result.success).toBeTruthy()
+      })
     })
   })
 

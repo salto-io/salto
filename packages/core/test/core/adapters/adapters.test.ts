@@ -15,7 +15,7 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { creator } from '@salto-io/salesforce-adapter'
-import { initAdapters, getAdaptersConfigType } from '../../src/core/adapters/adapters'
+import { initAdapters, getAdaptersConfigType } from '../../../src/core/adapters/adapters'
 
 describe('adapters.ts', () => {
   const { configType } = creator

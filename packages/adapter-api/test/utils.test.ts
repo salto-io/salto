@@ -314,7 +314,7 @@ describe('Test utils.ts', () => {
       })
     })
 
-    const transformPrimitiveTest: TransformPrimitiveFunc = (val, _path, field) => {
+    const transformPrimitiveTest: TransformPrimitiveFunc = (val, _pathID, field) => {
       const fieldType = field?.type
       if (!isPrimitiveType(fieldType)) {
         return val
@@ -332,10 +332,9 @@ describe('Test utils.ts', () => {
     }
 
 
-    const transformReferenceTest: TransformReferenceFunc = (val, _path) => {
-      if (val instanceof ReferenceExpression) return val.value
-      return val
-    }
+    const transformReferenceTest: TransformReferenceFunc = val =>
+      val.value
+
 
     describe('when transformPrimitives and transformReference was received', () => {
       describe('when called with instance values', () => {
@@ -415,7 +414,7 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('transformReferences func', () => {
+  describe('resolveReferences func', () => {
     const instanceName = 'Instance'
     const objectName = 'Object'
     const newValue = 'NEW'
@@ -487,7 +486,7 @@ describe('Test utils.ts', () => {
     const getName = (refValue: Value): Value =>
       refValue
 
-    describe('transformReferences on objectType', () => {
+    describe('resolveReferences on objectType', () => {
       const sourceElementCopy = _.cloneDeep(sourceElement)
 
 
@@ -531,7 +530,7 @@ describe('Test utils.ts', () => {
       })
     })
 
-    describe('transformReferences on instance', () => {
+    describe('resolveReferences on instance', () => {
       const resolvedInstance = resolveReferences(instance, getName)
       it('should transform instanceElement', () => {
         expect(resolvedInstance.value.name).toEqual(instance.value.name)
@@ -543,6 +542,79 @@ describe('Test utils.ts', () => {
 
       it('should transform back to instance', () => {
         expect(restoreReferences(instance, resolvedInstance, getName)).toEqual(instance)
+      })
+    })
+
+    describe('resolveReferences on primitive', () => {
+      const prim = new PrimitiveType({
+        elemID: new ElemID('mockAdapter', 'str'),
+        primitive: PrimitiveTypes.STRING,
+        annotationTypes: {
+          testAnno: BuiltinTypes.STRING,
+          testNumAnno: BuiltinTypes.NUMBER,
+          refAnno: BuiltinTypes.STRING,
+        },
+        annotations: {
+          testAnno: 'TEST ANNO TYPE',
+          testNumAnno: 34,
+          refAnno: valueRef,
+        },
+      })
+
+      const resolvedPrim = resolveReferences(prim, getName)
+
+      it('should transform primitive', () => {
+        expect(resolvedPrim).not.toEqual(prim)
+
+        expect(resolvedPrim.primitive).toEqual(prim.primitive)
+        expect(resolvedPrim.elemID).toEqual(prim.elemID)
+        expect(resolvedPrim.path).toEqual(prim.path)
+        expect(resolvedPrim.annotationTypes).toEqual(prim.annotationTypes)
+
+        expect(resolvedPrim.annotations).not.toEqual(prim.annotations)
+        expect(resolvedPrim.annotations.refAnno).toEqual(regValue)
+      })
+
+      it('should transform back to primitive', () => {
+        expect(restoreReferences(prim, resolvedPrim, getName)).toEqual(prim)
+      })
+    })
+
+    describe('resolveReferences on field', () => {
+      const FieldType = new ObjectType({
+        elemID,
+        annotationTypes: {
+          testAnno: BuiltinTypes.STRING,
+          testNumAnno: BuiltinTypes.NUMBER,
+          refAnno: BuiltinTypes.STRING,
+        },
+      })
+
+      const field = new Field(elemID, 'field', FieldType, {
+        testAnno: 'TEST ANNO TYPE',
+        testNumAnno: 34,
+        refAnno: valueRef,
+      })
+
+      const resolvedField = resolveReferences(field, getName)
+
+      it('should transform field', () => {
+        expect(resolvedField).not.toEqual(field)
+
+        expect(resolvedField.type).toEqual(field.type)
+        expect(resolvedField.isList).toEqual(field.isList)
+        expect(resolvedField.name).toEqual(field.name)
+        expect(resolvedField.elemID).toEqual(field.elemID)
+        expect(resolvedField.path).toEqual(field.path)
+        expect(resolvedField.parentID).toEqual(field.parentID)
+
+        expect(resolvedField.annotations).not.toEqual(field.annotations)
+        expect(resolvedField.annotations.refAnno).toEqual(regValue)
+        expect(resolvedField.annotations.testAnno).toEqual(field.annotations.testAnno)
+      })
+
+      it('should transform back to field', () => {
+        expect(restoreReferences(field, resolvedField, getName)).toEqual(field)
       })
     })
   })

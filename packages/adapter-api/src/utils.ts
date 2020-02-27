@@ -176,11 +176,11 @@ export const bpCase = (name?: string): string => (
 type PrimitiveField = Field & {type: PrimitiveType}
 
 export type TransformPrimitiveFunc = (
-  val: PrimitiveValue, path?: ElemID, type?: PrimitiveField)
+  val: PrimitiveValue, pathID?: ElemID, type?: PrimitiveField)
   => PrimitiveValue | ReferenceExpression | undefined
 
 export type TransformReferenceFunc = (
-  val: ReferenceExpression, path?: ElemID
+  val: ReferenceExpression, pathID?: ElemID
 ) => Value | ReferenceExpression
 
 export const transformValues = (
@@ -190,34 +190,34 @@ export const transformValues = (
     transformPrimitives = v => v,
     transformReferences = v => v,
     strict = true,
-    path = undefined,
+    pathID = undefined,
   }: {
     values: Value
     type: ObjectType | TypeMap
     transformPrimitives?: TransformPrimitiveFunc
     transformReferences?: TransformReferenceFunc
     strict?: boolean
-    path?: ElemID
+    pathID?: ElemID
   }
 ): Values | undefined => {
-  const transformValue = (value: Value, keyPath?: ElemID, field?: Field): Value => {
+  const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): Value => {
     if (isReferenceExpression(value)) {
-      return transformReferences(value, keyPath)
+      return transformReferences(value, keyPathID)
     }
 
     if (_.isArray(value)) {
       const transformed = value
-        .map((item, index) => transformValue(item, keyPath?.createNestedID(String(index)), field))
+        .map((item, index) => transformValue(item, keyPathID?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
 
     if (field === undefined) {
-      return strict ? undefined : transformPrimitives(value, keyPath)
+      return strict ? undefined : transformPrimitives(value, keyPathID)
     }
 
     if (isPrimitiveType(field.type)) {
-      return transformPrimitives(value, keyPath, field as PrimitiveField)
+      return transformPrimitives(value, keyPathID, field as PrimitiveField)
     }
     if (isObjectType(field.type)) {
       const transformed = _.omitBy(
@@ -227,7 +227,7 @@ export const transformValues = (
           transformPrimitives,
           transformReferences,
           strict,
-          path: keyPath,
+          pathID: keyPathID,
         }),
         _.isUndefined
       )
@@ -241,7 +241,7 @@ export const transformValues = (
     : _.mapValues(type, (fieldType, name) => new Field(new ElemID(''), name, fieldType))
 
   const result = _(values)
-    .mapValues((value, key) => transformValue(value, path?.createNestedID(key), fieldMap[key]))
+    .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMap[key]))
     .omitBy(_.isUndefined)
     .value()
   return _.isEmpty(result) ? undefined : result
@@ -252,10 +252,12 @@ export const transformElement = <T extends Element>(
     element,
     transformPrimitives,
     transformReference,
+    strict,
   }: {
     element: T
     transformPrimitives?: TransformPrimitiveFunc
     transformReference?: TransformReferenceFunc
+    strict?: boolean
   }
 ): T => {
   let newElement: Element
@@ -265,8 +267,8 @@ export const transformElement = <T extends Element>(
     type: element.annotationTypes,
     transformPrimitives,
     transformReferences: transformReference,
-    strict: false,
-    path: element.elemID.createNestedID('annotation'),
+    strict,
+    pathID: isInstanceElement(element) ? element.elemID : element.elemID.createNestedID('attr'),
   }) || {}
 
   if (isInstanceElement(element)) {
@@ -275,8 +277,8 @@ export const transformElement = <T extends Element>(
       type: element.type,
       transformPrimitives,
       transformReferences: transformReference,
-      strict: false,
-      path: element.elemID.createNestedID('value'),
+      strict,
+      pathID: element.elemID,
     }) || {}
 
     newElement = new InstanceElement(
@@ -302,8 +304,8 @@ export const transformElement = <T extends Element>(
           type: field.annotationTypes,
           transformPrimitives,
           transformReferences: transformReference,
-          strict: false,
-          path: field.elemID,
+          strict,
+          pathID: field.elemID,
         }) || {},
         field.isList,
       )
@@ -323,7 +325,7 @@ export const transformElement = <T extends Element>(
 
   if (isField(element)) {
     newElement = new Field(
-      element.elemID,
+      element.parentID,
       element.name,
       element.type,
       transformedAnnotations,
@@ -356,6 +358,7 @@ export const resolveReferences = <T extends Element>(
   return transformElement({
     element,
     transformReference: referenceReplacer,
+    strict: false,
   })
 }
 
@@ -365,9 +368,9 @@ export const restoreReferences = <T extends Element>(
   getLookUpName: (v: Value) => Value
 ): T => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
-  const createPathMapCallback: TransformReferenceFunc = (val, path) => {
-    if (isReferenceExpression(val) && path) {
-      allReferencesPaths.set(path.getFullName(), val)
+  const createPathMapCallback: TransformReferenceFunc = (val, pathID) => {
+    if (pathID) {
+      allReferencesPaths.set(pathID.getFullName(), val)
     }
     return val
   }
@@ -375,14 +378,15 @@ export const restoreReferences = <T extends Element>(
   transformElement({
     element: source,
     transformReference: createPathMapCallback,
+    strict: false,
   })
 
-  const restoreReferencesFunc: TransformPrimitiveFunc = (val, path) => {
-    if (path === undefined) {
+  const restoreReferencesFunc: TransformPrimitiveFunc = (val, pathID) => {
+    if (pathID === undefined) {
       return val
     }
 
-    const ref = allReferencesPaths.get(path.getFullName())
+    const ref = allReferencesPaths.get(pathID.getFullName())
     if (ref !== undefined) {
       if (_.isEqual(getLookUpName(ref.value), val)) {
         return ref
@@ -395,6 +399,7 @@ export const restoreReferences = <T extends Element>(
   return transformElement({
     element: targetElement,
     transformPrimitives: restoreReferencesFunc,
+    strict: false,
   })
 }
 

@@ -78,7 +78,7 @@ const replaceReferenceValues = (
     return _.isString(val) ? new ReferenceExpression(elemID) : val
   }
 
-  const transformPrimitive: TransformPrimitiveFunc = (val, _path, field) => (
+  const transformPrimitive: TransformPrimitiveFunc = (val, _pathID, field) => (
     !_.isUndefined(field) && shouldReplace(field) ? replacePrimitive(val, field) : val
   )
 

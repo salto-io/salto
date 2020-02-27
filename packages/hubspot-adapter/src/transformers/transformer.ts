@@ -1790,7 +1790,7 @@ export const createInstanceName = (
   name: string
 ): string => bpCase(name.trim())
 
-const transformPrimitive: TransformPrimitiveFunc = (val, _path, field) => {
+const transformPrimitive: TransformPrimitiveFunc = (val, _pathID, field) => {
   // remove values that are just an empty string or null
   if (val === '' || val === null) {
     return undefined

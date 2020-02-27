@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
-  ReferenceExpression, TemplateExpression,
+  ReferenceExpression, TemplateExpression, FunctionExpression,
 } from '@salto-io/adapter-api'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/core/expressions'
 
@@ -102,6 +102,13 @@ describe('Test Salto Expressions', () => {
       },
     })
 
+    const instanceWithFunctions = new InstanceElement('withfunctions', base, {
+      simple: new FunctionExpression('simple', ['aaa']),
+      several: new FunctionExpression('several', [false, 123]),
+      list: new FunctionExpression('list', [['aaa', true, 123]]),
+      mixed: new FunctionExpression('mixed', ['aaa', [1, 2, 'aa']]),
+    })
+
     const elements = [
       base,
       baseInst,
@@ -114,6 +121,7 @@ describe('Test Salto Expressions', () => {
       chainedRefInst,
       noPathInst,
       objectRef,
+      instanceWithFunctions,
     ]
 
     const resolved = resolve(elements)
@@ -131,6 +139,33 @@ describe('Test Salto Expressions', () => {
     it('should resolve simple references', () => {
       const element = findResolved<InstanceElement>(simpleRefInst)
       expect(element.value.test.value).toEqual('simple')
+    })
+
+    describe('functions', () => {
+      let element: InstanceElement
+      beforeAll(() => {
+        element = findResolved<InstanceElement>(instanceWithFunctions)
+      })
+      it('should resolve simple params', () => {
+        expect(element.value).toHaveProperty('simple')
+        expect(element.value.simple.funcName).toEqual('simple')
+        expect(element.value.simple.parameters).toEqual(['aaa'])
+      })
+      it('should resolve several params', () => {
+        expect(element.value).toHaveProperty('several')
+        expect(element.value.several.funcName).toEqual('several')
+        expect(element.value.several.parameters).toEqual([false, 123])
+      })
+      it('should resolve list params', () => {
+        expect(element.value).toHaveProperty('list')
+        expect(element.value.list.funcName).toEqual('list')
+        expect(element.value.list.parameters).toEqual([['aaa', true, 123]])
+      })
+      it('should resolve mixed params', () => {
+        expect(element.value).toHaveProperty('mixed')
+        expect(element.value.mixed.funcName).toEqual('mixed')
+        expect(element.value.mixed.parameters).toEqual(['aaa', [1, 2, 'aa']])
+      })
     })
 
     it('should not mutate parameters to resolve function', () => {

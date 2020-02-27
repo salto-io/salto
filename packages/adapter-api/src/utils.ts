@@ -20,6 +20,7 @@ import {
 } from './elements'
 import {
   Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value,
+  FunctionExpression,
 } from './values'
 import { ElemID } from './element_id'
 import {
@@ -93,8 +94,13 @@ export const isTemplateExpression = (value: any): value is TemplateExpression =>
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isFunctionExpression = (value: any): value is FunctionExpression => (
+  value instanceof FunctionExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isExpression = (value: any): value is Expression => (
-  isReferenceExpression(value) || isTemplateExpression(value)
+  isReferenceExpression(value) || isTemplateExpression(value) || isFunctionExpression(value)
 )
 
 export const getSubElement = (baseType: TypeElement, pathParts: string[]):

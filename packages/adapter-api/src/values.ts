@@ -26,6 +26,15 @@ export interface Values {
   [key: string]: Value
 }
 
+export class FunctionExpression {
+  constructor(
+    public readonly funcName: string,
+    public readonly parameters: Value[]
+  ) {}
+
+  static get serializedTypeName(): string { return 'FunctionExpression' }
+}
+
 export class ReferenceExpression {
   constructor(
     public readonly elemId: ElemID, private resValue?: Value
@@ -48,7 +57,7 @@ export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {
   static get serializedTypeName(): string { return 'TemplateExpression' }
 }
 
-export type Expression = ReferenceExpression | TemplateExpression
+export type Expression = ReferenceExpression | TemplateExpression | FunctionExpression
 
 export type TemplatePart = string | Expression
 

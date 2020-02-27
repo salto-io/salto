@@ -8,15 +8,15 @@
 %}
 
 # Pass your lexer object using the @lexer option:
-@lexer lexer 
+@lexer lexer
 
 main -> _nl (blockItem __nl:? {% d=> d[0] %}):* {% d=> _.flatten(d.filter(d => d)) %}
 block -> blockLabels oObj _nl (blockItem __nl {% id %}):* cObj {% d => converters.convertBlock(d[0], d[3], d[4]) %}
 blockLabels -> word __ (label __ {% d => d[0] %}):* {% d=> _.flatten([d[0], d[2]]) %}
-label -> 
+label ->
 	  %word {% id %}
 	| string {% id %}
-blockItem -> 
+blockItem ->
 	  block {% id %}
 	| attr {% id %}
 attr -> (word {% id %} | string {% id %}) _ eq _ value {% d => converters.convertAttr(d[0], d[4]) %}
@@ -26,10 +26,11 @@ arrayItems ->
 	| value _nl ("," _nl value _nl {% d => d[2] %}):*  ( "," _nl ):? {% d => _.flatten([d[0], d[2]]) %}
 object -> oObj _nl objectItems cObj {% d => converters.convertObject(d[0], d[2], d[3]) %}
 objectItems ->(attr _nl {% d=> d[0] %}):* {% d => _.flatten(d[0]) %}
-value -> 
+value ->
 	  primitive {% id %}
 	| array {% id %}
 	| object {% id %}
+	| func {% id %}
 
 primitive ->
 	  %number {% d => converters.convertNumber(d[0]) %}
@@ -39,6 +40,9 @@ primitive ->
 	| multilineString {% id %}
 	| %wildcard {% d => converters.convertWildcard(d[0]) %}
 
+
+func -> %word args {% d => converters.convertFunction(d[0], d[1][1], d[1][2]) %}
+args -> "(" arrayItems ")" {% d => d %}
 
 string -> "\"" (content {% id %} |reference {% id %}):* stringEnd {% d => converters.convertString(d[0], d[1], d[2]) %}
 multilineString -> %mlStart (content {% id %} | reference {% id %}):* %mlEnd {% d => converters.convertMultilineString(d[0], d[1], d[2]) %}

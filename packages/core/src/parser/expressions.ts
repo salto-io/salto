@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   Value, ElemID, TemplateExpression, ReferenceExpression,
+  FunctionExpression,
 } from '@salto-io/adapter-api'
 import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
 
@@ -51,6 +52,16 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
       const traversalParts = exp.value as unknown as string[]
       return new ReferenceExpression(
         ElemID.fromFullName(traversalParts.join(ElemID.NAMESPACE_SEPARATOR))
+      )
+    },
+    func: exp => {
+      const { value: { funcName, parameters } } = exp
+      const params: Value[] = (parameters.type && parameters.type === 'list')
+        ? evaluators[parameters.type as ExpressionType](parameters)
+        : parameters.map((x: HclExpression) => evaluate(x, baseId, sourceMap))
+      return new FunctionExpression(
+        funcName,
+        params,
       )
     },
   }

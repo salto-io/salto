@@ -19,6 +19,7 @@ import {
 } from '../src/elements'
 import {
   ReferenceExpression, Values, TemplateExpression, Value,
+  FunctionExpression,
 }
   from '../src/values'
 import { ElemID } from '../src/element_id'
@@ -132,6 +133,10 @@ describe('Test utils.ts', () => {
           },
         },
       ],
+      simplefunc: new FunctionExpression('funcush', ['aaa']),
+      severalfunc: new FunctionExpression('several', [false, 123, 'aaa']),
+      listfunc: new FunctionExpression('list', [[1, 2, 3]]),
+      mixedfunc: new FunctionExpression('mixed', [true, [1, 2, 3], 'ZOMG']),
     },
     [],
     {

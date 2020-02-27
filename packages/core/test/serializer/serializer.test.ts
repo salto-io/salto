@@ -17,6 +17,7 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
+  FunctionExpression,
 } from '@salto-io/adapter-api'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
@@ -85,6 +86,16 @@ describe('State serialization', () => {
     }
   )
 
+  const functionRefInstance = new InstanceElement(
+    'also_me_function',
+    model,
+    {
+      singleparam: new FunctionExpression('funcadelic', ['aaa']),
+      multipleparams: new FunctionExpression('george', [false, 321]),
+      withlist: new FunctionExpression('washington', ['ZOMG', [3, 2, 1]]),
+    },
+  )
+
   const config = new InstanceElement(
     ElemID.CONFIG_NAME,
     model,
@@ -92,7 +103,7 @@ describe('State serialization', () => {
   )
 
   const elements = [strType, numType, boolType, model,
-    instance, refInstance, templateRefInstance, config]
+    instance, refInstance, templateRefInstance, functionRefInstance, config]
 
   it('should serialize and deserialize all element types', () => {
     const serialized = serialize(elements)

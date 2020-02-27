@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { TemplateExpression, ReferenceExpression, ElemID } from '@salto-io/adapter-api'
+import {
+  FunctionExpression, TemplateExpression,
+  ReferenceExpression, ElemID,
+} from '@salto-io/adapter-api'
 import { parse } from '../../../src/parser/internal/parse'
 import { dump } from '../../../src/parser/internal/dump'
 import {
@@ -270,6 +273,12 @@ describe('HCL dump', () => {
                 ' test',
               ],
             }),
+            somefunc: new FunctionExpression('funcush', ['ZOMG']),
+            otherfunc: new FunctionExpression('so_plenty', [[false, 1, '4rlz']]),
+            mixedfunc: new FunctionExpression('mixtush', [false, [1, 2, 3], '4rlz']),
+            lastfunc: new FunctionExpression('severalush', [false, 1, '4rlz']),
+            nestedfunc: new FunctionExpression('nestush', [false, [1, 2, [3, 4]], '4rlz']),
+            superdeepnest: new FunctionExpression('nestbaabuabua', [false, [1, 2, [3, [4, 5]]], '4rlz']),
             nested: {
               val: 'so deep',
             },
@@ -303,6 +312,25 @@ describe('HCL dump', () => {
     // eslint-disable-next-line no-template-curly-in-string
     expect(serialized).toMatch('exp = "test ${ a.b } test"')
   })
+  it('dumps functions with single parameters', () => {
+    expect(serialized).toMatch('somefunc = funcush("ZOMG")')
+  })
+  it('dumps functions with list', () => {
+    expect(serialized).toMatch('otherfunc = so_plenty([false, 1, "4rlz"])')
+  })
+  it('dumps functions mixed parameters', () => {
+    expect(serialized).toMatch('mixedfunc = mixtush(false, [1, 2, 3], "4rlz")')
+  })
+  it('dumps functions several parameters', () => {
+    expect(serialized).toMatch('lastfunc = severalush(false, 1, "4rlz")')
+  })
+  it('dumps functions nested parameters', () => {
+    expect(serialized).toMatch('nestedfunc = nestush(false, [1, 2, [3, 4]], "4rlz")')
+  })
+  it('dumps functions really nested parameters', () => {
+    expect(serialized).toMatch('superdeepnest = nestbaabuabua(false, [1, 2, [3, [4, 5]]], "4rlz")')
+  })
+
   it('handles nested attributes', () => {
     expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep",*\s*}/m)
   })

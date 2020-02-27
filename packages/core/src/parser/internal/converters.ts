@@ -235,3 +235,17 @@ export const convertWildcard = (wildcard: LexerToken): HclExpression => {
   if (allowWildcard) return exp
   throw new NearleyError(exp, wildcard.offset, 'Invalid wildcard token')
 }
+
+export const convertFunction = (
+  funcStart: LexerToken,
+  parameters: HclExpression[],
+  funcEnd: LexerToken
+): HclExpression => ({
+  type: 'func',
+  expressions: [],
+  value: {
+    funcName: funcStart.value,
+    parameters,
+  },
+  source: createSourceRange(funcStart, funcEnd),
+})

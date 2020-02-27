@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, TemplateExpression, ElemID } from '@salto-io/adapter-api'
+import { FunctionExpression, ReferenceExpression, TemplateExpression, ElemID } from '@salto-io/adapter-api'
 import devaluate from './internal/devaluate'
 import evaluate from '../../src/parser/expressions'
 
@@ -59,5 +59,28 @@ describe('HCL Expression', () => {
     const templ = new TemplateExpression({ parts: [ref] })
     const exp = devaluate(templ)
     expect(evaluate(exp)).toEqual(templ)
+  })
+
+  describe('should evaluate functions', () => {
+    it('with single parameter', () => {
+      const ref = new FunctionExpression('funcush', ['aa'])
+      const exp = devaluate(ref)
+      expect(evaluate(exp)).toEqual(ref)
+    })
+    it('with several parameters', () => {
+      const ref = new FunctionExpression('funcush', ['aa', 312])
+      const exp = devaluate(ref)
+      expect(evaluate(exp)).toEqual(ref)
+    })
+    it('with list', () => {
+      const ref = new FunctionExpression('funcush', [['aa', 'bb']])
+      const exp = devaluate(ref)
+      expect(evaluate(exp)).toEqual(ref)
+    })
+    it('with mixed', () => {
+      const ref = new FunctionExpression('funcush', [false, ['aa', 'bb']])
+      const exp = devaluate(ref)
+      expect(evaluate(exp)).toEqual(ref)
+    })
   })
 })

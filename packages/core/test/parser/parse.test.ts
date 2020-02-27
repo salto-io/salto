@@ -64,7 +64,7 @@ describe('Salto parser', () => {
             }
           ]
         }
-        
+
         annotations {
           salesforce.LeadConvertSettings convertSettings {}
         }
@@ -113,14 +113,31 @@ describe('Salto parser', () => {
         full_name              = "PathAssistant"
         path_assistant_enabled = false
       }
-      `
+      adapter_id.some_asset {
+        content                                 = funcadelic("some.png")
+        contentWithNumber                       = funkynumber(1)
+        contentWithBoolean                      = pun_is_fun(true)
+        contentWithList                         = pun_is_really_fun(["yes", "dad", true])
+        contentWithSeveralParams                = severability(false, 3, "WAT")
+        contentWithMixed                        = mixer(false, [3, 3], "WAT")
+        contentWithNested                       = nestush(false, [3, [
+          1,
+          2
+        ]], "WAT")
+        contentWithMultilineArraysAndParameters = multish("regular", [
+          "aa",
+          2,
+          false
+        ], 321)
+      }
+       `
     beforeAll(() => {
       ({ elements, sourceMap } = parse(Buffer.from(body), 'none'))
     })
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(12)
+        expect(elements.length).toBe(13)
       })
     })
 
@@ -403,6 +420,79 @@ describe('Salto parser', () => {
         expect(annotationTypeSource).toHaveLength(1)
       })
     })
+    describe('functions', () => {
+      let instanceWithFunctions: InstanceElement
+
+      beforeAll(() => {
+        instanceWithFunctions = elements[12] as InstanceElement
+      })
+
+      describe('parameters', () => {
+        it('number', () => {
+          expect(instanceWithFunctions.value.contentWithNumber).toHaveProperty('funcName')
+          expect(instanceWithFunctions.value.contentWithNumber.funcName).toEqual('funkynumber')
+          expect(instanceWithFunctions.value.contentWithNumber).toHaveProperty('parameters')
+          expect(instanceWithFunctions.value.contentWithNumber.parameters).toEqual([1])
+        })
+        it('string', () => {
+          expect(instanceWithFunctions.value.content).toHaveProperty('funcName')
+          expect(instanceWithFunctions.value.content.funcName).toEqual('funcadelic')
+          expect(instanceWithFunctions.value.content).toHaveProperty('parameters')
+          expect(instanceWithFunctions.value.content.parameters).toEqual(['some.png'])
+        })
+        it('boolean', () => {
+          expect(instanceWithFunctions.value.contentWithBoolean).toHaveProperty('funcName')
+          expect(instanceWithFunctions.value.contentWithBoolean.funcName).toEqual('pun_is_fun')
+          expect(instanceWithFunctions.value.contentWithBoolean).toHaveProperty('parameters')
+          expect(instanceWithFunctions.value.contentWithBoolean.parameters).toEqual([true])
+        })
+        it('list', () => {
+          expect(instanceWithFunctions.value.contentWithList).toHaveProperty('funcName')
+          expect(instanceWithFunctions.value.contentWithList.funcName).toEqual('pun_is_really_fun')
+          expect(instanceWithFunctions.value.contentWithList).toHaveProperty('parameters')
+          expect(instanceWithFunctions.value.contentWithList.parameters[0])
+            .toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithList.parameters[0])
+            .toEqual(['yes', 'dad', true])
+        })
+        it('several paraams', () => {
+          expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('funcName')
+          expect(instanceWithFunctions.value.contentWithSeveralParams.funcName).toEqual('severability')
+          expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('parameters')
+          expect(instanceWithFunctions.value.contentWithSeveralParams.parameters)
+            .toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithSeveralParams.parameters)
+            .toEqual([false, 3, 'WAT'])
+        })
+        it('mixed', () => {
+          expect(instanceWithFunctions.value.contentWithMixed).toHaveProperty('funcName')
+          expect(instanceWithFunctions.value.contentWithMixed.funcName).toEqual('mixer')
+          expect(instanceWithFunctions.value.contentWithMixed).toHaveProperty('parameters')
+          expect(instanceWithFunctions.value.contentWithMixed.parameters)
+            .toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithMixed.parameters)
+            .toEqual([false, [3, 3], 'WAT'])
+        })
+        it('nested', () => {
+          expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('funcName')
+          expect(instanceWithFunctions.value.contentWithNested.funcName).toEqual('nestush')
+          expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('parameters')
+          expect(instanceWithFunctions.value.contentWithNested.parameters)
+            .toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithNested.parameters)
+            .toEqual([false, [3, [1, 2]], 'WAT'])
+        })
+        it('multiline', () => {
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty('funcName')
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.funcName).toEqual('multish')
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty('parameters')
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters)
+            .toHaveLength(3)
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters)
+            .toEqual(['regular', ['aa', 2, false], 321])
+        })
+      })
+    })
   })
 
   describe('error tests', () => {
@@ -413,6 +503,7 @@ describe('Salto parser', () => {
       expect(() => parse(Buffer.from(body), 'none')).toThrow()
     })
   })
+
   it('fails on invalid top level syntax', async () => {
     const body = 'bla'
     expect(parse(Buffer.from(body), 'none').errors).not.toHaveLength(0)

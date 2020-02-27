@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   ReferenceExpression, TemplateExpression,
+  FunctionExpression,
 } from '@salto-io/adapter-api'
 import { SourceRange, HclExpression } from '../../../src/parser/internal/types'
 
@@ -72,6 +73,16 @@ const devaluate = (value: any): HclExpression => {
     source,
   })
 
+  const devaluateFunctionExpression = (funcExp: FunctionExpression): HclExpression => ({
+    type: 'func',
+    expressions: [],
+    value: {
+      funcName: funcExp.funcName,
+      parameters: devaluateArray(funcExp.parameters),
+    },
+    source,
+  })
+
   if (_.isString(value)) {
     return devaluateString(value as string)
   }
@@ -88,6 +99,10 @@ const devaluate = (value: any): HclExpression => {
   }
   if (value instanceof TemplateExpression) {
     return devaluateTemplateExpression(value)
+  }
+
+  if (value instanceof FunctionExpression) {
+    return devaluateFunctionExpression(value)
   }
 
   return devaluateValue(value)

@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, isExpression, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
+import {
+  Value, isExpression, ReferenceExpression,
+  TemplateExpression, isFunctionExpression,
+} from '@salto-io/adapter-api'
 import { DumpedHclBlock, DumpedHclBody } from './types'
 
 const O_BLOCK = '{'
@@ -23,6 +26,8 @@ const O_OBJ = '{'
 const C_OBJ = '}'
 const O_ARR = '['
 const C_ARR = ']'
+const O_PAREN = '('
+const C_PAREN = ')'
 const IDENT = '  '
 
 const ident = (lines: string[]): string[] => {
@@ -68,6 +73,23 @@ const dumpArray = (arr: Value): string[] => {
 
 const dumpExpresion = (exp: Value): string[] => {
   if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
+  if (isFunctionExpression(exp)) {
+    const { parameters, funcName } = exp
+
+    // All of this lovelyness is to not get an extra empty item on the start and end of the array
+    const dumpParamFunction = (val: Value): string[] => (
+      Array.isArray(val)
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        ? dumpArrInlineFunction(val)
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        : dumpValue(val)
+    )
+    const dumpArrInlineFunction = (arr: Value): string[] =>
+      [`${O_ARR}${arr.map(dumpParamFunction).join(', ')}${C_ARR}`]
+    const paramsString = parameters.map(dumpParamFunction).join(', ')
+
+    return [`${funcName}${O_PAREN}${paramsString}${C_PAREN}`]
+  }
   const { parts } = exp as TemplateExpression
   return [
     dumpPrimitive(parts

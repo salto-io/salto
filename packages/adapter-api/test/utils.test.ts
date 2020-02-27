@@ -44,6 +44,7 @@ describe('Test utils.ts', () => {
       testAnno: 'TEST ANNO',
     },
     fields: {
+      ref: new Field(mockElem, 'ref', BuiltinTypes.STRING),
       str: new Field(mockElem, 'str', BuiltinTypes.STRING, {
         testAnno: 'TEST FIELD ANNO',
       }),

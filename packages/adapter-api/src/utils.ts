@@ -262,9 +262,21 @@ export const transformElement = <T extends Element>(
 ): T => {
   let newElement: Element
 
+  const elementAnnotationTypes = (): TypeMap => {
+    if (isInstanceElement(element)) {
+      return {}
+    }
+
+    if (isField(element)) {
+      return element.type.annotationTypes
+    }
+
+    return element.annotationTypes
+  }
+
   const transformedAnnotations = transformValues({
     values: element.annotations,
-    type: element.annotationTypes,
+    type: elementAnnotationTypes(),
     transformPrimitives,
     transformReferences: transformReference,
     strict,
@@ -295,20 +307,12 @@ export const transformElement = <T extends Element>(
     const clonedFields: FieldMap = {}
 
     Object.entries(element.fields).forEach(([key, field]: [string, Field]) => {
-      clonedFields[key] = new Field(
-        field.parentID,
-        field.name,
-        field.type,
-        transformValues({
-          values: field.annotations,
-          type: field.annotationTypes,
-          transformPrimitives,
-          transformReferences: transformReference,
-          strict,
-          pathID: field.elemID,
-        }) || {},
-        field.isList,
-      )
+      clonedFields[key] = transformElement({
+        element: field,
+        transformPrimitives,
+        transformReference,
+        strict,
+      })
     })
 
     newElement = new ObjectType({

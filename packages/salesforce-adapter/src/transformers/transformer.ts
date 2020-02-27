@@ -59,9 +59,12 @@ export const metadataType = (element: Element): string => {
 export const isCustomObject = (element: Element): boolean =>
   metadataType(element) === CUSTOM_OBJECT
 
+export const isCustom = (fullName: string): boolean =>
+  fullName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+
 export const defaultApiName = (element: Element): string => {
   const { name } = element.elemID
-  return name.endsWith(SALESFORCE_CUSTOM_SUFFIX) || isInstanceElement(element)
+  return isCustom(name) || isInstanceElement(element)
     ? name
     : `${name}${SALESFORCE_CUSTOM_SUFFIX}`
 }
@@ -845,9 +848,6 @@ export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Va
 export const toCustomField = (
   field: TypeField, fullname = false
 ): CustomField => {
-  const isCustomField = ({ fullName }: CustomField): boolean =>
-    (_.last(fullName.split(API_NAME_SEPERATOR)) as string).endsWith(SALESFORCE_CUSTOM_SUFFIX)
-
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const newField = new CustomField(
     apiName(field, !fullname),
@@ -884,7 +884,8 @@ export const toCustomField = (
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)
     && !blacklistedAnnotations.includes(annotationName)
-    && (annotationName !== LABEL || isCustomField(newField)) // Cant specify label on standard field
+    // Cannot specify label on standard field
+    && (annotationName !== LABEL || isCustom(newField.fullName))
   )
 
   // Convert the annotations' names to the required API name
@@ -1363,15 +1364,14 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
     // For each geolocation field, get its name, then find its corresponding child fields by
     // this name.
     Object.keys(locationFields).forEach(key => {
-      const isCustomField = key.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-      const keyBaseName = isCustomField ? key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length) : key
+      const keyBaseName = isCustom(key) ? key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length) : key
       Object.values(Types.compoundDataTypes.Location.fields).forEach(childField => {
         const clonedField = childField.clone()
         // Add the child fields to the object type
         const childFieldName = `${keyBaseName}__${clonedField.name}`
         clonedField.name = childFieldName
         clonedField.annotations = {
-          [API_NAME]: `${[apiName(object), childFieldName].join(API_NAME_SEPERATOR)}${isCustomField ? '__s' : ''}`,
+          [API_NAME]: `${[apiName(object), childFieldName].join(API_NAME_SEPERATOR)}${isCustom(key) ? '__s' : ''}`,
         }
         object.fields[childFieldName] = clonedField
       })

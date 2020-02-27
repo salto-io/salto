@@ -22,11 +22,9 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import SalesforceClient from '../client/client'
 import { FilterCreator } from '../filter'
+import { FIELD_ANNOTATIONS } from '../constants'
 import {
-  SALESFORCE_CUSTOM_SUFFIX, FIELD_ANNOTATIONS,
-} from '../constants'
-import {
-  metadataType, apiName, createInstanceElement, isCustomObject, Types,
+  metadataType, apiName, createInstanceElement, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
 import { extractFullNamesFromValueList } from './utils'
 
@@ -125,10 +123,11 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
 
 const isStandardPickList = (f: Field): boolean => {
   const apiNameResult = apiName(f)
-  return apiNameResult ? (
-    f.type.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID)
-    || f.type.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID))
-    && !apiNameResult.endsWith(SALESFORCE_CUSTOM_SUFFIX) : false
+  return apiNameResult
+    ? (f.type.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID)
+      || f.type.elemID.isEqual(Types.primitiveDataTypes.MultiselectPicklist.elemID))
+      && !isCustom(apiNameResult)
+    : false
 }
 
 const calculatePicklistFieldsToUpdate = (

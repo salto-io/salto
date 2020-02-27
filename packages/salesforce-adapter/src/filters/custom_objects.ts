@@ -25,7 +25,7 @@ import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
-  SALESFORCE_CUSTOM_SUFFIX, LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
+  LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
   VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
   VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES, OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
   FORMULA, LEAD_CONVERT_SETTINGS_METADATA_TYPE, ASSIGNMENT_RULES_METADATA_TYPE,
@@ -35,7 +35,7 @@ import {
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive,
-  formulaTypeName, metadataType,
+  formulaTypeName, metadataType, isCustom,
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue,
@@ -367,14 +367,14 @@ const createFromInstance = (instance: InstanceElement,
   const { serviceIds, object: annotationsObject, namespace } = createObjectTypeWithBaseAnnotations(
     objectName, instance.value[LABEL]
   )
-  transformObjectAnnotations(annotationsObject, objectName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
+  transformObjectAnnotations(annotationsObject, isCustom(objectName)
     ? typesFromInstance.customAnnotationTypes
     : typesFromInstance.standardAnnotationTypes, instance)
   newElements.push(annotationsObject)
 
   const instanceFields = makeArray(instance.value.fields)
   const [instanceCustomFields, instanceStandardFields] = _.partition(instanceFields, field =>
-    field[INSTANCE_FULL_NAME_FIELD].endsWith(SALESFORCE_CUSTOM_SUFFIX))
+    isCustom(field[INSTANCE_FULL_NAME_FIELD]))
   if (!_.isEmpty(instanceStandardFields)) {
     const standardFieldsElement = Types.get(objectName, true, false, serviceIds) as ObjectType
     const standardFields = createFieldsFromInstanceFields(instanceStandardFields,

@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
+import { resolve } from '../../src/core/expressions'
 
 describe('State serialization', () => {
   const strType = new PrimitiveType({
@@ -67,13 +68,20 @@ describe('State serialization', () => {
     'also_me',
     model,
     {
+      num: new ReferenceExpression(instance.elemID.createNestedID('num')),
+    }
+  )
+
+  const templateRefInstance = new InstanceElement(
+    'also_me_template',
+    model,
+    {
       name: new TemplateExpression({
         parts: [
           'I am not',
           new ReferenceExpression(instance.elemID.createNestedID('name')),
         ],
       }),
-      num: new ReferenceExpression(instance.elemID.createNestedID('num')),
     }
   )
 
@@ -83,12 +91,22 @@ describe('State serialization', () => {
     { name: 'other', num: 5 },
   )
 
-  const elements = [strType, numType, boolType, model, instance, refInstance, config]
+  const elements = [strType, numType, boolType, model,
+    instance, refInstance, templateRefInstance, config]
 
   it('should serialize and deserialize all element types', () => {
     const serialized = serialize(elements)
     const deserialized = deserialize(serialized)
     const sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
+    expect(deserialized).toEqual(sortedElements)
+  })
+
+  it('should not serialize resolved values', () => {
+    // TemplateExpressions are discarded
+    const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
+    const serialized = serialize(resolve(elementsToSerialize))
+    const deserialized = deserialize(serialized)
+    const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
     expect(deserialized).toEqual(sortedElements)
   })
   it('should create the same result for the same input regardless of elements order', () => {

@@ -162,7 +162,12 @@ BlueprintsSource => {
   }
 
   const setBlueprints = async (...blueprints: Blueprint[]): Promise<void> => {
-    await Promise.all(blueprints.map(bp => blueprintsStore.set(bp)))
+    const [emptyBlueprints, nonEmptyBlueprints] = _.partition(
+      blueprints,
+      bp => _.isEmpty(bp.buffer.trim())
+    )
+    await Promise.all(nonEmptyBlueprints.map(bp => blueprintsStore.set(bp)))
+    await Promise.all(emptyBlueprints.map(bp => blueprintsStore.delete(bp.filename)))
     // Swap state
     state = buildBlueprintsState(blueprints, (await state).parsedBlueprints)
   }

@@ -18,12 +18,14 @@ import fs from 'fs'
 import rimRafLib from 'rimraf'
 import mkdirpLib from 'mkdirp'
 import { strings } from '@salto-io/lowerdash'
+import path from 'path'
 
 const statP = promisify(fs.stat)
 const readFileP = promisify(fs.readFile)
 const copyFileP = promisify(fs.copyFile)
 const writeFileP = promisify(fs.writeFile)
 const renameP = promisify(fs.rename)
+const readDirP = promisify(fs.readdir)
 
 export const rm = promisify(rimRafLib)
 export const mkdirp = promisify(mkdirpLib)
@@ -50,6 +52,19 @@ export type Stats = fs.Stats
 export const stat = (filename: string): Promise<fs.Stats> => statP(filename)
 
 stat.notFoundAsUndefined = notFoundAsUndefined(stat)
+
+export const isSubFolder = (
+  subFolder: string,
+  folder: string
+): boolean => {
+  const relative = path.relative(folder, subFolder)
+  return !relative.startsWith('..') && !path.isAbsolute(relative)
+}
+
+export const emptyDir = async (
+  dirName: string
+): Promise<boolean> => (await readDirP(dirName)).length === 0
+
 
 export const exists = async (
   filename: string

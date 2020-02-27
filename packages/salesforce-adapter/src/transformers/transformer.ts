@@ -763,12 +763,14 @@ export class Types {
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
       Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,
-      Types.TreatBlankAsType,
+      Types.TreatBlankAsType, Types.filterItemType,
       ...Object.values(Types.restrictedNumberTypes),
     ]
       .map(type => {
         const fieldType = type.clone()
-        fieldType.path = [SALESFORCE, TYPES_PATH, 'annotation_types']
+        fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
+          ? [SALESFORCE, TYPES_PATH, 'annotation_types']
+          : [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
         return fieldType
       })
   }

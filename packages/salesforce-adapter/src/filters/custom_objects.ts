@@ -23,6 +23,7 @@ import {
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
+import wu from 'wu'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
@@ -468,15 +469,16 @@ const removeIrrelevantElements = (elements: Element[]): void => {
 }
 
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
+const workflowDependentMetadataTypes = new Set([WORKFLOW_METADATA_TYPE,
+  ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
 const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE_METADATA_TYPE,
   QUICK_ACTION_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
-  ...Object.values(WORKFLOW_FIELD_TO_TYPE),
+  ...wu(workflowDependentMetadataTypes.values()).toArray(),
 ])
 
 const hasCustomObjectParent = (instance: InstanceElement): boolean =>
   dependentMetadataTypes.has(metadataType(instance))
-
 
 const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
   const apiNameParts = (instance: InstanceElement): string[] =>
@@ -487,7 +489,8 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
     if (customObject.path) {
       instance.path = [
         ...customObject.path.slice(0, -1),
-        instance.elemID.typeName,
+        ...(workflowDependentMetadataTypes.has(instance.elemID.typeName)
+          ? [WORKFLOW_METADATA_TYPE, instance.elemID.typeName] : [instance.elemID.typeName]),
         ...(apiNameParts(instance).length > 1 ? [instance.elemID.name] : []),
       ]
     }

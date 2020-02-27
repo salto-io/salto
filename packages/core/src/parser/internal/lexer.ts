@@ -25,6 +25,7 @@ const lexer = moo.states({
     // string: /".*?"/,
     number: /[-+]?\d+\.?\d*/,
     boolean: /true|false/,
+    fcn: /\w{1,}\(.+\)/,
     word: /[\d\w.]+/,
     arrOpen: '[',
     arrClose: ']',

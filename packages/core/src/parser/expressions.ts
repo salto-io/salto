@@ -53,6 +53,11 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
         ElemID.fromFullName(traversalParts.join(ElemID.NAMESPACE_SEPARATOR))
       )
     },
+    fcn: exp => {
+      switch (exp.value.fcnName) {
+        default: return [exp.value]
+      }
+    },
   }
 
   if (sourceMap && baseId && expression.source) {

@@ -15,7 +15,7 @@
 */
 import { ElemID, Values } from '@salto-io/adapter-api'
 
-export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'|'dynamic'
+export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'|'dynamic'|'fcn'
 
 export type HclExpression = {
   type: ExpressionType

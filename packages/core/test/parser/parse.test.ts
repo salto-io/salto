@@ -64,7 +64,7 @@ describe('Salto parser', () => {
             }
           ]
         }
-        
+
         annotations {
           salesforce.LeadConvertSettings convertSettings {}
         }
@@ -412,7 +412,17 @@ describe('Salto parser', () => {
       `
       expect(() => parse(Buffer.from(body), 'none')).toThrow()
     })
+    it('fails on unknown functions', () => {
+      const body = `
+      some__amazong_block {
+        content = zify("aaaa")
+      }
+      `
+      const result = parse(Buffer.from(body), 'none')
+      expect(result.errors[0].summary).toEqual('Unknown function zify')
+    })
   })
+
   it('fails on invalid top level syntax', async () => {
     const body = 'bla'
     expect(parse(Buffer.from(body), 'none').errors).not.toHaveLength(0)

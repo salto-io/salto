@@ -20,6 +20,10 @@ import { ParsedHclBlock, HclAttribute, HclExpression, SourceRange } from './type
 let currentFilename: string
 let allowWildcard = false
 
+// Was not able to make this more elegant and less duplicate
+const functionKeywordList = ['file']
+export type functionKeyword = 'file' // Add chained `| 'yourfcnname' to add here
+
 type HCLToken = ParsedHclBlock | HclAttribute | HclExpression
 
 interface LexerToken {
@@ -234,4 +238,45 @@ export const convertWildcard = (wildcard: LexerToken): HclExpression => {
   } as HclExpression
   if (allowWildcard) return exp
   throw new NearleyError(exp, wildcard.offset, 'Invalid wildcard token')
+}
+
+export const convertFunction = (fcn: LexerToken): HclExpression => {
+  const exp = {
+    type: 'fcn',
+    expressions: [],
+    source: createSourceRange(fcn, fcn),
+  } as HclExpression
+
+  const match = fcn.text.match(/(\w{1,})\((.+)\)/)
+
+  if (!match) {
+    throw new NearleyError(exp, fcn.offset, 'Invalid function')
+  }
+
+  const [, fcnName, rawParams] = match
+
+  if (!functionKeywordList.includes(fcnName)) {
+    throw new NearleyError(exp, fcn.offset, `Unknown function ${fcnName}`)
+  }
+
+  const paramsBeforeParsing = rawParams.split(',')
+    .map(Function.prototype.call, String.prototype.trim)
+
+  let params
+
+  try {
+    params = paramsBeforeParsing.map(s => JSON.parse(s))
+  } catch (jsonParseError) {
+    throw new NearleyError(exp, fcn.offset, `Invalid parameters for ${fcnName}: ${paramsBeforeParsing}`)
+  }
+
+  return {
+    ...exp,
+    ...{
+      value: {
+        fcnName,
+        params,
+      },
+    },
+  }
 }

@@ -32,7 +32,7 @@ import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
-  defaultApiName, getLookUpName,
+  defaultApiName, getLookUpName, transformReferences,
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -299,10 +299,20 @@ export default class SalesforceAdapter {
    * @param type the object type of which to retrieve instances
    */
   public async *getInstancesOfType(type: ObjectType): AsyncIterable<InstanceElement[]> {
+    const toInstanceElements = (queryResult: QueryResult<Value>):
+InstanceElement[] => {
+      // Omit the "attributes" field from the objects
+      const results = queryResult.records.map(obj => _.pickBy(obj, (_value, key) =>
+        key !== 'attributes'))
+
+      // Convert the result to Instance Elements
+      return results.map(res => new InstanceElement(res.Id, type, res))
+    }
+
     let results = await this.getFirstBatchOfInstances(type)
 
     while (true) {
-      yield toInstanceElements(type, results)
+      yield toInstanceElements(results)
       if (results.nextRecordsUrl !== undefined) {
         // eslint-disable-next-line no-await-in-loop
         results = await this.client.queryMore(results.nextRecordsUrl)

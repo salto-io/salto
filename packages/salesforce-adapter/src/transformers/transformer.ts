@@ -15,8 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult,
-  Record as SfRecord, PicklistEntry,
+  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, Record as SfRecord, PicklistEntry,
 } from 'jsforce'
 import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
@@ -1094,16 +1093,6 @@ export const toMetadataInfo = (fullName: string, values: Values):
     fullName,
     ...values,
   })
-
-export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Value>):
-  InstanceElement[] => {
-  // Omit the "attributes" field from the objects
-  const results = queryResult.records.map(obj => _.pickBy(obj, (_value, key) =>
-    key !== 'attributes'))
-
-  // Convert the result to Instance Elements
-  return results.map(res => new InstanceElement(res.Id, type, res))
-}
 
 export const createInstanceElementFromValues = (values: Values, type: ObjectType,
   namespacePrefix?: string): InstanceElement => {

@@ -100,10 +100,6 @@ export enum ANNOTATION_TYPE_NAMES {
 // Salto annotations
 export const API_NAME = 'apiName'
 export const METADATA_TYPE = 'metadataType'
-export const FIELD_PERMISSIONS = 'fieldPermissions'
-export const OBJECT_PERMISSIONS = 'objectPermissions'
-export const FIELD_LEVEL_SECURITY_ANNOTATION = 'fieldLevelSecurity'
-export const OBJECT_LEVEL_SECURITY_ANNOTATION = 'objectLevelSecurity'
 export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topicsForObjects'
 
 // Salesforce annotations
@@ -214,20 +210,6 @@ export const NAME_FIELDS = {
 export const GEOLOCATION_FIELDS = {
   LATITUDE: 'Latitude',
   LONGITUDE: 'Longitude',
-}
-
-export const FIELD_LEVEL_SECURITY_FIELDS = {
-  EDITABLE: 'editable',
-  READABLE: 'readable',
-}
-
-export const OBJECT_LEVEL_SECURITY_FIELDS = {
-  ALLOW_CREATE: 'allowCreate',
-  ALLOW_DELETE: 'allowDelete',
-  ALLOW_EDIT: 'allowEdit',
-  ALLOW_READ: 'allowRead',
-  MODIFY_ALL_RECORDS: 'modifyAllRecords',
-  VIEW_ALL_RECORDS: 'viewAllRecords',
 }
 
 export const TOPICS_FOR_OBJECTS_FIELDS = {

@@ -21,27 +21,14 @@ export type JSONBool = boolean | 'true' | 'false'
 
 export type ObjectPermissionsOptionsFields = 'allowCreate' | 'allowDelete' | 'allowEdit'
  | 'allowRead' | 'modifyAllRecords' | 'viewAllRecords'
-export const OBJECT_PERMISSIONS_OPTIONS:
- ReadonlyArray<ObjectPermissionsOptionsFields> = Object.freeze([
-   'allowCreate', 'allowDelete', 'allowEdit', 'allowRead',
-   'modifyAllRecords', 'viewAllRecords',
- ])
 export type ObjectPermissionsOptions = {[option in ObjectPermissionsOptionsFields]: JSONBool}
 
 export type FieldPermissionsOptionsFields = 'editable' | 'readable'
-export const FIELD_PERMISSIONS_OPTIONS:
- ReadonlyArray<FieldPermissionsOptionsFields> = Object.freeze([
-   'readable', 'editable',
- ])
 export type FieldPermissionsOptions = {[option in FieldPermissionsOptionsFields]: JSONBool}
 
 export type FieldPermissions = { field: string } & FieldPermissionsOptions
 export type ObjectPermissions = { object: string } & ObjectPermissionsOptions
 
-export type PermissionsTypes = FieldPermissions | ObjectPermissions
-export type PermissionsOptionsTypes = FieldPermissionsOptions | ObjectPermissionsOptions
-export type PermissionsOptionsFieldsTypes = ObjectPermissionsOptionsFields |
- FieldPermissionsOptionsFields
 
 export class ProfileInfo implements MetadataInfo {
   constructor(

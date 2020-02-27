@@ -180,8 +180,6 @@ describe('SalesforceAdapter fetch', () => {
         + 2 /* LookupFilter & filter items */
         + 1 /* rollup summary operation */
         + 3
-        + 1 /* field permissions */
-        + 1 /* object permissions */
         + 2 /* mask char & type */
         + 1 /* security classification */
         + 1 /* business status */

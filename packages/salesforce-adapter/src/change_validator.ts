@@ -17,13 +17,11 @@ import { Change, Element, ChangeValidator, ChangeError } from '@salto-io/adapter
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import packageValidator from './change_validators/package'
-import profilePermissionsValidator from './change_validators/profile_permissions'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 
 
 const changeValidators: Partial<ChangeValidator>[] = [
   packageValidator,
-  profilePermissionsValidator,
   picklistStandardFieldValidator,
 ]
 

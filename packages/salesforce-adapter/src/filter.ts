@@ -20,8 +20,6 @@ import SalesforceClient from './client/client'
 
 // Filter interface, filters will be activated upon adapter fetch, add, update and remove
 // operations. The filter will be responsible for specific business logic.
-// For example, field permissions filter will add fieldLevelSecurity annotation and will read
-// it and update permissions accordingly.
 export type Filter = Partial<{
   onFetch(elements: Element[]): Promise<void>
   onAdd(after: Element): Promise<(SaveResult| UpsertResult)[]>

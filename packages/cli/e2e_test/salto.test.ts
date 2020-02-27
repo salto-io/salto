@@ -20,10 +20,12 @@ import { strings } from '@salto-io/lowerdash'
 import { testHelpers as salesforceTestHelpers, SalesforceClient } from '@salto-io/salesforce-adapter'
 import { Plan, file, Workspace, SALTO_HOME_VAR, SourceMap } from '@salto-io/core'
 import {
-  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE,
-  SALESFORCE_CUSTOM_SUFFIX, API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE,
+  API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
+  API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE, PROFILE_METADATA_TYPE, RECORDS_PATH,
 } from '@salto-io/salesforce-adapter/dist/src/constants'
-import { BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
+import {
+  ActionName, BuiltinTypes, ElemID, findInstances, InstanceElement, ObjectType,
+} from '@salto-io/adapter-api'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {
@@ -264,20 +266,32 @@ describe('cli e2e', () => {
     })
   })
   describe('deploy after deleting the object and the instance', () => {
+    let profiles: InstanceElement[]
     beforeAll(async () => {
+      const workspace = await loadValidWorkspace(fetchOutputDir)
       await rm(fullPath(tmpBPRelativePath))
       await rm(fullPath(newObjectAnnotationsRelativePath))
       await rm(fullPath(newObjectStandardFieldRelativePath))
       // delete references from SearchSettings
-      await editBlueprint(fullPath('salesforce/Records/Settings/Search.bp'),
+      await editBlueprint(fullPath(`${SALESFORCE}/${RECORDS_PATH}/Settings/Search.bp`),
         [
-          [`{
-            enhancedLookupEnabled = false
-            lookupAutoCompleteEnabled = false
-            name = salesforce.${newObjectElemName}
-            resultsPerPageCount = 0
-          },`, ''],
+          [new RegExp(`{\\W+enhancedLookupEnabled = false\\W+lookupAutoCompleteEnabled = false\\W+name = salesforce.${newObjectElemName}\\W+resultsPerPageCount = 0\\W+},`), ''],
         ])
+      // delete references from Profiles
+      profiles = [...findInstances(await workspace.elements,
+        new ElemID(SALESFORCE, PROFILE_METADATA_TYPE))]
+      await Promise.all(profiles
+        .map(profile =>
+          editBlueprint(fullPath(`${SALESFORCE}/${RECORDS_PATH}/${PROFILE_METADATA_TYPE}/${profile.elemID.name}.bp`),
+            [
+              // fieldPermissions
+              [new RegExp(`{\\W+editable = (true|false)\\W+field = salesforce.${newObjectElemName}.field.Alpha\\W+readable = (true|false)\\W+},`), ''],
+              [new RegExp(`{\\W+editable = (true|false)\\W+field = salesforce.${newObjectElemName}.field.Modified\\W+readable = (true|false)\\W+},`), ''],
+              // objectPermissions
+              [new RegExp(`{\\W+allowCreate = (true|false)\\W+allowDelete = (true|false)\\W+allowEdit = (true|false)\\W+allowRead = (true|false)\\W+modifyAllRecords = (true|false)\\W+object = salesforce.${newObjectElemName}\\W+viewAllRecords = (true|false)\\W+},`), ''],
+              // layoutAssignments
+              [new RegExp(`{\\W+layout = salesforce.Layout.instance.${newObjectElemName}_Layout\\W+},`), ''],
+            ])))
       await runDeploy(lastPlan, fetchOutputDir)
     })
     it('should have "remove" changes', async () => {
@@ -285,7 +299,11 @@ describe('cli e2e', () => {
         { action: 'remove', element: newObjectElemName },
         { action: 'remove', element: newInstanceElemName },
         // modify on SearchSettings
-        { action: 'modify', element: '_config' }])
+        { action: 'modify', element: '_config' },
+        // modify on all Profiles
+        ...profiles.map(profile =>
+          ({ action: 'modify' as ActionName, element: profile.elemID.name })),
+      ])
     })
     it('should remove the object in salesforce', async () => {
       expect(await objectExists(client, newObjectApiName)).toBe(false)

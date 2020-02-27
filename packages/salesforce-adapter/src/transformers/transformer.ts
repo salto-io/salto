@@ -31,9 +31,8 @@ import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
   LOOKUP_FILTER_FIELDS, ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
-  FIELD_LEVEL_SECURITY_ANNOTATION, FIELD_LEVEL_SECURITY_FIELDS, FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, OBJECT_LEVEL_SECURITY_ANNOTATION,
-  OBJECT_LEVEL_SECURITY_FIELDS, DESCRIPTION, HELP_TEXT, BUSINESS_STATUS, FORMULA_TYPE_NAME,
+  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, DESCRIPTION,
+  HELP_TEXT, BUSINESS_STATUS, FORMULA_TYPE_NAME,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
   CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
@@ -140,54 +139,6 @@ const restrictedNumber = (name: RestrictedNumberName, min: number, max: number, 
 
 export class Types {
   private static getElemIdFunc: ElemIdGetter
-
-  private static fieldLevelSecurityElemID = new ElemID(SALESFORCE, FIELD_LEVEL_SECURITY_ANNOTATION)
-  private static fieldLevelSecurityType = new ObjectType({
-    elemID: Types.fieldLevelSecurityElemID,
-    fields: {
-      [FIELD_LEVEL_SECURITY_FIELDS.EDITABLE]: new TypeField(
-        Types.fieldLevelSecurityElemID, FIELD_LEVEL_SECURITY_FIELDS.EDITABLE,
-        BuiltinTypes.STRING, {}, true
-      ),
-      [FIELD_LEVEL_SECURITY_FIELDS.READABLE]: new TypeField(
-        Types.fieldLevelSecurityElemID, FIELD_LEVEL_SECURITY_FIELDS.READABLE,
-        BuiltinTypes.STRING, {}, true
-      ),
-    },
-  })
-
-  private static objectLevelSecurityElemID = new ElemID(SALESFORCE,
-    OBJECT_LEVEL_SECURITY_ANNOTATION)
-
-  private static objectLevelSecurityType = new ObjectType({
-    elemID: Types.objectLevelSecurityElemID,
-    fields: {
-      [OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE]: new TypeField(
-        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE,
-        BuiltinTypes.STRING, {}, true
-      ),
-      [OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE]: new TypeField(
-        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE,
-        BuiltinTypes.STRING, {}, true
-      ),
-      [OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT]: new TypeField(
-        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT,
-        BuiltinTypes.STRING, {}, true
-      ),
-      [OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ]: new TypeField(
-        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ,
-        BuiltinTypes.STRING, {}, true
-      ),
-      [OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS]: new TypeField(
-        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS,
-        BuiltinTypes.STRING, {}, true
-      ),
-      [OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS]: new TypeField(
-        Types.objectLevelSecurityElemID, OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS,
-        BuiltinTypes.STRING, {}, true
-      ),
-    },
-  })
 
   private static filterItemElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.FILTER_ITEM)
   private static filterItemType = new ObjectType({
@@ -435,7 +386,6 @@ export class Types {
     [DESCRIPTION]: BuiltinTypes.STRING,
     [HELP_TEXT]: BuiltinTypes.STRING,
     [LABEL]: BuiltinTypes.STRING,
-    [FIELD_LEVEL_SECURITY_ANNOTATION]: Types.fieldLevelSecurityType,
     [BUSINESS_OWNER_USER]: BuiltinTypes.STRING,
     [BUSINESS_OWNER_GROUP]: BuiltinTypes.STRING,
     [BUSINESS_STATUS]: Types.BusinessStatusType,
@@ -810,8 +760,7 @@ export class Types {
   }
 
   static getAnnotationTypes(): TypeElement[] {
-    return [Types.fieldLevelSecurityType, Types.fieldDependencyType,
-      Types.rollupSummaryOperationType, Types.objectLevelSecurityType,
+    return [Types.fieldDependencyType, Types.rollupSummaryOperationType,
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
       Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,
@@ -879,7 +828,6 @@ export const toCustomField = (
     DEFAULT_VALUE_FORMULA, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter
     FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
-    FIELD_LEVEL_SECURITY_ANNOTATION,
   ]
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)

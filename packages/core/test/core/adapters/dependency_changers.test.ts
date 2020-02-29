@@ -24,6 +24,7 @@ describe('getAdapterDependencyChangers', () => {
   )
 
   const mockAdapterCreator = (dependencyChanger?: DependencyChanger): AdapterCreator => ({
+    credentialsType: new ObjectType({ elemID: new ElemID('test') }),
     configType: new ObjectType({ elemID: new ElemID('test') }),
     create: () => ({
       fetch: jest.fn(),

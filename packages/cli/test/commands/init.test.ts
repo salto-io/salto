@@ -28,6 +28,7 @@ jest.mock('@salto-io/core', () => ({
           localStorage: '',
           baseDir: '',
           uid: '',
+          adaptersConfigLocation: 'adaptersConfig',
           envs: {
             default: {
               baseDir: '',

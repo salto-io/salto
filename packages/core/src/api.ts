@@ -23,6 +23,7 @@ import {
   ElemIdGetter,
   InstanceElement,
   ObjectType,
+  AdapterCreatorConfig,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -48,7 +49,7 @@ import {
   toChangesWithPath,
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
-import Credentials from './workspace/credentials'
+import { AdapterCredentials, AdapterConfig } from './workspace/adapter_config'
 import { defaultDependencyChangers } from './core/plan/plan'
 
 const log = logger(module)
@@ -63,7 +64,7 @@ export const updateLoginConfig = async (
   } else {
     throw new Error(`unknown adapter: ${newConfig.elemID.adapter}`)
   }
-  await workspace.credentials.set(newConfig.elemID.adapter, newConfig)
+  await workspace.adapterCredentials.set(newConfig.elemID.adapter, newConfig)
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }
 
@@ -83,14 +84,19 @@ export const preview = async (
 )
 
 const getAdapters = async (
-  credentials: Credentials,
   adapters: string[],
+  credentials: AdapterCredentials,
+  config: AdapterConfig,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, Adapter>> => {
-  const adaptersCredentials = _.fromPairs(await Promise.all(adapters.map(
-    async adapter => ([adapter, await credentials.get(adapter)])
-  )))
-  return initAdapters(adaptersCredentials, elemIdGetter)
+  const creatorConfig: Record<string, AdapterCreatorConfig> = _
+    .fromPairs(await Promise.all(adapters.map(
+      async adapter => ([adapter, {
+        credentials: await credentials.get(adapter),
+        config: await config.get(adapter),
+      }])
+    )))
+  return initAdapters(creatorConfig, elemIdGetter)
 }
 
 export interface DeployResult {
@@ -109,7 +115,9 @@ export const deploy = async (
   const changedElements: Element[] = []
   const actionPlan = await preview(workspace, services)
   if (force || await shouldDeploy(actionPlan)) {
-    const adapters = await getAdapters(workspace.credentials, services)
+    const adapters = await getAdapters(
+      services, workspace.adapterCredentials, workspace.adapterConfig,
+    )
 
     const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
       ((action === 'remove')
@@ -166,8 +174,9 @@ export const fetch: fetchFunc = async (
     services)
 
   const adapters = await getAdapters(
-    workspace.credentials,
     services,
+    workspace.adapterCredentials,
+    workspace.adapterConfig,
     createElemIdGetter(filteredStateElements)
   )
 
@@ -229,7 +238,9 @@ export const exportToCsv = async (
   workspace: Workspace,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(workspace.credentials, [type.elemID.adapter])
+  const adapters = await getAdapters(
+    [type.elemID.adapter], workspace.adapterCredentials, workspace.adapterConfig,
+  )
   return getInstancesOfType(type as ObjectType, adapters, outPath)
 }
 
@@ -239,7 +250,9 @@ export const importFromCsvFile = async (
   workspace: Workspace,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(workspace.credentials, [type.elemID.adapter])
+  const adapters = await getAdapters(
+    [type.elemID.adapter], workspace.adapterCredentials, workspace.adapterConfig,
+  )
   return importInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -249,7 +262,9 @@ export const deleteFromCsvFile = async (
   workspace: Workspace,
 ): Promise<DataModificationResult> => {
   const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(workspace.credentials, [type.elemID.adapter])
+  const adapters = await getAdapters(
+    [type.elemID.adapter], workspace.adapterCredentials, workspace.adapterConfig,
+  )
   return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
 }
 
@@ -278,7 +293,7 @@ export const getLoginStatuses = async (
     async (config, adapter) =>
       ({
         configType: config,
-        isLoggedIn: !!await workspace.credentials.get(adapter),
+        isLoggedIn: !!await workspace.adapterCredentials.get(adapter),
       }))
 
   return promises.object.resolveValues(logins)

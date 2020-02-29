@@ -199,6 +199,7 @@ export const mockLoadConfig = (workspaceDir: string): Config =>
     baseDir: workspaceDir,
     name: 'mock-ws',
     localStorage: '',
+    adaptersConfigLocation: '/adaptersConfig',
     envs: {
       active: {
         baseDir: 'active',

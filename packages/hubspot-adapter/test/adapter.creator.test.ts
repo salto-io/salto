@@ -42,7 +42,7 @@ describe('HubspotAdapter creator', () => {
   })
 
   describe('when passed a config element', () => {
-    const config = new InstanceElement(
+    const credentials = new InstanceElement(
       ElemID.CONFIG_NAME,
       creator.configType,
       {
@@ -51,7 +51,7 @@ describe('HubspotAdapter creator', () => {
     )
 
     beforeEach(() => {
-      creator.create({ config })
+      creator.create({ config: { credentials, config: undefined } })
     })
 
     it('creates the client correctly', () => {

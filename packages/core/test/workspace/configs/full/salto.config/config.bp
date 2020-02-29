@@ -9,5 +9,6 @@ salto {
       },
   ]
   currentEnv = "default"
+  adaptersConfigLocation = "/configs"
 }
 

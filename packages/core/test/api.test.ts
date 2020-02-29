@@ -78,8 +78,12 @@ const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Work
   resolvePath: _.identity,
   updateBlueprints: jest.fn(),
   flush: jest.fn(),
-  credentials: {
+  adapterCredentials: {
     get: () => jest.fn().mockImplementation(() => Promise.resolve(mockConfigInstance)),
+    set: () => jest.fn().mockImplementation(() => Promise.resolve()),
+  },
+  adapterConfig: {
+    get: () => jest.fn().mockImplementation(() => Promise.resolve()),
     set: () => jest.fn().mockImplementation(() => Promise.resolve()),
   },
   getWorkspaceErrors: async () => [],
@@ -345,7 +349,7 @@ describe('api.ts', () => {
       const newConf = mockConfigInstance.clone()
       newConf.value.password = 'bla'
       await api.updateLoginConfig(ws, newConf)
-      expect((ws.credentials.set as jest.Mock).call).toHaveLength(1)
+      expect((ws.adapterCredentials.set as jest.Mock).call).toHaveLength(1)
     })
   })
 })

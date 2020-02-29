@@ -126,22 +126,24 @@ export const getFieldInputType = (fieldType: TypeElement, fieldName: string): st
   return 'confirm'
 }
 
-export const getConfigFromUser = async (configType: ObjectType): Promise<InstanceElement> => {
-  const questions = Object.keys(configType.fields).map(fieldName =>
+export const getConfigFromUser = async (credentialsType: ObjectType): Promise<InstanceElement> => {
+  const questions = Object.keys(credentialsType.fields).map(fieldName =>
     ({
-      type: getFieldInputType(configType.fields[fieldName].type, fieldName),
+      type: getFieldInputType(credentialsType.fields[fieldName].type, fieldName),
       mask: '*',
       name: fieldName,
-      message: formatConfigFieldInput(fieldName, configType.fields[fieldName].annotations.message),
+      message: formatConfigFieldInput(
+        fieldName, credentialsType.fields[fieldName].annotations.message,
+      ),
     }))
   const values = await inquirer.prompt(questions)
-  return new InstanceElement(ElemID.CONFIG_NAME, configType, values)
+  return new InstanceElement(ElemID.CONFIG_NAME, credentialsType, values)
 }
 
-export const getConfigWithHeader = async (output: WriteStream, configType: ObjectType):
+export const getConfigWithHeader = async (output: WriteStream, credentialsType: ObjectType):
   Promise<InstanceElement> => {
-  output.write(formatConfigHeader(configType.elemID.adapter))
-  return getConfigFromUser(configType)
+  output.write(formatConfigHeader(credentialsType.elemID.adapter))
+  return getConfigFromUser(credentialsType)
 }
 
 export const getEnvName = async (currentName = 'default'): Promise<string> => {

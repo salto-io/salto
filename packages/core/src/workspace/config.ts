@@ -16,7 +16,8 @@
 import * as path from 'path'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement,
+  findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
 import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'
@@ -111,6 +112,7 @@ export interface Config {
   name: string
   envs: Record<string, {baseDir: string; config: EnvConfig}>
   currentEnv: string
+  adaptersConfigLocation: string
 }
 
 type PartialConfig = Required<Pick<Config, 'uid' | 'name' | 'currentEnv'>> & {
@@ -131,6 +133,7 @@ const createDefaultWorkspaceConfig = (
     name,
     envs: {},
     currentEnv: '',
+    adaptersConfigLocation: path.join(baseDir, CONFIG_DIR_NAME, 'adaptersConfig'),
   }
 }
 
@@ -199,8 +202,16 @@ export const currentEnvConfig = (config: Config): EnvConfig => (
   config.envs[config.currentEnv].config
 )
 
+export const getConfigDir = (baseDir: string): string => (
+  path.join(baseDir, CONFIG_DIR_NAME)
+)
+
 export const getConfigPath = (baseDir: string): string => (
-  path.join(baseDir, CONFIG_DIR_NAME, CONFIG_FILENAME)
+  path.join(getConfigDir(baseDir), CONFIG_FILENAME)
+)
+
+export const getAdaptersConfigDir = (baseDir: string, adaptersConfigLocation: string): string => (
+  resolvePath(baseDir, adaptersConfigLocation)
 )
 
 const parseConfig = (buffer: Buffer): PartialConfig => {

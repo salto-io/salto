@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, Adapter, ElemIdGetter, InstanceElement,
+  ObjectType, Adapter, ElemIdGetter, AdapterCreatorConfig,
 } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
 
@@ -27,18 +27,21 @@ export const getAdaptersConfigType = (
 }
 
 export const initAdapters = (
-  credentials: Record<string, InstanceElement | undefined>,
+  config: Record<string, AdapterCreatorConfig>,
   getElemIdFunc?: ElemIdGetter,
 ): Record<string, Adapter> =>
   _.mapValues(
-    credentials, (creds, adapter) => {
-      if (!creds) {
+    config, (conf, adapter) => {
+      if (!conf.credentials) {
         throw new Error(`${adapter} is not logged in.\n\nPlease login and try again.`)
       }
       const creator = adapterCreators[adapter]
       if (!creator) {
         throw new Error(`${adapter} adapter is not registered.`)
       }
-      return creator.create({ config: creds, getElemIdFunc })
+      return creator.create({
+        config: conf,
+        getElemIdFunc,
+      })
     }
   )

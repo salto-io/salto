@@ -43,6 +43,11 @@ export interface Adapter {
   ): Promise<DataModificationResult>
 }
 
+export type AdapterCreatorConfig = {
+  credentials: InstanceElement | undefined
+  config: InstanceElement | undefined
+}
+
 export const OBJECT_SERVICE_ID = 'object_service_id'
 export const ADAPTER = 'adapter'
 export type ServiceIds = Record<string, string>
@@ -51,8 +56,12 @@ export const toServiceIdsString = (serviceIds: ServiceIds): string =>
 export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
 
 export type AdapterCreator = {
-  create: (opts: { config: InstanceElement; getElemIdFunc?: ElemIdGetter }) => Adapter
+  create: (opts: {
+    config: AdapterCreatorConfig
+    getElemIdFunc?: ElemIdGetter
+  }) => Adapter
   validateConfig: (config: Readonly<InstanceElement>) => Promise<void>
+  credentialsType: ObjectType
   configType: ObjectType
   changeValidator?: ChangeValidator
   dependencyChanger?: DependencyChanger

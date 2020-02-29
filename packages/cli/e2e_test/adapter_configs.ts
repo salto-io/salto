@@ -31,11 +31,11 @@ export default {
       sandbox: credentials.isSandbox,
     }
 
-    const { configType } = salesforceAdapterCreator
+    const { credentialsType } = salesforceAdapterCreator
 
     return new InstanceElement(
       ElemID.CONFIG_NAME,
-      configType,
+      credentialsType,
       configValues,
     )
   },

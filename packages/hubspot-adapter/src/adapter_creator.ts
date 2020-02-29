@@ -15,19 +15,27 @@
 */
 import {
   AdapterCreator, BuiltinTypes, ElemID, Field,
-  InstanceElement, ObjectType,
+  InstanceElement, ObjectType, AdapterCreatorConfig,
 } from '@salto-io/adapter-api'
 import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
 import { changeValidator } from './change_validator'
 
-const configID = new ElemID('hubspot')
+const credentialsID = new ElemID('hubspot', 'credentials')
+const configID = new ElemID('hubspot', 'config')
 
-const configType = new ObjectType({
-  elemID: configID,
+export const credentialsType = new ObjectType({
+  elemID: credentialsID,
   fields: {
     apiKey: new Field(configID, 'apiKey', BuiltinTypes.STRING),
   },
+  annotationTypes: {},
+  annotations: {},
+})
+
+export const configType = new ObjectType({
+  elemID: configID,
+  fields: {},
   annotationTypes: {},
   annotations: {},
 })
@@ -36,10 +44,10 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   apiKey: config.value.apiKey,
 })
 
-const clientFromConfig = (config: InstanceElement): HubspotClient =>
+const clientFromConfig = (config: AdapterCreatorConfig): HubspotClient =>
   new HubspotClient(
     {
-      credentials: credentialsFromConfig(config),
+      credentials: credentialsFromConfig(config.credentials as InstanceElement),
     }
   )
 
@@ -47,10 +55,8 @@ export const creator: AdapterCreator = {
   create: ({ config }) => new HubspotAdapter({
     client: clientFromConfig(config),
   }),
-  validateConfig: config => {
-    const credentials = credentialsFromConfig(config)
-    return HubspotClient.validateCredentials(credentials)
-  },
+  validateConfig: config => HubspotClient.validateCredentials(credentialsFromConfig(config)),
+  credentialsType,
   configType,
   changeValidator,
 }

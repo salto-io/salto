@@ -47,11 +47,12 @@ describe('adapters.ts', () => {
         sandbox: false,
       }
     )
-    const adapters = initAdapters({ salesforce: sfConfig })
+    const adapters = initAdapters({ salesforce: { credentials: sfConfig, config: undefined } })
     expect(adapters.salesforce).toBeDefined()
   })
 
   it('should throw error when no proper config exists', async () => {
-    expect(() => initAdapters({ [services[0]]: undefined })).toThrow()
+    expect(() => initAdapters({ [services[0]]: { credentials: undefined, config: undefined } }))
+      .toThrow()
   })
 })

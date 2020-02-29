@@ -13,31 +13,46 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { parse } from '../parser/parse'
 import { dumpElements } from '../parser/dump'
 import { BP_EXTENSION } from './blueprints/blueprints_source'
 import { DirectoryStore } from './dir_store'
+import { adaptersCredentials, adaptersConfig } from '../core/adapters/creators'
 
-export default interface Credentials {
+interface Config {
   get(adapter: string): Promise<InstanceElement | undefined>
-  set(adapter: string, credentials: Readonly<InstanceElement>): Promise<void>
+  set(adapter: string, config: Readonly<InstanceElement>): Promise<void>
 }
 
-export const adapterCredentials = (dirStore: DirectoryStore): Credentials => {
+export type AdapterConfig = Config
+export type AdapterCredentials = Config
+
+const getConfig = (
+  dirStore: DirectoryStore,
+  adapterToConfigType: Record<string, ObjectType>,
+): Config => {
   const filename = (adapter: string): string => adapter.concat(BP_EXTENSION)
 
   return {
     get: async (adapter: string): Promise<InstanceElement | undefined> => {
       const bp = await dirStore.get(filename(adapter))
-      return bp
-        ? parse(Buffer.from(bp.buffer), bp.filename).elements.pop() as InstanceElement
-        : undefined
+      if (bp) {
+        const element = parse(Buffer.from(bp.buffer), bp.filename).elements.pop() as InstanceElement
+        element.type = adapterToConfigType[adapter] ?? element.type
+        return element
+      }
+      return undefined
     },
 
-    set: async (adapter: string, creds: InstanceElement): Promise<void> => {
-      await dirStore.set({ filename: filename(adapter), buffer: dumpElements([creds]) })
+    set: async (adapter: string, config: InstanceElement): Promise<void> => {
+      await dirStore.set({ filename: filename(adapter), buffer: dumpElements([config]) })
       await dirStore.flush()
     },
   }
 }
+
+export const adapterConfig = (dirStore: DirectoryStore):
+  AdapterConfig => getConfig(dirStore, adaptersConfig)
+export const adapterCredentials = (dirStore: DirectoryStore):
+  AdapterCredentials => getConfig(dirStore, adaptersCredentials)

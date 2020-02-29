@@ -31,8 +31,11 @@ const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: s
 
 const realAdapter = ({ adapterParams }: Opts = {}): Reals => {
   const client = (adapterParams && adapterParams.client) || realClient()
-  const adapter = new SalesforceAdapter({ client,
-    ...adapterParams || { getElemIdFunc: mockGetElemIdFunc } })
+  const adapter = new SalesforceAdapter({
+    client,
+    config: {},
+    ...adapterParams || { getElemIdFunc: mockGetElemIdFunc },
+  })
   return { client, adapter }
 }
 

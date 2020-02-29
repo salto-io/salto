@@ -54,6 +54,7 @@ const createWorkspace = (bpStore?: DirectoryStore): Workspace => {
     name: 'test',
     localStorage: path.join(os.homedir(), '.salto', 'test'),
     baseDir: '/salto',
+    adaptersConfigLocation: '/adaptersConfig',
     envs: {
       default: {
         baseDir: 'envs/default',

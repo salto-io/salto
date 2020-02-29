@@ -22,8 +22,9 @@ import { DetailedChange } from '../core/plan'
 import { validateElements, ValidationError } from '../core/validator'
 import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
-import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType, currentEnvConfig } from './config'
-import Credentials, { adapterCredentials } from './credentials'
+import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
+  saltoConfigType, currentEnvConfig, getAdaptersConfigDir } from './config'
+import { AdapterCredentials, AdapterConfig, adapterConfig, adapterCredentials } from './adapter_config'
 import State from './state'
 import { localState } from './local/state'
 import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
@@ -123,7 +124,8 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
 
 export class Workspace {
   readonly state: State
-  readonly credentials: Credentials
+  readonly adapterCredentials: AdapterCredentials
+  readonly adapterConfig: AdapterConfig
   private readonly blueprintsSource: BlueprintsSource
   private mergedStatePromise?: Promise<MergedState>
 
@@ -132,8 +134,11 @@ export class Workspace {
       ? loadBlueprintSource(config.baseDir, config.localStorage)
       : loadMultiEnvSource(config)
     this.state = localState(currentEnvConfig(config).stateLocation)
-    this.credentials = adapterCredentials(
+    this.adapterCredentials = adapterCredentials(
       localDirectoryStore(currentEnvConfig(config).credentialsLocation)
+    )
+    this.adapterConfig = adapterConfig(
+      localDirectoryStore(getAdaptersConfigDir(config.baseDir, config.adaptersConfigLocation))
     )
   }
 

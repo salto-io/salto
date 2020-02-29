@@ -40,7 +40,8 @@ describe('SalesforceAdapter fetch', () => {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
         metadataTypeBlacklist: ['Test1', 'Ignored1'],
-        instancesBlacklist: ['Test2.instance1', 'Test1.Ignored1'],
+        instancesRegexBlacklist: ['Test2.instance1'],
+        retrieveRegexBlacklist: ['Blacklist$'],
       },
     }))
   })
@@ -700,6 +701,50 @@ describe('SalesforceAdapter fetch', () => {
       it('should skip blacklist instances', () => {
         expect(findElements(result, 'Test2', 'instance1')).toHaveLength(0)
         expect(findElements(result, 'Test3', 'instance1')).toHaveLength(1)
+      })
+    })
+
+    describe('should not fetch blacklist retrieve instance', () => {
+      let result: Element[] = []
+      beforeEach(async () => {
+        mockSingleMetadataType('EmailTemplate', [{
+          name: 'fullName',
+          soapType: 'string',
+          valueRequired: true,
+        },
+        {
+          name: 'name',
+          soapType: 'string',
+          valueRequired: false,
+        },
+        {
+          name: 'content',
+          soapType: 'string',
+          valueRequired: false,
+        }])
+
+        mockSingleMetadataInstance('MyFolder/MyEmailTemplateBlacklist',
+          { fullName: 'MyFolder/MyEmailTemplateBlacklist' }, undefined,
+          [{ path: 'unpackaged/email/MyFolder/MyEmailTemplateBlacklist.email-meta.xml',
+            content: '<?xml version="1.0" encoding="UTF-8"?>\n'
+              + '<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+              + '    <available>false</available>\n'
+              + '    <encodingKey>ISO-8859-1</encodingKey>\n'
+              + '    <name>My Email Template</name>\n'
+              + '    <style>none</style>\n'
+              + '    <subject>MySubject</subject>\n'
+              + '    <type>text</type>\n'
+              + '    <uiType>Aloha</uiType>\n'
+              + '</EmailTemplate>\n' },
+          { path: 'unpackaged/email/MyFolder/MyEmailTemplateBlacklist.email',
+            content: 'Email Body' }])
+
+        result = await adapter.fetch()
+      })
+
+      it('should skip blacklist retrieve instances', () => {
+        expect(findElements(result, 'EmailTemplate', 'MyFolder_MyEmailTemplateBlacklist'))
+          .toHaveLength(0)
       })
     })
   })

@@ -16,8 +16,8 @@
 import {
   BuiltinTypes, TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
-  Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
-  DataModificationResult, Values,
+  Value, Change, getChangeElement, isField, isElement, ElemIdGetter, DataModificationResult, Values,
+  resolveReferences, restoreReferences,
 } from '@salto-io/adapter-api'
 import {
   SaveResult, MetadataInfo, QueryResult, FileProperties, BatchResultInfo, BulkLoadOperation,
@@ -31,8 +31,8 @@ import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
   metadataType, toInstanceElements, createMetadataTypeElements,
-  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields, transformReferences,
-  restoreReferences, defaultApiName,
+  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
+  defaultApiName, getLookUpName,
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -430,7 +430,7 @@ export default class SalesforceAdapter {
    */
   public async add(element: Element): Promise<Element> {
     let post: Element
-    const resolved = transformReferences(element)
+    const resolved = resolveReferences(element, getLookUpName)
     if (isObjectType(resolved)) {
       post = await this.addObject(resolved)
     } else {
@@ -438,7 +438,7 @@ export default class SalesforceAdapter {
     }
 
     await this.runFiltersOnAdd(post)
-    return restoreReferences(element, post)
+    return restoreReferences(element, post, getLookUpName)
   }
 
   /**
@@ -498,7 +498,7 @@ export default class SalesforceAdapter {
    */
   @logDuration()
   public async remove(element: Element): Promise<void> {
-    const resolved = transformReferences(element)
+    const resolved = resolveReferences(element, getLookUpName)
     const type = metadataType(resolved)
     if (isInstanceElement(resolved)
       && this.isMetadataTypeToRetrieveAndDeploy(type)) {
@@ -519,11 +519,11 @@ export default class SalesforceAdapter {
   @logDuration()
   public async update(before: Element, after: Element,
     changes: ReadonlyArray<Change>): Promise<Element> {
-    const resBefore = transformReferences(before)
-    const resAfter = transformReferences(after)
+    const resBefore = resolveReferences(before, getLookUpName)
+    const resAfter = resolveReferences(after, getLookUpName)
     const resChanges = changes.map(c => ({
       action: c.action,
-      data: _.mapValues(c.data, transformReferences),
+      data: _.mapValues(c.data, (x => resolveReferences(x, getLookUpName))),
     })) as ReadonlyArray<Change<Field | ObjectType>>
     let result = resAfter
     if (isObjectType(resBefore) && isObjectType(resAfter)) {
@@ -540,7 +540,7 @@ export default class SalesforceAdapter {
 
     // Aspects should be updated once all object related properties updates are over
     await this.runFiltersOnUpdate(resBefore, result, resChanges)
-    return restoreReferences(after, result)
+    return restoreReferences(after, result, getLookUpName)
   }
 
   /**

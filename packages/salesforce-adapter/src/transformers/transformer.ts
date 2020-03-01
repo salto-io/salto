@@ -22,7 +22,7 @@ import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
-  ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
+  isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
   Field as TypeField, TypeMap, TransformPrimitiveFunc, bpCase, isField,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -1385,32 +1385,9 @@ export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
   return Object.values(clonedObject.fields)
 }
 
-const getLookUpName = (refValue: Value): Value => {
+export const getLookUpName = (refValue: Value): Value => {
   if (isElement(refValue)) {
     return apiName(refValue)
   }
   return refValue
-}
-
-export const transformReferences = <T extends Element>(element: T): T => {
-  const refReplacer = (value: Value): Value => {
-    if (value instanceof ReferenceExpression) return getLookUpName(value.value)
-    if (isElement(value)) return transformReferences(value)
-    return undefined
-  }
-  return _.mergeWith(element.clone(), element, refReplacer)
-}
-
-export const restoreReferences = <T extends Element>(orig: T, modified: T): T => {
-  const resResotrer = (obj: Value, src: Value): Value => {
-    if (isElement(obj) && isElement(src)) {
-      return restoreReferences(obj, src)
-    }
-    if (obj instanceof ReferenceExpression && !(src instanceof ReferenceExpression)) {
-      return (getLookUpName(obj.value) === src) ? obj : src
-    }
-    return undefined
-  }
-
-  return _.mergeWith(orig.clone(), modified, resResotrer)
 }

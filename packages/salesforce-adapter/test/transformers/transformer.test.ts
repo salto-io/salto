@@ -16,14 +16,13 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
-  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement,
+  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, restoreReferences, resolveReferences,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject,
-  getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements,
-  transformReferences, restoreReferences,
+  getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements, getLookUpName,
 } from '../../src/transformers/transformer'
 import {
   FIELD_ANNOTATIONS,
@@ -1170,14 +1169,24 @@ describe('transformer', () => {
     const objectApiName = 'Object'
     const regValue = 'REG'
     const newValue = 'NEW'
+
     const elementID = new ElemID('salesforce', 'elememt')
+
+    const typeRef = new ReferenceExpression(elementID.createNestedID(
+      'annotation', API_NAME
+    ), objectApiName)
+
     const element = new ObjectType({
       elemID: elementID,
+      annotationTypes: {
+        instanceRef: BuiltinTypes.STRING,
+        objectRef: BuiltinTypes.STRING,
+        valueRef: BuiltinTypes.STRING,
+        reg: BuiltinTypes.STRING,
+      },
       annotations: {
         [API_NAME]: objectApiName,
-        typeRef: new ReferenceExpression(
-          elementID.createNestedID('annotation', API_NAME), objectApiName
-        ),
+        typeRef,
       },
     })
 
@@ -1190,6 +1199,12 @@ describe('transformer', () => {
     const elemID = new ElemID('salesforce', 'base')
     const orig = new ObjectType({
       elemID,
+      annotationTypes: {
+        instanceRef: BuiltinTypes.STRING,
+        objectRef: BuiltinTypes.STRING,
+        valueRef: BuiltinTypes.STRING,
+        reg: BuiltinTypes.STRING,
+      },
       annotations: {
         instanceRef,
         objectRef: elementRef,
@@ -1208,7 +1223,7 @@ describe('transformer', () => {
       },
     })
     const origCopy = _.cloneDeep(orig)
-    const modified = transformReferences(orig)
+    const modified = resolveReferences(orig, getLookUpName)
 
     it('should not modify the original element', () => {
       expect(orig).toEqual(origCopy)
@@ -1216,13 +1231,14 @@ describe('transformer', () => {
 
     it('should transform element ref values', () => {
       expect(modified.annotations.instanceRef).toEqual(instanceFullName)
-      expect(modified.fields.field.annotations.instanceRef).toEqual(instanceFullName)
       expect(modified.annotations.objectRef).toEqual(objectApiName)
-      expect(modified.fields.field.annotations.objectRef).toEqual(objectApiName)
       expect(modified.annotations.valueRef).toEqual(regValue)
+      expect(modified.annotations.changeToRef).toEqual(regValue)
+
+      expect(modified.fields.field.annotations.instanceRef).toEqual(instanceFullName)
+      expect(modified.fields.field.annotations.objectRef).toEqual(objectApiName)
       expect(modified.fields.field.annotations.valueRef).toEqual(regValue)
       expect(modified.fields.field.annotations.changeToRef).toEqual(regValue)
-      expect(modified.annotations.changeToRef).toEqual(regValue)
     })
 
     it('should transform regular ref values', () => {
@@ -1230,11 +1246,13 @@ describe('transformer', () => {
       expect(modified.annotations.changeToRef).toEqual(regValue)
       expect(modified.fields.field.annotations.reg).toEqual(regValue)
       expect(modified.fields.field.annotations.changeToRef).toEqual(regValue)
-      expect(modified.fields.field.type.annotations.typeRef).toEqual(objectApiName)
+
+      // Should not resolve field type annotations
+      expect(modified.fields.field.type.annotations.typeRef).toEqual(typeRef)
     })
 
     it('should transform back to orig value', () => {
-      expect(restoreReferences(orig, modified)).toEqual(orig)
+      expect(restoreReferences(orig, modified, getLookUpName)).toEqual(orig)
     })
 
     it('should maintain new values when transforming back to orig value', () => {
@@ -1245,7 +1263,7 @@ describe('transformer', () => {
       after.fields.field.annotations.regValue = newValue
       after.fields.field.annotations.changeToRef = instanceRef
       after.annotations.changeToRef = instanceRef
-      const restored = restoreReferences(orig, after)
+      const restored = restoreReferences(orig, after, getLookUpName)
       expect(restored.annotations.new).toEqual(newValue)
       expect(restored.fields.field.annotations.new).toEqual(newValue)
       expect(restored.annotations.regValue).toEqual(newValue)

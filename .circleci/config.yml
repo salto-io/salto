@@ -132,7 +132,7 @@ jobs:
             notices_diff=$(git diff NOTICES)
             if [ ! -z "$notices_diff" ]; then
               echo "NOTICES file need to be regenerated;"
-              echo "please run 'docker run --rm -it -v$(greadlink -f .):/salto --workdir /salto circleci/node:12.12 yarn run generate-notices-file'"
+              echo "please run 'docker run --rm -it -v$(readlink -f .):/salto --workdir /salto circleci/node:12.12 yarn run generate-notices-file'"
               echo -e "diff:\n$notices_diff"
               exit 1
             fi

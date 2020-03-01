@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
   Element, getChangeElement, TransformReferenceFunc,
@@ -26,10 +25,6 @@ import {
 const getAllReferencedIds = (elem: Element): Set<string> => {
   const allReferencedIds = new Set<string>()
   const transformCallback: TransformReferenceFunc = val => {
-    if (_.isArray(val)) {
-      val.forEach(item => transformCallback(item, undefined))
-      return val
-    }
     if (isReferenceExpression(val)) {
       allReferencedIds.add(val.elemId.getFullName())
     }

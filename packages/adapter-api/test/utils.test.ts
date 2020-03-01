@@ -23,7 +23,7 @@ import {
   from '../src/values'
 import { ElemID } from '../src/element_id'
 import {
-  BuiltinInstanceAnnotationTypes,
+  InstanceAnnotationTypes,
   BuiltinTypes, INSTANCE_ANNOTATIONS,
 } from '../src/builtins'
 import {
@@ -157,7 +157,7 @@ describe('Test utils.ts', () => {
         transformReferenceFunc = jest.fn().mockImplementation(val => val)
       })
 
-      describe('when called with instance values', () => {
+      describe('when called with objectType as type parameter', () => {
         beforeEach(async () => {
           const result = transformValues({
             values: mockInstance.value,
@@ -249,11 +249,10 @@ describe('Test utils.ts', () => {
         beforeEach(async () => {
           const result = transformValues({
             values: mockInstance.annotations,
-            type: BuiltinInstanceAnnotationTypes,
+            type: InstanceAnnotationTypes,
             transformPrimitives: transformPrimitiveFunc,
             transformReferences: transformReferenceFunc,
           })
-          expect(result).toBeDefined()
           expect(result).toEqual(mockInstance.annotations)
         })
 
@@ -368,23 +367,6 @@ describe('Test utils.ts', () => {
           expect(resp.obj[0].innerObj.magical.deepNumber).toEqual(888)
         })
       })
-
-      describe('when called with instance annotations', () => {
-        beforeEach(async () => {
-          const result = transformValues({
-            values: mockInstance.annotations,
-            type: BuiltinInstanceAnnotationTypes,
-            transformPrimitives: transformPrimitiveTest,
-            transformReferences: transformReferenceTest,
-          })
-          expect(result).toBeDefined()
-          resp = result as Values
-        })
-
-        it('should transform reference types', () => {
-          expect(resp[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toEqual('regValue')
-        })
-      })
     })
 
     describe('when strict is false', () => {
@@ -476,7 +458,11 @@ describe('Test utils.ts', () => {
         regValue,
         valueRef,
       ],
-    })
+    },
+    [],
+    {
+      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
+    },)
     const elementRef = new ReferenceExpression(element.elemID, element)
 
     const sourceElement = new ObjectType({
@@ -562,6 +548,8 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.value.arrayValues).toHaveLength(2)
         expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
         expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
+
+        expect(resolvedInstance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toEqual(regValue)
       })
 
       it('should transform back to instance', () => {

@@ -17,14 +17,13 @@ import wu from 'wu'
 import _ from 'lodash'
 import {
   TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType, TypeMap,
-  FieldMap,
 } from './elements'
 import {
   Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value,
 } from './values'
 import { ElemID } from './element_id'
 import {
-  BuiltinInstanceAnnotationTypes,
+  InstanceAnnotationTypes,
 } from './builtins'
 
 interface AnnoRef {
@@ -267,7 +266,7 @@ export const transformElement = <T extends Element>(
 
   const elementAnnotationTypes = (): TypeMap => {
     if (isInstanceElement(element)) {
-      return BuiltinInstanceAnnotationTypes
+      return InstanceAnnotationTypes
     }
 
     if (isField(element)) {
@@ -307,16 +306,17 @@ export const transformElement = <T extends Element>(
   }
 
   if (isObjectType(element)) {
-    const clonedFields: FieldMap = {}
-
-    Object.entries(element.fields).forEach(([key, field]) => {
-      clonedFields[key] = transformElement({
-        element: field,
-        transformPrimitives,
-        transformReferences,
-        strict,
-      })
-    })
+    const clonedFields = _.mapValues(
+      element.fields,
+      field => transformElement(
+        {
+          element: field,
+          transformPrimitives,
+          transformReferences,
+          strict,
+        }
+      )
+    )
 
     newElement = new ObjectType({
       elemID: element.elemID,

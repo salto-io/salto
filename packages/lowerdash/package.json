@@ -28,7 +28,8 @@
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
     "watch-ts": "tsc -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint --fix"
+    "lint-fix": "yarn run lint --fix",
+    "fix-coverage-thresholds": "../../build_utils/fix_coverage_thresholds.js"
   },
   "dependencies": {
     "lodash": "^4.17.11",

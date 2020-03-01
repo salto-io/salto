@@ -31,7 +31,8 @@
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint --fix"
+    "lint-fix": "yarn run lint --fix",
+    "fix-coverage-thresholds": "../../build_utils/fix_coverage_thresholds.js"
   },
   "dependencies": {
     "@salto-io/adapter-api": "0.1.1",

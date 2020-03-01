@@ -30,15 +30,7 @@ module.exports = deepMerge(
     testEnvironment: process.env.RUN_E2E_TESTS
       ? '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
       : undefined,
-    coverageThreshold: {
-      // Slowly start increasing here, never decrease!
-      global: {
-        branches: 77.53,
-        functions: 88.31,
-        lines: 85,
-        statements: 90,
-      },
-    },
+    coverageThreshold: require('./coverage_thresholds.json'),
   }
 )
 

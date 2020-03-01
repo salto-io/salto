@@ -33,13 +33,6 @@ module.exports = {
     '!<rootDir>/dist/src/index.js',
   ],
   testEnvironment: './dist/test/lib/dynamodb/environment',
-  coverageThreshold: {
-    global: {
-      branches: 98,
-      functions: 98,
-      lines: 98,
-      statements: 98,
-    },
-  },
+  coverageThreshold: require('./coverage_thresholds.json'),
 }
 

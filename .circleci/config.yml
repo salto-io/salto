@@ -253,8 +253,61 @@ jobs:
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
           arguments: '--acl public-read'
 
+  fix_coverage_thesholds:
+    docker:
+      - image: circleci/python
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Run unit tests for each package individually
+          command: yarn test-each
+
+      - run:
+          name: Fix coverage thresholds
+          command: yarn fix-coverage-thresholds
+
+      - add_ssh_keys:
+          fingerprints:
+              - "49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17"
+
+      - run:
+          name: Create PR if needed
+          command: |
+            set -euo pipefail
+            CHANGED_THRESHOLD_FILES=$(git diff-index --name-only HEAD -- packages/*/coverage_thresholds.json)
+            if [ -z "$CHANGED_THRESHOLD_FILES" ]; then
+              echo "No thresholds changed, exiting"
+              exit 0
+            fi
+
+            BRANCH=fix-coverage-threshold-${CIRCLE_SHA1}
+            git checkout -b "$BRANCH"
+            git commit -m "Fixed coverage threshold files" $CHANGED_THRESHOLD_FILES
+            git push origin "$BRANCH"
+            curl -fsSL https://github.com/github/hub/raw/master/script/get | bash -s 2.14.1
+            ./bin/hub pull-request --no-edit -l FIX-COV-THRESH
+
 workflows:
   version: 2
+
+  fix-coverage-thresholds:
+    triggers:
+      - schedule:
+          # cron: "8 17 * * Sun"  # run weekly
+          cron: "8 17 * * *"      # run daily until stabilized
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - build
+
+      - fix_coverage_thesholds:
+          requires:
+            - build
 
   commit:
     jobs:

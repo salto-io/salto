@@ -130,7 +130,8 @@
         "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
         "lint-fix": "yarn run lint --fix",
         "package": "bash ./scripts/package.sh",
-        "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock"
+        "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock",
+        "fix-coverage-thresholds": "../../build_utils/fix_coverage_thresholds.js"
     },
     "dependencies": {
         "@salto-io/adapter-api": "0.1.1",

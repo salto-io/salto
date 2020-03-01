@@ -25,15 +25,7 @@ module.exports = deepMerge(
       '!<rootDir>/dist/index.js',
     ],
     testEnvironment: 'jest-dynalite/dist/environment',
-    coverageThreshold: {
-      // Slowly start increasing here, never decrease!
-      global: {
-        branches: 32.97,
-        functions: 62.35,
-        lines: 65.74,
-        statements: 64.52,
-      },
-    },
+    coverageThreshold: require('./coverage_thresholds.json'),
   }
 )
 

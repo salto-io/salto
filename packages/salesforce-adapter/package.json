@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/salesforce-adapter",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "Apache-2.0",
   "description": "Salto Salesforce adapter",
   "repository": {
@@ -34,10 +34,10 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.1",
-    "@salto-io/e2e-credentials-store": "0.1.1",
-    "@salto-io/logging": "0.1.1",
-    "@salto-io/lowerdash": "0.1.1",
+    "@salto-io/adapter-api": "0.1.2",
+    "@salto-io/e2e-credentials-store": "0.1.2",
+    "@salto-io/logging": "0.1.2",
+    "@salto-io/lowerdash": "0.1.2",
     "@types/requestretry": "^1.12.5",
     "buffer": "^5.2.1",
     "events": "^3.0.0",
@@ -52,7 +52,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/persistent-pool": "0.1.1",
+    "@salto-io/persistent-pool": "0.1.2",
     "@types/jest": "^24.0.0",
     "@types/jszip": "^3.1.6",
     "@types/lodash": "^4.14.133",

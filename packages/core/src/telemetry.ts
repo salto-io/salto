@@ -61,6 +61,14 @@ export type CountEvent = Event & { type: EVENT_TYPES.COUNTER; value: number }
 export type StackEvent = Event & { type: EVENT_TYPES.STACK; value: string[] }
 export type TelemetryEvent = CountEvent | StackEvent
 
+export const isCountEvent = (event: TelemetryEvent): event is CountEvent => (
+  event.type === EVENT_TYPES.COUNTER && _.isNumber(event.value)
+)
+
+export const isStackEvent = (event: TelemetryEvent): event is StackEvent => (
+  event.type === EVENT_TYPES.STACK && _.isArray(event.value)
+)
+
 const stacktraceFromError = (err: Error): string[] => {
   if (err.stack === undefined) {
     return []

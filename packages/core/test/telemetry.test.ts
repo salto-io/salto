@@ -17,9 +17,8 @@
 
 import nock from 'nock'
 import _ from 'lodash'
-import { telemetrySender, EVENT_TYPES, TelemetryEvent, StackEvent, Tags } from '../src/telemetry'
+import { telemetrySender, EVENT_TYPES, TelemetryEvent, StackEvent, Tags, isCountEvent, isStackEvent } from '../src/telemetry'
 
-// jest.useFakeTimers()
 describe('telemetry', () => {
   const eventByName = (
     name: string,
@@ -180,5 +179,81 @@ describe('telemetry', () => {
     telemetry.sendCountEvent('ev1', 1)
     await telemetry.stop(1)
     await telemetry.stop(1)
+  })
+
+  it('should be counter event using typeguards', async () => {
+    const telemetry = telemetrySender(config, requiredTags)
+    telemetry.sendCountEvent('ev_count', 1)
+    telemetry.sendStackEvent('ev_err', new Error('err'))
+    await telemetry.stop(1)
+
+    const shouldBeCountEvent = eventByName('ev_count', reqEvents) as TelemetryEvent
+    expect(isCountEvent(shouldBeCountEvent)).toBeTruthy()
+
+    const shouldNotBeCountEvent = eventByName('ev_err', reqEvents) as TelemetryEvent
+    expect(isCountEvent(shouldNotBeCountEvent)).toBeFalsy()
+
+    shouldBeCountEvent.value = ['a']
+    expect(isCountEvent(shouldBeCountEvent)).toBeFalsy()
+
+    const illegalEventString = `
+    {
+      "type": "nonexistent",
+      "value": 1,
+      "name": "ev",
+      "tags": {},
+      "timestamp": ""
+    }
+    `
+    expect(isCountEvent(JSON.parse(illegalEventString) as StackEvent)).toBeFalsy()
+
+    const legalEventString = `
+    {
+      "type": "${EVENT_TYPES.COUNTER}",
+      "value": 1,
+      "name": "ev",
+      "tags": {},
+      "timestamp": ""
+    }
+    `
+    expect(isCountEvent(JSON.parse(legalEventString) as StackEvent)).toBeTruthy()
+  })
+
+  it('should be stack event using typeguards', async () => {
+    const telemetry = telemetrySender(config, requiredTags)
+    telemetry.sendStackEvent('ev_err', new Error('err'))
+    telemetry.sendCountEvent('ev_count', 1)
+    await telemetry.stop(1)
+
+    const shouldBeStackEvent = eventByName('ev_err', reqEvents) as TelemetryEvent
+    expect(isStackEvent(shouldBeStackEvent)).toBeTruthy()
+
+    const shouldNotBeStackEvent = eventByName('ev_count', reqEvents) as TelemetryEvent
+    expect(isStackEvent(shouldNotBeStackEvent)).toBeFalsy()
+
+    shouldBeStackEvent.value = 1
+    expect(isStackEvent(shouldBeStackEvent)).toBeFalsy()
+
+    const illegalEventString = `
+    {
+      "type": "nonexistent",
+      "value": ["a", "b"],
+      "name": "ev",
+      "tags": {},
+      "timestamp": ""
+    }
+    `
+    expect(isStackEvent(JSON.parse(illegalEventString) as StackEvent)).toBeFalsy()
+
+    const legalEventString = `
+    {
+      "type": "${EVENT_TYPES.STACK}",
+      "value": ["a", "b"],
+      "name": "ev",
+      "tags": {},
+      "timestamp": ""
+    }
+    `
+    expect(isStackEvent(JSON.parse(legalEventString) as StackEvent)).toBeTruthy()
   })
 })

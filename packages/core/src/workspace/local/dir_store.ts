@@ -17,7 +17,7 @@ import readdirp from 'readdirp'
 import path from 'path'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
-import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents } from '../../file'
+import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents, emptyDir, isSubFolder } from '../../file'
 import { DirectoryStore, File } from '../dir_store'
 
 const { chunkSeries } = promises.array
@@ -71,7 +71,18 @@ export const localDirectoryStore = (
     return replaceContents(absFileName, file.buffer)
   }
 
-  const deleteFile = async (filename: string): Promise<void> => rm(getAbsFileName(filename))
+  const removeDirIfEmpty = async (dirPath: string): Promise<void> => {
+    if (await emptyDir(dirPath) && isSubFolder(dirPath, baseDir)) {
+      await rm(dirPath)
+      await removeDirIfEmpty(path.dirname(dirPath))
+    }
+  }
+
+  const deleteFile = async (filename: string): Promise<void> => {
+    const absFileName = getAbsFileName(filename)
+    await rm(absFileName)
+    await removeDirIfEmpty(path.dirname(absFileName))
+  }
 
   const mtimestampFile = async (filename: string): Promise<number | undefined> =>
     (await stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
@@ -95,6 +106,7 @@ export const localDirectoryStore = (
       const relFilename = getRelativeFileName(file.filename)
       file.timestamp = Date.now()
       updated[relFilename] = file
+      deleted = deleted.filter(filename => filename !== relFilename)
     },
 
     delete: async (filename: string): Promise<void> => {

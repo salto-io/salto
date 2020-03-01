@@ -24,7 +24,9 @@ module.exports = deepMerge(
     collectCoverageFrom: [
       '!<rootDir>/dist/index.js',
     ],
-    coverageThreshold: require('./coverage_thresholds.json'),
+    coverageThreshold: !process.env.NO_COVERAGE_THRESHOLD
+      ? require('./coverage_thresholds.json')
+      : {},
   }
 )
 

@@ -27,7 +27,9 @@ module.exports = deepMerge(
       '!<rootDir>/dist/index.js',
     ],
     testEnvironment: process.env.RUN_E2E_TESTS ? './dist/e2e_test/jest_environment' : undefined,
-    coverageThreshold: require('./coverage_thresholds.json'),
+    coverageThreshold: !process.env.NO_COVERAGE_THRESHOLD
+      ? require('./coverage_thresholds.json')
+      : {},
   },
 )
 

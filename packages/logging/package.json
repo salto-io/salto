@@ -33,7 +33,7 @@
   },
   "dependencies": {
     "@salto-io/lowerdash": "0.1.1",
-    "chalk": "^2.4.2",
+    "ansi-styles": "^4.2.1",
     "lodash": "^4.17.11",
     "logform": "^2.1.2",
     "minimatch": "^3.0.4",

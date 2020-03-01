@@ -19,7 +19,7 @@
   "scripts": {
     "prepublishOnly": "yarn test",
     "build": "yarn lint && yarn tsc",
-    "test": "jest --verbose=false --coverage=false",
+    "test": "jest --verbose=false",
     "clean": "rm -rf ./dist",
     "watch-ts": "tsc -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",

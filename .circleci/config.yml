@@ -264,6 +264,8 @@ jobs:
       - run:
           name: Run unit tests for each package individually
           command: yarn test-each
+          environment:
+            NO_COVERAGE_THRESHOLD: '1'
 
       - run:
           name: Fix coverage thresholds

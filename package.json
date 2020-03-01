@@ -20,7 +20,7 @@
     "clean": "lerna run clean",
     "test": "yarn run jest",
     "test-each": "lerna run test",
-    "fix-coverage-thresholds": "lerna run fix-coverage-thresholds",
+    "fix-coverage-thresholds": "lerna run --no-sort fix-coverage-thresholds",
     "generate-notices-file": "./build_utils/generate_notices.sh",
     "lerna-publish": "lerna publish",
     "lerna-version": "lerna version"

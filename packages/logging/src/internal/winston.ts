@@ -17,12 +17,12 @@ import fs from 'fs'
 import { Writable, PassThrough } from 'stream'
 import winston from 'winston'
 import * as Transport from 'winston-transport'
-import chalk from 'chalk'
 import * as logform from 'logform'
 import { streams } from '@salto-io/lowerdash'
 import { LOG_LEVELS, LogLevel, toHexColor as levelToHexColor } from './level'
 import { Config, Format } from './config'
 import { BaseLoggerMaker, BaseLoggerRepo } from './logger'
+import { colorize as doColorize } from './colors'
 import {
   toHexColor as namespaceToHexColor,
 } from './namespace'
@@ -61,8 +61,8 @@ const textFormat = (
   const { timestamp, namespace, level, message, stack } = info
   return [
     timestamp,
-    colorize ? chalk.hex(levelToHexColor(level as LogLevel))(level) : level,
-    colorize ? chalk.hex(namespaceToHexColor(namespace))(namespace) : namespace,
+    colorize ? doColorize(level, levelToHexColor(level as LogLevel)) : level,
+    colorize ? doColorize(namespace, namespaceToHexColor(namespace)) : namespace,
     stack || message,
   ].join(' ')
 })

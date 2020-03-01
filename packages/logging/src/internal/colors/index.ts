@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import styles from 'ansi-styles'
 import colorData from './colors.json'
+
 
 export type ColorName = string
 export type HexString = string
@@ -36,3 +38,9 @@ export const byName: { [name in ColorName]: HexString } = Object.freeze(
     ...all.map(c => ({ [c.name]: c.hexString })),
   ),
 )
+
+export const colorize = (s: string, colorHex: string): string => [
+  styles.color.ansi16m.hex(colorHex),
+  s,
+  styles.color.close,
+].join('')

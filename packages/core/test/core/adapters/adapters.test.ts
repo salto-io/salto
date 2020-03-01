@@ -18,7 +18,7 @@ import { creator } from '@salto-io/salesforce-adapter'
 import { initAdapters, getAdaptersConfigType } from '../../../src/core/adapters/adapters'
 
 describe('adapters.ts', () => {
-  const { configType } = creator
+  const { credentialsType } = creator
   const services = ['salesforce']
 
   describe('run get adapters config statuses', () => {
@@ -26,12 +26,12 @@ describe('adapters.ts', () => {
 
     it('should return config for defined adapter', () => {
       configs = getAdaptersConfigType(services)
-      expect(configs.salesforce).toEqual(configType)
+      expect(configs.salesforce).toEqual(credentialsType)
     })
 
     it('should return undefined for non defined adapter', () => {
       configs = getAdaptersConfigType(services.concat('fake'))
-      expect(configs.salesforce).toEqual(configType)
+      expect(configs.salesforce).toEqual(credentialsType)
       expect(configs.fake).toBeUndefined()
     })
   })
@@ -39,7 +39,7 @@ describe('adapters.ts', () => {
   it('should return adapter when config is defined', () => {
     const sfConfig = new InstanceElement(
       ElemID.CONFIG_NAME,
-      configType,
+      credentialsType,
       {
         username: 'bpuser',
         password: 'bppass',

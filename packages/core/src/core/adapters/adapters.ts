@@ -23,7 +23,7 @@ export const getAdaptersConfigType = (
   names: string[]
 ): Record<string, ObjectType> => {
   const relevantAdapterCreators = _.pick(adapterCreators, names)
-  return _.mapValues(relevantAdapterCreators, creator => creator.configType)
+  return _.mapValues(relevantAdapterCreators, creator => creator.credentialsType)
 }
 
 export const initAdapters = (

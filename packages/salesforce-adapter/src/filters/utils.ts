@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
-  TypeElement, BuiltinTypes, ElemID, BuiltinAnnotationTypes, TypeMap, INSTANCE_ANNOTATIONS,
+  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, INSTANCE_ANNOTATIONS,
   isReferenceExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
@@ -114,7 +114,7 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
   const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
   return new ObjectType({ elemID: annotationTypesElemID,
     fields: Object.assign({}, ...Object.entries(annotationTypes)
-      .concat(Object.entries(BuiltinAnnotationTypes))
+      .concat(Object.entries(CoreAnnotationTypes))
       .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
 }
 

@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, Element, isObjectType, isInstanceElement, Value, Values, ObjectType, ElemID, ReferenceExpression, TransformValueFunc, transform } from '@salto-io/adapter-api'
+import {
+  Field, Element, isObjectType, isInstanceElement, Value, Values, ObjectType, ElemID,
+  ReferenceExpression, TransformPrimitiveFunc, transformValues,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { SALESFORCE, CUSTOM_OBJECT, CUSTOM_FIELD } from '../constants'
@@ -66,7 +69,7 @@ const replaceReferenceValues = (
   apiToIdMap: ApiNameMapping
 ): Values => {
   const shouldReplace = (field: Field): boolean => (
-    !_.isUndefined(field) && replaceTypes.has(field.elemID.getFullName())
+    replaceTypes.has(field.elemID.getFullName())
   )
 
   const replacePrimitive = (val: Value, field: Field): Value => {
@@ -88,11 +91,18 @@ const replaceReferenceValues = (
     return _.isString(val) ? new ReferenceExpression(elemID) : val
   }
 
-  const transformReferences: TransformValueFunc = (val, field) => (
-    field !== undefined && shouldReplace(field) ? replacePrimitive(val, field) : val
+  const transformPrimitive: TransformPrimitiveFunc = (val, _pathID, field) => (
+    !_.isUndefined(field) && shouldReplace(field) ? replacePrimitive(val, field) : val
   )
 
-  return transform(values, refElement, transformReferences, false) || values
+  return transformValues(
+    {
+      values,
+      type: refElement,
+      transformPrimitives: transformPrimitive,
+      strict: false,
+    }
+  ) || values
 }
 
 export const replaceInstances = (elements: Element[], fieldToTypeMap: Map<string, string>):

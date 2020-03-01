@@ -18,8 +18,13 @@ import _ from 'lodash'
 import {
   TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType, TypeMap,
 } from './elements'
-import { Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value } from './values'
+import {
+  Values, PrimitiveValue, Expression, ReferenceExpression, TemplateExpression, Value,
+} from './values'
 import { ElemID } from './element_id'
+import {
+  InstanceAnnotationTypes,
+} from './builtins'
 
 interface AnnoRef {
   annoType?: TypeElement
@@ -93,7 +98,7 @@ export const isExpression = (value: any): value is Expression => (
 )
 
 export const getSubElement = (baseType: TypeElement, pathParts: string[]):
-Field | TypeElement | undefined => {
+  Field | TypeElement | undefined => {
   // This is a little tricky. Since many fields can have _ in them,
   // and we can't tell of the _ is path separator or a part of the
   // the path name. As long as path is not empty we will try to advance
@@ -134,7 +139,7 @@ export const getField = (baseType: TypeElement, pathParts: string[]): Field | un
 }
 
 export const getFieldType = (baseType: TypeElement, pathParts: string[]):
-TypeElement | undefined => {
+  TypeElement | undefined => {
   const field = getField(baseType, pathParts)
   return (isField(field)) ? field.type : undefined
 }
@@ -151,7 +156,7 @@ export const getFieldNames = (refType: ObjectType, path: string): string[] => {
 }
 
 export const getAnnotationKey = (annotations: {[key: string]: TypeElement}, path: string):
-AnnoRef => {
+  AnnoRef => {
   // Looking for the longest key in annotations that start with pathParts
   const annoName = _(annotations).keys().filter(k => path.startsWith(k))
     .sortBy(k => k.length)
@@ -170,33 +175,62 @@ export const bpCase = (name?: string): string => (
   name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
 )
 
-type TransformValueType = PrimitiveValue | Expression
-export type TransformValueFunc = (
-  val: TransformValueType, field?: Field,
-) => TransformValueType | undefined
+type PrimitiveField = Field & {type: PrimitiveType}
 
-export const transform = (
-  obj: Values,
-  type: ObjectType | TypeMap,
-  transformPrimitives: TransformValueFunc,
-  strict = true
+export type TransformPrimitiveFunc = (
+  val: PrimitiveValue, pathID?: ElemID, type?: PrimitiveField)
+  => PrimitiveValue | ReferenceExpression | undefined
+
+export type TransformReferenceFunc = (
+  val: ReferenceExpression, pathID?: ElemID
+) => Value | ReferenceExpression
+
+export const transformValues = (
+  {
+    values,
+    type,
+    transformPrimitives = v => v,
+    transformReferences = v => v,
+    strict = true,
+    pathID = undefined,
+  }: {
+    values: Value
+    type: ObjectType | TypeMap
+    transformPrimitives?: TransformPrimitiveFunc
+    transformReferences?: TransformReferenceFunc
+    strict?: boolean
+    pathID?: ElemID
+  }
 ): Values | undefined => {
-  const transformValue = (value: Value, field?: Field): Value => {
+  const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): Value => {
     if (field === undefined) {
-      return strict ? undefined : transformPrimitives(value)
+      return strict ? undefined : value
     }
+
+    if (isReferenceExpression(value)) {
+      return transformReferences(value, keyPathID)
+    }
+
     if (_.isArray(value)) {
       const transformed = value
-        .map(item => transformValue(item, field))
+        .map((item, index) => transformValue(item, keyPathID?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
-    if (isPrimitiveType(field.type) || isExpression(value)) {
-      return transformPrimitives(value, field)
+
+    if (isPrimitiveType(field.type)) {
+      return transformPrimitives(value, keyPathID, field as PrimitiveField)
     }
     if (isObjectType(field.type)) {
       const transformed = _.omitBy(
-        transform(value, field.type, transformPrimitives, strict),
+        transformValues({
+          values: value,
+          type: field.type,
+          transformPrimitives,
+          transformReferences,
+          strict,
+          pathID: keyPathID,
+        }),
         _.isUndefined
       )
       return _.isEmpty(transformed) ? undefined : transformed
@@ -208,11 +242,171 @@ export const transform = (
     ? type.fields
     : _.mapValues(type, (fieldType, name) => new Field(new ElemID(''), name, fieldType))
 
-  const result = _(obj)
-    .mapValues((value, key) => transformValue(value, fieldMap[key]))
+  const result = _(values)
+    .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMap[key]))
     .omitBy(_.isUndefined)
     .value()
   return _.isEmpty(result) ? undefined : result
+}
+
+export const transformElement = <T extends Element>(
+  {
+    element,
+    transformPrimitives,
+    transformReferences,
+    strict,
+  }: {
+    element: T
+    transformPrimitives?: TransformPrimitiveFunc
+    transformReferences?: TransformReferenceFunc
+    strict?: boolean
+  }
+): T => {
+  let newElement: Element
+
+  const elementAnnotationTypes = (): TypeMap => {
+    if (isInstanceElement(element)) {
+      return InstanceAnnotationTypes
+    }
+
+    if (isField(element)) {
+      return element.type.annotationTypes
+    }
+
+    return element.annotationTypes
+  }
+
+  const transformedAnnotations = transformValues({
+    values: element.annotations,
+    type: elementAnnotationTypes(),
+    transformPrimitives,
+    transformReferences,
+    strict,
+    pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
+  }) || {}
+
+  if (isInstanceElement(element)) {
+    const transformedValues = transformValues({
+      values: element.value,
+      type: element.type,
+      transformPrimitives,
+      transformReferences,
+      strict,
+      pathID: element.elemID,
+    }) || {}
+
+    newElement = new InstanceElement(
+      element.elemID.name,
+      element.type,
+      transformedValues,
+      element.path,
+      transformedAnnotations
+    )
+    return newElement as T
+  }
+
+  if (isObjectType(element)) {
+    const clonedFields = _.mapValues(
+      element.fields,
+      field => transformElement(
+        {
+          element: field,
+          transformPrimitives,
+          transformReferences,
+          strict,
+        }
+      )
+    )
+
+    newElement = new ObjectType({
+      elemID: element.elemID,
+      fields: clonedFields,
+      annotationTypes: element.annotationTypes,
+      annotations: transformedAnnotations,
+      path: element.path,
+      isSettings: element.isSettings,
+    })
+
+    return newElement as T
+  }
+
+  if (isField(element)) {
+    newElement = new Field(
+      element.parentID,
+      element.name,
+      element.type,
+      transformedAnnotations,
+      element.isList
+    )
+    return newElement as T
+  }
+
+  if (isPrimitiveType(element)) {
+    newElement = new PrimitiveType({
+      elemID: element.elemID,
+      primitive: element.primitive,
+      annotationTypes: element.annotationTypes,
+      path: element.path,
+      annotations: transformedAnnotations,
+    })
+
+    return newElement as T
+  }
+
+  throw Error('received unsupported (subtype) Element')
+}
+
+export const resolveReferences = <T extends Element>(
+  element: T,
+  getLookUpName: (v: Value) => Value
+): T => {
+  const referenceReplacer: TransformReferenceFunc = ref => getLookUpName(ref.value)
+
+  return transformElement({
+    element,
+    transformReferences: referenceReplacer,
+    strict: false,
+  })
+}
+
+export const restoreReferences = <T extends Element>(
+  source: T,
+  targetElement: T,
+  getLookUpName: (v: Value) => Value
+): T => {
+  const allReferencesPaths = new Map<string, ReferenceExpression>()
+  const createPathMapCallback: TransformReferenceFunc = (val, pathID) => {
+    if (pathID) {
+      allReferencesPaths.set(pathID.getFullName(), val)
+    }
+    return val
+  }
+
+  transformElement({
+    element: source,
+    transformReferences: createPathMapCallback,
+    strict: false,
+  })
+
+  const restoreReferencesFunc: TransformPrimitiveFunc = (val, pathID) => {
+    if (pathID === undefined) {
+      return val
+    }
+
+    const ref = allReferencesPaths.get(pathID.getFullName())
+    if (ref !== undefined
+      && _.isEqual(getLookUpName(ref.value), val)) {
+      return ref
+    }
+
+    return val
+  }
+
+  return transformElement({
+    element: targetElement,
+    transformPrimitives: restoreReferencesFunc,
+    strict: false,
+  })
 }
 
 export const findElements = (elements: Iterable<Element>, id: ElemID): Iterable<Element> => (

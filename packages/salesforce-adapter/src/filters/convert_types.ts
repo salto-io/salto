@@ -15,7 +15,7 @@
 */
 import {
   Element, isObjectType, ObjectType,
-  isInstanceElement, transform,
+  isInstanceElement, transformValues,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { transformPrimitive } from '../transformers/transformer'
@@ -37,10 +37,12 @@ const filterCreator: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(instance => isObjectType(instance.type))
       .forEach(instance => {
-        instance.value = transform(
-          instance.value,
-          instance.type as ObjectType,
-          transformPrimitive
+        instance.value = transformValues(
+          {
+            values: instance.value,
+            type: instance.type as ObjectType,
+            transformPrimitives: transformPrimitive,
+          }
         ) || {}
       })
   },

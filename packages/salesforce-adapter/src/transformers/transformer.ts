@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   ReferenceExpression, isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
-  Field as TypeField, TypeMap, TransformValueFunc, bpCase, isField,
+  Field as TypeField, TypeMap, TransformPrimitiveFunc, bpCase, isField,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { CustomObject, CustomField } from '../client/types'
@@ -966,11 +966,7 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
   'xsd:long': Number,
 }
 
-export const transformPrimitive: TransformValueFunc = (val, field) => {
-  const fieldType = field?.type
-  if (!isPrimitiveType(fieldType)) {
-    return val
-  }
+export const transformPrimitive: TransformPrimitiveFunc = (val, pathID, field) => {
   // We sometimes get empty strings that we want to filter out
   if (val === '') {
     return undefined
@@ -985,9 +981,9 @@ export const transformPrimitive: TransformValueFunc = (val, field) => {
   // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
   if (_.isObject(val) && Object.keys(val).includes('_')) {
     const convertFunc = convertXsdTypeFuncMap[_.get(val, ['$', 'xsi:type'])] || (v => v)
-    return transformPrimitive(convertFunc(_.get(val, '_')), field)
+    return transformPrimitive(convertFunc(_.get(val, '_')), pathID, field)
   }
-  switch (fieldType.primitive) {
+  switch (field?.type.primitive) {
     case PrimitiveTypes.NUMBER:
       return Number(val)
     case PrimitiveTypes.BOOLEAN:

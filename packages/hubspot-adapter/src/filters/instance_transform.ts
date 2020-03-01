@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, isObjectType, transform, ObjectType } from '@salto-io/adapter-api'
+import {
+  Element, isInstanceElement, isObjectType, transformValues, ObjectType,
+} from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { transformPrimitive } from '../transformers/transformer'
 
@@ -27,10 +29,12 @@ const filterCreator: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(instance => isObjectType(instance.type))
       .forEach(instance => {
-        instance.value = transform(
-          instance.value,
-          instance.type as ObjectType,
-          transformPrimitive
+        instance.value = transformValues(
+          {
+            values: instance.value,
+            type: instance.type as ObjectType,
+            transformPrimitives: transformPrimitive,
+          }
         ) || {}
       })
   },

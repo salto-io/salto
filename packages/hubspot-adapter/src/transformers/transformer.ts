@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field as TypeField,
-  BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, transform,
-  TypeMap, Values, TransformValueFunc, isPrimitiveType, bpCase, Value,
+  BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, transformValues,
+  TypeMap, Values, TransformPrimitiveFunc, isPrimitiveType, bpCase, Value,
 } from '@salto-io/adapter-api'
 import { isFormInstance } from '../filters/form_field'
 import {
@@ -1786,13 +1786,12 @@ export const createInstanceName = (
   name: string
 ): string => bpCase(name.trim())
 
-export const transformPrimitive: TransformValueFunc = (val, field) => {
+export const transformPrimitive: TransformPrimitiveFunc = (val, _pathID, field) => {
   // remove values that are just an empty string or null
   if (val === '' || val === null) {
     return undefined
   }
-  const fieldType = field?.type
-  if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
+  if (field?.type.isEqual(BuiltinTypes.JSON)) {
     return JSON.stringify(val)
   }
   return val
@@ -1818,8 +1817,12 @@ export const transformAfterUpdateOrAdd = async (
   // If transform/filter moves auto-generated fields from being at the same
   // "location" as it comes from the api then we need transform^-1 here before this merge
   const mergedValues = _.mergeWith(updateResult as Values, clonedInstance.value, mergeCustomizer)
-  clonedInstance.value = transform(
-    mergedValues, clonedInstance.type as ObjectType, transformPrimitive
+  clonedInstance.value = transformValues(
+    {
+      values: mergedValues,
+      type: clonedInstance.type as ObjectType,
+      transformPrimitives: transformPrimitive,
+    }
   ) || {}
   return clonedInstance
 }

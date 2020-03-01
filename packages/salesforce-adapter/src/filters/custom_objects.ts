@@ -17,8 +17,8 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType, InstanceElement,
-  isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, transform, TypeMap, findObjectType,
-  Values, bpCase, INSTANCE_ANNOTATIONS, ReferenceExpression,
+  isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, TypeMap, findObjectType,
+  Values, bpCase, INSTANCE_ANNOTATIONS, ReferenceExpression, transformValues,
 } from '@salto-io/adapter-api'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
@@ -271,14 +271,26 @@ export const transformFieldAnnotations = (
   const annotationsType = buildAnnotationsObjectType(fieldType.annotationTypes)
   convertList(annotationsType, annotations)
 
-  return transform(annotations, annotationsType, transformPrimitive) || {}
+  return transformValues(
+    {
+      values: annotations,
+      type: annotationsType,
+      transformPrimitives: transformPrimitive,
+    }
+  ) || {}
 }
 
 const transformObjectAnnotationValues = (instance: InstanceElement,
   annotationTypesFromInstance: TypeMap):
   Values | undefined => {
   const annotationsObject = buildAnnotationsObjectType(annotationTypesFromInstance)
-  return transform(instance.value, annotationsObject, transformPrimitive)
+  return transformValues(
+    {
+      values: instance.value,
+      type: annotationsObject,
+      transformPrimitives: transformPrimitive,
+    }
+  )
 }
 
 const transformObjectAnnotations = (customObject: ObjectType, annotationTypesFromInstance: TypeMap,

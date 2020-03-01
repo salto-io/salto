@@ -17,11 +17,19 @@ import _ from 'lodash'
 import {
   Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
 } from '../src/elements'
-import { Values } from '../src/values'
-import { ElemID } from '../src/element_id'
-import { BuiltinTypes } from '../src/builtins'
 import {
-  transform, resolvePath, TransformValueFunc, isPrimitiveType, bpCase,
+  ReferenceExpression, Values, TemplateExpression, Value,
+}
+  from '../src/values'
+import { ElemID } from '../src/element_id'
+import {
+  BuiltinInstanceAnnotationTypes,
+  BuiltinTypes, INSTANCE_ANNOTATIONS,
+} from '../src/builtins'
+import {
+  transformValues, resolvePath, TransformPrimitiveFunc, isPrimitiveType,
+  TransformReferenceFunc, restoreReferences, resolveReferences,
+  bpCase,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -39,6 +47,7 @@ describe('Test utils.ts', () => {
       testAnno: 'TEST ANNO',
     },
     fields: {
+      ref: new Field(mockElem, 'ref', BuiltinTypes.STRING),
       str: new Field(mockElem, 'str', BuiltinTypes.STRING, {
         testAnno: 'TEST FIELD ANNO',
       }),
@@ -69,10 +78,14 @@ describe('Test utils.ts', () => {
     },
   })
 
+  const regValue = 'regValue'
+  const valueRef = new ReferenceExpression(mockElem, regValue)
+
   const mockInstance = new InstanceElement(
     'mockInstance',
     mockType,
     {
+      ref: valueRef,
       str: 'val',
       bool: 'true',
       num: '99',
@@ -120,38 +133,39 @@ describe('Test utils.ts', () => {
         },
       ],
     },
+    [],
+    {
+      [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
+    },
   )
 
-  describe('bpCase', () => {
-    describe('names without special characters', () => {
-      const normalNames = [
-        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
-        'CRMFusionDBR101__Scenario__C',
-      ]
-      it('should remain the same', () => {
-        normalNames.forEach(name => expect(bpCase(name)).toEqual(name))
-      })
-    })
-
-    describe('names with spaces', () => {
-      it('should be replaced with _', () => {
-        expect(bpCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
-      })
-    })
-  })
-
-  describe('transform func', () => {
+  describe('transformValues func', () => {
     let resp: Values
 
+    describe('with empty values', () => {
+      it('should return undefined', () => {
+        expect(transformValues({ values: {}, type: mockType })).toBeUndefined()
+      })
+    })
+
     describe('with empty transformPrimitives func', () => {
-      let transfromFunc: jest.Mock
+      let transformPrimitiveFunc: jest.Mock
+      let transformReferenceFunc: jest.Mock
+
       beforeEach(() => {
-        transfromFunc = jest.fn().mockImplementation(val => val)
+        transformPrimitiveFunc = jest.fn().mockImplementation(val => val)
+        transformReferenceFunc = jest.fn().mockImplementation(val => val)
       })
 
-      describe('when called with instance and object type', () => {
+      describe('when called with instance values', () => {
         beforeEach(async () => {
-          const result = transform(mockInstance.value, mockType, transfromFunc)
+          const result = transformValues({
+            values: mockInstance.value,
+            type: mockType,
+            transformPrimitives: transformPrimitiveFunc,
+            transformReferences: transformReferenceFunc,
+          })
+
           expect(result).toBeDefined()
           resp = result as Values
         })
@@ -159,19 +173,33 @@ describe('Test utils.ts', () => {
         it('should call transform on top level primitive values', () => {
           const primitiveFieldNames = ['str', 'bool', 'num']
           primitiveFieldNames.forEach(field => {
-            expect(transfromFunc).toHaveBeenCalledWith(
-              mockInstance.value[field], mockType.fields[field],
+            expect(transformPrimitiveFunc).toHaveBeenCalledWith(
+              mockInstance.value[field], undefined, mockType.fields[field],
             )
           })
         })
 
-        it('should call transfrom on array elements', () => {
+        it('should call transform on top level references values', () => {
+          const referenceFieldNames = ['ref']
+          referenceFieldNames.forEach(field => {
+            expect(transformReferenceFunc).toHaveBeenCalledWith(
+              mockInstance.value[field], undefined,
+            )
+          })
+        })
+
+
+        it('should call transform on array elements', () => {
           (mockInstance.value.numArray as string[]).forEach(
-            val => expect(transfromFunc).toHaveBeenCalledWith(val, mockType.fields.numArray)
+            val => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
+              val,
+              undefined,
+              mockType.fields.numArray,
+            )
           )
         })
 
-        it('should call transfrom on primitive types in nested objects', () => {
+        it('should call transform on primitive types in nested objects', () => {
           const getField = (type: ObjectType, path: (string | number)[]): Field => {
             if (typeof path[0] === 'number') {
               return getField(type, path.slice(1))
@@ -187,8 +215,8 @@ describe('Test utils.ts', () => {
             ['obj', 0, 'innerObj', 'magical', 'deepName'],
           ]
           nestedPrimitivePaths.forEach(
-            path => expect(transfromFunc).toHaveBeenCalledWith(
-              _.get(mockInstance.value, path), getField(mockType, path),
+            path => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
+              _.get(mockInstance.value, path), undefined, getField(mockType, path),
             )
           )
         })
@@ -216,6 +244,31 @@ describe('Test utils.ts', () => {
           expect(resp.obj[0]).toEqual(mockInstance.value.obj[0])
         })
       })
+
+      describe('when called with instance annotations', () => {
+        beforeEach(async () => {
+          const result = transformValues({
+            values: mockInstance.annotations,
+            type: BuiltinInstanceAnnotationTypes,
+            transformPrimitives: transformPrimitiveFunc,
+            transformReferences: transformReferenceFunc,
+          })
+          expect(result).toBeDefined()
+          expect(result).toEqual(mockInstance.annotations)
+        })
+
+
+        it('should call transform on instance annotation references values', () => {
+          const referenceAnnotationNames = [INSTANCE_ANNOTATIONS.DEPENDS_ON]
+          referenceAnnotationNames.forEach(annotation => {
+            expect(transformReferenceFunc).toHaveBeenCalledWith(
+              mockInstance.annotations[annotation], undefined,
+            )
+          })
+        })
+      })
+
+
       describe('when called with type map', () => {
         let origValue: Values
         let typeMap: TypeMap
@@ -227,18 +280,34 @@ describe('Test utils.ts', () => {
             bool: BuiltinTypes.BOOLEAN,
             nums: BuiltinTypes.NUMBER,
           }
-          const result = transform(origValue, typeMap, transfromFunc)
+          const result = transformValues(
+            {
+              values: origValue,
+              type: typeMap,
+              transformPrimitives: transformPrimitiveFunc,
+              transformReferences: transformReferenceFunc,
+            }
+          )
+
           expect(result).toBeDefined()
           resp = result as Values
         })
-        it('should call transfrom func on all defined types', () => {
+        it('should call transform func on all defined types', () => {
           const mockField = (name: string): Field => new Field(new ElemID(''), name, typeMap[name])
           const primitiveTypes = ['str', 'num', 'bool']
           primitiveTypes.forEach(
-            name => expect(transfromFunc).toHaveBeenCalledWith(origValue[name], mockField(name))
+            name => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
+              origValue[name],
+              undefined,
+              mockField(name)
+            )
           )
           origValue.nums.forEach(
-            (val: string) => expect(transfromFunc).toHaveBeenCalledWith(val, mockField('nums'))
+            (val: string) => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
+              val,
+              undefined,
+              mockField('nums')
+            )
           )
         })
         it('should omit undefined fields values', () => {
@@ -250,7 +319,7 @@ describe('Test utils.ts', () => {
       })
     })
 
-    const transformPrimitiveTest: TransformValueFunc = (val, field) => {
+    const transformPrimitiveTest: TransformPrimitiveFunc = (val, _pathID, field) => {
       const fieldType = field?.type
       if (!isPrimitiveType(fieldType)) {
         return val
@@ -267,27 +336,68 @@ describe('Test utils.ts', () => {
       }
     }
 
-    describe('when transformPrimitives was received', () => {
-      beforeEach(async () => {
-        const result = transform(mockInstance.value, mockType, transformPrimitiveTest)
-        expect(result).toBeDefined()
-        resp = result as Values
+
+    const transformReferenceTest: TransformReferenceFunc = val =>
+      val.value
+
+
+    describe('when transformPrimitives and transformReference was received', () => {
+      describe('when called with instance values', () => {
+        beforeEach(async () => {
+          const result = transformValues({
+            values: mockInstance.value,
+            type: mockType,
+            transformPrimitives: transformPrimitiveTest,
+            transformReferences: transformReferenceTest,
+          })
+          expect(result).toBeDefined()
+          resp = result as Values
+        })
+
+        it('should transform primitive types', () => {
+          expect(resp.str).toEqual('val')
+          expect(resp.bool).toEqual(true)
+          expect(resp.num).toEqual(99)
+        })
+
+        it('should transform reference types', () => {
+          expect(resp.ref).toEqual('regValue')
+        })
+
+        it('should transform inner object', () => {
+          expect(resp.obj[0].innerObj.magical.deepNumber).toEqual(888)
+        })
       })
 
-      it('should transform primitive types', () => {
-        expect(resp.str).toEqual('val')
-        expect(resp.bool).toEqual(true)
-        expect(resp.num).toEqual(99)
-      })
+      describe('when called with instance annotations', () => {
+        beforeEach(async () => {
+          const result = transformValues({
+            values: mockInstance.annotations,
+            type: BuiltinInstanceAnnotationTypes,
+            transformPrimitives: transformPrimitiveTest,
+            transformReferences: transformReferenceTest,
+          })
+          expect(result).toBeDefined()
+          resp = result as Values
+        })
 
-      it('should transform inner object', () => {
-        expect(resp.obj[0].innerObj.magical.deepNumber).toEqual(888)
+        it('should transform reference types', () => {
+          expect(resp[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toEqual('regValue')
+        })
       })
     })
 
     describe('when strict is false', () => {
       beforeEach(async () => {
-        const result = transform(mockInstance.value, mockType, transformPrimitiveTest, false)
+        const result = transformValues(
+          {
+            values: mockInstance.value,
+            type: mockType,
+            transformPrimitives: transformPrimitiveTest,
+            transformReferences: transformReferenceTest,
+            strict: false,
+          }
+        )
         expect(result).toBeDefined()
         resp = result as Values
       })
@@ -305,6 +415,257 @@ describe('Test utils.ts', () => {
         expect(resp.obj[1].innerObj.magical.deepNumber).toBeUndefined()
         expect(resp.obj[1].innerObj.magical.notExist2).toEqual('false')
         expect(resp.obj[2]).not.toEqual(mockInstance.value.obj[2])
+      })
+    })
+  })
+
+  describe('resolveReferences func', () => {
+    const instanceName = 'Instance'
+    const objectName = 'Object'
+    const newValue = 'NEW'
+    const elementID = new ElemID('salesforce', 'elememt')
+    const element = new ObjectType({
+      elemID: elementID,
+      annotationTypes: {
+        refValue: BuiltinTypes.STRING,
+        reg: BuiltinTypes.STRING,
+
+      },
+      annotations: {
+        name: objectName,
+        typeRef: new ReferenceExpression(
+          elementID.createNestedID('annotation', 'name'), objectName
+        ),
+      },
+      fields: {
+        refValue: new Field(mockElem, 'refValue', BuiltinTypes.STRING),
+        arrayValues: new Field(mockElem, 'refValue', BuiltinTypes.STRING, {}, true),
+      },
+    })
+
+    const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
+      new ReferenceExpression(
+        elemID.createNestedID(...path)
+      )
+    )
+
+    const elemID = new ElemID('salesforce', 'base')
+
+    const refType = new ObjectType({
+      elemID: new ElemID('salto', 'simple'),
+    })
+
+    const firstRef = new InstanceElement(
+      'first',
+      refType,
+      { from: 'Milano', to: 'Minsk' }
+    )
+    const instance = new InstanceElement('instance', element, {
+      name: instanceName,
+      refValue: valueRef,
+      into: new TemplateExpression({
+        parts: [
+          'Well, you made a long journey from ',
+          refTo(firstRef, 'from'),
+          ' to ',
+          refTo(firstRef, 'to'),
+          ', Rochelle Rochelle',
+        ],
+      }),
+      arrayValues: [
+        regValue,
+        valueRef,
+      ],
+    })
+    const elementRef = new ReferenceExpression(element.elemID, element)
+
+    const sourceElement = new ObjectType({
+      elemID,
+      annotationTypes: {
+        refValue: BuiltinTypes.STRING,
+        objectRef: BuiltinTypes.STRING,
+        reg: BuiltinTypes.STRING,
+      },
+      annotations: {
+        objectRef: elementRef,
+        refValue: valueRef,
+        reg: regValue,
+      },
+      fields: {
+        field: new Field(elemID, 'field', element, {
+          reg: regValue,
+          refValue: valueRef,
+        }),
+      },
+    })
+
+    const getName = (refValue: Value): Value =>
+      refValue
+
+    describe('resolveReferences on objectType', () => {
+      let sourceElementCopy: ObjectType
+      let resolvedElement: ObjectType
+
+      beforeAll(async () => {
+        sourceElementCopy = sourceElement.clone()
+        resolvedElement = resolveReferences(sourceElement, getName)
+      })
+
+      it('should not modify the source element', () => {
+        expect(sourceElement).toEqual(sourceElementCopy)
+      })
+
+      it('should transform element ref values', () => {
+        expect(resolvedElement.annotations.refValue).toEqual(regValue)
+        expect(resolvedElement.annotations.objectRef).toEqual(element)
+
+        expect(resolvedElement.fields.field.annotations.refValue).toEqual(regValue)
+      })
+
+      it('should transform regular values', () => {
+        expect(resolvedElement.annotations.reg).toEqual(regValue)
+        expect(resolvedElement.fields.field.annotations.reg).toEqual(regValue)
+      })
+
+      it('should transform back to sourceElement value', () => {
+        expect(restoreReferences(sourceElement, resolvedElement, getName)).toEqual(sourceElement)
+      })
+
+      it('should maintain new values when transforming back to orig value', () => {
+        const after = resolvedElement.clone()
+        after.annotations.new = newValue
+        after.annotationTypes.new = BuiltinTypes.STRING
+        after.fields.field.annotations.new = newValue
+        after.annotations.regValue = newValue
+        after.annotationTypes.regValue = BuiltinTypes.STRING
+        after.fields.field.annotations.regValue = newValue
+
+        const restored = restoreReferences(sourceElement, after, getName)
+        expect(restored.annotations.new).toEqual(newValue)
+        expect(restored.annotations.regValue).toEqual(newValue)
+
+        expect(restored.fields.field.annotations.new).toEqual(newValue)
+        expect(restored.fields.field.annotations.regValue).toEqual(newValue)
+      })
+    })
+
+    describe('resolveReferences on instance', () => {
+      let resolvedInstance: InstanceElement
+
+      beforeAll(async () => {
+        resolvedInstance = resolveReferences(instance, getName)
+      })
+
+      it('should transform instanceElement', () => {
+        expect(resolvedInstance.value.name).toEqual(instance.value.name)
+        expect(resolvedInstance.value.refValue).toEqual(regValue)
+        expect(resolvedInstance.value.arrayValues).toHaveLength(2)
+        expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
+        expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
+      })
+
+      it('should transform back to instance', () => {
+        expect(restoreReferences(instance, resolvedInstance, getName)).toEqual(instance)
+      })
+    })
+
+    describe('resolveReferences on primitive', () => {
+      const prim = new PrimitiveType({
+        elemID: new ElemID('mockAdapter', 'str'),
+        primitive: PrimitiveTypes.STRING,
+        annotationTypes: {
+          testAnno: BuiltinTypes.STRING,
+          testNumAnno: BuiltinTypes.NUMBER,
+          refAnno: BuiltinTypes.STRING,
+        },
+        annotations: {
+          testAnno: 'TEST ANNO TYPE',
+          testNumAnno: 34,
+          refAnno: valueRef,
+        },
+      })
+
+      let resolvedPrim: PrimitiveType
+
+      beforeAll(async () => {
+        resolvedPrim = resolveReferences(prim, getName)
+      })
+
+
+      it('should transform primitive', () => {
+        expect(resolvedPrim).not.toEqual(prim)
+
+        expect(resolvedPrim.primitive).toEqual(prim.primitive)
+        expect(resolvedPrim.elemID).toEqual(prim.elemID)
+        expect(resolvedPrim.path).toEqual(prim.path)
+        expect(resolvedPrim.annotationTypes).toEqual(prim.annotationTypes)
+
+        expect(resolvedPrim.annotations).not.toEqual(prim.annotations)
+        expect(resolvedPrim.annotations.refAnno).toEqual(regValue)
+      })
+
+      it('should transform back to primitive', () => {
+        expect(restoreReferences(prim, resolvedPrim, getName)).toEqual(prim)
+      })
+    })
+
+    describe('resolveReferences on field', () => {
+      const FieldType = new ObjectType({
+        elemID,
+        annotationTypes: {
+          testAnno: BuiltinTypes.STRING,
+          testNumAnno: BuiltinTypes.NUMBER,
+          refAnno: BuiltinTypes.STRING,
+        },
+      })
+
+      const field = new Field(elemID, 'field', FieldType, {
+        testAnno: 'TEST ANNO TYPE',
+        testNumAnno: 34,
+        refAnno: valueRef,
+      })
+
+      let resolvedField: Field
+
+      beforeAll(async () => {
+        resolvedField = resolveReferences(field, getName)
+      })
+
+
+      it('should transform field', () => {
+        expect(resolvedField).not.toEqual(field)
+
+        expect(resolvedField.type).toEqual(field.type)
+        expect(resolvedField.isList).toEqual(field.isList)
+        expect(resolvedField.name).toEqual(field.name)
+        expect(resolvedField.elemID).toEqual(field.elemID)
+        expect(resolvedField.path).toEqual(field.path)
+        expect(resolvedField.parentID).toEqual(field.parentID)
+
+        expect(resolvedField.annotations).not.toEqual(field.annotations)
+        expect(resolvedField.annotations.refAnno).toEqual(regValue)
+        expect(resolvedField.annotations.testAnno).toEqual(field.annotations.testAnno)
+      })
+
+      it('should transform back to field', () => {
+        expect(restoreReferences(field, resolvedField, getName)).toEqual(field)
+      })
+    })
+  })
+  describe('bpCase func', () => {
+    describe('names without special characters', () => {
+      const normalNames = [
+        'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
+        'CRMFusionDBR101__Scenario__C',
+      ]
+      it('should remain the same', () => {
+        normalNames.forEach(name => expect(bpCase(name)).toEqual(name))
+      })
+    })
+
+    describe('names with spaces', () => {
+      it('should be replaced with _', () => {
+        expect(bpCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
       })
     })
   })

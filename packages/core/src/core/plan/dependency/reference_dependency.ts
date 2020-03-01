@@ -17,14 +17,15 @@ import wu from 'wu'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Element, getChangeElement, transform, isInstanceElement, TransformValueFunc,
+  Element, getChangeElement, TransformReferenceFunc,
   isReferenceExpression, ChangeDataType, INSTANCE_ANNOTATIONS, Change, DependencyChanger,
   ChangeEntry, DependencyChange, addReferenceDependency, addParentDependency, isDependentAction,
+  transformElement,
 } from '@salto-io/adapter-api'
 
 const getAllReferencedIds = (elem: Element): Set<string> => {
   const allReferencedIds = new Set<string>()
-  const transformCallback: TransformValueFunc = val => {
+  const transformCallback: TransformReferenceFunc = val => {
     if (_.isArray(val)) {
       val.forEach(item => transformCallback(item, undefined))
       return val
@@ -35,10 +36,12 @@ const getAllReferencedIds = (elem: Element): Set<string> => {
     return val
   }
 
-  if (isInstanceElement(elem)) {
-    transform(elem.value, elem.type, transformCallback, false)
-  }
-  transform(elem.annotations, elem.annotationTypes, transformCallback, false)
+  transformElement({
+    element: elem,
+    transformReferences: transformCallback,
+    strict: false,
+  })
+
   return allReferencedIds
 }
 

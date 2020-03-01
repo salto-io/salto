@@ -51,6 +51,11 @@ export const INSTANCE_ANNOTATIONS = {
   PARENT: '_parent',
 }
 
+export const BuiltinInstanceAnnotationTypes: TypeMap = {
+  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: BuiltinTypes.STRING,
+  [INSTANCE_ANNOTATIONS.PARENT]: BuiltinTypes.STRING,
+}
+
 export const RESTRICTION_ANNOTATIONS = {
   ENFORCE_VALUE: 'enforce_value',
   MIN: 'min',

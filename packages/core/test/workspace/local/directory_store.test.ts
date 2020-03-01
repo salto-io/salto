@@ -31,6 +31,10 @@ describe('localDirectoryStore', () => {
   const mockReaddirp = readdirp.promise as jest.Mock
   const mockReplaceContents = file.replaceContents as jest.Mock
   const mockMkdir = file.mkdirp as jest.Mock
+  const mockRm = file.rm as jest.Mock
+  const mockEmptyDir = file.emptyDir as jest.Mock
+  const mockIsSubFolder = file.isSubFolder as jest.Mock
+
   describe('list', () => {
     it('returns empty list if dir not exists', async () => {
       mockFileExists.mockResolvedValue(false)
@@ -108,6 +112,34 @@ describe('localDirectoryStore', () => {
       expect(files[0]).toBeUndefined()
       expect(files[1]?.buffer).toEqual('bla1')
       expect(files[2]?.buffer).toEqual('bla2')
+    })
+  })
+
+  describe('rm blueprint', () => {
+    const baseDir = '/base'
+    const multipleFilesDir = 'multi'
+    const oneFileDir = 'single'
+    const bpDir = path.join(baseDir, multipleFilesDir, oneFileDir)
+    const bpName = 'rm_this.bp'
+    const bpPath = path.join(bpDir, bpName)
+    const bpStore = localDirectoryStore(baseDir)
+
+    it('delete the blueprint', async () => {
+      mockEmptyDir.mockResolvedValueOnce(false)
+      await bpStore.delete(bpPath)
+      await bpStore.flush()
+      expect(mockRm).toHaveBeenCalledTimes(1)
+      expect(mockRm).toHaveBeenCalledWith(bpPath)
+    })
+
+    it('delete an empty directory', async () => {
+      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      mockIsSubFolder.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
+      await bpStore.delete(bpPath)
+      await bpStore.flush()
+      expect(mockRm).toHaveBeenCalledTimes(2)
+      expect(mockRm).toHaveBeenNthCalledWith(1, bpPath)
+      expect(mockRm).toHaveBeenNthCalledWith(2, bpDir)
     })
   })
 })

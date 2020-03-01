@@ -422,4 +422,35 @@ describe('file', () => {
       })
     })
   })
+  describe('emptyDir', () => {
+    let dirTmp: tmp.DirectoryResult
+    let emptyDirPath: string
+    let fullDirPath: string
+
+    beforeEach(async () => {
+      dirTmp = await tmp.dir()
+      emptyDirPath = path.join(dirTmp.path, 'empty')
+      fullDirPath = path.join(dirTmp.path, 'full')
+      await file.mkdirp(emptyDirPath)
+      await file.mkdirp(fullDirPath)
+      await file.writeFile(path.join(fullDirPath, 'file.bp'), '')
+    })
+
+    it('detect an empty dir', async () => {
+      expect(await file.emptyDir(emptyDirPath)).toBeTruthy()
+    })
+
+    it('detect a dir with files', async () => {
+      expect(await file.emptyDir(fullDirPath)).toBeFalsy()
+    })
+  })
+
+  describe('is sub folder', () => {
+    it('detect a sub folder', () => {
+      expect(file.isSubFolder('/base/child', '/base')).toBeTruthy()
+      expect(file.isSubFolder('../base/child', '../base')).toBeTruthy()
+      expect(file.isSubFolder('../base/child', '../test')).toBeFalsy()
+      expect(file.isSubFolder('/base/child', '/test')).toBeFalsy()
+    })
+  })
 })

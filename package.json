@@ -20,7 +20,7 @@
     "clean": "lerna run clean",
     "test": "yarn run jest",
     "generate-notices-file": "./build_utils/generate_notices.sh",
-    "lerna-publish": "lerna publish",
-    "lerna-version": "lerna version"
-  }
+    "version-pr": "./build_utils/create_version_pr.sh"
+  },
+  "version": "0.0.0"
 }

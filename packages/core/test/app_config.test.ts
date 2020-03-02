@@ -21,14 +21,26 @@ jest.mock('../src/file', () => ({
   mkdirp: jest.fn().mockImplementation(
     (_dir: string) => Promise.resolve()
   ),
-  writeFile: jest.fn().mockImplementation(
+  replaceContents: jest.fn().mockImplementation(
     (_filename: string, _content: Buffer | string) => Promise.resolve()
   ),
   exists: jest.fn().mockImplementation(
     (filename: string) => ((filename.search('exists') !== -1) ? Promise.resolve(true) : Promise.resolve(false))
   ),
-  readTextFile: jest.fn().mockImplementation(
-    (_filename: string) => Promise.resolve('1234')
+  readFile: jest.fn().mockImplementation(
+    (_filename: string) => Promise.resolve(
+      Buffer.from(
+        `salto {
+          installationID = "1234"
+        }
+        telemetry {
+          url = "https://telemetry.salto.io"
+          token = "1234"
+          enabled = true
+        }`,
+        'utf-8',
+      )
+    )
   ),
 }))
 
@@ -37,16 +49,22 @@ describe('app config', () => {
     delete process.env.SALTO_HOME
   })
 
-  it('should load installation id from disk', async () => {
+  it('should load config from disk', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'
     const appConfig = await conf.configFromDisk()
     expect(conf.getSaltoHome()).toEqual('/exists/home')
     expect(appConfig.installationID).toEqual('1234')
+    expect(appConfig.telemetry.url).toEqual('https://telemetry.salto.io')
   })
 
-  it('should fail when loading config that was not initialized', async () => {
-    process.env[conf.SALTO_HOME_VAR] = '/a/b/c'
-    await expect(conf.configFromDisk()).rejects.toThrow(/cannot find installation id/)
+  it('should disable telemetry if env var is saying so', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/exists/home'
+    process.env.SALTO_TELEMETRY_DISABLE = '1'
+    jest.resetModules()
+    const iko = require('../') // eslint-disable-line
+
+    const appConfig = await iko.configFromDisk()
+    expect(appConfig.telemetry.enabled).toBeFalsy()
   })
 
   it('should initialize config on disk', async () => {
@@ -55,5 +73,6 @@ describe('app config', () => {
     const appConfig = await conf.configFromDisk()
     expect(conf.getSaltoHome()).toEqual('/exists')
     expect(appConfig.installationID).toEqual('1234')
+    expect(appConfig.telemetry.url).toEqual('https://telemetry.salto.io')
   })
 })

@@ -60,7 +60,9 @@ jest.mock('../src/file', () => ({
 }))
 
 
+let keepEnv: NodeJS.ProcessEnv = {}
 describe('app config', () => {
+  beforeAll(() => { keepEnv = process.env })
   afterEach(() => {
     [
       'SALTO_TELEMETRY_URL',
@@ -69,6 +71,7 @@ describe('app config', () => {
       'SALTO_HOME',
     ].forEach(e => delete process.env[e])
   })
+  afterAll(() => { process.env = keepEnv })
 
   it('should load config from disk', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'

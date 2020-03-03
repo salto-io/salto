@@ -111,6 +111,14 @@ const dumpConfig = async (config: AppConfig): Promise<void> => {
   return replaceContents(configFullPath(), dumpElements([configInstance]))
 }
 
+const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
+  config.telemetry = {
+    token: telemetryToken(),
+    url: telemetryURL(),
+    enabled: telemetryDisabled() ? false : config.telemetry.enabled,
+  }
+  return config
+}
 const configFromBPFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
   const parsed = parse(buf, '')
@@ -119,11 +127,6 @@ const configFromBPFile = async (filepath: string): Promise<AppConfig> => {
 
   const saltoConfigInstance = configInstance.value as AppConfig
 
-  saltoConfigInstance.telemetry = {
-    token: telemetryToken(),
-    url: telemetryURL(),
-    enabled: telemetryDisabled() ? false : saltoConfigInstance.telemetry.enabled,
-  }
   return saltoConfigInstance
 }
 
@@ -135,5 +138,6 @@ export const configFromDisk = async (): Promise<AppConfig> => {
       telemetry: DEFAULT_TELEMETRY_CONFIG,
     })
   }
-  return configFromBPFile(configFullPath())
+  const bpConfig = await configFromBPFile(configFullPath())
+  return mergeConfigWithEnv(bpConfig)
 }

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { creator } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
@@ -62,7 +62,7 @@ describe('SalesforceAdapter creator', () => {
 
     const config = new InstanceElement(
       ElemID.CONFIG_NAME,
-      creator.configType,
+      creator.configType as ObjectType,
       {
         metadataTypesBlacklist: ['test1'],
         retrieveRegexBlacklist: ['test2'],

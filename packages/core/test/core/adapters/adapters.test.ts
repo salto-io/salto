@@ -52,7 +52,7 @@ describe('adapters.ts', () => {
   })
 
   it('should throw error when no proper config exists', async () => {
-    expect(() => initAdapters({ [services[0]]: { credentials: undefined, config: undefined } }))
+    expect(() => initAdapters({ [services[0]]: {} }))
       .toThrow()
   })
 })

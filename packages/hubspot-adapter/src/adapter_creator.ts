@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import {
-  AdapterCreator, BuiltinTypes, ElemID, Field,
-  InstanceElement, ObjectType, AdapterCreatorConfig,
+  AdapterCreator, BuiltinTypes, ElemID, Field, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
@@ -44,16 +43,14 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   apiKey: config.value.apiKey,
 })
 
-const clientFromConfig = (config: AdapterCreatorConfig): HubspotClient =>
-  new HubspotClient(
-    {
-      credentials: credentialsFromConfig(config.credentials as InstanceElement),
-    }
-  )
+const clientFromCredentials = (credentials: InstanceElement): HubspotClient =>
+  new HubspotClient({
+    credentials: credentialsFromConfig(credentials),
+  })
 
 export const creator: AdapterCreator = {
   create: ({ config }) => new HubspotAdapter({
-    client: clientFromConfig(config),
+    client: clientFromCredentials(config.credentials as InstanceElement),
   }),
   validateConfig: config => HubspotClient.validateCredentials(credentialsFromConfig(config)),
   credentialsType,

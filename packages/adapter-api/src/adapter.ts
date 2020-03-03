@@ -44,8 +44,8 @@ export interface Adapter {
 }
 
 export type AdapterCreatorConfig = {
-  credentials: InstanceElement | undefined
-  config: InstanceElement | undefined
+  credentials?: InstanceElement
+  config?: InstanceElement
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'
@@ -62,7 +62,7 @@ export type AdapterCreator = {
   }) => Adapter
   validateConfig: (config: Readonly<InstanceElement>) => Promise<void>
   credentialsType: ObjectType
-  configType: ObjectType
+  configType?: ObjectType
   changeValidator?: ChangeValidator
   dependencyChanger?: DependencyChanger
 }

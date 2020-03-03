@@ -16,14 +16,11 @@
 import wu from 'wu'
 import {
   ActionName,
-  Adapter,
   DataModificationResult,
   Element,
   ElemID,
-  ElemIdGetter,
   InstanceElement,
   ObjectType,
-  AdapterCreatorConfig,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -32,7 +29,7 @@ import { promises } from '@salto-io/lowerdash'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
 import {
-  adapterCreators, getAdaptersConfigType, initAdapters, getAdapterChangeValidators,
+  adapterCreators, getAdaptersConfigType, getAdapters, getAdapterChangeValidators,
   getAdapterDependencyChangers,
 } from './core/adapters'
 import { addServiceToConfig, loadConfig, currentEnvConfig } from './workspace/config'
@@ -49,7 +46,6 @@ import {
   toChangesWithPath,
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
-import { AdapterCredentials, AdapterConfig } from './workspace/adapter_config'
 import { defaultDependencyChangers } from './core/plan/plan'
 
 const log = logger(module)
@@ -82,22 +78,6 @@ export const preview = async (
   getAdapterChangeValidators(),
   defaultDependencyChangers.concat(getAdapterDependencyChangers()),
 )
-
-const getAdapters = async (
-  adapters: string[],
-  credentials: AdapterCredentials,
-  config: AdapterConfig,
-  elemIdGetter?: ElemIdGetter,
-): Promise<Record<string, Adapter>> => {
-  const creatorConfig: Record<string, AdapterCreatorConfig> = _
-    .fromPairs(await Promise.all(adapters.map(
-      async adapter => ([adapter, {
-        credentials: await credentials.get(adapter),
-        config: await config.get(adapter),
-      }])
-    )))
-  return initAdapters(creatorConfig, elemIdGetter)
-}
 
 export interface DeployResult {
   success: boolean

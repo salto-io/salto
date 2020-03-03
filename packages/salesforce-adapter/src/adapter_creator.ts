@@ -75,12 +75,12 @@ SalesforceConfig => {
   return adapterConfig
 }
 
-const clientFromConfig = (config: InstanceElement): SalesforceClient =>
-  new SalesforceClient({ credentials: credentialsFromConfig(config) })
+const clientFromCredentials = (credentials: InstanceElement): SalesforceClient =>
+  new SalesforceClient({ credentials: credentialsFromConfig(credentials) })
 
 export const creator: AdapterCreator = {
   create: ({ config, getElemIdFunc }) => new SalesforceAdapter({
-    client: clientFromConfig(config.credentials as InstanceElement),
+    client: clientFromCredentials(config.credentials as InstanceElement),
     config: adapterConfigFromConfig(config.config),
     getElemIdFunc,
   }),

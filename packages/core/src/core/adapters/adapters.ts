@@ -18,6 +18,7 @@ import {
   ObjectType, Adapter, ElemIdGetter, AdapterCreatorConfig,
 } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
+import { Config } from '../../workspace/adapter_config'
 
 export const getAdaptersConfigType = (
   names: string[]
@@ -45,3 +46,19 @@ export const initAdapters = (
       })
     }
   )
+
+export const getAdapters = async (
+  adapters: string[],
+  credentials: Config,
+  config: Config,
+  elemIdGetter?: ElemIdGetter,
+): Promise<Record<string, Adapter>> => {
+  const creatorConfig: Record<string, AdapterCreatorConfig> = _
+    .fromPairs(await Promise.all(adapters.map(
+      async adapter => ([adapter, {
+        credentials: await credentials.get(adapter),
+        config: await config.get(adapter),
+      }])
+    )))
+  return initAdapters(creatorConfig, elemIdGetter)
+}

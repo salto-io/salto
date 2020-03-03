@@ -23,7 +23,7 @@ describe('HubspotAdapter creator', () => {
   describe('when validateConfig is called', () => {
     const config = new InstanceElement(
       ElemID.CONFIG_NAME,
-      creator.configType,
+      creator.credentialsType,
       {
         apiKey: 'myKey',
       }
@@ -44,14 +44,14 @@ describe('HubspotAdapter creator', () => {
   describe('when passed a config element', () => {
     const credentials = new InstanceElement(
       ElemID.CONFIG_NAME,
-      creator.configType,
+      creator.credentialsType,
       {
         apiKey: 'myApiKey',
       }
     )
 
     beforeEach(() => {
-      creator.create({ config: { credentials, config: undefined } })
+      creator.create({ config: { credentials } })
     })
 
     it('creates the client correctly', () => {

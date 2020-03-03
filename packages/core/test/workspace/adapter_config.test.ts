@@ -16,7 +16,7 @@
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser/dump'
-import { adapterCredentials, adapterConfig } from '../../src/workspace/adapter_config'
+import { adaptersConfigs, adaptersCredentials } from '../../src/workspace/adapter_config'
 
 jest.mock('../../../src/workspace/local/dir_store')
 describe('configs', () => {
@@ -48,7 +48,7 @@ describe('configs', () => {
     jest.resetAllMocks()
   })
 
-  it.each([['credentials', adapterCredentials], ['config', adapterConfig]])(
+  it.each([['credentials', adaptersCredentials], ['config', adaptersConfigs]])(
     'should set new %s', async (_name, func) => {
       mockSet.mockResolvedValueOnce(true)
       mockFlush.mockResolvedValue(true)
@@ -58,7 +58,7 @@ describe('configs', () => {
     }
   )
 
-  it.each([['credentials', adapterCredentials], ['config', adapterConfig]])(
+  it.each([['credentials', adaptersCredentials], ['config', adaptersConfigs]])(
     'should get %s if exists', async (_name, func) => {
       mockGet.mockResolvedValueOnce(dumpedConfig)
       const fromConfigStore = await func(mockedDirStore).get(adapter)
@@ -66,7 +66,7 @@ describe('configs', () => {
     }
   )
 
-  it.each([['credentials', adapterCredentials], ['config', adapterConfig]])(
+  it.each([['credentials', adaptersCredentials], ['config', adaptersConfigs]])(
     'shouldnt fail if %s not exists', async (_name, func) => {
       mockGet.mockResolvedValueOnce(undefined)
       const fromConfigStore = await func(mockedDirStore).get(adapter)

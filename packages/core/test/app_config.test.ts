@@ -51,6 +51,8 @@ jest.mock('../src/file', () => ({
             enabled = false
           }
         }`
+      } else if (filename.search('invalid') !== -1) {
+        fileContent = 'asdf'
       }
       return Promise.resolve(Buffer.from(fileContent, 'utf-8'))
     }
@@ -120,5 +122,10 @@ describe('app config', () => {
     const appConfig = await conf.configFromDisk()
     expect(appConfig.telemetry.url).toEqual('')
     expect(appConfig.telemetry.enabled).toBeFalsy()
+  })
+
+  it('should fail when config is invalid', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/invalid/home'
+    await expect(conf.configFromDisk()).rejects.toThrow()
   })
 })

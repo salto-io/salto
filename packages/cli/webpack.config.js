@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 const path = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'development', // production minifaction results in bad error stacks
@@ -47,6 +48,11 @@ module.exports = {
                                 // caused by requestretry which depends on an old version of es6-promise
   },
   plugins: [
+    new webpack.EnvironmentPlugin({
+      SALTO_TELEMETRY_TOKEN: 'dev',
+      SALTO_TELEMETRY_DISABLE: '0',
+      SALTO_TELEMETRY_URL: 'https://telemetry.salto.io',
+    }),
     // // This plugin fixes __dirname and __filename references from sibling
     // // projects in the monorepo. However it conflicts with nexe packaging so
     // // it is not used for now. Kept here for documentation purposes.

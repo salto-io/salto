@@ -18,11 +18,11 @@ commands:
 
   upload_pkg:
     parameters:
-        workspace_dir:
-          type: string
+      workspace_dir:
+        type: string
 
-        out_filename:
-          type: string
+      out_filename:
+        type: string
 
     steps:
       - set_s3_pkg_urls
@@ -157,7 +157,7 @@ jobs:
 
       - persist_to_workspace:
           root: .
-          paths: '*'
+          paths: "*"
 
       - run:
           name: Run unit tests
@@ -188,9 +188,9 @@ jobs:
           command: yarn test --reporters=default --reporters=jest-junit --coverage=false
           no_output_timeout: 20m
           environment:
-            RUN_E2E_TESTS: '1'
-            SALTO_LOG_LEVEL: 'warn'
-            SALTO_TELEMETRY_DISABLE: '1'
+            RUN_E2E_TESTS: "1"
+            SALTO_LOG_LEVEL: "warn"
+            SALTO_TELEMETRY_DISABLE: "1"
             JEST_JUNIT_OUTPUT: "reports/e2e/test-results.xml"
 
       - store_test_results:
@@ -205,6 +205,9 @@ jobs:
           at: .
 
       - run:
+          environment:
+            SALTO_TELEMETRY_DISABLE: "0"
+            SALTO_TELEMETRY_URL: "https://telemetry.salto.io"
           name: Build native executables
           command: yarn workspace @salto-io/cli package
 
@@ -242,7 +245,7 @@ jobs:
       - aws-s3/sync:
           from: ${S3_PKG_HASH_PREFIX}/
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
-          arguments: '--delete --acl public-read'
+          arguments: "--delete --acl public-read"
 
       - run:
           name: Create a marker file with the git hash
@@ -251,7 +254,7 @@ jobs:
       - aws-s3/copy:
           from: ./PACKAGED_FROM.${PKG_PREFIX}
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
-          arguments: '--acl public-read'
+          arguments: "--acl public-read"
 
 workflows:
   version: 2

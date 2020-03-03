@@ -28,25 +28,44 @@ jest.mock('../src/file', () => ({
     (filename: string) => ((filename.search('exists') !== -1) ? Promise.resolve(true) : Promise.resolve(false))
   ),
   readFile: jest.fn().mockImplementation(
-    (_filename: string) => Promise.resolve(
-      Buffer.from(
-        `salto {
+    (filename: string) => {
+      let fileContent = `
+        salto {
+          installationID = "9876"
+          telemetry = {
+            enabled = false
+          }
+        }`
+      if (filename.search('exists') !== -1) {
+        fileContent = `
+        salto {
           installationID = "1234"
-        }
-        telemetry {
-          url = "https://telemetry.salto.io"
-          token = "1234"
-          enabled = true
-        }`,
-        'utf-8',
-      )
-    )
+          telemetry = {
+            enabled = true
+          }
+        }`
+      } else if (filename.search('no_installation_id') !== -1) {
+        fileContent = `
+        salto {
+          telemetry = {
+            enabled = false
+          }
+        }`
+      }
+      return Promise.resolve(Buffer.from(fileContent, 'utf-8'))
+    }
   ),
 }))
 
+
 describe('app config', () => {
-  afterAll(() => {
-    delete process.env.SALTO_HOME
+  afterEach(() => {
+    [
+      'SALTO_TELEMETRY_URL',
+      'SALTO_TELEMETRY_DISABLE',
+      'SALTO_TELEMETRY_TOKEN',
+      'SALTO_HOME',
+    ].forEach(e => delete process.env[e])
   })
 
   it('should load config from disk', async () => {
@@ -54,25 +73,53 @@ describe('app config', () => {
     const appConfig = await conf.configFromDisk()
     expect(conf.getSaltoHome()).toEqual('/exists/home')
     expect(appConfig.installationID).toEqual('1234')
-    expect(appConfig.telemetry.url).toEqual('https://telemetry.salto.io')
+    expect(appConfig.telemetry.url).toEqual('')
+    expect(appConfig.telemetry.token).toEqual('')
   })
 
-  it('should disable telemetry if env var is saying so', async () => {
-    process.env[conf.SALTO_HOME_VAR] = '/exists/home'
-    process.env.SALTO_TELEMETRY_DISABLE = '1'
-    jest.resetModules()
-    const iko = require('../') // eslint-disable-line
-
-    const appConfig = await iko.configFromDisk()
+  it('should disable telemetry if telemetry config is disabled', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/home/u'
+    const appConfig = await conf.configFromDisk()
     expect(appConfig.telemetry.enabled).toBeFalsy()
+  })
+
+  it('should create the config if not existing', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/home/u'
+    const appConfig = await conf.configFromDisk()
+    expect(conf.getSaltoHome()).toEqual('/home/u')
+    expect(appConfig.installationID).toEqual('9876')
   })
 
   it('should initialize config on disk', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists'
-
     const appConfig = await conf.configFromDisk()
     expect(conf.getSaltoHome()).toEqual('/exists')
     expect(appConfig.installationID).toEqual('1234')
-    expect(appConfig.telemetry.url).toEqual('https://telemetry.salto.io')
+  })
+
+  it('should override config.bp with env variable', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/exists/home'
+    process.env.SALTO_TELEMETRY_DISABLE = '1'
+    process.env.SALTO_TELEMETRY_TOKEN = 'token'
+    process.env.SALTO_TELEMETRY_URL = 'localhost'
+    const appConfig = await conf.configFromDisk()
+    expect(appConfig.installationID).toEqual('1234')
+    expect(appConfig.telemetry.url).toEqual('localhost')
+    expect(appConfig.telemetry.token).toEqual('token')
+    expect(appConfig.telemetry.enabled).toBeFalsy()
+  })
+
+  it('should not throw an error if installationID is missing', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/home/no_installation_id'
+    const appConfig = await conf.configFromDisk()
+    expect(appConfig.installationID).toBeUndefined()
+  })
+
+  it('should disable telemetry if enabled and url is empty', async () => {
+    process.env[conf.SALTO_HOME_VAR] = '/exists/home'
+    process.env.SALTO_TELEMETRY_URL = ''
+    const appConfig = await conf.configFromDisk()
+    expect(appConfig.telemetry.url).toEqual('')
+    expect(appConfig.telemetry.enabled).toBeFalsy()
   })
 })

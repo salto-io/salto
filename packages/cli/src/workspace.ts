@@ -80,7 +80,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   if (changes.length > 0) {
     log.info('going to update workspace with %d changes and print %d of them',
       changes.length,
-      changes.length > MAX_DETAIL_CHANGES_TO_LOG ? changes.length : MAX_DETAIL_CHANGES_TO_LOG)
+      changes.length > MAX_DETAIL_CHANGES_TO_LOG ? MAX_DETAIL_CHANGES_TO_LOG : changes.length)
     if (!await ws.isEmpty(true)) {
       formatDetailedChanges([changes.slice(0, MAX_DETAIL_CHANGES_TO_LOG).map(c => c.change)])
         .split('\n')

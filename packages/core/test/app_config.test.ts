@@ -74,7 +74,6 @@ describe('app config', () => {
     expect(conf.getSaltoHome()).toEqual('/exists/home')
     expect(appConfig.installationID).toEqual('1234')
     expect(appConfig.telemetry.url).toEqual('')
-    expect(appConfig.telemetry.token).toEqual('')
   })
 
   it('should disable telemetry if telemetry config is disabled', async () => {

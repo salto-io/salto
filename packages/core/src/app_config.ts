@@ -21,7 +21,6 @@ import uuidv4 from 'uuid/v4'
 import {
   CORE_ANNOTATIONS, BuiltinTypes,
   Field, ObjectType, ElemID, InstanceElement,
-  findInstances,
 } from '@salto-io/adapter-api'
 import { replaceContents, exists, mkdirp, readFile } from './file'
 import { TelemetryConfig } from './telemetry'
@@ -75,41 +74,33 @@ export type AppConfig = {
 }
 
 const saltoConfigElemID = new ElemID('salto')
-const telemetryElemID = new ElemID('telemetry')
 const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
-export const telemetryConfigType = new ObjectType({
-  elemID: telemetryElemID,
-  fields: {
-    enabled: new Field(telemetryElemID, 'enabled', BuiltinTypes.BOOLEAN, requireAnno),
-  },
-  annotationTypes: {},
-  annotations: {},
-})
 
 export const saltoAppConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
     installationID: new Field(saltoConfigElemID, 'installationID', BuiltinTypes.STRING, requireAnno),
-    telemetry: new Field(saltoConfigElemID, 'telemetry', telemetryConfigType, requireAnno),
+    telemetry: new Field(saltoConfigElemID, 'telemetry', BuiltinTypes.JSON, requireAnno),
   },
   annotationTypes: {},
   annotations: {},
 })
 
-const dumpConfig = async (config: AppConfig): Promise<void> => {
-  const configInstance = new InstanceElement(
-    ElemID.CONFIG_NAME,
-    saltoAppConfigType,
-    {
-      installationID: config.installationID,
-      telemetry: {
-        enabled: config.telemetry.enabled,
-      },
-    }
+const dumpConfig = async (config: AppConfig): Promise<void> => (
+  replaceContents(
+    configFullPath(),
+    dumpElements([new InstanceElement(
+      ElemID.CONFIG_NAME,
+      saltoAppConfigType,
+      {
+        installationID: config.installationID,
+        telemetry: {
+          enabled: config.telemetry.enabled,
+        },
+      }
+    )]),
   )
-
-  return replaceContents(configFullPath(), dumpElements([configInstance]))
-}
+)
 
 const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
   config.telemetry = {
@@ -121,8 +112,7 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
 }
 const configFromBPFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
-  const parsed = parse(buf, '')
-  const [configInstance] = [...findInstances(parsed.elements, saltoConfigElemID)]
+  const configInstance = parse(buf, filepath).elements.pop() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
   const saltoConfigInstance = configInstance.value as AppConfig

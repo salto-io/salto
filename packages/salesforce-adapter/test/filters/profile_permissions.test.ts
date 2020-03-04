@@ -126,6 +126,15 @@ describe('Object Permissions filter', () => {
     verifyUpdateCall('Test__c', [], true)
   })
 
+  it('should not set permissions for system fields upon add', async () => {
+    const after = mockObject.clone()
+    after.fields[descriptionFieldName].annotations[constants.API_NAME] = 'NotCustomField'
+
+    await filter().onAdd(after)
+
+    verifyUpdateCall('Test__c', [], true)
+  })
+
   it('should not set permissions for master-detail fields upon add', async () => {
     const after = mockObject.clone()
     Object.values(after.fields).forEach(f => {
@@ -142,6 +151,22 @@ describe('Object Permissions filter', () => {
     const after = before.clone()
 
     after.fields[descriptionFieldName].annotations[CORE_ANNOTATIONS.REQUIRED] = true
+
+    await filter().onUpdate(before, after, [
+      { action: 'modify',
+        data: {
+          before: before.fields[descriptionFieldName],
+          after: after.fields[descriptionFieldName],
+        } },
+    ])
+    expect(mockUpdate).not.toHaveBeenCalled()
+  })
+
+  it('should not update system fields', async () => {
+    const before = mockObject.clone()
+    const after = before.clone()
+
+    after.fields[descriptionFieldName].annotations[constants.API_NAME] = 'NotCustomField'
 
     await filter().onUpdate(before, after, [
       { action: 'modify',

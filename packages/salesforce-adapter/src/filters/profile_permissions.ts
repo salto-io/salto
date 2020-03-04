@@ -20,16 +20,17 @@ import {
 import { SaveResult } from 'jsforce'
 import wu from 'wu'
 import { logger } from '@salto-io/logging'
-import { PROFILE_METADATA_TYPE, ADMIN_PROFILE } from '../constants'
-import { isCustomObject, apiName, Types } from '../transformers/transformer'
+import { PROFILE_METADATA_TYPE, ADMIN_PROFILE, API_NAME } from '../constants'
+import { isCustomObject, apiName, Types, isCustom } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { ProfileInfo, FieldPermissions, ObjectPermissions } from '../client/types'
 
 const log = logger(module)
 
-// We can't set permissions for master detail or required fields
+// We can't set permissions for master detail / required fields / system fields
 const shouldSetDefaultPermissions = (field: Field): boolean => (
-  field.annotations[CORE_ANNOTATIONS.REQUIRED] !== true
+  isCustom(field.annotations[API_NAME])
+  && field.annotations[CORE_ANNOTATIONS.REQUIRED] !== true
   && !field.type.elemID.isEqual(Types.primitiveDataTypes.MasterDetail.elemID)
 )
 
@@ -79,8 +80,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .filter(change => change.action === 'add')
       .map(getChangeElement)
       .filter(isField)
-      .filter(shouldSetDefaultPermissions)
       .map(fieldAddition => after.fields[fieldAddition.name])
+      .filter(shouldSetDefaultPermissions)
       .toArray()
 
     if (newFields.length === 0) {

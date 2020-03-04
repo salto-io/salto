@@ -13,7 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const firstFunc = (): void => {
-  // eslint-disable-next-line no-console
-  console.log('Welcome to netsuite adapter')
-}
+import { Service as Connection } from 'node-suitetalk'
+
+const mockSuitetalkConnection: () => Connection = () => ({
+  init: jest.fn().mockImplementation(() => Promise.resolve()),
+  getList: jest.fn().mockImplementation(() => Promise.resolve()),
+  getCustomizationId: jest.fn().mockImplementation(() => Promise.resolve()),
+})
+
+export default mockSuitetalkConnection

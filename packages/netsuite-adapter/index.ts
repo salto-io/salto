@@ -13,14 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { firstFunc } from '../src/main'
-
-describe('Test example', () => {
-  beforeAll(async () => {
-    firstFunc()
-  })
-
-  it('should pass', () => {
-    expect(true).toBeTruthy()
-  })
-})
+export { default } from './src/adapter'
+export { creator } from './src/adapter_creator'

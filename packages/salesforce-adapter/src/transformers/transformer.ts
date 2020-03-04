@@ -763,14 +763,14 @@ export class Types {
       Types.valueSettingsType, Types.lookupFilterType, Types.filterItemType,
       Types.encryptedTextMaskCharType, Types.encryptedTextMaskTypeType,
       Types.BusinessStatusType, Types.SecurityClassificationType, Types.valueSetType,
-      Types.TreatBlankAsType, Types.filterItemType,
+      Types.TreatBlankAsType,
       ...Object.values(Types.restrictedNumberTypes),
     ]
       .map(type => {
         const fieldType = type.clone()
         fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
-          ? [SALESFORCE, TYPES_PATH, 'annotation_types']
-          : [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
+          ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
+          : [SALESFORCE, TYPES_PATH, 'annotation_types']
         return fieldType
       })
   }
@@ -1143,9 +1143,9 @@ export const createInstanceElementFromValues = (values: Values, type: ObjectType
   )
 }
 
-export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
+export const createInstanceElement = (value: Values, type: ObjectType,
   namespacePrefix?: string): InstanceElement =>
-  createInstanceElementFromValues(fromMetadataInfo(mdInfo), type, namespacePrefix)
+  createInstanceElementFromValues(value, type, namespacePrefix)
 
 export const createMetadataTypeElements = async (
   objectName: string,

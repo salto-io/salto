@@ -23,9 +23,7 @@ import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto-io/lowerdash'
 import * as constants from '../src/constants'
 import {
-  annotationsFileName, customFieldsFileName,
   INSTANCE_TYPE_FIELD, NESTED_INSTANCE_TYPE_NAME,
-  standardFieldsFileName,
   transformFieldAnnotations,
 } from '../src/filters/custom_objects'
 import { STANDARD_VALUE, STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
@@ -35,17 +33,15 @@ import {
   TopicsForObjectsInfo,
 } from '../src/client/types'
 import {
-  Types, fromMetadataInfo, metadataType, apiName, formulaTypeName,
+  Types, metadataType, apiName, formulaTypeName,
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
-import { findElements } from '../test/utils'
+import { findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject } from '../test/utils'
 import SalesforceClient, { API_VERSION } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
-import {
-  WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
-} from '../src/filters/workflow'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
+import { objectExists, getMetadata, getMetadataFromElement, createInstance, removeElementAndVerify, removeElementIfAlreadyExists, createElementAndVerify } from './utils'
 
 const { makeArray } = collections.array
 const { PROFILE_METADATA_TYPE } = constants
@@ -68,50 +64,6 @@ describe('Salesforce adapter E2E with real account', () => {
     object,
     field,
   ].join(constants.API_NAME_SEPERATOR)
-
-  const objectExists = async (type: string, name: string, fields?: string[],
-    missingFields?: string[], annotations?: Record<string, Value>):
-    Promise<boolean> => {
-    const readResult = (await client.readMetadata(type, name)
-    )[0] as CustomObject
-    if (!readResult || !readResult.fullName) {
-      return false
-    }
-    if (fields || missingFields) {
-      const fieldNames = makeArray(readResult.fields).map(rf => rf.fullName)
-      if (fields && !fields.every(f => fieldNames.includes(f))) {
-        return false
-      }
-      return (!missingFields || missingFields.every(f => !fieldNames.includes(f)))
-    }
-    if (annotations) {
-      const valuesMatch = Object.entries(annotations)
-        .every(([annotationName, expectedVal]) =>
-          _.isEqual(_.get(readResult, annotationName), expectedVal))
-      if (!valuesMatch) {
-        return false
-      }
-    }
-    return true
-  }
-
-  const findCustomFieldsObject = (elements: Element[], name: string): ObjectType => {
-    const customObjects = findElements(elements, name) as ObjectType[]
-    return customObjects
-      .find(obj => obj.path?.slice(-1)[0] === customFieldsFileName(name)) as ObjectType
-  }
-
-  const findStandardFieldsObject = (elements: Element[], name: string): ObjectType => {
-    const customObjects = findElements(elements, name) as ObjectType[]
-    return customObjects
-      .find(obj => obj.path?.slice(-1)[0] === standardFieldsFileName(name)) as ObjectType
-  }
-
-  const findAnnotationsObject = (elements: Element[], name: string): ObjectType => {
-    const customObjects = findElements(elements, name) as ObjectType[]
-    return customObjects
-      .find(obj => obj.path?.slice(-1)[0] === annotationsFileName(name)) as ObjectType
-  }
 
   const gvsName = 'TestGlobalValueSet'
   const accountApiName = 'Account'
@@ -471,7 +423,7 @@ describe('Salesforce adapter E2E with real account', () => {
         }],
       }
       await verifyObjectsDependentFieldsExist()
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectWithFieldsName)) {
+      if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectWithFieldsName)) {
         await client.delete(constants.CUSTOM_OBJECT, customObjectWithFieldsName)
       }
       await client.upsert(constants.CUSTOM_OBJECT, objectToAdd as MetadataInfo)
@@ -1280,46 +1232,6 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.value.variables[0].dataType).toEqual('SObject')
       expect(flow.value.processType).toEqual('Workflow')
     })
-
-    describe('should fetch Workflow instance', () => {
-      it('should fetch workflow alerts', async () => {
-        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-        expect(leadWorkflow.value[WORKFLOW_ALERTS_FIELD]).toBeDefined()
-        const workflowAlert = makeArray(leadWorkflow.value[WORKFLOW_ALERTS_FIELD])
-          .find(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWorkflowAlert')
-        expect(workflowAlert.description).toEqual('E2E Fetch WorkflowAlert')
-      })
-
-      it('should fetch workflow field updates', async () => {
-        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-        expect(leadWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD]).toBeDefined()
-        const workflowFieldUpdate = makeArray(leadWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD])
-          .find(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWorkflowFieldUpdate')
-        expect(workflowFieldUpdate.description).toEqual('E2E Fetch WorkflowFieldUpdate')
-      })
-
-      it('should fetch workflow task', async () => {
-        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-        expect(leadWorkflow.value[WORKFLOW_TASKS_FIELD]).toBeDefined()
-        const workflowTask = makeArray(leadWorkflow.value[WORKFLOW_TASKS_FIELD])
-          .find(task => task[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWorkflowTask')
-        expect(workflowTask.description).toEqual('E2E Fetch WorkflowTask')
-      })
-
-      it('should fetch workflow rule', async () => {
-        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-        expect(leadWorkflow.value[WORKFLOW_RULES_FIELD]).toBeDefined()
-        const workflowRule = makeArray(leadWorkflow.value[WORKFLOW_RULES_FIELD])
-          .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.TestWorkflowRule')
-        expect(workflowRule.description).toEqual('E2E Fetch WorkflowRule')
-      })
-
-      it('should set workflow instance path correctly', async () => {
-        const leadWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-        expect(leadWorkflow.path)
-          .toEqual([constants.SALESFORCE, constants.OBJECTS_PATH, 'Lead', 'WorkflowRules'])
-      })
-    })
   })
 
   describe('should perform CRUD operations', () => {
@@ -1329,7 +1241,7 @@ describe('Salesforce adapter E2E with real account', () => {
       typeof variable === 'string' ? JSON.parse(variable) : variable)
 
     const getProfileInfo = async (profile: string): Promise<ProfileInfo> =>
-      (await client.readMetadata(PROFILE_METADATA_TYPE, profile))[0] as ProfileInfo
+      getMetadata(client, PROFILE_METADATA_TYPE, profile) as Promise<ProfileInfo>
 
     const fieldPermissionExists = async (profile: string, fields: string[]): Promise<boolean[]> => {
       const profileInfo = await getProfileInfo(profile)
@@ -1427,23 +1339,9 @@ describe('Salesforce adapter E2E with real account', () => {
         [constants.INSTANCE_FULL_NAME_FIELD]: instanceElementName,
       })
 
-      if (await objectExists(PROFILE_METADATA_TYPE, apiName(instance))) {
-        await adapter.remove(instance)
-      }
-
-      const post = await adapter.add(instance) as InstanceElement
-
-      // Test
-      expect(post).toMatchObject(instance)
-
-      expect(
-        await objectExists(
-          post.type.annotations[constants.METADATA_TYPE], apiName(post)
-        )
-      ).toBeTruthy()
-
-      // Clean-up
-      await adapter.remove(post)
+      await removeElementIfAlreadyExists(client, instance)
+      await createElementAndVerify(adapter, client, instance)
+      await removeElementAndVerify(adapter, client, instance)
     })
 
     it('should add custom object', async () => {
@@ -1498,9 +1396,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-        await adapter.remove(element)
-      }
+      await removeElementIfAlreadyExists(client, element)
       const post = await adapter.add(element) as ObjectType
 
       // Test
@@ -1512,7 +1408,7 @@ describe('Salesforce adapter E2E with real account', () => {
         post.fields.formula.annotations[constants.API_NAME]
       ).toBe('TestAddCustom__c.formula__c')
 
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName,
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName,
         ['description__c', 'formula__c'], undefined, {
           deploymentStatus: 'InDevelopment',
           enableHistory: 'true',
@@ -1554,15 +1450,9 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
       // Setup
-      if (!await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-        await adapter.add(element)
-        expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
-      }
-      // Run
-      const removeResult = await adapter.remove(element)
-      // Validate
-      expect(removeResult).toBeUndefined()
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(false)
+      await createElementAndVerify(adapter, client, element)
+      // Run and verify
+      await removeElementAndVerify(adapter, client, element)
     })
 
     it('should modify an object by creating a new custom field and remove another one', async () => {
@@ -1597,14 +1487,11 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-        await adapter.remove(oldElement)
-      }
+      await removeElementIfAlreadyExists(client, oldElement)
       const addResult = await adapter.add(oldElement)
       // Verify setup was performed properly
       expect(addResult).toBeInstanceOf(ObjectType)
-
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Address__c', 'Banana__c'])).toBe(true)
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, ['Address__c', 'Banana__c'])).toBe(true)
 
       const newElement = new ObjectType({
         elemID: mockElemID,
@@ -1639,12 +1526,9 @@ describe('Salesforce adapter E2E with real account', () => {
         ])
 
       expect(modificationResult).toBeInstanceOf(ObjectType)
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, ['Banana__c', 'description__c'],
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName, ['Banana__c', 'description__c'],
         ['Address__c'])).toBe(true)
       expect((await fieldPermissionExists('Admin', [`${customObjectName}.description__c`]))[0]).toBe(true)
-
-      // Clean-up
-      await adapter.remove(oldElement)
     })
 
     it('should modify an instance', async () => {
@@ -1803,10 +1687,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       })
 
-      if (await objectExists(PROFILE_METADATA_TYPE, apiName(oldInstance))) {
-        await adapter.remove(oldInstance)
-      }
-
+      await removeElementIfAlreadyExists(client, oldInstance)
       const post = await adapter.add(oldInstance) as InstanceElement
       const updateResult = await adapter.update(oldInstance, newInstance, [])
 
@@ -1814,9 +1695,8 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(updateResult).toStrictEqual(newInstance)
 
       // Checking that the saved instance identical to newInstance
-      const savedInstance = (await client.readMetadata(
-        PROFILE_METADATA_TYPE, apiName(newInstance)
-      ))[0] as Profile
+      const savedInstance = await getMetadata(client, PROFILE_METADATA_TYPE,
+        apiName(newInstance)) as Profile
 
       type Profile = ProfileInfo & {
         tabVisibilities: Record<string, Value>
@@ -1858,12 +1738,9 @@ describe('Salesforce adapter E2E with real account', () => {
 
       expect((newValues.classAccesses as []).some((v: Value) =>
         _.isEqual(v, valuesMap.get(v.apexClass)))).toBeTruthy()
-
       expect(newValues.loginHours).toEqual(savedInstance.loginHours)
 
-      // Clean-up
-      await adapter.remove(post)
-      expect(await objectExists(PROFILE_METADATA_TYPE, apiName(oldInstance))).toBe(false)
+      await removeElementAndVerify(adapter, client, post)
     })
 
     // This test should be removed and replace with an appropriate one as soon as SALTO-551 is done
@@ -1929,10 +1806,8 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-        await adapter.remove(oldElement)
-      }
-      await adapter.add(oldElement)
+      await removeElementIfAlreadyExists(client, oldElement)
+      await createElementAndVerify(adapter, client, oldElement)
 
       const newElement = new ObjectType({
         elemID: mockElemID,
@@ -1995,7 +1870,8 @@ describe('Salesforce adapter E2E with real account', () => {
           { action: 'modify', data: { before: oldElement, after: newElement } },
         ])
       expect(modificationResult).toBeInstanceOf(ObjectType)
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, undefined, undefined,
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName,
+        undefined, undefined,
         {
           [constants.LABEL]: 'test label 2',
           deploymentStatus: 'Deployed',
@@ -2004,19 +1880,15 @@ describe('Salesforce adapter E2E with real account', () => {
             type: 'Text',
           },
         })).toBe(true)
-      const readResult = (await client.readMetadata(
-        constants.CUSTOM_OBJECT,
-        customObjectName
-      ))[0] as CustomObject
+      const readResult = await getMetadata(client, constants.CUSTOM_OBJECT,
+        customObjectName) as CustomObject
+
       const field = makeArray(readResult.fields).filter(f => f.fullName === 'Banana__c')[0]
       expect(field).toBeDefined()
       expect(field.label).toBe('Banana Split')
       expect(field.securityClassification).toBe('Restricted')
       expect(field.businessStatus).toBe('Hidden')
       expect(field.complianceGroup).toBe('GDPR')
-
-      // Clean-up
-      await adapter.remove(oldElement)
     })
 
     it('should modify field and object annotation', async () => {
@@ -2042,10 +1914,8 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-        await adapter.remove(oldElement)
-      }
-      await adapter.add(oldElement)
+      await removeElementIfAlreadyExists(client, oldElement)
+      await createElementAndVerify(adapter, client, oldElement)
 
       const newElement = oldElement.clone()
       newElement.annotations.label = 'Object Updated Label'
@@ -2062,14 +1932,12 @@ describe('Salesforce adapter E2E with real account', () => {
         ])
       expect(modificationResult).toBeInstanceOf(ObjectType)
 
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, undefined, undefined,
-        { [constants.LABEL]: 'Object Updated Label' })).toBeTruthy()
-      const addressFieldInfo = (await client.readMetadata(constants.CUSTOM_FIELD,
-        apiNameAnno(customObjectName, 'Address__c')))[0] as CustomField
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName,
+        undefined, undefined, { [constants.LABEL]: 'Object Updated Label' }))
+        .toBeTruthy()
+      const addressFieldInfo = await getMetadata(client, constants.CUSTOM_FIELD,
+        apiNameAnno(customObjectName, 'Address__c')) as CustomField
       expect(addressFieldInfo.label).toEqual('Field Updated Label')
-
-      // Clean-up
-      await adapter.remove(oldElement)
     })
 
     describe('should fetch and add custom object with various field types', () => {
@@ -2580,12 +2448,12 @@ describe('Salesforce adapter E2E with real account', () => {
               )
             })
 
-          if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+          if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)) {
             await adapter.remove(newCustomObject)
           }
           post = await adapter.add(newCustomObject) as ObjectType
-          objectInfo = (
-            await client.readMetadata(constants.CUSTOM_OBJECT, customObjectName))[0] as CustomObject
+          objectInfo = await getMetadata(client, constants.CUSTOM_OBJECT,
+            customObjectName) as CustomObject
         })
 
         it('custom object', async () => {
@@ -2806,7 +2674,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   data: { before: caseObj.fields[fieldName] } }])
               return caseAfterFieldRemoval
             }
-            if (await objectExists(constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
+            if (await objectExists(client, constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
               origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldApiName)
             }
 
@@ -2838,8 +2706,8 @@ describe('Salesforce adapter E2E with real account', () => {
               return caseAfterFieldAddition
             }
             const verifyRollupSummaryField = async (): Promise<void> => {
-              const fetchedRollupSummary = (await client.readMetadata(constants.CUSTOM_FIELD,
-                `Case.${rollupSummaryFieldApiName}`))[0] as CustomField
+              const fetchedRollupSummary = await getMetadata(client, constants.CUSTOM_FIELD,
+                `Case.${rollupSummaryFieldApiName}`) as CustomField
               expect(_.get(fetchedRollupSummary, 'summarizedField'))
                 .toEqual(`${customObjectName}.${currencyFieldName}`)
               expect(_.get(fetchedRollupSummary, 'summaryForeignKey'))
@@ -3125,10 +2993,8 @@ describe('Salesforce adapter E2E with real account', () => {
                 action: 'modify',
                 data: { before: customFieldsObject.fields[f], after: newCustomObject.fields[f] },
               })))
-          objectInfo = (
-            await client.readMetadata(
-              constants.CUSTOM_OBJECT, customObjectWithFieldsName
-            ))[0] as CustomObject
+          objectInfo = await getMetadata(client, constants.CUSTOM_OBJECT,
+            customObjectWithFieldsName) as CustomObject
         })
 
         describe('fields', () => {
@@ -3319,9 +3185,8 @@ describe('Salesforce adapter E2E with real account', () => {
               updatedAccount,
               [{ action: 'modify', data: { before: field, after: updatedField } }],
             )
-            const fieldInfo = (
-              await client.readMetadata(constants.CUSTOM_FIELD, fullName)
-            )[0] as CustomField
+            const fieldInfo = await getMetadata(client, constants.CUSTOM_FIELD,
+              fullName) as CustomField
             expect(fieldInfo[constants.INSTANCE_FULL_NAME_FIELD])
               .toEqual(`${accountApiName}.${fetchedRollupSummaryFieldName}`)
             delete fieldInfo[constants.INSTANCE_FULL_NAME_FIELD]
@@ -3364,14 +3229,14 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
         },
       )
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+      if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)) {
         await adapter.remove(oldElement)
       }
       const addResult = await adapter.add(oldElement)
       // Verify setup was performed properly
       expect(addResult).toBeInstanceOf(ObjectType)
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName, [lookupFieldApiName]))
-        .toBe(true)
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName,
+        [lookupFieldApiName])).toBe(true)
 
       const newElement = new ObjectType({
         elemID: mockElemID,
@@ -3437,7 +3302,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+      if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)) {
         await adapter.remove(element)
       }
       const addResult = await adapter.add(element)
@@ -3462,7 +3327,7 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+      if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)) {
         await adapter.remove(element)
       }
       const addResult = await adapter.add(element)
@@ -3491,12 +3356,12 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
+      if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)) {
         await adapter.remove(oldElement)
       }
       const addResult = await adapter.add(oldElement)
       // Verify setup was performed properly
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
+      expect(await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
       expect(addResult).toBeInstanceOf(ObjectType)
       expect(addResult.annotations[constants.TOPICS_FOR_OBJECTS_ANNOTATION][constants
         .TOPICS_FOR_OBJECTS_FIELDS.ENABLE_TOPICS]).toBe(false)
@@ -3529,9 +3394,8 @@ describe('Salesforce adapter E2E with real account', () => {
     // Assignment rules are special because they use the Deploy API so they get their own test
     describe('assignment rules manipulation', () => {
       const assignmentRulesTypeName = 'AssignmentRules'
-      const getRulesFromClient = async (): Promise<Values> => fromMetadataInfo(
-        (await client.readMetadata(assignmentRulesTypeName, 'Lead'))[0]
-      )
+      const getRulesFromClient = async (): Promise<Values> =>
+        getMetadata(client, assignmentRulesTypeName, 'Lead') as Promise<Values>
 
       let before: InstanceElement
       let after: InstanceElement
@@ -3808,134 +3672,75 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       describe('types that support also CRUD-Based calls', () => {
-        const findInstance = async (instance: InstanceElement):
-          Promise<MetadataInfo | undefined> => {
-          const instanceInfo = (await client.readMetadata(
-            instance.type.annotations[constants.METADATA_TYPE],
-            instance.value[constants.INSTANCE_FULL_NAME_FIELD],
-          ))[0]
-          if (instanceInfo && instanceInfo.fullName) {
-            return instanceInfo
-          }
-          return undefined
-        }
-
-        const removeIfAlreadyExists = async (instance: InstanceElement): Promise<void> => {
-          if (await findInstance(instance)) {
-            await client.delete(instance.type.annotations[constants.METADATA_TYPE],
-              instance.value[constants.INSTANCE_FULL_NAME_FIELD])
-          }
-        }
-
-        const verifyCreateInstance = async (instance: InstanceElement): Promise<void> => {
-          await adapter.add(instance)
-          const instanceInfo = await findInstance(instance)
-          expect(instanceInfo).toBeDefined()
-        }
-
         const verifyUpdateInstance = async (instance: InstanceElement, updatedField: string,
           updatedValue: string): Promise<void> => {
           const after = instance.clone()
           after.value[updatedField] = updatedValue
           await adapter.update(instance, after, [])
-          const instanceInfo = await findInstance(instance)
+          const instanceInfo = await getMetadataFromElement(client, instance)
           expect(instanceInfo).toBeDefined()
           expect(_.get(instanceInfo, updatedField)).toEqual(updatedValue)
         }
 
-        const verifyRemoveInstance = async (instance: InstanceElement): Promise<void> => {
-          await adapter.remove(instance)
-          const instanceInfo = await findInstance(instance)
-          expect(instanceInfo).toBeUndefined()
-        }
-
-        const createInstanceElement = (fullName: string, typeName: string, values: Values):
-          InstanceElement => {
-          const objectType = new ObjectType({
-            elemID: new ElemID(constants.SALESFORCE, _.snakeCase(typeName)),
-            annotations: {
-              [constants.METADATA_TYPE]: typeName,
-            },
-          })
-          return new InstanceElement(
-            _.snakeCase(fullName),
-            objectType,
-            {
-              ...values,
-              [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
-            }
-          )
-        }
-
         describe('email folder manipulation', () => {
-          const emailFolderInstance = createInstanceElement('MyEmailFolder', 'EmailFolder',
-            { name: 'My Email Folder Name' })
+          const emailFolderInstance = createInstance({ name: 'My Email Folder Name',
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'MyEmailFolder' },
+          'EmailFolder')
 
           beforeAll(async () => {
-            await removeIfAlreadyExists(emailFolderInstance)
+            await removeElementIfAlreadyExists(client, emailFolderInstance)
           })
 
-          describe('create email folder instance', () => {
-            it('should create email folder instance', async () => {
-              await verifyCreateInstance(emailFolderInstance)
-            })
+          it('should create email folder instance', async () => {
+            await createElementAndVerify(adapter, client, emailFolderInstance)
           })
 
-          describe('update email folder instance', () => {
-            it('should update email folder instance', async () => {
-              await verifyUpdateInstance(emailFolderInstance, 'name',
-                'My Updated Email Folder Name')
-            })
+          it('should update email folder instance', async () => {
+            await verifyUpdateInstance(emailFolderInstance, 'name',
+              'My Updated Email Folder Name')
           })
 
-          describe('remove email folder instance', () => {
-            it('should remove email folder instance', async () => {
-              await verifyRemoveInstance(emailFolderInstance)
-            })
+          it('should remove email folder instance', async () => {
+            await removeElementAndVerify(adapter, client, emailFolderInstance)
           })
         })
 
         describe('email template manipulation', () => {
-          const emailTemplateInstance = createInstanceElement('TestEmailFolder/MyEmailTemplate',
-            'EmailTemplate', {
-              name: 'My Email Template Name',
-              available: true,
-              style: 'none',
-              subject: 'My Email Template Subject',
-              uiType: 'Aloha',
-              encodingKey: 'UTF-8',
-              type: 'text',
-              description: 'My Email Template Description',
-              content: 'My Email Template Body',
-            })
+          const emailTemplateInstance = createInstance({
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'TestEmailFolder/MyEmailTemplate',
+            name: 'My Email Template Name',
+            available: true,
+            style: 'none',
+            subject: 'My Email Template Subject',
+            uiType: 'Aloha',
+            encodingKey: 'UTF-8',
+            type: 'text',
+            description: 'My Email Template Description',
+            content: 'My Email Template Body',
+          }, 'EmailTemplate')
 
           beforeAll(async () => {
-            await removeIfAlreadyExists(emailTemplateInstance)
+            await removeElementIfAlreadyExists(client, emailTemplateInstance)
           })
 
-          describe('create email template instance', () => {
-            it('should create email template instance', async () => {
-              await verifyCreateInstance(emailTemplateInstance)
-            })
+          it('should create email template instance', async () => {
+            await createElementAndVerify(adapter, client, emailTemplateInstance)
           })
 
-          describe('update email template instance', () => {
-            it('should update email template instance', async () => {
-              await verifyUpdateInstance(emailTemplateInstance, 'name',
-                'My Updated Email Template Name')
-            })
+          it('should update email template instance', async () => {
+            await verifyUpdateInstance(emailTemplateInstance, 'name',
+              'My Updated Email Template Name')
           })
 
-          describe('remove email template instance', () => {
-            it('should remove email template instance', async () => {
-              await verifyRemoveInstance(emailTemplateInstance)
-            })
+          it('should remove email template instance', async () => {
+            await removeElementAndVerify(adapter, client, emailTemplateInstance)
           })
         })
 
         describe('report type manipulation', () => {
-          const reportTypeInstance = createInstanceElement('MyReportType',
-            'ReportType', {
+          const reportTypeInstance = createInstance(
+            {
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportType',
               label: 'My Report Type Label',
               baseObject: 'Account',
               category: 'accounts',
@@ -3944,161 +3749,134 @@ describe('Salesforce adapter E2E with real account', () => {
                 columns: [],
                 masterLabel: 'Master Label',
               }],
-            })
+            }, 'ReportType'
+          )
 
           beforeAll(async () => {
-            await removeIfAlreadyExists(reportTypeInstance)
+            await removeElementIfAlreadyExists(client, reportTypeInstance)
           })
 
-          describe('create report type instance', () => {
-            it('should create report type instance', async () => {
-              await verifyCreateInstance(reportTypeInstance)
-            })
+          it('should create report type instance', async () => {
+            await createElementAndVerify(adapter, client, reportTypeInstance)
           })
 
-          describe('update report type instance', () => {
-            it('should update report type instance', async () => {
-              await verifyUpdateInstance(reportTypeInstance, 'label',
-                'My Updated Report Type Label')
-            })
+          it('should update report type instance', async () => {
+            await verifyUpdateInstance(reportTypeInstance, 'label',
+              'My Updated Report Type Label')
           })
 
-          describe('remove report type instance', () => {
-            it('should remove report type instance', async () => {
-              await verifyRemoveInstance(reportTypeInstance)
-            })
+          it('should remove report type instance', async () => {
+            await removeElementAndVerify(adapter, client, reportTypeInstance)
           })
         })
 
         describe('report folder manipulation', () => {
-          const reportFolderInstance = createInstanceElement('MyReportFolder', 'ReportFolder',
-            { name: 'My Report Folder Name' })
+          const reportFolderInstance = createInstance({
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportFolder',
+            name: 'My Report Folder Name',
+          }, 'ReportFolder')
 
           beforeAll(async () => {
-            await removeIfAlreadyExists(reportFolderInstance)
+            await removeElementIfAlreadyExists(client, reportFolderInstance)
           })
 
-          describe('create report folder instance', () => {
-            it('should create report folder instance', async () => {
-              await verifyCreateInstance(reportFolderInstance)
-            })
+          it('should create report folder instance', async () => {
+            await createElementAndVerify(adapter, client, reportFolderInstance)
           })
 
-          describe('update report folder instance', () => {
-            it('should update report folder instance', async () => {
-              await verifyUpdateInstance(reportFolderInstance, 'name',
-                'My Updated Report Folder Name')
-            })
+          it('should update report folder instance', async () => {
+            await verifyUpdateInstance(reportFolderInstance, 'name',
+              'My Updated Report Folder Name')
           })
 
-          describe('remove report folder instance', () => {
-            it('should remove report folder instance', async () => {
-              await verifyRemoveInstance(reportFolderInstance)
-            })
+          it('should remove report folder instance', async () => {
+            await removeElementAndVerify(adapter, client, reportFolderInstance)
           })
         })
 
         describe('report manipulation', () => {
-          const reportInstance = createInstanceElement('TestReportFolder/MyReport',
-            'Report', {
-              name: 'My Report Name',
-              format: 'Summary',
-              reportType: 'Opportunity',
-            })
+          const reportInstance = createInstance({
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'TestReportFolder/MyReport',
+            name: 'My Report Name',
+            format: 'Summary',
+            reportType: 'Opportunity',
+          }, 'Report')
 
           beforeAll(async () => {
-            await removeIfAlreadyExists(reportInstance)
+            await removeElementIfAlreadyExists(client, reportInstance)
           })
 
-          describe('create report instance', () => {
-            it('should create report instance', async () => {
-              await verifyCreateInstance(reportInstance)
-            })
+          it('should create report instance', async () => {
+            await createElementAndVerify(adapter, client, reportInstance)
           })
 
-          describe('update report instance', () => {
-            it('should update report instance', async () => {
-              await verifyUpdateInstance(reportInstance, 'name',
-                'My Updated Report Name')
-            })
+          it('should update report instance', async () => {
+            await verifyUpdateInstance(reportInstance, 'name',
+              'My Updated Report Name')
           })
 
-          describe('remove report instance', () => {
-            it('should remove report instance', async () => {
-              await verifyRemoveInstance(reportInstance)
-            })
+          it('should remove report instance', async () => {
+            await removeElementAndVerify(adapter, client, reportInstance)
           })
         })
 
         describe('dashboard folder manipulation', () => {
-          const dashboardFolderInstance = createInstanceElement('MyDashboardFolder', 'DashboardFolder',
-            { name: 'My Dashboard Folder Name' })
+          const dashboardFolderInstance = createInstance({ name: 'My Dashboard Folder Name',
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'MyDashboardFolder' }, 'DashboardFolder')
 
           beforeAll(async () => {
-            await removeIfAlreadyExists(dashboardFolderInstance)
+            await removeElementIfAlreadyExists(client, dashboardFolderInstance)
           })
 
-          describe('create dashboard folder instance', () => {
-            it('should create dashboard folder instance', async () => {
-              await verifyCreateInstance(dashboardFolderInstance)
-            })
+          it('should create dashboard folder instance', async () => {
+            await createElementAndVerify(adapter, client, dashboardFolderInstance)
           })
 
-          describe('update dashboard folder instance', () => {
-            it('should update dashboard folder instance', async () => {
-              await verifyUpdateInstance(dashboardFolderInstance, 'name',
-                'My Updated Dashboard Folder Name')
-            })
+          it('should update dashboard folder instance', async () => {
+            await verifyUpdateInstance(dashboardFolderInstance, 'name',
+              'My Updated Dashboard Folder Name')
           })
 
-          describe('remove dashboard folder instance', () => {
-            it('should remove dashboard folder instance', async () => {
-              await verifyRemoveInstance(dashboardFolderInstance)
-            })
+          it('should remove dashboard folder instance', async () => {
+            await removeElementAndVerify(adapter, client, dashboardFolderInstance)
           })
         })
 
         describe('dashboard manipulation', () => {
-          const dashboardInstance = createInstanceElement('TestDashboardFolder/MyDashboard',
-            'Dashboard', {
-              backgroundEndColor: '#FFFFFF',
-              backgroundFadeDirection: 'Diagonal',
-              backgroundStartColor: '#FFFFFF',
-              textColor: '#000000',
-              title: 'My Dashboard Title',
-              titleColor: '#000000',
-              titleSize: '12',
-              leftSection: {
-                columnSize: 'Medium',
-                components: [],
-              },
-              rightSection: {
-                columnSize: 'Medium',
-                components: [],
-              },
-            })
+          const dashboardInstance = createInstance({
+            [constants.INSTANCE_FULL_NAME_FIELD]: 'TestDashboardFolder/MyDashboard',
+            backgroundEndColor: '#FFFFFF',
+            backgroundFadeDirection: 'Diagonal',
+            backgroundStartColor: '#FFFFFF',
+            textColor: '#000000',
+            title: 'My Dashboard Title',
+            titleColor: '#000000',
+            titleSize: '12',
+            leftSection: {
+              columnSize: 'Medium',
+              components: [],
+            },
+            rightSection: {
+              columnSize: 'Medium',
+              components: [],
+            },
+          }, 'Dashboard')
 
           beforeAll(async () => {
-            await removeIfAlreadyExists(dashboardInstance)
+            await removeElementIfAlreadyExists(client, dashboardInstance)
           })
 
-          describe('create dashboard instance', () => {
-            it('should create dashboard instance', async () => {
-              await verifyCreateInstance(dashboardInstance)
-            })
+          it('should create dashboard instance', async () => {
+            await createElementAndVerify(adapter, client, dashboardInstance)
           })
 
-          describe('update dashboard instance', () => {
-            it('should update dashboard instance', async () => {
-              await verifyUpdateInstance(dashboardInstance, 'title',
-                'My Updated Dashboard Title')
-            })
+          it('should update dashboard instance', async () => {
+            await verifyUpdateInstance(dashboardInstance, 'title',
+              'My Updated Dashboard Title')
           })
 
-          describe('remove dashboard instance', () => {
-            it('should remove dashboard instance', async () => {
-              await verifyRemoveInstance(dashboardInstance)
-            })
+          it('should remove dashboard instance', async () => {
+            await removeElementAndVerify(adapter, client, dashboardInstance)
           })
         })
       })
@@ -4296,522 +4074,28 @@ describe('Salesforce adapter E2E with real account', () => {
           ],
         })
 
-        // make sure we create a new flow and don't use an old one
-        await adapter.remove(flow).catch(() => undefined)
+        await removeElementIfAlreadyExists(client, flow)
       })
 
-      describe('create flow', () => {
-        it('should create flow', async () => {
-          flow = (await adapter.add(flow)) as InstanceElement
-          const flowInfo = (await client.readMetadata('Flow', 'MyFlow'))[0]
-          expect(flowInfo).toBeDefined()
-          expect(flowInfo[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFlow')
-          expect(_.get(flowInfo, 'variables')[0].dataType).toEqual('SObject')
-        })
+      it('should create flow', async () => {
+        const flowInfo = await createElementAndVerify(adapter, client, flow)
+        expect(_.get(flowInfo, 'variables')[0].dataType).toEqual('SObject')
       })
 
-      describe('update flow', () => {
-        it('should update flow', async () => {
-          const newFlow = flow.clone()
-          newFlow.value.decisions.rules.conditions.operator = 'NotEqualTo'
+      it('should update flow', async () => {
+        const newFlow = flow.clone()
+        newFlow.value.decisions.rules.conditions.operator = 'NotEqualTo'
 
-          flow = (await adapter.update(flow, newFlow,
-            [{ action: 'modify', data: { before: flow, after: newFlow } }])) as InstanceElement
+        flow = (await adapter.update(flow, newFlow,
+          [{ action: 'modify', data: { before: flow, after: newFlow } }])) as InstanceElement
 
-          const flowInfo = (await client.readMetadata('Flow', 'MyFlow'))[0]
-          expect(flowInfo).toBeDefined()
-          expect(flowInfo[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFlow')
-          expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual('NotEqualTo')
-        })
+        const flowInfo = await getMetadataFromElement(client, flow)
+        expect(flowInfo).toBeDefined()
+        expect(_.get(flowInfo, 'decisions').rules.conditions.operator).toEqual('NotEqualTo')
       })
 
-      describe('delete flow', () => {
-        it('should delete flow', async () => {
-          await adapter.remove(flow)
-          expect(await objectExists('Flow', 'MyFlow')).toBeFalsy()
-        })
-      })
-    })
-
-    describe('workflow instance manipulations', () => {
-      const findInstance = async (type: string, fullName: string):
-        Promise<MetadataInfo | undefined> => {
-        const instanceInfo = (await client.readMetadata(type, fullName))[0]
-        if (instanceInfo && instanceInfo.fullName) {
-          return instanceInfo
-        }
-        return undefined
-      }
-
-      const removeIfAlreadyExists = async (type: string, fullName: string): Promise<void> => {
-        if (await objectExists(type, fullName)) {
-          await client.delete(type, fullName)
-        }
-      }
-
-      describe('workflow alerts manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('WorkflowAlert', 'Lead.MyWorkflowAlert')
-        })
-
-        describe('create workflow alert', () => {
-          it('should create workflow alert', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value[WORKFLOW_ALERTS_FIELD] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWorkflowAlert',
-              description: 'My Workflow Alert',
-              protected: false,
-              recipients: [
-                {
-                  recipient: 'CEO',
-                  type: 'role',
-                },
-              ],
-              senderType: 'CurrentUser',
-              template: 'unfiled$public/SalesNewCustomerEmail',
-            }, ...makeArray(newWorkflow.value[WORKFLOW_ALERTS_FIELD])]
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            expect(await objectExists('WorkflowAlert', 'Lead.MyWorkflowAlert')).toBeTruthy()
-            // to save another fetch, we set the new workflow alert on the old instance
-            oldWorkflow.value[WORKFLOW_ALERTS_FIELD] = newWorkflow.value[WORKFLOW_ALERTS_FIELD]
-          })
-        })
-
-        describe('update workflow alert', () => {
-          it('should update workflow alert', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            const workflowAlertToUpdate = makeArray(newWorkflow.value[WORKFLOW_ALERTS_FIELD])
-              .find(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowAlert')
-            expect(workflowAlertToUpdate).toBeDefined()
-            workflowAlertToUpdate.description = 'My Updated Workflow Alert'
-            workflowAlertToUpdate.recipients = [
-              {
-                recipient: 'CEO',
-                type: 'role',
-              },
-              {
-                recipient: 'CFO',
-                type: 'role',
-              },
-            ]
-            workflowAlertToUpdate.template = 'unfiled$public/SupportCaseResponse'
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            const workflowAlertInfo = await findInstance('WorkflowAlert', 'Lead.MyWorkflowAlert')
-            expect(workflowAlertInfo).toBeDefined()
-            expect(_.get(workflowAlertInfo, 'description')).toEqual('My Updated Workflow Alert')
-            expect(_.get(workflowAlertInfo, 'recipients')).toEqual([
-              {
-                recipient: 'CEO',
-                type: 'role',
-              },
-              {
-                recipient: 'CFO',
-                type: 'role',
-              },
-            ])
-            expect(_.get(workflowAlertInfo, 'template'))
-              .toEqual('unfiled$public/SupportCaseResponse')
-          })
-        })
-
-        describe('delete workflow alert', () => {
-          it('should delete workflow alert', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value[WORKFLOW_ALERTS_FIELD] = makeArray(
-              newWorkflow.value[WORKFLOW_ALERTS_FIELD]
-            ).filter(alert => alert[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowAlert')
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            expect(await objectExists('WorkflowAlert', 'Lead.MyWorkflowAlert')).toBeFalsy()
-          })
-        })
-      })
-
-      describe('workflow field updates manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('WorkflowFieldUpdate', 'Lead.MyWorkflowFieldUpdate')
-        })
-
-        describe('create workflow field update', () => {
-          it('should create workflow field update', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWorkflowFieldUpdate',
-              name: 'TestWorkflowFieldUpdate',
-              description: 'My Workflow Field Update',
-              field: 'Company',
-              formula: 'LastName',
-              notifyAssignee: false,
-              reevaluateOnChange: true,
-              protected: false,
-              operation: 'Formula',
-            }, ...makeArray(newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD])]
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            expect(await objectExists('WorkflowFieldUpdate', 'Lead.MyWorkflowFieldUpdate'))
-              .toBeTruthy()
-            // to save another fetch, we set the new workflow field update on the old instance
-            oldWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD] = newWorkflow
-              .value[WORKFLOW_FIELD_UPDATES_FIELD]
-          })
-        })
-
-        describe('update workflow field update', () => {
-          it('should update workflow field update', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            const workflowFieldUpdateToUpdate = makeArray(
-              newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD]
-            ).find(field =>
-              field[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowFieldUpdate')
-            expect(workflowFieldUpdateToUpdate).toBeDefined()
-            workflowFieldUpdateToUpdate.description = 'My Updated Workflow Field Update'
-            workflowFieldUpdateToUpdate.field = 'Rating'
-            workflowFieldUpdateToUpdate.operation = 'PreviousValue'
-            workflowFieldUpdateToUpdate.reevaluateOnChange = false
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            const workflowFieldUpdateInfo = await findInstance('WorkflowFieldUpdate',
-              'Lead.MyWorkflowFieldUpdate')
-            expect(workflowFieldUpdateInfo).toBeDefined()
-            expect(_.get(workflowFieldUpdateInfo, 'description'))
-              .toEqual('My Updated Workflow Field Update')
-            expect(_.get(workflowFieldUpdateInfo, 'field')).toEqual('Rating')
-            expect(_.get(workflowFieldUpdateInfo, 'operation')).toEqual('PreviousValue')
-            expect(_.get(workflowFieldUpdateInfo, 'reevaluateOnChange')).toBeUndefined()
-          })
-        })
-
-        describe('delete workflow field update', () => {
-          it('should delete workflow field update', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD] = makeArray(
-              newWorkflow.value[WORKFLOW_FIELD_UPDATES_FIELD]
-            ).filter(field =>
-              field[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowFieldUpdate')
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            expect(await objectExists('WorkflowFieldUpdate', 'Lead.MyWorkflowFieldUpdate')).toBeFalsy()
-          })
-        })
-      })
-
-      describe('workflow tasks manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('WorkflowTask', 'Lead.MyWorkflowTask')
-        })
-
-        describe('create workflow task', () => {
-          it('should create workflow task', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value[WORKFLOW_TASKS_FIELD] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWorkflowTask',
-              assignedTo: 'CEO',
-              assignedToType: 'role',
-              description: 'My Workflow Task',
-              dueDateOffset: 1,
-              notifyAssignee: false,
-              priority: 'Normal',
-              protected: false,
-              status: 'Not Started',
-              subject: 'TestWorkflowOutboundMessage',
-            }, ...makeArray(newWorkflow.value[WORKFLOW_TASKS_FIELD])]
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            expect(await objectExists('WorkflowTask', 'Lead.MyWorkflowTask')).toBeTruthy()
-            // to save another fetch, we set the new workflow task on the old instance
-            oldWorkflow.value[WORKFLOW_TASKS_FIELD] = newWorkflow.value[WORKFLOW_TASKS_FIELD]
-          })
-        })
-
-        describe('update workflow task', () => {
-          it('should update workflow task', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            const workflowTaskToUpdate = makeArray(newWorkflow.value[WORKFLOW_TASKS_FIELD])
-              .find(task => task[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowTask')
-            expect(workflowTaskToUpdate).toBeDefined()
-            workflowTaskToUpdate.description = 'My Updated Workflow Task'
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            const workflowTaskInfo = await findInstance('WorkflowTask', 'Lead.MyWorkflowTask')
-            expect(workflowTaskInfo).toBeDefined()
-            expect(_.get(workflowTaskInfo, 'description')).toEqual('My Updated Workflow Task')
-          })
-        })
-
-        describe('delete workflow task', () => {
-          it('should delete workflow task', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value[WORKFLOW_TASKS_FIELD] = makeArray(
-              newWorkflow.value[WORKFLOW_TASKS_FIELD]
-            ).filter(task => task[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowTask')
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            expect(await objectExists('WorkflowTask', 'Lead.MyWorkflowTask')).toBeFalsy()
-          })
-        })
-      })
-
-      describe('workflow rules manipulations', () => {
-        beforeAll(async () => {
-          await removeIfAlreadyExists('WorkflowRule', 'Lead.MyWorkflowRule')
-        })
-
-        describe('create workflow rule', () => {
-          it('should create workflow rule', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value[WORKFLOW_RULES_FIELD] = [{
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.MyWorkflowRule',
-              actions: [
-                {
-                  name: 'TestWorkflowAlert',
-                  type: 'Alert',
-                },
-                {
-                  name: 'TestWorkflowFieldUpdate',
-                  type: 'FieldUpdate',
-                },
-                {
-                  name: 'TestWorkflowTask',
-                  type: 'Task',
-                },
-              ],
-              active: false,
-              criteriaItems: [
-                {
-                  field: 'Lead.Company',
-                  operation: 'notEqual',
-                  value: 'BLA',
-                },
-              ],
-              description: 'My Workflow Rule',
-              triggerType: 'onCreateOnly',
-              workflowTimeTriggers: [
-                {
-                  actions: [
-                    {
-                      name: 'TestWorkflowAlert',
-                      type: 'Alert',
-                    },
-                  ],
-                  timeLength: '1',
-                  workflowTimeTriggerUnit: 'Hours',
-                },
-              ],
-            }, ...makeArray(newWorkflow.value[WORKFLOW_RULES_FIELD])]
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            expect(await objectExists('WorkflowRule', 'Lead.MyWorkflowRule')).toBeTruthy()
-            // to save another fetch, we set the new workflow rule on the old instance
-            oldWorkflow.value[WORKFLOW_RULES_FIELD] = newWorkflow.value[WORKFLOW_RULES_FIELD]
-          })
-        })
-
-        describe('update workflow rule', () => {
-          it('should update workflow rule', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            const workflowRuleToUpdate = makeArray(newWorkflow.value[WORKFLOW_RULES_FIELD])
-              .find(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] === 'Lead.MyWorkflowRule')
-            expect(workflowRuleToUpdate).toBeDefined()
-            workflowRuleToUpdate.description = 'My Updated Workflow Rule'
-            workflowRuleToUpdate.criteriaItems = []
-            workflowRuleToUpdate.formula = 'true'
-            workflowRuleToUpdate.triggerType = 'onCreateOrTriggeringUpdate'
-            workflowRuleToUpdate.workflowTimeTriggers = [
-              {
-                actions: [
-                  {
-                    name: 'TestWorkflowFieldUpdate',
-                    type: 'FieldUpdate',
-                  },
-                ],
-                timeLength: '2',
-                workflowTimeTriggerUnit: 'Days',
-              },
-            ]
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            const workflowRuleInfo = await findInstance('WorkflowRule', 'Lead.MyWorkflowRule')
-            expect(workflowRuleInfo).toBeDefined()
-            expect(_.get(workflowRuleInfo, 'description')).toEqual('My Updated Workflow Rule')
-            expect(_.get(workflowRuleInfo, 'criteriaItems')).toBeUndefined()
-            expect(_.get(workflowRuleInfo, 'formula')).toEqual('true')
-            expect(_.get(workflowRuleInfo, 'triggerType')).toEqual('onCreateOrTriggeringUpdate')
-            const workflowTimeTrigger = _.get(workflowRuleInfo, 'workflowTimeTriggers')
-            expect(workflowTimeTrigger.actions).toEqual({ name: 'TestWorkflowFieldUpdate',
-              type: 'FieldUpdate' })
-            expect(workflowTimeTrigger.timeLength).toEqual('2')
-            expect(workflowTimeTrigger.workflowTimeTriggerUnit).toEqual('Days')
-          })
-        })
-
-        describe('delete workflow rule', () => {
-          it('should delete workflow rule', async () => {
-            const oldWorkflow = findElements(result, constants.WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
-            const newWorkflow = oldWorkflow.clone()
-            newWorkflow.value[WORKFLOW_RULES_FIELD] = makeArray(
-              newWorkflow.value[WORKFLOW_RULES_FIELD]
-            ).filter(rule => rule[constants.INSTANCE_FULL_NAME_FIELD] !== 'Lead.MyWorkflowRule')
-
-            await adapter.update(oldWorkflow, newWorkflow,
-              [{ action: 'modify', data: { before: oldWorkflow, after: newWorkflow } }])
-
-            expect(await objectExists('WorkflowRule', 'Lead.MyWorkflowRule')).toBeFalsy()
-          })
-        })
-      })
-
-      it('should create and remove a workflow instance with inner types', async () => {
-        const workflowInstanceName = 'Campaign'
-        const workflowWithInnerTypes = new InstanceElement(workflowInstanceName,
-          findElements(result, constants.WORKFLOW_METADATA_TYPE)[0] as ObjectType,
-          {
-            [constants.INSTANCE_FULL_NAME_FIELD]: workflowInstanceName,
-            [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-            [WORKFLOW_ALERTS_FIELD]: [
-              {
-                [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(workflowInstanceName, 'MyWorkflowAlert1'),
-                description: 'My Workflow Alert 1',
-                protected: false,
-                recipients: [
-                  {
-                    recipient: 'CEO',
-                    type: 'role',
-                  },
-                ],
-                senderType: 'CurrentUser',
-                template: 'TestEmailFolder/TestEmailTemplate',
-              },
-              {
-                [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(workflowInstanceName, 'MyWorkflowAlert2'),
-                description: 'My Workflow Alert 2',
-                protected: false,
-                recipients: [
-                  {
-                    recipient: 'CEO',
-                    type: 'role',
-                  },
-                ],
-                senderType: 'CurrentUser',
-                template: 'TestEmailFolder/TestEmailTemplate',
-              },
-            ],
-            [WORKFLOW_FIELD_UPDATES_FIELD]: {
-              [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(workflowInstanceName, 'MyWorkflowFieldUpdate'),
-              name: 'TestWorkflowFieldUpdate',
-              description: 'My Workflow Field Update',
-              field: 'Description',
-              notifyAssignee: false,
-              protected: false,
-              operation: 'Null',
-            },
-            tasks: {
-              [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(workflowInstanceName, 'MyWorkflowTask'),
-              assignedTo: 'CEO',
-              assignedToType: 'role',
-              description: 'My Workflow Task',
-              dueDateOffset: 1,
-              notifyAssignee: false,
-              priority: 'Normal',
-              protected: false,
-              status: 'Not Started',
-              subject: 'TestWorkflowOutboundMessage',
-            },
-            rules: {
-              [constants.INSTANCE_FULL_NAME_FIELD]: apiNameAnno(workflowInstanceName, 'MyWorkflowRule'),
-              actions: [
-                {
-                  name: 'MyWorkflowAlert1',
-                  type: 'Alert',
-                },
-                {
-                  name: 'MyWorkflowAlert2',
-                  type: 'Alert',
-                },
-                {
-                  name: 'MyWorkflowFieldUpdate',
-                  type: 'FieldUpdate',
-                },
-                {
-                  name: 'MyWorkflowTask',
-                  type: 'Task',
-                },
-              ],
-              active: false,
-              criteriaItems: [
-                {
-                  field: apiNameAnno(workflowInstanceName, 'Description'),
-                  operation: 'notEqual',
-                  value: 'BLA',
-                },
-              ],
-              description: 'My Workflow Rule',
-              triggerType: 'onCreateOnly',
-              workflowTimeTriggers: [
-                {
-                  actions: [
-                    {
-                      name: 'MyWorkflowAlert1',
-                      type: 'Alert',
-                    },
-                  ],
-                  timeLength: '1',
-                  workflowTimeTriggerUnit: 'Hours',
-                },
-              ],
-            },
-          })
-
-        const innerTypesExist = async (): Promise<boolean[]> =>
-          Promise.all([
-            objectExists('WorkflowAlert', apiNameAnno(workflowInstanceName, 'MyWorkflowAlert1')),
-            objectExists('WorkflowAlert', apiNameAnno(workflowInstanceName, 'MyWorkflowAlert2')),
-            objectExists('WorkflowFieldUpdate', apiNameAnno(workflowInstanceName, 'MyWorkflowFieldUpdate')),
-            objectExists('WorkflowTask', apiNameAnno(workflowInstanceName, 'MyWorkflowTask')),
-            objectExists('WorkflowRule', apiNameAnno(workflowInstanceName, 'MyWorkflowRule')),
-          ])
-
-        if ((await innerTypesExist()).some(Boolean)) {
-          await adapter.remove(workflowWithInnerTypes)
-        }
-        await adapter.add(workflowWithInnerTypes)
-        expect((await innerTypesExist()).every(Boolean)).toBeTruthy()
-        await adapter.remove(workflowWithInnerTypes)
-        expect((await innerTypesExist()).some(Boolean)).toBeFalsy()
+      it('should delete flow', async () => {
+        await removeElementAndVerify(adapter, client, flow)
       })
     })
 
@@ -4920,121 +4204,110 @@ describe('Salesforce adapter E2E with real account', () => {
           ],
         })
 
-        // make sure we create a new layout and don't use an old one
-        await adapter.remove(layout).catch(() => undefined)
+        await removeElementIfAlreadyExists(client, layout)
       })
 
-      describe('create layout', () => {
-        it('should create layout', async () => {
-          layout = (await adapter.add(layout)) as InstanceElement
-          expect(await objectExists('Layout', 'Lead-MyLayout')).toBeTruthy()
-        })
+      it('should create layout', async () => {
+        await createElementAndVerify(adapter, client, layout)
       })
 
-      describe('update layout', () => {
-        it('should update layout', async () => {
-          const newLayout = layout.clone()
+      it('should update layout', async () => {
+        const newLayout = layout.clone()
 
-          // edit layout sections
-          newLayout.value.layoutSections[0].style = 'OneColumn'
-          newLayout.value.layoutSections[0].layoutColumns = {
-            layoutItems: [
-              {
-                behavior: 'Required',
-                field: 'Name',
-              },
-              {
-                behavior: 'Edit',
-                field: 'Phone',
-              },
-              {
-                behavior: 'Required',
-                field: 'Company',
-              },
-              {
-                behavior: 'Edit',
-                field: 'Email',
-              },
-              {
-                behavior: 'Required',
-                field: 'Status',
-              },
-            ],
-          }
-          newLayout.value.layoutSections[1].label = 'Updated Label'
-
-          // edit layout quick actions
-          newLayout.value.quickActionList.quickActionListItems = [
+        // edit layout sections
+        newLayout.value.layoutSections[0].style = 'OneColumn'
+        newLayout.value.layoutSections[0].layoutColumns = {
+          layoutItems: [
             {
-              quickActionName: 'FeedItem.PollPost',
+              behavior: 'Required',
+              field: 'Name',
             },
             {
-              quickActionName: 'FeedItem.ContentPost',
+              behavior: 'Edit',
+              field: 'Phone',
             },
+            {
+              behavior: 'Required',
+              field: 'Company',
+            },
+            {
+              behavior: 'Edit',
+              field: 'Email',
+            },
+            {
+              behavior: 'Required',
+              field: 'Status',
+            },
+          ],
+        }
+        newLayout.value.layoutSections[1].label = 'Updated Label'
 
-          ]
+        // edit layout quick actions
+        newLayout.value.quickActionList.quickActionListItems = [
+          {
+            quickActionName: 'FeedItem.PollPost',
+          },
+          {
+            quickActionName: 'FeedItem.ContentPost',
+          },
 
-          // edit layout related lists
-          newLayout.value.relatedLists = [{
-            fields: [
-              'TASK.LAST_UPDATE',
-              'TASK.DUE_DATE',
-            ],
-            relatedList: 'RelatedHistoryList',
-          }]
+        ]
 
-          layout = (await adapter.update(layout, newLayout,
-            [{ action: 'modify', data: { before: layout, after: newLayout } }])) as InstanceElement
+        // edit layout related lists
+        newLayout.value.relatedLists = [{
+          fields: [
+            'TASK.LAST_UPDATE',
+            'TASK.DUE_DATE',
+          ],
+          relatedList: 'RelatedHistoryList',
+        }]
 
-          const layoutInfo = (await client.readMetadata('Layout', 'Lead-MyLayout'))[0]
-          expect(layoutInfo).toBeDefined()
-          const layoutSections = _.get(layoutInfo, 'layoutSections')
-          expect(layoutSections[0].style).toEqual('OneColumn')
-          expect(layoutSections[0].layoutColumns.layoutItems)
-            .toEqual([
-              {
-                behavior: 'Required',
-                field: 'Name',
-              },
-              {
-                behavior: 'Edit',
-                field: 'Phone',
-              },
-              {
-                behavior: 'Required',
-                field: 'Company',
-              },
-              {
-                behavior: 'Edit',
-                field: 'Email',
-              },
-              {
-                behavior: 'Required',
-                field: 'Status',
-              },
-            ])
-          expect(layoutSections[1].label).toEqual('Updated Label')
-          const quickActionItems = _.get(layoutInfo, 'quickActionList').quickActionListItems
-          expect(quickActionItems[0].quickActionName).toEqual('FeedItem.PollPost')
-          expect(quickActionItems[1].quickActionName).toEqual('FeedItem.ContentPost')
-          const relatedLists = _.get(layoutInfo, 'relatedLists')
-          expect(relatedLists.fields).toEqual(['TASK.LAST_UPDATE', 'TASK.DUE_DATE'])
-        })
+        layout = (await adapter.update(layout, newLayout,
+          [{ action: 'modify', data: { before: layout, after: newLayout } }])) as InstanceElement
+
+        const layoutInfo = await getMetadataFromElement(client, layout)
+        expect(layoutInfo).toBeDefined()
+        const layoutSections = _.get(layoutInfo, 'layoutSections')
+        expect(layoutSections[0].style).toEqual('OneColumn')
+        expect(layoutSections[0].layoutColumns.layoutItems)
+          .toEqual([
+            {
+              behavior: 'Required',
+              field: 'Name',
+            },
+            {
+              behavior: 'Edit',
+              field: 'Phone',
+            },
+            {
+              behavior: 'Required',
+              field: 'Company',
+            },
+            {
+              behavior: 'Edit',
+              field: 'Email',
+            },
+            {
+              behavior: 'Required',
+              field: 'Status',
+            },
+          ])
+        expect(layoutSections[1].label).toEqual('Updated Label')
+        const quickActionItems = _.get(layoutInfo, 'quickActionList').quickActionListItems
+        expect(quickActionItems[0].quickActionName).toEqual('FeedItem.PollPost')
+        expect(quickActionItems[1].quickActionName).toEqual('FeedItem.ContentPost')
+        const relatedLists = _.get(layoutInfo, 'relatedLists')
+        expect(relatedLists.fields).toEqual(['TASK.LAST_UPDATE', 'TASK.DUE_DATE'])
       })
 
-      describe('delete layout', () => {
-        it('should delete layout', async () => {
-          await adapter.remove(layout)
-          expect(await objectExists('Layout', 'Lead-MyLayout')).toBeFalsy()
-        })
+      it('should delete layout', async () => {
+        await removeElementAndVerify(adapter, client, layout)
       })
 
-      describe('instance reference string is resolved as a reference', () => {
-        it('should point parentRole to a Role instance', () => {
-          const childRole = findElements(result, 'Role', 'TestChildRole')[0] as InstanceElement
-          expect(childRole.value.parentRole).toBeInstanceOf(ReferenceExpression)
-          expect(childRole.value.parentRole.elemId.typeName).toEqual('Role')
-        })
+      it('should point parentRole to a Role instance', () => {
+        const childRole = findElements(result, 'Role', 'TestChildRole')[0] as InstanceElement
+        expect(childRole.value.parentRole).toBeInstanceOf(ReferenceExpression)
+        expect(childRole.value.parentRole.elemId.typeName).toEqual('Role')
       })
     })
   })

@@ -94,9 +94,12 @@ const getChangedElementName = (change: Change): string => getChangeElement(chang
 
 export const verifyChanges = (plan: Plan,
   expectedChanges: { action: ActionName; element: string }[]): void => {
-  const changes = wu(plan.itemsByEvalOrder()).map(item => item.parent() as Change)
-    .map(c => ({ action: c.action, element: getChangedElementName(c) })).toArray()
-  expect(_.sortBy(changes, 'element')).toEqual(_.sortBy(expectedChanges, 'element'))
+  expect(plan.size).toBe(expectedChanges.length)
+  const changes = wu(plan.itemsByEvalOrder()).map(item => item.parent() as Change).toArray()
+  expect(changes.every(change =>
+    expectedChanges.some(expectedChange =>
+      change.action === expectedChange.action
+      && getChangedElementName(change) === expectedChange.element))).toBeTruthy()
 }
 
 const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,

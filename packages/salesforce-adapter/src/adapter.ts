@@ -30,9 +30,9 @@ import SalesforceClient, { API_VERSION, Credentials, validateCredentials } from 
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
-  metadataType, toInstanceElements, createMetadataTypeElements,
+  metadataType, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
-  defaultApiName, getLookUpName, transformReferences,
+  defaultApiName, getLookUpName,
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'

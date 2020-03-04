@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { Workspace, FetchChange, DetailedChange } from '@salto-io/core'
 import { Spinner } from '../src/types'
-import { validateWorkspace, loadWorkspace, updateWorkspace } from '../src/workspace'
-import { MockWriteStream, dummyChanges } from './mocks'
+import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG } from '../src/workspace'
+import { MockWriteStream, dummyChanges, detailedChange } from './mocks'
 
 const mockWs = {
   hasErrors: jest.fn().mockResolvedValue(false),
@@ -174,6 +175,19 @@ describe('workspace', () => {
       mockWs.hasErrors = jest.fn().mockResolvedValue(false)
       const result = await updateWorkspace(mockWs, cliOutput,
         dummyChanges.map((change: DetailedChange): FetchChange =>
+          ({ change, serviceChange: change })))
+      expect(result).toBeTruthy()
+      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(dummyChanges, undefined)
+      expect(mockWs.flush).toHaveBeenCalledTimes(1)
+      expect(mockWs.hasErrors).toHaveBeenCalled()
+    })
+
+    it('with more changes than max changes to log', async () => {
+      mockWs.hasErrors = jest.fn().mockResolvedValue(false)
+      const changes = _.fill(Array(MAX_DETAIL_CHANGES_TO_LOG + 1),
+        detailedChange('add', ['adapter', 'dummy'], undefined, 'after-add-dummy1'))
+      const result = await updateWorkspace(mockWs, cliOutput,
+        changes.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBeTruthy()
       expect(mockWs.updateBlueprints).toHaveBeenCalledWith(dummyChanges, undefined)

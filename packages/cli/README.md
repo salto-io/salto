@@ -35,3 +35,5 @@ Local builds will be configured with `enabled = false`, unless the `SALTO_TELEME
 Enabling or disabling telemetry events can be also controlled by using the environment variables `SALTO_TELEMETRY_DISABLE`.
 `SALTO_TELEMETRY_DISABLE` will always override the `config.bp` definition, thus `enabled` can be set to `true` but
 one can turn off telemetry stats sending for a specific run of some salto command.
+
+Set `SALTO_TELEMETRY_DISABLE=1` to disable telemetry.

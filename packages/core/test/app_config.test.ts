@@ -16,49 +16,13 @@
 */
 
 import * as conf from '../src/app_config'
+import * as file from '../src/file'
 
-jest.mock('../src/file', () => ({
-  mkdirp: jest.fn().mockImplementation(
-    (_dir: string) => Promise.resolve()
-  ),
-  replaceContents: jest.fn().mockImplementation(
-    (_filename: string, _content: Buffer | string) => Promise.resolve()
-  ),
-  exists: jest.fn().mockImplementation(
-    (filename: string) => ((filename.search('exists') !== -1) ? Promise.resolve(true) : Promise.resolve(false))
-  ),
-  readFile: jest.fn().mockImplementation(
-    (filename: string) => {
-      let fileContent = `
-        salto {
-          installationID = "9876"
-          telemetry = {
-            enabled = false
-          }
-        }`
-      if (filename.search('exists') !== -1) {
-        fileContent = `
-        salto {
-          installationID = "1234"
-          telemetry = {
-            enabled = true
-          }
-        }`
-      } else if (filename.search('no_installation_id') !== -1) {
-        fileContent = `
-        salto {
-          telemetry = {
-            enabled = false
-          }
-        }`
-      } else if (filename.search('invalid') !== -1) {
-        fileContent = 'asdf'
-      }
-      return Promise.resolve(Buffer.from(fileContent, 'utf-8'))
-    }
-  ),
-}))
-
+jest.mock('../src/file')
+const mockMkdirp = file.mkdirp as jest.Mock
+const mockReplaceContents = file.replaceContents as jest.Mock
+const mockExists = file.exists as jest.Mock
+const mockReadFile = file.readFile as unknown as jest.Mock
 
 let keepEnv: NodeJS.ProcessEnv = {}
 describe('app config', () => {
@@ -75,30 +39,56 @@ describe('app config', () => {
 
   it('should load config from disk', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'
+    process.env.SALTO_TELEMETRY_URL = 'localhost'
+    const bpFileContent = `
+    salto {
+      installationID = "1234"
+      telemetry = {
+        enabled = true
+      }
+    }`
+    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockExists.mockResolvedValue(true)
     const appConfig = await conf.configFromDisk()
     expect(conf.getSaltoHome()).toEqual('/exists/home')
     expect(appConfig.installationID).toEqual('1234')
-    expect(appConfig.telemetry.url).toEqual('')
+    expect(appConfig.telemetry.url).toEqual('localhost')
+    expect(appConfig.telemetry.enabled).toBeTruthy()
+    expect(mockMkdirp).not.toHaveBeenCalled()
+    expect(mockReplaceContents).not.toHaveBeenCalled()
   })
 
   it('should disable telemetry if telemetry config is disabled', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/home/u'
+    const bpFileContent = `
+    salto {
+      installationID = "9876"
+      telemetry = {
+        enabled = false
+      }
+    }`
+    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockExists.mockResolvedValue(false)
     const appConfig = await conf.configFromDisk()
     expect(appConfig.telemetry.enabled).toBeFalsy()
   })
 
   it('should create the config if not existing', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/home/u'
+    const bpFileContent = `
+    salto {
+      installationID = "9876"
+      telemetry = {
+        enabled = false
+      }
+    }`
+    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockExists.mockResolvedValue(false)
     const appConfig = await conf.configFromDisk()
     expect(conf.getSaltoHome()).toEqual('/home/u')
     expect(appConfig.installationID).toEqual('9876')
-  })
-
-  it('should initialize config on disk', async () => {
-    process.env[conf.SALTO_HOME_VAR] = '/exists'
-    const appConfig = await conf.configFromDisk()
-    expect(conf.getSaltoHome()).toEqual('/exists')
-    expect(appConfig.installationID).toEqual('1234')
+    expect(mockMkdirp).toHaveBeenCalled()
+    expect(mockReplaceContents).toHaveBeenCalled()
   })
 
   it('should override config.bp with env variable', async () => {
@@ -106,6 +96,15 @@ describe('app config', () => {
     process.env.SALTO_TELEMETRY_DISABLE = '1'
     process.env.SALTO_TELEMETRY_TOKEN = 'token'
     process.env.SALTO_TELEMETRY_URL = 'localhost'
+    const bpFileContent = `
+    salto {
+      installationID = "1234"
+      telemetry = {
+        enabled = true
+      }
+    }`
+    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockExists.mockResolvedValue(true)
     const appConfig = await conf.configFromDisk()
     expect(appConfig.installationID).toEqual('1234')
     expect(appConfig.telemetry.url).toEqual('localhost')
@@ -115,6 +114,14 @@ describe('app config', () => {
 
   it('should not throw an error if installationID is missing', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/home/no_installation_id'
+    const bpFileContent = `
+    salto {
+      telemetry = {
+        enabled = true
+      }
+    }`
+    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockExists.mockResolvedValue(true)
     const appConfig = await conf.configFromDisk()
     expect(appConfig.installationID).toBeUndefined()
   })
@@ -122,6 +129,15 @@ describe('app config', () => {
   it('should disable telemetry if enabled and url is empty', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'
     process.env.SALTO_TELEMETRY_URL = ''
+    const bpFileContent = `
+    salto {
+      installationID = "1234"
+      telemetry = {
+        enabled = true
+      }
+    }`
+    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockExists.mockResolvedValue(true)
     const appConfig = await conf.configFromDisk()
     expect(appConfig.telemetry.url).toEqual('')
     expect(appConfig.telemetry.enabled).toBeFalsy()
@@ -129,6 +145,15 @@ describe('app config', () => {
 
   it('should fail when config is invalid', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/invalid/home'
+    const bpFileContent = `
+    salto {
+      installationID: "1234"
+      telemetry = {
+        enabled = true
+      }
+    }`
+    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockExists.mockResolvedValue(true)
     await expect(conf.configFromDisk()).rejects.toThrow()
   })
 })

@@ -205,9 +205,6 @@ jobs:
           at: .
 
       - run:
-          environment:
-            SALTO_TELEMETRY_DISABLE: '0'
-            SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
           name: Build native executables
           command: yarn workspace @salto-io/cli package
 

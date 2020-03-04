@@ -13,22 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { parse } from '../parser/parse'
 import { dumpElements } from '../parser/dump'
 import { BP_EXTENSION } from './blueprints/blueprints_source'
 import { DirectoryStore } from './dir_store'
-import adapterCreators from '../core/adapters/creators'
 
 export interface Config {
   get(adapter: string): Promise<InstanceElement | undefined>
   set(adapter: string, config: Readonly<InstanceElement>): Promise<void>
 }
 
-const getConfig = (
+export const adapterConfig = (
   dirStore: DirectoryStore,
-  configTypeName: string,
 ): Config => {
   const filename = (adapter: string): string => adapter.concat(BP_EXTENSION)
 
@@ -36,9 +33,7 @@ const getConfig = (
     get: async (adapter: string): Promise<InstanceElement | undefined> => {
       const bp = await dirStore.get(filename(adapter))
       if (bp) {
-        const element = parse(Buffer.from(bp.buffer), bp.filename).elements.pop() as InstanceElement
-        element.type = _.get(adapterCreators[adapter], configTypeName) ?? element.type
-        return element
+        return parse(Buffer.from(bp.buffer), bp.filename).elements.pop() as InstanceElement
       }
       return undefined
     },
@@ -49,9 +44,3 @@ const getConfig = (
     },
   }
 }
-
-export const adaptersConfigs = (dirStore: DirectoryStore):
-  Config => getConfig(dirStore, 'configType')
-
-export const adaptersCredentials = (dirStore: DirectoryStore):
-  Config => getConfig(dirStore, 'credentialsType')

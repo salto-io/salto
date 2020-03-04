@@ -24,7 +24,7 @@ import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
   saltoConfigType, currentEnvConfig, getAdaptersConfigDir } from './config'
-import { adaptersConfigs, adaptersCredentials, Config as AdapterConfig } from './adapter_config'
+import { adapterConfig, Config as AdapterConfig } from './adapter_config'
 import State from './state'
 import { localState } from './local/state'
 import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
@@ -144,10 +144,10 @@ export class Workspace {
       ? loadBlueprintSource(config.baseDir, config.localStorage, [adapterConfigDirLocation])
       : loadMultiEnvSource(config)
     this.state = localState(currentEnvConfig(config).stateLocation)
-    this.adapterCredentials = adaptersCredentials(
+    this.adapterCredentials = adapterConfig(
       localDirectoryStore(currentEnvConfig(config).credentialsLocation),
     )
-    this.adapterConfig = adaptersConfigs(
+    this.adapterConfig = adapterConfig(
       localDirectoryStore(getAdaptersConfigDir(config.baseDir, config.adaptersConfigLocation)),
     )
   }

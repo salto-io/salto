@@ -72,7 +72,7 @@ describe('SalesforceAdapter creator', () => {
     )
 
     beforeAll(() => {
-      creator.create({ config: { credentials, config } })
+      creator.create({ credentials, config })
     })
 
     it('creates the client correctly', () => {

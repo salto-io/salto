@@ -51,7 +51,7 @@ describe('HubspotAdapter creator', () => {
     )
 
     beforeEach(() => {
-      creator.create({ config: { credentials } })
+      creator.create({ credentials })
     })
 
     it('creates the client correctly', () => {

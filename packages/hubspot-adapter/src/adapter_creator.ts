@@ -49,8 +49,8 @@ const clientFromCredentials = (credentials: InstanceElement): HubspotClient =>
   })
 
 export const creator: AdapterCreator = {
-  create: ({ config }) => new HubspotAdapter({
-    client: clientFromCredentials(config.credentials as InstanceElement),
+  create: opts => new HubspotAdapter({
+    client: clientFromCredentials(opts.credentials as InstanceElement),
   }),
   validateConfig: config => HubspotClient.validateCredentials(credentialsFromConfig(config)),
   credentialsType,

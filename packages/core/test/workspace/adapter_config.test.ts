@@ -16,7 +16,7 @@
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser/dump'
-import { adaptersConfigs, adaptersCredentials } from '../../src/workspace/adapter_config'
+import { adapterConfig } from '../../src/workspace/adapter_config'
 
 jest.mock('../../../src/workspace/local/dir_store')
 describe('configs', () => {
@@ -48,29 +48,23 @@ describe('configs', () => {
     jest.resetAllMocks()
   })
 
-  it.each([['credentials', adaptersCredentials], ['config', adaptersConfigs]])(
-    'should set new %s', async (_name, func) => {
-      mockSet.mockResolvedValueOnce(true)
-      mockFlush.mockResolvedValue(true)
-      await func(mockedDirStore).set(adapter, config)
-      expect(mockSet).toHaveBeenCalledWith(dumpedConfig)
-      expect(mockFlush).toHaveBeenCalledTimes(1)
-    }
-  )
+  it('should set new adapter config', async () => {
+    mockSet.mockResolvedValueOnce(true)
+    mockFlush.mockResolvedValue(true)
+    await adapterConfig(mockedDirStore).set(adapter, config)
+    expect(mockSet).toHaveBeenCalledWith(dumpedConfig)
+    expect(mockFlush).toHaveBeenCalledTimes(1)
+  })
 
-  it.each([['credentials', adaptersCredentials], ['config', adaptersConfigs]])(
-    'should get %s if exists', async (_name, func) => {
-      mockGet.mockResolvedValueOnce(dumpedConfig)
-      const fromConfigStore = await func(mockedDirStore).get(adapter)
-      expect(fromConfigStore?.value).toEqual(config.value)
-    }
-  )
+  it('should get adapter config if exists', async () => {
+    mockGet.mockResolvedValueOnce(dumpedConfig)
+    const fromConfigStore = await adapterConfig(mockedDirStore).get(adapter)
+    expect(fromConfigStore?.value).toEqual(config.value)
+  })
 
-  it.each([['credentials', adaptersCredentials], ['config', adaptersConfigs]])(
-    'shouldnt fail if %s not exists', async (_name, func) => {
-      mockGet.mockResolvedValueOnce(undefined)
-      const fromConfigStore = await func(mockedDirStore).get(adapter)
-      expect(fromConfigStore).toBeUndefined()
-    }
-  )
+  it('should not fail if adapter config not exists', async () => {
+    mockGet.mockResolvedValueOnce(undefined)
+    const fromConfigStore = await adapterConfig(mockedDirStore).get(adapter)
+    expect(fromConfigStore).toBeUndefined()
+  })
 })

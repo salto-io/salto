@@ -79,10 +79,10 @@ const clientFromCredentials = (credentials: InstanceElement): SalesforceClient =
   new SalesforceClient({ credentials: credentialsFromConfig(credentials) })
 
 export const creator: AdapterCreator = {
-  create: ({ config, getElemIdFunc }) => new SalesforceAdapter({
-    client: clientFromCredentials(config.credentials as InstanceElement),
-    config: adapterConfigFromConfig(config.config),
-    getElemIdFunc,
+  create: opts => new SalesforceAdapter({
+    client: clientFromCredentials(opts.credentials as InstanceElement),
+    config: adapterConfigFromConfig(opts.config),
+    getElemIdFunc: opts.getElemIdFunc,
   }),
   validateConfig: config => validateCredentials(credentialsFromConfig(config)),
   credentialsType,

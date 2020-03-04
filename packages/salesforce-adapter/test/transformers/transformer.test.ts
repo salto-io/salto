@@ -34,8 +34,6 @@ import {
   NAME_FIELDS,
   API_NAME,
   COMPOUND_FIELD_TYPE_NAMES,
-  FIELD_LEVEL_SECURITY_ANNOTATION,
-  FIELD_LEVEL_SECURITY_FIELDS,
   FIELD_DEPENDENCY_FIELDS,
   VALUE_SETTINGS_FIELDS,
   FILTER_ITEM_FIELDS,
@@ -962,18 +960,6 @@ describe('transformer', () => {
     it('should include apiName annotation with service_id type', async () => {
       Object.values(Types.getAllFieldTypes()).forEach(type => {
         expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
-      })
-    })
-
-    it('should include fieldLevelSecurity annotation with appropriate type', async () => {
-      Object.values(Types.getAllFieldTypes()).forEach(type => {
-        expect(type.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
-        const fieldLevelSecurityType = type.annotationTypes[FIELD_LEVEL_SECURITY_ANNOTATION]
-        expect(fieldLevelSecurityType).toBeInstanceOf(ObjectType)
-        expect((fieldLevelSecurityType as ObjectType).fields[FIELD_LEVEL_SECURITY_FIELDS.EDITABLE])
-          .toBeDefined()
-        expect((fieldLevelSecurityType as ObjectType).fields[FIELD_LEVEL_SECURITY_FIELDS.READABLE])
-          .toBeDefined()
       })
     })
   })

@@ -48,10 +48,9 @@ import {
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 const { makeArray } = collections.array
-const { FIELD_LEVEL_SECURITY_ANNOTATION, PROFILE_METADATA_TYPE } = constants
+const { PROFILE_METADATA_TYPE } = constants
 
 const ADMIN = 'Admin'
-const STANDARD = 'Standard'
 
 describe('Salesforce adapter E2E with real account', () => {
   let client: SalesforceClient
@@ -1475,14 +1474,6 @@ describe('Salesforce adapter E2E with real account', () => {
             displayFormat: 'BLA-{0000}',
             startingNumber: 123,
           },
-          [constants.OBJECT_LEVEL_SECURITY_ANNOTATION]: {
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ]: [ADMIN, STANDARD],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS]: [ADMIN],
-          },
         },
         fields: {
           description: new Field(
@@ -1493,10 +1484,6 @@ describe('Salesforce adapter E2E with real account', () => {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
               [constants.LABEL]: 'description label',
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                editable: [ADMIN, STANDARD],
-                readable: [ADMIN, STANDARD],
-              },
             },
           ),
           formula: new Field(
@@ -1538,9 +1525,7 @@ describe('Salesforce adapter E2E with real account', () => {
         }))
         .toBe(true)
       expect((await fieldPermissionExists('Admin', [`${customObjectName}.description__c`]))[0]).toBe(true)
-      expect((await fieldPermissionExists('Standard', [`${customObjectName}.description__c`]))[0]).toBe(true)
       expect((await objectPermissionExists('Admin', [`${customObjectName}`]))[0]).toBe(true)
-      expect((await objectPermissionExists('Standard', [`${customObjectName}`]))[0]).toBe(true)
 
       // Clean-up
       await adapter.remove(post)
@@ -1636,12 +1621,6 @@ describe('Salesforce adapter E2E with real account', () => {
             mockElemID,
             'description',
             stringType,
-            {
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                editable: [ADMIN, STANDARD],
-                readable: [ADMIN, STANDARD],
-              },
-            },
           ),
         },
         annotations: {
@@ -2088,212 +2067,6 @@ describe('Salesforce adapter E2E with real account', () => {
       const addressFieldInfo = (await client.readMetadata(constants.CUSTOM_FIELD,
         apiNameAnno(customObjectName, 'Address__c')))[0] as CustomField
       expect(addressFieldInfo.label).toEqual('Field Updated Label')
-
-      // Clean-up
-      await adapter.remove(oldElement)
-    })
-
-    it("should modify an object's object permissions", async () => {
-      const customObjectName = 'TestModifyObjectPermissions__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test modify object permissions')
-      const oldElement = new ObjectType({
-        elemID: mockElemID,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-          [constants.OBJECT_LEVEL_SECURITY_ANNOTATION]: {
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS]: [ADMIN],
-          },
-        },
-      })
-
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-        await adapter.remove(oldElement)
-      }
-      const addResult = await adapter.add(oldElement)
-      // Verify setup was performed properly
-      expect(addResult).toBeInstanceOf(ObjectType)
-
-      expect((await objectPermissionExists('Standard', [`${customObjectName}`]))[0]).toBeFalsy()
-      expect((await objectPermissionExists('Admin', [`${customObjectName}`]))[0]).toBeTruthy()
-
-      const newElement = new ObjectType({
-        elemID: mockElemID,
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-          [constants.OBJECT_LEVEL_SECURITY_ANNOTATION]: {
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_CREATE]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_DELETE]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_EDIT]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.ALLOW_READ]: [ADMIN, STANDARD],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.MODIFY_ALL_RECORDS]: [ADMIN],
-            [constants.OBJECT_LEVEL_SECURITY_FIELDS.VIEW_ALL_RECORDS]: [ADMIN],
-          },
-        },
-      })
-
-      // Test
-      const modificationResult = await adapter.update(oldElement, newElement, [
-        { action: 'modify',
-          data: { before: oldElement,
-            after: newElement } },
-      ])
-      expect(modificationResult).toBeInstanceOf(ObjectType)
-
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
-
-      expect(await objectPermissionExists('Standard', [`${customObjectName}`])).toBeTruthy()
-      expect(await objectPermissionExists('Admin', [`${customObjectName}`])).toBeTruthy()
-    })
-
-    it("should modify an object's custom fields' permissions", async () => {
-      // Setup
-      const customObjectName = 'TestModifyCustomFieldsPermissions__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test modify custom field permissions')
-      const oldElement = new ObjectType({
-        elemID: mockElemID,
-        fields: {
-          address: new Field(
-            mockElemID,
-            'address',
-            stringType,
-            {
-              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                editable: [ADMIN],
-                readable: [ADMIN],
-              },
-            },
-          ),
-          banana: new Field(
-            mockElemID,
-            'banana',
-            stringType,
-            {
-              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                editable: [STANDARD],
-                readable: [STANDARD],
-              },
-            },
-          ),
-          delta: new Field(
-            mockElemID,
-            'delta',
-            stringType,
-            {
-              [constants.API_NAME]: apiNameAnno(customObjectName, 'Delta__c'),
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                editable: [ADMIN],
-                readable: [ADMIN, STANDARD],
-              },
-            },
-          ),
-        },
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [constants.DEFAULT_VALUE_FORMULA]: 'test',
-          [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
-          [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-        },
-      })
-
-      if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
-        await adapter.remove(oldElement)
-      }
-      const addResult = await adapter.add(oldElement)
-      // Verify setup was performed properly
-      expect(addResult).toBeInstanceOf(ObjectType)
-
-      const newElement = new ObjectType({
-        elemID: mockElemID,
-        fields: {
-          address: new Field(
-            mockElemID,
-            'address',
-            stringType,
-            {
-              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                editable: [STANDARD],
-                readable: [STANDARD],
-              },
-            },
-          ),
-          banana: new Field(
-            mockElemID,
-            'banana',
-            stringType,
-            {
-              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                editable: [ADMIN, STANDARD],
-                readable: [ADMIN, STANDARD],
-              },
-            },
-          ),
-          delta: new Field(
-            mockElemID,
-            'delta',
-            stringType,
-            {
-              [constants.API_NAME]: apiNameAnno(customObjectName, 'Delta__c'),
-              [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-                readable: [STANDARD],
-              },
-            },
-          ),
-        },
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          [constants.DEFAULT_VALUE_FORMULA]: 'test',
-          [constants.LABEL]: 'test label',
-          [constants.API_NAME]: customObjectName,
-        },
-      })
-
-      // Test
-      const modificationResult = await adapter.update(oldElement, newElement, [
-        { action: 'modify',
-          data: { before: oldElement.fields.address, after: newElement.fields.address } },
-        { action: 'modify',
-          data: { before: oldElement.fields.banana, after: newElement.fields.banana } },
-        { action: 'modify',
-          data: { before: oldElement.fields.delta, after: newElement.fields.delta } },
-      ])
-      expect(modificationResult).toBeInstanceOf(ObjectType)
-
-      expect(await objectExists(constants.CUSTOM_OBJECT, customObjectName)).toBe(true)
-
-      const [addressStandardExists,
-        bananaStandardExists,
-        deltaStandardExists] = await fieldPermissionExists(
-        'Standard',
-        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
-      )
-      expect(addressStandardExists).toBeTruthy()
-      expect(bananaStandardExists).toBeTruthy()
-      expect(deltaStandardExists).toBeTruthy()
-      const [addressAdminExists,
-        bananaAdminExists,
-        deltaAdminExists] = await fieldPermissionExists(
-        'Admin',
-        [`${customObjectName}.Address__c`, `${customObjectName}.Banana__c`, `${customObjectName}.Delta__c`]
-      )
-      expect(addressAdminExists).toBeFalsy()
-      expect(bananaAdminExists).toBeTruthy()
-      expect(deltaAdminExists).toBeFalsy()
 
       // Clean-up
       await adapter.remove(oldElement)
@@ -3022,23 +2795,7 @@ describe('Salesforce adapter E2E with real account', () => {
               return caseObject
             }
 
-            const normalizeReferences = (obj: ObjectType): void => {
-              const resolveRef = (ref: ReferenceExpression): string | undefined => {
-                const elem = findElement(result, ref.elemId)
-                return elem ? apiName(elem) : undefined
-              }
-              Object.values(obj.fields)
-                .map(field => field.annotations[FIELD_LEVEL_SECURITY_ANNOTATION])
-                .filter(fieldSecurity => fieldSecurity !== undefined)
-                .forEach(fieldSecurity => {
-                  Object.entries(fieldSecurity).forEach(([key, values]) => {
-                    fieldSecurity[key] = (values as ReferenceExpression[]).map(resolveRef)
-                  })
-                })
-            }
-
             let origCase = findCustomCase()
-            normalizeReferences(origCase)
 
             const removeRollupSummaryFieldFromCase = async (caseObj: ObjectType, fieldName: string):
               Promise<ObjectType> => {
@@ -3113,13 +2870,6 @@ describe('Salesforce adapter E2E with real account', () => {
       describe('update', () => {
         let objectInfo: CustomObject
 
-        const adminFieldPermissions = {
-          [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-            [constants.FIELD_LEVEL_SECURITY_FIELDS.READABLE]: [ADMIN],
-            [constants.FIELD_LEVEL_SECURITY_FIELDS.EDITABLE]: [ADMIN],
-          },
-        }
-
         const fieldNamesToAnnotations: Record<string, Values> = {
           [currencyFieldName]: {
             [constants.LABEL]: 'Currency label Updated',
@@ -3148,7 +2898,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.LABEL]: 'Time label Updated',
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.TIME,
-            ...adminFieldPermissions,
           },
           [dateTimeFieldName]: {
             [constants.LABEL]: 'DateTime label Updated',
@@ -3159,7 +2908,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.COMPLIANCE_GROUP]: 'GDPR',
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.DATETIME,
-            ...adminFieldPermissions,
           },
           [picklistFieldName]: {
             [constants.LABEL]: 'Picklist label Updated',
@@ -3212,7 +2960,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.FIELD_ANNOTATIONS.UNIQUE]: false,
             [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.EMAIL,
-            ...adminFieldPermissions,
           },
           [locationFieldName]: {
             [constants.LABEL]: 'Location label Updated',
@@ -3230,13 +2977,11 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.FIELD_ANNOTATIONS.PRECISION]: 8,
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.PERCENT,
-            ...adminFieldPermissions,
           },
           [phoneFieldName]: {
             [constants.LABEL]: 'Phone label Updated',
             [CORE_ANNOTATIONS.REQUIRED]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.PHONE,
-            ...adminFieldPermissions,
           },
           [longTextAreaFieldName]: {
             [constants.LABEL]: 'LongTextArea label Updated',
@@ -3295,7 +3040,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.FIELD_ANNOTATIONS.EXTERNAL_ID]: false,
             [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.TEXT,
-            ...adminFieldPermissions,
           },
           [checkboxFieldName]: {
             [constants.LABEL]: 'Checkbox label Updated',
@@ -3303,7 +3047,6 @@ describe('Salesforce adapter E2E with real account', () => {
             [constants.HELP_TEXT]: 'Checkbox help updated',
             [constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]: false,
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.CHECKBOX,
-            ...adminFieldPermissions,
           },
           [globalPicklistFieldName]: {
             [constants.LABEL]: 'GlobalPicklist label Updated',
@@ -3334,7 +3077,6 @@ describe('Salesforce adapter E2E with real account', () => {
               }],
             },
             [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.LOOKUP,
-            ...adminFieldPermissions,
           },
           [masterDetailFieldName]: {
             [constants.LABEL]: 'MasterDetail label Updated',
@@ -3412,9 +3154,8 @@ describe('Salesforce adapter E2E with real account', () => {
           ):
             void => {
             const field = fields[name]
-            const annotations = expectedAnnotations ?? fieldNamesToAnnotations[name]
             expect(field[INSTANCE_TYPE_FIELD]).toEqual(expectedType)
-            expect(field).toEqual(_.omit(annotations, FIELD_LEVEL_SECURITY_ANNOTATION))
+            expect(field).toEqual(expectedAnnotations ?? fieldNamesToAnnotations[name])
           }
 
           it('currency', async () => {
@@ -3564,7 +3305,6 @@ describe('Salesforce adapter E2E with real account', () => {
               [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: 'Opportunity.AccountId',
               [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'min',
               [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY,
-              ...adminFieldPermissions,
             }
             const account = (findElements(result, 'Account') as ObjectType[])
               .find(a => a.fields[fetchedRollupSummaryFieldName]) as ObjectType
@@ -3588,7 +3328,7 @@ describe('Salesforce adapter E2E with real account', () => {
             expect(Object.assign(
               transformFieldAnnotations(fieldInfo, accountApiName),
               { [INSTANCE_TYPE_FIELD]: constants.FIELD_TYPE_NAMES.ROLLUP_SUMMARY }
-            )).toEqual(_.omit(annotations, [FIELD_LEVEL_SECURITY_ANNOTATION, constants.API_NAME]))
+            )).toEqual(_.omit(annotations, constants.API_NAME))
           })
         })
       })
@@ -3622,10 +3362,6 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.API_NAME]: lookupFieldApiFullName,
           [constants.LABEL]: fieldName,
           [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
-          [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-            editable: [ADMIN],
-            readable: [ADMIN],
-          },
         },
       )
       if (await objectExists(constants.CUSTOM_OBJECT, customObjectName)) {
@@ -3664,10 +3400,6 @@ describe('Salesforce adapter E2E with real account', () => {
                 [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
                 [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id' },
             ],
-          },
-          [FIELD_LEVEL_SECURITY_ANNOTATION]: {
-            editable: [ADMIN],
-            readable: [ADMIN],
           },
         },
       )

@@ -29,7 +29,7 @@ import { DeployCommand } from '../../src/commands/deploy'
 import { command as preview } from '../../src/commands/preview'
 import { command as servicesCommand } from '../../src/commands/services'
 
-export type Pair = [string, string]
+export type ReplacementPair = [string | RegExp, string]
 
 const services = ['salesforce']
 
@@ -44,7 +44,8 @@ export const runSalesforceLogin = async (workspaceDir: string): Promise<void> =>
     .execute()
 }
 
-export const editBlueprint = async (filename: string, replacements: Pair[]): Promise<void> => {
+export const editBlueprint = async (filename: string, replacements: ReplacementPair[]):
+  Promise<void> => {
   let fileAsString = await file.readTextFile(filename)
   replacements.forEach(pair => {
     fileAsString = fileAsString.replace(pair[0], pair[1])

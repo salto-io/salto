@@ -16,18 +16,16 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Element, getChangeElement, TransformReferenceFunc,
+  getChangeElement, TransformReferenceFunc,
   isReferenceExpression, ChangeDataType, INSTANCE_ANNOTATIONS, Change, DependencyChanger,
   ChangeEntry, DependencyChange, addReferenceDependency, addParentDependency, isDependentAction,
   transformElement,
 } from '@salto-io/adapter-api'
 
-const getAllReferencedIds = (elem: Element): Set<string> => {
+const getAllReferencedIds = (elem: ChangeDataType): Set<string> => {
   const allReferencedIds = new Set<string>()
   const transformCallback: TransformReferenceFunc = val => {
-    if (isReferenceExpression(val)) {
-      allReferencedIds.add(val.elemId.getFullName())
-    }
+    allReferencedIds.add(val.elemId.getFullName())
     return val
   }
 

@@ -18,64 +18,116 @@
 import os from 'os'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
-import { exists, writeFile, readTextFile, mkdirp } from './file'
+import {
+  CORE_ANNOTATIONS, BuiltinTypes,
+  Field, ObjectType, ElemID, InstanceElement,
+} from '@salto-io/adapter-api'
+import { replaceContents, exists, mkdirp, readFile } from './file'
 import { TelemetryConfig } from './telemetry'
+import { dumpElements } from './parser/dump'
+import { parse } from './parser/parse'
+
+class AppConfigParseError extends Error {
+  constructor() {
+    super('failed to parse config file')
+  }
+}
 
 const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
+const GLOBAL_CONFIG_DIR = 'salto.config'
+const CONFIG_FILENAME = 'config.bp'
 export const SALTO_HOME_VAR = 'SALTO_HOME'
 
 export const getSaltoHome = (): string =>
   process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
 
-const globalConfigDirSuffix = 'salto.config'
-const installationIDFilename = 'installation_id'
+const telemetryToken = (): string => (
+  process.env.SALTO_TELEMETRY_TOKEN || ''
+)
+
+const telemetryURL = (): string => (
+  process.env.SALTO_TELEMETRY_URL || ''
+)
+
+const telemetryDisabled = (): boolean => (
+  (process.env.SALTO_TELEMETRY_DISABLE !== undefined
+    && process.env.SALTO_TELEMETRY_DISABLE === '1') || telemetryURL() === ''
+)
+
+const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
+  url: telemetryURL(),
+  token: telemetryToken(),
+  enabled: !telemetryDisabled(),
+}
 
 const configHomeDir = (): string => (
-  path.join(getSaltoHome(), globalConfigDirSuffix)
-)
-const installationIDFullPath = (): string => (
-  path.join(configHomeDir(), installationIDFilename)
+  path.join(getSaltoHome(), GLOBAL_CONFIG_DIR)
 )
 
-const telemetryToken = process.env.SALTO_TELEMETRY_TOKEN || ''
+const configFullPath = (): string => path.join(configHomeDir(), CONFIG_FILENAME)
 
-const getTelemetryURL = (): string => (
-  process.env.SALTO_TELEMETRY_URL || 'https://telemetry.salto.io'
-)
-
-const getTelemetryEnabled = (): boolean => (
-  process.env.SALTO_TELEMETRY_DISABLE === undefined
-)
+const generateInstallationID = (): string => uuidv4()
 
 export type AppConfig = {
   installationID: string
   telemetry: TelemetryConfig
 }
 
-const loadInstallatioIDFromDisk = async (): Promise<string> => {
-  if (!await exists(installationIDFullPath())) {
-    throw Error('cannot find installation id file on disk')
-  }
+const saltoConfigElemID = new ElemID('salto')
+const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 
-  const installationID = await readTextFile(installationIDFullPath())
-  return Promise.resolve(installationID.trim())
+export const saltoAppConfigType = new ObjectType({
+  elemID: saltoConfigElemID,
+  fields: {
+    installationID: new Field(saltoConfigElemID, 'installationID', BuiltinTypes.STRING, requireAnno),
+    telemetry: new Field(saltoConfigElemID, 'telemetry', BuiltinTypes.JSON, requireAnno),
+  },
+  annotationTypes: {},
+  annotations: {},
+})
+
+const dumpConfig = async (config: AppConfig): Promise<void> => (
+  replaceContents(
+    configFullPath(),
+    dumpElements([new InstanceElement(
+      ElemID.CONFIG_NAME,
+      saltoAppConfigType,
+      {
+        installationID: config.installationID,
+        telemetry: {
+          enabled: config.telemetry.enabled,
+        },
+      }
+    )]),
+  )
+)
+
+const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
+  config.telemetry = {
+    token: telemetryToken(),
+    url: telemetryURL(),
+    enabled: telemetryDisabled() ? false : config.telemetry.enabled,
+  }
+  return config
+}
+const configFromBPFile = async (filepath: string): Promise<AppConfig> => {
+  const buf = await readFile(filepath)
+  const configInstance = parse(buf, filepath).elements.pop() as InstanceElement
+  if (!configInstance) throw new AppConfigParseError()
+
+  const saltoConfigInstance = configInstance.value as AppConfig
+
+  return saltoConfigInstance
 }
 
 export const configFromDisk = async (): Promise<AppConfig> => {
-  await mkdirp(configHomeDir())
-
-  if (!await exists(installationIDFullPath())) {
-    const installationID = uuidv4()
-    await writeFile(installationIDFullPath(), installationID)
+  if (!await exists(configFullPath())) {
+    await mkdirp(configHomeDir())
+    await dumpConfig({
+      installationID: generateInstallationID(),
+      telemetry: DEFAULT_TELEMETRY_CONFIG,
+    })
   }
-
-  const installationID = await loadInstallatioIDFromDisk()
-  return {
-    installationID,
-    telemetry: {
-      url: getTelemetryURL(),
-      enabled: getTelemetryEnabled(),
-      token: telemetryToken,
-    },
-  }
+  const bpConfig = await configFromBPFile(configFullPath())
+  return mergeConfigWithEnv(bpConfig)
 }

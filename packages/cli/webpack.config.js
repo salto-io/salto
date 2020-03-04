@@ -49,6 +49,7 @@ module.exports = {
   },
   plugins: [
     new webpack.EnvironmentPlugin({
+      // SALTO_TELEMETRY_TOKEN should be defined in the build system, i.e. circleci
       SALTO_TELEMETRY_TOKEN: 'dev',
       SALTO_TELEMETRY_DISABLE: '0',
       SALTO_TELEMETRY_URL: 'https://telemetry.salto.io',

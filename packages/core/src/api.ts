@@ -29,7 +29,7 @@ import { promises } from '@salto-io/lowerdash'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
 import {
-  adapterCreators, getAdaptersConfigType, getAdapters, getAdapterChangeValidators,
+  adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
   getAdapterDependencyChangers,
 } from './core/adapters'
 import { addServiceToConfig, loadConfig, currentEnvConfig } from './workspace/config'
@@ -256,12 +256,12 @@ export const addAdapter = async (
   workspaceDir: string,
   adapterName: string
 ): Promise<ObjectType> => {
-  const adapterConfig = getAdaptersConfigType([adapterName])[adapterName]
-  if (!adapterConfig) {
+  const adapterCredentials = getAdaptersCredentialsTypes([adapterName])[adapterName]
+  if (!adapterCredentials) {
     throw new Error('No adapter available for this service')
   }
   await addServiceToConfig(await loadConfig(workspaceDir), adapterName)
-  return adapterConfig
+  return adapterCredentials
 }
 
 export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }
@@ -269,7 +269,7 @@ export const getLoginStatuses = async (
   workspace: Workspace,
   adapterNames = currentEnvConfig(workspace.config).services,
 ): Promise<Record<string, LoginStatus>> => {
-  const logins = _.mapValues(getAdaptersConfigType(adapterNames),
+  const logins = _.mapValues(getAdaptersCredentialsTypes(adapterNames),
     async (config, adapter) =>
       ({
         configType: config,

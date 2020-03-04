@@ -108,9 +108,6 @@ export interface SalesforceAdapterParams {
   // Regular expressions for instances that we want to exclude from readMetadata
   instancesRegexBlacklist?: string[]
 
-  // Regular expressions for instances that we want to exclude from retrieve
-  retrieveRegexBlacklist?: string[]
-
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
   metadataTypeBlacklist?: string[]
@@ -162,13 +159,11 @@ type RetrieveMember = {
 export type SalesforceConfig = {
   metadataTypesBlacklist?: string[]
   instancesRegexBlacklist?: string[]
-  retrieveRegexBlacklist?: string[]
 }
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private instancesRegexBlacklist: RegExp[]
-  private retrieveRegexBlacklist: RegExp[]
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
@@ -177,7 +172,6 @@ export default class SalesforceAdapter {
   private filterCreators: FilterCreator[]
   private client: SalesforceClient
   private systemFields: string[]
-  private config: SalesforceConfig
 
   public constructor({
     metadataTypeBlacklist = [
@@ -190,7 +184,6 @@ export default class SalesforceAdapter {
       'AssignmentRule', 'EscalationRule',
     ],
     instancesRegexBlacklist = [],
-    retrieveRegexBlacklist = [],
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
@@ -270,14 +263,10 @@ export default class SalesforceAdapter {
     ],
     config,
   }: SalesforceAdapterParams) {
-    this.config = config
     this.metadataTypeBlacklist = metadataTypeBlacklist
-      .concat(makeArray(this.config.metadataTypesBlacklist))
+      .concat(makeArray(config.metadataTypesBlacklist))
     this.instancesRegexBlacklist = instancesRegexBlacklist
-      .concat(makeArray(this.config.instancesRegexBlacklist))
-      .map(e => new RegExp(e))
-    this.retrieveRegexBlacklist = retrieveRegexBlacklist
-      .concat(makeArray(this.config.retrieveRegexBlacklist))
+      .concat(makeArray(config.instancesRegexBlacklist))
       .map(e => new RegExp(e))
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
@@ -784,7 +773,7 @@ export default class SalesforceAdapter {
       .map(([type, files]) => _(files)
         .map(constants.INSTANCE_FULL_NAME_FIELD)
         .uniq()
-        .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.retrieveRegexBlacklist))
+        .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexBlacklist))
         .map(name => ({ type, name }))
         .value())
       .flatten()

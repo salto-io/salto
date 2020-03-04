@@ -44,7 +44,7 @@ export interface Adapter {
 }
 
 export type AdapterCreatorOpts = {
-  credentials?: InstanceElement
+  credentials: InstanceElement
   config?: InstanceElement
   getElemIdFunc?: ElemIdGetter
 }

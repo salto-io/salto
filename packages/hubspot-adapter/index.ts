@@ -14,4 +14,4 @@
 * limitations under the License.
 */
 export { default } from './src/adapter'
-export { creator, credentialsType, configType } from './src/adapter_creator'
+export { creator } from './src/adapter_creator'

@@ -23,7 +23,7 @@ import {
 import { Plan, FetchChange, Workspace } from '@salto-io/core'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
-  formatShouldContinueWithWarning, formatCancelCommand, formatConfigHeader,
+  formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
   formatConfigFieldInput, formatShouldAbortWithValidationError,
 } from './formatter'
 import Prompts from './prompts'
@@ -126,7 +126,8 @@ export const getFieldInputType = (fieldType: TypeElement, fieldName: string): st
   return 'confirm'
 }
 
-export const getConfigFromUser = async (credentialsType: ObjectType): Promise<InstanceElement> => {
+export const getCredentialsFromUser = async (credentialsType: ObjectType):
+Promise<InstanceElement> => {
   const questions = Object.keys(credentialsType.fields).map(fieldName =>
     ({
       type: getFieldInputType(credentialsType.fields[fieldName].type, fieldName),
@@ -142,8 +143,8 @@ export const getConfigFromUser = async (credentialsType: ObjectType): Promise<In
 
 export const getConfigWithHeader = async (output: WriteStream, credentialsType: ObjectType):
   Promise<InstanceElement> => {
-  output.write(formatConfigHeader(credentialsType.elemID.adapter))
-  return getConfigFromUser(credentialsType)
+  output.write(formatCredentialsHeader(credentialsType.elemID.adapter))
+  return getCredentialsFromUser(credentialsType)
 }
 
 export const getEnvName = async (currentName = 'default'): Promise<string> => {

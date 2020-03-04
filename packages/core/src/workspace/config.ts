@@ -26,6 +26,7 @@ import { getSaltoHome } from '../app_config'
 
 const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
+const ADAPTERS_CONFIGS_DIR_NAME = 'adapters.config'
 const SALTO_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341'
 
 class NotAWorkspaceError extends Error {
@@ -112,7 +113,6 @@ export interface Config {
   name: string
   envs: Record<string, {baseDir: string; config: EnvConfig}>
   currentEnv: string
-  adaptersConfigLocation: string
 }
 
 type PartialConfig = Required<Pick<Config, 'uid' | 'name' | 'currentEnv'>> & {
@@ -133,7 +133,6 @@ const createDefaultWorkspaceConfig = (
     name,
     envs: {},
     currentEnv: '',
-    adaptersConfigLocation: path.join(baseDir, CONFIG_DIR_NAME, 'adaptersConfig'),
   }
 }
 
@@ -210,8 +209,8 @@ export const getConfigPath = (baseDir: string): string => (
   path.join(getConfigDir(baseDir), CONFIG_FILENAME)
 )
 
-export const getAdaptersConfigDir = (baseDir: string, adaptersConfigLocation: string): string => (
-  resolvePath(baseDir, adaptersConfigLocation)
+export const getAdaptersConfigDir = (baseDir: string): string => (
+  path.join(getConfigDir(baseDir), ADAPTERS_CONFIGS_DIR_NAME)
 )
 
 const parseConfig = (buffer: Buffer): PartialConfig => {

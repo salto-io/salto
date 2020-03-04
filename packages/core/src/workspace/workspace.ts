@@ -24,7 +24,7 @@ import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
   saltoConfigType, currentEnvConfig, getAdaptersConfigDir } from './config'
-import { adapterConfig, Config as AdapterConfig } from './adapter_config'
+import { adapterConfig, ConfigSource } from './config_source'
 import State from './state'
 import { localState } from './local/state'
 import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
@@ -104,10 +104,7 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
     throw new Error('Unknown active env')
   }
 
-  const adapterConfigDirLocation = getAdaptersConfigDir(
-    config.baseDir, config.adaptersConfigLocation,
-  )
-
+  const adapterConfigDirLocation = getAdaptersConfigDir(config.baseDir)
   const sources = {
     ..._.fromPairs(_.values(config.envs).map(env =>
       [
@@ -131,15 +128,13 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
 
 export class Workspace {
   readonly state: State
-  readonly adapterCredentials: AdapterConfig
-  readonly adapterConfig: AdapterConfig
+  readonly adapterCredentials: ConfigSource
+  readonly adapterConfig: ConfigSource
   private readonly blueprintsSource: BlueprintsSource
   private mergedStatePromise?: Promise<MergedState>
 
   constructor(public config: Config) {
-    const adapterConfigDirLocation = getAdaptersConfigDir(
-      config.baseDir, config.adaptersConfigLocation,
-    )
+    const adapterConfigDirLocation = getAdaptersConfigDir(config.baseDir)
     this.blueprintsSource = _.isEmpty(config.envs)
       ? loadBlueprintSource(config.baseDir, config.localStorage, [adapterConfigDirLocation])
       : loadMultiEnvSource(config)
@@ -147,9 +142,7 @@ export class Workspace {
     this.adapterCredentials = adapterConfig(
       localDirectoryStore(currentEnvConfig(config).credentialsLocation),
     )
-    this.adapterConfig = adapterConfig(
-      localDirectoryStore(getAdaptersConfigDir(config.baseDir, config.adaptersConfigLocation)),
-    )
+    this.adapterConfig = adapterConfig(localDirectoryStore(adapterConfigDirLocation))
   }
 
   static async init(

@@ -19,23 +19,22 @@ import { dumpElements } from '../parser/dump'
 import { BP_EXTENSION } from './blueprints/blueprints_source'
 import { DirectoryStore } from './dir_store'
 
-export interface Config {
-  get(adapter: string): Promise<InstanceElement | undefined>
-  set(adapter: string, config: Readonly<InstanceElement>): Promise<void>
+export interface ConfigSource {
+  get(name: string): Promise<InstanceElement | undefined>
+  set(name: string, config: Readonly<InstanceElement>): Promise<void>
 }
 
 export const adapterConfig = (
   dirStore: DirectoryStore,
-): Config => {
+): ConfigSource => {
   const filename = (adapter: string): string => adapter.concat(BP_EXTENSION)
 
   return {
     get: async (adapter: string): Promise<InstanceElement | undefined> => {
       const bp = await dirStore.get(filename(adapter))
-      if (bp) {
-        return parse(Buffer.from(bp.buffer), bp.filename).elements.pop() as InstanceElement
-      }
-      return undefined
+      return bp
+        ? parse(Buffer.from(bp.buffer), bp.filename).elements.pop() as InstanceElement
+        : undefined
     },
 
     set: async (adapter: string, config: InstanceElement): Promise<void> => {

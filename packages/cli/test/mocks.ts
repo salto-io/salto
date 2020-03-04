@@ -97,7 +97,7 @@ export const cli = async ({
 
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const createMockGetConfigFromUser = (value: Values) =>
+export const createMockgetCredentialsFromUser = (value: Values) =>
   jest.fn(async (configObjType: ObjectType): Promise<InstanceElement> =>
     new InstanceElement(ElemID.CONFIG_NAME, configObjType, value))
 
@@ -199,7 +199,6 @@ export const mockLoadConfig = (workspaceDir: string): Config =>
     baseDir: workspaceDir,
     name: 'mock-ws',
     localStorage: '',
-    adaptersConfigLocation: '/adaptersConfig',
     envs: {
       active: {
         baseDir: 'active',

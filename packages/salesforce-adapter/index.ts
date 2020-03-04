@@ -19,7 +19,7 @@ import testCredentials from './e2e_test/credentials'
 import { Credentials } from './src/client/client'
 
 export { default } from './src/adapter'
-export { creator, credentialsType, configType } from './src/adapter_creator'
+export { creator } from './src/adapter_creator'
 export { changeValidator } from './src/change_validator'
 export { default as SalesforceClient } from './src/client/client'
 export { Credentials } from './src/client/client'

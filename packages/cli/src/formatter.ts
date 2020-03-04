@@ -422,8 +422,8 @@ export const formatChangesSummary = (changes: number, approved: number): string 
 export const formatConfigFieldInput = (fieldName: string, message: string): string =>
   `${message ?? _.capitalize(fieldName)}:`
 
-export const formatConfigHeader = (adapterName: string): string => [
-  Prompts.CONFIG_HEADER(_.capitalize(adapterName)),
+export const formatCredentialsHeader = (adapterName: string): string => [
+  Prompts.CREDENTIALS_HEADER(_.capitalize(adapterName)),
   emptyLine(),
 ].join('\n')
 

@@ -16,7 +16,7 @@
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser/dump'
-import { adapterConfig } from '../../src/workspace/adapter_config'
+import { adapterConfig } from '../../src/workspace/config_source'
 
 jest.mock('../../../src/workspace/local/dir_store')
 describe('configs', () => {

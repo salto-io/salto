@@ -65,8 +65,7 @@ describe('SalesforceAdapter creator', () => {
       creator.configType as ObjectType,
       {
         metadataTypesBlacklist: ['test1'],
-        retrieveRegexBlacklist: ['test2'],
-        instancesRegexBlacklist: ['test3'],
+        instancesRegexBlacklist: ['test3', 'test2'],
         notExist: ['not exist'],
       }
     )
@@ -90,8 +89,7 @@ describe('SalesforceAdapter creator', () => {
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           metadataTypesBlacklist: ['test1'],
-          retrieveRegexBlacklist: ['test2'],
-          instancesRegexBlacklist: ['test3'],
+          instancesRegexBlacklist: ['test3', 'test2'],
         },
         client: expect.any(Object),
         getElemIdFunc: undefined,

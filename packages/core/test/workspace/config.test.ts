@@ -44,7 +44,6 @@ describe('configuration dir location', () => {
 describe('load proper configuration', () => {
   const defaultUUID = '56816ffc-1457-55da-bd68-6e02c87f908f'
   const defaultLocalStorageName = `${path.basename(defaultsWorkspaceDir)}-${defaultUUID}`
-  const defaultAdpatersConfigLocation = path.join(defaultsWorkspaceDir, 'salto.config', 'adaptersConfig')
 
   it('should load a full config', async () => {
     const config = await loadConfig(fullWorkspaceDir)
@@ -55,7 +54,6 @@ describe('load proper configuration', () => {
         baseDir: fullWorkspaceDir,
         uid: 'uid',
         currentEnv: 'default',
-        adaptersConfigLocation: '/configs',
         envs: {
           default: {
             baseDir: 'default',
@@ -79,7 +77,6 @@ describe('load proper configuration', () => {
         baseDir: defaultsWorkspaceDir,
         uid: defaultUUID,
         currentEnv: 'default',
-        adaptersConfigLocation: defaultAdpatersConfigLocation,
         envs: {
           default: {
             baseDir: 'default',
@@ -105,7 +102,6 @@ describe('load proper configuration', () => {
         baseDir: defaultsWorkspaceDir,
         uid: defaultUUID,
         currentEnv: 'default',
-        adaptersConfigLocation: defaultAdpatersConfigLocation,
         envs: {
           default: {
             baseDir: 'default',
@@ -128,7 +124,6 @@ describe('update environment settings', () => {
     baseDir: fullWorkspaceDir,
     stateLocation: '/states/test.bpc',
     credentialsLocation: '/creds/default',
-    adaptersConfigLocation: '/adapterConfigs',
     services: [],
     uid: 'uid',
     currentEnv: 'default',

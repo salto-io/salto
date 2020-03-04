@@ -26,11 +26,10 @@ import SalesforceAdapter, { SalesforceConfig } from './adapter'
 const { makeArray } = collections.array
 const log = logger(module)
 
-const credentialsID = new ElemID('salesforce', 'credentials')
-const configID = new ElemID('salesforce', 'config')
+const configID = new ElemID('salesforce')
 
-export const credentialsType = new ObjectType({
-  elemID: credentialsID,
+const credentialsType = new ObjectType({
+  elemID: configID,
   fields: {
     username: new Field(configID, 'username', BuiltinTypes.STRING),
     password: new Field(configID, 'password', BuiltinTypes.STRING),
@@ -40,7 +39,7 @@ export const credentialsType = new ObjectType({
   },
 })
 
-export const configType = new ObjectType({
+const configType = new ObjectType({
   elemID: configID,
   fields: {
     metadataTypesBlacklist: new Field(
@@ -48,9 +47,6 @@ export const configType = new ObjectType({
     ),
     instancesRegexBlacklist: new Field(
       configID, 'instancesRegexBlacklist', BuiltinTypes.STRING, {}, true,
-    ),
-    retrieveRegexBlacklist: new Field(
-      configID, 'retrieveRegexBlacklist', BuiltinTypes.STRING, {}, true,
     ),
   },
 })
@@ -67,7 +63,6 @@ SalesforceConfig => {
   const adapterConfig = {
     metadataTypesBlacklist: makeArray(config?.value?.metadataTypesBlacklist),
     instancesRegexBlacklist: makeArray(config?.value?.instancesRegexBlacklist),
-    retrieveRegexBlacklist: makeArray(config?.value?.retrieveRegexBlacklist),
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))
@@ -80,7 +75,7 @@ const clientFromCredentials = (credentials: InstanceElement): SalesforceClient =
 
 export const creator: AdapterCreator = {
   create: opts => new SalesforceAdapter({
-    client: clientFromCredentials(opts.credentials as InstanceElement),
+    client: clientFromCredentials(opts.credentials),
     config: adapterConfigFromConfig(opts.config),
     getElemIdFunc: opts.getElemIdFunc,
   }),

@@ -15,24 +15,24 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { creator } from '@salto-io/salesforce-adapter'
-import { initAdapters, getAdaptersConfigType } from '../../../src/core/adapters/adapters'
+import { initAdapters, getAdaptersCredentialsTypes } from '../../../src/core/adapters/adapters'
 
 describe('adapters.ts', () => {
   const { credentialsType } = creator
   const services = ['salesforce']
 
   describe('run get adapters config statuses', () => {
-    let configs: Record<string, ObjectType>
+    let credentials: Record<string, ObjectType>
 
     it('should return config for defined adapter', () => {
-      configs = getAdaptersConfigType(services)
-      expect(configs.salesforce).toEqual(credentialsType)
+      credentials = getAdaptersCredentialsTypes(services)
+      expect(credentials.salesforce).toEqual(credentialsType)
     })
 
     it('should return undefined for non defined adapter', () => {
-      configs = getAdaptersConfigType(services.concat('fake'))
-      expect(configs.salesforce).toEqual(credentialsType)
-      expect(configs.fake).toBeUndefined()
+      credentials = getAdaptersCredentialsTypes(services.concat('fake'))
+      expect(credentials.salesforce).toEqual(credentialsType)
+      expect(credentials.fake).toBeUndefined()
     })
   })
 
@@ -52,7 +52,10 @@ describe('adapters.ts', () => {
   })
 
   it('should throw error when no proper config exists', async () => {
-    expect(() => initAdapters({ [services[0]]: {} }))
+    const credentials: InstanceElement | undefined = undefined
+    expect(() => initAdapters(
+      { [services[0]]: { credentials: (credentials as unknown as InstanceElement) } }
+    ))
       .toThrow()
   })
 })

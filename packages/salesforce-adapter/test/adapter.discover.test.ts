@@ -40,8 +40,7 @@ describe('SalesforceAdapter fetch', () => {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
         metadataTypeBlacklist: ['Test1', 'Ignored1'],
-        instancesRegexBlacklist: ['Test2.instance1'],
-        retrieveRegexBlacklist: ['Blacklist$'],
+        instancesRegexBlacklist: ['Test2.instance1', 'Blacklist$'],
       },
     }))
   })

@@ -20,21 +20,13 @@ import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
 import { changeValidator } from './change_validator'
 
-const credentialsID = new ElemID('hubspot', 'credentials')
-const configID = new ElemID('hubspot', 'config')
+const configID = new ElemID('hubspot')
 
-export const credentialsType = new ObjectType({
-  elemID: credentialsID,
+const credentialsType = new ObjectType({
+  elemID: configID,
   fields: {
     apiKey: new Field(configID, 'apiKey', BuiltinTypes.STRING),
   },
-  annotationTypes: {},
-  annotations: {},
-})
-
-export const configType = new ObjectType({
-  elemID: configID,
-  fields: {},
   annotationTypes: {},
   annotations: {},
 })
@@ -50,10 +42,9 @@ const clientFromCredentials = (credentials: InstanceElement): HubspotClient =>
 
 export const creator: AdapterCreator = {
   create: opts => new HubspotAdapter({
-    client: clientFromCredentials(opts.credentials as InstanceElement),
+    client: clientFromCredentials(opts.credentials),
   }),
   validateConfig: config => HubspotClient.validateCredentials(credentialsFromConfig(config)),
   credentialsType,
-  configType,
   changeValidator,
 }

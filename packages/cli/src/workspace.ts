@@ -25,6 +25,7 @@ import Prompts from './prompts'
 
 const log = logger(module)
 
+export const MAX_DETAIL_CHANGES_TO_LOG = 100
 const isError = (e: WorkspaceError<SaltoError>): boolean => (e.severity === 'Error')
 
 export type LoadWorkspaceResult = {
@@ -77,9 +78,14 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
 export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   changes: readonly FetchChange[], strict = false): Promise<boolean> => {
   if (changes.length > 0) {
-    log.info(`going to update workspace with ${changes.length} changes`)
     if (!await ws.isEmpty(true)) {
-      formatDetailedChanges([changes.map(c => c.change)]).split('\n').forEach(s => log.info(s))
+      log.info('going to update workspace with %d changes', changes.length)
+      if (changes.length > MAX_DETAIL_CHANGES_TO_LOG) {
+        log.info('going to log only %d changes', MAX_DETAIL_CHANGES_TO_LOG)
+      }
+      formatDetailedChanges([changes.slice(0, MAX_DETAIL_CHANGES_TO_LOG).map(c => c.change)])
+        .split('\n')
+        .forEach(s => log.info(s))
     }
 
     await ws.updateBlueprints(

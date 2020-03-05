@@ -22,7 +22,7 @@ import { NETSUITE } from './constants'
 
 const configID = new ElemID(NETSUITE)
 
-const configType = new ObjectType({
+const credentialsType = new ObjectType({
   elemID: configID,
   fields: {
     account: new Field(configID, 'account', BuiltinTypes.STRING),
@@ -35,26 +35,21 @@ const configType = new ObjectType({
   annotations: {},
 })
 
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
-  account: config.value.account,
-  consumerKey: config.value.consumerKey,
-  consumerSecret: config.value.consumerSecret,
-  tokenId: config.value.tokenId,
-  tokenSecret: config.value.tokenSecret,
-})
+const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
+  credentials.value as Credentials
 
-const clientFromConfig = (config: InstanceElement): NetsuiteClient =>
+const clientFromCredentials = (credentials: InstanceElement): NetsuiteClient =>
   new NetsuiteClient({
-    credentials: credentialsFromConfig(config),
+    credentials: netsuiteCredentialsFromCredentials(credentials),
   })
 
 export const creator: AdapterCreator = {
-  create: ({ config }) => new NetsuiteAdapter({
-    client: clientFromConfig(config),
+  create: opts => new NetsuiteAdapter({
+    client: clientFromCredentials(opts.credentials),
   }),
   validateConfig: config => {
-    const credentials = credentialsFromConfig(config)
+    const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)
   },
-  configType,
+  credentialsType,
 }

@@ -20,9 +20,9 @@ import NetsuiteClient from '../src/client/client'
 jest.mock('../src/client/client')
 
 describe('NetsuiteAdapter creator', () => {
-  const config = new InstanceElement(
+  const credentials = new InstanceElement(
     ElemID.CONFIG_NAME,
-    creator.configType,
+    creator.credentialsType,
     {
       account: '123',
       consumerKey: 'aaa',
@@ -33,20 +33,20 @@ describe('NetsuiteAdapter creator', () => {
   )
   describe('validateConfig', () => {
     beforeEach(() => {
-      creator.validateConfig(config)
+      creator.validateConfig(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', async () => {
       // await creator.validateConfig(config)
-      expect(NetsuiteClient.validateCredentials).toHaveBeenCalledWith(config.value)
+      expect(NetsuiteClient.validateCredentials).toHaveBeenCalledWith(credentials.value)
     })
   })
 
   describe('client creation', () => {
     it('should create the client correctly', () => {
-      creator.create({ config })
+      creator.create({ credentials })
       expect(NetsuiteClient).toHaveBeenCalledWith({
-        credentials: config.value,
+        credentials: credentials.value,
       })
     })
   })

@@ -67,8 +67,6 @@ export const changeValidator = {
     if (!isInstanceElement(after)) {
       return []
     }
-    // eslint-disable-next-line no-console
-    console.log('calling getFormInstanceFieldErrorsFromAfter now!!!!')
     return getFormInstanceFieldErrorsFromAfter(after)
   },
   onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> => {

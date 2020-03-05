@@ -25,6 +25,8 @@ const log = logger(module)
 const MAX_EVENTS_PER_REQUEST = 20
 const EVENTS_API_PATH = '/v1/events'
 const EVENTS_FLUSH_INTERVAL = 1000
+const EVENT_NAME_SEPARATOR = '.'
+export const DEFAULT_EVENT_NAME_PREFIX = 'salto'
 
 export type TelemetryConfig = {
   url: string
@@ -93,12 +95,14 @@ export type Telemetry = {
 
 export const telemetrySender = (
   config: TelemetryConfig,
-  tags: RequiredTags & Tags
+  tags: RequiredTags & Tags,
+  eventNamePrefix = DEFAULT_EVENT_NAME_PREFIX
 ): Telemetry => {
   const newEvents = [] as Array<TelemetryEvent>
   let queuedEvents = [] as Array<TelemetryEvent>
   const enabled = config.enabled || false
   const flushInterval = config.flushInterval ? config.flushInterval : EVENTS_FLUSH_INTERVAL
+  const namePrefix = eventNamePrefix
   let httpRequestTimeout = axios.defaults.timeout
   let timer = {} as NodeJS.Timer
   let stopped = false
@@ -117,6 +121,10 @@ export const telemetrySender = (
 
   const transformTags = (extraTags: Tags): Tags => (
     _({ ...commonTags, ...extraTags }).mapKeys((_v, k) => _.snakeCase(k)).value()
+  )
+
+  const transformName = (eventName: string): string => (
+    [namePrefix, eventName].join(EVENT_NAME_SEPARATOR)
   )
 
   const flush = async (): Promise<void> => {
@@ -154,7 +162,7 @@ export const telemetrySender = (
 
   const sendCountEvent = (name: string, value: number, extraTags: Tags = {}): void => {
     const newEvent = {
-      name,
+      name: transformName(name),
       value,
       tags: transformTags(extraTags),
       type: EVENT_TYPES.COUNTER,
@@ -169,7 +177,7 @@ export const telemetrySender = (
       return
     }
     const newEvent = {
-      name,
+      name: transformName(name),
       value: stackArray,
       tags: transformTags(extraTags),
       type: EVENT_TYPES.STACK,

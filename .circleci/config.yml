@@ -187,17 +187,7 @@ jobs:
 
       - run:
           name: publish to NPM if version changed
-          command: |
-            set -euo pipefail
-            CURRENT_VERSION="$(jq -r .version < lerna.json)"
-            PREV_VERSION="$(git show << pipeline.git.base_revision >>:lerna.json | jq -r .version)"
-            if [ "$CURRENT_VERSION" != "$PREV_VERSION" ]; then
-              echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
-              yarn lerna-publish -y --ignore-scripts
-              VERSION_TAG="v${CURRENT_VERSION}""
-              git tag $VERSION_TAG
-              git push origin $VERSION_TAG
-            fi
+          command: ./circleci/scripts/publish_to_npm_if_version_changed.sh << pipeline.git.base_revision >>
 
   e2e_test:
     docker:

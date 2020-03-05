@@ -74,7 +74,7 @@ export default class NetsuiteClient {
     }
   }
 
-  protected static requiresLogin = decorators.wrapMethodWith(
+  private static requiresLogin = decorators.wrapMethodWith(
     async function withLogin(
       this: NetsuiteClient,
       originalMethod: decorators.OriginalCall

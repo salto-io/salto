@@ -16,7 +16,8 @@
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
-import { ATTRIBUTES, NETSUITE } from '../src/constants'
+import { NETSUITE } from '../src/constants'
+import { recordInList } from './utils'
 
 describe('Adapter', () => {
   const { client } = createClient()
@@ -26,49 +27,7 @@ describe('Adapter', () => {
     it('should fetch all types and instances', async () => {
       client.listCustomizations = jest.fn().mockImplementation(type => {
         if (type === 'entityCustomField') {
-          return Promise.resolve([{
-            [ATTRIBUTES]: {
-              internalId: '19',
-              'xsi:type': 'setupCustom:EntityCustomField',
-            },
-            label: 'My Entity Custom Field Name',
-            owner: {
-              [ATTRIBUTES]: {
-                internalId: '-5',
-              },
-              name: 'Owner Name',
-            },
-            storeValue: true,
-            showInList: false,
-            globalSearch: false,
-            isParent: false,
-            subtab: {
-              [ATTRIBUTES]: {
-                internalId: '-4',
-              },
-              name: 'Main',
-            },
-            displayType: '_hidden',
-            isMandatory: false,
-            checkSpelling: false,
-            defaultChecked: false,
-            isFormula: false,
-            appliesToCustomer: true,
-            appliesToVendor: false,
-            appliesToEmployee: false,
-            appliesToOtherName: false,
-            appliesToContact: true,
-            appliesToPartner: false,
-            appliesToWebSite: false,
-            appliesToGroup: false,
-            availableExternally: false,
-            accessLevel: '_edit',
-            appliesToStatement: false,
-            searchLevel: '_edit',
-            appliesToPriceList: false,
-            fieldType: '_freeFormText',
-            scriptId: 'custentity_myScriptId',
-          }])
+          return Promise.resolve([recordInList])
         }
         return Promise.resolve([])
       })

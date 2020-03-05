@@ -15,10 +15,10 @@
 */
 import { Service as Connection } from 'node-suitetalk'
 
-const mockSuitetalkConnection: () => Connection = () => ({
+const mockSuiteTalkConnection: () => Connection = () => ({
   init: jest.fn().mockImplementation(() => Promise.resolve()),
   getList: jest.fn().mockImplementation(() => Promise.resolve()),
   getCustomizationId: jest.fn().mockImplementation(() => Promise.resolve()),
 })
 
-export default mockSuitetalkConnection
+export default mockSuiteTalkConnection

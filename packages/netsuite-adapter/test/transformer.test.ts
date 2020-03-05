@@ -36,7 +36,7 @@ describe('Transformer', () => {
 
   describe('createInstanceElement func', () => {
     let inst: InstanceElement
-    beforeEach(() => {
+    beforeAll(() => {
       inst = createInstanceElement(entityCustomFieldRecord,
         Types.customizationObjects.EntityCustomField)
       expect(inst).toBeDefined()
@@ -52,7 +52,6 @@ describe('Transformer', () => {
 
     it('should flatten ATTRIBUTES of inner value', async () => {
       const { owner } = inst.value
-      expect(owner).toBeDefined()
       expect(owner).not.toHaveProperty(ATTRIBUTES)
       expect(owner[INTERNAL_ID]).toEqual('222')
       expect(owner.name).toEqual('I am the owner')

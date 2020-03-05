@@ -16,6 +16,7 @@
 import createClient from './client'
 import { ATTRIBUTES } from '../../src/constants'
 import { NetsuiteRecord } from '../../src/client/client'
+import { recordInList } from '../utils'
 
 describe('Client', () => {
   const { connection, client } = createClient()
@@ -39,50 +40,6 @@ describe('Client', () => {
       },
     },
   })
-
-  const recordInList = {
-    [ATTRIBUTES]: {
-      internalId: '19',
-      'xsi:type': 'setupCustom:EntityCustomField',
-    },
-    label: 'My Entity Custom Field Name',
-    owner: {
-      [ATTRIBUTES]: {
-        internalId: '-5',
-      },
-      name: 'Owner Name',
-    },
-    storeValue: true,
-    showInList: false,
-    globalSearch: false,
-    isParent: false,
-    subtab: {
-      [ATTRIBUTES]: {
-        internalId: '-4',
-      },
-      name: 'Main',
-    },
-    displayType: '_hidden',
-    isMandatory: false,
-    checkSpelling: false,
-    defaultChecked: false,
-    isFormula: false,
-    appliesToCustomer: true,
-    appliesToVendor: false,
-    appliesToEmployee: false,
-    appliesToOtherName: false,
-    appliesToContact: true,
-    appliesToPartner: false,
-    appliesToWebSite: false,
-    appliesToGroup: false,
-    availableExternally: false,
-    accessLevel: '_edit',
-    appliesToStatement: false,
-    searchLevel: '_edit',
-    appliesToPriceList: false,
-    fieldType: '_freeFormText',
-    scriptId: 'custentity_myScriptId',
-  }
 
   connection.getList = jest.fn().mockReturnValue({
     readResponseList: {

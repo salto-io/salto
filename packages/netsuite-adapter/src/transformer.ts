@@ -32,7 +32,7 @@ const recordRefElemID = new ElemID(NETSUITE, 'RecordRef')
  * This is a static creation because Netsuite API supports only instances.
  */
 export class Types {
-  public static platformCoreSubtypes: Record<string, PrimitiveType> = {
+  private static platformCoreSubtypes: Record<string, PrimitiveType> = {
     RecordType: new PrimitiveType({
       elemID: new ElemID(NETSUITE, 'RecordType'),
       primitive: PrimitiveTypes.STRING,
@@ -235,7 +235,7 @@ export class Types {
     }),
   }
 
-  public static platformCoreObjects: Record<string, ObjectType> = {
+  private static platformCoreObjects: Record<string, ObjectType> = {
     RecordRef: new ObjectType({
       elemID: recordRefElemID,
       fields: {

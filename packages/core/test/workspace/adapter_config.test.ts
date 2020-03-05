@@ -16,7 +16,7 @@
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser/dump'
-import { adapterConfig } from '../../src/workspace/config_source'
+import { configSource } from '../../src/workspace/config_source'
 
 jest.mock('../../../src/workspace/local/dir_store')
 describe('configs', () => {
@@ -51,20 +51,20 @@ describe('configs', () => {
   it('should set new adapter config', async () => {
     mockSet.mockResolvedValueOnce(true)
     mockFlush.mockResolvedValue(true)
-    await adapterConfig(mockedDirStore).set(adapter, config)
+    await configSource(mockedDirStore).set(adapter, config)
     expect(mockSet).toHaveBeenCalledWith(dumpedConfig)
     expect(mockFlush).toHaveBeenCalledTimes(1)
   })
 
   it('should get adapter config if exists', async () => {
     mockGet.mockResolvedValueOnce(dumpedConfig)
-    const fromConfigStore = await adapterConfig(mockedDirStore).get(adapter)
+    const fromConfigStore = await configSource(mockedDirStore).get(adapter)
     expect(fromConfigStore?.value).toEqual(config.value)
   })
 
   it('should not fail if adapter config not exists', async () => {
     mockGet.mockResolvedValueOnce(undefined)
-    const fromConfigStore = await adapterConfig(mockedDirStore).get(adapter)
+    const fromConfigStore = await configSource(mockedDirStore).get(adapter)
     expect(fromConfigStore).toBeUndefined()
   })
 })

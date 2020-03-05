@@ -17,7 +17,12 @@
 
 import nock from 'nock'
 import _ from 'lodash'
-import { telemetrySender, EVENT_TYPES, TelemetryEvent, StackEvent, Tags, isCountEvent, isStackEvent } from '../src/telemetry'
+import {
+  telemetrySender, EVENT_TYPES,
+  TelemetryEvent, StackEvent,
+  Tags, isCountEvent, isStackEvent,
+  DEFAULT_EVENT_NAME_PREFIX as prefix,
+} from '../src/telemetry'
 
 describe('telemetry', () => {
   const eventByName = (
@@ -50,13 +55,22 @@ describe('telemetry', () => {
     nock.cleanAll()
   })
 
+  it('should use custom prefix for event names', async () => {
+    const telemetry = telemetrySender(config, requiredTags, 'testing')
+    expect(telemetry.enabled).toBeTruthy()
+    telemetry.sendCountEvent('ev1', 1, {})
+    await telemetry.stop(1)
+
+    expect(reqEvents[0].name).toEqual('testing.ev1')
+  })
+
   it('should send events when enabled', async () => {
     const telemetry = telemetrySender(config, requiredTags)
     expect(telemetry.enabled).toBeTruthy()
     telemetry.sendCountEvent('ev1', 1, {})
     await telemetry.stop(1)
 
-    expect(reqEvents[0].name).toEqual('ev1')
+    expect(reqEvents[0].name).toEqual(`${prefix}.ev1`)
     expect(reqEvents[0].type).toEqual(EVENT_TYPES.COUNTER)
     expect(reqEvents[0].value).toEqual(1)
   })
@@ -100,7 +114,7 @@ describe('telemetry', () => {
     await telemetry.stop(1)
 
     expect(reqEvents.length).toEqual(1)
-    expect(reqEvents[0].name).toEqual('err_ev')
+    expect(reqEvents[0].name).toEqual(`${prefix}.err_ev`)
     expect(reqEvents[0].type).toEqual(EVENT_TYPES.STACK)
 
     const stackEvent = reqEvents[0] as StackEvent
@@ -117,13 +131,13 @@ describe('telemetry', () => {
     await telemetry.stop(1)
 
     expect(reqEvents.length).toEqual(4)
-    const stackEvent1 = eventByName('err_ev_1', reqEvents) as StackEvent
-    const stackEvent2 = eventByName('err_ev_2', reqEvents) as StackEvent
+    const stackEvent1 = eventByName(`${prefix}.err_ev_1`, reqEvents) as StackEvent
+    const stackEvent2 = eventByName(`${prefix}.err_ev_2`, reqEvents) as StackEvent
 
     expect(stackEvent1.value[0]).toMatch(/at.*/)
     expect(stackEvent2.value[0]).toMatch(/at.*/)
-    expect(eventByName('count_ev_1', reqEvents)?.value).toEqual(1)
-    expect(eventByName('count_ev_2', reqEvents)?.value).toEqual(2)
+    expect(eventByName(`${prefix}.count_ev_1`, reqEvents)?.value).toEqual(1)
+    expect(eventByName(`${prefix}.count_ev_2`, reqEvents)?.value).toEqual(2)
   })
 
   it('should send events with custom tags', async () => {
@@ -134,13 +148,13 @@ describe('telemetry', () => {
     await telemetry.stop(1)
 
     expect(reqEvents.length).toEqual(2)
-    const eventCustomTags = eventByName('ev_with_custom_tags', reqEvents)?.tags || {}
+    const eventCustomTags = eventByName(`${prefix}.ev_with_custom_tags`, reqEvents)?.tags || {}
     expect(eventCustomTags.sometag).toEqual(customTags.sometag)
     expect(eventCustomTags.somenumbertag).toEqual(customTags.somenumbertag)
     expect(eventCustomTags.should_be_snake).toEqual(customTags.shouldBeSnake)
     expect(eventCustomTags.workspace_id).toEqual(customTags.workspaceID)
 
-    const noCustomTags = eventByName('ev_without_custom_tags', reqEvents)?.tags || {}
+    const noCustomTags = eventByName(`${prefix}.ev_without_custom_tags`, reqEvents)?.tags || {}
     expect(Object.keys(noCustomTags).length)
       .toEqual(Object.keys(eventCustomTags).length - Object.keys(customTags).length)
     expect(noCustomTags.app).toEqual(app)
@@ -187,10 +201,10 @@ describe('telemetry', () => {
     telemetry.sendStackEvent('ev_err', new Error('err'))
     await telemetry.stop(1)
 
-    const shouldBeCountEvent = eventByName('ev_count', reqEvents) as TelemetryEvent
+    const shouldBeCountEvent = eventByName(`${prefix}.ev_count`, reqEvents) as TelemetryEvent
     expect(isCountEvent(shouldBeCountEvent)).toBeTruthy()
 
-    const shouldNotBeCountEvent = eventByName('ev_err', reqEvents) as TelemetryEvent
+    const shouldNotBeCountEvent = eventByName(`${prefix}.ev_err`, reqEvents) as TelemetryEvent
     expect(isCountEvent(shouldNotBeCountEvent)).toBeFalsy()
 
     shouldBeCountEvent.value = ['a']
@@ -225,10 +239,10 @@ describe('telemetry', () => {
     telemetry.sendCountEvent('ev_count', 1)
     await telemetry.stop(1)
 
-    const shouldBeStackEvent = eventByName('ev_err', reqEvents) as TelemetryEvent
+    const shouldBeStackEvent = eventByName(`${prefix}.ev_err`, reqEvents) as TelemetryEvent
     expect(isStackEvent(shouldBeStackEvent)).toBeTruthy()
 
-    const shouldNotBeStackEvent = eventByName('ev_count', reqEvents) as TelemetryEvent
+    const shouldNotBeStackEvent = eventByName(`${prefix}.ev_count`, reqEvents) as TelemetryEvent
     expect(isStackEvent(shouldNotBeStackEvent)).toBeFalsy()
 
     shouldBeStackEvent.value = 1

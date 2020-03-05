@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isInstanceElement, InstanceElement, Element, ReferenceExpression, Values, Value } from '@salto-io/adapter-api'
+import {
+  isInstanceElement, InstanceElement, Element, ReferenceExpression, Values, Value,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import { formElemID, contactPropertyElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS } from '../constants'
@@ -31,11 +33,10 @@ const filterCreator: FilterCreator = () => ({
     const findContactProperty = (contactPropertyName: string): InstanceElement | undefined => {
       const isContactPropertyInstance = (instance: InstanceElement): boolean =>
         instance.type.elemID.isEqual(contactPropertyElemID)
-      const contactProperty = elements
+      return elements
         .filter(isInstanceElement)
         .filter(isContactPropertyInstance)
         .find(property => property.value.name === contactPropertyName)
-      return contactProperty
     }
 
     const createPropertyOverrides = (fieldValues: Values, contactPropValues: Values): Values =>
@@ -47,21 +48,21 @@ const filterCreator: FilterCreator = () => ({
         return !(contactPropValues && val === contactPropValues[fieldName])
       })
 
-    const tranformField = (field: Value, fieldsToRemove: Set<string>): void => {
+    const transformField = (field: Value, fieldsToRemove: Set<string>): void => {
       const property = findContactProperty(field.name)
       if (!property) {
         fieldsToRemove.add(field.name)
-        return
-      }
-      field.contactProperty = new ReferenceExpression(property.elemID)
-      field.contactPropertyOverrides = createPropertyOverrides(field, property.value)
-      const { dependentFieldFilters } = field
-      // Only available at top level so there's no endless recursion
-      if (dependentFieldFilters && dependentFieldFilters.length > 0) {
-        makeArray(dependentFieldFilters).forEach(dependentFieldFilter => {
-          const { dependentFormField } = dependentFieldFilter
-          tranformField(dependentFormField, fieldsToRemove)
-        })
+      } else {
+        field.contactProperty = new ReferenceExpression(property.elemID)
+        field.contactPropertyOverrides = createPropertyOverrides(field, property.value)
+        const { dependentFieldFilters } = field
+        // Only available at top level so there's no endless recursion
+        if (dependentFieldFilters && dependentFieldFilters.length > 0) {
+          makeArray(dependentFieldFilters).forEach(dependentFieldFilter => {
+            const { dependentFormField } = dependentFieldFilter
+            transformField(dependentFormField, fieldsToRemove)
+          })
+        }
       }
     }
 
@@ -71,7 +72,7 @@ const filterCreator: FilterCreator = () => ({
         const { fields } = formFieldGroup
         const fieldsToRemove = new Set<string>()
         makeArray(fields).forEach(field => {
-          tranformField(field, fieldsToRemove)
+          transformField(field, fieldsToRemove)
         })
         fieldsToRemove.forEach(name => { delete fields[name] })
       })

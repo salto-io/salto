@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
+import {
+  InstanceElement, ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { HUBSPOT } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
@@ -64,6 +66,11 @@ export const g1PropInstance = new InstanceElement(
   [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'g1'],
 )
 
+const g1PropReference = new ReferenceExpression(
+  g1PropInstance.elemID,
+  g1PropInstance
+)
+
 export const datePropInstance = new InstanceElement(
   'date_of_birth',
   Types.hubspotObjects.contactProperty,
@@ -77,6 +84,11 @@ export const datePropInstance = new InstanceElement(
     displayOrder: 1,
   },
   [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'date_of_birth'],
+)
+
+const datePropReference = new ReferenceExpression(
+  datePropInstance.elemID,
+  datePropInstance
 )
 
 export const valuePropInstance = new InstanceElement(
@@ -102,6 +114,11 @@ export const valuePropInstance = new InstanceElement(
   [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'value'],
 )
 
+const valuePropReference = new ReferenceExpression(
+  valuePropInstance.elemID,
+  valuePropInstance
+)
+
 export const beforeFormInstanceValuesMock = {
   name: 'beforeUpdateInstance',
   guid: 'guid',
@@ -117,7 +134,7 @@ export const beforeFormInstanceValuesMock = {
     {
       fields: [
         {
-          contactProperty: new ReferenceExpression(g1PropInstance.elemID, g1PropInstance),
+          contactProperty: g1PropReference,
           contactPropertyOverrides: {
             label: 'g1!',
           },
@@ -134,10 +151,7 @@ export const beforeFormInstanceValuesMock = {
                 },
               ],
               dependentFormField: {
-                contactProperty: new ReferenceExpression(
-                  datePropInstance.elemID,
-                  datePropInstance
-                ),
+                contactProperty: datePropReference,
                 contactPropertyOverrides: {
                   label: 'Date of birth override',
                   description: 'l',
@@ -157,10 +171,7 @@ export const beforeFormInstanceValuesMock = {
     {
       fields: [
         {
-          contactProperty: new ReferenceExpression(
-            valuePropInstance.elemID,
-            valuePropInstance
-          ),
+          contactProperty: valuePropReference,
           contactPropertyOverrides: {
             options: [
               {
@@ -197,7 +208,7 @@ export const afterFormInstanceValuesMock = {
     {
       fields: [
         {
-          contactProperty: new ReferenceExpression(g1PropInstance.elemID, g1PropInstance),
+          contactProperty: g1PropReference,
           contactPropertyOverrides: {
             label: 'g1!',
           },
@@ -214,10 +225,7 @@ export const afterFormInstanceValuesMock = {
                 },
               ],
               dependentFormField: {
-                contactProperty: new ReferenceExpression(
-                  datePropInstance.elemID,
-                  datePropInstance
-                ),
+                contactProperty: datePropReference,
                 contactPropertyOverrides: {
                   label: 'Date of birth override',
                   description: 'l',
@@ -237,10 +245,7 @@ export const afterFormInstanceValuesMock = {
     {
       fields: [
         {
-          contactProperty: new ReferenceExpression(
-            valuePropInstance.elemID,
-            valuePropInstance.value
-          ),
+          contactProperty: valuePropReference,
           contactPropertyOverrides: {
             options: [
               {

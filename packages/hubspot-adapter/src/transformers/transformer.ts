@@ -1828,12 +1828,8 @@ export const transformAfterUpdateOrAdd = async (
 }
 
 const mergeFormFieldAndContactProperty = (field: Value): Value => {
-  if (!field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]) {
-    return field
-  }
   const newField = _.clone(field)
-  const contactPropertyValues = _.clone(field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]
-    .resValue.value)
+  const contactPropertyValues = _.clone(field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY].value)
   const merged = _.pick(_.merge(
     contactPropertyValues,
     _.merge(newField, field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES])
@@ -1861,18 +1857,16 @@ export const createHubspotMetadataFromInstanceElement = (element: Readonly<Insta
       return JSON.parse(val)
     }
     if (isFormInstance(element) && key === FORM_FIELDS.FORMFIELDGROUPS) {
-      const newVal = val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
+      return val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
         (formFieldGroupVal, formFieldGroupKey) => {
           if (!(formFieldGroupKey === FORM_PROPERTY_GROUP_FIELDS.FIELDS)) {
             return formFieldGroupVal
           }
-          return formFieldGroupVal.map((innerField: Value) => {
-            const mergedVal = mergeFormFieldAndContactProperty(innerField)
-            return mergedVal
-          })
+          return formFieldGroupVal.map(
+            (innerField: Value) => mergeFormFieldAndContactProperty(innerField)
+          )
         })
       ))
-      return newVal
     }
     return val
   }) as HubspotMetadata)
@@ -1895,3 +1889,7 @@ export const createHubspotInstanceElement = (
     [HUBSPOT, 'records', typeName, instanceName],
   )
 }
+
+export const getLookUpName = (refValue: Value): Value =>
+  // TODO: find the correct field with Adam
+  refValue

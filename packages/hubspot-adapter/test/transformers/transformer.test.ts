@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { HUBSPOT } from '../../src/constants'
 import {
-  createInstanceName, transformAfterUpdateOrAdd, createHubspotMetadataFromInstanceElement, Types,
+  createInstanceName, transformAfterUpdateOrAdd, createHubspotMetadataFromInstanceElement,
+  Types, getLookUpName,
 } from '../../src/transformers/transformer'
 import {
   HubspotMetadata, Form,
@@ -236,7 +239,7 @@ describe('Transformer', () => {
         const fieldWithDependent = formMetadata.formFieldGroups[0].fields[0]
         expect(fieldWithDependent).toBeDefined()
 
-        // Overidden
+        // Overridden
         expect(fieldWithDependent.label).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
             .contactPropertyOverrides.label
@@ -262,19 +265,19 @@ describe('Transformer', () => {
         // From contactProperty
         expect(fieldWithDependent.name).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.resValue.value.name
+            .contactProperty.value.name
         )
         expect(fieldWithDependent.displayOrder).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.resValue.value.displayOrder
+            .contactProperty.value.displayOrder
         )
         expect(fieldWithDependent.description).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.resValue.value.description
+            .contactProperty.value.description
         )
         expect(fieldWithDependent.options).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.resValue.value.options
+            .contactProperty.value.options
         )
 
 
@@ -282,7 +285,7 @@ describe('Transformer', () => {
         const fieldWithOptions = formMetadata.formFieldGroups[1].fields[0]
         expect(fieldWithOptions).toBeDefined()
 
-        // Overidden
+        // Overridden
         expect(fieldWithOptions.options).toEqual(
           formInstance.value.formFieldGroups[1].fields[0]
             .contactPropertyOverrides.options
@@ -313,7 +316,7 @@ describe('Transformer', () => {
         const { dependentFormField } = dependentFieldFilters[0]
         expect(dependentFormField).toBeDefined()
 
-        // Overidden
+        // Overridden
         expect(dependentFormField.label).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
             .dependentFormField.contactPropertyOverrides.label
@@ -348,15 +351,15 @@ describe('Transformer', () => {
         // From contactProperty
         expect(dependentFormField.name).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-            .dependentFormField.contactProperty.resValue.value.name
+            .dependentFormField.contactProperty.value.name
         )
         expect(dependentFormField.displayOrder).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-            .dependentFormField.contactProperty.resValue.value.displayOrder
+            .dependentFormField.contactProperty.value.displayOrder
         )
         expect(dependentFormField.options).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-            .dependentFormField.contactProperty.resValue.value.options
+            .dependentFormField.contactProperty.value.options
         )
       })
     })
@@ -381,6 +384,22 @@ describe('Transformer', () => {
     it('should replace all spaces with underscore', async () => {
       const resp = createInstanceName(' name secondName ')
       expect(resp).toEqual('name_secondName')
+    })
+  })
+
+  describe('getLookUpName func', () => {
+    const instanceTestName = 'instance test name'
+    const mockGuid = 'id1234'
+    const mockId = 54321
+    const hubMetadataType = {
+      name: instanceTestName,
+      bla: false,
+      guid: mockGuid,
+      id: mockId,
+    } as HubspotMetadata
+
+    it('should replace all spaces with underscore', async () => {
+      expect(getLookUpName(hubMetadataType)).toEqual(hubMetadataType)
     })
   })
 })

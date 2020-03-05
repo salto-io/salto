@@ -106,6 +106,8 @@ export interface SalesforceAdapterParams {
   metadataAdditionalTypes?: string[]
 
   // Regular expressions for instances that we want to exclude from readMetadata
+  // The regular expression would be matched against instances of the format METADATA_TYPE.INSTANCE
+  // For example: CustomObject.Lead
   instancesRegexBlacklist?: string[]
 
   // Metadata types that we do not want to fetch even though they are returned as top level

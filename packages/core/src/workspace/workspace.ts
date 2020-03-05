@@ -23,7 +23,7 @@ import { validateElements, ValidationError } from '../core/validator'
 import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
-  saltoConfigType, currentEnvConfig, getAdaptersConfigDir } from './config'
+  saltoConfigType, currentEnvConfig, getAdaptersConfigDir, getConfigDir } from './config'
 import { adapterConfig, ConfigSource } from './config_source'
 import State from './state'
 import { localState } from './local/state'
@@ -89,7 +89,7 @@ const loadBlueprintSource = (
   const blueprintsStore = localDirectoryStore(
     sourceBaseDir,
     `*${BP_EXTENSION}`,
-    (dirParh: string) => !excludeDirs.includes(dirParh),
+    (dirParh: string) => !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirParh),
   )
   const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
   return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
@@ -104,7 +104,6 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
     throw new Error('Unknown active env')
   }
 
-  const adapterConfigDirLocation = getAdaptersConfigDir(config.baseDir)
   const sources = {
     ..._.fromPairs(_.values(config.envs).map(env =>
       [
@@ -112,7 +111,6 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
         loadBlueprintSource(
           path.resolve(config.baseDir, env.baseDir),
           path.resolve(config.localStorage, env.baseDir),
-          [adapterConfigDirLocation],
         ),
       ])),
     [COMMON_ENV_PREFIX]: loadBlueprintSource(
@@ -120,7 +118,6 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
       config.localStorage,
       _.values(_.values(config.envs)
         .map(env => path.join(config.baseDir, env.baseDir)))
-        .concat(adapterConfigDirLocation)
     ),
   }
   return multiEnvSource(sources, activeEnv.baseDir, COMMON_ENV_PREFIX)
@@ -134,15 +131,14 @@ export class Workspace {
   private mergedStatePromise?: Promise<MergedState>
 
   constructor(public config: Config) {
-    const adapterConfigDirLocation = getAdaptersConfigDir(config.baseDir)
     this.blueprintsSource = _.isEmpty(config.envs)
-      ? loadBlueprintSource(config.baseDir, config.localStorage, [adapterConfigDirLocation])
+      ? loadBlueprintSource(config.baseDir, config.localStorage)
       : loadMultiEnvSource(config)
     this.state = localState(currentEnvConfig(config).stateLocation)
     this.adapterCredentials = adapterConfig(
       localDirectoryStore(currentEnvConfig(config).credentialsLocation),
     )
-    this.adapterConfig = adapterConfig(localDirectoryStore(adapterConfigDirLocation))
+    this.adapterConfig = adapterConfig(localDirectoryStore(getAdaptersConfigDir(config.baseDir)))
   }
 
   static async init(

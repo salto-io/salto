@@ -26,7 +26,7 @@ import { getSaltoHome } from '../app_config'
 
 const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
-const ADAPTERS_CONFIGS_DIR_NAME = 'adapters.config'
+const ADAPTERS_CONFIGS_DIR_NAME = 'adapters'
 const SALTO_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341'
 
 class NotAWorkspaceError extends Error {

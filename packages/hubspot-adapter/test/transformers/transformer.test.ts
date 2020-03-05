@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { HUBSPOT } from '../../src/constants'
 import {
-  createInstanceName, transformAfterUpdateOrAdd, createHubspotMetadataFromInstanceElement, Types,
+  createInstanceName, transformAfterUpdateOrAdd, createHubspotMetadataFromInstanceElement,
+  Types, getLookUpName,
 } from '../../src/transformers/transformer'
 import {
   HubspotMetadata, Form,
@@ -381,6 +384,22 @@ describe('Transformer', () => {
     it('should replace all spaces with underscore', async () => {
       const resp = createInstanceName(' name secondName ')
       expect(resp).toEqual('name_secondName')
+    })
+  })
+
+  describe('getLookUpName func', () => {
+    const instanceTestName = 'instance test name'
+    const mockGuid = 'id1234'
+    const mockId = 54321
+    const hubMetadataType = {
+      name: instanceTestName,
+      bla: false,
+      guid: mockGuid,
+      id: mockId,
+    } as HubspotMetadata
+
+    it('should replace all spaces with underscore', async () => {
+      expect(getLookUpName(hubMetadataType)).toEqual(hubMetadataType)
     })
   })
 })

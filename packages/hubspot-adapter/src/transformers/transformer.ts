@@ -1828,9 +1828,6 @@ export const transformAfterUpdateOrAdd = async (
 }
 
 const mergeFormFieldAndContactProperty = (field: Value): Value => {
-  if (!field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]) {
-    return field
-  }
   const newField = _.clone(field)
   const contactPropertyValues = _.clone(field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY].value)
   const merged = _.pick(_.merge(

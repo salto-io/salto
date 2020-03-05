@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { HUBSPOT } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
@@ -117,7 +119,7 @@ export const beforeFormInstanceValuesMock = {
     {
       fields: [
         {
-          contactProperty: new ReferenceExpression(g1PropInstance.elemID, g1PropInstance),
+          contactProperty: g1PropInstance,
           contactPropertyOverrides: {
             label: 'g1!',
           },
@@ -134,10 +136,7 @@ export const beforeFormInstanceValuesMock = {
                 },
               ],
               dependentFormField: {
-                contactProperty: new ReferenceExpression(
-                  datePropInstance.elemID,
-                  datePropInstance
-                ),
+                contactProperty: datePropInstance,
                 contactPropertyOverrides: {
                   label: 'Date of birth override',
                   description: 'l',
@@ -157,10 +156,7 @@ export const beforeFormInstanceValuesMock = {
     {
       fields: [
         {
-          contactProperty: new ReferenceExpression(
-            valuePropInstance.elemID,
-            valuePropInstance
-          ),
+          contactProperty: valuePropInstance,
           contactPropertyOverrides: {
             options: [
               {

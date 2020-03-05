@@ -22,8 +22,9 @@ import { DetailedChange } from '../core/plan'
 import { validateElements, ValidationError } from '../core/validator'
 import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
-import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig, saltoConfigType, currentEnvConfig } from './config'
-import Credentials, { adapterCredentials } from './credentials'
+import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
+  saltoConfigType, currentEnvConfig, getAdaptersConfigDir, getConfigDir } from './config'
+import { configSource, ConfigSource } from './config_source'
 import State from './state'
 import { localState } from './local/state'
 import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
@@ -88,7 +89,7 @@ const loadBlueprintSource = (
   const blueprintsStore = localDirectoryStore(
     sourceBaseDir,
     `*${BP_EXTENSION}`,
-    (dirParh: string) => !excludeDirs.includes(dirParh),
+    (dirParh: string) => !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirParh),
   )
   const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
   return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
@@ -109,13 +110,14 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
         env.baseDir,
         loadBlueprintSource(
           path.resolve(config.baseDir, env.baseDir),
-          path.resolve(config.localStorage, env.baseDir)
+          path.resolve(config.localStorage, env.baseDir),
         ),
       ])),
     [COMMON_ENV_PREFIX]: loadBlueprintSource(
       config.baseDir,
       config.localStorage,
-      _.values(_.values(config.envs).map(env => path.join(config.baseDir, env.baseDir)))
+      _.values(_.values(config.envs)
+        .map(env => path.join(config.baseDir, env.baseDir)))
     ),
   }
   return multiEnvSource(sources, activeEnv.baseDir, COMMON_ENV_PREFIX)
@@ -123,7 +125,8 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
 
 export class Workspace {
   readonly state: State
-  readonly credentials: Credentials
+  readonly adapterCredentials: ConfigSource
+  readonly adapterConfig: ConfigSource
   private readonly blueprintsSource: BlueprintsSource
   private mergedStatePromise?: Promise<MergedState>
 
@@ -132,9 +135,10 @@ export class Workspace {
       ? loadBlueprintSource(config.baseDir, config.localStorage)
       : loadMultiEnvSource(config)
     this.state = localState(currentEnvConfig(config).stateLocation)
-    this.credentials = adapterCredentials(
-      localDirectoryStore(currentEnvConfig(config).credentialsLocation)
+    this.adapterCredentials = configSource(
+      localDirectoryStore(currentEnvConfig(config).credentialsLocation),
     )
+    this.adapterConfig = configSource(localDirectoryStore(getAdaptersConfigDir(config.baseDir)))
   }
 
   static async init(

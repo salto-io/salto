@@ -29,12 +29,12 @@ import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
 import { loadWorkspace } from '../workspace'
-import { getConfigFromUser } from '../callbacks'
+import { getCredentialsFromUser } from '../callbacks'
 import { serviceCmdFilter, ServiceCmdArgs } from '../filters/services'
 import {
   formatServiceConfigured, formatServiceNotConfigured, formatConfiguredServices,
   formatLoginUpdated, formatLoginOverride, formatServiceAdded,
-  formatServiceAlreadyAdded, formatConfigHeader, formatLoginToServiceFailed,
+  formatServiceAlreadyAdded, formatCredentialsHeader, formatLoginToServiceFailed,
 } from '../formatter'
 
 const getLoginInputFlow = async (
@@ -43,7 +43,7 @@ const getLoginInputFlow = async (
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   stdout: WriteStream
 ): Promise<void> => {
-  stdout.write(formatConfigHeader(configType.elemID.adapter))
+  stdout.write(formatCredentialsHeader(configType.elemID.adapter))
   const newConfig = await getLoginInput(configType)
   await updateLoginConfig(workspace, newConfig)
   stdout.write(EOL)
@@ -154,7 +154,7 @@ const servicesBuilder = createCommandBuilder({
 
   filters: [serviceCmdFilter],
   async build(input: ServiceParsedCliInput, output: CliOutput) {
-    return command('.', input.args.command, output, getConfigFromUser, input.args.name)
+    return command('.', input.args.command, output, getCredentialsFromUser, input.args.name)
   },
 })
 

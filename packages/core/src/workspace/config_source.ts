@@ -19,24 +19,26 @@ import { dumpElements } from '../parser/dump'
 import { BP_EXTENSION } from './blueprints/blueprints_source'
 import { DirectoryStore } from './dir_store'
 
-export default interface Credentials {
-  get(adapter: string): Promise<InstanceElement | undefined>
-  set(adapter: string, credentials: Readonly<InstanceElement>): Promise<void>
+export interface ConfigSource {
+  get(name: string): Promise<InstanceElement | undefined>
+  set(name: string, config: Readonly<InstanceElement>): Promise<void>
 }
 
-export const adapterCredentials = (dirStore: DirectoryStore): Credentials => {
-  const filename = (adapter: string): string => adapter.concat(BP_EXTENSION)
+export const configSource = (
+  dirStore: DirectoryStore,
+): ConfigSource => {
+  const filename = (name: string): string => name.concat(BP_EXTENSION)
 
   return {
-    get: async (adapter: string): Promise<InstanceElement | undefined> => {
-      const bp = await dirStore.get(filename(adapter))
+    get: async (name: string): Promise<InstanceElement | undefined> => {
+      const bp = await dirStore.get(filename(name))
       return bp
         ? parse(Buffer.from(bp.buffer), bp.filename).elements.pop() as InstanceElement
         : undefined
     },
 
-    set: async (adapter: string, creds: InstanceElement): Promise<void> => {
-      await dirStore.set({ filename: filename(adapter), buffer: dumpElements([creds]) })
+    set: async (name: string, config: InstanceElement): Promise<void> => {
+      await dirStore.set({ filename: filename(name), buffer: dumpElements([config]) })
       await dirStore.flush()
     },
   }

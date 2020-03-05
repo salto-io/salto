@@ -1,0 +1,6 @@
+salesforce {
+  metadataTypesBlacklist = [
+    "test1",
+    "test2",
+  ]
+}

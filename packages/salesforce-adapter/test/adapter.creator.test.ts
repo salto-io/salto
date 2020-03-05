@@ -13,17 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID } from '@salto-io/adapter-api'
-import { creator } from '../src/adapter'
+import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { creator } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
+import SalesforceAdapter from '../src/adapter'
 
 jest.mock('../src/client/client')
+jest.mock('../src/adapter')
 
 describe('SalesforceAdapter creator', () => {
   describe('when validateConfig is called', () => {
     const config = new InstanceElement(
       ElemID.CONFIG_NAME,
-      creator.configType,
+      creator.credentialsType,
       {
         username: 'myUser',
         password: 'myPassword',
@@ -46,10 +48,10 @@ describe('SalesforceAdapter creator', () => {
       expect(validateCredentials).toHaveBeenCalledWith(credentials)
     })
   })
-  describe('when passed a config element', () => {
-    const config = new InstanceElement(
+  describe('when passed config elements', () => {
+    const credentials = new InstanceElement(
       ElemID.CONFIG_NAME,
-      creator.configType,
+      creator.credentialsType,
       {
         username: 'myUser',
         password: 'myPassword',
@@ -58,8 +60,18 @@ describe('SalesforceAdapter creator', () => {
       }
     )
 
-    beforeEach(() => {
-      creator.create({ config })
+    const config = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      creator.configType as ObjectType,
+      {
+        metadataTypesBlacklist: ['test1'],
+        instancesRegexBlacklist: ['test3', 'test2'],
+        notExist: ['not exist'],
+      }
+    )
+
+    beforeAll(() => {
+      creator.create({ credentials, config })
     })
 
     it('creates the client correctly', () => {
@@ -70,6 +82,17 @@ describe('SalesforceAdapter creator', () => {
           apiToken: 'myToken',
           isSandbox: false,
         },
+      })
+    })
+
+    it('creates the adapter correctly', () => {
+      expect(SalesforceAdapter).toHaveBeenCalledWith({
+        config: {
+          metadataTypesBlacklist: ['test1'],
+          instancesRegexBlacklist: ['test3', 'test2'],
+        },
+        client: expect.any(Object),
+        getElemIdFunc: undefined,
       })
     })
   })

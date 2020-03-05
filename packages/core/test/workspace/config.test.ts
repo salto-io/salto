@@ -44,6 +44,7 @@ describe('configuration dir location', () => {
 describe('load proper configuration', () => {
   const defaultUUID = '56816ffc-1457-55da-bd68-6e02c87f908f'
   const defaultLocalStorageName = `${path.basename(defaultsWorkspaceDir)}-${defaultUUID}`
+
   it('should load a full config', async () => {
     const config = await loadConfig(fullWorkspaceDir)
     expect(config).toEqual(

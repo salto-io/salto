@@ -58,7 +58,7 @@ jest.mock('@salto-io/core', () => ({
 jest.mock('../../src/workspace')
 describe('services command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
-  const mockGetConfigFromUser = mocks.createMockGetConfigFromUser({
+  const mockGetCredentialsFromUser = mocks.createMockGetCredentialsFromUser({
     username: 'test@test',
     password: 'test',
     token: 'test',
@@ -91,7 +91,7 @@ describe('services command', () => {
   describe('when workspace fails to load', () => {
     let result: number
     beforeEach(async () => {
-      result = await command('errdir', 'add', cliOutput, mockGetConfigFromUser, 'service')
+      result = await command('errdir', 'add', cliOutput, mockGetCredentialsFromUser, 'service')
         .execute()
     })
 
@@ -104,7 +104,7 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with no service name', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetConfigFromUser, undefined).execute()
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, undefined).execute()
         })
 
         it('should load the workspace', () => {
@@ -119,7 +119,7 @@ describe('services command', () => {
 
       describe('when called with service that is configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetConfigFromUser, 'hubspot').execute()
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'hubspot').execute()
         })
 
         it('should load the workspace', async () => {
@@ -133,7 +133,7 @@ describe('services command', () => {
 
       describe('when called with a service that is not configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetConfigFromUser, 'notConfigured').execute()
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'notConfigured').execute()
         })
 
         it('should print configured services', async () => {
@@ -147,7 +147,7 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with already configured service', () => {
         beforeEach(async () => {
-          await command('', 'add', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
+          await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
         })
 
         it('should print already added', async () => {
@@ -157,7 +157,7 @@ describe('services command', () => {
 
       describe('when called with a new service', () => {
         beforeEach(async () => {
-          await command('', 'add', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
+          await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
         })
 
         it('should print added', async () => {
@@ -170,7 +170,7 @@ describe('services command', () => {
 
         describe('when called with valid credentials', () => {
           beforeEach(async () => {
-            await command('', 'add', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
+            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
           })
           it('should print login information updated', async () => {
             expect(cliOutput.stdout.content).toContain('Login information successfully updated!')
@@ -180,7 +180,7 @@ describe('services command', () => {
         describe('when called with invalid credentials', () => {
           beforeEach(async () => {
             (updateLoginConfig as jest.Mock).mockRejectedValue('Rejected!')
-            await command('', 'add', cliOutput, mockGetConfigFromUser, 'newAdapter').execute()
+            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
           })
           afterEach(() => {
             (updateLoginConfig as jest.Mock).mockResolvedValue(true)
@@ -202,7 +202,7 @@ describe('services command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with already logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
         })
 
         it('should print login override', () => {
@@ -210,7 +210,7 @@ describe('services command', () => {
         })
 
         it('should get config from user', () => {
-          expect(mockGetConfigFromUser).toHaveBeenCalled()
+          expect(mockGetCredentialsFromUser).toHaveBeenCalled()
         })
 
         it('should call update config', () => {
@@ -224,7 +224,7 @@ describe('services command', () => {
 
       describe('when called with not configured service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetConfigFromUser, 'notConfigured').execute()
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'notConfigured').execute()
         })
 
         it('should print not configured', () => {
@@ -234,11 +234,11 @@ describe('services command', () => {
 
       describe('when called with configured but not logged in service', () => {
         beforeEach(async () => {
-          await command('', 'login', cliOutput, mockGetConfigFromUser, 'salesforce').execute()
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
         })
 
         it('should get config from user', () => {
-          expect(mockGetConfigFromUser).toHaveBeenCalled()
+          expect(mockGetCredentialsFromUser).toHaveBeenCalled()
         })
 
         it('should call update config', async () => {

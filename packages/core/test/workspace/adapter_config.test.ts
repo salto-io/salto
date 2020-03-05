@@ -16,51 +16,55 @@
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser/dump'
-import { adapterCredentials } from '../../src/workspace/credentials'
+import { configSource } from '../../src/workspace/config_source'
 
 jest.mock('../../../src/workspace/local/dir_store')
-describe('credentials', () => {
+describe('configs', () => {
   const adapter = 'mockadapter'
   const configID = new ElemID(adapter)
   const configType = new ObjectType({
     elemID: configID,
     fields: {
-      username: new Field(configID, 'username', BuiltinTypes.STRING),
-      password: new Field(configID, 'password', BuiltinTypes.STRING),
+      field1: new Field(configID, 'field1', BuiltinTypes.STRING, {}, true),
+      field2: new Field(configID, 'field2', BuiltinTypes.STRING),
     },
   })
-  const creds = new InstanceElement(ElemID.CONFIG_NAME, configType, {
-    username: 'test@test',
-    password: 'test',
+  const config = new InstanceElement(ElemID.CONFIG_NAME, configType, {
+    field1: ['test1', 'test2'],
+    field2: 'test3',
   })
 
+  const dumpedConfig = { filename: `${adapter}.bp`, buffer: dumpElements([config]) }
   const mockSet = jest.fn()
   const mockGet = jest.fn()
   const mockFlush = jest.fn()
-  const dumpedCredentials = { filename: `${adapter}.bp`, buffer: dumpElements([creds]) }
   const mockedDirStore = {
     get: mockGet,
     set: mockSet,
     flush: mockFlush,
   } as unknown as DirectoryStore
 
-  it('should set new credentials', async () => {
+  beforeEach(() => {
+    jest.resetAllMocks()
+  })
+
+  it('should set new adapter config', async () => {
     mockSet.mockResolvedValueOnce(true)
     mockFlush.mockResolvedValue(true)
-    await adapterCredentials(mockedDirStore).set(adapter, creds)
-    expect(mockSet).toHaveBeenCalledWith(dumpedCredentials)
+    await configSource(mockedDirStore).set(adapter, config)
+    expect(mockSet).toHaveBeenCalledWith(dumpedConfig)
     expect(mockFlush).toHaveBeenCalledTimes(1)
   })
 
-  it('should get credentials if exists', async () => {
-    mockGet.mockResolvedValueOnce(dumpedCredentials)
-    const fromCredsStore = await adapterCredentials(mockedDirStore).get(adapter)
-    expect(fromCredsStore?.value).toEqual(creds.value)
+  it('should get adapter config if exists', async () => {
+    mockGet.mockResolvedValueOnce(dumpedConfig)
+    const fromConfigStore = await configSource(mockedDirStore).get(adapter)
+    expect(fromConfigStore?.value).toEqual(config.value)
   })
 
-  it('shouldnt fail if credentials not exists', async () => {
+  it('should not fail if adapter config not exists', async () => {
     mockGet.mockResolvedValueOnce(undefined)
-    const fromCredsStore = await adapterCredentials(mockedDirStore).get(adapter)
-    expect(fromCredsStore).toBeUndefined()
+    const fromConfigStore = await configSource(mockedDirStore).get(adapter)
+    expect(fromConfigStore).toBeUndefined()
   })
 })

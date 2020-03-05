@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
-  isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement, AdapterCreator,
-  Value, Change, getChangeElement, isField, isElement, ElemIdGetter, DataModificationResult, Values,
-  resolveReferences, restoreReferences,
+  TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
+  isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement,
+  Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
+  DataModificationResult, Values, resolveReferences, restoreReferences,
 } from '@salto-io/adapter-api'
 import {
   SaveResult, MetadataInfo, QueryResult, FileProperties, BatchResultInfo, BulkLoadOperation,
@@ -26,7 +26,7 @@ import {
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { decorators, collections } from '@salto-io/lowerdash'
-import SalesforceClient, { API_VERSION, Credentials, validateCredentials } from './client/client'
+import SalesforceClient, { API_VERSION } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
@@ -57,8 +57,6 @@ import {
   FilterCreator, Filter, FilterWith, filtersWith,
 } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
-import { changeValidator } from './change_validator'
-import { dependencyChanger } from './dependency_changer'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -90,6 +88,9 @@ const addDefaults = (element: ObjectType): void => {
   })
 }
 
+const instanceNameMatchRegex = (name: string, regex: RegExp[]): boolean =>
+  regex.some(re => re.test(name))
+
 const validateApiName = (prevElement: Element, newElement: Element): void => {
   if (apiName(prevElement) !== apiName(newElement)) {
     throw Error(
@@ -104,10 +105,10 @@ export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
   metadataAdditionalTypes?: string[]
 
-  // Instances that we want to exclude from readMetadata
-  // This is expected to be a list of strings of format METADATA_TYPE.INSTANCE
+  // Regular expressions for instances that we want to exclude from readMetadata
+  // The regular expression would be matched against instances of the format METADATA_TYPE.INSTANCE
   // For example: CustomObject.Lead
-  instancesBlacklist?: string[]
+  instancesRegexBlacklist?: string[]
 
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
@@ -137,6 +138,8 @@ export interface SalesforceAdapterParams {
 
   // System fields that salesforce may add to custom objects - to be ignored when creating objects
   systemFields?: string[]
+
+  config: SalesforceConfig
 }
 
 const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
@@ -155,9 +158,14 @@ type RetrieveMember = {
   name: string
 }
 
+export type SalesforceConfig = {
+  metadataTypesBlacklist?: string[]
+  instancesRegexBlacklist?: string[]
+}
+
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
-  private instancesBlacklist: string[]
+  private instancesRegexBlacklist: RegExp[]
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
@@ -177,7 +185,7 @@ export default class SalesforceAdapter {
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],
-    instancesBlacklist = [],
+    instancesRegexBlacklist = [],
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
@@ -255,9 +263,13 @@ export default class SalesforceAdapter {
       'SystemModstamp',
       'OwnerId',
     ],
+    config,
   }: SalesforceAdapterParams) {
     this.metadataTypeBlacklist = metadataTypeBlacklist
-    this.instancesBlacklist = instancesBlacklist
+      .concat(makeArray(config.metadataTypesBlacklist))
+    this.instancesRegexBlacklist = instancesRegexBlacklist
+      .concat(makeArray(config.instancesRegexBlacklist))
+      .map(e => new RegExp(e))
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
@@ -761,7 +773,10 @@ export default class SalesforceAdapter {
     const retrieveMembers: RetrieveMember[] = _(retrieveTypeToFiles)
       .entries()
       .map(([type, files]) => _(files)
-        .map(constants.INSTANCE_FULL_NAME_FIELD).uniq().map(name => ({ type, name }))
+        .map(constants.INSTANCE_FULL_NAME_FIELD)
+        .uniq()
+        .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexBlacklist))
+        .map(name => ({ type, name }))
         .value())
       .flatten()
       .value()
@@ -890,7 +905,7 @@ export default class SalesforceAdapter {
       .value()
 
     const instancesFullNames = objs.map(getFullName)
-      .filter(name => !this.instancesBlacklist.includes(`${type}.${name}`))
+      .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexBlacklist))
     const instanceInfos = await this.client.readMetadata(type, instancesFullNames)
       .catch(err => {
         log.error('failed to read metadata for type %s', type)
@@ -944,43 +959,4 @@ export default class SalesforceAdapter {
     } FROM ${apiName(type)}`
     return this.client.runQuery(queryString)
   }
-}
-
-const configID = new ElemID('salesforce')
-
-const configType = new ObjectType({
-  elemID: configID,
-  fields: {
-    username: new Field(configID, 'username', BuiltinTypes.STRING),
-    password: new Field(configID, 'password', BuiltinTypes.STRING),
-    token: new Field(configID, 'token', BuiltinTypes.STRING,
-      { message: 'Token (empty if your org uses IP whitelisting)' }),
-    sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
-  },
-})
-
-const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
-  username: config.value.username,
-  password: config.value.password,
-  apiToken: config.value.token,
-  isSandbox: config.value.sandbox,
-})
-
-const clientFromConfig = (config: InstanceElement): SalesforceClient =>
-  new SalesforceClient({
-    credentials: credentialsFromConfig(config),
-  })
-
-export const creator: AdapterCreator = {
-  create: ({ config, getElemIdFunc }) => new SalesforceAdapter({
-    client: clientFromConfig(config),
-    getElemIdFunc,
-  }),
-  validateConfig: config => {
-    const credentials = credentialsFromConfig(config)
-    return validateCredentials(credentials)
-  },
-  configType,
-  changeValidator,
-  dependencyChanger,
 }

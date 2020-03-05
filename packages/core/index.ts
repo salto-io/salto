@@ -35,7 +35,7 @@ export { FetchChange, FetchProgressEvents, StepEmitter, MergeErrorWithElements a
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
-export { getAdaptersConfigType } from './src/core/adapters/adapters'
+export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
   Workspace, WorkspaceError, SourceFragment,
 } from './src/workspace/workspace'

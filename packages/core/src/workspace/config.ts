@@ -16,7 +16,8 @@
 import * as path from 'path'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement,
+  findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
 import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'
@@ -25,6 +26,7 @@ import { getSaltoHome } from '../app_config'
 
 const CONFIG_FILENAME = 'config.bp'
 const CONFIG_DIR_NAME = 'salto.config'
+const ADAPTERS_CONFIGS_DIR_NAME = 'adapters'
 const SALTO_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341'
 
 class NotAWorkspaceError extends Error {
@@ -199,8 +201,16 @@ export const currentEnvConfig = (config: Config): EnvConfig => (
   config.envs[config.currentEnv].config
 )
 
+export const getConfigDir = (baseDir: string): string => (
+  path.join(baseDir, CONFIG_DIR_NAME)
+)
+
 export const getConfigPath = (baseDir: string): string => (
-  path.join(baseDir, CONFIG_DIR_NAME, CONFIG_FILENAME)
+  path.join(getConfigDir(baseDir), CONFIG_FILENAME)
+)
+
+export const getAdaptersConfigDir = (baseDir: string): string => (
+  path.join(getConfigDir(baseDir), ADAPTERS_CONFIGS_DIR_NAME)
 )
 
 const parseConfig = (buffer: Buffer): PartialConfig => {

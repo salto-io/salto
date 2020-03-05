@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import {
-  AdapterCreator, BuiltinTypes, ElemID, Field,
-  InstanceElement, ObjectType,
+  AdapterCreator, BuiltinTypes, ElemID, Field, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
@@ -23,7 +22,7 @@ import { changeValidator } from './change_validator'
 
 const configID = new ElemID('hubspot')
 
-const configType = new ObjectType({
+const credentialsType = new ObjectType({
   elemID: configID,
   fields: {
     apiKey: new Field(configID, 'apiKey', BuiltinTypes.STRING),
@@ -36,21 +35,16 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   apiKey: config.value.apiKey,
 })
 
-const clientFromConfig = (config: InstanceElement): HubspotClient =>
-  new HubspotClient(
-    {
-      credentials: credentialsFromConfig(config),
-    }
-  )
+const clientFromCredentials = (credentials: InstanceElement): HubspotClient =>
+  new HubspotClient({
+    credentials: credentialsFromConfig(credentials),
+  })
 
 export const creator: AdapterCreator = {
-  create: ({ config }) => new HubspotAdapter({
-    client: clientFromConfig(config),
+  create: opts => new HubspotAdapter({
+    client: clientFromCredentials(opts.credentials),
   }),
-  validateConfig: config => {
-    const credentials = credentialsFromConfig(config)
-    return HubspotClient.validateCredentials(credentials)
-  },
-  configType,
+  validateConfig: config => HubspotClient.validateCredentials(credentialsFromConfig(config)),
+  credentialsType,
   changeValidator,
 }

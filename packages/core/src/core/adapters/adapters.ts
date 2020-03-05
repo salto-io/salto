@@ -15,30 +15,47 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, Adapter, ElemIdGetter, InstanceElement,
+  ObjectType, Adapter, ElemIdGetter, AdapterCreatorOpts,
 } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
+import { ConfigSource } from '../../workspace/config_source'
 
-export const getAdaptersConfigType = (
+export const getAdaptersCredentialsTypes = (
   names: string[]
 ): Record<string, ObjectType> => {
   const relevantAdapterCreators = _.pick(adapterCreators, names)
-  return _.mapValues(relevantAdapterCreators, creator => creator.configType)
+  return _.mapValues(relevantAdapterCreators, creator => creator.credentialsType)
 }
 
 export const initAdapters = (
-  credentials: Record<string, InstanceElement | undefined>,
-  getElemIdFunc?: ElemIdGetter,
+  config: Record<string, AdapterCreatorOpts>,
 ): Record<string, Adapter> =>
   _.mapValues(
-    credentials, (creds, adapter) => {
-      if (!creds) {
+    config, (opts, adapter) => {
+      if (!opts.credentials) {
         throw new Error(`${adapter} is not logged in.\n\nPlease login and try again.`)
       }
       const creator = adapterCreators[adapter]
       if (!creator) {
         throw new Error(`${adapter} adapter is not registered.`)
       }
-      return creator.create({ config: creds, getElemIdFunc })
+      return creator.create(opts)
     }
   )
+
+export const getAdapters = async (
+  adapters: string[],
+  credentials: ConfigSource,
+  config: ConfigSource,
+  elemIdGetter?: ElemIdGetter,
+): Promise<Record<string, Adapter>> => {
+  const creatorConfig: Record<string, AdapterCreatorOpts> = _
+    .fromPairs(await Promise.all(adapters.map(
+      async adapter => ([adapter, {
+        credentials: await credentials.get(adapter),
+        config: await config.get(adapter),
+        getElemIdFunc: elemIdGetter,
+      }])
+    )))
+  return initAdapters(creatorConfig)
+}

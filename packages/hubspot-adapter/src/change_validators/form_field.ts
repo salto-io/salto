@@ -16,22 +16,26 @@
 import _ from 'lodash'
 import {
   ChangeError, Change, getChangeElement, isInstanceElement, Element,
-  isModificationDiff, InstanceElement, Value,
+  isModificationDiff, InstanceElement, Value, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import { isFormInstance } from '../filters/form_field'
+import {
+  OBJECTS_NAMES,
+} from '../constants'
 
 
 const getFormInstanceFieldErrorsFromAfter = async (after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {
   const getErrorsFromField = (field: Value): ReadonlyArray<ChangeError> => {
     const errors = [] as ChangeError[]
-    if (!isInstanceElement(field.contactProperty)) {
+    if (!isReferenceExpression(field.contactProperty)
+      || (field.contactProperty.elemId.typeName !== OBJECTS_NAMES.CONTACT_PROPERTY)) {
       errors.push({
         elemID: after.elemID,
         severity: 'Error',
         message: `${field.contactProperty} is not a valid for contactProperty`,
-        detailedMessage: 'contactProperty field ContactProperty instance',
+        detailedMessage: 'contactProperty field must be a reference of ContactProperty instance',
       } as ChangeError)
     }
     let dependentErrors = [] as ChangeError[]
@@ -63,6 +67,8 @@ export const changeValidator = {
     if (!isInstanceElement(after)) {
       return []
     }
+    // eslint-disable-next-line no-console
+    console.log('calling getFormInstanceFieldErrorsFromAfter now!!!!')
     return getFormInstanceFieldErrorsFromAfter(after)
   },
   onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> => {

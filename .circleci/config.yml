@@ -173,6 +173,32 @@ jobs:
           command: npx codecov -F unit_test -f coverage/*.json
           when: always
 
+  publish_on_version_change:
+    docker:
+      - image: circleci/node:12.12
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - add_ssh_keys:
+          fingerprints:
+              - "49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17"
+
+      - run:
+          name: publish to NPM if version changed
+          command: |
+            set -euo pipefail
+            CURRENT_VERSION="$(jq -r .version < lerna.json)"
+            PREV_VERSION="$(git show << pipeline.git.base_revision >>:lerna.json | jq -r .version)"
+            if [ "$CURRENT_VERSION" != "$PREV_VERSION" ]; then
+              echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+              yarn lerna-publish -y --ignore-scripts
+              VERSION_TAG="v${CURRENT_VERSION}""
+              git tag $VERSION_TAG
+              git push origin $VERSION_TAG
+            fi
+
   e2e_test:
     docker:
       - image: circleci/node:12.12
@@ -278,3 +304,12 @@ workflows:
           requires:
             - package_cli
             - package_vscode_extension
+
+      - publish_on_version_change:
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - build
+            - e2e_test

@@ -51,6 +51,15 @@ const configType = new ObjectType({
   },
 })
 
+const defaultConfig = new InstanceElement(
+  ElemID.CONFIG_NAME,
+  configType,
+  {
+    metadataTypesBlacklist: [],
+    instancesRegexBlacklist: ['CustomObject.InvoiceLine$'],
+  },
+)
+
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,
   password: config.value.password,
@@ -82,6 +91,7 @@ export const creator: AdapterCreator = {
   validateConfig: config => validateCredentials(credentialsFromConfig(config)),
   credentialsType,
   configType,
+  defaultConfig,
   changeValidator,
   dependencyChanger,
 }

@@ -51,11 +51,18 @@ export const getAdapters = async (
 ): Promise<Record<string, Adapter>> => {
   const creatorConfig: Record<string, AdapterCreatorOpts> = _
     .fromPairs(await Promise.all(adapters.map(
-      async adapter => ([adapter, {
-        credentials: await credentials.get(adapter),
-        config: await config.get(adapter),
-        getElemIdFunc: elemIdGetter,
-      }])
+      async adapter => {
+        const adapterConfig = await config.get(adapter)
+        const { defaultConfig } = adapterCreators[adapter]
+        if (_.isUndefined(adapterConfig) && defaultConfig) {
+          await config.set(adapter, defaultConfig)
+        }
+        return ([adapter, {
+          credentials: await credentials.get(adapter),
+          config: adapterConfig ?? defaultConfig,
+          getElemIdFunc: elemIdGetter,
+        }])
+      }
     )))
   return initAdapters(creatorConfig)
 }

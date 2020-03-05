@@ -236,7 +236,7 @@ describe('Transformer', () => {
         const fieldWithDependent = formMetadata.formFieldGroups[0].fields[0]
         expect(fieldWithDependent).toBeDefined()
 
-        // Overidden
+        // Overridden
         expect(fieldWithDependent.label).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
             .contactPropertyOverrides.label
@@ -262,19 +262,19 @@ describe('Transformer', () => {
         // From contactProperty
         expect(fieldWithDependent.name).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.resValue.value.name
+            .contactProperty.value.name
         )
         expect(fieldWithDependent.displayOrder).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.resValue.value.displayOrder
+            .contactProperty.value.displayOrder
         )
         expect(fieldWithDependent.description).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.resValue.value.description
+            .contactProperty.value.description
         )
         expect(fieldWithDependent.options).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.resValue.value.options
+            .contactProperty.value.options
         )
 
 
@@ -282,7 +282,7 @@ describe('Transformer', () => {
         const fieldWithOptions = formMetadata.formFieldGroups[1].fields[0]
         expect(fieldWithOptions).toBeDefined()
 
-        // Overidden
+        // Overridden
         expect(fieldWithOptions.options).toEqual(
           formInstance.value.formFieldGroups[1].fields[0]
             .contactPropertyOverrides.options
@@ -313,7 +313,7 @@ describe('Transformer', () => {
         const { dependentFormField } = dependentFieldFilters[0]
         expect(dependentFormField).toBeDefined()
 
-        // Overidden
+        // Overridden
         expect(dependentFormField.label).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
             .dependentFormField.contactPropertyOverrides.label
@@ -348,15 +348,15 @@ describe('Transformer', () => {
         // From contactProperty
         expect(dependentFormField.name).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-            .dependentFormField.contactProperty.resValue.value.name
+            .dependentFormField.contactProperty.value.name
         )
         expect(dependentFormField.displayOrder).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-            .dependentFormField.contactProperty.resValue.value.displayOrder
+            .dependentFormField.contactProperty.value.displayOrder
         )
         expect(dependentFormField.options).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-            .dependentFormField.contactProperty.resValue.value.options
+            .dependentFormField.contactProperty.value.options
         )
       })
     })

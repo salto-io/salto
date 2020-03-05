@@ -197,7 +197,7 @@ export const afterFormInstanceValuesMock = {
     {
       fields: [
         {
-          contactProperty: new ReferenceExpression(g1PropInstance.elemID, g1PropInstance),
+          contactProperty: g1PropInstance,
           contactPropertyOverrides: {
             label: 'g1!',
           },
@@ -214,10 +214,7 @@ export const afterFormInstanceValuesMock = {
                 },
               ],
               dependentFormField: {
-                contactProperty: new ReferenceExpression(
-                  datePropInstance.elemID,
-                  datePropInstance
-                ),
+                contactProperty: datePropInstance,
                 contactPropertyOverrides: {
                   label: 'Date of birth override',
                   description: 'l',
@@ -237,10 +234,7 @@ export const afterFormInstanceValuesMock = {
     {
       fields: [
         {
-          contactProperty: new ReferenceExpression(
-            valuePropInstance.elemID,
-            valuePropInstance.value
-          ),
+          contactProperty: valuePropInstance,
           contactPropertyOverrides: {
             options: [
               {

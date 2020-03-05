@@ -20,20 +20,18 @@ import {
 } from '@salto-io/adapter-api'
 import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import { isFormInstance } from '../filters/form_field'
-import { OBJECTS_NAMES } from '../constants'
 
 
 const getFormInstanceFieldErrorsFromAfter = async (after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {
   const getErrorsFromField = (field: Value): ReadonlyArray<ChangeError> => {
     const errors = [] as ChangeError[]
-    if (!field.contactProperty.elemId || !field.contactProperty.resValue
-      || (field.contactProperty.elemId.typeName !== OBJECTS_NAMES.CONTACT_PROPERTY)) {
+    if (!isInstanceElement(field.contactProperty)) {
       errors.push({
         elemID: after.elemID,
         severity: 'Error',
-        message: `${field.contactProperty} is not a valid valid for contactProperty`,
-        detailedMessage: 'contactProperty field must be a reference to a ContactProperty instance',
+        message: `${field.contactProperty} is not a valid for contactProperty`,
+        detailedMessage: 'contactProperty field ContactProperty instance',
       } as ChangeError)
     }
     let dependentErrors = [] as ChangeError[]
@@ -54,11 +52,10 @@ const getFormInstanceFieldErrorsFromAfter = async (after: InstanceElement):
   }
 
   const { formFieldGroups } = after.value
-  const errors = _.flatten(makeArray(formFieldGroups).map((formFieldGroup: Value) => {
+  return _.flatten(makeArray(formFieldGroups).map((formFieldGroup: Value) => {
     const { fields } = formFieldGroup
     return _.flatten(makeArray(fields).map((field: Value) => getErrorsFromField(field)))
   })) as ChangeError[]
-  return errors
 }
 
 export const changeValidator = {

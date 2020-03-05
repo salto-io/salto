@@ -20,6 +20,7 @@ import formFieldValidator from '../../src/change_validators/form_field'
 
 describe('form field change validator', () => {
   let formInstance: InstanceElement
+  const notInstanceStr = 'not an instance'
 
   beforeEach(() => {
     formInstance = new InstanceElement(
@@ -35,22 +36,22 @@ describe('form field change validator', () => {
       addInstance = formInstance.clone()
     })
 
-    it('should work when contactProperty are references', async () => {
+    it('should work when contactProperty are instances', async () => {
       const changeErrors = await formFieldValidator.onAdd(addInstance)
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('should have errors when not reference at field level', async () => {
-      addInstance.value.formFieldGroups[0].fields[0].contactProperty = 'not a ref'
+    it('should have errors when not instance at field level', async () => {
+      addInstance.value.formFieldGroups[0].fields[0].contactProperty = notInstanceStr
       const changeErrors = await formFieldValidator.onAdd(addInstance)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(addInstance.elemID)
     })
 
-    it('should have errors when not reference in dependent fields', async () => {
-      addInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
-        .contactProperty = 'not a ref'
+    it('should have errors when not instance in dependent fields', async () => {
+      addInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
+        .dependentFormField.contactProperty = notInstanceStr
       const changeErrors = await formFieldValidator.onAdd(addInstance)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
@@ -63,15 +64,15 @@ describe('form field change validator', () => {
     beforeEach(() => {
       after = formInstance.clone()
     })
-    it('should work when contactProperty are references', async () => {
+    it('should work when contactProperty are instances', async () => {
       const changeErrors = await formFieldValidator.onUpdate([{
         action: 'modify',
         data: { after, before: formInstance },
       }])
       expect(changeErrors).toHaveLength(0)
     })
-    it('should have errors when not reference at field level', async () => {
-      after.value.formFieldGroups[0].fields[0].contactProperty = 'not a ref'
+    it('should have errors when not instance at field level', async () => {
+      after.value.formFieldGroups[0].fields[0].contactProperty = notInstanceStr
       const changeErrors = await formFieldValidator.onUpdate([{
         action: 'modify',
         data: { after, before: formInstance },
@@ -81,9 +82,9 @@ describe('form field change validator', () => {
       expect(changeErrors[0].elemID).toEqual(after.elemID)
     })
 
-    it('should have errors when not reference in dependent fields', async () => {
-      after.value.formFieldGroups[0].fields[0].dependentFieldFilters[0].dependentFormField
-        .contactProperty = 'not a ref'
+    it('should have errors when not instance in dependent fields', async () => {
+      after.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
+        .dependentFormField.contactProperty = notInstanceStr
       const changeErrors = await formFieldValidator.onUpdate([{
         action: 'modify',
         data: { after, before: formInstance },

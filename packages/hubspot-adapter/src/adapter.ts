@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  Element, InstanceElement, ObjectType,
+  Element, InstanceElement, ObjectType, resolveReferences,
+  restoreReferences,
 } from '@salto-io/adapter-api'
 import {
   HubspotMetadata,
@@ -23,11 +24,11 @@ import {
 import HubspotClient from './client/client'
 import {
   Types, createHubspotInstanceElement, createHubspotMetadataFromInstanceElement,
-  transformAfterUpdateOrAdd,
+  transformAfterUpdateOrAdd, getLookUpName,
 } from './transformers/transformer'
 import { FilterCreator } from './filter'
 import formFieldFilter from './filters/form_field'
-import instanceTranformFilter from './filters/instance_transform'
+import instanceTransformFilter from './filters/instance_transform'
 
 const validateFormGuid = (
   before: InstanceElement,
@@ -56,7 +57,7 @@ export default class HubspotAdapter {
     client,
     filtersCreators = [
       formFieldFilter,
-      instanceTranformFilter,
+      instanceTransformFilter,
     ],
   }: HubspotAdapterParams) {
     this.client = client
@@ -103,11 +104,16 @@ export default class HubspotAdapter {
    * @throws error in case of failure
    */
   public async add(instance: InstanceElement): Promise<InstanceElement> {
+    const resolved = resolveReferences(instance, getLookUpName)
     const resp = await this.client.createInstance(
-      instance.type.elemID.name,
-      createHubspotMetadataFromInstanceElement(instance.clone())
+      resolved.type.elemID.name,
+      createHubspotMetadataFromInstanceElement(resolved)
     )
-    return transformAfterUpdateOrAdd(instance, resp)
+    return restoreReferences(
+      instance,
+      await transformAfterUpdateOrAdd(resolved, resp),
+      getLookUpName
+    )
   }
 
   /**
@@ -116,9 +122,10 @@ export default class HubspotAdapter {
    * @throws error in case of failure
    */
   public async remove(instance: InstanceElement): Promise<void> {
+    const resolved = resolveReferences(instance, getLookUpName)
     await this.client.deleteInstance(
-      instance.type.elemID.name,
-      instance.value as HubspotMetadata
+      resolved.type.elemID.name,
+      resolved.value as HubspotMetadata
     )
   }
 
@@ -132,12 +139,18 @@ export default class HubspotAdapter {
     before: InstanceElement,
     after: InstanceElement,
   ): Promise<InstanceElement> {
-    validateFormGuid(before, after)
+    const resolvedBefore = resolveReferences(before, getLookUpName)
+    const resolvedAfter = resolveReferences(after, getLookUpName)
+    validateFormGuid(resolvedBefore, resolvedAfter)
     const resp = await this.client.updateInstance(
-      after.type.elemID.name,
-      createHubspotMetadataFromInstanceElement(after.clone())
+      resolvedAfter.type.elemID.name,
+      createHubspotMetadataFromInstanceElement(resolvedAfter)
     )
-    return transformAfterUpdateOrAdd(after, resp)
+    return restoreReferences(
+      after,
+      await transformAfterUpdateOrAdd(resolvedAfter, resp),
+      getLookUpName
+    )
   }
 
   private async runFiltersOnFetch(elements: Element[]): Promise<void> {

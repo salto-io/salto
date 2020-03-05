@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/netsuite-adapter",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "license": "Apache-2.0",
   "description": "Salto Netsuite adapter",
   "repository": {
@@ -27,9 +27,9 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto-io/logging": "0.1.1",
-    "@salto-io/lowerdash": "0.1.1",
-    "@salto-io/adapter-api": "0.1.1",
+    "@salto-io/adapter-api": "0.1.0",
+    "@salto-io/logging": "0.1.0",
+    "@salto-io/lowerdash": "0.1.0",
     "lodash": "^4.17.11",
     "node-suitetalk": "https://github.com/salto-io/node-suitetalk.git",
     "wu": "^2.1.0"

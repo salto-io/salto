@@ -187,7 +187,7 @@ jobs:
 
       - run:
           name: publish to NPM if version changed
-          command: ./circleci/scripts/publish_to_npm_if_version_changed.sh << pipeline.git.base_revision >>
+          command: ./.circleci/scripts/publish_to_npm_if_version_changed.sh << pipeline.git.base_revision >>
 
   e2e_test:
     docker:

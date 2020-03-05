@@ -97,7 +97,7 @@ export const cli = async ({
 
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const createMockgetCredentialsFromUser = (value: Values) =>
+export const createMockGetCredentialsFromUser = (value: Values) =>
   jest.fn(async (configObjType: ObjectType): Promise<InstanceElement> =>
     new InstanceElement(ElemID.CONFIG_NAME, configObjType, value))
 

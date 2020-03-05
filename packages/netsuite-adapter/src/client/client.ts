@@ -35,7 +35,7 @@ export type NetsuiteClientOpts = {
   connection?: Connection
 }
 
-export const realClient = (credentials: Credentials): Connection => {
+export const realConnection = (credentials: Credentials): Connection => {
   const config = new Configuration({
     account: credentials.account,
     apiVersion: API_VERSION,
@@ -60,11 +60,11 @@ export default class NetsuiteClient {
   private readonly conn: Connection
 
   static validateCredentials(credentials: Credentials): Promise<void> {
-    return realClient(credentials).init()
+    return realConnection(credentials).init()
   }
 
   constructor({ credentials, connection }: NetsuiteClientOpts) {
-    this.conn = connection ?? realClient(credentials)
+    this.conn = connection ?? realConnection(credentials)
   }
 
   private async ensureLoggedIn(): Promise<void> {

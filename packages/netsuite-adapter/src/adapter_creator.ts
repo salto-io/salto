@@ -43,7 +43,6 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   tokenSecret: config.value.tokenSecret,
 })
 
-
 const clientFromConfig = (config: InstanceElement): NetsuiteClient =>
   new NetsuiteClient({
     credentials: credentialsFromConfig(config),

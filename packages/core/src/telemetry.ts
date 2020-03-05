@@ -96,13 +96,13 @@ export type Telemetry = {
 export const telemetrySender = (
   config: TelemetryConfig,
   tags: RequiredTags & Tags,
-  eventNamePrefix?: string
+  eventNamePrefix = DEFAULT_EVENT_NAME_PREFIX
 ): Telemetry => {
   const newEvents = [] as Array<TelemetryEvent>
   let queuedEvents = [] as Array<TelemetryEvent>
   const enabled = config.enabled || false
   const flushInterval = config.flushInterval ? config.flushInterval : EVENTS_FLUSH_INTERVAL
-  const namePrefix = eventNamePrefix || DEFAULT_EVENT_NAME_PREFIX
+  const namePrefix = eventNamePrefix
   let httpRequestTimeout = axios.defaults.timeout
   let timer = {} as NodeJS.Timer
   let stopped = false

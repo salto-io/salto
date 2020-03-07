@@ -15,14 +15,14 @@
 */
 import _ from 'lodash'
 import {
-  Value, ObjectType, ElemID, InstanceElement, Values,
+  Value, ObjectType, ElemID, InstanceElement, Values, TypeElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
 import { SALESFORCE, METADATA_TYPE } from '../src/constants'
 import SalesforceAdapter from '../src/adapter'
 import SalesforceClient from '../src/client/client'
-import { createInstanceElement, metadataType, apiName } from '../src/transformers/transformer'
+import { createInstanceElement, metadataType, apiName, createMetadataTypeElements } from '../src/transformers/transformer'
 
 const { makeArray } = collections.array
 
@@ -108,9 +108,17 @@ export const createAndVerify = async (adapter: SalesforceAdapter, client: Salesf
   return instance
 }
 
-
 export const removeElementAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
   element: InstanceElement | ObjectType): Promise<void> => {
   await adapter.remove(element)
   expect(await getMetadataFromElement(client, element)).toBeUndefined()
+}
+
+export const fetchTypes = async (client: SalesforceClient, types: string[]):
+Promise<ObjectType[]> => {
+  const baseTypeNames = new Set(types)
+  const subTypes = new Map<string, TypeElement>()
+  return _.flatten(await Promise.all(types.map(async type =>
+    createMetadataTypeElements(type, await client.describeMetadataType(type), subTypes,
+      baseTypeNames, client))))
 }

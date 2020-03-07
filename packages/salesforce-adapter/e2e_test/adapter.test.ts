@@ -632,100 +632,6 @@ describe('Salesforce adapter E2E with real account', () => {
       ])
     }
 
-    const verifyLeadHasWorkflowAlert = async (): Promise<void> => {
-      await client.upsert('WorkflowAlert', {
-        fullName: 'Lead.TestWorkflowAlert',
-        description: 'E2E Fetch WorkflowAlert',
-        protected: false,
-        recipients: [
-          {
-            recipient: 'CEO',
-            type: 'role',
-          },
-        ],
-        senderType: 'CurrentUser',
-        template: 'TestEmailFolder/TestEmailTemplate',
-      } as MetadataInfo)
-    }
-
-    const verifyLeadHasWorkflowFieldUpdate = async (): Promise<void> => {
-      await client.upsert('WorkflowFieldUpdate', {
-        fullName: 'Lead.TestWorkflowFieldUpdate',
-        name: 'TestWorkflowFieldUpdate',
-        description: 'E2E Fetch WorkflowFieldUpdate',
-        field: 'Company',
-        notifyAssignee: false,
-        protected: false,
-        operation: 'Null',
-      } as MetadataInfo)
-    }
-
-    const verifyLeadHasWorkflowTask = async (): Promise<void> => {
-      await client.upsert('WorkflowTask', {
-        fullName: 'Lead.TestWorkflowTask',
-        assignedTo: 'CEO',
-        assignedToType: 'role',
-        description: 'E2E Fetch WorkflowTask',
-        dueDateOffset: 1,
-        notifyAssignee: false,
-        priority: 'Normal',
-        protected: false,
-        status: 'Not Started',
-        subject: 'TestWorkflowOutboundMessage',
-      } as MetadataInfo)
-    }
-
-    const verifyLeadHasWorkflowRule = async (): Promise<void> => {
-      await client.upsert('WorkflowRule', {
-        fullName: 'Lead.TestWorkflowRule',
-        actions: [
-          {
-            name: 'TestWorkflowAlert',
-            type: 'Alert',
-          },
-          {
-            name: 'TestWorkflowFieldUpdate',
-            type: 'FieldUpdate',
-          },
-          {
-            name: 'TestWorkflowTask',
-            type: 'Task',
-          },
-        ],
-        active: false,
-        criteriaItems: [
-          {
-            field: 'Lead.Company',
-            operation: 'notEqual',
-            value: 'BLA',
-          },
-        ],
-        description: 'E2E Fetch WorkflowRule',
-        triggerType: 'onCreateOnly',
-        workflowTimeTriggers: [
-          {
-            actions: [
-              {
-                name: 'TestWorkflowAlert',
-                type: 'Alert',
-              },
-            ],
-            timeLength: '1',
-            workflowTimeTriggerUnit: 'Hours',
-          },
-        ],
-      } as MetadataInfo)
-    }
-
-    const verifyLeadWorkflowInnerTypesExist = async (): Promise<void> => {
-      await Promise.all([
-        verifyLeadHasWorkflowAlert(),
-        verifyLeadHasWorkflowFieldUpdate(),
-        verifyLeadHasWorkflowTask(),
-      ])
-      return verifyLeadHasWorkflowRule() // WorkflowRule depends on Alert, FieldUpdate & Task
-    }
-
     const verifyFlowExists = async (): Promise<void> => {
       await client.upsert('Flow', {
         fullName: 'TestFlow',
@@ -988,7 +894,6 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyReportAndFolderExist(),
       verifyDashboardAndFolderExist(),
       verifyCustomObjectInnerTypesExist(),
-      verifyLeadWorkflowInnerTypesExist(),
       verifyFlowExists(),
       verifyRolesExist(),
       verifyApexPageAndClassExist(),

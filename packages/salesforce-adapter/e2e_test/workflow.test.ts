@@ -14,10 +14,13 @@
 * limitations under the License.
 */
 import {
-  InstanceElement, Element,
+  InstanceElement, Element, ElemID, findElements as findElementsByID,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterWith } from 'src/filter'
+import { collections } from '@salto-io/lowerdash'
+import wu from 'wu'
+import { MetadataInfo } from 'jsforce-types'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 import workflowFilter, {
@@ -28,7 +31,9 @@ import missingFieldsFilter from '../src/filters/missing_fields'
 import { WORKFLOW_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 import SalesforceAdapter from '../src/adapter'
 import { findElements } from '../test/utils'
-import { getInstance, getMetadata, removeIfAlreadyExists, createAndVerify, removeElementAndVerify } from './utils'
+import { getInstance, getMetadata, removeIfAlreadyExists, createAndVerify, removeElementAndVerify, fetchTypes } from './utils'
+
+const { makeArray } = collections.array
 
 describe('workflow filter', () => {
   // Set long timeout as we communicate with salesforce API
@@ -45,22 +50,118 @@ describe('workflow filter', () => {
   describe('should fetch Workflow instances', () => {
     let leadWorkflow: InstanceElement
 
-    const verifySubInstance = (subField: string, _subName: string,
-      _subDescription: string): void => {
+    const verifyLeadHasWorkflowAlert = async (): Promise<void> => {
+      await client.upsert('WorkflowAlert', {
+        fullName: 'Lead.TestWorkflowAlert',
+        description: 'E2E Fetch WorkflowAlert',
+        protected: false,
+        recipients: [
+          {
+            recipient: 'CEO',
+            type: 'role',
+          },
+        ],
+        senderType: 'CurrentUser',
+        template: 'TestEmailFolder/TestEmailTemplate',
+      } as MetadataInfo)
+    }
+
+    const verifyLeadHasWorkflowFieldUpdate = async (): Promise<void> => {
+      await client.upsert('WorkflowFieldUpdate', {
+        fullName: 'Lead.TestWorkflowFieldUpdate',
+        name: 'TestWorkflowFieldUpdate',
+        description: 'E2E Fetch WorkflowFieldUpdate',
+        field: 'Company',
+        notifyAssignee: false,
+        protected: false,
+        operation: 'Null',
+      } as MetadataInfo)
+    }
+
+    const verifyLeadHasWorkflowTask = async (): Promise<void> => {
+      await client.upsert('WorkflowTask', {
+        fullName: 'Lead.TestWorkflowTask',
+        assignedTo: 'CEO',
+        assignedToType: 'role',
+        description: 'E2E Fetch WorkflowTask',
+        dueDateOffset: 1,
+        notifyAssignee: false,
+        priority: 'Normal',
+        protected: false,
+        status: 'Not Started',
+        subject: 'TestWorkflowOutboundMessage',
+      } as MetadataInfo)
+    }
+
+    const verifyLeadHasWorkflowRule = async (): Promise<void> => {
+      await client.upsert('WorkflowRule', {
+        fullName: 'Lead.TestWorkflowRule',
+        actions: [
+          {
+            name: 'TestWorkflowAlert',
+            type: 'Alert',
+          },
+          {
+            name: 'TestWorkflowFieldUpdate',
+            type: 'FieldUpdate',
+          },
+          {
+            name: 'TestWorkflowTask',
+            type: 'Task',
+          },
+        ],
+        active: false,
+        criteriaItems: [
+          {
+            field: 'Lead.Company',
+            operation: 'notEqual',
+            value: 'BLA',
+          },
+        ],
+        description: 'E2E Fetch WorkflowRule',
+        triggerType: 'onCreateOnly',
+        workflowTimeTriggers: [
+          {
+            actions: [
+              {
+                name: 'TestWorkflowAlert',
+                type: 'Alert',
+              },
+            ],
+            timeLength: '1',
+            workflowTimeTriggerUnit: 'Hours',
+          },
+        ],
+      } as MetadataInfo)
+    }
+
+    const verifyLeadWorkflowInnerTypesExist = async (): Promise<void> => {
+      await Promise.all([
+        verifyLeadHasWorkflowAlert(),
+        verifyLeadHasWorkflowFieldUpdate(),
+        verifyLeadHasWorkflowTask(),
+      ])
+      return verifyLeadHasWorkflowRule() // WorkflowRule depends on Alert, FieldUpdate & Task
+    }
+
+    const verifySubInstance = (subField: string, subName: string,
+      subDescription: string): void => {
       expect(leadWorkflow.value[subField]).toBeDefined()
-      // TODO: should be deleted WIP
-      // console.log(JSON.stringify(leadWorkflow)
-      // console.log(JSON.stringify(leadWorkflow.value[subField]))
-      // const subElemId = makeArray(leadWorkflow.value[subField])
-      //  .find((alert: {elemId: ElemID}) => alert.elemId.name === subName)
-      // const subInstance = wu(findElementsByID(result, subElemId)).toArray()[0] as InstanceElement
-      // expect(subInstance.value.description).toEqual(subDescription)
+
+      const subElemId = makeArray(leadWorkflow.value[subField])
+        .find((alert: {elemId: ElemID}) => alert.elemId.name === subName)?.elemId
+      const subInstance = wu(findElementsByID(fetchResult, subElemId))
+        .toArray()[0] as InstanceElement
+      expect(subInstance.value.description).toEqual(subDescription)
     }
 
     beforeAll(async () => {
-      const temp = await getInstance(client, WORKFLOW_METADATA_TYPE, 'Lead')
-      expect(temp).toBeDefined()
-      fetchResult = [temp as InstanceElement]
+      await verifyLeadWorkflowInnerTypesExist()
+      const rawWorkflowInstance = await getInstance(client, WORKFLOW_METADATA_TYPE, 'Lead')
+      expect(rawWorkflowInstance).toBeDefined()
+      const rawWorkflowTypes = await fetchTypes(client, [WORKFLOW_METADATA_TYPE,
+        ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
+      fetchResult = [rawWorkflowInstance as InstanceElement, ...rawWorkflowTypes]
       const filters = [missingFieldsFilter({ client }), workflowFilter({ client })] as FilterWith<'onFetch'>[]
       filters[0].onFetch(fetchResult)
       filters[1].onFetch(fetchResult)
@@ -71,20 +172,20 @@ describe('workflow filter', () => {
     })
 
     it('should fetch workflow alerts', async () => {
-      verifySubInstance(WORKFLOW_ALERTS_FIELD, 'Lead.TestWorkflowAlert', 'E2E Fetch WorkflowAlert')
+      verifySubInstance(WORKFLOW_ALERTS_FIELD, 'Lead_TestWorkflowAlert', 'E2E Fetch WorkflowAlert')
     })
 
     it('should fetch workflow field updates', async () => {
-      verifySubInstance(WORKFLOW_FIELD_UPDATES_FIELD, 'Lead.TestWorkflowFieldUpdate',
+      verifySubInstance(WORKFLOW_FIELD_UPDATES_FIELD, 'Lead_TestWorkflowFieldUpdate',
         'E2E Fetch WorkflowFieldUpdate')
     })
 
     it('should fetch workflow task', async () => {
-      verifySubInstance(WORKFLOW_TASKS_FIELD, 'Lead.TestWorkflowTask', 'E2E Fetch WorkflowTask')
+      verifySubInstance(WORKFLOW_TASKS_FIELD, 'Lead_TestWorkflowTask', 'E2E Fetch WorkflowTask')
     })
 
     it('should fetch workflow rule', async () => {
-      verifySubInstance(WORKFLOW_RULES_FIELD, 'Lead.TestWorkflowRule', 'E2E Fetch WorkflowRule')
+      verifySubInstance(WORKFLOW_RULES_FIELD, 'Lead_TestWorkflowRule', 'E2E Fetch WorkflowRule')
     })
   })
 

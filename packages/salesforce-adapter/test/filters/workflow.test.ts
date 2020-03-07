@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, Element } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, findElement } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator, {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD,
@@ -24,6 +25,8 @@ import {
   API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, WORKFLOW_METADATA_TYPE,
   METADATA_TYPE,
 } from '../../src/constants'
+
+const { makeArray } = collections.array
 
 describe('Workflow filter', () => {
   const { client } = mockClient()
@@ -63,23 +66,52 @@ describe('Workflow filter', () => {
   }
 
   describe('on fetch', () => {
-    it('should modify inner types full_names to contain the parent fullName', async () => {
-      const workflowWithInnerTypes = generateWorkFlowInstance(true)
-      const workflowSubTypes = Object.values(WORKFLOW_FIELD_TO_TYPE).map(subType => new ObjectType({
-        elemID: new ElemID(SALESFORCE, subType),
-        annotations: { [METADATA_TYPE]: subType },
-      }))
-      const elements = [workflowWithInnerTypes, ...workflowSubTypes]
-      await filter.onFetch(elements)
+    const workflowWithInnerTypes = generateWorkFlowInstance(true)
+    let elements: Element[]
 
-      const verifyFullName = (e: Element, name: string): void =>
-        expect((e as InstanceElement).value[INSTANCE_FULL_NAME_FIELD]).toEqual(name)
+    describe('should modify workflow instance', () => {
+      beforeAll(async () => {
+        const workflowSubTypes = Object.values(WORKFLOW_FIELD_TO_TYPE)
+          .map(subType => new ObjectType({
+            elemID: new ElemID(SALESFORCE, subType),
+            annotations: { [METADATA_TYPE]: subType },
+          }))
+        elements = [workflowWithInnerTypes, ...workflowSubTypes]
+        expect(elements).toHaveLength(8)
+        await filter.onFetch(elements)
+      })
 
-      verifyFullName(elements[8], 'Account.MyWorkflowAlert1')
-      verifyFullName(elements[9], 'Account.MyWorkflowAlert2')
-      verifyFullName(elements[10], 'Account.MyWorkflowFieldUpdate')
-      verifyFullName(elements[11], 'Account.MyWorkflowTask')
-      verifyFullName(elements[12], 'Account.MyWorkflowRule')
+      it('should split workflow instance', () => {
+        expect(elements).toHaveLength(13)
+      })
+
+      it('should modify inner types full_names to contain the parent fullName', async () => {
+        const verifyFullName = (e: Element, name: string): void =>
+          expect((e as InstanceElement).value[INSTANCE_FULL_NAME_FIELD]).toEqual(name)
+
+        verifyFullName(elements[8], 'Account.MyWorkflowAlert1')
+        verifyFullName(elements[9], 'Account.MyWorkflowAlert2')
+        verifyFullName(elements[10], 'Account.MyWorkflowFieldUpdate')
+        verifyFullName(elements[11], 'Account.MyWorkflowTask')
+        verifyFullName(elements[12], 'Account.MyWorkflowRule')
+      })
+
+      it('should have reference from workflow instance', () => {
+        Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(field => {
+          makeArray(workflowWithInnerTypes.value[field]).forEach(val => {
+            expect(val).toBeInstanceOf(ReferenceExpression)
+          })
+        })
+      })
+
+      it('should have list reference from workflow instance', () => {
+        expect(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD]).toHaveLength(2)
+        makeArray(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD]).forEach(val => {
+          expect(val).toBeInstanceOf(ReferenceExpression)
+          const { elemId } = val as ReferenceExpression
+          expect((findElement(elements, elemId) as InstanceElement).value.description).toBe('description')
+        })
+      })
     })
 
     it('should not modify non workflow instances', async () => {

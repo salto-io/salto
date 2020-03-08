@@ -16,7 +16,7 @@
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator,
+  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
 import { changeValidator } from './change_validator'
@@ -43,22 +43,25 @@ const configType = new ObjectType({
   elemID: configID,
   fields: {
     metadataTypesBlacklist: new Field(
-      configID, 'metadataTypesBlacklist', BuiltinTypes.STRING, {}, true,
+      configID,
+      'metadataTypesBlacklist',
+      BuiltinTypes.STRING,
+      {
+        [CORE_ANNOTATIONS.DEFAULT]: [],
+      },
+      true,
     ),
     instancesRegexBlacklist: new Field(
-      configID, 'instancesRegexBlacklist', BuiltinTypes.STRING, {}, true,
+      configID,
+      'instancesRegexBlacklist',
+      BuiltinTypes.STRING,
+      {
+        [CORE_ANNOTATIONS.DEFAULT]: [],
+      },
+      true,
     ),
   },
 })
-
-const defaultConfig = new InstanceElement(
-  ElemID.CONFIG_NAME,
-  configType,
-  {
-    metadataTypesBlacklist: [],
-    instancesRegexBlacklist: ['CustomObject.InvoiceLine$'],
-  },
-)
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,
@@ -91,7 +94,6 @@ export const creator: AdapterCreator = {
   validateConfig: config => validateCredentials(credentialsFromConfig(config)),
   credentialsType,
   configType,
-  defaultConfig,
   changeValidator,
   dependencyChanger,
 }

@@ -61,7 +61,6 @@ export type AdapterCreator = {
   validateConfig: (config: Readonly<InstanceElement>) => Promise<void>
   credentialsType: ObjectType
   configType?: ObjectType
-  defaultConfig?: InstanceElement
   changeValidator?: ChangeValidator
   dependencyChanger?: DependencyChanger
 }

@@ -23,7 +23,7 @@ if [ "$CURRENT_VERSION" != "$PREV_VERSION" ]; then
   git tag $VERSION_TAG
 
   # prevent SSH fingerprint prompt on git push
-  ssh -o StrictHostKeyChecking=no git@github.com
-  
+  ssh -o StrictHostKeyChecking=no git@github.com || true
+
   git push origin $VERSION_TAG
 fi

@@ -86,14 +86,20 @@ describe('Data migration operations E2E', () => {
     })
 
     it('should succeed when running import from a CSV file', async () => {
-      await importCommand(fetchOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
+      await importCommand(
+        fetchOutputDir, sfLeadObjectName,
+        dataFilePath, mockTelemetry, cliOutput,
+      ).execute()
       expect(cliOutput.stdout.content).toContain(Prompts.IMPORT_ENDED_SUMMARY(2, 0))
     })
 
     it('should succeed When running delete instances read from a CSV file', async () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
-      await importCommand(fetchOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
+      await importCommand(
+        fetchOutputDir, sfLeadObjectName,
+        dataFilePath, mockTelemetry, cliOutput,
+      ).execute()
 
       // Replicate the file with the Ids of the created items
       await exportCommand(
@@ -137,8 +143,10 @@ describe('Data migration operations E2E', () => {
     })
 
     it('should fail when running import from a CSV file', async () => {
-      const command = importCommand(fetchOutputDir, sfLeadObjectName,
-        dataFilePath, cliOutput)
+      const command = importCommand(
+        fetchOutputDir, sfLeadObjectName,
+        dataFilePath, mockTelemetry, cliOutput,
+      )
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
     })

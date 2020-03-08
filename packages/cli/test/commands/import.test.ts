@@ -41,8 +41,10 @@ describe('import command', () => {
   const workspaceDir = 'dummy_dir'
 
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
-  mockLoadWorkspace.mockResolvedValue({ workspace: mocks.mockLoadWorkspace(workspaceDir),
-    errored: false })
+  mockLoadWorkspace.mockResolvedValue({
+    workspace: mocks.mockLoadWorkspace(workspaceDir),
+    errored: false,
+  })
 
   beforeEach(() => {
     jest.spyOn(file, 'exists').mockResolvedValue(true)
@@ -50,7 +52,7 @@ describe('import command', () => {
   })
 
   it('should run import successfully if given a correct path to a real CSV file', async () => {
-    await command(workspaceDir, 'mockName', 'mockPath', cliOutput).execute()
+    await command(workspaceDir, 'mockName', 'mockPath', mocks.mockTelemetry, cliOutput).execute()
     expect(importFromCsvFile).toHaveBeenCalled()
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_ENDED_SUMMARY(5, 0))
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
@@ -58,7 +60,7 @@ describe('import command', () => {
 
   it('should fail if given a wrong path for a CSV file', async () => {
     jest.spyOn(file, 'exists').mockResolvedValueOnce(false)
-    await command(workspaceDir, '', '', cliOutput).execute()
+    await command(workspaceDir, '', '', mocks.mockTelemetry, cliOutput).execute()
     expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
   })
   it('should fail if workspace load failed', async () => {
@@ -68,12 +70,12 @@ describe('import command', () => {
       getWorkspaceErrors: mocks.getWorkspaceErrors,
     } as unknown as Workspace
     mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-    const result = await command(workspaceDir, '', '', cliOutput).execute()
+    const result = await command(workspaceDir, '', '', mocks.mockTelemetry, cliOutput).execute()
     expect(result).toBe(CliExitCode.AppError)
   })
 
   it('should fail if import operation failed', async () => {
-    const exitCode = await command(workspaceDir, 'error-type', '', cliOutput).execute()
+    const exitCode = await command(workspaceDir, 'error-type', '', mocks.mockTelemetry, cliOutput).execute()
     expect(exitCode).toEqual(CliExitCode.AppError)
     expect(cliOutput.stdout.content).toMatch(Prompts.ERROR_SUMMARY(['error1', 'error2']))
   })

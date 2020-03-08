@@ -45,7 +45,7 @@ const seriesImpl = <T>(
     if (done) {
       return results
     }
-    const [index, valuePromise] = indexedValue as [number, () => Promise<T>]
+    const [index, valuePromise] = indexedValue
     results[index] = await valuePromise()
     return next()
   }

@@ -32,7 +32,7 @@ export {
   DuplicateAnnotationFieldDefinitionError, DuplicateAnnotationTypeError,
 } from './internal/object_types'
 
-export { DuplicateInstanceKeyError } from './internal/instances'
+export { DuplicateInstanceKeyError, createDefaultInstanceFromType } from './internal/instances'
 export { MultiplePrimitiveTypesUnsupportedError } from './internal/primitives'
 
 const log = logger(module)

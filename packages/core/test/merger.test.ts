@@ -15,14 +15,14 @@
 */
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement,
+  PrimitiveTypes, TypeElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   mergeElements,
   MultipleBaseDefinitionsMergeError,
   NoBaseDefinitionMergeError, DuplicateAnnotationTypeError,
   DuplicateAnnotationError, DuplicateAnnotationFieldDefinitionError, DuplicateInstanceKeyError,
-  MultiplePrimitiveTypesUnsupportedError,
+  MultiplePrimitiveTypesUnsupportedError, createDefaultInstanceFromType,
 } from '../src/core/merger'
 import { Keywords } from '../src/parser/language'
 
@@ -364,6 +364,25 @@ describe('merger', () => {
       const { errors } = mergeElements([ins1, conflicting])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(DuplicateAnnotationError)
+    })
+
+    it('should create default instance from type', () => {
+      const mockElemID = new ElemID('test')
+      const configType = new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          val1: new Field(
+            mockElemID,
+            'val1',
+            BuiltinTypes.STRING,
+            {
+              [CORE_ANNOTATIONS.DEFAULT]: 'test',
+            }
+          ),
+        },
+      })
+      expect(createDefaultInstanceFromType('test', configType))
+        .toEqual(new InstanceElement('test', configType, { val1: 'test' }))
     })
   })
 

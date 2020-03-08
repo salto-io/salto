@@ -8,6 +8,9 @@
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"
+            ],
+            "node-suitetalk": [
+              "../netsuite-adapter/types/node-suitetalk"
             ]
         },
         "lib": [

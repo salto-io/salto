@@ -13,7 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const firstFunc = (): void => {
-  // eslint-disable-next-line no-console
-  console.log('Welcome to netsuite adapter')
-}
+export { default } from './src/adapter'
+export { creator } from './src/adapter_creator'

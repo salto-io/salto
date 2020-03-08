@@ -13,15 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { creator as salesforceAdapterCreator } from '@salto-io/salesforce-adapter'
-import { AdapterCreator } from '@salto-io/adapter-api'
-import { creator as hubspotAdapterCreator } from '@salto-io/hubspot-adapter'
-import { creator as netsuiteAdapterCreator } from '@salto-io/netsuite-adapter'
-
-const adapterCreators: Record<string, AdapterCreator> = {
-  salesforce: salesforceAdapterCreator,
-  hubspot: hubspotAdapterCreator,
-  netsuite: netsuiteAdapterCreator,
-}
-
-export default adapterCreators
+export const NETSUITE = 'netsuite'
+export const RECORDS_PATH = 'Records'
+export const METADATA_TYPE = 'metadataType'
+export const INTERNAL_ID = 'internalId'
+export const EXTERNAL_ID = 'externalId'
+export const ATTRIBUTES = '$attributes'

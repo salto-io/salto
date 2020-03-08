@@ -13,14 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { firstFunc } from '../src/main'
+import { Service as Connection } from 'node-suitetalk'
 
-describe('Test example', () => {
-  beforeAll(async () => {
-    firstFunc()
-  })
-
-  it('should pass', () => {
-    expect(true).toBeTruthy()
-  })
+const mockSuiteTalkConnection: () => Connection = () => ({
+  init: jest.fn().mockImplementation(() => Promise.resolve()),
+  getList: jest.fn().mockImplementation(() => Promise.resolve()),
+  getCustomizationId: jest.fn().mockImplementation(() => Promise.resolve()),
 })
+
+export default mockSuiteTalkConnection

@@ -13,15 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { creator as salesforceAdapterCreator } from '@salto-io/salesforce-adapter'
-import { AdapterCreator } from '@salto-io/adapter-api'
-import { creator as hubspotAdapterCreator } from '@salto-io/hubspot-adapter'
-import { creator as netsuiteAdapterCreator } from '@salto-io/netsuite-adapter'
+import { Service as Connection } from 'node-suitetalk'
+import NetsuiteClient from '../../src/client/client'
+import createConnection from './connection'
 
-const adapterCreators: Record<string, AdapterCreator> = {
-  salesforce: salesforceAdapterCreator,
-  hubspot: hubspotAdapterCreator,
-  netsuite: netsuiteAdapterCreator,
+const mockClient = (): { connection: Connection; client: NetsuiteClient } => {
+  const connection = createConnection()
+  const client = new NetsuiteClient({
+    credentials: {
+      account: '123',
+      consumerKey: 'consumerKey',
+      consumerSecret: 'consumerSecret',
+      tokenId: 'tokenId',
+      tokenSecret: 'tokenSecret',
+    },
+    connection,
+  })
+
+  return { connection, client }
 }
 
-export default adapterCreators
+export default mockClient

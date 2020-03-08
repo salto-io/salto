@@ -15,10 +15,11 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, Adapter, ElemIdGetter, AdapterCreatorOpts,
+  ObjectType, Adapter, ElemIdGetter, AdapterCreatorOpts, ElemID,
 } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
 import { ConfigSource } from '../../workspace/config_source'
+import { createDefaultInstanceFromType } from '../merger/internal/instances'
 
 export const getAdaptersCredentialsTypes = (
   names: string[]
@@ -51,11 +52,21 @@ export const getAdapters = async (
 ): Promise<Record<string, Adapter>> => {
   const creatorConfig: Record<string, AdapterCreatorOpts> = _
     .fromPairs(await Promise.all(adapters.map(
-      async adapter => ([adapter, {
-        credentials: await credentials.get(adapter),
-        config: await config.get(adapter),
-        getElemIdFunc: elemIdGetter,
-      }])
+      async adapter => {
+        const adapterConfig = await config.get(adapter)
+        const { configType } = adapterCreators[adapter]
+        const defaultConfig = configType
+          ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
+          : undefined
+        if (_.isUndefined(adapterConfig) && defaultConfig) {
+          await config.set(adapter, defaultConfig)
+        }
+        return ([adapter, {
+          credentials: await credentials.get(adapter),
+          config: adapterConfig ?? defaultConfig,
+          getElemIdFunc: elemIdGetter,
+        }])
+      }
     )))
   return initAdapters(creatorConfig)
 }

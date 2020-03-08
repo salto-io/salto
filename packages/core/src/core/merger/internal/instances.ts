@@ -92,3 +92,6 @@ export const mergeInstances = (
     errors.length}]`)
   return { merged, errors }
 }
+
+export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
+InstanceElement => mergeInstances([new InstanceElement(name, objectType)]).merged[0]

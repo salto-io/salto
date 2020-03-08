@@ -76,11 +76,11 @@ const filterCreator: FilterCreator = () => ({
    */
   onFetch: async (elements: Element[]) => {
     const splitWorkflow = (workflowInstance: InstanceElement): InstanceElement[] => _.flatten(
-      Object.keys(WORKFLOW_FIELD_TO_TYPE).map(fieldName => {
+      Object.entries(WORKFLOW_FIELD_TO_TYPE).map(([fieldName, fieldType]) => {
         const objType = elements.filter(isObjectType)
-          .find(e => metadataType(e) === WORKFLOW_FIELD_TO_TYPE[fieldName])
+          .find(e => metadataType(e) === fieldType)
         if (_.isUndefined(objType)) {
-          log.warn('failed to find object type for %s', WORKFLOW_FIELD_TO_TYPE[fieldName])
+          log.warn('failed to find object type for %s', fieldType)
           return []
         }
         const splitted = makeArray(workflowInstance.value[fieldName])
@@ -103,16 +103,10 @@ const filterCreator: FilterCreator = () => ({
       })
     )
 
-    const newInstances: InstanceElement[] = []
-    elements
+    elements.push(..._.flatten(elements
       .filter(isInstanceElement)
       .filter(isWorkflowInstance)
-      .forEach(wfInst => {
-        // we use here "forEach" and not for as we are modifying the wsInstance and create
-        // new instances
-        newInstances.push(...splitWorkflow(wfInst))
-      })
-    elements.push(...newInstances)
+      .map(wfInst => splitWorkflow(wfInst))))
   },
 })
 

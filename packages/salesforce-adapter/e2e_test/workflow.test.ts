@@ -18,7 +18,6 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import wu from 'wu'
 import { MetadataInfo } from 'jsforce-types'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
@@ -47,13 +46,14 @@ describe('workflow filter', () => {
   beforeAll(() => {
     ({ adapter, client } = realAdapter())
   })
+  const baseCustomObject = 'Lead'
 
   describe('should fetch Workflow instances', () => {
-    let leadWorkflow: InstanceElement
+    let workflow: InstanceElement
 
-    const verifyLeadHasWorkflowAlert = async (): Promise<void> => {
+    const verifyHasWorkflowAlert = async (): Promise<void> => {
       await client.upsert('WorkflowAlert', {
-        fullName: 'Lead.TestWorkflowAlert',
+        fullName: `${baseCustomObject}.TestWorkflowAlert`,
         description: 'E2E Fetch WorkflowAlert',
         protected: false,
         recipients: [
@@ -67,9 +67,9 @@ describe('workflow filter', () => {
       } as MetadataInfo)
     }
 
-    const verifyLeadHasWorkflowFieldUpdate = async (): Promise<void> => {
+    const verifyHasWorkflowFieldUpdate = async (): Promise<void> => {
       await client.upsert('WorkflowFieldUpdate', {
-        fullName: 'Lead.TestWorkflowFieldUpdate',
+        fullName: `${baseCustomObject}.TestWorkflowFieldUpdate`,
         name: 'TestWorkflowFieldUpdate',
         description: 'E2E Fetch WorkflowFieldUpdate',
         field: 'Company',
@@ -79,9 +79,9 @@ describe('workflow filter', () => {
       } as MetadataInfo)
     }
 
-    const verifyLeadHasWorkflowTask = async (): Promise<void> => {
+    const verifyHasWorkflowTask = async (): Promise<void> => {
       await client.upsert('WorkflowTask', {
-        fullName: 'Lead.TestWorkflowTask',
+        fullName: `${baseCustomObject}.TestWorkflowTask`,
         assignedTo: 'CEO',
         assignedToType: 'role',
         description: 'E2E Fetch WorkflowTask',
@@ -94,9 +94,9 @@ describe('workflow filter', () => {
       } as MetadataInfo)
     }
 
-    const verifyLeadHasWorkflowRule = async (): Promise<void> => {
+    const verifyHasWorkflowRule = async (): Promise<void> => {
       await client.upsert('WorkflowRule', {
-        fullName: 'Lead.TestWorkflowRule',
+        fullName: `${baseCustomObject}.TestWorkflowRule`,
         actions: [
           {
             name: 'TestWorkflowAlert',
@@ -114,7 +114,7 @@ describe('workflow filter', () => {
         active: false,
         criteriaItems: [
           {
-            field: 'Lead.Company',
+            field: `${baseCustomObject}.Company`,
             operation: 'notEqual',
             value: 'BLA',
           },
@@ -136,62 +136,67 @@ describe('workflow filter', () => {
       } as MetadataInfo)
     }
 
-    const verifyLeadWorkflowInnerTypesExist = async (): Promise<void> => {
+    const verifyWorkflowInnerTypesExist = async (): Promise<void> => {
       await Promise.all([
-        verifyLeadHasWorkflowAlert(),
-        verifyLeadHasWorkflowFieldUpdate(),
-        verifyLeadHasWorkflowTask(),
+        verifyHasWorkflowAlert(),
+        verifyHasWorkflowFieldUpdate(),
+        verifyHasWorkflowTask(),
       ])
-      return verifyLeadHasWorkflowRule() // WorkflowRule depends on Alert, FieldUpdate & Task
+      return verifyHasWorkflowRule() // WorkflowRule depends on Alert, FieldUpdate & Task
     }
 
     const verifySubInstance = (subField: string, subName: string,
       subDescription: string): void => {
-      expect(leadWorkflow.value[subField]).toBeDefined()
+      expect(workflow.value[subField]).toBeDefined()
 
-      const subElemId = makeArray(leadWorkflow.value[subField])
-        .find((alert: {elemId: ElemID}) => alert.elemId.name === subName)?.elemId
-      const subInstance = wu(findElementsByID(fetchResult, subElemId))
-        .toArray()[0] as InstanceElement
+      const subElemId = makeArray(workflow.value[subField])
+        .find((ref: {elemId: ElemID}) => ref.elemId.name === subName)?.elemId
+      const [subInstance] = findElementsByID(fetchResult, subElemId) as Iterable<InstanceElement>
       expect(subInstance.value.description).toEqual(subDescription)
     }
 
     beforeAll(async () => {
-      await verifyLeadWorkflowInnerTypesExist()
-      const rawWorkflowInstance = await getInstance(client, WORKFLOW_METADATA_TYPE, 'Lead')
+      await verifyWorkflowInnerTypesExist()
+      const rawWorkflowInstance = await getInstance(client, WORKFLOW_METADATA_TYPE,
+        baseCustomObject)
       expect(rawWorkflowInstance).toBeDefined()
       const rawWorkflowTypes = await fetchTypes(client, [WORKFLOW_METADATA_TYPE,
         ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
       fetchResult = [rawWorkflowInstance as InstanceElement, ...rawWorkflowTypes]
       await runFiltersOnFetch(client, fetchResult)
-      leadWorkflow = findElements(fetchResult, WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
+      workflow = findElements(fetchResult, WORKFLOW_METADATA_TYPE,
+        baseCustomObject)[0] as InstanceElement
     })
     it('should fetch workflow', async () => {
-      expect(leadWorkflow.value[INSTANCE_FULL_NAME_FIELD]).toBeDefined()
+      expect(workflow.value[INSTANCE_FULL_NAME_FIELD]).toBe(baseCustomObject)
     })
 
     it('should fetch workflow alerts', async () => {
-      verifySubInstance(WORKFLOW_ALERTS_FIELD, 'Lead_TestWorkflowAlert', 'E2E Fetch WorkflowAlert')
+      verifySubInstance(WORKFLOW_ALERTS_FIELD, `${baseCustomObject}_TestWorkflowAlert`,
+        'E2E Fetch WorkflowAlert')
     })
 
     it('should fetch workflow field updates', async () => {
-      verifySubInstance(WORKFLOW_FIELD_UPDATES_FIELD, 'Lead_TestWorkflowFieldUpdate',
+      verifySubInstance(WORKFLOW_FIELD_UPDATES_FIELD,
+        `${baseCustomObject}_TestWorkflowFieldUpdate`,
         'E2E Fetch WorkflowFieldUpdate')
     })
 
     it('should fetch workflow task', async () => {
-      verifySubInstance(WORKFLOW_TASKS_FIELD, 'Lead_TestWorkflowTask', 'E2E Fetch WorkflowTask')
+      verifySubInstance(WORKFLOW_TASKS_FIELD, `${baseCustomObject}_TestWorkflowTask`,
+        'E2E Fetch WorkflowTask')
     })
 
     it('should fetch workflow rule', async () => {
-      verifySubInstance(WORKFLOW_RULES_FIELD, 'Lead_TestWorkflowRule', 'E2E Fetch WorkflowRule')
+      verifySubInstance(WORKFLOW_RULES_FIELD, `${baseCustomObject}_TestWorkflowRule`,
+        'E2E Fetch WorkflowRule')
     })
   })
 
   describe('workflow instance manipulations', () => {
     describe('workflow alerts manipulations', () => {
       const alertType = WORKFLOW_FIELD_TO_TYPE[WORKFLOW_ALERTS_FIELD]
-      const newInstanceName = 'Lead.MyWorkflowAlert'
+      const newInstanceName = `${baseCustomObject}.MyWorkflowAlert`
       let newAlert: InstanceElement
       beforeAll(async () => {
         await removeIfAlreadyExists(client, alertType, newInstanceName)
@@ -257,7 +262,7 @@ describe('workflow filter', () => {
 
     describe('workflow field updates manipulations', () => {
       const fieldUpdateType = WORKFLOW_FIELD_TO_TYPE[WORKFLOW_FIELD_UPDATES_FIELD]
-      const newInstanceName = 'Lead.MyWorkflowFieldUpdate'
+      const newInstanceName = `${baseCustomObject}.MyWorkflowFieldUpdate`
       let newInstance: InstanceElement
       beforeAll(async () => {
         await removeIfAlreadyExists(client, fieldUpdateType, newInstanceName)
@@ -305,7 +310,7 @@ describe('workflow filter', () => {
 
     describe('workflow tasks manipulations', () => {
       const taskType = WORKFLOW_FIELD_TO_TYPE[WORKFLOW_TASKS_FIELD]
-      const newInstanceName = 'Lead.MyWorkflowTask'
+      const newInstanceName = `${baseCustomObject}.MyWorkflowTask`
       let newInstance: InstanceElement
       beforeAll(async () => {
         await removeIfAlreadyExists(client, taskType, newInstanceName)
@@ -348,7 +353,7 @@ describe('workflow filter', () => {
 
     describe('workflow rules manipulations', () => {
       const rulesType = WORKFLOW_FIELD_TO_TYPE[WORKFLOW_RULES_FIELD]
-      const newInstanceName = 'Lead.MyWorkflowRule'
+      const newInstanceName = `${baseCustomObject}.MyWorkflowRule`
       let newInstance: InstanceElement
       beforeAll(async () => {
         await removeIfAlreadyExists(client, rulesType, newInstanceName)
@@ -374,7 +379,7 @@ describe('workflow filter', () => {
           active: false,
           criteriaItems: [
             {
-              field: 'Lead.Company',
+              field: `${baseCustomObject}.Company`,
               operation: 'notEqual',
               value: 'BLA',
             },

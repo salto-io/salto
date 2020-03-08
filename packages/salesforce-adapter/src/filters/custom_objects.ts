@@ -23,7 +23,6 @@ import {
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
-import wu from 'wu'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
@@ -474,7 +473,7 @@ const workflowDependentMetadataTypes = new Set([WORKFLOW_METADATA_TYPE,
 const dependentMetadataTypes = new Set([CUSTOM_TAB_METADATA_TYPE, DUPLICATE_RULE_METADATA_TYPE,
   QUICK_ACTION_METADATA_TYPE, WORKFLOW_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
-  ...wu(workflowDependentMetadataTypes.values()).toArray(),
+  ...workflowDependentMetadataTypes.values(),
 ])
 
 const hasCustomObjectParent = (instance: InstanceElement): boolean =>

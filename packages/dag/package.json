@@ -50,6 +50,6 @@
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
     "ts-cleaner": "^1.0.2",
-    "typescript": "^3.7.2"
+    "typescript": "3.8.3"
   }
 }

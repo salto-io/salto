@@ -39,8 +39,8 @@
     "@salto-io/hubspot-adapter": "0.1.11",
     "@salto-io/logging": "0.1.11",
     "@salto-io/lowerdash": "0.1.11",
-    "@salto-io/salesforce-adapter": "0.1.11",
     "@salto-io/netsuite-adapter": "0.1.11",
+    "@salto-io/salesforce-adapter": "0.1.11",
     "async": "^3.1.0",
     "axios": "^0.19.2",
     "chalk": "^2.3.0",
@@ -71,8 +71,8 @@
     "@types/tmp": "^0.1.0",
     "@types/uuid": "^3.4.5",
     "@types/wu": "^2.1.40",
-    "@typescript-eslint/eslint-plugin": "^2.6.1",
-    "@typescript-eslint/parser": "^2.6.1",
+    "@typescript-eslint/eslint-plugin": "2.21.0",
+    "@typescript-eslint/parser": "2.21.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-header": "^3.0.0",
@@ -88,6 +88,6 @@
     "tmp-promise": "^2.0.2",
     "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
-    "typescript": "^3.7.2"
+    "typescript": "3.8.3"
   }
 }

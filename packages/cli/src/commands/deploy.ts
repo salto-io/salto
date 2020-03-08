@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
+import { deploy, PlanItem, ItemStatus, Telemetry } from '@salto-io/core'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -28,12 +28,20 @@ import {
   formatItemError, deployPhaseEpilogue,
 } from '../formatter'
 import { shouldDeploy } from '../callbacks'
-import { loadWorkspace, updateWorkspace } from '../workspace'
+import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
+import { TELEMETRY } from '../constants'
 
 const log = logger(module)
 
 const ACTION_INPROGRESS_INTERVAL = 5000
+const eventBaseName = 'workspace.deploy'
+const eventStart = `${eventBaseName}.${TELEMETRY.START}`
+const eventSuccess = `${eventBaseName}.${TELEMETRY.SUCCESS}`
+const eventFailure = `${eventBaseName}.${TELEMETRY.FAILURE}`
+const eventActions = `${eventBaseName}.actions`
+const eventActionErrors = `${eventActions}.${TELEMETRY.FAILURE}`
+const eventActionSuccess = `${eventActions}.${TELEMETRY.SUCCESS}`
 
 type Action = {
   item: PlanItem
@@ -45,17 +53,20 @@ export class DeployCommand implements CliCommand {
   readonly stdout: WriteStream
   readonly stderr: WriteStream
   private actions: Map<string, Action>
+  private telemetry: Telemetry
 
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
     readonly inputServices: string[],
+    telemetry: Telemetry,
     { stdout, stderr }: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
   ) {
     this.stdout = stdout
     this.stderr = stderr
     this.actions = new Map<string, Action>()
+    this.telemetry = telemetry
   }
 
   private endAction(itemName: string): void {
@@ -118,9 +129,13 @@ export class DeployCommand implements CliCommand {
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout }, this.spinnerCreator)
     if (errored) {
+      this.telemetry.sendCountEvent(eventFailure, 1)
       return CliExitCode.AppError
     }
 
+    const workspaceEventTags = await getWorkspaceTelemetryTags(workspace)
+
+    this.telemetry.sendCountEvent(eventStart, 1, workspaceEventTags)
     const result = await deploy(
       workspace,
       shouldDeploy(this.stdout, workspace),
@@ -135,14 +150,28 @@ export class DeployCommand implements CliCommand {
     this.stdout.write(deployPhaseEpilogue(nonErroredActions.length, result.errors.length))
     this.stdout.write(EOL)
 
+    this.telemetry.sendCountEvent(eventActionSuccess, nonErroredActions.length, workspaceEventTags)
+    this.telemetry.sendCountEvent(eventActionErrors, result.errors.length, workspaceEventTags)
+
+    let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
     if (!_.isUndefined(result.changes)) {
       const changes = [...result.changes]
-      return await updateWorkspace(workspace, { stderr: this.stderr, stdout: this.stdout },
-        changes)
-        ? CliExitCode.Success
-        : CliExitCode.AppError
+      if (!await updateWorkspace(
+        workspace,
+        { stderr: this.stderr, stdout: this.stdout },
+        changes
+      )) {
+        cliExitCode = CliExitCode.AppError
+      }
     }
-    return result.success ? CliExitCode.Success : CliExitCode.AppError
+
+    if (cliExitCode === CliExitCode.Success) {
+      this.telemetry.sendCountEvent(eventSuccess, 1, workspaceEventTags)
+    } else {
+      this.telemetry.sendCountEvent(eventFailure, 1, workspaceEventTags)
+    }
+
+    return cliExitCode
   }
 }
 
@@ -173,7 +202,7 @@ const deployBuilder = createCommandBuilder({
     output: CliOutput,
     spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
-    return new DeployCommand('.', input.args.force, input.args.services, output, spinnerCreator)
+    return new DeployCommand('.', input.args.force, input.args.services, input.telemetry, output, spinnerCreator)
   },
 })
 

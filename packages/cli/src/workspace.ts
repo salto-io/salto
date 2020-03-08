@@ -14,13 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace, loadConfig, FetchChange, WorkspaceError } from '@salto-io/core'
+import { Workspace, loadConfig, FetchChange, WorkspaceError, Tags } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { formatWorkspaceErrors, formatWorkspaceAbort, formatDetailedChanges, formatFinishedLoading } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
-import { shouldContinueInCaseOfWarnings,
-  shouldAbortWorkspaceInCaseOfValidationError } from './callbacks'
+import {
+  shouldContinueInCaseOfWarnings,
+  shouldAbortWorkspaceInCaseOfValidationError,
+} from './callbacks'
 import Prompts from './prompts'
 
 const log = logger(module)
@@ -107,3 +109,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   log.debug('finished updating workspace')
   return true
 }
+
+export const getWorkspaceTelemetryTags = async (ws: Workspace): Promise<Tags> => (
+  { workspaceID: ws.config.uid }
+)

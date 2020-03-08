@@ -63,6 +63,11 @@ export interface MockCliOutput {
   exitCode: number
 }
 
+export const mockTelemetry = telemetrySender(
+  { url: '', enabled: false, token: '' },
+  { installationID: '1234', app: 'test' },
+)
+
 export const cli = async ({
   commandBuilders = builders,
   args = [],
@@ -77,10 +82,7 @@ export const cli = async ({
   const input = {
     args: _.isArray(args) ? args : args.split(' '),
     stdin: {},
-    telemetry: telemetrySender(
-      { url: '', enabled: false, token: '' },
-      { installationID: '1234', app: 'test' },
-    ),
+    telemetry: mockTelemetry,
   }
 
   const output = {

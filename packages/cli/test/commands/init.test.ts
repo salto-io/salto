@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Config, telemetrySender } from '@salto-io/core'
+import { Config } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
 
@@ -45,11 +45,6 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 
-const telemetry = telemetrySender(
-  { url: 'http://0.0.0.0', token: '1234', enabled: false },
-  { installationID: 'abcd', app: 'test' },
-)
-
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
 
@@ -58,12 +53,12 @@ describe('describe command', () => {
   })
 
   it('should invoke api\'s init', async () => {
-    await command('test', telemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
+    await command('test', mocks.mockTelemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
     expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
   })
 
   it('should print errors', async () => {
-    await command('error', telemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
+    await command('error', mocks.mockTelemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
     expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
   })
 })

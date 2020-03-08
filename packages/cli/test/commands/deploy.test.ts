@@ -18,7 +18,7 @@ import {
   Workspace, Plan, PlanItem, currentEnvConfig,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
-import { deploy, preview, mockSpinnerCreator, MockWriteStream } from '../mocks'
+import { deploy, preview, mockSpinnerCreator, MockWriteStream, mockTelemetry } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
 
@@ -73,7 +73,7 @@ describe('deploy command', () => {
 
   describe('valid deploy', () => {
     beforeEach(() => {
-      command = new DeployCommand('', true, services, cliOutput, spinnerCreator)
+      command = new DeployCommand('', true, services, mockTelemetry, cliOutput, spinnerCreator)
     })
 
     describe('report progress upon updates', () => {
@@ -121,7 +121,7 @@ describe('deploy command', () => {
   describe('invalid deploy', () => {
     beforeEach(() => {
       // Creating here with base dir 'errorDir' will cause the mock to throw an error
-      command = new DeployCommand('errorDir', true, services, cliOutput, spinnerCreator)
+      command = new DeployCommand('errorDir', true, services, mockTelemetry, cliOutput, spinnerCreator)
     })
     it('should fail gracefully', async () => {
       const result = await command.execute()

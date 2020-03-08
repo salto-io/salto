@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { file, Plan, Workspace } from '@salto-io/core'
+import { file, Plan, Workspace, telemetrySender } from '@salto-io/core'
 import _ from 'lodash'
 import {
   ActionName, Change, ElemID, findElement, getChangeElement, InstanceElement, ObjectType, Values,
@@ -63,10 +63,15 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
     lastPlan.clear()
   }
   const output = mockCliOutput()
+  const mockTelemetry = telemetrySender(
+    { url: 'http://0.0.0.0', token: '1234', enabled: false },
+    { installationID: 'abcd', app: 'test' },
+  )
   const result = await new DeployCommand(
     fetchOutputDir,
     false,
     services,
+    mockTelemetry,
     output,
     mockSpinnerCreator([])
   ).execute()

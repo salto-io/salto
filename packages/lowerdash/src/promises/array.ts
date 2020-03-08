@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
-import _ from 'lodash'
+import { arrayOf } from '../collections/array'
+import { toIndexedIterable, IndexedIterator } from '../collections/iterable'
 
 export const partition = async <T>(
   iterable: Iterable<T>,
@@ -36,26 +36,31 @@ export const partition = async <T>(
   return next()
 }
 
-export const series = <T>(promises: Iterable<() => Promise<T>>): Promise<T[]> => {
-  const i = promises[Symbol.iterator]()
-  const result: T[] = []
+const seriesImpl = <T>(
+  iterator: IndexedIterator<() => Promise<T>>,
+  results: T[],
+): Promise<T[]> => {
   const next = async (): Promise<T[]> => {
-    const { done, value } = i.next()
+    const { done, value: indexedValue } = iterator.next()
     if (done) {
-      return result
+      return results
     }
-    result.push(await value())
+    const [index, valuePromise] = indexedValue as [number, () => Promise<T>]
+    results[index] = await valuePromise()
     return next()
   }
   return next()
 }
 
-export const chunkSeries = async <T>(
+export const series = async <T>(
+  promises: Iterable<() => Promise<T>>,
+): Promise<T[]> => seriesImpl(toIndexedIterable(promises)[Symbol.iterator](), [])
+
+export const withLimitedConcurrency = async <T>(
   promises: Iterable<() => Promise<T>>, maxConcurrency: number
-): Promise<T[]> => _.flatten(
-  await series(
-    wu(promises)
-      .chunk(maxConcurrency)
-      .map(chunk => () => Promise.all(chunk.map(f => f())))
-  )
-)
+): Promise<T[]> => {
+  const i = toIndexedIterable(promises)[Symbol.iterator]()
+  const results: T[] = []
+  await Promise.all(arrayOf(maxConcurrency, () => seriesImpl(i, results)))
+  return results
+}

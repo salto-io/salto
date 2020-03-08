@@ -15,24 +15,34 @@
 */
 import path from 'path'
 import wu from 'wu'
-import { exportToCsv } from '@salto-io/core'
+import { exportToCsv, Telemetry } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
-import { loadWorkspace } from '../workspace'
+import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { TELEMETRY } from '../constants'
+
+const baseEventName = 'workspace.export'
+const eventSuccess = `${baseEventName}.${TELEMETRY.SUCCESS}`
+const eventStart = `${baseEventName}.${TELEMETRY.START}`
+const eventFailure = `${baseEventName}.${TELEMETRY.FAILURE}`
 
 export const command = (
   workingDir: string,
   typeName: string,
   outputPath: string,
+  telemetry: Telemetry,
   { stdout, stderr }: CliOutput
-):
-CliCommand => ({
+): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
+      telemetry.sendCountEvent(eventFailure, 1)
       return CliExitCode.AppError
     }
+
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    telemetry.sendCountEvent(eventStart, 1, workspaceTags)
 
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
@@ -41,9 +51,11 @@ CliCommand => ({
     stdout.write(Prompts.EXPORT_ENDED_SUMMARY(result.successfulRows, typeName, outputPath))
     if (result.errors.size > 0) {
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
+      telemetry.sendCountEvent(eventFailure, 1, workspaceTags)
       return CliExitCode.AppError
     }
     stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
+    telemetry.sendCountEvent(eventSuccess, 1, workspaceTags)
     return CliExitCode.Success
   },
 })
@@ -51,7 +63,7 @@ CliCommand => ({
 type ExportArgs = {
   'type-name': string
   'output-path': string
- }
+}
 type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
 const exportBuilder = createCommandBuilder({
@@ -76,7 +88,7 @@ const exportBuilder = createCommandBuilder({
   },
 
   async build(input: ExportParsedCliInput, output: CliOutput) {
-    return command('.', input.args['type-name'], input.args['output-path'], output)
+    return command('.', input.args['type-name'], input.args['output-path'], input.telemetry, output)
   },
 })
 

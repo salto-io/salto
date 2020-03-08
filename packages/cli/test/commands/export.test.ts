@@ -36,15 +36,17 @@ describe('export command', () => {
   const outputPath = 'dummy_outpath'
 
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
-  mockLoadWorkspace.mockResolvedValue({ workspace: mocks.mockLoadWorkspace(workspaceDir),
-    errored: false })
+  mockLoadWorkspace.mockResolvedValue({
+    workspace: mocks.mockLoadWorkspace(workspaceDir),
+    errored: false,
+  })
 
   beforeEach(() => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
   })
 
   it('should run export', async () => {
-    await command(workspaceDir, 'Test', outputPath, cliOutput).execute()
+    await command(workspaceDir, 'Test', outputPath, mocks.mockTelemetry, cliOutput).execute()
     expect(exportToCsv).toHaveBeenCalled()
     expect(cliOutput.stdout.content).toMatch(Prompts.EXPORT_ENDED_SUMMARY(5, 'Test', outputPath))
   })
@@ -56,7 +58,7 @@ describe('export command', () => {
       getWorkspaceErrors: mocks.getWorkspaceErrors,
     } as unknown as Workspace
     mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-    const result = await command(workspaceDir, 'Test', outputPath, cliOutput).execute()
+    const result = await command(workspaceDir, 'Test', outputPath, mocks.mockTelemetry, cliOutput).execute()
     expect(result).toBe(CliExitCode.AppError)
   })
 
@@ -68,7 +70,7 @@ describe('export command', () => {
       errors: new Set<string>(errors),
     } as unknown as DataModificationResult
     (exportToCsv as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
-    const exitCode = await command(workspaceDir, 'Test', outputPath, cliOutput).execute()
+    const exitCode = await command(workspaceDir, 'Test', outputPath, mocks.mockTelemetry, cliOutput).execute()
     expect(cliOutput.stdout.content).toMatch(Prompts.EXPORT_ENDED_SUMMARY(1, 'Test', outputPath))
     expect(cliOutput.stdout.content).toMatch(Prompts.ERROR_SUMMARY(errors))
     expect(exitCode).toEqual(CliExitCode.AppError)

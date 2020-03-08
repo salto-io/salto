@@ -76,8 +76,10 @@ describe('Data migration operations E2E', () => {
     })
 
     it('should save the data in csv file when running export', async () => {
-      await exportCommand(fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, cliOutput).execute()
+      await exportCommand(
+        fetchOutputDir, sfLeadObjectName,
+        exportOutputFullPath, mockTelemetry, cliOutput
+      ).execute()
       expect(await exists(exportOutputFullPath)).toBe(true)
       const exportObjects = await readAllCsvContents(exportOutputFullPath)
       expect(exportObjects.length).toBeGreaterThan(0)
@@ -94,8 +96,10 @@ describe('Data migration operations E2E', () => {
       await importCommand(fetchOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
 
       // Replicate the file with the Ids of the created items
-      await exportCommand(fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, cliOutput).execute()
+      await exportCommand(
+        fetchOutputDir, sfLeadObjectName,
+        exportOutputFullPath, mockTelemetry, cliOutput,
+      ).execute()
       const exportObjects = await readAllCsvContents(exportOutputFullPath)
       const clark = exportObjects.find(object => object.FirstName === 'Clark' && object.LastName === 'Kent')
       const bruce = exportObjects.find(object => object.FirstName === 'Bruce' && object.LastName === 'Wayne')
@@ -123,8 +127,10 @@ describe('Data migration operations E2E', () => {
     })
 
     it('should fail when running export', async () => {
-      const command = exportCommand(fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, cliOutput)
+      const command = exportCommand(
+        fetchOutputDir, sfLeadObjectName,
+        exportOutputFullPath, mockTelemetry, cliOutput,
+      )
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
       expect(await exists(exportOutputFullPath)).toBe(false)

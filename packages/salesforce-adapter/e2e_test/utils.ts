@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
-import { filtersRunner } from 'src/filter'
+import { filtersRunner } from '../src/filter'
 import { SALESFORCE, METADATA_TYPE } from '../src/constants'
 import SalesforceAdapter, { ALL_FILTERS_CREATORS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'

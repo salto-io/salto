@@ -17,21 +17,22 @@ import {
   InstanceElement, Element, ElemID, findElements as findElementsByID,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { FilterWith } from 'src/filter'
 import { collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { MetadataInfo } from 'jsforce-types'
 import realAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
-import workflowFilter, {
+import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
   WORKFLOW_FIELD_TO_TYPE,
 } from '../src/filters/workflow'
-import missingFieldsFilter from '../src/filters/missing_fields'
 import { WORKFLOW_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 import SalesforceAdapter from '../src/adapter'
 import { findElements } from '../test/utils'
-import { getInstance, getMetadata, removeIfAlreadyExists, createAndVerify, removeElementAndVerify, fetchTypes } from './utils'
+import {
+  getInstance, getMetadata, removeIfAlreadyExists, createAndVerify, removeElementAndVerify,
+  fetchTypes, runFiltersOnFetch,
+} from './utils'
 
 const { makeArray } = collections.array
 
@@ -162,9 +163,7 @@ describe('workflow filter', () => {
       const rawWorkflowTypes = await fetchTypes(client, [WORKFLOW_METADATA_TYPE,
         ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
       fetchResult = [rawWorkflowInstance as InstanceElement, ...rawWorkflowTypes]
-      const filters = [missingFieldsFilter({ client }), workflowFilter({ client })] as FilterWith<'onFetch'>[]
-      filters[0].onFetch(fetchResult)
-      filters[1].onFetch(fetchResult)
+      await runFiltersOnFetch(client, fetchResult)
       leadWorkflow = findElements(fetchResult, WORKFLOW_METADATA_TYPE, 'Lead')[0] as InstanceElement
     })
     it('should fetch workflow', async () => {

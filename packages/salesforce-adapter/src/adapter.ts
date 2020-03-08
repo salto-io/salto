@@ -54,7 +54,7 @@ import globalValueSetFilter from './filters/global_value_sets'
 import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import {
-  FilterCreator, Filter, FilterWith, filtersWith,
+  FilterCreator, Filter, filtersRunner,
 } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { changeValidator } from './change_validator'
@@ -65,6 +65,29 @@ const log = logger(module)
 
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 const RECORDS_CHUNK_SIZE = 10000
+export const ALL_FILTERS_CREATORS = [
+  missingFieldsFilter,
+  settingsFilter,
+  // should run before customObjectsFilter
+  workflowFilter,
+  // customObjectsFilter depends on missingFieldsFilter and settingsFilter
+  customObjectsFilter,
+  removeFieldsFilter,
+  profilePermissionsFilter,
+  layoutFilter,
+  standardValueSetFilter,
+  flowFilter,
+  lookupFiltersFilter,
+  animationRulesFilter,
+  samlInitMethodFilter,
+  topicsForObjectsFilter,
+  valueSetFilter,
+  globalValueSetFilter,
+  // The following filters should remain last in order to make sure they fix all elements
+  convertListsFilter,
+  convertTypeFilter,
+  instanceReferences,
+]
 
 const absoluteIDMetadataTypes: Record<string, string[]> = {
   CustomLabels: ['labels'],
@@ -163,7 +186,7 @@ export default class SalesforceAdapter {
   private metadataTypesToSkipMutation: string[]
   private metadataTypesToUseUpsertUponUpdate: string[]
   private nestedMetadataTypes: Record<string, string[]>
-  private filterCreators: FilterCreator[]
+  private filtersRunner: Required<Filter>
   private client: SalesforceClient
   private systemFields: string[]
 
@@ -212,29 +235,7 @@ export default class SalesforceAdapter {
       ...absoluteIDMetadataTypes,
       ...nestedIDMetadataTypes,
     },
-    filterCreators = [
-      missingFieldsFilter,
-      settingsFilter,
-      // should run before customObjectsFilter
-      workflowFilter,
-      // customObjectsFilter depends on missingFieldsFilter and settingsFilter
-      customObjectsFilter,
-      removeFieldsFilter,
-      profilePermissionsFilter,
-      layoutFilter,
-      standardValueSetFilter,
-      flowFilter,
-      lookupFiltersFilter,
-      animationRulesFilter,
-      samlInitMethodFilter,
-      topicsForObjectsFilter,
-      valueSetFilter,
-      globalValueSetFilter,
-      // The following filters should remain last in order to make sure they fix all elements
-      convertListsFilter,
-      convertTypeFilter,
-      instanceReferences,
-    ],
+    filterCreators = ALL_FILTERS_CREATORS,
     client,
     getElemIdFunc,
     // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
@@ -264,8 +265,8 @@ export default class SalesforceAdapter {
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
     this.nestedMetadataTypes = nestedMetadataTypes
-    this.filterCreators = filterCreators
     this.client = client
+    this.filtersRunner = filtersRunner(this.client, filterCreators)
     this.systemFields = systemFields
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
@@ -289,7 +290,7 @@ export default class SalesforceAdapter {
       await Promise.all([annotationTypes, fieldTypes,
         metadataTypes, metadataInstances]) as Element[][]
     )
-    await this.runFiltersOnFetch(elements)
+    await this.filtersRunner.onFetch(elements)
     return elements
   }
 
@@ -448,7 +449,7 @@ InstanceElement[] => {
       post = await this.addInstance(resolved as InstanceElement)
     }
 
-    await this.runFiltersOnAdd(post)
+    await this.filtersRunner.onAdd(post)
     return restoreReferences(element, post, getLookUpName)
   }
 
@@ -517,7 +518,7 @@ InstanceElement[] => {
     } else if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(resolved))
     }
-    await this.runFiltersOnRemove(resolved)
+    await this.filtersRunner.onRemove(resolved)
   }
 
   /**
@@ -550,7 +551,7 @@ InstanceElement[] => {
     }
 
     // Aspects should be updated once all object related properties updates are over
-    await this.runFiltersOnUpdate(resBefore, result, resChanges)
+    await this.filtersRunner.onUpdate(resBefore, result, resChanges)
     return restoreReferences(after, result, getLookUpName)
   }
 
@@ -909,43 +910,6 @@ InstanceElement[] => {
       })
     return instanceInfos.map(instanceInfo =>
       ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))
-  }
-
-  private filtersWith<M extends keyof Filter>(m: M): FilterWith<M>[] {
-    const allFilters = this.filterCreators.map(f => f({ client: this.client }))
-    return filtersWith(m, allFilters)
-  }
-
-  // Filter related functions
-
-  private async runFiltersOnFetch(elements: Element[]): Promise<void> {
-    // Fetch filters order is important so they should run one after the other
-    return this.filtersWith('onFetch').reduce(
-      (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
-      Promise.resolve(),
-    )
-  }
-
-  private async runFiltersInParallel<M extends keyof Filter>(
-    m: M,
-    run: (f: FilterWith<M>) => Promise<SaveResult[]>
-  ): Promise<SaveResult[]> {
-    return _.flatten(
-      await Promise.all(this.filtersWith(m).map(run))
-    )
-  }
-
-  private async runFiltersOnAdd(after: Element): Promise<(SaveResult| UpsertResult)[]> {
-    return this.runFiltersInParallel('onAdd', filter => filter.onAdd(after))
-  }
-
-  private async runFiltersOnUpdate(before: Element, after: Element,
-    changes: Iterable<Change>): Promise<(SaveResult| UpsertResult)[]> {
-    return this.runFiltersInParallel('onUpdate', filter => filter.onUpdate(before, after, changes))
-  }
-
-  private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {
-    return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
   }
 
   private async getFirstBatchOfInstances(type: ObjectType): Promise<QueryResult<Value>> {

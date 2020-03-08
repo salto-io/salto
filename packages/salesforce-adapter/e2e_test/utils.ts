@@ -15,12 +15,13 @@
 */
 import _ from 'lodash'
 import {
-  Value, ObjectType, ElemID, InstanceElement, Values, TypeElement,
+  Value, ObjectType, ElemID, InstanceElement, Values, TypeElement, Element,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
+import { filtersRunner } from 'src/filter'
 import { SALESFORCE, METADATA_TYPE } from '../src/constants'
-import SalesforceAdapter from '../src/adapter'
+import SalesforceAdapter, { ALL_FILTERS_CREATORS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, createMetadataTypeElements } from '../src/transformers/transformer'
 
@@ -122,3 +123,7 @@ Promise<ObjectType[]> => {
     createMetadataTypeElements(type, await client.describeMetadataType(type), subTypes,
       baseTypeNames, client))))
 }
+
+export const runFiltersOnFetch = async (client: SalesforceClient, fetchResult: Element[]):
+Promise<void> =>
+  filtersRunner(client, ALL_FILTERS_CREATORS).onFetch(fetchResult)

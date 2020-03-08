@@ -1,0 +1,27 @@
+name: Merge Bot
+
+on:
+  pull_request:
+    types:
+      - labeled
+    branches:
+      - master
+  check_suite:
+    types: [completed]
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    name: Merge
+    steps:
+    - name: Auto-merge PR
+      uses: squalrus/merge-bot@v0.2.0
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        test: false
+        reviewers: false
+        labels: VERSION
+        blocking-labels: do not merge
+        checks: true
+        method: squash
+

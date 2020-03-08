@@ -95,7 +95,11 @@ export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): P
   if (lastPlan) {
     lastPlan.clear()
   }
-  await preview(fetchOutputDir, mockCliOutput(), mockSpinnerCreator([]), services).execute()
+  await preview(
+    fetchOutputDir, mockTelemetry,
+    mockCliOutput(), mockSpinnerCreator([]),
+    services,
+  ).execute()
   expect(_.isEmpty(lastPlan)).toBeTruthy()
 }
 

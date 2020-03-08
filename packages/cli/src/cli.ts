@@ -26,6 +26,7 @@ export const VERBOSE_LOG_LEVEL: LogLevel = 'debug'
 const EVENTS_FLUSH_WAIT_TIME = 1000
 
 const log = logger(module)
+const exceptionEvent = 'workspace.error'
 
 const increaseLoggingLogLevel = (): void => {
   const currentLogLevel = logger.config.minLevel
@@ -69,7 +70,7 @@ export default async (
     return CliExitCode.Success
   } catch (err) {
     log.error(`Caught exception: ${[err, err.stack].filter(n => n).join(EOL)}`)
-    input.telemetry.sendStackEvent('error', err, {})
+    input.telemetry.sendStackEvent(exceptionEvent, err, {})
 
     const errorStream = output.stderr
     const unstyledErrorString = `${[err].filter(n => n).join(EOL)}`

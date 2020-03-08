@@ -14,7 +14,11 @@
 * limitations under the License.
 */
 import { command } from '../../src/commands/preview'
-import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator, mockLoadConfig, transformToWorkspaceError } from '../mocks'
+import {
+  preview, MockWriteStream, getWorkspaceErrors,
+  mockSpinnerCreator, mockLoadConfig,
+  transformToWorkspaceError, mockTelemetry,
+} from '../mocks'
 import { SpinnerCreator, Spinner, CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
 
@@ -33,23 +37,27 @@ describe('preview command', () => {
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
   mockLoadWorkspace.mockImplementation(baseDir => {
     if (baseDir === 'errdir') {
-      return { workspace: {
-        hasErrors: () => true,
-        errors: {
-          strings: () => ['Error', 'Error'],
+      return {
+        workspace: {
+          hasErrors: () => true,
+          errors: {
+            strings: () => ['Error', 'Error'],
+          },
+          getWorkspaceErrors,
+          config: mockLoadConfig(baseDir),
+          transformToWorkspaceError,
         },
-        getWorkspaceErrors,
+        errored: true,
+      }
+    }
+    return {
+      workspace: {
+        hasErrors: () => false,
         config: mockLoadConfig(baseDir),
         transformToWorkspaceError,
       },
-      errored: true }
+      errored: false,
     }
-    return { workspace: {
-      hasErrors: () => false,
-      config: mockLoadConfig(baseDir),
-      transformToWorkspaceError,
-    },
-    errored: false }
   })
 
   beforeEach(() => {
@@ -60,7 +68,7 @@ describe('preview command', () => {
 
   describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
-      await command('', cliOutput, spinnerCreator, services).execute()
+      await command('', mockTelemetry, cliOutput, spinnerCreator, services).execute()
     })
 
     it('should load the workspace', async () => {
@@ -92,7 +100,7 @@ describe('preview command', () => {
   describe('when the workspace fails to load', () => {
     let result: number
     beforeEach(async () => {
-      result = await command('errdir', cliOutput, spinnerCreator, services).execute()
+      result = await command('errdir', mockTelemetry, cliOutput, spinnerCreator, services).execute()
     })
 
     it('should fail', () => {

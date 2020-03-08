@@ -39,12 +39,33 @@ E2E tests are run on CircleCI builds, and you should also run them locally befor
 
 **Important** E2E tests for the `cli` and `salesforce-adapter` need [valid SFDC credentials](packages/salesforce-adapter/README.md#E2E-tests) to run.
 
-### Publisn to NPM registery
+### Publishing to NPM
 
-- Publish is done using user in salto-io organization in https://www.npmjs.com/
-- Publish need to be done from a clone and not a fork as the publish process tag the repo and commit the new versions
-- Run ```bash yarn lerna-publish```  from the root of the clone
+#### TL;DR Quick method
 
+Make sure you're on `master`, no local changes, CI status is passing, and run:
+
+```bash
+yarn lerna-version-pr [BUMP]
+```
+
+Where BUMP is a [lerna version](https://github.com/lerna/lerna/tree/master/commands/version#usage); default is  `patch`
+
+This will create a [PR labeled `VERSION`](https://github.com/salto-io/salto/pulls?q=is%3Apr+label%3AVERSION). Once the PR is merged, the version will be published and a git tag will be created.
+
+#### Create a PR manually
+
+##### 1. Create a new version
+
+```bash
+yarn lerna-version [BUMP]
+```
+
+##### 2. Commit and push the version to git
+
+Submit a PR and have it merged.
+
+Once the PR is merged, the version will be published and a git tag will be created.
 
 ### Usage instructions
 

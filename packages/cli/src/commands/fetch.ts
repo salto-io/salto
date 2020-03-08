@@ -21,6 +21,7 @@ import {
   FetchChange,
   FetchProgressEvents,
   StepEmitter,
+  Telemetry,
 } from '@salto-io/core'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -32,11 +33,18 @@ import {
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
-import { updateWorkspace, loadWorkspace } from '../workspace'
+import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
+import { TELEMETRY } from '../constants'
 
 const log = logger(module)
+const eventBaseName = 'workspace.fetch'
+const eventSuccess = `${eventBaseName}.${TELEMETRY.SUCCESS}`
+const eventStart = `${eventBaseName}.${TELEMETRY.START}`
+const eventFailure = `${eventBaseName}.${TELEMETRY.FAILURE}`
+const eventMergeErrors = `${eventBaseName}.merge_errors`
+const eventCountChanges = `${eventBaseName}.changes`
 
 type approveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
@@ -44,11 +52,16 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 export const fetchCommand = async (
-  { workspace, force, interactive, strict, inputServices, output, fetch, getApprovedChanges }: {
+  {
+    workspace, force, interactive, strict,
+    inputServices, telemetry, output, fetch,
+    getApprovedChanges,
+  }: {
     workspace: Workspace
     force: boolean
     interactive: boolean
     strict?: boolean
+    telemetry: Telemetry
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
@@ -68,6 +81,8 @@ export const fetchCommand = async (
       outputLine(EOL)
     })
   }
+  const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+  telemetry.sendCountEvent(eventStart, 1, workspaceTags)
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
   fetchProgress.on('adaptersDidInitialize', () => {
     outputLine(formatFetchHeader())
@@ -98,6 +113,7 @@ export const fetchCommand = async (
   )
   if (fetchResult.success === false) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
+    telemetry.sendCountEvent(eventFailure, 1, workspaceTags)
     return CliExitCode.AppError
   }
 
@@ -106,11 +122,13 @@ export const fetchCommand = async (
   // and only print the merge errors
   if (!_.isEmpty(fetchResult.mergeErrors)) {
     log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
+    telemetry.sendCountEvent(eventMergeErrors, fetchResult.mergeErrors.length, workspaceTags)
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
+  telemetry.sendCountEvent(eventCountChanges, 1, workspaceTags)
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const changesToApply = force || (await workspace.isEmpty())
     ? changes
@@ -125,6 +143,11 @@ export const fetchCommand = async (
   } else {
     updatingWsEmitter.emit('failed')
   }
+  if (updatingWsSucceeded) {
+    telemetry.sendCountEvent(eventSuccess, 1, workspaceTags)
+  } else {
+    telemetry.sendCountEvent(eventFailure, 1, workspaceTags)
+  }
   return updatingWsSucceeded
     ? CliExitCode.Success
     : CliExitCode.AppError
@@ -134,16 +157,19 @@ export const command = (
   workspaceDir: string,
   force: boolean,
   interactive: boolean,
+  telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
   inputServices: string[],
-  strict: boolean
+  strict: boolean,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
       interactive}, strict=${strict}]`)
+
     const { workspace, errored } = await loadWorkspace(workspaceDir, output, spinnerCreator)
     if (errored) {
+      telemetry.sendCountEvent(eventFailure, 1)
       return CliExitCode.AppError
     }
     return fetchCommand({
@@ -151,6 +177,7 @@ export const command = (
       force,
       interactive,
       inputServices,
+      telemetry,
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
@@ -188,7 +215,7 @@ const fetchBuilder = createCommandBuilder({
       strict: {
         alias: ['t'],
         describe: 'Restrict fetch from modifing common configuration '
-                  + '(might result in changes in other env folders)',
+          + '(might result in changes in other env folders)',
         boolean: true,
         default: false,
         demandOption: false,
@@ -203,6 +230,7 @@ const fetchBuilder = createCommandBuilder({
       '.',
       input.args.force,
       input.args.interactive,
+      input.telemetry,
       output,
       spinnerCreator,
       input.args.services,

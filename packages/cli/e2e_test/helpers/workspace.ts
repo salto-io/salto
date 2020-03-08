@@ -39,6 +39,11 @@ const getSalesforceConfig = (): Promise<InstanceElement> =>
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
+const mockTelemetry = telemetrySender(
+  { url: 'http://0.0.0.0', token: '1234', enabled: false },
+  { installationID: 'abcd', app: 'test' },
+)
+
 export const runSalesforceLogin = async (workspaceDir: string): Promise<void> => {
   await servicesCommand(workspaceDir, 'login', mockCliOutput(), getSalesforceConfig, 'salesforce')
     .execute()
@@ -54,7 +59,16 @@ export const editBlueprint = async (filename: string, replacements: ReplacementP
 }
 
 export const runFetch = async (fetchOutputDir: string): Promise<void> => {
-  await fetch(fetchOutputDir, true, false, mockCliOutput(), mockSpinnerCreator([]), services, false)
+  await fetch(
+    fetchOutputDir,
+    true,
+    false,
+    mockTelemetry,
+    mockCliOutput(),
+    mockSpinnerCreator([]),
+    services,
+    false
+  )
     .execute()
 }
 
@@ -63,10 +77,6 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
     lastPlan.clear()
   }
   const output = mockCliOutput()
-  const mockTelemetry = telemetrySender(
-    { url: 'http://0.0.0.0', token: '1234', enabled: false },
-    { installationID: 'abcd', app: 'test' },
-  )
   const result = await new DeployCommand(
     fetchOutputDir,
     false,

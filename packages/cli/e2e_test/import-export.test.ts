@@ -19,7 +19,7 @@ import {
   dumpCsv, file, readAllCsvContents, SALTO_HOME_VAR,
 } from '@salto-io/core'
 import { Spinner } from '../src/types'
-import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
+import { MockWriteStream, mockSpinnerCreator, mockTelemetry } from '../test/mocks'
 import { command as fetch } from '../src/commands/fetch'
 import { command as importCommand } from '../src/commands/import'
 import { command as exportCommand } from '../src/commands/export'
@@ -68,7 +68,11 @@ describe('Data migration operations E2E', () => {
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
       await copyFile(envConfigFile, `${fetchOutputDir}/envs/default/salto.config/config.bp`)
       await runSalesforceLogin(fetchOutputDir)
-      await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator, services, false).execute()
+      await fetch(
+        fetchOutputDir, true, false,
+        mockTelemetry, cliOutput,
+        spinnerCreator, services, false
+      ).execute()
     })
 
     it('should save the data in csv file when running export', async () => {

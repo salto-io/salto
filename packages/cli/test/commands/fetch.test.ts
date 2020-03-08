@@ -63,7 +63,7 @@ describe('fetch command', () => {
           getWorkspaceErrors: mocks.getWorkspaceErrors,
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-        result = await command('', true, false, cliOutput, spinnerCreator, services, false)
+        result = await command('', true, false, mocks.mockTelemetry, cliOutput, spinnerCreator, services, false)
           .execute()
       })
 
@@ -76,11 +76,14 @@ describe('fetch command', () => {
     describe('with valid workspace', () => {
       const workspaceDir = 'valid-ws'
       beforeAll(async () => {
-        mockLoadWorkspace.mockResolvedValue({ workspace: mocks.mockLoadWorkspace(workspaceDir),
-          errored: false })
+        mockLoadWorkspace.mockResolvedValue({
+          workspace: mocks.mockLoadWorkspace(workspaceDir),
+          errored: false,
+        })
         result = await command(
           workspaceDir,
           true, false,
+          mocks.mockTelemetry,
           cliOutput,
           spinnerCreator,
           services,
@@ -139,6 +142,7 @@ describe('fetch command', () => {
             interactive: false,
             output: cliOutput,
             inputServices: services,
+            telemetry: mocks.mockTelemetry,
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockEmptyApprove,
           })
@@ -164,6 +168,7 @@ describe('fetch command', () => {
             interactive: false,
             output: cliOutput,
             inputServices: services,
+            telemetry: mocks.mockTelemetry,
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
           })
@@ -195,6 +200,7 @@ describe('fetch command', () => {
               force: true,
               interactive: false,
               inputServices: services,
+              telemetry: mocks.mockTelemetry,
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -218,6 +224,7 @@ describe('fetch command', () => {
               force: true,
               interactive: false,
               inputServices: services,
+              telemetry: mocks.mockTelemetry,
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -241,6 +248,7 @@ describe('fetch command', () => {
               force: false,
               interactive: false,
               inputServices: services,
+              telemetry: mocks.mockTelemetry,
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -263,6 +271,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
+                telemetry: mocks.mockTelemetry,
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockEmptyApprove,
@@ -286,6 +295,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
+                telemetry: mocks.mockTelemetry,
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -311,6 +321,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
+                telemetry: mocks.mockTelemetry,
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -336,6 +347,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
+                telemetry: mocks.mockTelemetry,
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -356,6 +368,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
+                telemetry: mocks.mockTelemetry,
                 output: cliOutput,
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockSingleChangeApprove,

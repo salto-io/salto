@@ -79,7 +79,7 @@
     "nexe": "https://github.com/salto-io/nexe#fix_windows_fs_patch_normalization",
     "source-map-loader": "^0.2.4",
     "tmp-promise": "^2.0.2",
-    "typescript": "^3.7.2",
+    "typescript": "3.8.3",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.10"
   }

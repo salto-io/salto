@@ -35,8 +35,8 @@
     "@types/lodash": "^4.14.133",
     "@types/node": "^12.7.1",
     "@types/uuid": "^3.4.6",
-    "@typescript-eslint/eslint-plugin": "^2.6.1",
-    "@typescript-eslint/parser": "^2.6.1",
+    "@typescript-eslint/eslint-plugin": "^2.22.0",
+    "@typescript-eslint/parser": "^2.22.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-header": "^3.0.0",
@@ -50,6 +50,6 @@
     "jest-dynalite": "1.1.1",
     "jest-environment-node": "^24.9.0",
     "jest-junit": "^6.4.0",
-    "typescript": "^3.7.2"
+    "typescript": "^3.8.3"
   }
 }

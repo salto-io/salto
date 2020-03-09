@@ -84,8 +84,9 @@ export const localDirectoryStore = (
     await removeDirIfEmpty(path.dirname(absFileName))
   }
 
-  const mtimestampFile = async (filename: string): Promise<number | undefined> =>
-    (await stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
+  const mtimestampFile = async (filename: string): Promise<number | undefined> => (updated[filename]
+    ? updated[filename].timestamp
+    : (await stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs)
 
   const get = async (filename: string): Promise<File | undefined> => {
     const relFilename = getRelativeFileName(filename)

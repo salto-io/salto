@@ -18,6 +18,7 @@ import { createInstanceElement, toNetsuiteRecord, Types } from '../src/transform
 import {
   ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, RECORDS_PATH, SCRIPT_ID,
 } from '../src/constants'
+import { NetsuiteRecord } from '../src/client/client'
 
 describe('Transformer', () => {
   const entityCustomFieldRecord = {
@@ -73,15 +74,18 @@ describe('Transformer', () => {
   })
 
   describe('toNetsuiteRecord func', () => {
-    const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
-      label: 'Labelo',
-      [SCRIPT_ID]: 'my_script_id',
-      owner: {
-        [INTERNAL_ID]: '-5',
-        name: 'Owner Name',
-      },
+    let result: NetsuiteRecord
+    beforeEach(() => {
+      const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
+        label: 'Labelo',
+        [SCRIPT_ID]: 'my_script_id',
+        owner: {
+          [INTERNAL_ID]: '-5',
+          name: 'Owner Name',
+        },
+      })
+      result = toNetsuiteRecord(instance)
     })
-    const result = toNetsuiteRecord(instance)
 
     it('should transform string fields', () => {
       expect(result.bodyFieldList).toHaveLength(3)

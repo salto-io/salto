@@ -46,8 +46,6 @@ module.exports = {
   externals: {
     vertx: 'commonjs vertx',    // workaround for: https://github.com/stefanpenner/es6-promise/issues/305
                                 // caused by requestretry which depends on an old version of es6-promise
-    formidable: 'commonjs formidable', // workaround for: https://github.com/node-formidable/formidable/issues/452
-                                       // caused by node-suitetalk. not supported by webpack. This way node will load it only when executed
   },
   plugins: [
     new webpack.EnvironmentPlugin({
@@ -55,6 +53,10 @@ module.exports = {
       SALTO_TELEMETRY_TOKEN: 'dev',
       SALTO_TELEMETRY_DISABLE: '0',
       SALTO_TELEMETRY_URL: 'https://telemetry.salto.io',
+    }),
+    // https://github.com/node-formidable/formidable/issues/452
+    new webpack.DefinePlugin({
+      'global.GENTLY': false,
     }),
     // // This plugin fixes __dirname and __filename references from sibling
     // // projects in the monorepo. However it conflicts with nexe packaging so

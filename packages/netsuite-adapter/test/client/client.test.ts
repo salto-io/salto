@@ -68,7 +68,7 @@ describe('Client', () => {
     let listResult: NetsuiteRecord[]
     beforeEach(async () => {
       connection.init = jest.fn().mockImplementation(() => Promise.resolve())
-      listResult = await client.list([{ type: 'entityCustomField', internalId: 19 }])
+      listResult = await client.list([{ type: 'entityCustomField', internalId: '19' }])
     })
 
     it('should return list records', async () => {
@@ -123,6 +123,35 @@ describe('Client', () => {
     it('should return list records', async () => {
       expect(addResult).toBeDefined()
       expect(addResult).toEqual(reference)
+    })
+
+    it('should call init once', async () => {
+      expect(connection.init).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('delete', () => {
+    let deleteResult: NetsuiteReference
+    const reference = {
+      [ATTRIBUTES]: {
+        [INTERNAL_ID]: '123',
+        type: 'entityCustomField',
+        'xsi:type': 'platformCore:RecordRef',
+      },
+    }
+    beforeEach(async () => {
+      connection.init = jest.fn().mockImplementation(() => Promise.resolve())
+      connection.delete = jest.fn().mockReturnValue(Promise.resolve({
+        writeResponse: {
+          baseRef: reference,
+        },
+      }))
+      deleteResult = await client.delete({ type: 'entityCustomField', internalId: '123' })
+    })
+
+    it('should return list records', async () => {
+      expect(deleteResult).toBeDefined()
+      expect(deleteResult).toEqual(reference)
     })
 
     it('should call init once', async () => {

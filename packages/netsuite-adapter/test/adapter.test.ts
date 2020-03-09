@@ -70,9 +70,17 @@ describe('Adapter', () => {
     })
   })
 
-  describe('remove', () => { // todo: implement tests once implemented
-    it('dummy test for coverage', async () => {
-      await netsuiteAdapter.remove(new ObjectType({ elemID: new ElemID(NETSUITE, 'test') }))
+  describe('remove', () => {
+    beforeAll(async () => {
+      client.delete = jest.fn().mockImplementation(() => Promise.resolve())
+      const instance = new InstanceElement('test', Types.customizationObjects.EntityCustomField, {
+        [INTERNAL_ID]: '123',
+      })
+      await netsuiteAdapter.remove(instance)
+    })
+
+    it('should call client.delete with the correct parameter', () => {
+      expect(client.delete).toHaveBeenCalledWith({ type: 'entityCustomField', internalId: '123' })
     })
   })
 })

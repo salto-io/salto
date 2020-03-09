@@ -56,9 +56,11 @@ export default class NetsuiteAdapter {
     return post
   }
 
-  public async remove(_element: Element): Promise<void> { // todo: implement
-    // eslint-disable-next-line no-console
-    console.log(this.client)
+  public async remove(instance: InstanceElement): Promise<void> {
+    await this.client.delete({
+      type: instance.type.annotations[METADATA_TYPE],
+      internalId: instance.value[INTERNAL_ID],
+    })
   }
 
   public async update(_before: Element, after: Element, _changes: Iterable<Change>):

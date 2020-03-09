@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
-import { NETSUITE } from '../src/constants'
+import { ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, SCRIPT_ID } from '../src/constants'
 import { recordInList } from './utils'
+import { Types } from '../src/transformer'
 
 describe('Adapter', () => {
   const { client } = createClient()
@@ -36,9 +37,29 @@ describe('Adapter', () => {
     })
   })
 
-  describe('add', () => { // todo: implement tests once implemented
-    it('dummy test for coverage', async () => {
-      await netsuiteAdapter.add(new ObjectType({ elemID: new ElemID(NETSUITE, 'test') }))
+  describe('add', () => {
+    let result: InstanceElement
+    beforeAll(async () => {
+      client.add = jest.fn().mockReturnValue(
+        Promise.resolve({
+          [ATTRIBUTES]: {
+            [SCRIPT_ID]: 'custentity_my_script_id',
+            [INTERNAL_ID]: '123',
+            type: 'entityCustomField',
+            'xsi:type': 'platformCore:CustomizationRef',
+          },
+        })
+      )
+      const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
+        label: 'Labelo',
+        [SCRIPT_ID]: 'my_script_id',
+      })
+      result = await netsuiteAdapter.add(instance)
+    })
+
+    it('should enrich the instance with SCRIPT_ID & INTERNAL_ID post add', () => {
+      expect(result.value[INTERNAL_ID]).toEqual('123')
+      expect(result.value[SCRIPT_ID]).toEqual('custentity_my_script_id')
     })
   })
 

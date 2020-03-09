@@ -15,17 +15,18 @@
 */
 import _ from 'lodash'
 import {
-  bpCase,
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType,
+  bpCase, BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType,
   PrimitiveType, PrimitiveTypes, RESTRICTION_ANNOTATIONS, transformValues, Values,
 } from '@salto-io/adapter-api'
+import { Record } from 'node-suitetalk'
 import {
-  ATTRIBUTES,
-  EXTERNAL_ID, INTERNAL_ID, METADATA_TYPE, NETSUITE, RECORDS_PATH,
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, EXTERNAL_ID, INTERNAL_ID, METADATA_TYPE, NETSUITE, RECORDS_PATH,
+  RECORD_REF, SCRIPT_ID,
 } from './constants'
+import { NetsuiteRecord } from './client/client'
 
-const entityCustomFieldElemID = new ElemID(NETSUITE, 'EntityCustomField')
-const recordRefElemID = new ElemID(NETSUITE, 'RecordRef')
+const entityCustomFieldElemID = new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)
+const recordRefElemID = new ElemID(NETSUITE, RECORD_REF)
 
 /**
  * All supported Netsuite types.
@@ -236,7 +237,7 @@ export class Types {
   }
 
   private static platformCoreObjects: Record<string, ObjectType> = {
-    RecordRef: new ObjectType({
+    [RECORD_REF]: new ObjectType({
       elemID: recordRefElemID,
       fields: {
         [INTERNAL_ID]: new Field(recordRefElemID, INTERNAL_ID, BuiltinTypes.SERVICE_ID),
@@ -248,13 +249,14 @@ export class Types {
   }
 
   public static customizationObjects: Record<string, ObjectType> = {
-    EntityCustomField: new ObjectType({
+    [ENTITY_CUSTOM_FIELD]: new ObjectType({
       elemID: entityCustomFieldElemID,
       fields: {
         [INTERNAL_ID]: new Field(entityCustomFieldElemID, INTERNAL_ID, BuiltinTypes.SERVICE_ID),
         label: new Field(entityCustomFieldElemID, 'label', BuiltinTypes.STRING),
-        owner: new Field(entityCustomFieldElemID, 'owner', Types.platformCoreObjects.RecordRef),
+        owner: new Field(entityCustomFieldElemID, 'owner', Types.platformCoreObjects[RECORD_REF]),
         description: new Field(entityCustomFieldElemID, 'description', BuiltinTypes.STRING),
+        [SCRIPT_ID]: new Field(entityCustomFieldElemID, SCRIPT_ID, BuiltinTypes.STRING),
       },
       annotationTypes: {
         [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
@@ -263,6 +265,13 @@ export class Types {
         [METADATA_TYPE]: 'entityCustomField',
       },
     }),
+  }
+
+  public static getFamilyTypeName(type: ObjectType): string {
+    if (Types.customizationObjects[type.elemID.name].elemID.isEqual(type.elemID)) {
+      return 'setupCustom'
+    }
+    throw new Error(`Unsupported Type: ${type.elemID.name}`)
   }
 }
 
@@ -288,4 +297,27 @@ export const createInstanceElement = (record: Values, type: ObjectType): Instanc
   const instanceName = bpCase(values.label)
   return new InstanceElement(instanceName, type, values,
     [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
+}
+
+const toNetsuiteFields = (instance: InstanceElement): Record.Fields.Field[] =>
+  Object.entries(instance.value)
+    .map(([name, value]) => {
+      const fieldType = instance.type.fields[name].type
+      if (fieldType.elemID.isEqual(recordRefElemID)) {
+        const field = new Record.Fields.RecordRef()
+        field.field = name
+        _.assign(field, value)
+        return field
+      }
+      const field = new Record.Fields.Field(fieldType.elemID.name)
+      field.field = name
+      field.value = value
+      return field
+    })
+
+export const toNetsuiteRecord = (instance: InstanceElement): NetsuiteRecord => {
+  const record = new Record.Types.Record(Types.getFamilyTypeName(instance.type),
+    instance.type.elemID.name)
+  record.bodyFieldList.push(...toNetsuiteFields(instance))
+  return record
 }

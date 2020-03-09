@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Record } from 'node-suitetalk'
 import createClient from './client'
-import { ATTRIBUTES } from '../../src/constants'
-import { NetsuiteRecord } from '../../src/client/client'
+import { ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, SCRIPT_ID } from '../../src/constants'
+import { NetsuiteRecord, NetsuiteReference } from '../../src/client/client'
 import { recordInList } from '../utils'
 
 describe('Client', () => {
@@ -94,5 +95,35 @@ describe('Client', () => {
     // it('should call init once', async () => {
     //   expect(connection.init).toHaveBeenCalledTimes(1)
     // })
+  })
+
+  describe('add', () => {
+    let addResult: NetsuiteReference
+    const reference = {
+      [ATTRIBUTES]: {
+        [SCRIPT_ID]: 'custentityscript_id',
+        [INTERNAL_ID]: '123',
+        type: 'entityCustomField',
+        'xsi:type': 'platformCore:CustomizationRef',
+      },
+    }
+    beforeEach(async () => {
+      connection.init = jest.fn().mockImplementation(() => Promise.resolve())
+      connection.add = jest.fn().mockReturnValue(Promise.resolve({
+        writeResponse: {
+          baseRef: reference,
+        },
+      }))
+      addResult = await client.add(new Record.Types.Record('setupCustom', ENTITY_CUSTOM_FIELD))
+    })
+
+    it('should return list records', async () => {
+      expect(addResult).toBeDefined()
+      expect(addResult).toEqual(reference)
+    })
+
+    it('should call init once', async () => {
+      expect(connection.init).toHaveBeenCalledTimes(1)
+    })
   })
 })

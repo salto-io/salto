@@ -7793,9 +7793,9 @@ node-notifier@^5.4.2:
     shellwords "^0.1.1"
     which "^1.3.0"
 
-"node-suitetalk@https://github.com/salto-io/node-suitetalk":
+"node-suitetalk@https://github.com/salto-io/node-suitetalk.git":
   version "0.0.3"
-  resolved "https://github.com/salto-io/node-suitetalk#52d31e68d2fedd98cd7ce65cd99806ce2e9a1865"
+  resolved "https://github.com/salto-io/node-suitetalk.git#66f17d1af75834f001b87bbae6a06746e1ab617a"
   dependencies:
     adm-zip "^0.4.13"
     denodeify "^1.2.1"

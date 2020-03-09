@@ -20,7 +20,7 @@ import { promises } from '@salto-io/lowerdash'
 import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents, emptyDir, isSubFolder } from '../../file'
 import { DirectoryStore, File } from '../dir_store'
 
-const { chunkSeries } = promises.array
+const { withLimitedConcurrency } = promises.array
 
 const READ_CONCURRENCY = 100
 const WRITE_CONCURRENCY = 100
@@ -122,13 +122,15 @@ export const localDirectoryStore = (
     },
 
     flush: async (): Promise<void> => {
-      await chunkSeries(Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY)
-      await chunkSeries(deleted.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
+      await withLimitedConcurrency(
+        Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY
+      )
+      await withLimitedConcurrency(deleted.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
       updated = {}
       deleted = []
     },
 
     getFiles: async (filenames: string[]): Promise<(File | undefined) []> =>
-      chunkSeries(filenames.map(f => () => get(f)), READ_CONCURRENCY),
+      withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY),
   }
 }

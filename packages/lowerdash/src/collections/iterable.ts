@@ -23,3 +23,34 @@ export const groupBy = <T>(elements: Iterable<T>, groupFunc: (t: T) => SetId): M
     new DefaultMap<SetId, T[]>(() => []),
   ))
 )
+
+export type Indexed<T> = [number, T]
+export type IndexedIterator<T> = Iterator<Indexed<T>>
+export type IndexedIterable<T> = Iterable<Indexed<T>>
+
+export const toIndexedIterable = <T>(iterable: Iterable<T>): IndexedIterable<T> => {
+  let index = -1
+
+  const convert = (r: IteratorResult<T>): IteratorResult<Indexed<T>> => {
+    if (r.done) {
+      return r
+    }
+    index += 1
+    return { done: r.done, value: [index, r.value as T] }
+  }
+
+  const iterator = iterable[Symbol.iterator]()
+  const { return: originalReturn, throw: originalThrow } = iterator
+
+  return {
+    [Symbol.iterator]: (): IndexedIterator<T> => ({
+      next: () => convert(iterator.next()),
+      return: originalReturn
+        ? value => convert(originalReturn.bind(iterator)(value))
+        : undefined,
+      throw: originalThrow
+        ? value => convert(originalThrow.bind(iterator)(value))
+        : undefined,
+    }),
+  }
+}

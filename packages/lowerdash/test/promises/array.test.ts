@@ -19,8 +19,9 @@ import { MaxCounter, maxCounter } from '../max_counter'
 const { arrayOf } = collections.array
 
 describe('array', () => {
-  describe('series and chunkSeries', () => {
-    const NUM_PROMISES = 5
+  describe('series and withLimitedConcurrency', () => {
+    const resolveTimes = [2, 3, 1, 4, 0]
+    const NUM_PROMISES = resolveTimes.length
     let input: (() => Promise<number>)[]
     let output: number[]
     let concurrencyCounter: MaxCounter
@@ -32,7 +33,7 @@ describe('array', () => {
         setTimeout(() => {
           resolve(i)
           concurrencyCounter.decrement()
-        }, 0)
+        }, resolveTimes[i])
       }))
     })
 
@@ -61,12 +62,12 @@ describe('array', () => {
       })
     })
 
-    describe('chunkSeries', () => {
-      const { chunkSeries } = promises.array
+    describe('withLimitedConcurrency', () => {
+      const { withLimitedConcurrency } = promises.array
       const MAX_CONCURRENCY = 2
 
       beforeEach(async () => {
-        output = await chunkSeries(input, MAX_CONCURRENCY)
+        output = await withLimitedConcurrency(input, MAX_CONCURRENCY)
       })
 
       it('resolves all promises', async () => {

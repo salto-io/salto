@@ -30,7 +30,7 @@ import { DetailedChange } from '../../core/plan'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 
-const { chunkSeries } = promises.array
+const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
 
@@ -93,7 +93,7 @@ BlueprintsSource => {
   }
 
   const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
-    chunkSeries(blueprints.map(bp => async () => {
+    withLimitedConcurrency(blueprints.map(bp => async () => {
       const parsed = await parseBlueprint(bp)
       return {
         timestamp: bp.timestamp || Date.now(),
@@ -186,14 +186,14 @@ BlueprintsSource => {
       .flatten().uniq().value()
     const { parsedBlueprints } = await state
     const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(
-      await chunkSeries(bps
+      await withLimitedConcurrency(bps
         .map(bp => async () => [parsedBlueprints[bp].filename,
           await getSourceMap(parsedBlueprints[bp].filename)]),
       CACHE_READ_CONCURRENCY)
     )
 
     const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
-    const updatedBlueprints = (await chunkSeries(
+    const updatedBlueprints = (await withLimitedConcurrency(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
         .flatten()
@@ -256,7 +256,7 @@ BlueprintsSource => {
 
     getSourceRanges: async elemID => {
       const bps = await getElementBlueprints(elemID)
-      const sourceRanges = await chunkSeries(bps
+      const sourceRanges = await withLimitedConcurrency(bps
         .map(bp => async () => (await getSourceMap(bp)).get(elemID.getFullName()) || []),
       CACHE_READ_CONCURRENCY)
       return _.flatten(sourceRanges)

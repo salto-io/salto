@@ -34,7 +34,7 @@ export type ParseResultKey = {
 }
 
 export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> &
-{ flush: () => Promise<void> }
+{ flush: () => Promise<void>; clone: () => ParseResultCache }
 
 export const parseResultCache = (dirStore: DirectoryStore): ParseResultCache => {
   const resolveCacheFileName = (key: ParseResultKey): string =>
@@ -64,5 +64,6 @@ export const parseResultCache = (dirStore: DirectoryStore): ParseResultCache => 
     },
 
     flush: dirStore.flush,
+    clone: (): ParseResultCache => parseResultCache(dirStore.clone()),
   }
 }

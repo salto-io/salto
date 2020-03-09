@@ -60,6 +60,7 @@ export type BlueprintsSource = ElementsSource & {
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getErrors: () => Promise<Errors>
   getElements: (filename: string) => Promise<Element[]>
+  clone: () => BlueprintsSource
 }
 
 type ParsedBlueprint = {
@@ -80,8 +81,11 @@ type BlueprintsState = {
   readonly mergeErrors: MergeError[]
 }
 
-export const blueprintsSource = (blueprintsStore: DirectoryStore, cache: ParseResultCache):
-BlueprintsSource => {
+const buildBlueprintsSource = (
+  blueprintsStore: DirectoryStore,
+  cache: ParseResultCache,
+  initState?: Promise<BlueprintsState>
+): BlueprintsSource => {
   const parseBlueprint = async (bp: Blueprint): Promise<ParseResult> => {
     const key = { filename: bp.filename, lastModified: bp.timestamp || Date.now() }
     let parseResult = await cache.get(key)
@@ -138,7 +142,7 @@ BlueprintsSource => {
     }
   }
 
-  let state: Promise<BlueprintsState> = readAllBps()
+  let state: Promise<BlueprintsState> = initState || readAllBps()
     .then(bps => buildBlueprintsState(bps, {}))
 
   const getElementBlueprints = async (elemID: ElemID): Promise<string[]> => {
@@ -268,9 +272,20 @@ BlueprintsSource => {
         .map(filename => ({ filename, buffer: '' })), (await state).parsedBlueprints)
     },
 
+    clone: () => buildBlueprintsSource(
+      blueprintsStore.clone(),
+      cache.clone(),
+      state
+    ),
+
     update,
     setBlueprints,
     getSourceMap,
     getElementBlueprints,
   }
 }
+
+export const blueprintsSource = (
+  blueprintsStore: DirectoryStore,
+  cache: ParseResultCache,
+): BlueprintsSource => buildBlueprintsSource(blueprintsStore, cache)

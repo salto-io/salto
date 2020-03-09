@@ -46,10 +46,11 @@ type MultiEnvState = {
   mergeErrors: MergeError[]
 }
 
-export const multiEnvSource = (
+const buildMultiEnvSource = (
   sources: Record<string, BlueprintsSource>,
   primarySourceName: string,
   commonSourceName: string,
+  initState?: Promise<MultiEnvState>
 ): BlueprintsSource => {
   let state: Promise<MultiEnvState>
 
@@ -76,7 +77,7 @@ export const multiEnvSource = (
   }
 
 
-  state = buildMutiEnvState()
+  state = initState || buildMutiEnvState()
 
   const getSourceForBlueprint = (
     fullName: string
@@ -224,5 +225,17 @@ export const multiEnvSource = (
         .map(async ([prefix, source]) => (
           await source.getElementBlueprints(id)).map(p => buidFullPath(prefix, p)))))
     ),
+    clone: () => buildMultiEnvSource(
+      _.mapValues(sources, source => source.clone()),
+      primarySourceName,
+      commonSourceName,
+      state
+    ),
   }
 }
+
+export const multiEnvSource = (
+  sources: Record<string, BlueprintsSource>,
+  primarySourceName: string,
+  commonSourceName: string,
+): BlueprintsSource => buildMultiEnvSource(sources, primarySourceName, commonSourceName)

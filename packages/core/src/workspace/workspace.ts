@@ -130,10 +130,13 @@ export class Workspace {
   private readonly blueprintsSource: BlueprintsSource
   private mergedStatePromise?: Promise<MergedState>
 
-  constructor(public config: Config) {
-    this.blueprintsSource = _.isEmpty(config.envs)
+  constructor(
+    public config: Config,
+    initBlueprintsSource? : BlueprintsSource
+  ) {
+    this.blueprintsSource = initBlueprintsSource || (_.isEmpty(config.envs)
       ? loadBlueprintSource(config.baseDir, config.localStorage)
-      : loadMultiEnvSource(config)
+      : loadMultiEnvSource(config))
     this.state = localState(currentEnvConfig(config).stateLocation)
     this.adapterCredentials = configSource(
       localDirectoryStore(currentEnvConfig(config).credentialsLocation),
@@ -297,5 +300,12 @@ export class Workspace {
   async flush(): Promise<void> {
     await this.state.flush()
     await this.blueprintsSource.flush()
+  }
+
+  clone(): Workspace {
+    return new Workspace(
+      this.config,
+      this.blueprintsSource.clone()
+    )
   }
 }

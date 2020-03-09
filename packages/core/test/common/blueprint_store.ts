@@ -16,6 +16,7 @@
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { DirectoryStore, File } from 'src/workspace/dir_store'
+import { ParseResultCache } from 'src/workspace/cache'
 
 const workspaceFiles = {
   'file.bp': `
@@ -78,5 +79,13 @@ export const mockBpsStore = (exclude: string[] = ['error.bp', 'dup.bp']): Direct
     mtimestamp: jest.fn(),
     getFiles: jest.fn().mockImplementation((filenames: string[]) =>
       Promise.resolve(filenames.map(f => bps[f]))),
+    clone: () => mockBpsStore(exclude),
   }
 )
+
+export const mockParseCache = (): ParseResultCache => ({
+  put: () => Promise.resolve(),
+  get: () => Promise.resolve(undefined),
+  flush: () => Promise.resolve(undefined),
+  clone: () => mockParseCache(),
+})

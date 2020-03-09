@@ -14,28 +14,41 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { deleteFromCsvFile, file } from '@salto-io/core'
+import { deleteFromCsvFile, file, Telemetry } from '@salto-io/core'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import Prompts from '../prompts'
-import { loadWorkspace } from '../workspace'
+import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { TELEMETRY } from '../constants'
+
+const eventBaseName = 'workspace.delete'
+const eventSuccess = `${eventBaseName}.${TELEMETRY.SUCCESS}`
+const eventFailure = `${eventBaseName}.${TELEMETRY.FAILURE}`
+const eventStart = `${eventBaseName}.${TELEMETRY.START}`
+const eventErrorsCount = `${eventBaseName}.errors`
+const eventFailedRows = `${eventBaseName}.failed_rows`
 
 export const command = (
   workingDir: string,
   typeName: string,
   inputPath: string,
+  telemetry: Telemetry,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     if (!(await file.exists(inputPath))) {
       stderr.write(Prompts.COULD_NOT_FIND_FILE)
+      telemetry.sendCountEvent(eventFailure, 1)
       return CliExitCode.UserInputError
     }
 
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
+      telemetry.sendCountEvent(eventFailure, 1)
       return CliExitCode.AppError
     }
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    telemetry.sendCountEvent(eventStart, 1, workspaceTags)
     const result = await deleteFromCsvFile(
       typeName,
       inputPath,
@@ -45,14 +58,17 @@ export const command = (
     stdout.write(Prompts.DELETE_ENDED_SUMMARY(result.successfulRows, result.failedRows))
     // Print the unique errors encountered during the import
     if (result.errors.size > 0) {
+      telemetry.sendCountEvent(eventErrorsCount, result.errors.size, workspaceTags)
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
     }
     // If any rows failed, return error exit code
     if (result.failedRows > 0) {
+      telemetry.sendCountEvent(eventFailedRows, result.failedRows, workspaceTags)
       return CliExitCode.AppError
     }
     // Otherwise return success
     stdout.write(Prompts.DELETE_FINISHED_SUCCESSFULLY)
+    telemetry.sendCountEvent(eventSuccess, 1, workspaceTags)
     return CliExitCode.Success
   },
 })
@@ -84,6 +100,7 @@ const deleteBuilder = createCommandBuilder({
       '.',
       input.args['type-name'],
       input.args['input-path'],
+      input.telemetry,
       output
     )
   },

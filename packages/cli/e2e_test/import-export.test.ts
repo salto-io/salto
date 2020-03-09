@@ -117,7 +117,7 @@ describe('Data migration operations E2E', () => {
       await dumpCsv(deletionObjects, updatedDataFilePath, false)
 
       await deleteCommand(fetchOutputDir, sfLeadObjectName,
-        updatedDataFilePath, cliOutput).execute()
+        updatedDataFilePath, mockTelemetry, cliOutput).execute()
       expect(cliOutput.stdout.content).toContain(Prompts.DELETE_ENDED_SUMMARY(2, 0))
     })
   })
@@ -153,7 +153,7 @@ describe('Data migration operations E2E', () => {
 
     it('should fail when running delete instances read from a CSV file', async () => {
       const command = deleteCommand(fetchOutputDir, sfLeadObjectName,
-        dataFilePath, cliOutput)
+        dataFilePath, mockTelemetry, cliOutput)
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
     })

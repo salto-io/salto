@@ -58,12 +58,12 @@ export const command = (
     stdout.write(Prompts.IMPORT_ENDED_SUMMARY(result.successfulRows, result.failedRows))
     // Print the unique errors encountered during the import
     if (result.errors.size > 0) {
-      telemetry.sendCountEvent(eventErrorsCount, 1, workspaceTags)
+      telemetry.sendCountEvent(eventErrorsCount, result.errors.size, workspaceTags)
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
     }
     // If any rows failed, return error exit code
     if (result.failedRows > 0) {
-      telemetry.sendCountEvent(eventFailedRows, 1, workspaceTags)
+      telemetry.sendCountEvent(eventFailedRows, result.failedRows, workspaceTags)
       return CliExitCode.AppError
     }
     // Otherwise return success

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  InstanceElement, Element, ElemID, findElements as findElementsByID,
+  InstanceElement, Element, ElemID, findElements as findElementsByID, findElement, ObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -25,7 +25,7 @@ import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
   WORKFLOW_FIELD_TO_TYPE,
 } from '../src/filters/workflow'
-import { WORKFLOW_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
+import { WORKFLOW_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../src/constants'
 import SalesforceAdapter from '../src/adapter'
 import { findElements } from '../test/utils'
 import {
@@ -148,7 +148,6 @@ describe('workflow filter', () => {
     const verifySubInstance = (subField: string, subName: string,
       subDescription: string): void => {
       expect(workflow.value[subField]).toBeDefined()
-
       const subElemId = makeArray(workflow.value[subField])
         .find((ref: {elemId: ElemID}) => ref.elemId.name === subName)?.elemId
       const [subInstance] = findElementsByID(fetchResult, subElemId) as Iterable<InstanceElement>
@@ -157,15 +156,18 @@ describe('workflow filter', () => {
 
     beforeAll(async () => {
       await verifyWorkflowInnerTypesExist()
-      const rawWorkflowInstance = await getInstance(client, WORKFLOW_METADATA_TYPE,
-        baseCustomObject)
-      expect(rawWorkflowInstance).toBeDefined()
       const rawWorkflowTypes = await fetchTypes(client, [WORKFLOW_METADATA_TYPE,
         ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
-      fetchResult = [rawWorkflowInstance as InstanceElement, ...rawWorkflowTypes]
+      const rawWorkflowInstance = await getInstance(client,
+        findElement(rawWorkflowTypes, new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)) as ObjectType,
+        baseCustomObject)
+      expect(rawWorkflowInstance).toBeDefined()
+      fetchResult = [...rawWorkflowTypes, rawWorkflowInstance as InstanceElement]
+      console.log(`BEFORE FILTERS: ${JSON.stringify(rawWorkflowInstance)}`)
       await runFiltersOnFetch(client, fetchResult)
-      workflow = findElements(fetchResult, WORKFLOW_METADATA_TYPE,
-        baseCustomObject)[0] as InstanceElement
+      const workflows = findElements(fetchResult, WORKFLOW_METADATA_TYPE, baseCustomObject)
+      console.log(`WORKFLOWS: ${JSON.stringify(workflows)}`)
+      workflow = workflows[0] as InstanceElement
     })
     it('should fetch workflow', async () => {
       expect(workflow.value[INSTANCE_FULL_NAME_FIELD]).toBe(baseCustomObject)

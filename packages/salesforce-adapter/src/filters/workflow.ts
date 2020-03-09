@@ -95,7 +95,7 @@ const filterCreator: FilterCreator = () => ({
               objType
             )
           })
-        if (!_.isUndefined(workflowInstance.value[fieldName])) {
+        if (!_.isEmpty(splitted)) {
           workflowInstance.value[fieldName] = splitted.map(s => new ReferenceExpression(s.elemID))
         }
 

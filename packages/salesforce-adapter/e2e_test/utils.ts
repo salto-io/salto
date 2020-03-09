@@ -15,12 +15,12 @@
 */
 import _ from 'lodash'
 import {
-  Value, ObjectType, ElemID, InstanceElement, Values, TypeElement, Element,
+  Value, ObjectType, ElemID, InstanceElement, Values, TypeElement, Element, findElement, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
 import { filtersRunner } from '../src/filter'
-import { SALESFORCE, METADATA_TYPE } from '../src/constants'
+import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { ALL_FILTERS_CREATORS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, createMetadataTypeElements } from '../src/transformers/transformer'
@@ -68,16 +68,28 @@ export const getMetadataFromElement = async (client: SalesforceClient,
   return getMetadata(client, mdType, fullName)
 }
 
-export const createInstance = (value: Values, type: string): InstanceElement =>
-  createInstanceElement(value, new ObjectType({
-    elemID: new ElemID(SALESFORCE, type),
-    annotations: { [METADATA_TYPE]: type },
-  }))
+export const fetchTypes = async (client: SalesforceClient, types: string[]):
+Promise<ObjectType[]> => {
+  const baseTypeNames = new Set(types)
+  const subTypes = new Map<string, TypeElement>()
+  return _.flatten(await Promise.all(types.map(async type =>
+    createMetadataTypeElements(type, await client.describeMetadataType(type), subTypes,
+      baseTypeNames, client))))
+}
 
-export const getInstance = async (client: SalesforceClient, type: string, fullName: string):
-Promise<InstanceElement | undefined> => {
-  const md = await getMetadata(client, type, fullName)
-  return _.isUndefined(md) ? undefined : createInstance(md, type)
+export const createInstance = async (client: SalesforceClient, value: Values,
+  type: string | ObjectType): Promise<InstanceElement> => {
+  const objectType = isObjectType(type)
+    ? type
+    : findElement(await fetchTypes(client, [type]), new ElemID(SALESFORCE, type)) as ObjectType
+  return createInstanceElement(value, objectType)
+}
+
+
+export const getInstance = async (client: SalesforceClient, type: string | ObjectType,
+  fullName: string): Promise<InstanceElement | undefined> => {
+  const md = await getMetadata(client, isObjectType(type) ? metadataType(type) : type, fullName)
+  return _.isUndefined(md) ? undefined : createInstance(client, md, type)
 }
 
 export const removeIfAlreadyExists = async (client: SalesforceClient, type: string,
@@ -104,7 +116,7 @@ export const createElementAndVerify = async (adapter: SalesforceAdapter, client:
 
 export const createAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
   type: string, md: MetadataInfo): Promise<InstanceElement> => {
-  const instance = createInstance(md, type)
+  const instance = await createInstance(client, md, type)
   await createElementAndVerify(adapter, client, instance)
   return instance
 }
@@ -113,15 +125,6 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
   element: InstanceElement | ObjectType): Promise<void> => {
   await adapter.remove(element)
   expect(await getMetadataFromElement(client, element)).toBeUndefined()
-}
-
-export const fetchTypes = async (client: SalesforceClient, types: string[]):
-Promise<ObjectType[]> => {
-  const baseTypeNames = new Set(types)
-  const subTypes = new Map<string, TypeElement>()
-  return _.flatten(await Promise.all(types.map(async type =>
-    createMetadataTypeElements(type, await client.describeMetadataType(type), subTypes,
-      baseTypeNames, client))))
 }
 
 export const runFiltersOnFetch = async (client: SalesforceClient, fetchResult: Element[]):

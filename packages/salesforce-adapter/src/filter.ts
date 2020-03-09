@@ -35,10 +35,8 @@ export type FilterCreator = (opts: { client: SalesforceClient }) => Filter
 
 export const filtersRunner = (client: SalesforceClient,
   filterCreators: ReadonlyArray<FilterCreator>): Required<Filter> => {
-  const filtersWith = <M extends keyof Filter>(m: M): FilterWith<M>[] => {
-    const allFilters = filterCreators.map(f => f({ client }))
-    return types.filterHasMember<Filter, M>(m, allFilters)
-  }
+  const filtersWith = <M extends keyof Filter>(m: M): FilterWith<M>[] =>
+    types.filterHasMember<Filter, M>(m, filterCreators.map(f => f({ client })))
 
   const runFiltersInParallel = async <M extends keyof Filter>(m: M,
     run: (f: FilterWith<M>) => Promise<SaveResult[]>): Promise<SaveResult[]> =>

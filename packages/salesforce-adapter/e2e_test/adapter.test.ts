@@ -3588,11 +3588,12 @@ describe('Salesforce adapter E2E with real account', () => {
         }
 
         describe('email folder manipulation', () => {
-          const emailFolderInstance = createInstance({ name: 'My Email Folder Name',
-            [constants.INSTANCE_FULL_NAME_FIELD]: 'MyEmailFolder' },
-          'EmailFolder')
+          let emailFolderInstance: InstanceElement
 
           beforeAll(async () => {
+            emailFolderInstance = await createInstance(client, { name: 'My Email Folder Name',
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyEmailFolder' },
+            'EmailFolder')
             await removeElementIfAlreadyExists(client, emailFolderInstance)
           })
 
@@ -3611,20 +3612,21 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('email template manipulation', () => {
-          const emailTemplateInstance = createInstance({
-            [constants.INSTANCE_FULL_NAME_FIELD]: 'TestEmailFolder/MyEmailTemplate',
-            name: 'My Email Template Name',
-            available: true,
-            style: 'none',
-            subject: 'My Email Template Subject',
-            uiType: 'Aloha',
-            encodingKey: 'UTF-8',
-            type: 'text',
-            description: 'My Email Template Description',
-            content: 'My Email Template Body',
-          }, 'EmailTemplate')
+          let emailTemplateInstance: InstanceElement
 
           beforeAll(async () => {
+            emailTemplateInstance = await createInstance(client, {
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'TestEmailFolder/MyEmailTemplate',
+              name: 'My Email Template Name',
+              available: true,
+              style: 'none',
+              subject: 'My Email Template Subject',
+              uiType: 'Aloha',
+              encodingKey: 'UTF-8',
+              type: 'text',
+              description: 'My Email Template Description',
+              content: 'My Email Template Body',
+            }, 'EmailTemplate')
             await removeElementIfAlreadyExists(client, emailTemplateInstance)
           })
 
@@ -3643,21 +3645,21 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('report type manipulation', () => {
-          const reportTypeInstance = createInstance(
-            {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportType',
-              label: 'My Report Type Label',
-              baseObject: 'Account',
-              category: 'accounts',
-              deployed: true,
-              sections: [{
-                columns: [],
-                masterLabel: 'Master Label',
-              }],
-            }, 'ReportType'
-          )
+          let reportTypeInstance: InstanceElement
 
           beforeAll(async () => {
+            reportTypeInstance = await createInstance(client,
+              {
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportType',
+                label: 'My Report Type Label',
+                baseObject: 'Account',
+                category: 'accounts',
+                deployed: true,
+                sections: [{
+                  columns: [],
+                  masterLabel: 'Master Label',
+                }],
+              }, 'ReportType')
             await removeElementIfAlreadyExists(client, reportTypeInstance)
           })
 
@@ -3676,12 +3678,13 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('report folder manipulation', () => {
-          const reportFolderInstance = createInstance({
-            [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportFolder',
-            name: 'My Report Folder Name',
-          }, 'ReportFolder')
+          let reportFolderInstance: InstanceElement
 
           beforeAll(async () => {
+            reportFolderInstance = await createInstance(client, {
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyReportFolder',
+              name: 'My Report Folder Name',
+            }, 'ReportFolder')
             await removeElementIfAlreadyExists(client, reportFolderInstance)
           })
 
@@ -3700,14 +3703,15 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('report manipulation', () => {
-          const reportInstance = createInstance({
-            [constants.INSTANCE_FULL_NAME_FIELD]: 'TestReportFolder/MyReport',
-            name: 'My Report Name',
-            format: 'Summary',
-            reportType: 'Opportunity',
-          }, 'Report')
+          let reportInstance: InstanceElement
 
           beforeAll(async () => {
+            reportInstance = await createInstance(client, {
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'TestReportFolder/MyReport',
+              name: 'My Report Name',
+              format: 'Summary',
+              reportType: 'Opportunity',
+            }, 'Report')
             await removeElementIfAlreadyExists(client, reportInstance)
           })
 
@@ -3726,10 +3730,11 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('dashboard folder manipulation', () => {
-          const dashboardFolderInstance = createInstance({ name: 'My Dashboard Folder Name',
-            [constants.INSTANCE_FULL_NAME_FIELD]: 'MyDashboardFolder' }, 'DashboardFolder')
+          let dashboardFolderInstance: InstanceElement
 
           beforeAll(async () => {
+            dashboardFolderInstance = await createInstance(client, { name: 'My Dashboard Folder Name',
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyDashboardFolder' }, 'DashboardFolder')
             await removeElementIfAlreadyExists(client, dashboardFolderInstance)
           })
 
@@ -3748,26 +3753,27 @@ describe('Salesforce adapter E2E with real account', () => {
         })
 
         describe('dashboard manipulation', () => {
-          const dashboardInstance = createInstance({
-            [constants.INSTANCE_FULL_NAME_FIELD]: 'TestDashboardFolder/MyDashboard',
-            backgroundEndColor: '#FFFFFF',
-            backgroundFadeDirection: 'Diagonal',
-            backgroundStartColor: '#FFFFFF',
-            textColor: '#000000',
-            title: 'My Dashboard Title',
-            titleColor: '#000000',
-            titleSize: '12',
-            leftSection: {
-              columnSize: 'Medium',
-              components: [],
-            },
-            rightSection: {
-              columnSize: 'Medium',
-              components: [],
-            },
-          }, 'Dashboard')
+          let dashboardInstance: InstanceElement
 
           beforeAll(async () => {
+            dashboardInstance = await createInstance(client, {
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'TestDashboardFolder/MyDashboard',
+              backgroundEndColor: '#FFFFFF',
+              backgroundFadeDirection: 'Diagonal',
+              backgroundStartColor: '#FFFFFF',
+              textColor: '#000000',
+              title: 'My Dashboard Title',
+              titleColor: '#000000',
+              titleSize: '12',
+              leftSection: {
+                columnSize: 'Medium',
+                components: [],
+              },
+              rightSection: {
+                columnSize: 'Medium',
+                components: [],
+              },
+            }, 'Dashboard')
             await removeElementIfAlreadyExists(client, dashboardInstance)
           })
 

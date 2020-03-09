@@ -30,8 +30,12 @@ export class EditorWorkspace {
   constructor(workspace: Workspace, isCopy = false) {
     this.workspace = workspace
     this.isCopy = isCopy
-    if (!workspace.hasErrors()) {
-      this.lastValidCopy = _.clone(workspace)
+    workspace.hasErrors().then(hasErrors => {
+      if (!hasErrors) {
+        this.lastValidCopy = workspace.clone()
+      }
+    })
+  }
     }
   }
 

@@ -31,7 +31,7 @@ describe('workspace', () => {
 
   it('should collect errors', async () => {
     const baseWs = await mockWorkspace(bpFileName)
-    baseWs.hasErrors = jest.fn().mockReturnValue(true)
+    baseWs.hasErrors = jest.fn().mockImplementation(async () => true)
     const workspace = new EditorWorkspace(baseWs)
     expect(workspace.hasErrors()).toBeTruthy()
   })
@@ -47,7 +47,7 @@ describe('workspace', () => {
   it('should maintain status on error', async () => {
     const baseWs = await mockWorkspace(bpFileName)
     const workspace = new EditorWorkspace(baseWs)
-    baseWs.hasErrors = jest.fn().mockImplementation(() => true)
+    baseWs.hasErrors = jest.fn().mockImplementation(async () => true)
     workspace.setBlueprints({ filename: 'error', buffer: 'error content' })
     await workspace.awaitAllUpdates()
     expect(workspace.workspace.elements).toBeDefined()
@@ -66,14 +66,14 @@ describe('workspace', () => {
 
   it('should return last valid state if there are errors', async () => {
     const baseWs = await mockWorkspace(bpFileName)
-    baseWs.hasErrors = jest.fn().mockImplementation(() => false)
+    baseWs.hasErrors = jest.fn().mockImplementation(async () => false)
     const workspace = new EditorWorkspace(baseWs)
     const shouldBeCurrent = workspace.getValidCopy()
     if (!shouldBeCurrent) throw new Error('lastValid not defined')
     expect(await shouldBeCurrent.workspace.elements).toEqual(await workspace.workspace.elements)
     expect(await shouldBeCurrent.workspace.errors).toEqual(await workspace.workspace.errors)
 
-    baseWs.hasErrors = jest.fn().mockImplementation(() => true)
+    baseWs.hasErrors = jest.fn().mockImplementation(async () => true)
     workspace.setBlueprints({ filename: 'error', buffer: 'error' })
     await workspace.awaitAllUpdates()
     expect(await workspace.workspace.elements).toBeDefined()

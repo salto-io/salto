@@ -19,7 +19,7 @@ import {
   ReferenceExpression, Values, TemplateExpression, Value,
   ElemID, InstanceAnnotationTypes,
   BuiltinTypes, INSTANCE_ANNOTATIONS,
-  isPrimitiveType,
+  isPrimitiveType, FunctionExpression,
 } from '@salto-io/adapter-api'
 
 import {
@@ -128,6 +128,10 @@ describe('Test utils.ts', () => {
           },
         },
       ],
+      simplefunc: new FunctionExpression('funcush', ['aaa']),
+      severalfunc: new FunctionExpression('several', [false, 123, 'aaa']),
+      listfunc: new FunctionExpression('list', [[1, 2, 3]]),
+      mixedfunc: new FunctionExpression('mixed', [true, [1, 2, 3], 'ZOMG']),
     },
     [],
     {

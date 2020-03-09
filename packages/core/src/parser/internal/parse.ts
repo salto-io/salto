@@ -23,7 +23,7 @@ const grammar = require('./hcl')
 
 
 const MAX_FILE_ERRORS = 20
-
+const LONGEST_EMPTY_NON_LITERAL_LENGTH = 3
 const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
   const symbol = state.rule.symbols[state.dot]
   return (typeof symbol === 'object' && symbol.type && symbol.type !== 'wildcard')
@@ -113,6 +113,10 @@ const restoreOrigRanges = (
     : undefined))
 )
 
+const hasFatalError = (src: string): boolean => src.includes(
+  _.repeat(WILDCARD, LONGEST_EMPTY_NON_LITERAL_LENGTH)
+)
+
 export const parseBuffer = (
   src: string,
   filename: string,
@@ -131,7 +135,7 @@ export const parseBuffer = (
     const parserError = convertParserError(err, filename, lastColumn)
     // The is equal check is here to make sure we won't get into a "recovery loop" which
     // is a condition in which the error recovery does not change the state.
-    if (prevErrors.length < MAX_FILE_ERRORS) {
+    if (prevErrors.length < MAX_FILE_ERRORS && !hasFatalError(src)) {
       // Adding the wildcard token to bypass the error and give the parser another change
       const fixedBuffer = [
         src.slice(0, parserError.subject.start.byte),

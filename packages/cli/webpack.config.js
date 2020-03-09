@@ -46,6 +46,8 @@ module.exports = {
   externals: {
     vertx: 'commonjs vertx',    // workaround for: https://github.com/stefanpenner/es6-promise/issues/305
                                 // caused by requestretry which depends on an old version of es6-promise
+    formidable: 'commonjs formidable', // workaround for: https://github.com/node-formidable/formidable/issues/452
+                                       // caused by node-suitetalk. not supported by webpack. This way node will load it only when executed
   },
   plugins: [
     new webpack.EnvironmentPlugin({

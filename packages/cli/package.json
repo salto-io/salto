@@ -76,7 +76,7 @@
     "jest": "^24.0.0",
     "jest-junit": "^6.4.0",
     "memory-streams": "^0.1.3",
-    "nexe": "https://github.com/salto-io/nexe#fix_windows_fs_patch_normalization",
+    "nexe": "4.0.0-beta.4",
     "source-map-loader": "^0.2.4",
     "tmp-promise": "^2.0.2",
     "typescript": "3.8.3",

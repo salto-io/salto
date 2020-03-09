@@ -163,10 +163,8 @@ describe('workflow filter', () => {
         baseCustomObject)
       expect(rawWorkflowInstance).toBeDefined()
       fetchResult = [...rawWorkflowTypes, rawWorkflowInstance as InstanceElement]
-      console.log(`BEFORE FILTERS: ${JSON.stringify(rawWorkflowInstance)}`)
       await runFiltersOnFetch(client, fetchResult)
       const workflows = findElements(fetchResult, WORKFLOW_METADATA_TYPE, baseCustomObject)
-      console.log(`WORKFLOWS: ${JSON.stringify(workflows)}`)
       workflow = workflows[0] as InstanceElement
     })
     it('should fetch workflow', async () => {

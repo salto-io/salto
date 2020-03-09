@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  Value, ObjectType, ElemID, InstanceElement, Values, TypeElement, Element, findElement, isObjectType,
+  Value, ObjectType, ElemID, InstanceElement, Values, TypeElement, Element, findElement,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'

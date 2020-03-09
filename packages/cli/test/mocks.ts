@@ -22,8 +22,9 @@ import {
 import _ from 'lodash'
 import {
   DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError,
-  DeployResult, Config, telemetrySender,
+  DeployResult, Config, telemetrySender, Telemetry, Tags, TelemetryEvent,
 } from '@salto-io/core'
+import { EVENT_TYPES } from '@salto-io/core/dist/src/telemetry'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
 import { YargsCommandBuilder } from '../src/command_builder'
@@ -63,10 +64,38 @@ export interface MockCliOutput {
   exitCode: number
 }
 
-export const mockTelemetry = telemetrySender(
-  { url: '', enabled: false, token: '' },
-  { installationID: '1234', app: 'test' },
-)
+export type MockTelemetry = {
+  getEvents(): TelemetryEvent[]
+  getEventsMap(): {[name: string]: TelemetryEvent[]}
+} & Telemetry
+
+export const getMockTelemetry = (): MockTelemetry => {
+  const telemetry = telemetrySender(
+    { url: '', enabled: false, token: '' },
+    { installationID: '1234', app: 'test' },
+  )
+  const events: TelemetryEvent[] = []
+  telemetry.sendCountEvent = async (
+    name: string,
+    value: number,
+    tags: Tags = {},
+  ): Promise<void> => {
+    events.push({
+      name,
+      value,
+      tags,
+      type: EVENT_TYPES.COUNTER,
+      timestamp: '',
+    })
+  }
+
+  return Object.assign(telemetry, {
+    getEvents: (): TelemetryEvent[] => events,
+    getEventsMap: (): {[name: string]: TelemetryEvent[]} => (
+      _(events).groupBy(e => e.name).value()
+    ),
+  })
+}
 
 export const cli = async ({
   commandBuilders = builders,
@@ -82,7 +111,7 @@ export const cli = async ({
   const input = {
     args: _.isArray(args) ? args : args.split(' '),
     stdin: {},
-    telemetry: mockTelemetry,
+    telemetry: getMockTelemetry(),
   }
 
   const output = {

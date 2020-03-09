@@ -18,7 +18,11 @@ import {
   Workspace, Plan, PlanItem, currentEnvConfig,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
-import { deploy, preview, mockSpinnerCreator, MockWriteStream, mockTelemetry } from '../mocks'
+import {
+  deploy, preview, mockSpinnerCreator,
+  MockWriteStream, getMockTelemetry,
+  MockTelemetry,
+} from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
 
@@ -41,9 +45,19 @@ jest.mock('@salto-io/core', () => ({
     mockDeploy(ws, shouldDeploy, reportProgress, services, force)),
 }))
 jest.mock('../../src/workspace')
+
+const eventsNames = {
+  failure: 'workspace.deploy.failure',
+  start: 'workspace.deploy.start',
+  success: 'workspace.deploy.success',
+  actionsErrors: 'workspace.deploy.actions.failure',
+  actionsSuccess: 'workspace.deploy.actions.success',
+}
+
 describe('deploy command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let command: DeployCommand
+  let mockTelemetry: MockTelemetry
   const spinners: Spinner[] = []
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
@@ -64,10 +78,7 @@ describe('deploy command', () => {
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-  })
-
-  beforeEach(() => {
-    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    mockTelemetry = getMockTelemetry()
     spinnerCreator = mockSpinnerCreator(spinners)
   })
 
@@ -126,6 +137,8 @@ describe('deploy command', () => {
     it('should fail gracefully', async () => {
       const result = await command.execute()
       expect(result).toBe(CliExitCode.AppError)
+      expect(mockTelemetry.getEvents()).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
     })
   })
 })

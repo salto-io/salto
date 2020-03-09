@@ -45,20 +45,36 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 
+const eventsNames = {
+  failure: 'workspace.init.failure',
+  success: 'workspace.init.success',
+  start: 'workspace.init.start',
+}
+
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  let mockTelemetry: mocks.MockTelemetry
 
   beforeEach(async () => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockTelemetry = mocks.getMockTelemetry()
   })
 
   it('should invoke api\'s init', async () => {
-    await command('test', mocks.mockTelemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
+    await command('test', mockTelemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
     expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
+    expect(mockTelemetry.getEvents()).toHaveLength(2)
+    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
   })
 
   it('should print errors', async () => {
-    await command('error', mocks.mockTelemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
+    await command('error', mockTelemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
     expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
+    expect(mockTelemetry.getEvents()).toHaveLength(2)
+    expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
   })
 })

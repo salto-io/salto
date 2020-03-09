@@ -17,7 +17,8 @@ import { command } from '../../src/commands/preview'
 import {
   preview, MockWriteStream, getWorkspaceErrors,
   mockSpinnerCreator, mockLoadConfig,
-  transformToWorkspaceError, mockTelemetry,
+  transformToWorkspaceError, getMockTelemetry,
+  MockTelemetry,
 } from '../mocks'
 import { SpinnerCreator, Spinner, CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
@@ -28,8 +29,16 @@ jest.mock('@salto-io/core', () => ({
   preview: jest.fn().mockImplementation(() => mockPreview()),
 }))
 jest.mock('../../src/workspace')
+
+const eventsNames = {
+  failure: 'workspace.preview.failure',
+  start: 'workspace.preview.start',
+  success: 'workspace.preview.success',
+}
+
 describe('preview command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  let mockTelemetry: MockTelemetry
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
@@ -62,6 +71,7 @@ describe('preview command', () => {
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    mockTelemetry = getMockTelemetry()
     spinners = []
     spinnerCreator = mockSpinnerCreator(spinners)
   })
@@ -73,6 +83,9 @@ describe('preview command', () => {
 
     it('should load the workspace', async () => {
       expect(mockLoadWorkspace).toHaveBeenCalled()
+      expect(mockTelemetry.getEvents()).toHaveLength(2)
+      expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+      expect(mockTelemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
     })
 
     it('should print summary', async () => {
@@ -105,6 +118,8 @@ describe('preview command', () => {
 
     it('should fail', () => {
       expect(result).toBe(CliExitCode.AppError)
+      expect(mockTelemetry.getEvents()).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
     })
 
     it('should not start the preview spinner', () => {

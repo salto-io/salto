@@ -45,6 +45,7 @@ const eventStart = `${eventBaseName}.${TELEMETRY.START}`
 const eventFailure = `${eventBaseName}.${TELEMETRY.FAILURE}`
 const eventMergeErrors = `${eventBaseName}.merge_errors`
 const eventCountChanges = `${eventBaseName}.changes`
+const eventCountChangesToApply = `${eventBaseName}.changes_to_apply`
 
 type approveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
@@ -128,12 +129,13 @@ export const fetchCommand = async (
 
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
-  telemetry.sendCountEvent(eventCountChanges, 1, workspaceTags)
+  telemetry.sendCountEvent(eventCountChanges, changes.length, workspaceTags)
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const changesToApply = force || (await workspace.isEmpty())
     ? changes
     : await getApprovedChanges(changes, interactive)
 
+  telemetry.sendCountEvent(eventCountChangesToApply, changesToApply.length, workspaceTags)
   const updatingWsEmitter = new StepEmitter()
   fetchProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
   const updatingWsSucceeded = await updateWorkspace(workspace, output, changesToApply, strict)

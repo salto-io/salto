@@ -19,7 +19,10 @@ import {
   dumpCsv, file, readAllCsvContents, SALTO_HOME_VAR,
 } from '@salto-io/core'
 import { Spinner } from '../src/types'
-import { MockWriteStream, mockSpinnerCreator, mockTelemetry } from '../test/mocks'
+import {
+  MockWriteStream, mockSpinnerCreator,
+  getMockTelemetry, MockTelemetry,
+} from '../test/mocks'
 import { command as fetch } from '../src/commands/fetch'
 import { command as importCommand } from '../src/commands/import'
 import { command as exportCommand } from '../src/commands/export'
@@ -35,6 +38,7 @@ let homePath: string
 let fetchOutputDir: string
 let exportOutputDir: string
 let exportOutputFullPath: string
+let mockTelemetry: MockTelemetry
 
 const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
 const envConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/env.bp`
@@ -43,6 +47,7 @@ const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 
 describe('Data migration operations E2E', () => {
   beforeAll(() => {
+    mockTelemetry = getMockTelemetry()
     homePath = tmp.dirSync().name
     fetchOutputDir = `${homePath}/salesforce/BP/test_import`
     exportOutputDir = `${homePath}/salesforce/tmp/export`

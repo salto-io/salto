@@ -36,8 +36,18 @@ jest.mock('@salto-io/core', () => ({
       }))),
 }))
 jest.mock('../../src/workspace')
+
+const eventsNames = {
+  failure: 'workspace.import.failure',
+  success: 'workspace.import.success',
+  start: 'workspace.import.start',
+  errors: 'workspace.import.errors',
+  failedRows: 'workspace.import.failed_rows',
+}
+
 describe('import command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  let mockTelemetry: mocks.MockTelemetry
   const workspaceDir = 'dummy_dir'
 
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
@@ -49,19 +59,25 @@ describe('import command', () => {
   beforeEach(() => {
     jest.spyOn(file, 'exists').mockResolvedValue(true)
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockTelemetry = mocks.getMockTelemetry()
   })
 
   it('should run import successfully if given a correct path to a real CSV file', async () => {
-    await command(workspaceDir, 'mockName', 'mockPath', mocks.mockTelemetry, cliOutput).execute()
+    await command(workspaceDir, 'mockName', 'mockPath', mockTelemetry, cliOutput).execute()
     expect(importFromCsvFile).toHaveBeenCalled()
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_ENDED_SUMMARY(5, 0))
     expect(cliOutput.stdout.content).toMatch(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
+    expect(mockTelemetry.getEvents()).toHaveLength(2)
+    expect(mockTelemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
   })
 
   it('should fail if given a wrong path for a CSV file', async () => {
     jest.spyOn(file, 'exists').mockResolvedValueOnce(false)
-    await command(workspaceDir, '', '', mocks.mockTelemetry, cliOutput).execute()
+    await command(workspaceDir, '', '', mockTelemetry, cliOutput).execute()
     expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
+    expect(mockTelemetry.getEvents()).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
   })
   it('should fail if workspace load failed', async () => {
     const erroredWorkspace = {
@@ -70,13 +86,25 @@ describe('import command', () => {
       getWorkspaceErrors: mocks.getWorkspaceErrors,
     } as unknown as Workspace
     mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-    const result = await command(workspaceDir, '', '', mocks.mockTelemetry, cliOutput).execute()
+    const result = await command(workspaceDir, '', '', mockTelemetry, cliOutput).execute()
     expect(result).toBe(CliExitCode.AppError)
+    expect(mockTelemetry.getEvents()).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
   })
 
   it('should fail if import operation failed', async () => {
-    const exitCode = await command(workspaceDir, 'error-type', '', mocks.mockTelemetry, cliOutput).execute()
+    const exitCode = await command(workspaceDir, 'error-type', '', mockTelemetry, cliOutput).execute()
     expect(exitCode).toEqual(CliExitCode.AppError)
     expect(cliOutput.stdout.content).toMatch(Prompts.ERROR_SUMMARY(['error1', 'error2']))
+    expect(mockTelemetry.getEvents()).toHaveLength(4)
+    expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.errors]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.errors]).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()[eventsNames.errors][0].value).toEqual(2)
+
+    expect(mockTelemetry.getEventsMap()[eventsNames.failedRows]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.failedRows]).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()[eventsNames.failedRows][0].value).toEqual(5)
   })
 })

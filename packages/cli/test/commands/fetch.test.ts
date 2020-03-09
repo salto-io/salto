@@ -17,13 +17,23 @@ import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { ElemID, ObjectType, Element } from '@salto-io/adapter-api'
 import {
-  Workspace, fetch, FetchChange, DetailedChange, FetchProgressEvents, StepEmitter,
+  Workspace, fetch, FetchChange,
+  DetailedChange, FetchProgressEvents,
+  StepEmitter,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
 import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace'
+
+const eventsNames = {
+  failure: 'workspace.fetch.failure',
+  start: 'workspace.fetch.start',
+  success: 'workspace.fetch.success',
+  changes: 'workspace.fetch.changes',
+  changesToApply: 'workspace.fetch.changes_to_apply',
+}
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -54,8 +64,10 @@ describe('fetch command', () => {
 
   describe('execute', () => {
     let result: number
+    let mockTelemetry: mocks.MockTelemetry
     describe('with errored workspace', () => {
       beforeEach(async () => {
+        mockTelemetry = mocks.getMockTelemetry()
         const erroredWorkspace = {
           hasErrors: () => true,
           errors: { strings: () => ['some error'] },
@@ -63,19 +75,23 @@ describe('fetch command', () => {
           getWorkspaceErrors: mocks.getWorkspaceErrors,
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-        result = await command('', true, false, mocks.mockTelemetry, cliOutput, spinnerCreator, services, false)
+        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, services, false)
           .execute()
       })
 
       it('should fail', async () => {
         expect(result).toBe(CliExitCode.AppError)
         expect(fetch).not.toHaveBeenCalled()
+        expect(mockTelemetry.getEvents().length).toEqual(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.failure][0].value).toEqual(1)
       })
     })
 
     describe('with valid workspace', () => {
       const workspaceDir = 'valid-ws'
       beforeAll(async () => {
+        mockTelemetry = mocks.getMockTelemetry()
         mockLoadWorkspace.mockResolvedValue({
           workspace: mocks.mockLoadWorkspace(workspaceDir),
           errored: false,
@@ -83,7 +99,7 @@ describe('fetch command', () => {
         result = await command(
           workspaceDir,
           true, false,
-          mocks.mockTelemetry,
+          mockTelemetry,
           cliOutput,
           spinnerCreator,
           services,
@@ -102,6 +118,14 @@ describe('fetch command', () => {
         const calls = findWsUpdateCalls(workspaceDir)
         expect(calls).toHaveLength(1)
         expect(_.isEmpty(calls[0][2])).toBeTruthy()
+      })
+
+      it('should send telemetry events', () => {
+        expect(mockTelemetry.getEvents()).toHaveLength(4)
+        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
       })
     })
 
@@ -136,13 +160,14 @@ describe('fetch command', () => {
           return Promise.resolve({ changes: [], mergeErrors: [], success: true })
         })
         beforeEach(async () => {
+          mockTelemetry = mocks.getMockTelemetry()
           await fetchCommand({
             workspace: mockWorkspace(),
             force: true,
             interactive: false,
             output: cliOutput,
             inputServices: services,
-            telemetry: mocks.mockTelemetry,
+            telemetry: mockTelemetry,
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockEmptyApprove,
           })
@@ -161,6 +186,7 @@ describe('fetch command', () => {
         let workspace: Workspace
         const workspaceDir = 'no-changes'
         beforeEach(async () => {
+          mockTelemetry = mocks.getMockTelemetry()
           workspace = mockWorkspace()
           await fetchCommand({
             workspace,
@@ -168,7 +194,7 @@ describe('fetch command', () => {
             interactive: false,
             output: cliOutput,
             inputServices: services,
-            telemetry: mocks.mockTelemetry,
+            telemetry: mockTelemetry,
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
           })
@@ -176,6 +202,10 @@ describe('fetch command', () => {
         it('should not update workspace', () => {
           const calls = findWsUpdateCalls(workspaceDir)
           expect(calls).toHaveLength(0)
+          expect(mockTelemetry.getEvents()).toHaveLength(4)
+          expect(mockTelemetry.getEventsMap()[eventsNames.changes]).not.toBeUndefined()
+          expect(mockTelemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
+          expect(mockTelemetry.getEventsMap()[eventsNames.changes][0].value).toEqual(0)
         })
       })
       describe('with upstream changes', () => {
@@ -193,6 +223,7 @@ describe('fetch command', () => {
           const workspaceDir = 'with-force'
           let workspace: Workspace
           beforeEach(async () => {
+            mockTelemetry = mocks.getMockTelemetry()
             workspace = mockWorkspace()
             workspace.config.baseDir = workspaceDir
             result = await fetchCommand({
@@ -200,7 +231,7 @@ describe('fetch command', () => {
               force: true,
               interactive: false,
               inputServices: services,
-              telemetry: mocks.mockTelemetry,
+              telemetry: mockTelemetry,
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -217,6 +248,7 @@ describe('fetch command', () => {
           const workspaceDir = 'with-strict'
           let workspace: Workspace
           beforeEach(async () => {
+            mockTelemetry = mocks.getMockTelemetry()
             workspace = mockWorkspace()
             workspace.config.baseDir = workspaceDir
             result = await fetchCommand({
@@ -224,7 +256,7 @@ describe('fetch command', () => {
               force: true,
               interactive: false,
               inputServices: services,
-              telemetry: mocks.mockTelemetry,
+              telemetry: mockTelemetry,
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -243,12 +275,13 @@ describe('fetch command', () => {
           const workspace = mockWorkspace()
           workspace.config.baseDir = workspaceDir
           beforeEach(async () => {
+            mockTelemetry = mocks.getMockTelemetry()
             await fetchCommand({
               workspace,
               force: false,
               interactive: false,
               inputServices: services,
-              telemetry: mocks.mockTelemetry,
+              telemetry: mockTelemetry,
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -265,13 +298,14 @@ describe('fetch command', () => {
             let workspace: Workspace
             const workspaceDir = 'no-approve'
             beforeEach(async () => {
+              mockTelemetry = mocks.getMockTelemetry()
               workspace = mockWorkspace([new ObjectType({ elemID: new ElemID('adapter', 'type') })])
               await fetchCommand({
                 workspace,
                 force: false,
                 interactive: false,
                 inputServices: services,
-                telemetry: mocks.mockTelemetry,
+                telemetry: mockTelemetry,
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockEmptyApprove,
@@ -280,6 +314,9 @@ describe('fetch command', () => {
             it('should not update workspace', () => {
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(0)
+              expect(mockTelemetry.getEvents()).toHaveLength(4)
+              expect(mockTelemetry.getEventsMap()[eventsNames.changes]).not.toBeUndefined()
+              expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).not.toBeUndefined()
             })
           })
           describe('if some changes are approved', () => {
@@ -290,12 +327,13 @@ describe('fetch command', () => {
               const workspace = mockWorkspace(mocks.elements())
               const workspaceDir = 'single-approve'
               workspace.config.baseDir = workspaceDir
+              mockTelemetry = mocks.getMockTelemetry()
               await fetchCommand({
                 workspace,
                 force: false,
                 interactive: false,
                 inputServices: services,
-                telemetry: mocks.mockTelemetry,
+                telemetry: mockTelemetry,
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -303,6 +341,9 @@ describe('fetch command', () => {
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(1)
               expect(calls[0][2][0]).toEqual(changes[0])
+              expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).not.toBeUndefined()
+              expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
+              expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply][0].value).toEqual(1)
             })
 
             it('should exit if errors identified in workspace after update', async () => {
@@ -321,7 +362,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
-                telemetry: mocks.mockTelemetry,
+                telemetry: mocks.getMockTelemetry(),
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -347,7 +388,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
-                telemetry: mocks.mockTelemetry,
+                telemetry: mocks.getMockTelemetry(),
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -362,13 +403,14 @@ describe('fetch command', () => {
             it('should not update workspace if fetch failed', async () => {
               const workspace = mockWorkspace(mocks.elements())
               const workspaceDir = 'fail'
+              mockTelemetry = mocks.getMockTelemetry()
               workspace.config.baseDir = workspaceDir
               await fetchCommand({
                 workspace,
                 force: false,
                 interactive: false,
                 inputServices: services,
-                telemetry: mocks.mockTelemetry,
+                telemetry: mockTelemetry,
                 output: cliOutput,
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -376,6 +418,8 @@ describe('fetch command', () => {
               expect(cliOutput.stderr.content).toContain('Error')
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(0)
+              expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+              expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
             })
           })
         })

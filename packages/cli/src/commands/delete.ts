@@ -64,6 +64,7 @@ export const command = (
     // If any rows failed, return error exit code
     if (result.failedRows > 0) {
       telemetry.sendCountEvent(eventFailedRows, result.failedRows, workspaceTags)
+      telemetry.sendCountEvent(eventFailure, 1, workspaceTags)
       return CliExitCode.AppError
     }
     // Otherwise return success

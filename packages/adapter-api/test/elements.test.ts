@@ -28,10 +28,6 @@ import {
   isObjectType,
   isPrimitiveType,
   isType,
-  findElement,
-  findElements,
-  findObjectType,
-  findInstances,
 } from '../src/utils'
 
 describe('Test elements.ts', () => {
@@ -463,41 +459,6 @@ describe('Test elements.ts', () => {
         it('should return the nesting path in the instance', () => {
           expect(path).toEqual(['nested', 'value'])
         })
-      })
-    })
-  })
-
-  describe('findElement functions', () => {
-    const instances = [
-      new InstanceElement('1', ot, {}),
-      new InstanceElement('2', ot, {}),
-    ]
-    const elements = [primStr, primStr, ot, ...instances]
-    describe('findElements', () => {
-      it('should find all elements with the requested id', () => {
-        expect([...findElements(elements, primID)]).toEqual([primStr, primStr])
-      })
-    })
-    describe('findElement', () => {
-      it('should find any matching element', () => {
-        expect(findElement(elements, ot.elemID)).toBe(ot)
-        expect(findElement(elements, primID)).toBe(primStr)
-      })
-      it('should return undefined if there is no matching element', () => {
-        expect(findElement([], primID)).toBeUndefined()
-      })
-    })
-    describe('findObjectType', () => {
-      it('should find object type by ID', () => {
-        expect(findObjectType(elements, ot.elemID)).toBe(ot)
-      })
-      it('should not find non-object types', () => {
-        expect(findObjectType(elements, primID)).toBeUndefined()
-      })
-    })
-    describe('findInstances', () => {
-      it('should find all instances of a given type', () => {
-        expect([...findInstances(elements, ot.elemID)]).toEqual(instances)
       })
     })
   })

@@ -15,9 +15,11 @@
 */
 import _ from 'lodash'
 import {
-  Element, InstanceElement, ObjectType, resolveReferences,
-  restoreReferences,
+  Element, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
+import {
+  resolveReferences, restoreReferences,
+} from '@salto-io/adapter-utils'
 import {
   HubspotMetadata,
 } from './client/types'

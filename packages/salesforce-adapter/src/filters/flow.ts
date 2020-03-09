@@ -14,8 +14,11 @@
 * limitations under the License.
 */
 import {
-  Element, CORE_ANNOTATIONS, ElemID, findObjectType, RESTRICTION_ANNOTATIONS,
+  Element, CORE_ANNOTATIONS, ElemID, RESTRICTION_ANNOTATIONS,
 } from '@salto-io/adapter-api'
+import {
+  findObjectType,
+} from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
 

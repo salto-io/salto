@@ -15,10 +15,13 @@
 */
 import _ from 'lodash'
 import {
-  bpCase, BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType,
-  PrimitiveType, PrimitiveTypes, RESTRICTION_ANNOTATIONS, transformValues, Values,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType,
+  PrimitiveType, PrimitiveTypes, RESTRICTION_ANNOTATIONS, Values,
 } from '@salto-io/adapter-api'
 import { Record } from 'node-suitetalk'
+import {
+  bpCase, transformValues,
+} from '@salto-io/adapter-utils'
 import {
   ATTRIBUTES, ENTITY_CUSTOM_FIELD, EXTERNAL_ID, FAMILY_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE,
   RECORDS_PATH, RECORD_REF, SCRIPT_ID,

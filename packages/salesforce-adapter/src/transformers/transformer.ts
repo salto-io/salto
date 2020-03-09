@@ -22,9 +22,13 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue, RESTRICTION_ANNOTATIONS,
-  Field as TypeField, TypeMap, TransformPrimitiveFunc, bpCase, isField,
+  Field as TypeField, TypeMap,
+  isField,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import {
+  bpCase, TransformPrimitiveFunc,
+} from '@salto-io/adapter-utils'
 import { CustomObject, CustomField } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,

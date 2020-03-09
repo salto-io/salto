@@ -16,8 +16,11 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, isField, isType, isObjectType, findElement,
+  Element, isField, isType, isObjectType,
 } from '@salto-io/adapter-api'
+import {
+  findElement,
+} from '@salto-io/adapter-utils'
 import { SourceMap } from '@salto-io/core'
 import { EditorWorkspace } from './workspace'
 

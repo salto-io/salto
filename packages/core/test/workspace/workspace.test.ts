@@ -18,8 +18,10 @@ import path from 'path'
 import _ from 'lodash'
 import {
   Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes,
-  findElement,
 } from '@salto-io/adapter-api'
+import {
+  findElement,
+} from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { blueprintsSource } from '../../src/workspace/blueprints/blueprints_source'
 import { Workspace } from '../../src/workspace/workspace'

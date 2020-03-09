@@ -16,10 +16,14 @@
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
-  ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType, InstanceElement,
-  isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, TypeMap, findObjectType,
-  Values, bpCase, INSTANCE_ANNOTATIONS, ReferenceExpression, transformValues,
+  ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType,
+  isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement,
+  Values, INSTANCE_ANNOTATIONS, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import {
+  findObjectType,
+  bpCase, transformValues,
+} from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'

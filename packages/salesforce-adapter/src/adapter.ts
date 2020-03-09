@@ -17,8 +17,11 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
-  DataModificationResult, Values, resolveReferences, restoreReferences,
+  DataModificationResult, Values,
 } from '@salto-io/adapter-api'
+import {
+  resolveReferences, restoreReferences,
+} from '@salto-io/adapter-utils'
 import {
   SaveResult, MetadataInfo, QueryResult, FileProperties, BatchResultInfo, BulkLoadOperation,
   Record as SfRecord, ListMetadataQuery, UpsertResult, RetrieveResult, RetrieveRequest,

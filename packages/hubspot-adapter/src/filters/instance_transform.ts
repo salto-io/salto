@@ -14,8 +14,11 @@
 * limitations under the License.
 */
 import {
-  Element, isInstanceElement, isObjectType, transformValues, ObjectType,
+  Element, isInstanceElement, isObjectType, ObjectType,
 } from '@salto-io/adapter-api'
+import {
+  transformValues,
+} from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { transformPrimitive } from '../transformers/transformer'
 

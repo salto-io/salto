@@ -20,6 +20,7 @@ declare module 'node-suitetalk' {
     constructor(config: Configuration)
     init(): Promise<void>
     add(record: Record.Types.Record): Promise<AddResponse>
+    update(record: Record.Types.Record): Promise<UpdateResponse>
     delete(recordRef: Record.Types.Reference): Promise<DeleteResponse>
     getList(recordRefs: Record.Types.Reference[]): Promise<GetListResponse>
     getCustomizationId(type: string, includeInactives: boolean):
@@ -124,6 +125,11 @@ declare module 'node-suitetalk' {
 
   // add
   export interface AddResponse {
+    writeResponse: WriteResponse
+  }
+
+  // update
+  export interface UpdateResponse {
     writeResponse: WriteResponse
   }
 

@@ -14,11 +14,20 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, InstanceElement, ObjectType, Change } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
-import { createInstanceElement, toNetsuiteRecord, toNetsuiteReference, Types } from './transformer'
+import { createInstanceElement, internalId, toNetsuiteRecord, toNetsuiteReference, Types } from './transformer'
 import { ATTRIBUTES, INTERNAL_ID, METADATA_TYPE, SCRIPT_ID } from './constants'
 
+
+const validateInternalId = (prevElement: InstanceElement, newElement: InstanceElement): void => {
+  if (internalId(prevElement) !== internalId(newElement)) {
+    throw Error(
+      `Failed to update element as internalIds prev=${internalId(prevElement)}
+       and new=${internalId(newElement)} are different`
+    )
+  }
+}
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
@@ -60,10 +69,9 @@ export default class NetsuiteAdapter {
     await this.client.delete(toNetsuiteReference(instance))
   }
 
-  public async update(_before: Element, after: Element, _changes: Iterable<Change>):
-    Promise<Element> { // todo: implement
-    // eslint-disable-next-line no-console
-    console.log(this.client)
-    return Promise.resolve(after)
+  public async update(before: InstanceElement, after: InstanceElement): Promise<Element> {
+    validateInternalId(before, after)
+    await this.client.update(toNetsuiteRecord(after))
+    return after
   }
 }

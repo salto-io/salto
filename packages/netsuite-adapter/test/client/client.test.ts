@@ -19,7 +19,7 @@ import {
   ATTRIBUTES, ENTITY_CUSTOM_FIELD, FAMILY_TYPE, INTERNAL_ID, RECORD_REF, SCRIPT_ID,
 } from '../../src/constants'
 import { NetsuiteRecord, NetsuiteReference } from '../../src/client/client'
-import { recordInList } from '../utils'
+import { recordInList, returnedReferenceMock } from '../utils'
 
 describe('Client', () => {
   const { connection, client } = createClient()
@@ -120,9 +120,33 @@ describe('Client', () => {
         ENTITY_CUSTOM_FIELD))
     })
 
-    it('should return list records', async () => {
+    it('should return reference', async () => {
       expect(addResult).toBeDefined()
       expect(addResult).toEqual(reference)
+    })
+
+    it('should call init once', async () => {
+      expect(connection.init).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('update', () => {
+    let updateResult: NetsuiteReference
+    beforeEach(async () => {
+      connection.init = jest.fn().mockImplementation(() => Promise.resolve())
+      connection.update = jest.fn().mockReturnValue(Promise.resolve({
+        writeResponse: {
+          baseRef: returnedReferenceMock,
+        },
+      }))
+      const record = new Record.Types.Record('setupCustom', ENTITY_CUSTOM_FIELD)
+      record.internalId = '123'
+      updateResult = await client.update(record)
+    })
+
+    it('should return reference', async () => {
+      expect(updateResult).toBeDefined()
+      expect(updateResult).toEqual(returnedReferenceMock)
     })
 
     it('should call init once', async () => {

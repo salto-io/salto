@@ -31,5 +31,8 @@ export const INTERNAL_ID = 'internalId'
 export const EXTERNAL_ID = 'externalId'
 export const SCRIPT_ID = 'scriptId'
 
-// Annotations
+// Object annotations
 export const METADATA_TYPE = 'metadataType'
+
+// Field annotations
+export const IS_ATTRIBUTE = 'isAttribute'

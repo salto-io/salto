@@ -20,6 +20,7 @@ const mockSuiteTalkConnection: () => Connection = () => ({
   getList: jest.fn().mockImplementation(() => Promise.resolve()),
   getCustomizationId: jest.fn().mockImplementation(() => Promise.resolve()),
   add: jest.fn().mockImplementation(() => Promise.resolve()),
+  update: jest.fn().mockImplementation(() => Promise.resolve()),
   delete: jest.fn().mockImplementation(() => Promise.resolve()),
 })
 

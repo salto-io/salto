@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ATTRIBUTES } from '../src/constants'
+import { ATTRIBUTES, INTERNAL_ID, SCRIPT_ID } from '../src/constants'
 
 export const recordInList = {
   [ATTRIBUTES]: {
@@ -57,4 +57,13 @@ export const recordInList = {
   appliesToPriceList: false,
   fieldType: '_freeFormText',
   scriptId: 'custentity_myScriptId',
+}
+
+export const returnedReferenceMock = {
+  [ATTRIBUTES]: {
+    [SCRIPT_ID]: 'custentity_my_script_id',
+    [INTERNAL_ID]: '123',
+    type: 'entityCustomField',
+    'xsi:type': 'platformCore:CustomizationRef',
+  },
 }

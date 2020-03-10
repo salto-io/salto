@@ -23,8 +23,8 @@ import {
   bpCase, transformValues,
 } from '@salto-io/adapter-utils'
 import {
-  ATTRIBUTES, ENTITY_CUSTOM_FIELD, EXTERNAL_ID, FAMILY_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE,
-  RECORDS_PATH, RECORD_REF, SCRIPT_ID,
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, EXTERNAL_ID, FAMILY_TYPE, INTERNAL_ID, IS_ATTRIBUTE,
+  METADATA_TYPE, NETSUITE, RECORDS_PATH, RECORD_REF, SCRIPT_ID,
 } from './constants'
 import { NetsuiteRecord, NetsuiteReference } from './client/client'
 
@@ -243,10 +243,16 @@ export class Types {
     [RECORD_REF]: new ObjectType({
       elemID: recordRefElemID,
       fields: {
-        [INTERNAL_ID]: new Field(recordRefElemID, INTERNAL_ID, BuiltinTypes.SERVICE_ID),
-        [EXTERNAL_ID]: new Field(recordRefElemID, EXTERNAL_ID, BuiltinTypes.SERVICE_ID),
+        [INTERNAL_ID]: new Field(recordRefElemID, INTERNAL_ID, BuiltinTypes.SERVICE_ID, {
+          [IS_ATTRIBUTE]: true,
+        }),
+        [EXTERNAL_ID]: new Field(recordRefElemID, EXTERNAL_ID, BuiltinTypes.SERVICE_ID, {
+          [IS_ATTRIBUTE]: true,
+        }),
         name: new Field(recordRefElemID, 'name', BuiltinTypes.STRING),
-        type: new Field(recordRefElemID, 'type', Types.platformCoreSubtypes.RecordType),
+        type: new Field(recordRefElemID, 'type', Types.platformCoreSubtypes.RecordType, {
+          [IS_ATTRIBUTE]: true,
+        }),
       },
     }),
   }
@@ -255,7 +261,9 @@ export class Types {
     [ENTITY_CUSTOM_FIELD]: new ObjectType({
       elemID: entityCustomFieldElemID,
       fields: {
-        [INTERNAL_ID]: new Field(entityCustomFieldElemID, INTERNAL_ID, BuiltinTypes.SERVICE_ID),
+        [INTERNAL_ID]: new Field(entityCustomFieldElemID, INTERNAL_ID, BuiltinTypes.SERVICE_ID, {
+          [IS_ATTRIBUTE]: true,
+        }),
         label: new Field(entityCustomFieldElemID, 'label', BuiltinTypes.STRING),
         owner: new Field(entityCustomFieldElemID, 'owner', Types.platformCoreObjects[RECORD_REF]),
         description: new Field(entityCustomFieldElemID, 'description', BuiltinTypes.STRING),
@@ -302,8 +310,18 @@ export const createInstanceElement = (record: Values, type: ObjectType): Instanc
     [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
 }
 
+export const internalId = (instance: InstanceElement): string =>
+  instance.value[INTERNAL_ID]
+
+const metadataType = (instance: InstanceElement): string =>
+  instance.type.annotations[METADATA_TYPE]
+
+const isAttribute = (field: Field): boolean =>
+  field.annotations[IS_ATTRIBUTE] === true
+
 const toNetsuiteFields = (instance: InstanceElement): Record.Fields.Field[] =>
   Object.entries(instance.value)
+    .filter(([name, _value]) => !isAttribute(instance.type.fields[name]))
     .map(([name, value]) => {
       const fieldType = instance.type.fields[name].type
       if (fieldType.elemID.isEqual(recordRefElemID)) {
@@ -318,16 +336,22 @@ const toNetsuiteFields = (instance: InstanceElement): Record.Fields.Field[] =>
       return field
     })
 
+const setAttributes = (record: NetsuiteRecord, instance: InstanceElement): void => {
+  _.assign(record,
+    _.pickBy(instance.value, (_value, name) => isAttribute(instance.type.fields[name])))
+}
+
 export const toNetsuiteRecord = (instance: InstanceElement): NetsuiteRecord => {
   const record = new Record.Types.Record(Types.getFamilyTypeName(instance.type),
     instance.type.elemID.name)
-  record.bodyFieldList.push(...toNetsuiteFields(instance))
+  setAttributes(record, instance)
+  record.bodyFieldList = toNetsuiteFields(instance)
   return record
 }
 
 export const toNetsuiteReference = (instance: InstanceElement): NetsuiteReference => {
   const recordRef = new Record.Types.Reference(RECORD_REF)
-  recordRef.internalId = instance.value[INTERNAL_ID]
-  recordRef.type = instance.type.annotations[METADATA_TYPE]
+  recordRef.internalId = internalId(instance)
+  recordRef.type = metadataType(instance)
   return recordRef
 }

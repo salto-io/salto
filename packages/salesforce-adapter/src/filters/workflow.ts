@@ -15,7 +15,7 @@
 */
 import {
   Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
-  ObjectType, Values,
+  ObjectType, Values, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -102,6 +102,17 @@ const filterCreator: FilterCreator = () => ({
         return innerInstances
       })
     )
+
+    // Fix fields to expect api names instead of full objects
+    elements
+      .filter(isObjectType)
+      .filter(isWorkflowType)
+      .forEach(wfType => {
+        Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(fieldName => {
+          wfType.fields[fieldName].type = BuiltinTypes.STRING
+          wfType.fields[fieldName].isList = true
+        })
+      })
 
     elements.push(..._.flatten(elements
       .filter(isInstanceElement)

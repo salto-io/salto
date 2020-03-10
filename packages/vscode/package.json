@@ -1,7 +1,7 @@
 {
     "name": "@salto-io/vscode",
     "displayName": "Salto",
-    "description": "Configure, preview and deploy Salto patches in vscode.",
+    "description": "Configure Salto patches in vscode.",
     "version": "0.1.11",
     "publishConfig": {
         "access": "public"
@@ -76,38 +76,6 @@
                 "path": "./syntaxes/salto.json"
             }
         ],
-        "commands": [
-            {
-                "command": "salto.preview",
-                "title": "Salto: Preview"
-            },
-            {
-                "command": "salto.deploy",
-                "title": "Salto: Deploy"
-            }
-        ],
-        "menus": {
-            "editor/title": [
-                {
-                    "command": "salto.preview",
-                    "when": "resourceExtname == .bp"
-                },
-                {
-                    "command": "salto.deploy",
-                    "when": "resourceExtname == .bp"
-                }
-            ],
-            "touchBar": [
-                {
-                    "command": "salto.preview",
-                    "when": "resourceExtname == .bp"
-                },
-                {
-                    "command": "salto.deploy",
-                    "when": "resourceExtname == .bp"
-                }
-            ]
-        },
         "iconThemes": [
             {
                 "id": "salto_bp",

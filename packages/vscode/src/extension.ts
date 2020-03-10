@@ -24,7 +24,6 @@ import {
   createWorkspaceSymbolProvider,
   createFoldingProvider,
 } from './providers'
-import { previewCommand, deployCommand } from './commands'
 import { toVSDiagnostics } from './adapters'
 
 /**
@@ -71,24 +70,6 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       createFoldingProvider(workspace)
     )
 
-    const preview = vscode.commands.registerCommand('@salto-io/core.preview', () => {
-      previewCommand(workspace, context.extensionPath)
-    })
-
-    const deploy = vscode.commands.registerCommand('@salto-io/core.deploy', () => {
-      deployCommand(workspace, context.extensionPath)
-    })
-
-    const previewStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
-    previewStatusBar.text = 'Salto: Preview'
-    previewStatusBar.command = '@salto-io/core.preview'
-    previewStatusBar.show()
-
-    const deployStatus = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100)
-    deployStatus.text = 'Salto: Deploy'
-    deployStatus.command = '@salto-io/core.deploy'
-    deployStatus.show()
-
     context.subscriptions.push(
       completionProvider,
       definitionProvider,
@@ -96,10 +77,6 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       symbolsProvider,
       searchProvier,
       foldProvider,
-      preview,
-      deploy,
-      previewStatusBar,
-      deployStatus,
       vscode.workspace.onDidChangeTextDocument(
         e => onTextChangeEvent(e, workspace)
       ),

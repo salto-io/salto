@@ -17,11 +17,13 @@ import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
-  Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType, ADAPTER,
+  Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ElemIdGetter,
-  resolvePath,
+  ADAPTER, ElemIdGetter,
 } from '@salto-io/adapter-api'
+import {
+  resolvePath,
+} from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
 import { getPlan, DetailedChange } from './plan'

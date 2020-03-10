@@ -17,8 +17,11 @@ import _ from 'lodash'
 
 import {
   ElemID, Element, isObjectType, isInstanceElement, Value,
-  ReferenceExpression, TemplateExpression, resolvePath,
+  ReferenceExpression, TemplateExpression,
 } from '@salto-io/adapter-api'
+import {
+  resolvePath,
+} from '@salto-io/adapter-utils'
 
 type Resolver<T> = (
   v: T,

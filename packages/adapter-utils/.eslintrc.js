@@ -13,26 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+const path = require('path')
+
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(
-  require('../../jest.base.config.js'),
-  {
-    name: 'adapter-api',
-    displayName: 'adapter-api',
-    rootDir: `${__dirname}`,
-    collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
-    ],
-    coverageThreshold: {
-      // Slowly start increasing here, never decrease!
-      global: {
-        branches: 70.36,
-        functions: 57.33,
-        lines: 72.91,
-        statements: 71.92,
-      },
+    require('../../eslintrc.js'),
+    {
+        parserOptions: {
+            tsconfigRootDir: __dirname,
+            project: path.resolve(__dirname, './tsconfig.json'),
+        },
     },
-  }
 )
 

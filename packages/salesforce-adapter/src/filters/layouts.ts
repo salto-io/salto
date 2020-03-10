@@ -16,8 +16,11 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, findInstances, InstanceElement, ObjectType, bpCase,
+  Element, ElemID, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
+import {
+  findInstances, bpCase,
+} from '@salto-io/adapter-utils'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'

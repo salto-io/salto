@@ -16,8 +16,13 @@
 import * as path from 'path'
 import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement,
-  findInstances, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  ObjectType, ElemID, BuiltinTypes, Field, InstanceElement,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
+import {
+  findInstances,
+} from '@salto-io/adapter-utils'
 import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
 import { dumpElements } from '../parser/dump'
 import { parse } from '../parser/parse'

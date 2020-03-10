@@ -24,8 +24,11 @@ import {
   API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE, PROFILE_METADATA_TYPE, RECORDS_PATH,
 } from '@salto-io/salesforce-adapter/dist/src/constants'
 import {
-  ActionName, BuiltinTypes, ElemID, findInstances, InstanceElement, ObjectType,
+  ActionName, BuiltinTypes, ElemID, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
+import {
+  findInstances,
+} from '@salto-io/adapter-utils'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {

@@ -16,9 +16,12 @@
 import { file, Plan, Workspace } from '@salto-io/core'
 import _ from 'lodash'
 import {
-  ActionName, Change, ElemID, findElement, getChangeElement, InstanceElement, ObjectType, Values,
+  ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
   Element, TypeMap,
 } from '@salto-io/adapter-api'
+import {
+  findElement,
+} from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
 import adapterConfigs from '../adapter_configs'

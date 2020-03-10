@@ -16,10 +16,13 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
-  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, restoreReferences, resolveReferences,
+  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
+import {
+  restoreReferences, resolveReferences,
+} from '@salto-io/adapter-utils'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements, getLookUpName,

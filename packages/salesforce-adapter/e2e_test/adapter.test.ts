@@ -16,9 +16,13 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
-  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, findElement,
-  findObjectType, bpCase, TypeElement, isObjectType,
+  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
+  TypeElement, isObjectType,
 } from '@salto-io/adapter-api'
+import {
+  findElement,
+  findObjectType, bpCase,
+} from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto-io/lowerdash'
 import * as constants from '../src/constants'

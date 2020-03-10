@@ -1,8 +1,8 @@
 {
-  "name": "@salto-io/salesforce-adapter",
+  "name": "@salto-io/adapter-utils",
   "version": "0.1.11",
   "license": "Apache-2.0",
-  "description": "Salto Salesforce adapter",
+  "description": "Salto Adapter Utils",
   "repository": {
     "type": "git",
     "url": "https://github.com/salto-io/salto_monorepo"
@@ -13,7 +13,6 @@
   "files": [
     "dist",
     "src",
-    "e2e_test",
     "index.ts"
   ],
   "main": "dist/index.js",
@@ -23,7 +22,6 @@
     "prepublishOnly": "yarn test",
     "build": "yarn run lint && yarn run build-ts",
     "test": "jest",
-    "e2e-test": "RUN_E2E_TESTS=1 jest",
     "clean": "rm -rf ./dist",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",
@@ -35,29 +33,18 @@
   },
   "dependencies": {
     "@salto-io/adapter-api": "0.1.11",
-    "@salto-io/adapter-utils": "0.1.11",
-    "@salto-io/e2e-credentials-store": "0.1.11",
-    "@salto-io/logging": "0.1.11",
+    "@salto-io/dag": "0.1.11",
     "@salto-io/lowerdash": "0.1.11",
-    "@types/requestretry": "^1.12.5",
-    "buffer": "^5.2.1",
-    "events": "^3.0.0",
-    "fast-xml-parser": "^3.15.0",
-    "jsforce": "https://github.com/salto-io/jsforce.git",
-    "jsforce-types": "https://github.com/salto-io/jsforce-types.git",
-    "jszip": "^3.2.2",
     "lodash": "^4.17.11",
-    "requestretry": "^4.0.2",
-    "stream": "0.0.2",
-    "winston": "^3.2.1",
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/persistent-pool": "0.1.11",
     "@types/jest": "^24.0.0",
-    "@types/jszip": "^3.1.6",
     "@types/lodash": "^4.14.133",
     "@types/node": "^12.7.1",
+    "@types/shelljs": "^0.7.8",
+    "@types/supertest": "^2.0.4",
+    "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "2.21.0",
     "@typescript-eslint/parser": "2.21.0",
     "eslint": "^6.2.2",
@@ -69,11 +56,10 @@
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
     "jest": "^24.0.0",
+    "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
-    "nock": "^11.7.0",
-    "request": "^2.88.0",
-    "ts-cleaner": "^1.0.3",
+    "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
-    "typescript": "^3.8.3"
+    "typescript": "3.8.3"
   }
 }

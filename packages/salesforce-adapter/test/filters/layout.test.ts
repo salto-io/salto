@@ -14,8 +14,11 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression, bpCase,
+  ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import {
+  bpCase,
+} from '@salto-io/adapter-utils'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'

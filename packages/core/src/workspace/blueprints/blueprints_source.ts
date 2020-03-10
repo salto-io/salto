@@ -16,8 +16,11 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, ElementMap, resolvePath, Value,
+  Element, ElemID, ElementMap, Value,
 } from '@salto-io/adapter-api'
+import {
+  resolvePath,
+} from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { mergeElements, MergeError } from '../../core/merger'
 import {

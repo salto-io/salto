@@ -16,23 +16,22 @@
 const deepMerge = require('../../build_utils/deep_merge')
 
 module.exports = deepMerge(
-  require('../../jest.base.config.js'),
-  {
-    name: 'adapter-api',
-    displayName: 'adapter-api',
-    rootDir: `${__dirname}`,
-    collectCoverageFrom: [
-      '!<rootDir>/dist/index.js',
-    ],
-    coverageThreshold: {
-      // Slowly start increasing here, never decrease!
-      global: {
-        branches: 70.36,
-        functions: 57.33,
-        lines: 72.91,
-        statements: 71.92,
-      },
-    },
-  }
+    require('../../jest.base.config.js'),
+    {
+        name: 'adapter-utils',
+        displayName: 'adapter-utils',
+        rootDir: `${__dirname}`,
+        collectCoverageFrom: [
+            '!<rootDir>/dist/index.js',
+        ],
+        // todo: raise the coverageThreshold once more code is implemented
+        coverageThreshold: {
+            global: {
+                branches: 80,
+                functions: 80,
+                lines: 80,
+                statements: 80,
+            },
+        },
+    }
 )
-

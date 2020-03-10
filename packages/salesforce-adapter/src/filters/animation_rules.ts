@@ -15,8 +15,11 @@
 */
 import wu from 'wu'
 import {
-  Element, ElemID, findObjectType, findInstances, CORE_ANNOTATIONS, ObjectType, InstanceElement,
+  Element, ElemID, CORE_ANNOTATIONS, ObjectType, InstanceElement,
 } from '@salto-io/adapter-api'
+import {
+  findObjectType, findInstances,
+} from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
 import { SALESFORCE } from '../constants'
 

@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, findElement } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, Element, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  findElement,
+} from '@salto-io/adapter-utils'
 import { FilterWith } from '../../src/filter'
 import filterCreator, {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD,

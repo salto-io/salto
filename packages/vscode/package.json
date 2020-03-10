@@ -102,6 +102,7 @@
     },
     "dependencies": {
         "@salto-io/adapter-api": "0.1.11",
+        "@salto-io/adapter-utils": "0.1.11",
         "@salto-io/core": "0.1.11",
         "@types/diff": "^4.0.2",
         "diff": "^4.0.1",

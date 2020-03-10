@@ -15,8 +15,11 @@
 */
 import {
   Field, Element, isObjectType, isInstanceElement, Value, Values, ObjectType, ElemID,
-  ReferenceExpression, TransformPrimitiveFunc, transformValues,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
+import {
+  TransformPrimitiveFunc, transformValues,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { SALESFORCE, CUSTOM_OBJECT, CUSTOM_FIELD } from '../constants'

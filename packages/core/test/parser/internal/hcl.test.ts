@@ -293,6 +293,26 @@ describe('HCL parse', () => {
         end: { byte: 78, col: 27, line: 4 },
       })
     })
+
+  })
+
+  describe('limit error recovery attempts', () => {
+    const blockDef = `
+      type statement {
+        please = "let me finish
+      }
+    `
+    let errors: HclParseError[]
+    let body: ParsedHclBody
+
+    beforeAll(async () => {
+      ({ errors, body } = parse(Buffer.from(blockDef), 'none'))
+    })
+
+    it('should stop parsing on fatal error', () => {
+      expect(body.blocks).toHaveLength(1)
+      expect(errors).toHaveLength(1)
+    })
   })
 })
 

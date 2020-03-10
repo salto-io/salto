@@ -23,13 +23,24 @@ export const findGroupLevelChange = (group: Group<Change>): Change | undefined =
   )
 
 export const getOrCreateGroupLevelChange = (group: Group<Change>, beforeElementsMap: ElementMap,
-  afterElementsMap: ElementMap): Change =>
-  findGroupLevelChange(group) || {
-    action: 'modify',
-    data: { before: beforeElementsMap[group.groupKey] as ChangeDataType,
-      after: afterElementsMap[group.groupKey] as ChangeDataType },
+  afterElementsMap: ElementMap): Change => {
+  const groupChange = findGroupLevelChange(group)
+  if (groupChange) {
+    return groupChange
   }
-
+  const before = beforeElementsMap[group.groupKey] as ChangeDataType | undefined
+  const after = afterElementsMap[group.groupKey] as ChangeDataType | undefined
+  if (before && after) {
+    return { action: 'modify', data: { before, after } }
+  }
+  if (after) {
+    // This is an add change that got split into multiple parts, the main addition is part of
+    // a different group that must happen before this change so here we actually modify
+    return { action: 'modify', data: { before: after, after } }
+  }
+  // This is a remove change that got split into multiple parts
+  return { action: 'remove', data: { before: before as ChangeDataType } }
+}
 
 export const buildGroupedGraphFromDiffGraph = (
   diffGraph: DataNodeMap<Change>

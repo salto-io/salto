@@ -35,6 +35,7 @@ import {
   FORMULA, LEAD_CONVERT_SETTINGS_METADATA_TYPE, ASSIGNMENT_RULES_METADATA_TYPE,
   WORKFLOW_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
+  VALIDATION_RULES_METADATA_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
@@ -43,7 +44,7 @@ import {
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue,
-  buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference,
+  buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference, apiNameParts,
 } from './utils'
 import { convertList } from './convert_lists'
 import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
@@ -68,7 +69,7 @@ export const NESTED_INSTANCE_VALUE_NAME = {
 
 export const NESTED_INSTANCE_TYPE_NAME = {
   WEB_LINK: 'WebLink',
-  VALIDATION_RULE: 'ValidationRule',
+  VALIDATION_RULE: VALIDATION_RULES_METADATA_TYPE,
   BUSINESS_PROCESS: 'BusinessProcess',
   RECORD_TYPE: 'RecordType',
   LIST_VIEW: 'ListView',
@@ -484,9 +485,6 @@ const hasCustomObjectParent = (instance: InstanceElement): boolean =>
   dependentMetadataTypes.has(metadataType(instance))
 
 const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
-  const apiNameParts = (instance: InstanceElement): string[] =>
-    apiName(instance).split(/\.|-/g)
-
   const setDependingInstancePath = (instance: InstanceElement, customObject: ObjectType):
     void => {
     if (customObject.path) {

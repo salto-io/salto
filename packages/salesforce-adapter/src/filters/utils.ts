@@ -121,6 +121,9 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
   new Map(getCustomObjects(elements).map(obj => [apiName(obj), obj]))
 
+export const apiNameParts = (instance: InstanceElement): string[] =>
+  apiName(instance).split(/\.|-/g)
+
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
   const instanceDeps = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])

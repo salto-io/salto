@@ -66,7 +66,6 @@ const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
-const MAX_CONCURRENT_RETRIEVE_REQUEST = 3
 const RECORDS_CHUNK_SIZE = 10000
 export const DEFAULT_FILTERS = [
   missingFieldsFilter,
@@ -138,6 +137,9 @@ export interface SalesforceAdapterParams {
   // For example: CustomObject.Lead
   instancesRegexBlacklist?: string[]
 
+  // Max retrieve requests that we want to send concurrently
+  maxRetrieveRequestConcurrently?: number
+
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
   metadataTypeBlacklist?: string[]
@@ -189,11 +191,13 @@ type RetrieveMember = {
 export type SalesforceConfig = {
   metadataTypesBlacklist?: string[]
   instancesRegexBlacklist?: string[]
+  maxRetrieveRequestConcurrently?: number
 }
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private instancesRegexBlacklist: RegExp[]
+  private maxRetrieveRequestConcurrently: number
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
@@ -214,6 +218,7 @@ export default class SalesforceAdapter {
       'AssignmentRule', 'EscalationRule',
     ],
     instancesRegexBlacklist = [],
+    maxRetrieveRequestConcurrently = constants.MAX_RETRIEVE_REQUEST_CONCURRENTLY,
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
@@ -277,6 +282,8 @@ export default class SalesforceAdapter {
     this.instancesRegexBlacklist = instancesRegexBlacklist
       .concat(makeArray(config.instancesRegexBlacklist))
       .map(e => new RegExp(e))
+    this.maxRetrieveRequestConcurrently = config.maxRetrieveRequestConcurrently
+      ?? maxRetrieveRequestConcurrently
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
@@ -842,7 +849,7 @@ InstanceElement[] => {
     const retrieveResults = _.flatten(
       await withLimitedConcurrency(chunkedRetrieveMembers.map(
         retrieveChunk => () => this.client.retrieve(createRetrieveRequest(retrieveChunk))
-      ), MAX_CONCURRENT_RETRIEVE_REQUEST)
+      ), this.maxRetrieveRequestConcurrently)
     )
     return fromRetrieveResults(retrieveResults)
   }

@@ -16,9 +16,10 @@
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator, CORE_ANNOTATIONS,
+  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
+import * as constants from './constants'
 import { changeValidator } from './change_validator'
 import { dependencyChanger } from './dependency_changer'
 import SalesforceAdapter, { SalesforceConfig } from './adapter'
@@ -60,6 +61,19 @@ const configType = new ObjectType({
       },
       true,
     ),
+    maxRetrieveRequestConcurrently: new Field(
+      configID,
+      'maxRetrieveRequestConcurrently',
+      BuiltinTypes.NUMBER,
+      {
+        [CORE_ANNOTATIONS.DEFAULT]: constants.MAX_RETRIEVE_REQUEST_CONCURRENTLY,
+        [CORE_ANNOTATIONS.RESTRICTION]: {
+          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
+          [RESTRICTION_ANNOTATIONS.MIN]: 1,
+          [RESTRICTION_ANNOTATIONS.MAX]: 25,
+        },
+      },
+    ),
   },
 })
 
@@ -75,6 +89,7 @@ SalesforceConfig => {
   const adapterConfig = {
     metadataTypesBlacklist: makeArray(config?.value?.metadataTypesBlacklist),
     instancesRegexBlacklist: makeArray(config?.value?.instancesRegexBlacklist),
+    maxRetrieveRequestConcurrently: config?.value?.maxRetrieveRequestConcurrently,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

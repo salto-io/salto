@@ -22,6 +22,7 @@ import {
 } from '../mocks'
 import { SpinnerCreator, Spinner, CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
+import { getEvents } from '../../src/telemetry'
 
 const mockPreview = preview
 jest.mock('@salto-io/core', () => ({
@@ -30,11 +31,7 @@ jest.mock('@salto-io/core', () => ({
 }))
 jest.mock('../../src/workspace')
 
-const eventsNames = {
-  failure: 'workspace.preview.failure',
-  start: 'workspace.preview.start',
-  success: 'workspace.preview.success',
-}
+const eventsNames = getEvents('preview')
 
 describe('preview command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }

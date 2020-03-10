@@ -19,6 +19,7 @@ import { command } from '../../src/commands/import'
 import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
+import { getEvents } from '../../src/telemetry'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -37,13 +38,7 @@ jest.mock('@salto-io/core', () => ({
 }))
 jest.mock('../../src/workspace')
 
-const eventsNames = {
-  failure: 'workspace.import.failure',
-  success: 'workspace.import.success',
-  start: 'workspace.import.start',
-  errors: 'workspace.import.errors',
-  failedRows: 'workspace.import.failed_rows',
-}
+const eventsNames = getEvents('import')
 
 describe('import command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }

@@ -25,6 +25,7 @@ import {
 } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
+import { getEvents } from '../../src/telemetry'
 
 const mockDeploy = deploy
 const mockServices = (ws: Workspace): string[] => currentEnvConfig(ws.config).services as string[]
@@ -46,13 +47,7 @@ jest.mock('@salto-io/core', () => ({
 }))
 jest.mock('../../src/workspace')
 
-const eventsNames = {
-  failure: 'workspace.deploy.failure',
-  start: 'workspace.deploy.start',
-  success: 'workspace.deploy.success',
-  actionsErrors: 'workspace.deploy.actions.failure',
-  actionsSuccess: 'workspace.deploy.actions.success',
-}
+const eventsNames = getEvents('deploy')
 
 describe('deploy command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }

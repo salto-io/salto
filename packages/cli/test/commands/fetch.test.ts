@@ -26,14 +26,9 @@ import { command, fetchCommand } from '../../src/commands/fetch'
 import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace'
+import { getEvents } from '../../src/telemetry'
 
-const eventsNames = {
-  failure: 'workspace.fetch.failure',
-  start: 'workspace.fetch.start',
-  success: 'workspace.fetch.success',
-  changes: 'workspace.fetch.changes',
-  changesToApply: 'workspace.fetch.changes_to_apply',
-}
+const eventsNames = getEvents('fetch')
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),

@@ -16,6 +16,7 @@
 import { Config } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
+import { getEvents } from '../../src/telemetry'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -45,11 +46,7 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 
-const eventsNames = {
-  failure: 'workspace.init.failure',
-  success: 'workspace.init.success',
-  start: 'workspace.init.start',
-}
+const eventsNames = getEvents('init')
 
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }

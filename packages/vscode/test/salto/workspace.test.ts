@@ -68,6 +68,7 @@ describe('workspace', () => {
     const baseWs = await mockWorkspace(bpFileName)
     baseWs.hasErrors = jest.fn().mockImplementation(async () => false)
     const workspace = new EditorWorkspace(baseWs)
+    await workspace.awaitAllUpdates()
     const shouldBeCurrent = workspace.getValidCopy()
     if (!shouldBeCurrent) throw new Error('lastValid not defined')
     expect(await shouldBeCurrent.workspace.elements).toEqual(await workspace.workspace.elements)

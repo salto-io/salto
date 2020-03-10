@@ -49,7 +49,7 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
       validation: [],
       hasErrors: () => (!_.isEmpty(parseResult.errors)),
     },
-    hasErrors: jest.fn().mockImplementation(() => !_.isEmpty(parseResult.errors)),
+    hasErrors: jest.fn().mockImplementation(async () => !_.isEmpty(parseResult.errors)),
     getSourceMap: jest.fn().mockResolvedValue(parseResult.sourceMap),
     getSourceRanges: jest.fn().mockImplementation((elemID: ElemID): SourceRange[] =>
       (parseResult.sourceMap.get(elemID.getFullName()) || [])),

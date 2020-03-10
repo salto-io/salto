@@ -103,7 +103,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.requiresLogin
-  private async getCustomizationIds(type: string, includeInactives = true): Promise<string[]> {
+  private async getCustomizationIds(type: string, includeInactives: boolean): Promise<string[]> {
     const getCustomizationIdResponse = await this.conn.getCustomizationId(type, includeInactives)
     return getCustomizationIdResponse.getCustomizationIdResult.customizationRefList
       .customizationRef.map(customization => customization[ATTRIBUTES].internalId)
@@ -123,8 +123,8 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.requiresLogin
-  async delete(referenceTypeAndId: ReferenceTypeAndId): Promise<NetsuiteReference> {
-    const deleteResponse = await this.conn.delete(toNetsuiteRecordRef(referenceTypeAndId))
+  async delete(recordRef: NetsuiteReference): Promise<NetsuiteReference> {
+    const deleteResponse = await this.conn.delete(recordRef)
     return deleteResponse.writeResponse.baseRef
   }
 }

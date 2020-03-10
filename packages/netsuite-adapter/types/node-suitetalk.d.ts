@@ -22,7 +22,7 @@ declare module 'node-suitetalk' {
     add(record: Record.Types.Record): Promise<AddResponse>
     delete(recordRef: Record.Types.Reference): Promise<DeleteResponse>
     getList(recordRefs: Record.Types.Reference[]): Promise<GetListResponse>
-    getCustomizationId(type: string, includeInactives?: boolean):
+    getCustomizationId(type: string, includeInactives: boolean):
       Promise<GetCustomizationIdResponse>
   }
 

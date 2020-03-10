@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { Record } from 'node-suitetalk'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
-import { ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, SCRIPT_ID } from '../src/constants'
+import {
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, RECORD_REF, SCRIPT_ID,
+} from '../src/constants'
 import { recordInList } from './utils'
 import { Types } from '../src/transformer'
 
@@ -80,7 +83,10 @@ describe('Adapter', () => {
     })
 
     it('should call client.delete with the correct parameter', () => {
-      expect(client.delete).toHaveBeenCalledWith({ type: 'entityCustomField', internalId: '123' })
+      const recordRef = new Record.Types.Reference(RECORD_REF)
+      recordRef.internalId = '123'
+      recordRef.type = 'entityCustomField'
+      expect(client.delete).toHaveBeenCalledWith(recordRef)
     })
   })
 })

@@ -16,7 +16,7 @@
 import { Record } from 'node-suitetalk'
 import createClient from './client'
 import {
-  ATTRIBUTES, ENTITY_CUSTOM_FIELD, FAMILY_TYPE, INTERNAL_ID, SCRIPT_ID,
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, FAMILY_TYPE, INTERNAL_ID, RECORD_REF, SCRIPT_ID,
 } from '../../src/constants'
 import { NetsuiteRecord, NetsuiteReference } from '../../src/client/client'
 import { recordInList } from '../utils'
@@ -146,7 +146,10 @@ describe('Client', () => {
           baseRef: reference,
         },
       }))
-      deleteResult = await client.delete({ type: 'entityCustomField', internalId: '123' })
+      const recordRef = new Record.Types.Reference(RECORD_REF)
+      recordRef.internalId = '123'
+      recordRef.type = 'entityCustomField'
+      deleteResult = await client.delete(recordRef)
     })
 
     it('should return list records', async () => {

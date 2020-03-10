@@ -23,7 +23,7 @@ import {
   ATTRIBUTES, ENTITY_CUSTOM_FIELD, EXTERNAL_ID, FAMILY_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE,
   RECORDS_PATH, RECORD_REF, SCRIPT_ID,
 } from './constants'
-import { NetsuiteRecord } from './client/client'
+import { NetsuiteRecord, NetsuiteReference } from './client/client'
 
 const entityCustomFieldElemID = new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)
 const recordRefElemID = new ElemID(NETSUITE, RECORD_REF)
@@ -320,4 +320,11 @@ export const toNetsuiteRecord = (instance: InstanceElement): NetsuiteRecord => {
     instance.type.elemID.name)
   record.bodyFieldList.push(...toNetsuiteFields(instance))
   return record
+}
+
+export const toNetsuiteReference = (instance: InstanceElement): NetsuiteReference => {
+  const recordRef = new Record.Types.Reference(RECORD_REF)
+  recordRef.internalId = instance.value[INTERNAL_ID]
+  recordRef.type = instance.type.annotations[METADATA_TYPE]
+  return recordRef
 }

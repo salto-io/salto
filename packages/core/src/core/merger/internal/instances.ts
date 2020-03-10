@@ -45,6 +45,7 @@ const buildDefaults = (
         : field.annotations[CORE_ANNOTATIONS.DEFAULT])).pickBy(v => v !== undefined).value()
     return _.isEmpty(def) ? undefined : def
   }
+  // Handle recursive types
   if (knownTypes.has(type.elemID.getFullName())) {
     return undefined
   }

@@ -47,8 +47,8 @@ export const provideWorkspaceReferences = async (
   workspace: EditorWorkspace,
   token: string
 ): Promise<SaltoElemLocation[]> => ([
-  ... _.flatten(await Promise.all(
+  ..._.flatten(await Promise.all(
     (await workspace.workspace.elements).map(e => getUsages(workspace, e, token))
   )),
-  ... await getLocations(workspace, token)
+  ...await getLocations(workspace, token),
 ])

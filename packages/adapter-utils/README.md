@@ -1,6 +1,8 @@
 # Salto - Adapter Utils
 
-Hubspot adapter for salto.io
+Adapter utils for salto.io.
+
+Contains all the utility functions & logic for Elements
 
 
 ### Build instructions

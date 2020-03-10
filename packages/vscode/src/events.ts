@@ -27,7 +27,7 @@ export const onReportErrorsEvent = async (
 ): Promise<void> => {
   await workspace.awaitAllUpdates()
   const newDiag = toVSDiagnostics(
-    workspace.workspace.config.baseDir,
+    workspace.config.baseDir,
     await getDiagnostics(workspace)
   )
   diagCollection.set(newDiag)

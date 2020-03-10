@@ -23,10 +23,10 @@ describe('diagnostics', () => {
     baseWs.getWorkspaceErrors = jest.fn().mockImplementation(() => Promise.resolve([{
       severity: 'Error',
       message: 'Blabla',
-      sourceFragments: [{ sourceRange: { filename: 'parse_error.bp', start: 1, end: 2 } }],
+      sourceFragments: [{ sourceRange: { filename: '/parse_error.bp', start: 1, end: 2 } }],
     }]))
     const workspace = new EditorWorkspace(baseWs)
-    const diag = (await getDiagnostics(workspace))['parse_error.bp'][0]
+    const diag = (await getDiagnostics(workspace))['/parse_error.bp'][0]
     expect(diag).toBeDefined()
     expect(diag.msg).toContain('Blabla')
     expect(diag.severity).toBe('Error')

@@ -42,6 +42,7 @@ describe('convert lists filter', () => {
       single: new Field(mockObjId, 'single', BuiltinTypes.STRING),
       ordered: new Field(mockObjId, 'ordered', mockFieldType),
       unordered: new Field(mockObjId, 'unordered', mockFieldType),
+      singleHardcoded: new Field(mockObjId, 'singleHardcoded', BuiltinTypes.STRING),
     },
   })
 
@@ -59,6 +60,7 @@ describe('convert lists filter', () => {
         { key: 'b', value: '1' },
         { key: 'a', value: '2' },
       ],
+      singleHardcoded: 'val',
     },
   )
 
@@ -78,9 +80,13 @@ describe('convert lists filter', () => {
     },
   ]
 
+  const hardcodedLists: ReadonlyArray<string> = [
+    mockType.fields.singleHardcoded.elemID.getFullName(),
+  ]
+
   let testElements: Element[]
 
-  const filter = makeFilter(unorderedLists)({ client }) as FilterWith<'onFetch'>
+  const filter = makeFilter(unorderedLists, hardcodedLists)({ client }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()
@@ -128,6 +134,11 @@ describe('convert lists filter', () => {
       expect(type.fields.ordered.isList).toBe(true)
       expect(lstInst.value.ordered).toHaveLength(2)
       expect(lstInst.value.ordered).toEqual(mockInstanceLst.value.ordered)
+    })
+
+    it('should convent hardcoded fields to lists', () => {
+      expect(type.fields.singleHardcoded.isList).toBe(true)
+      expect(lstInst.value.singleHardcoded).toEqual(['val'])
     })
   })
 })

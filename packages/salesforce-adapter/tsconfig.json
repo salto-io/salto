@@ -4,6 +4,7 @@
         "outDir": "dist",
         "baseUrl": ".",
         "declaration": true,
+        "resolveJsonModule": true,
         "paths": {
             "jsforce": [
                 "../../node_modules/jsforce-types"

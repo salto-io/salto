@@ -22,12 +22,9 @@ import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { TELEMETRY } from '../constants'
+import { getEvents } from '../telemetry'
 
-const baseEventName = 'workspace.preview'
-const eventSuccess = `${baseEventName}.${TELEMETRY.SUCCESS}`
-const eventStart = `${baseEventName}.${TELEMETRY.START}`
-const eventFailure = `${baseEventName}.${TELEMETRY.FAILURE}`
+const telemetryEvents = getEvents('preview')
 
 export const command = (
   workspaceDir: string,
@@ -40,12 +37,12 @@ export const command = (
     const { workspace, errored } = await loadWorkspace(workspaceDir,
       { stdout, stderr }, spinnerCreator)
     if (errored) {
-      telemetry.sendCountEvent(eventFailure, 1)
+      telemetry.sendCountEvent(telemetryEvents.failure, 1)
       return CliExitCode.AppError
     }
 
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-    telemetry.sendCountEvent(eventStart, 1, workspaceTags)
+    telemetry.sendCountEvent(telemetryEvents.start, 1, workspaceTags)
     const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
       const workspacePlan = await preview(workspace, inputServices)
@@ -58,11 +55,11 @@ export const command = (
         planWorkspaceErrors
       )
       stdout.write(formattedPlanOutput)
-      telemetry.sendCountEvent(eventSuccess, 1, workspaceTags)
+      telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceTags)
       return CliExitCode.Success
     } catch (e) {
       spinner.fail(Prompts.PREVIEW_FAILED)
-      telemetry.sendCountEvent(eventFailure, 1, workspaceTags)
+      telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceTags)
       // not sending a stack event in here because it'll be send in the cli module (the caller)
       throw e
     }

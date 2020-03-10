@@ -20,12 +20,9 @@ import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getEnvName } from '../callbacks'
 import { getWorkspaceTelemetryTags } from '../workspace'
-import { TELEMETRY } from '../constants'
+import { getEvents } from '../telemetry'
 
-const eventBaseName = 'workspace.init'
-const eventStartName = `${eventBaseName}.${TELEMETRY.START}`
-const eventFailureName = `${eventBaseName}.${TELEMETRY.FAILURE}`
-const eventSuccessName = `${eventBaseName}.${TELEMETRY.SUCCESS}`
+const telemetryEvents = getEvents('init')
 
 export const command = (
   workspaceName: string | undefined,
@@ -34,19 +31,19 @@ export const command = (
   getEnvNameCallback: (currentEnvName?: string) => Promise<string>
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    telemetry.sendCountEvent(eventStartName, 1)
+    telemetry.sendCountEvent(telemetryEvents.start, 1)
     try {
       const defaultEnvName = await getEnvNameCallback()
       const workspace = await init(defaultEnvName, workspaceName)
       const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-      telemetry.sendCountEvent(eventSuccessName, 1, workspaceTags)
+      telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceTags)
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )
     } catch (e) {
       stderr.write(Prompts.initFailed(e.message))
-      telemetry.sendCountEvent(eventFailureName, 1)
-      telemetry.sendStackEvent(eventFailureName, e)
+      telemetry.sendCountEvent(telemetryEvents.failure, 1)
+      telemetry.sendStackEvent(telemetryEvents.failure, e)
       return CliExitCode.AppError
     }
     return CliExitCode.Success

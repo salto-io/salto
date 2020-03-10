@@ -19,14 +19,9 @@ import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import Prompts from '../prompts'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
-import { TELEMETRY } from '../constants'
+import { getEvents } from '../telemetry'
 
-const eventBaseName = 'workspace.import'
-const eventStart = `${eventBaseName}.${TELEMETRY.START}`
-const eventFailure = `${eventBaseName}.${TELEMETRY.FAILURE}`
-const eventSuccess = `${eventBaseName}.${TELEMETRY.SUCCESS}`
-const eventErrorsCount = `${eventBaseName}.errors`
-const eventFailedRows = `${eventBaseName}.failed_rows`
+const telemetryEvents = getEvents('import')
 
 export const command = (
   workingDir: string,
@@ -38,17 +33,17 @@ export const command = (
   async execute(): Promise<CliExitCode> {
     if (!(await file.exists(inputPath))) {
       stderr.write(Prompts.COULD_NOT_FIND_FILE)
-      telemetry.sendCountEvent(eventFailure, 1)
+      telemetry.sendCountEvent(telemetryEvents.failure, 1)
       return CliExitCode.AppError
     }
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
-      telemetry.sendCountEvent(eventFailure, 1)
+      telemetry.sendCountEvent(telemetryEvents.failure, 1)
       return CliExitCode.AppError
     }
 
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-    telemetry.sendCountEvent(eventStart, 1, workspaceTags)
+    telemetry.sendCountEvent(telemetryEvents.start, 1, workspaceTags)
     const result = await importFromCsvFile(
       typeName,
       inputPath,
@@ -58,18 +53,18 @@ export const command = (
     stdout.write(Prompts.IMPORT_ENDED_SUMMARY(result.successfulRows, result.failedRows))
     // Print the unique errors encountered during the import
     if (result.errors.size > 0) {
-      telemetry.sendCountEvent(eventErrorsCount, result.errors.size, workspaceTags)
+      telemetry.sendCountEvent(telemetryEvents.errors, result.errors.size, workspaceTags)
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
     }
     // If any rows failed, return error exit code
     if (result.failedRows > 0) {
-      telemetry.sendCountEvent(eventFailedRows, result.failedRows, workspaceTags)
-      telemetry.sendCountEvent(eventFailure, 1, workspaceTags)
+      telemetry.sendCountEvent(telemetryEvents.failedRows, result.failedRows, workspaceTags)
+      telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceTags)
       return CliExitCode.AppError
     }
     // Otherwise return success
     stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
-    telemetry.sendCountEvent(eventSuccess, 1, workspaceTags)
+    telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceTags)
     return CliExitCode.Success
   },
 })

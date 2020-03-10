@@ -15,8 +15,15 @@
 * limitations under the License.
 */
 
-export const TELEMETRY = {
-  FAILURE: 'failure',
-  SUCCESS: 'success',
-  START: 'start',
-}
+import { getEvents, buildEventName } from '../src/telemetry'
+
+describe('telemetry event names', () => {
+  it('should get events for some command name', () => {
+    expect(getEvents('ev')).toHaveProperty('start')
+    expect(getEvents('ev').start).toEqual('workspace.ev.start')
+  })
+
+  it('should build event name for a some command', () => {
+    expect(buildEventName('some', 'ev')).toEqual('workspace.some.ev')
+  })
+})

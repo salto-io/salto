@@ -72,3 +72,16 @@ export interface ParsedCliInput<TParsedArgs = {}> extends Omit<CliInput, 'args'>
 export interface CliCommand {
   execute(): Promise<CliExitCode>
 }
+
+export type telemetryEventNames = {
+  start: string
+  failure: string
+  success: string
+  mergeErrors: string
+  changes: string
+  changesToApply: string
+  errors: string
+  failedRows: string
+  actionsFailure: string
+  actionsSuccess: string
+}

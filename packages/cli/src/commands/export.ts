@@ -20,12 +20,9 @@ import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
-import { TELEMETRY } from '../constants'
+import { getEvents } from '../telemetry'
 
-const baseEventName = 'workspace.export'
-const eventSuccess = `${baseEventName}.${TELEMETRY.SUCCESS}`
-const eventStart = `${baseEventName}.${TELEMETRY.START}`
-const eventFailure = `${baseEventName}.${TELEMETRY.FAILURE}`
+const telemetryEvents = getEvents('export')
 
 export const command = (
   workingDir: string,
@@ -37,12 +34,12 @@ export const command = (
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
-      telemetry.sendCountEvent(eventFailure, 1)
+      telemetry.sendCountEvent(telemetryEvents.failure, 1)
       return CliExitCode.AppError
     }
 
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-    telemetry.sendCountEvent(eventStart, 1, workspaceTags)
+    telemetry.sendCountEvent(telemetryEvents.start, 1, workspaceTags)
 
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
@@ -51,11 +48,11 @@ export const command = (
     stdout.write(Prompts.EXPORT_ENDED_SUMMARY(result.successfulRows, typeName, outputPath))
     if (result.errors.size > 0) {
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
-      telemetry.sendCountEvent(eventFailure, 1, workspaceTags)
+      telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceTags)
       return CliExitCode.AppError
     }
     stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
-    telemetry.sendCountEvent(eventSuccess, 1, workspaceTags)
+    telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceTags)
     return CliExitCode.Success
   },
 })

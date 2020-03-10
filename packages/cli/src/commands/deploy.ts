@@ -30,18 +30,12 @@ import {
 import { shouldDeploy } from '../callbacks'
 import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { TELEMETRY } from '../constants'
+import { getEvents } from '../telemetry'
 
 const log = logger(module)
 
 const ACTION_INPROGRESS_INTERVAL = 5000
-const eventBaseName = 'workspace.deploy'
-const eventStart = `${eventBaseName}.${TELEMETRY.START}`
-const eventSuccess = `${eventBaseName}.${TELEMETRY.SUCCESS}`
-const eventFailure = `${eventBaseName}.${TELEMETRY.FAILURE}`
-const eventActions = `${eventBaseName}.actions`
-const eventActionErrors = `${eventActions}.${TELEMETRY.FAILURE}`
-const eventActionSuccess = `${eventActions}.${TELEMETRY.SUCCESS}`
+const telemetryEvents = getEvents('deploy')
 
 type Action = {
   item: PlanItem
@@ -129,13 +123,13 @@ export class DeployCommand implements CliCommand {
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout }, this.spinnerCreator)
     if (errored) {
-      this.telemetry.sendCountEvent(eventFailure, 1)
+      this.telemetry.sendCountEvent(telemetryEvents.failure, 1)
       return CliExitCode.AppError
     }
 
     const workspaceEventTags = await getWorkspaceTelemetryTags(workspace)
 
-    this.telemetry.sendCountEvent(eventStart, 1, workspaceEventTags)
+    this.telemetry.sendCountEvent(telemetryEvents.start, 1, workspaceEventTags)
     const result = await deploy(
       workspace,
       shouldDeploy(this.stdout, workspace),
@@ -150,8 +144,12 @@ export class DeployCommand implements CliCommand {
     this.stdout.write(deployPhaseEpilogue(nonErroredActions.length, result.errors.length))
     this.stdout.write(EOL)
 
-    this.telemetry.sendCountEvent(eventActionSuccess, nonErroredActions.length, workspaceEventTags)
-    this.telemetry.sendCountEvent(eventActionErrors, result.errors.length, workspaceEventTags)
+    this.telemetry.sendCountEvent(
+      telemetryEvents.actionsSuccess, nonErroredActions.length, workspaceEventTags
+    )
+    this.telemetry.sendCountEvent(
+      telemetryEvents.actionsFailure, result.errors.length, workspaceEventTags
+    )
 
     let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
     if (!_.isUndefined(result.changes)) {
@@ -166,9 +164,9 @@ export class DeployCommand implements CliCommand {
     }
 
     if (cliExitCode === CliExitCode.Success) {
-      this.telemetry.sendCountEvent(eventSuccess, 1, workspaceEventTags)
+      this.telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceEventTags)
     } else {
-      this.telemetry.sendCountEvent(eventFailure, 1, workspaceEventTags)
+      this.telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceEventTags)
     }
 
     return cliExitCode

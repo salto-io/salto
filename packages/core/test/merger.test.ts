@@ -289,6 +289,21 @@ describe('merger', () => {
       field1: 'ins1',
     })
 
+    const recursiveElemID = new ElemID('salto', 'recursive')
+    const recursiveTypeFake = new ObjectType({
+      elemID: recursiveElemID,
+      fields: {
+        field: new Field(recursiveElemID, 'field', strType),
+      },
+    })
+    const recursiveType = new ObjectType({
+      elemID: recursiveElemID,
+      fields: {
+        field: new Field(recursiveElemID, 'field', recursiveTypeFake),
+      },
+    })
+    const instanceRecursive = new InstanceElement('ins', recursiveType)
+
     it('should merge instances', () => {
       const elements = [ins1, ins2]
       const { merged, errors } = mergeElements(elements)
@@ -349,6 +364,13 @@ describe('merger', () => {
           field2: 'base2',
         },
       })
+    })
+
+    it('should not fail with recursive types', () => {
+      const elements = [instanceRecursive]
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(1)
     })
 
     it('should fail on multiple values for same key', () => {

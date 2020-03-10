@@ -14,8 +14,11 @@
 * limitations under the License.
 */
 import {
-  InstanceElement, Element, ElemID, findElements as findElementsByID, findElement, ObjectType,
+  InstanceElement, Element, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
+import {
+  findElements as findElementsByID, findElement,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce-types'

@@ -1224,6 +1224,7 @@ export const createMetadataTypeElements = async (
   enrichedFields
     .filter(field => _.isEmpty(field.fields))
     .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
+    .filter(field => field.soapType !== objectName)
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 
   const fieldElements = enrichedFields.map(field =>

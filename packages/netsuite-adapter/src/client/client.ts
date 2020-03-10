@@ -16,9 +16,10 @@
 
 import { Configuration, Record, Service as Connection } from 'node-suitetalk'
 import { decorators } from '@salto-io/lowerdash'
-import { ATTRIBUTES } from '../constants'
+import { ATTRIBUTES, RECORD_REF } from '../constants'
 
 export type NetsuiteRecord = Record.Types.Record
+export type NetsuiteReference = Record.Types.Reference
 
 const API_VERSION = '2019_2'
 
@@ -89,7 +90,7 @@ export default class NetsuiteClient {
     Promise<NetsuiteRecord[]> {
     const recordRefs = recordReferences
       .map(recordReference => {
-        const recordRef = new Record.Types.RecordRef()
+        const recordRef = new Record.Types.Reference(RECORD_REF)
         recordRef.internalId = recordReference.internalId
         recordRef.type = recordReference.type
         return recordRef
@@ -110,5 +111,11 @@ export default class NetsuiteClient {
     const customizationInternalIds = await this.getCustomizationIds(type, includeInactives)
     const customRecordRefs = customizationInternalIds.map(internalId => ({ type, internalId }))
     return this.list(customRecordRefs)
+  }
+
+  @NetsuiteClient.requiresLogin
+  async add(record: NetsuiteRecord): Promise<NetsuiteReference> {
+    const addResponse = await this.conn.add(record)
+    return addResponse.writeResponse.baseRef
   }
 }

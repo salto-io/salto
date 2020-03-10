@@ -19,7 +19,8 @@ declare module 'node-suitetalk' {
   export class Service {
     constructor(config: Configuration)
     init(): Promise<void>
-    getList(recordRefs: Record.Types.RecordRef[]): Promise<GetListResponse>
+    add(record: Record.Types.Record): Promise<AddResponse>
+    getList(recordRefs: Record.Types.Reference[]): Promise<GetListResponse>
     getCustomizationId(type: string, includeInactives?: boolean):
       Promise<GetCustomizationIdResponse>
   }
@@ -32,16 +33,31 @@ declare module 'node-suitetalk' {
   }
 
   export namespace Record {
-    export namespace Types {
+    export namespace Fields {
+      export class Field {
+        constructor(fieldType: string)
+        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+        [key: string]: any
+      }
       export class RecordRef {
         constructor()
+        internalId: string
+        externalId: string
+        type: string
+        field: string
+      }
+    }
+
+    export namespace Types {
+      // eslint-disable-next-line no-shadow
+      export class Record {
+        constructor(type: string, name: string)
         /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
         [key: string]: any
       }
 
-      // eslint-disable-next-line no-shadow
-      export class Record {
-        constructor()
+      export class Reference {
+        constructor(reference: string)
         /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
         [key: string]: any
       }
@@ -70,6 +86,12 @@ declare module 'node-suitetalk' {
     }
   }
 
+  export interface WriteResponse {
+    status: Status
+    baseRef: Record.Types.Reference
+  }
+
+  // getList
   export interface ReadResponse {
     status: Status
     record: Record.Types.Record
@@ -85,9 +107,10 @@ declare module 'node-suitetalk' {
   }
 
   export interface RecordRefList {
-    customizationRef: Record.Types.RecordRef[]
+    customizationRef: Record.Types.Reference[]
   }
 
+  // getCustomizationId
   export interface GetCustomizationIdResult {
     status: Status
     totalRecords: number
@@ -96,5 +119,10 @@ declare module 'node-suitetalk' {
 
   export interface GetCustomizationIdResponse {
     getCustomizationIdResult: GetCustomizationIdResult
+  }
+
+  // add
+  export interface AddResponse {
+    writeResponse: WriteResponse
   }
 }

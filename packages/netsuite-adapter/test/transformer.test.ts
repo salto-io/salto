@@ -14,8 +14,11 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { createInstanceElement, Types } from '../src/transformer'
-import { ATTRIBUTES, INTERNAL_ID, NETSUITE, RECORDS_PATH } from '../src/constants'
+import { createInstanceElement, toNetsuiteRecord, Types } from '../src/transformer'
+import {
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, RECORDS_PATH, SCRIPT_ID,
+} from '../src/constants'
+import { NetsuiteRecord } from '../src/client/client'
 
 describe('Transformer', () => {
   const entityCustomFieldRecord = {
@@ -38,7 +41,7 @@ describe('Transformer', () => {
     let inst: InstanceElement
     beforeAll(() => {
       inst = createInstanceElement(entityCustomFieldRecord,
-        Types.customizationObjects.EntityCustomField)
+        Types.customizationObjects[ENTITY_CUSTOM_FIELD])
       expect(inst).toBeDefined()
     })
     it('should omit values that are not stated in the type', async () => {
@@ -66,7 +69,43 @@ describe('Transformer', () => {
     })
     it('should create correct path', async () => {
       expect(inst.path)
-        .toEqual([NETSUITE, RECORDS_PATH, 'EntityCustomField', 'My_Custom_Field_Record'])
+        .toEqual([NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, 'My_Custom_Field_Record'])
+    })
+  })
+
+  describe('toNetsuiteRecord func', () => {
+    let result: NetsuiteRecord
+    beforeEach(() => {
+      const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
+        label: 'Labelo',
+        [SCRIPT_ID]: 'my_script_id',
+        owner: {
+          [INTERNAL_ID]: '-5',
+          name: 'Owner Name',
+        },
+      })
+      result = toNetsuiteRecord(instance)
+    })
+
+    it('should transform string fields', () => {
+      expect(result.bodyFieldList).toHaveLength(3)
+      expect(result.bodyFieldList).toMatchObject([
+        {
+          field: 'label',
+          value: 'Labelo',
+          _fieldType: 'string',
+        },
+        {
+          field: 'scriptId',
+          value: 'my_script_id',
+          _fieldType: 'string',
+        },
+        {
+          internalId: '-5',
+          field: 'owner',
+          name: 'Owner Name',
+        },
+      ])
     })
   })
 })

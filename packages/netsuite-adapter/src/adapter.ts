@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { Element, InstanceElement, ObjectType, Change } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
-import { createInstanceElement, Types } from './transformer'
-import { METADATA_TYPE } from './constants'
+import { createInstanceElement, toNetsuiteRecord, Types } from './transformer'
+import { ATTRIBUTES, INTERNAL_ID, METADATA_TYPE, SCRIPT_ID } from './constants'
 
 
 export interface NetsuiteAdapterParams {
@@ -48,10 +48,12 @@ export default class NetsuiteAdapter {
     })))
   }
 
-  public async add(element: Element): Promise<Element> { // todo: implement
-    // eslint-disable-next-line no-console
-    console.log(this.client)
-    return Promise.resolve(element)
+  public async add(instance: InstanceElement): Promise<InstanceElement> {
+    const post = instance.clone()
+    const reference = await this.client.add(toNetsuiteRecord(post))
+    post.value[INTERNAL_ID] = reference[ATTRIBUTES][INTERNAL_ID]
+    post.value[SCRIPT_ID] = reference[ATTRIBUTES][SCRIPT_ID]
+    return post
   }
 
   public async remove(_element: Element): Promise<void> { // todo: implement

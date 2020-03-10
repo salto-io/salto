@@ -94,7 +94,7 @@ const loadBlueprintSource = (
     `*${BP_EXTENSION}`,
     (dirParh: string) => !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirParh),
   )
-  const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
+  const cacheStore = localDirectoryStore(path.join(localStorage, 'cache'))
   return buildBlueprintSource(blueprintsStore, parseResultCache(cacheStore))
 }
 
@@ -171,11 +171,11 @@ export class Workspace {
       },
       currentEnv: defaultEnvName,
     }
-    const config = completeConfig(absBaseDir, minimalConfig)
+    const config = await completeConfig(absBaseDir, minimalConfig)
     // We want to make sure that *ALL* of the paths we are going to create
     // do not exist right now before writing anything to disk.
     await ensureEmptyWorkspace(config)
-    await dumpConfig(absBaseDir, minimalConfig)
+    await dumpConfig(absBaseDir, minimalConfig, config.localStorage)
     await mkdirp(config.localStorage)
     return new Workspace(config)
   }

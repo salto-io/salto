@@ -15,7 +15,9 @@
 */
 import * as path from 'path'
 import os from 'os'
+import { Values } from '@salto-io/adapter-api'
 import { loadConfig, addEnvToConfig, setCurrentEnv } from '../../src/workspace/config'
+import { readFile } from '../../src/file'
 import { SALTO_HOME_VAR } from '../../src/app_config'
 
 const workspacesDir = path.join(__dirname, '../../../test/workspace/configs')
@@ -24,9 +26,53 @@ const defaultsWorkspaceDir = path.resolve(workspacesDir, 'defaults')
 
 jest.mock('../../src/file', () => ({
   ...jest.requireActual('../../src/file'),
+  readFile: jest.fn(),
+  mkdirp: jest.fn().mockImplementation(),
   replaceContents: jest.fn().mockImplementation(),
 }))
 describe('configuration dir location', () => {
+  const mockReadFile = readFile as unknown as jest.Mock
+  mockReadFile.mockImplementation(async (filename: string): Promise<Buffer> => {
+    const filenamesToContent: Values = {
+      'full/default/salto.config/config.bp': `salto.env default {
+        stateLocation = "/states/test.bpc"
+        credentialsLocation = "/creds/default"
+      }`,
+      'full/salto.config/config.bp': `salto {
+        name = "workspace"
+        localStorage = "/.salto/workspace"
+        uid = "uid"
+        envs = [
+            {
+              baseDir = "default"
+              name = "default"
+            },
+        ]
+      }`,
+      '/.salto/workspace/environment.bp': `salto.currentEnv _config {
+        currentEnv = "default"
+      }`,
+      'defaults/default/salto.config/config.bp': `salto.env default {
+      }`,
+      'defaults/salto.config/config.bp': `salto {
+        envs = [
+            {
+              baseDir = "default"
+              name = "default"
+            },
+        ]
+      }`,
+      '.salto_home/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/environment.bp': `salto.currentEnv _config {
+        currentEnv = "default"
+      }`,
+      '.salto/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/environment.bp': `salto.currentEnv _config {
+        currentEnv = "default"
+      }`,
+    }
+    const relativeFilename = Object.keys(filenamesToContent).find(name => filename.endsWith(name))
+    return relativeFilename ? Buffer.from(filenamesToContent[relativeFilename]) : Buffer.from('')
+  })
+
   it('should load config from workspace root', async () => {
     const config = await loadConfig(fullWorkspaceDir)
     expect(config).toBeDefined()

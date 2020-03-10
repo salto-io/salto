@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, ElemID, findElements as findElementsByID, Values } from '@salto-io/adapter-api'
+import { Element, ElemID, findElements as findElementsByID, Values, ObjectType } from '@salto-io/adapter-api'
 import JSZip from 'jszip'
 import * as constants from '../src/constants'
+import {
+  annotationsFileName, customFieldsFileName, standardFieldsFileName,
+} from '../src/filters/custom_objects'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -55,4 +58,22 @@ export const createEncodedZipContent = async (files: ZipFile[], encoding = 'base
   const zip = new JSZip()
   files.forEach(file => zip.file(file.path, file.content))
   return (await zip.generateAsync({ type: 'nodebuffer' })).toString(encoding)
+}
+
+export const findCustomFieldsObject = (elements: Element[], name: string): ObjectType => {
+  const customObjects = findElements(elements, name) as ObjectType[]
+  return customObjects
+    .find(obj => obj.path?.slice(-1)[0] === customFieldsFileName(name)) as ObjectType
+}
+
+export const findStandardFieldsObject = (elements: Element[], name: string): ObjectType => {
+  const customObjects = findElements(elements, name) as ObjectType[]
+  return customObjects
+    .find(obj => obj.path?.slice(-1)[0] === standardFieldsFileName(name)) as ObjectType
+}
+
+export const findAnnotationsObject = (elements: Element[], name: string): ObjectType => {
+  const customObjects = findElements(elements, name) as ObjectType[]
+  return customObjects
+    .find(obj => obj.path?.slice(-1)[0] === annotationsFileName(name)) as ObjectType
 }

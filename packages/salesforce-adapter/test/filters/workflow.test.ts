@@ -13,16 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, findElement } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import filterCreator, {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD,
-  WORKFLOW_TASKS_FIELD, WORKFLOW_TYPE_ID,
+  WORKFLOW_TASKS_FIELD, WORKFLOW_TYPE_ID, WORKFLOW_FIELD_TO_TYPE,
 } from '../../src/filters/workflow'
 import mockClient from '../client'
 import {
   API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, WORKFLOW_METADATA_TYPE,
+  METADATA_TYPE,
 } from '../../src/constants'
+
+const { makeArray } = collections.array
 
 describe('Workflow filter', () => {
   const { client } = mockClient()
@@ -62,19 +66,52 @@ describe('Workflow filter', () => {
   }
 
   describe('on fetch', () => {
-    it('should modify inner types full_names to contain the parent fullName', async () => {
-      const workflowWithInnerTypes = generateWorkFlowInstance(true)
-      await filter.onFetch([workflowWithInnerTypes])
-      expect(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD][0][INSTANCE_FULL_NAME_FIELD])
-        .toEqual('Account.MyWorkflowAlert1')
-      expect(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD][1][INSTANCE_FULL_NAME_FIELD])
-        .toEqual('Account.MyWorkflowAlert2')
-      expect(workflowWithInnerTypes.value[WORKFLOW_FIELD_UPDATES_FIELD][INSTANCE_FULL_NAME_FIELD])
-        .toEqual('Account.MyWorkflowFieldUpdate')
-      expect(workflowWithInnerTypes.value[WORKFLOW_TASKS_FIELD][INSTANCE_FULL_NAME_FIELD])
-        .toEqual('Account.MyWorkflowTask')
-      expect(workflowWithInnerTypes.value[WORKFLOW_RULES_FIELD][INSTANCE_FULL_NAME_FIELD])
-        .toEqual('Account.MyWorkflowRule')
+    const workflowWithInnerTypes = generateWorkFlowInstance(true)
+    let elements: Element[]
+
+    describe('should modify workflow instance', () => {
+      beforeAll(async () => {
+        const workflowSubTypes = Object.values(WORKFLOW_FIELD_TO_TYPE)
+          .map(subType => new ObjectType({
+            elemID: new ElemID(SALESFORCE, subType),
+            annotations: { [METADATA_TYPE]: subType },
+          }))
+        elements = [workflowWithInnerTypes, ...workflowSubTypes]
+        expect(elements).toHaveLength(8)
+        await filter.onFetch(elements)
+      })
+
+      it('should split workflow instance', () => {
+        expect(elements).toHaveLength(13)
+      })
+
+      it('should modify inner types full_names to contain the parent fullName', async () => {
+        const verifyFullName = (e: Element, name: string): void =>
+          expect((e as InstanceElement).value[INSTANCE_FULL_NAME_FIELD]).toEqual(name)
+
+        verifyFullName(elements[8], 'Account.MyWorkflowAlert1')
+        verifyFullName(elements[9], 'Account.MyWorkflowAlert2')
+        verifyFullName(elements[10], 'Account.MyWorkflowFieldUpdate')
+        verifyFullName(elements[11], 'Account.MyWorkflowTask')
+        verifyFullName(elements[12], 'Account.MyWorkflowRule')
+      })
+
+      it('should have reference from workflow instance', () => {
+        Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(field => {
+          makeArray(workflowWithInnerTypes.value[field]).forEach(val => {
+            expect(val).toBeInstanceOf(ReferenceExpression)
+          })
+        })
+      })
+
+      it('should have list reference from workflow instance', () => {
+        expect(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD]).toHaveLength(2)
+        makeArray(workflowWithInnerTypes.value[WORKFLOW_ALERTS_FIELD]).forEach(val => {
+          expect(val).toBeInstanceOf(ReferenceExpression)
+          const { elemId } = val as ReferenceExpression
+          expect((findElement(elements, elemId) as InstanceElement).value.description).toBe('description')
+        })
+      })
     })
 
     it('should not modify non workflow instances', async () => {
@@ -99,124 +136,6 @@ describe('Workflow filter', () => {
       const beforeFilterPath = dummyInstance.path
       await filter.onFetch([dummyInstance])
       expect(dummyInstance.path).toEqual(beforeFilterPath)
-    })
-  })
-
-  describe('on add', () => {
-    let mockUpsert: jest.Mock
-
-    beforeEach(() => {
-      mockUpsert = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
-      client.upsert = mockUpsert
-    })
-
-    it('should call upsert for all workflow inner types', async () => {
-      await filter.onAdd(generateWorkFlowInstance())
-      expect(mockUpsert).toHaveBeenCalledWith('WorkflowAlert', [{
-        fullName: 'Account.MyWorkflowAlert1',
-        description: 'description',
-      },
-      {
-        fullName: 'Account.MyWorkflowAlert2',
-        description: 'description',
-      }])
-      expect(mockUpsert).toHaveBeenCalledWith('WorkflowFieldUpdate', [{
-        fullName: 'Account.MyWorkflowFieldUpdate',
-      }])
-      expect(mockUpsert).toHaveBeenCalledWith('WorkflowTask', [{
-        fullName: 'Account.MyWorkflowTask',
-      }])
-      expect(mockUpsert).toHaveBeenCalledWith('WorkflowRule', [{
-        fullName: 'Account.MyWorkflowRule',
-      }])
-    })
-
-    it('should not call upsert for non workflow instances', async () => {
-      const dummyInstance = generateWorkFlowInstance()
-      dummyInstance.type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'dummy') })
-      await filter.onAdd(dummyInstance)
-      expect(mockUpsert).toHaveBeenCalledTimes(0)
-    })
-  })
-
-  describe('on update', () => {
-    let mockUpsert: jest.Mock
-    let mockUpdate: jest.Mock
-    let mockDelete: jest.Mock
-
-    beforeEach(() => {
-      mockUpsert = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
-      client.upsert = mockUpsert
-      mockUpdate = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
-      client.update = mockUpdate
-      mockDelete = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
-      client.delete = mockDelete
-    })
-
-    describe('for workflow instance', () => {
-      beforeEach(async () => {
-        const beforeWorkflowInstance = generateWorkFlowInstance()
-        const afterWorkflowInstance = beforeWorkflowInstance.clone()
-        afterWorkflowInstance.value[WORKFLOW_ALERTS_FIELD][0][INSTANCE_FULL_NAME_FIELD] = 'Account.MyWorkflowAlert3'
-        afterWorkflowInstance.value[WORKFLOW_ALERTS_FIELD][1].description = 'updated description'
-        await filter.onUpdate(beforeWorkflowInstance, afterWorkflowInstance, [])
-      })
-
-      it('should call upsert for new inner types', async () => {
-        expect(mockUpsert).toHaveBeenCalledWith('WorkflowAlert', [{
-          fullName: 'Account.MyWorkflowAlert3',
-          description: 'description',
-        }])
-      })
-
-      it('should call update for modified inner types', async () => {
-        expect(mockUpdate).toHaveBeenCalledWith('WorkflowAlert', [{
-          fullName: 'Account.MyWorkflowAlert2',
-          description: 'updated description',
-        }])
-      })
-
-      it('should call delete for deleted inner types', async () => {
-        expect(mockDelete).toHaveBeenCalledWith('WorkflowAlert', ['Account.MyWorkflowAlert1'])
-      })
-    })
-
-    it('should not call upsert/update/delete for non workflow instances', async () => {
-      const beforeDummyInstance = generateWorkFlowInstance()
-      beforeDummyInstance.type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'dummy') })
-      const afterDummyInstance = beforeDummyInstance.clone()
-      afterDummyInstance.value[WORKFLOW_ALERTS_FIELD][0][INSTANCE_FULL_NAME_FIELD] = 'Account.MyWorkflowAlert3'
-      afterDummyInstance.value[WORKFLOW_ALERTS_FIELD][1].description = 'updated description'
-      await filter.onUpdate(beforeDummyInstance, afterDummyInstance, [])
-      expect(mockUpsert).toHaveBeenCalledTimes(0)
-      expect(mockUpdate).toHaveBeenCalledTimes(0)
-      expect(mockDelete).toHaveBeenCalledTimes(0)
-    })
-  })
-
-  describe('on remove', () => {
-    let mockDelete: jest.Mock
-
-    beforeEach(() => {
-      mockDelete = jest.fn().mockImplementationOnce(() => ([{ success: true }]))
-      client.delete = mockDelete
-    })
-
-    it('should call delete for all workflow inner types', async () => {
-      await filter.onRemove(generateWorkFlowInstance())
-      expect(mockDelete).toHaveBeenCalledWith('WorkflowAlert',
-        ['Account.MyWorkflowAlert1', 'Account.MyWorkflowAlert2'])
-      expect(mockDelete).toHaveBeenCalledWith('WorkflowFieldUpdate',
-        ['Account.MyWorkflowFieldUpdate'])
-      expect(mockDelete).toHaveBeenCalledWith('WorkflowTask', ['Account.MyWorkflowTask'])
-      expect(mockDelete).toHaveBeenCalledWith('WorkflowRule', ['Account.MyWorkflowRule'])
-    })
-
-    it('should not call delete for non workflow instances', async () => {
-      const dummyInstance = generateWorkFlowInstance()
-      dummyInstance.type = new ObjectType({ elemID: new ElemID(SALESFORCE, 'dummy') })
-      await filter.onRemove(dummyInstance)
-      expect(mockDelete).toHaveBeenCalledTimes(0)
     })
   })
 })

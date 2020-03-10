@@ -130,3 +130,6 @@ export const addObjectParentReference = (instance: InstanceElement,
   instanceDeps.push(new ReferenceExpression(objectID))
   instance.annotations[INSTANCE_ANNOTATIONS.PARENT] = instanceDeps
 }
+
+export const fullApiName = (parent: string, child: string): string =>
+  ([parent, child].join(API_NAME_SEPERATOR))

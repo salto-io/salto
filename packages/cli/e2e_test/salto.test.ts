@@ -265,6 +265,7 @@ describe('cli e2e', () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
     })
   })
+
   describe('deploy after deleting the object and the instance', () => {
     let profiles: InstanceElement[]
     beforeAll(async () => {

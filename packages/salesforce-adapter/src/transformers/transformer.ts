@@ -15,8 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, QueryResult,
-  Record as SfRecord, PicklistEntry,
+  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, Record as SfRecord, PicklistEntry,
 } from 'jsforce'
 import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
@@ -769,7 +768,9 @@ export class Types {
     ]
       .map(type => {
         const fieldType = type.clone()
-        fieldType.path = [SALESFORCE, TYPES_PATH, 'annotation_types']
+        fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
+          ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
+          : [SALESFORCE, TYPES_PATH, 'annotation_types']
         return fieldType
       })
   }
@@ -1095,21 +1096,12 @@ export const toMetadataInfo = (fullName: string, values: Values):
     ...values,
   })
 
-export const toInstanceElements = (type: ObjectType, queryResult: QueryResult<Value>):
-  InstanceElement[] => {
-  // Omit the "attributes" field from the objects
-  const results = queryResult.records.map(obj => _.pickBy(obj, (_value, key) =>
-    key !== 'attributes'))
-
-  // Convert the result to Instance Elements
-  return results.map(res => new InstanceElement(res.Id, type, res))
-}
-
-export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
+export const createInstanceElementFromValues = (values: Values, type: ObjectType,
   namespacePrefix?: string): InstanceElement => {
+  const fullName = values[INSTANCE_FULL_NAME_FIELD]
   const getPackagePath = (): string[] => {
     if (namespacePrefix) {
-      if (namespacePrefix === 'standard' || mdInfo.fullName === namespacePrefix) {
+      if (namespacePrefix === 'standard' || fullName === namespacePrefix) {
         // InstalledPackage records should be under records and not within their package
         // Some CustomApplications have 'standard' namespace although they are not part of a package
         return [SALESFORCE]
@@ -1132,7 +1124,7 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
     }
 
     return {
-      [INSTANCE_FULL_NAME_FIELD]: mdInfo.fullName,
+      [INSTANCE_FULL_NAME_FIELD]: fullName,
       [ADAPTER]: SALESFORCE,
       [OBJECT_SERVICE_ID]: toServiceIdsString(typeServiceIds()),
     }
@@ -1140,17 +1132,20 @@ export const createInstanceElement = (mdInfo: MetadataInfo, type: ObjectType,
 
   const typeName = type.elemID.name
   const name = (): string => (
-    Types.getElemId(bpCase(mdInfo.fullName), true, instanceServiceIds()).name
+    Types.getElemId(bpCase(fullName), true, instanceServiceIds()).name
   )
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : name(),
     type,
-    fromMetadataInfo(mdInfo),
+    values,
     [...getPackagePath(), RECORDS_PATH,
-      type.isSettings ? SETTINGS_PATH : typeName, bpCase(mdInfo.fullName)],
+      type.isSettings ? SETTINGS_PATH : typeName, bpCase(fullName)],
   )
 }
 
+export const createInstanceElement = (value: Values, type: ObjectType,
+  namespacePrefix?: string): InstanceElement =>
+  createInstanceElementFromValues(value, type, namespacePrefix)
 
 export const createMetadataTypeElements = async (
   objectName: string,

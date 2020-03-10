@@ -30,7 +30,7 @@ import SalesforceClient, { API_VERSION } from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
-  metadataType, toInstanceElements, createMetadataTypeElements,
+  metadataType, createMetadataTypeElements,
   instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
   defaultApiName, getLookUpName,
 } from './transformers/transformer'
@@ -54,7 +54,7 @@ import globalValueSetFilter from './filters/global_value_sets'
 import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import {
-  FilterCreator, Filter, FilterWith, filtersWith,
+  FilterCreator, Filter, filtersRunner,
 } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 
@@ -63,6 +63,29 @@ const log = logger(module)
 
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 const RECORDS_CHUNK_SIZE = 10000
+export const DEFAULT_FILTERS = [
+  missingFieldsFilter,
+  settingsFilter,
+  // should run before customObjectsFilter
+  workflowFilter,
+  // customObjectsFilter depends on missingFieldsFilter and settingsFilter
+  customObjectsFilter,
+  removeFieldsFilter,
+  profilePermissionsFilter,
+  layoutFilter,
+  standardValueSetFilter,
+  flowFilter,
+  lookupFiltersFilter,
+  animationRulesFilter,
+  samlInitMethodFilter,
+  topicsForObjectsFilter,
+  valueSetFilter,
+  globalValueSetFilter,
+  // The following filters should remain last in order to make sure they fix all elements
+  convertListsFilter,
+  convertTypeFilter,
+  instanceReferences,
+]
 
 const absoluteIDMetadataTypes: Record<string, string[]> = {
   CustomLabels: ['labels'],
@@ -171,7 +194,7 @@ export default class SalesforceAdapter {
   private metadataTypesToSkipMutation: string[]
   private metadataTypesToUseUpsertUponUpdate: string[]
   private nestedMetadataTypes: Record<string, string[]>
-  private filterCreators: FilterCreator[]
+  private filtersRunner: Required<Filter>
   private client: SalesforceClient
   private systemFields: string[]
 
@@ -220,28 +243,7 @@ export default class SalesforceAdapter {
       ...absoluteIDMetadataTypes,
       ...nestedIDMetadataTypes,
     },
-    filterCreators = [
-      missingFieldsFilter,
-      settingsFilter,
-      // customObjectsFilter depends on missingFieldsFilter and settingsFilter
-      customObjectsFilter,
-      removeFieldsFilter,
-      profilePermissionsFilter,
-      layoutFilter,
-      standardValueSetFilter,
-      flowFilter,
-      lookupFiltersFilter,
-      animationRulesFilter,
-      samlInitMethodFilter,
-      workflowFilter,
-      topicsForObjectsFilter,
-      valueSetFilter,
-      globalValueSetFilter,
-      // The following filters should remain last in order to make sure they fix all elements
-      convertListsFilter,
-      convertTypeFilter,
-      instanceReferences,
-    ],
+    filterCreators = DEFAULT_FILTERS,
     client,
     getElemIdFunc,
     // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
@@ -275,8 +277,8 @@ export default class SalesforceAdapter {
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
     this.nestedMetadataTypes = nestedMetadataTypes
-    this.filterCreators = filterCreators
     this.client = client
+    this.filtersRunner = filtersRunner(this.client, filterCreators)
     this.systemFields = systemFields
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
@@ -300,7 +302,7 @@ export default class SalesforceAdapter {
       await Promise.all([annotationTypes, fieldTypes,
         metadataTypes, metadataInstances]) as Element[][]
     )
-    await this.runFiltersOnFetch(elements)
+    await this.filtersRunner.onFetch(elements)
     return elements
   }
 
@@ -310,10 +312,20 @@ export default class SalesforceAdapter {
    * @param type the object type of which to retrieve instances
    */
   public async *getInstancesOfType(type: ObjectType): AsyncIterable<InstanceElement[]> {
+    const toInstanceElements = (queryResult: QueryResult<Value>):
+InstanceElement[] => {
+      // Omit the "attributes" field from the objects
+      const results = queryResult.records.map(obj => _.pickBy(obj, (_value, key) =>
+        key !== 'attributes'))
+
+      // Convert the result to Instance Elements
+      return results.map(res => new InstanceElement(res.Id, type, res))
+    }
+
     let results = await this.getFirstBatchOfInstances(type)
 
     while (true) {
-      yield toInstanceElements(type, results)
+      yield toInstanceElements(results)
       if (results.nextRecordsUrl !== undefined) {
         // eslint-disable-next-line no-await-in-loop
         results = await this.client.queryMore(results.nextRecordsUrl)
@@ -449,7 +461,7 @@ export default class SalesforceAdapter {
       post = await this.addInstance(resolved as InstanceElement)
     }
 
-    await this.runFiltersOnAdd(post)
+    await this.filtersRunner.onAdd(post)
     return restoreReferences(element, post, getLookUpName)
   }
 
@@ -518,7 +530,7 @@ export default class SalesforceAdapter {
     } else if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(resolved))
     }
-    await this.runFiltersOnRemove(resolved)
+    await this.filtersRunner.onRemove(resolved)
   }
 
   /**
@@ -551,7 +563,7 @@ export default class SalesforceAdapter {
     }
 
     // Aspects should be updated once all object related properties updates are over
-    await this.runFiltersOnUpdate(resBefore, result, resChanges)
+    await this.filtersRunner.onUpdate(resBefore, result, resChanges)
     return restoreReferences(after, result, getLookUpName)
   }
 
@@ -913,43 +925,6 @@ export default class SalesforceAdapter {
       })
     return instanceInfos.map(instanceInfo =>
       ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))
-  }
-
-  private filtersWith<M extends keyof Filter>(m: M): FilterWith<M>[] {
-    const allFilters = this.filterCreators.map(f => f({ client: this.client }))
-    return filtersWith(m, allFilters)
-  }
-
-  // Filter related functions
-
-  private async runFiltersOnFetch(elements: Element[]): Promise<void> {
-    // Fetch filters order is important so they should run one after the other
-    return this.filtersWith('onFetch').reduce(
-      (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
-      Promise.resolve(),
-    )
-  }
-
-  private async runFiltersInParallel<M extends keyof Filter>(
-    m: M,
-    run: (f: FilterWith<M>) => Promise<SaveResult[]>
-  ): Promise<SaveResult[]> {
-    return _.flatten(
-      await Promise.all(this.filtersWith(m).map(run))
-    )
-  }
-
-  private async runFiltersOnAdd(after: Element): Promise<(SaveResult| UpsertResult)[]> {
-    return this.runFiltersInParallel('onAdd', filter => filter.onAdd(after))
-  }
-
-  private async runFiltersOnUpdate(before: Element, after: Element,
-    changes: Iterable<Change>): Promise<(SaveResult| UpsertResult)[]> {
-    return this.runFiltersInParallel('onUpdate', filter => filter.onUpdate(before, after, changes))
-  }
-
-  private async runFiltersOnRemove(before: Element): Promise<SaveResult[]> {
-    return this.runFiltersInParallel('onRemove', filter => filter.onRemove(before))
   }
 
   private async getFirstBatchOfInstances(type: ObjectType): Promise<QueryResult<Value>> {

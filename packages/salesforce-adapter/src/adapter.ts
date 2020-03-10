@@ -65,7 +65,7 @@ const log = logger(module)
 
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 const RECORDS_CHUNK_SIZE = 10000
-export const ALL_FILTERS_CREATORS = [
+export const DEFAULT_FILTERS = [
   missingFieldsFilter,
   settingsFilter,
   // should run before customObjectsFilter
@@ -235,7 +235,7 @@ export default class SalesforceAdapter {
       ...absoluteIDMetadataTypes,
       ...nestedIDMetadataTypes,
     },
-    filterCreators = ALL_FILTERS_CREATORS,
+    filterCreators = DEFAULT_FILTERS,
     client,
     getElemIdFunc,
     // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm

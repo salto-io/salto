@@ -22,7 +22,7 @@ import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
 import { filtersRunner } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
-import SalesforceAdapter, { ALL_FILTERS_CREATORS } from '../src/adapter'
+import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, createMetadataTypeElements } from '../src/transformers/transformer'
 
@@ -86,7 +86,6 @@ export const createInstance = async (client: SalesforceClient, value: Values,
   return createInstanceElement(value, objectType)
 }
 
-
 export const getInstance = async (client: SalesforceClient, type: string | ObjectType,
   fullName: string): Promise<InstanceElement | undefined> => {
   const md = await getMetadata(client, isObjectType(type) ? metadataType(type) : type, fullName)
@@ -130,4 +129,4 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
 
 export const runFiltersOnFetch = async (client: SalesforceClient, fetchResult: Element[]):
 Promise<void> =>
-  filtersRunner(client, ALL_FILTERS_CREATORS).onFetch(fetchResult)
+  filtersRunner(client, DEFAULT_FILTERS).onFetch(fetchResult)

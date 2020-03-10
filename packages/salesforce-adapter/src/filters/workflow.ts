@@ -21,12 +21,13 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
-  API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE, WORKFLOW_METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD, SALESFORCE, WORKFLOW_METADATA_TYPE,
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
   apiName, metadataType, createInstanceElementFromValues,
 } from '../transformers/transformer'
+import { fullApiName } from './utils'
 
 const { makeArray } = collections.array
 
@@ -54,11 +55,9 @@ export const WORKFLOW_TYPE_ID = new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)
 export const isWorkflowType = (type: ObjectType): boolean => type.elemID.isEqual(WORKFLOW_TYPE_ID)
 export const isWorkflowInstance = (instance: InstanceElement): boolean =>
   isWorkflowType(instance.type)
-const fullApiName = (workflow: string, relative: string): string =>
-  ([workflow, relative].join(API_NAME_SEPERATOR))
 
-type Tranformer = (workflowApiName: string, value: Values) => Values
-const transformers: Record<string, Tranformer> = {
+type SubInstanceTransformer = (workflowApiName: string, value: Values) => Values
+const subInstancetransformers: Record<string, SubInstanceTransformer> = {
   [WORKFLOW_RULES_FIELD]: (workflowApiName: string, rule: Values): Values => {
     makeArray(rule.actions).forEach(action => {
       if (action.name) {
@@ -83,11 +82,11 @@ const filterCreator: FilterCreator = () => ({
           log.warn('failed to find object type for %s', fieldType)
           return []
         }
-        const splitted = makeArray(workflowInstance.value[fieldName])
+        const innerInstances = makeArray(workflowInstance.value[fieldName])
           .map(innerValue => {
             innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName(apiName(workflowInstance),
               innerValue[INSTANCE_FULL_NAME_FIELD])
-            const transformer = transformers[fieldName]
+            const transformer = subInstancetransformers[fieldName]
             return createInstanceElementFromValues(
               _.isUndefined(transformer)
                 ? innerValue
@@ -95,11 +94,12 @@ const filterCreator: FilterCreator = () => ({
               objType
             )
           })
-        if (!_.isEmpty(splitted)) {
-          workflowInstance.value[fieldName] = splitted.map(s => new ReferenceExpression(s.elemID))
+        if (!_.isEmpty(innerInstances)) {
+          workflowInstance.value[fieldName] = innerInstances
+            .map(s => new ReferenceExpression(s.elemID))
         }
 
-        return splitted
+        return innerInstances
       })
     )
 

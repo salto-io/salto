@@ -16,6 +16,8 @@
 import { FunctionExpression, ReferenceExpression, TemplateExpression, ElemID } from '@salto-io/adapter-api'
 import devaluate from './internal/devaluate'
 import evaluate from '../../src/parser/expressions'
+import { UnresolvedReference } from '../../src/core/expressions'
+import { HclExpression } from '../../src/parser/internal/types'
 
 describe('HCL Expression', () => {
   it('should evaluate strings', () => {
@@ -52,6 +54,20 @@ describe('HCL Expression', () => {
     const ref = new ReferenceExpression(new ElemID('a', 'b', 'type'))
     const exp = devaluate(ref)
     expect(evaluate(exp)).toEqual(ref)
+  })
+
+  it('should evaluate reference with invalid syntax', () => {
+    const exp: HclExpression = {
+      type: 'reference',
+      value: ['salto', 'foo', 'inst'],
+      expressions: [],
+      source: {
+        filename: 'dummy',
+        start: { line: 0, col: 0, byte: 0 },
+        end: { line: 0, col: 0, byte: 0 },
+      },
+    }
+    expect(evaluate(exp)).toBeInstanceOf(UnresolvedReference)
   })
 
   it('should evaluate template reference', () => {

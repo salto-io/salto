@@ -20,8 +20,8 @@ import {
 } from '@salto-io/adapter-api'
 import { Record } from 'node-suitetalk'
 import {
-  ATTRIBUTES, ENTITY_CUSTOM_FIELD, EXTERNAL_ID, INTERNAL_ID, METADATA_TYPE, NETSUITE, RECORDS_PATH,
-  RECORD_REF, SCRIPT_ID,
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, EXTERNAL_ID, FAMILY_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE,
+  RECORDS_PATH, RECORD_REF, SCRIPT_ID,
 } from './constants'
 import { NetsuiteRecord } from './client/client'
 
@@ -269,7 +269,7 @@ export class Types {
 
   public static getFamilyTypeName(type: ObjectType): string {
     if (Types.customizationObjects[type.elemID.name].elemID.isEqual(type.elemID)) {
-      return 'setupCustom'
+      return FAMILY_TYPE.CUSTOMIZATION
     }
     throw new Error(`Unsupported Type: ${type.elemID.name}`)
   }

@@ -15,7 +15,9 @@
 */
 import { Record } from 'node-suitetalk'
 import createClient from './client'
-import { ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, SCRIPT_ID } from '../../src/constants'
+import {
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, FAMILY_TYPE, INTERNAL_ID, SCRIPT_ID,
+} from '../../src/constants'
 import { NetsuiteRecord, NetsuiteReference } from '../../src/client/client'
 import { recordInList } from '../utils'
 
@@ -114,7 +116,8 @@ describe('Client', () => {
           baseRef: reference,
         },
       }))
-      addResult = await client.add(new Record.Types.Record('setupCustom', ENTITY_CUSTOM_FIELD))
+      addResult = await client.add(new Record.Types.Record(FAMILY_TYPE.CUSTOMIZATION,
+        ENTITY_CUSTOM_FIELD))
     })
 
     it('should return list records', async () => {

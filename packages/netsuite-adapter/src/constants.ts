@@ -17,6 +17,11 @@ export const NETSUITE = 'netsuite'
 export const ATTRIBUTES = '$attributes'
 export const RECORDS_PATH = 'Records'
 
+// Family type names
+export const FAMILY_TYPE = {
+  CUSTOMIZATION: 'setupCustom',
+}
+
 // Type names
 export const RECORD_REF = 'RecordRef'
 export const ENTITY_CUSTOM_FIELD = 'EntityCustomField'

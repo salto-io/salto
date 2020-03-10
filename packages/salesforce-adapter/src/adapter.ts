@@ -28,7 +28,7 @@ import {
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { decorators, collections } from '@salto-io/lowerdash'
+import { decorators, collections, promises } from '@salto-io/lowerdash'
 import SalesforceClient, { API_VERSION } from './client/client'
 import * as constants from './constants'
 import {
@@ -62,9 +62,11 @@ import {
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 
 const { makeArray } = collections.array
+const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
-export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
+export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
+const MAX_CONCURRENT_RETRIEVE_REQUEST = 3
 const RECORDS_CHUNK_SIZE = 10000
 export const DEFAULT_FILTERS = [
   missingFieldsFilter,
@@ -836,13 +838,12 @@ InstanceElement[] => {
       }
     }
 
-    const retrieveResults = await _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
-      .reduce(async (prevResults, membersChunk) => {
-        // Wait for prev results before triggering another request to avoid passing the API limit
-        const results = await prevResults
-        return [...results, await this.client.retrieve(createRetrieveRequest(membersChunk))]
-      },
-      Promise.resolve<RetrieveResult[]>([]))
+    const chunkedRetrieveMembers = _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
+    const retrieveResults = _.flatten(
+      await withLimitedConcurrency(chunkedRetrieveMembers.map(
+        retrieveChunk => () => this.client.retrieve(createRetrieveRequest(retrieveChunk))
+      ), MAX_CONCURRENT_RETRIEVE_REQUEST)
+    )
     return fromRetrieveResults(retrieveResults)
   }
 

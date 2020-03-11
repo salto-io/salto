@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Workspace, Blueprint, DetailedChange, Errors, WorkspaceError, SourceMap, SourceRange, Config } from '@salto-io/core'
+import { Workspace, Blueprint, DetailedChange, WorkspaceError, SourceMap, SourceRange, Config } from '@salto-io/core'
 import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
 import wu from 'wu'
 
@@ -39,10 +39,6 @@ export class EditorWorkspace {
       }
       return undefined
     })
-  }
-
-  get errors(): Promise<Errors> {
-    return this.workspace.errors
   }
 
   get elements(): Promise<readonly Element[]> {
@@ -174,7 +170,6 @@ export class EditorWorkspace {
   }
 
   async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
-    // TODO Map filenames
     return (await this.workspace.getWorkspaceErrors())
       .map(err => ({
         ...err,

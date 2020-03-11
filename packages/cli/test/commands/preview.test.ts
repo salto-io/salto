@@ -20,9 +20,10 @@ import {
   transformToWorkspaceError, getMockTelemetry,
   MockTelemetry,
 } from '../mocks'
-import { SpinnerCreator, Spinner, CliExitCode } from '../../src/types'
+import { SpinnerCreator, Spinner, CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
-import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry } from '../../src/telemetry'
+
 
 const mockPreview = preview
 jest.mock('@salto-io/core', () => ({

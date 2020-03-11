@@ -17,10 +17,10 @@ import { DataModificationResult } from '@salto-io/adapter-api'
 import { Workspace, file, deleteFromCsvFile } from '@salto-io/core'
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
-import { CliExitCode } from '../../src/types'
+import { CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import * as mocks from '../mocks'
-import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry } from '../../src/telemetry'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),

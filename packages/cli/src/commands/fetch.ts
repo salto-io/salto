@@ -27,7 +27,10 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, SpinnerCreator } from '../types'
+import {
+  ParsedCliInput, CliCommand, CliOutput,
+  CliExitCode, SpinnerCreator, CliTelemetry,
+} from '../types'
 import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
@@ -36,7 +39,7 @@ import { getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { getCliTelemetry, CliTelemetry } from '../telemetry'
+import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
 

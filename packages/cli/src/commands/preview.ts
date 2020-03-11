@@ -16,13 +16,14 @@
 import { preview } from '@salto-io/core'
 import { createCommandBuilder } from '../command_builder'
 import {
-  ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
+  ParsedCliInput, CliCommand, CliOutput,
+  SpinnerCreator, CliExitCode, CliTelemetry,
 } from '../types'
 import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { getCliTelemetry, CliTelemetry } from '../telemetry'
+import { getCliTelemetry } from '../telemetry'
 
 export const command = (
   workspaceDir: string,

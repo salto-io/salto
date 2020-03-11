@@ -15,7 +15,8 @@
 * limitations under the License.
 */
 
-import { getEvents, buildEventName, CliTelemetry, getCliTelemetry } from '../src/telemetry'
+import { getEvents, buildEventName, getCliTelemetry } from '../src/telemetry'
+import { CliTelemetry } from '../src/types'
 import { getMockTelemetry, MockTelemetry } from './mocks'
 
 describe('telemetry event names', () => {

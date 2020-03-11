@@ -16,7 +16,8 @@
 import { Config } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
-import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry } from '../../src/telemetry'
+import { CliTelemetry } from '../../src/types'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),

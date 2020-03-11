@@ -18,9 +18,10 @@ import { DataModificationResult } from '@salto-io/adapter-api'
 import Prompts from '../../src/prompts'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/export'
-import { CliExitCode } from '../../src/types'
+import { CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
-import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry } from '../../src/telemetry'
+
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),

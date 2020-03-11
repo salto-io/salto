@@ -17,10 +17,10 @@ import * as path from 'path'
 import { init } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { getEnvName } from '../callbacks'
 import { getWorkspaceTelemetryTags } from '../workspace'
-import { getCliTelemetry, CliTelemetry } from '../telemetry'
+import { getCliTelemetry } from '../telemetry'
 
 export const command = (
   workspaceName: string | undefined,

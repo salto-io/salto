@@ -17,7 +17,7 @@ import wu from 'wu'
 import {
   Workspace, Plan, PlanItem, currentEnvConfig,
 } from '@salto-io/core'
-import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
+import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import {
   deploy, preview, mockSpinnerCreator,
   MockWriteStream, getMockTelemetry,
@@ -25,7 +25,8 @@ import {
 } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
-import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry } from '../../src/telemetry'
+
 
 const mockDeploy = deploy
 const mockServices = (ws: Workspace): string[] => currentEnvConfig(ws.config).services as string[]

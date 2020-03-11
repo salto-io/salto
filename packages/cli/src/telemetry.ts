@@ -16,19 +16,19 @@
 */
 
 import { Telemetry, Tags } from '@salto-io/core'
-import { telemetryEventNames } from './types'
+import { TelemetryEventNames, CliTelemetry } from './types'
 
 const SEPARATOR = '.'
 const WORKSPACE = 'workspace'
 
 export const buildEventName = (
   command: string,
-  action: keyof telemetryEventNames,
+  action: keyof TelemetryEventNames,
 ): string => [WORKSPACE, command, action].join(SEPARATOR)
 
 export const getEvents = (
   commandName: string,
-): telemetryEventNames => ({
+): TelemetryEventNames => ({
   start: buildEventName(commandName, 'start'),
   success: buildEventName(commandName, 'success'),
   failure: buildEventName(commandName, 'failure'),
@@ -40,21 +40,6 @@ export const getEvents = (
   actionsSuccess: buildEventName(commandName, 'actionsSuccess'),
   actionsFailure: buildEventName(commandName, 'actionsFailure'),
 })
-
-export type CliTelemetry = {
-  start(tags?: Tags): void
-  failure(tags?: Tags): void
-  success(tags?: Tags): void
-  mergeErrors(n: number, tags?: Tags): void
-  changes(n: number, tags?: Tags): void
-  changesToApply(n: number, tags?: Tags): void
-  errors(n: number, tags?: Tags): void
-  failedRows(n: number, tags?: Tags): void
-  actionsSuccess(n: number, tags?: Tags): void
-  actionsFailure(n: number, tags?: Tags): void
-
-  stacktrace(err: Error, tags?: Tags): void
-}
 
 export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetry => {
   const telemetryEvents = getEvents(command)

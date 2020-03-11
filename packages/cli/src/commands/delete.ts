@@ -16,10 +16,10 @@
 import wu from 'wu'
 import { deleteFromCsvFile, file } from '@salto-io/core'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from '../types'
 import Prompts from '../prompts'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
-import { CliTelemetry, getCliTelemetry } from '../telemetry'
+import { getCliTelemetry } from '../telemetry'
 
 export const command = (
   workingDir: string,

@@ -20,7 +20,8 @@ import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
 import {
-  CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode, SpinnerCreator,
+  CliCommand, CliOutput, ParsedCliInput, WriteStream,
+  CliExitCode, SpinnerCreator, CliTelemetry,
 } from '../types'
 import {
   formatActionStart, formatItemDone,
@@ -30,7 +31,7 @@ import {
 import { shouldDeploy } from '../callbacks'
 import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { CliTelemetry, getCliTelemetry } from '../telemetry'
+import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
 

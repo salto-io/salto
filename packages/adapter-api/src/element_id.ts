@@ -29,7 +29,7 @@ export class ElemID {
       return new ElemID(adapter, typeName)
     }
     if (!isElemIDType(idType)) {
-      throw new Error(`Invalid ID type ${idType}`)
+      throw new Error(`Cannot create ID ${fullName} - Invalid ID type ${idType}`)
     }
     if (idType === 'instance' && _.isEmpty(name)) {
       // This is a config instance (the last name part is omitted)
@@ -117,7 +117,8 @@ export class ElemID {
       // IDs nested under type IDs should have a different type
       const [nestedIDType, ...nestedNameParts] = nameParts
       if (!isElemIDType(nestedIDType)) {
-        throw new Error(`Invalid ID type ${nestedIDType}`)
+        const newIdName = [...this.fullNameParts(), ...nameParts].join(ElemID.NAMESPACE_SEPARATOR)
+        throw new Error(`Cannot create nested ID ${newIdName} - Invalid ID type ${nestedIDType}`)
       }
       return new ElemID(this.adapter, this.typeName, nestedIDType, ...nestedNameParts)
     }

@@ -51,11 +51,12 @@ const getDefaultAdapterConfig = (adapterName: string): InstanceElement | undefin
 
 export const createDefaultAdapterConfig = async (adapterName: string, config: ConfigSource):
 Promise<InstanceElement | undefined> => {
+  const adapterConfig = await config.get(adapterName)
   const defaultConfig = getDefaultAdapterConfig(adapterName)
-  if (defaultConfig) {
+  if (_.isUndefined(adapterConfig) && defaultConfig) {
     await config.set(adapterName, defaultConfig)
   }
-  return defaultConfig
+  return adapterConfig ?? defaultConfig
 }
 
 export const getAdapters = async (

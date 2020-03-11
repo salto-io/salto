@@ -344,7 +344,6 @@ describe('api.ts', () => {
       })
     })
 
-
     it('should persist a new config', async () => {
       const newConf = mockConfigInstance.clone()
       newConf.value.password = 'bla'

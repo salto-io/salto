@@ -15,8 +15,13 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { creator } from '@salto-io/salesforce-adapter'
-import { initAdapters, getAdaptersCredentialsTypes } from '../../../src/core/adapters/adapters'
+import { initAdapters, getAdaptersCredentialsTypes,
+  createDefaultAdapterConfig } from '../../../src/core/adapters/adapters'
+import { configSource, ConfigSource } from '../../../src/workspace/config_source'
+import { adapterCreators } from '../../../src/core/adapters'
+import { createDefaultInstanceFromType } from '../../../src/core/merger/internal/instances'
 
+jest.mock('../../../src/workspace/config_source')
 describe('adapters.ts', () => {
   const { credentialsType } = creator
   const services = ['salesforce']
@@ -57,5 +62,36 @@ describe('adapters.ts', () => {
       { [services[0]]: { credentials: (credentials as unknown as InstanceElement) } }
     ))
       .toThrow()
+  })
+
+  describe('create default adapter config', () => {
+    const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('test') }))
+    const mockSet = jest.fn().mockImplementation()
+    const mockGet = jest.fn().mockImplementation()
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(instance)
+    const mockConfigSource = (configSource as jest.Mock)
+      .mockImplementation(() => ({ get: mockGet, set: mockSet }))
+    const serviceName = 'salesforce'
+
+    beforeEach(() => {
+      mockSet.mockReset()
+    })
+
+    it('should set default adapter config if there is no adapter config file', async () => {
+      const defaultConfig = createDefaultInstanceFromType(
+        ElemID.CONFIG_NAME, adapterCreators[serviceName].configType as ObjectType,
+      )
+      expect(await createDefaultAdapterConfig(serviceName, mockConfigSource() as ConfigSource))
+        .toEqual(defaultConfig)
+      expect(mockSet).toHaveBeenCalledTimes(1)
+      expect(mockSet).toHaveBeenCalledWith(serviceName, defaultConfig)
+    })
+
+    it('should not set default adapter config if there is adapter config file', async () => {
+      expect(await createDefaultAdapterConfig(serviceName, mockConfigSource() as ConfigSource))
+        .toEqual(instance)
+      expect(mockSet).not.toHaveBeenCalled()
+    })
   })
 })

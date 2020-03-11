@@ -66,7 +66,7 @@ const addService = async (
     return CliExitCode.UserInputError
   }
 
-  const adapterCredentialsType = await addAdapter(workspaceDir, serviceName, workspace)
+  const adapterCredentialsType = await addAdapter(serviceName, workspace)
   stdout.write(formatServiceAdded(serviceName))
 
   try {

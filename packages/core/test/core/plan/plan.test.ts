@@ -13,10 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType,
   PrimitiveTypes,
   Element,
+  DependencyChanger,
+  dependencyChange,
 } from '@salto-io/adapter-api'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
@@ -30,6 +33,7 @@ type PlanGenerators = {
   planWithListChange: () => Promise<[Plan, InstanceElement]>
   planWithAnnotationTypesChanges: () => Promise<[Plan, ObjectType]>
   planWithFieldIsListChanges: () => Promise<[Plan, ObjectType]>
+  planWithSplitElem: (isAdd: boolean) => Promise<[Plan, ObjectType]>
 }
 
 export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerators => ({
@@ -96,6 +100,31 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const plan = await getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   },
+
+  planWithSplitElem: async isAdd => {
+    const afterElements = mock.getAllElements()
+    const [,, saltoOffice, saltoEmployee] = afterElements
+    saltoOffice.fields.test = new Field(saltoOffice.elemID, 'test', BuiltinTypes.STRING)
+    const depChanger: DependencyChanger = async changes => {
+      const changeByElem = new Map(
+        wu(changes).map(([id, change]) => [getChangeElement(change).elemID.getFullName(), id]),
+      )
+      const officeChange = changeByElem.get(saltoOffice.elemID.getFullName())
+      const officeFieldChange = changeByElem.get(saltoOffice.fields.test.elemID.getFullName())
+      const employeeChange = changeByElem.get(saltoEmployee.elemID.getFullName())
+      if (officeChange && officeFieldChange && employeeChange) {
+        return [
+          dependencyChange('add', employeeChange, officeChange),
+          dependencyChange('add', officeFieldChange, employeeChange),
+        ]
+      }
+      return []
+    }
+    const plan = isAdd
+      ? await getPlan([], afterElements, {}, [depChanger])
+      : await getPlan(afterElements, [], {}, [depChanger])
+    return [plan, saltoOffice]
+  },
 })
 
 describe('getPlan', () => {
@@ -105,6 +134,7 @@ describe('getPlan', () => {
     planWithTypeChanges,
     planWithFieldChanges,
     planWithNewType,
+    planWithSplitElem,
   } = planGenerators(allElements)
 
   it('should create empty plan', async () => {
@@ -167,5 +197,29 @@ describe('getPlan', () => {
     expect(planItem.groupKey).toBe(changedElem.elemID.getFullName())
     expect(getChange(planItem, changedElem.elemID).action).toBe('modify')
     expect(planItem.items.size).toBe(1)
+  })
+
+  it('should split elements on addition if their fields create a dependency cycle', async () => {
+    const [plan, splitElem] = await planWithSplitElem(true)
+
+    const planItems = [...plan.itemsByEvalOrder()]
+    expect(planItems).toHaveLength(6)
+    const splitElemChanges = planItems
+      .filter(item => item.groupKey === splitElem.elemID.getFullName())
+    expect(splitElemChanges).toHaveLength(2)
+    expect(splitElemChanges[0].parent().action).toEqual('add')
+    expect(splitElemChanges[1].parent().action).toEqual('modify')
+  })
+
+  it('should split elements on removal if their fields create a dependency cycle', async () => {
+    const [plan, splitElem] = await planWithSplitElem(false)
+
+    const planItems = [...plan.itemsByEvalOrder()]
+    expect(planItems).toHaveLength(6)
+    const splitElemChanges = planItems
+      .filter(item => item.groupKey === splitElem.elemID.getFullName())
+    expect(splitElemChanges).toHaveLength(2)
+    expect(splitElemChanges[0].parent().action).toEqual('remove')
+    expect(splitElemChanges[1].parent().action).toEqual('remove')
   })
 })

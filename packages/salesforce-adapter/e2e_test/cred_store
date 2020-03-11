@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-require('@salto/e2e-credentials-store').cli.main({
+require('@salto-io/e2e-credentials-store').cli.main({
   adapters: {
     salesforce: require('../dist/e2e_test/credentials_store/adapter').default
   },

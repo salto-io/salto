@@ -1060,6 +1060,7 @@ describe('dynamoDB repo', () => {
             id,
             value: myVal,
             clientId: CLIENT_ID,
+            suspensionReason,
             leaseExpiresBy: new Date(now + timeout),
           })
         })

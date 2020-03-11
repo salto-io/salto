@@ -81,7 +81,7 @@ export const createDefinitionsProvider = (
   ): Promise<vscode.Definition> => {
     const validWorkspace = workspace.getValidCopy()
     if (validWorkspace) {
-      const currentToken = doc.getText(doc.getWordRangeAtPosition(position))
+      const currentToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
       const context = await getPositionContext(
         validWorkspace,
         doc.fileName,
@@ -105,7 +105,7 @@ export const createReferenceProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.Location[]> => {
-    const currenToken = doc.getText(doc.getWordRangeAtPosition(position))
+    const currenToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
     return (await provideWorkspaceReferences(workspace, currenToken)).map(
       def => new vscode.Location(
         vscode.Uri.file(path.resolve(workspace.workspace.config.baseDir, def.filename)),

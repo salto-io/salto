@@ -103,15 +103,15 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.requiresLogin
-  private async getCustomizationIds(type: string, includeInactives: boolean): Promise<string[]> {
-    const getCustomizationIdResponse = await this.conn.getCustomizationId(type, includeInactives)
+  private async getCustomizationIds(type: string): Promise<string[]> {
+    const getCustomizationIdResponse = await this.conn.getCustomizationId(type, true)
     return getCustomizationIdResponse.getCustomizationIdResult.customizationRefList
       .customizationRef.map(customization => customization[ATTRIBUTES].internalId)
   }
 
   @NetsuiteClient.requiresLogin
-  async listCustomizations(type: string, includeInactives = true): Promise<NetsuiteRecord[]> {
-    const customizationInternalIds = await this.getCustomizationIds(type, includeInactives)
+  async listCustomizations(type: string): Promise<NetsuiteRecord[]> {
+    const customizationInternalIds = await this.getCustomizationIds(type)
     const customRecordRefs = customizationInternalIds.map(internalId => ({ type, internalId }))
     return this.list(customRecordRefs)
   }

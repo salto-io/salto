@@ -19,6 +19,7 @@ import {
   FunctionExpression,
 } from '@salto-io/adapter-api'
 import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
+import { UnresolvedReference } from '../core/expressions'
 
 type ExpEvaluator = (expression: HclExpression) => Value
 
@@ -50,9 +51,14 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
     dynamic: _exp => undefined,
     reference: exp => {
       const traversalParts = exp.value as unknown as string[]
-      return new ReferenceExpression(
-        ElemID.fromFullName(traversalParts.join(ElemID.NAMESPACE_SEPARATOR))
-      )
+      const ref = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
+      try {
+        return new ReferenceExpression(
+          ElemID.fromFullName(ref)
+        )
+      } catch (e) {
+        return new UnresolvedReference(ref)
+      }
     },
     func: exp => {
       const { value: { funcName, parameters } } = exp

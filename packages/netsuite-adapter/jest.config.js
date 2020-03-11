@@ -27,10 +27,10 @@ module.exports = deepMerge(
         // todo: raise the coverageThreshold once more code is implemented
         coverageThreshold: {
             global: {
-                branches: 66,
-                functions: 93,
-                lines: 96,
-                statements: 96,
+                branches: 75,
+                functions: 95,
+                lines: 95,
+                statements: 95,
             },
         },
     }

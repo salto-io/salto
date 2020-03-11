@@ -78,6 +78,7 @@ describe('Transformer', () => {
     beforeEach(() => {
       const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
         label: 'Labelo',
+        [INTERNAL_ID]: '123',
         [SCRIPT_ID]: 'my_script_id',
         owner: {
           [INTERNAL_ID]: '-5',
@@ -87,7 +88,11 @@ describe('Transformer', () => {
       result = toNetsuiteRecord(instance)
     })
 
-    it('should transform string fields', () => {
+    it('should transform INTERNAL_ID', () => {
+      expect(result.internalId).toEqual('123')
+    })
+
+    it('should transform body fields', () => {
       expect(result.bodyFieldList).toHaveLength(3)
       expect(result.bodyFieldList).toMatchObject([
         {

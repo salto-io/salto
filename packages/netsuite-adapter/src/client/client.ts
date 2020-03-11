@@ -123,6 +123,12 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.requiresLogin
+  async update(record: NetsuiteRecord): Promise<NetsuiteReference> {
+    const updateResponse = await this.conn.update(record)
+    return updateResponse.writeResponse.baseRef
+  }
+
+  @NetsuiteClient.requiresLogin
   async delete(recordRef: NetsuiteReference): Promise<NetsuiteReference> {
     const deleteResponse = await this.conn.delete(recordRef)
     return deleteResponse.writeResponse.baseRef

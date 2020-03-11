@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement } from '@salto-io/adapter-api'
 import { Record } from 'node-suitetalk'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import {
-  ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, RECORD_REF, SCRIPT_ID,
+  ENTITY_CUSTOM_FIELD, INTERNAL_ID, RECORD_REF, SCRIPT_ID,
 } from '../src/constants'
-import { recordInList } from './utils'
+import { recordInList, returnedReferenceMock } from './utils'
 import { Types } from '../src/transformer'
 
 describe('Adapter', () => {
@@ -43,20 +43,12 @@ describe('Adapter', () => {
   describe('add', () => {
     let result: InstanceElement
     beforeAll(async () => {
-      client.add = jest.fn().mockReturnValue(
-        Promise.resolve({
-          [ATTRIBUTES]: {
-            [SCRIPT_ID]: 'custentity_my_script_id',
-            [INTERNAL_ID]: '123',
-            type: 'entityCustomField',
-            'xsi:type': 'platformCore:CustomizationRef',
-          },
+      client.add = jest.fn().mockReturnValue(Promise.resolve(returnedReferenceMock))
+      const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD],
+        {
+          label: 'Labelo',
+          [SCRIPT_ID]: 'my_script_id',
         })
-      )
-      const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
-        label: 'Labelo',
-        [SCRIPT_ID]: 'my_script_id',
-      })
       result = await netsuiteAdapter.add(instance)
     })
 
@@ -66,10 +58,35 @@ describe('Adapter', () => {
     })
   })
 
-  describe('update', () => { // todo: implement tests once implemented
-    it('dummy test for coverage', async () => {
-      await netsuiteAdapter.update(new ObjectType({ elemID: new ElemID(NETSUITE, 'test') }),
-        new ObjectType({ elemID: new ElemID(NETSUITE, 'test') }), [])
+  describe('update', () => {
+    let beforeInstance: InstanceElement
+    beforeAll(async () => {
+      client.update = jest.fn().mockReturnValue(Promise.resolve(returnedReferenceMock))
+      beforeInstance = new InstanceElement('test',
+        Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
+          [INTERNAL_ID]: '123',
+          [SCRIPT_ID]: 'custentity_my_script_id',
+          label: 'Labelo',
+        })
+    })
+
+    it('should succeed', async () => {
+      const afterInstance = beforeInstance.clone()
+      afterInstance.value.label = 'Edited'
+
+      const result = await netsuiteAdapter.update(beforeInstance, afterInstance) as InstanceElement
+
+      expect(result.value[INTERNAL_ID]).toEqual('123')
+      expect(result.value[SCRIPT_ID]).toEqual('custentity_my_script_id')
+      expect(result.value.label).toEqual('Edited')
+    })
+
+    it('should throw an error when INTERNAL_ID has changed', async () => {
+      const afterInstance = beforeInstance.clone()
+      afterInstance.value.label = 'Edited'
+      afterInstance.value[INTERNAL_ID] = '456'
+
+      await expect(netsuiteAdapter.update(beforeInstance, afterInstance)).rejects.toThrow()
     })
   })
 

@@ -115,10 +115,10 @@ const restoreOrigRanges = (
 
 export const parseBuffer = (
   src: string,
-  hclParser: nearley.Parser,
   filename: string,
   prevErrors: HclParseError[] = []
 ): [HclExpression[], HclParseError[]] => {
+  const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
   try {
     hclParser.feed(src)
   } catch (err) {
@@ -132,14 +132,15 @@ export const parseBuffer = (
     // The is equal check is here to make sure we won't get into a "recovery loop" which
     // is a condition in which the error recovery does not change the state.
     if (prevErrors.length < MAX_FILE_ERRORS) {
-      // Restoring the state to before the error took place
-      hclParser.restore(lastColumn)
       // Adding the wildcard token to bypass the error and give the parser another change
-      const restOfBuffer = WILDCARD + src.slice(parserError.subject.start.byte)
+      const fixedBuffer = [
+        src.slice(0, parserError.subject.start.byte),
+        WILDCARD,
+        src.slice(parserError.subject.start.byte),
+      ].join('')
       setErrorRecoveryMode() // Allows the wildcard token to be parsed from now on in this file
       const [blockItems, errors] = parseBuffer(
-        restOfBuffer,
-        hclParser,
+        fixedBuffer,
         filename,
         [...prevErrors, parserError]
       )
@@ -152,9 +153,8 @@ export const parseBuffer = (
 }
 
 export const parse = (src: Buffer, filename: string): HclParseReturn => {
-  const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
   startParse(filename)
-  const [blockItems, errors] = parseBuffer(src.toString(), hclParser, filename)
+  const [blockItems, errors] = parseBuffer(src.toString(), filename)
   if (blockItems !== undefined) {
     return {
       body: convertMain(blockItems),

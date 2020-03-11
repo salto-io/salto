@@ -21,7 +21,7 @@ import {
 import { parse } from '../../../src/parser/internal/parse'
 import { dump } from '../../../src/parser/internal/dump'
 import {
-  ParsedHclBlock, HclAttribute, HclExpression, HclParseError, DumpedHclBody,
+  ParsedHclBlock, HclAttribute, HclExpression, HclParseError, DumpedHclBody, ParsedHclBody,
 } from '../../../src/parser/internal/types'
 import devaluate from './devaluate'
 import evaluate from '../../../src/parser/expressions'
@@ -249,6 +249,49 @@ describe('HCL parse', () => {
 
     it('contains the error detail', () => {
       expect(errors[0].detail).not.toBeFalsy()
+    })
+  })
+
+  describe('source ranges with errors', () => {
+    const blockDef = `
+      type foo {
+        novalue = 
+        hasvalue = "value"
+      }
+    `
+    let errors: HclParseError[]
+    let body: ParsedHclBody
+
+    beforeAll(async () => {
+      ({ errors, body } = parse(Buffer.from(blockDef), 'none'))
+    })
+
+    it('should contain the parser error', () => {
+      expect(errors).toHaveLength(1)
+      expect(errors[0].summary).toContain('Unexpected token')
+    })
+
+    it('should create the parseable blocks', () => {
+      expect(body.blocks).toHaveLength(1)
+      const block = body.blocks[0]
+      expect(_.keys(block.attrs)).toEqual(['novalue', 'hasvalue'])
+      expect(block.attrs.hasvalue.expressions).toHaveLength(1)
+      expect(evaluate(block.attrs.hasvalue.expressions[0])).toEqual('value')
+    })
+
+    it('should have proper ranges for the rest of the elements', () => {
+      expect(body.blocks).toHaveLength(1)
+      const block = body.blocks[0]
+      expect(block.source).toEqual({
+        filename: 'none',
+        start: { byte: 7, col: 7, line: 2 },
+        end: { byte: 86, col: 8, line: 5 },
+      })
+      expect(block.attrs.hasvalue.source).toEqual({
+        filename: 'none',
+        start: { byte: 60, col: 9, line: 4 },
+        end: { byte: 78, col: 27, line: 4 },
+      })
     })
   })
 })

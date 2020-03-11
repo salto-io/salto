@@ -389,7 +389,7 @@ describe('Test auto complete', () => {
     })
 
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should suggest annotations when base is an object type with 1 level nesting', async () => {
+    it('should suggest annotations when base is an object type with 1 level nesting', async () => {
       const pos = { line: 145, col: 37 }
       const line = await getLine(workspace, bpFileName, pos)
       const ctx = await getPositionContext(workspace, bpFileName, pos)
@@ -439,7 +439,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should suggest all field\'s annotations inside string template', async () => {
+    it('should suggest all field\'s annotations inside string template', async () => {
       const pos = { line: 148, col: 41 }
       const line = await getLine(workspace, bpFileName, pos)
       const ctx = await getPositionContext(workspace, bpFileName, pos)
@@ -490,7 +490,7 @@ describe('Test auto complete', () => {
     })
 
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should suggest all field\'s annotations inside string template with prefix', async () => {
+    it('should suggest all field\'s annotations inside string template with prefix', async () => {
       const pos = { line: 151, col: 45 }
       const line = await getLine(workspace, bpFileName, pos)
       const ctx = await getPositionContext(workspace, bpFileName, pos)
@@ -540,7 +540,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should suggest all field\'s annotations inside string template with empty prefix', async () => {
+    it('should suggest all field\'s annotations inside string template with empty prefix', async () => {
       const pos = { line: 154, col: 45 }
       const line = await getLine(workspace, bpFileName, pos)
       const ctx = await getPositionContext(workspace, bpFileName, pos)
@@ -593,7 +593,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should suggest all field\'s annotations inside string template with complex prefix', async () => {
+    it('should suggest all field\'s annotations inside string template with complex prefix', async () => {
       const pos = { line: 157, col: 45 }
       const line = await getLine(workspace, bpFileName, pos)
       const ctx = await getPositionContext(workspace, bpFileName, pos)
@@ -613,12 +613,12 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
     // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should return nothing on non-existing base element', async () => {
+    it('should return nothing on non-existing base element', async () => {
       const pos = { line: 139, col: 31 }
       const line = (await getLine(workspace, bpFileName, pos)).replace('vs_weekend_car', 'nothing')
       const ctx = await getPositionContext(workspace, bpFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['""']
+      const include: string[] = []
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })

@@ -17,8 +17,9 @@ import _ from 'lodash'
 import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
-  CORE_ANNOTATIONS, resolvePath } from '@salto-io/adapter-api'
+  CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { dumpElemID, parseElemID } from '@salto-io/core'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { ContextReference } from '../context'
 
 interface InsertText {
@@ -76,14 +77,13 @@ const refNameSuggestions = (
   const baseElement = elements.find(e => e.elemID.getFullName() === baseID.getFullName())
   if (!baseElement) return []
 
-  const refValue = resolvePath(baseElement, refElemID)
   switch (refElemID.idType) {
     case 'annotation':
-      return isType(refValue) ? _.keys(refValue.annotationTypes) : []
+      return isType(baseElement) ? _.keys(baseElement.annotationTypes) : []
     case 'attr':
-      return isType(refValue) ? _.keys(refValue.annotations) : []
+      return isType(baseElement) ? _.keys(baseElement.annotations) : []
     case 'field':
-      return isObjectType(refValue) ? _.keys(refValue.fields) : []
+      return isObjectType(baseElement) ? _.keys(baseElement.fields) : []
     case 'instance':
       return getAllInstances(elements, baseID.adapter, baseID.getFullName())
     default:
@@ -100,8 +100,10 @@ const refValueSuggestions = (
     e => e.elemID.getFullName() === parent.getFullName()
   )
   if (_.isUndefined(parentElement)) return []
-
   const refValue = resolvePath(parentElement, refElemID)
+  if (isField(refValue)) {
+    return _.keys(refValue.annotations)
+  }
   if (isInstanceElement(refValue)) {
     return _.keys(refValue.value)
   }
@@ -124,25 +126,28 @@ const referenceSuggestions = (
   if (!unquotedMatch && (valueToken.includes('"') || valueToken.includes("'"))) return []
   const match = unquotedMatch ? unquotedMatch[1] : valueToken
   const refParts = match.split(ElemID.NAMESPACE_SEPARATOR)
-    .filter(p => !_.isEmpty(p))
+    .slice(0, -1)
   const refPartIndex = refParts.length
-  const refElemID = ElemID.fromFullName([
-    refParts[0],
-    ...refParts.slice(1),
-  ].join(ElemID.NAMESPACE_SEPARATOR))
 
-  const refPartsResolvers = [
-    () => getAdapterNames(elements),
-    () => getAllTypes(elements || [], refElemID.adapter)
-      .map(n => n.substring(refElemID.adapter.length + 1)),
-    () => ['instance', 'attr', 'field'],
-    () => refNameSuggestions(elements, refElemID),
-    () => refValueSuggestions(elements, refElemID),
-  ]
+  // try & catch here as we must consider the possibility of an illegal elemID here.
+  try {
+    const refElemID = ElemID.fromFullName(refParts.join(ElemID.NAMESPACE_SEPARATOR))
 
-  return refPartIndex >= refPartsResolvers.length
-    ? refPartsResolvers[refPartsResolvers.length - 1]()
-    : refPartsResolvers[refPartIndex]()
+    const refPartsResolvers = [
+      () => getAdapterNames(elements),
+      () => getAllTypes(elements || [], refElemID.adapter)
+        .map(n => n.substring(refElemID.adapter.length + 1)),
+      () => ['instance', 'attr', 'field'],
+      () => refNameSuggestions(elements, refElemID),
+      () => refValueSuggestions(elements, refElemID),
+    ]
+
+    return refPartIndex >= refPartsResolvers.length
+      ? refPartsResolvers[refPartsResolvers.length - 1]()
+      : refPartsResolvers[refPartIndex]()
+  } catch (e) {
+    return []
+  }
 }
 
 export const valueSuggestions = (

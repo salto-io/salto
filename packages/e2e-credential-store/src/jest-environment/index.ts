@@ -15,7 +15,6 @@
 */
 import { Global } from '@jest/types'
 import NodeEnvironment from 'jest-environment-node'
-import { JestEnvironment } from '@jest/environment'
 import { Event } from 'jest-circus'
 import humanizeDuration from 'humanize-duration'
 import { logger, Logger } from '@salto-io/logging'
@@ -31,19 +30,20 @@ export type CredsNodeEnvironmentOpts<TCreds> = {
   credsSpec: CredsSpec<TCreds>
 }
 
-export default <TCreds>({
-  logBaseName,
-  credsSpec,
-}: CredsNodeEnvironmentOpts<TCreds>
-): typeof JestEnvironment => class extends NodeEnvironment {
+export type JestEnvironmentConstructorArgs = ConstructorParameters<typeof NodeEnvironment>
+
+export class CredsJestEnvironment<TCreds> extends NodeEnvironment {
   protected readonly log: Logger
   protected readonly runningTasksPrinter: IntervalScheduler
+  protected readonly credsSpec: CredsSpec<TCreds>
   credsLease: CredsLease<TCreds> | undefined
 
   constructor(
-    ...args: ConstructorParameters<typeof NodeEnvironment>
+    { logBaseName, credsSpec }: CredsNodeEnvironmentOpts<TCreds>,
+    ...args: JestEnvironmentConstructorArgs
   ) {
     super(...args)
+    this.credsSpec = credsSpec
     this.log = logger([logBaseName, process.env.JEST_WORKER_ID].filter(x => x).join('/'))
     this.runningTasksPrinter = new IntervalScheduler(
       (id, startTime) => {
@@ -58,14 +58,18 @@ export default <TCreds>({
     await super.setup()
 
     this.runningTasksPrinter.schedule(CREDS_INTERVAL_ID)
-    this.credsLease = await creds(credsSpec, process.env, this.log)
-      .finally(() => this.runningTasksPrinter.unschedule(CREDS_INTERVAL_ID))
-    this.global[credsSpec.globalProp as keyof Global.Global] = this.credsLease.value
+    try {
+      this.credsLease = await creds(this.credsSpec, process.env, this.log)
+    } finally {
+      this.runningTasksPrinter.unschedule(CREDS_INTERVAL_ID)
+    }
+
+    this.global[this.credsSpec.globalProp as keyof Global.Global] = this.credsLease.value
     this.log.warn(`setup, using creds: ${this.credsLease.id}`)
   }
 
   async teardown(): Promise<void> {
-    delete this.global[credsSpec.globalProp as keyof Global.Global]
+    delete this.global[this.credsSpec.globalProp as keyof Global.Global]
     if (this.credsLease !== undefined) {
       await this.credsLease.return?.()
       this.log.warn(`teardown, returned creds ${this.credsLease?.id}`)

@@ -15,9 +15,18 @@
 */
 import { logger } from '@salto-io/logging'
 import {
-  JestEnvironment, createEnvUtils, CredsSpec, SuspendCredentialsError,
+  CredsJestEnvironment,
+  createEnvUtils,
+  CredsSpec,
+  SuspendCredentialsError,
+  JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
-import { Credentials, validateCredentials, ApiLimitsTooLowError } from '../src/client/client'
+import {
+  Credentials,
+  validateCredentials,
+  getRemainingDailyRequests,
+  ApiLimitsTooLowError,
+} from '../src/client/client'
 
 const MIN_API_REQUESTS_NEEDED = 500
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
@@ -49,7 +58,29 @@ export const credsSpec: CredsSpec<Credentials> = {
   globalProp: 'salesforceCredentials',
 }
 
-export default JestEnvironment<Credentials>({
-  logBaseName: log.namespace,
-  credsSpec,
-})
+export default class SalesforceCredsEnvironment extends CredsJestEnvironment<Credentials> {
+  dailyRequestsRemainingOnSetup: number | undefined
+
+  constructor(...args: JestEnvironmentConstructorArgs) {
+    super({ logBaseName: log.namespace, credsSpec }, ...args)
+  }
+
+  async setup(): Promise<void> {
+    await super.setup()
+    if (this.credsLease) {
+      this.dailyRequestsRemainingOnSetup = await getRemainingDailyRequests(this.credsLease.value)
+      this.log.warn('remaining daily requests on creds %o: %o', this.credsLease.id, this.dailyRequestsRemainingOnSetup)
+    }
+  }
+
+  async teardown(): Promise<void> {
+    if (this.credsLease && this.dailyRequestsRemainingOnSetup !== undefined) {
+      const dailyRequestsRemainingOnTeardown = await getRemainingDailyRequests(
+        this.credsLease.value,
+      )
+      const usedRequests = this.dailyRequestsRemainingOnSetup - dailyRequestsRemainingOnTeardown
+      this.log.warn('this run used %o of daily requests quota', usedRequests)
+    }
+    await super.teardown()
+  }
+}

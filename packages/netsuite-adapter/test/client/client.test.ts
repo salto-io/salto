@@ -132,7 +132,7 @@ describe('Client', () => {
 
   describe('update', () => {
     let updateResult: NetsuiteReference
-    beforeEach(async () => {
+    beforeAll(async () => {
       connection.init = jest.fn().mockImplementation(() => Promise.resolve())
       connection.update = jest.fn().mockReturnValue(Promise.resolve({
         writeResponse: {

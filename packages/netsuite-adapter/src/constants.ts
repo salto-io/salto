@@ -32,7 +32,7 @@ export const EXTERNAL_ID = 'externalId'
 export const SCRIPT_ID = 'scriptId'
 
 // Object annotations
-export const METADATA_TYPE = 'metadataType'
+export const METADATA_TYPE = 'type'
 
 // Field annotations
 export const IS_ATTRIBUTE = 'isAttribute'

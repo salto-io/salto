@@ -253,8 +253,8 @@ export const init = async (defaultEnvName: string, workspaceName?: string): Prom
 )
 
 export const addAdapter = async (
-  adapterName: string,
   workspace: Workspace,
+  adapterName: string,
 ): Promise<ObjectType> => {
   const adapterCredentials = getAdaptersCredentialsTypes([adapterName])[adapterName]
   if (!adapterCredentials) {

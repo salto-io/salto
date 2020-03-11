@@ -27,11 +27,11 @@ type ReadonlyDiags = ReadonlyArray<ReadonlyDiagsItem>
 
 export const saltoPosToVsPos = (
   pos: EditorPosition
-): vscode.Position => new vscode.Position(pos.line - 1, pos.col)
+): vscode.Position => new vscode.Position(pos.line - 1, pos.col - 1)
 
 export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
   line: pos.line + 1,
-  col: pos.character,
+  col: pos.character + 1,
 })
 
 const AUTO_FOLD_ELEMENT_NAMES: string[] = []
@@ -120,7 +120,7 @@ const toVSDiagnostic = (
     ? vscode.DiagnosticSeverity.Error
     : vscode.DiagnosticSeverity.Warning,
   range: new vscode.Range(
-    saltoPosToVsPos({ col: diag.range.start.col - 1, line: diag.range.start.line }),
+    saltoPosToVsPos({ col: diag.range.start.col, line: diag.range.start.line }),
     saltoPosToVsPos(diag.range.end)
   ),
 })

@@ -16,7 +16,8 @@
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
+  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator,
+  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
 import * as constants from './constants'

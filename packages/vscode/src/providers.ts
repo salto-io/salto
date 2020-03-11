@@ -55,7 +55,7 @@ export const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     await workspace.awaitAllUpdates()
-    const validWorkspace = workspace.getValidCopy()
+    const validWorkspace = await workspace.getValidCopy()
     if (validWorkspace) {
       const saltoPos = vsPosToSaltoPos(position)
       const context = await getPositionContext(
@@ -79,7 +79,7 @@ export const createDefinitionsProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.Definition> => {
-    const validWorkspace = workspace.getValidCopy()
+    const validWorkspace = await workspace.getValidCopy()
     if (validWorkspace) {
       const currentToken = doc.getText(doc.getWordRangeAtPosition(position))
       const context = await getPositionContext(

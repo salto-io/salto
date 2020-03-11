@@ -27,7 +27,10 @@ import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
 import { configSource, ConfigSource } from './config_source'
 import State from './state'
 import { localState } from './local/state'
-import { blueprintsSource, BP_EXTENSION, BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
+import {
+  blueprintsSource as buildBlueprintSource, BP_EXTENSION, BlueprintsSource,
+  Blueprint, RoutingMode,
+} from './blueprints/blueprints_source'
 import { parseResultCache } from './cache'
 import { localDirectoryStore } from './local/dir_store'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
@@ -92,7 +95,7 @@ const loadBlueprintSource = (
     (dirParh: string) => !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirParh),
   )
   const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
-  return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
+  return buildBlueprintSource(blueprintsStore, parseResultCache(cacheStore))
 }
 
 const loadMultiEnvSource = (config: Config): BlueprintsSource => {
@@ -130,15 +133,25 @@ export class Workspace {
   private readonly blueprintsSource: BlueprintsSource
   private mergedStatePromise?: Promise<MergedState>
 
-  constructor(public config: Config) {
-    this.blueprintsSource = _.isEmpty(config.envs)
+  constructor(
+    public config: Config,
+    blueprintsSource? : BlueprintsSource,
+    state?: State,
+    adapterCredentials?: ConfigSource,
+    adapterConfig: ConfigSource = configSource(
+      localDirectoryStore(getAdaptersConfigDir(config.baseDir))
+    )
+  ) {
+    this.blueprintsSource = blueprintsSource || (_.isEmpty(config.envs)
       ? loadBlueprintSource(config.baseDir, config.localStorage)
-      : loadMultiEnvSource(config)
-    this.state = localState(currentEnvConfig(config).stateLocation)
-    this.adapterCredentials = configSource(
+      : loadMultiEnvSource(config))
+    this.state = state || localState(currentEnvConfig(config).stateLocation)
+    this.adapterCredentials = adapterCredentials || configSource(
       localDirectoryStore(currentEnvConfig(config).credentialsLocation),
     )
-    this.adapterConfig = configSource(localDirectoryStore(getAdaptersConfigDir(config.baseDir)))
+    this.adapterConfig = adapterConfig || configSource(
+      localDirectoryStore(getAdaptersConfigDir(config.baseDir))
+    )
   }
 
   static async init(
@@ -297,5 +310,12 @@ export class Workspace {
   async flush(): Promise<void> {
     await this.state.flush()
     await this.blueprintsSource.flush()
+  }
+
+  clone(): Workspace {
+    return new Workspace(
+      this.config,
+      this.blueprintsSource.clone()
+    )
   }
 }

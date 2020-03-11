@@ -44,4 +44,5 @@ export const createMockBlueprintSource = (
     filename => Promise.resolve(blueprints[filename] || [])
   ),
   getElementBlueprints: jest.fn().mockImplementation(() => Promise.resolve([path.join('test', 'path.bp')])),
+  clone: jest.fn().mockImplementation(() => Promise.resolve()),
 })

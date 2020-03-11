@@ -32,7 +32,7 @@ import { UnresolvedReferenceValidationError, InvalidValueValidationError } from 
 import * as dump from '../../src/parser/dump'
 import * as config from '../../src/workspace/config'
 
-import { mockBpsStore } from '../common/blueprint_store'
+import { mockBpsStore, mockParseCache } from '../common/blueprint_store'
 
 const changedBP = {
   filename: 'file.bp',
@@ -68,12 +68,7 @@ const createWorkspace = (bpStore?: DirectoryStore): Workspace => {
     },
     currentEnv: 'default',
   })
-  _.set(ws, 'blueprintsSource', blueprintsSource(bpStore || mockBpsStore(),
-    {
-      put: () => Promise.resolve(),
-      get: () => Promise.resolve(undefined),
-      flush: () => Promise.resolve(undefined),
-    }))
+  _.set(ws, 'blueprintsSource', blueprintsSource(bpStore || mockBpsStore(), mockParseCache()))
   return ws
 }
 

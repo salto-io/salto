@@ -30,13 +30,15 @@ type FileMap = {
   [key: string]: File
 }
 
-export const localDirectoryStore = (
+const buildLocalDirectoryStore = (
   baseDir: string,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
+  initUpdated?: FileMap,
+  initDeleted? : string[]
 ): DirectoryStore => {
-  let updated: FileMap = {}
-  let deleted: string[] = []
+  let updated: FileMap = initUpdated || {}
+  let deleted: string[] = initDeleted || []
 
   const getAbsFileName = (filename: string): string => path.resolve(baseDir, filename)
 
@@ -133,5 +135,20 @@ export const localDirectoryStore = (
 
     getFiles: async (filenames: string[]): Promise<(File | undefined) []> =>
       withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY),
+
+
+    clone: () => buildLocalDirectoryStore(
+      baseDir,
+      fileFilter,
+      directoryFilter,
+      _.cloneDeep(updated),
+      _.cloneDeep(deleted)
+    ),
   }
 }
+
+export const localDirectoryStore = (
+  baseDir: string,
+  fileFilter?: string,
+  directoryFilter?: (path: string) => boolean,
+): DirectoryStore => buildLocalDirectoryStore(baseDir, fileFilter, directoryFilter)

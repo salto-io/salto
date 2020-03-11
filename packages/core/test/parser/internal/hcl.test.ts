@@ -293,7 +293,6 @@ describe('HCL parse', () => {
         end: { byte: 78, col: 27, line: 4 },
       })
     })
-
   })
 
   describe('limit error recovery attempts', () => {
@@ -310,8 +309,8 @@ describe('HCL parse', () => {
     })
 
     it('should stop parsing on fatal error', () => {
-      expect(body.blocks).toHaveLength(1)
-      expect(errors).toHaveLength(1)
+      expect(body.blocks).toHaveLength(0)
+      expect(errors.length).toBeGreaterThan(0)
     })
   })
 })

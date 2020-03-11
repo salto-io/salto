@@ -22,7 +22,6 @@ module.exports = deepMerge(
     displayName: 'salesforce-adapter',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
-      '!<rootDir>/dist/src/tools/**', // At the moment we do not cover the tools
       '!<rootDir>/dist/index.js',
     ],
     testEnvironment: process.env.RUN_E2E_TESTS ? './dist/e2e_test/jest_environment' : undefined,

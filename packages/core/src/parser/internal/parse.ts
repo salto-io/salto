@@ -23,7 +23,9 @@ const grammar = require('./hcl')
 
 
 const MAX_FILE_ERRORS = 20
-const LONGEST_EMPTY_NON_LITERAL_LENGTH = 3
+// This value was set for the longest minimal length of an empty non-literal
+// in the grammer.
+const MAX_ALLOWED_DYNAMIC_TOKEN = 3
 const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
   const symbol = state.rule.symbols[state.dot]
   return (typeof symbol === 'object' && symbol.type && symbol.type !== 'wildcard')
@@ -114,7 +116,7 @@ const restoreOrigRanges = (
 )
 
 const hasFatalError = (src: string): boolean => src.includes(
-  _.repeat(WILDCARD, LONGEST_EMPTY_NON_LITERAL_LENGTH)
+  _.repeat(WILDCARD, MAX_ALLOWED_DYNAMIC_TOKEN)
 )
 
 export const parseBuffer = (

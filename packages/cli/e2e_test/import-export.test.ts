@@ -17,14 +17,18 @@ import path from 'path'
 import tmp from 'tmp-promise'
 import {
   dumpCsv, file, readAllCsvContents, SALTO_HOME_VAR,
+  Telemetry, telemetrySender, configFromDisk,
 } from '@salto-io/core'
 import { Spinner } from '../src/types'
-import { MockWriteStream, mockSpinnerCreator } from '../test/mocks'
+import {
+  MockWriteStream, mockSpinnerCreator,
+} from '../test/mocks'
 import { command as fetch } from '../src/commands/fetch'
 import { command as importCommand } from '../src/commands/import'
 import { command as exportCommand } from '../src/commands/export'
 import { command as deleteCommand } from '../src/commands/delete'
 import Prompts from '../src/prompts'
+import { getCliTelemetry } from '../src/telemetry'
 import { runSalesforceLogin } from './helpers/workspace'
 
 const { copyFile, rm, mkdirp, exists } = file
@@ -35,6 +39,7 @@ let homePath: string
 let fetchOutputDir: string
 let exportOutputDir: string
 let exportOutputFullPath: string
+let telemetry: Telemetry
 
 const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
 const envConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/env.bp`
@@ -42,7 +47,8 @@ const exportFile = 'export_test.csv'
 const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 
 describe('Data migration operations E2E', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
+    telemetry = telemetrySender({ ...(await configFromDisk()).telemetry, enabled: true }, { installationID: 'e2e-installationID', app: 'e2e' })
     homePath = tmp.dirSync().name
     fetchOutputDir = `${homePath}/salesforce/BP/test_import`
     exportOutputDir = `${homePath}/salesforce/tmp/export`
@@ -51,6 +57,7 @@ describe('Data migration operations E2E', () => {
     process.env[SALTO_HOME_VAR] = homePath
   })
   afterAll(async () => {
+    await telemetry.stop(1000)
     await rm(homePath)
   })
 
@@ -68,30 +75,44 @@ describe('Data migration operations E2E', () => {
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
       await copyFile(envConfigFile, `${fetchOutputDir}/envs/default/salto.config/config.bp`)
       await runSalesforceLogin(fetchOutputDir)
-      await fetch(fetchOutputDir, true, false, cliOutput, spinnerCreator, services, false).execute()
+      await fetch(
+        fetchOutputDir, true, false,
+        telemetry, cliOutput,
+        spinnerCreator, services, false
+      ).execute()
     })
 
     it('should save the data in csv file when running export', async () => {
-      await exportCommand(fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, cliOutput).execute()
+      await exportCommand(
+        fetchOutputDir, sfLeadObjectName,
+        exportOutputFullPath, getCliTelemetry(telemetry, 'export'), cliOutput
+      ).execute()
       expect(await exists(exportOutputFullPath)).toBe(true)
       const exportObjects = await readAllCsvContents(exportOutputFullPath)
       expect(exportObjects.length).toBeGreaterThan(0)
     })
 
     it('should succeed when running import from a CSV file', async () => {
-      await importCommand(fetchOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
+      await importCommand(
+        fetchOutputDir, sfLeadObjectName,
+        dataFilePath, getCliTelemetry(telemetry, 'import'), cliOutput,
+      ).execute()
       expect(cliOutput.stdout.content).toContain(Prompts.IMPORT_ENDED_SUMMARY(2, 0))
     })
 
     it('should succeed When running delete instances read from a CSV file', async () => {
       const dataWithIdFileName = 'importWithIds.csv'
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
-      await importCommand(fetchOutputDir, sfLeadObjectName, dataFilePath, cliOutput).execute()
+      await importCommand(
+        fetchOutputDir, sfLeadObjectName,
+        dataFilePath, getCliTelemetry(telemetry, 'import'), cliOutput,
+      ).execute()
 
       // Replicate the file with the Ids of the created items
-      await exportCommand(fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, cliOutput).execute()
+      await exportCommand(
+        fetchOutputDir, sfLeadObjectName,
+        exportOutputFullPath, getCliTelemetry(telemetry, 'fetch'), cliOutput,
+      ).execute()
       const exportObjects = await readAllCsvContents(exportOutputFullPath)
       const clark = exportObjects.find(object => object.FirstName === 'Clark' && object.LastName === 'Kent')
       const bruce = exportObjects.find(object => object.FirstName === 'Bruce' && object.LastName === 'Wayne')
@@ -103,7 +124,7 @@ describe('Data migration operations E2E', () => {
       await dumpCsv(deletionObjects, updatedDataFilePath, false)
 
       await deleteCommand(fetchOutputDir, sfLeadObjectName,
-        updatedDataFilePath, cliOutput).execute()
+        updatedDataFilePath, getCliTelemetry(telemetry, 'delete'), cliOutput).execute()
       expect(cliOutput.stdout.content).toContain(Prompts.DELETE_ENDED_SUMMARY(2, 0))
     })
   })
@@ -119,23 +140,27 @@ describe('Data migration operations E2E', () => {
     })
 
     it('should fail when running export', async () => {
-      const command = exportCommand(fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, cliOutput)
+      const command = exportCommand(
+        fetchOutputDir, sfLeadObjectName,
+        exportOutputFullPath, getCliTelemetry(telemetry, 'export'), cliOutput,
+      )
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
       expect(await exists(exportOutputFullPath)).toBe(false)
     })
 
     it('should fail when running import from a CSV file', async () => {
-      const command = importCommand(fetchOutputDir, sfLeadObjectName,
-        dataFilePath, cliOutput)
+      const command = importCommand(
+        fetchOutputDir, sfLeadObjectName,
+        dataFilePath, getCliTelemetry(telemetry, 'import'), cliOutput,
+      )
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
     })
 
     it('should fail when running delete instances read from a CSV file', async () => {
       const command = deleteCommand(fetchOutputDir, sfLeadObjectName,
-        dataFilePath, cliOutput)
+        dataFilePath, getCliTelemetry(telemetry, 'delete'), cliOutput)
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
     })

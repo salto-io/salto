@@ -14,9 +14,16 @@
 * limitations under the License.
 */
 import { command } from '../../src/commands/preview'
-import { preview, MockWriteStream, getWorkspaceErrors, mockSpinnerCreator, mockLoadConfig, transformToWorkspaceError } from '../mocks'
-import { SpinnerCreator, Spinner, CliExitCode } from '../../src/types'
+import {
+  preview, MockWriteStream, getWorkspaceErrors,
+  mockSpinnerCreator, mockLoadConfig,
+  transformToWorkspaceError, getMockTelemetry,
+  MockTelemetry,
+} from '../mocks'
+import { SpinnerCreator, Spinner, CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+
 
 const mockPreview = preview
 jest.mock('@salto-io/core', () => ({
@@ -24,8 +31,18 @@ jest.mock('@salto-io/core', () => ({
   preview: jest.fn().mockImplementation(() => mockPreview()),
 }))
 jest.mock('../../src/workspace')
+
+const commandName = 'preview'
+const eventsNames = {
+  success: buildEventName(commandName, 'success'),
+  start: buildEventName(commandName, 'start'),
+  failure: buildEventName(commandName, 'failure'),
+}
+
 describe('preview command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  let mockTelemetry: MockTelemetry
+  let mockCliTelemetry: CliTelemetry
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
@@ -33,38 +50,47 @@ describe('preview command', () => {
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
   mockLoadWorkspace.mockImplementation(baseDir => {
     if (baseDir === 'errdir') {
-      return { workspace: {
-        hasErrors: () => true,
-        errors: {
-          strings: () => ['Error', 'Error'],
+      return {
+        workspace: {
+          hasErrors: () => true,
+          errors: {
+            strings: () => ['Error', 'Error'],
+          },
+          getWorkspaceErrors,
+          config: mockLoadConfig(baseDir),
+          transformToWorkspaceError,
         },
-        getWorkspaceErrors,
+        errored: true,
+      }
+    }
+    return {
+      workspace: {
+        hasErrors: () => false,
         config: mockLoadConfig(baseDir),
         transformToWorkspaceError,
       },
-      errored: true }
+      errored: false,
     }
-    return { workspace: {
-      hasErrors: () => false,
-      config: mockLoadConfig(baseDir),
-      transformToWorkspaceError,
-    },
-    errored: false }
   })
 
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
+    mockTelemetry = getMockTelemetry()
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'preview')
     spinners = []
     spinnerCreator = mockSpinnerCreator(spinners)
   })
 
   describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
-      await command('', cliOutput, spinnerCreator, services).execute()
+      await command('', mockCliTelemetry, cliOutput, spinnerCreator, services).execute()
     })
 
     it('should load the workspace', async () => {
       expect(mockLoadWorkspace).toHaveBeenCalled()
+      expect(mockTelemetry.getEvents()).toHaveLength(2)
+      expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
+      expect(mockTelemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
     })
 
     it('should print summary', async () => {
@@ -92,11 +118,13 @@ describe('preview command', () => {
   describe('when the workspace fails to load', () => {
     let result: number
     beforeEach(async () => {
-      result = await command('errdir', cliOutput, spinnerCreator, services).execute()
+      result = await command('errdir', mockCliTelemetry, cliOutput, spinnerCreator, services).execute()
     })
 
     it('should fail', () => {
       expect(result).toBe(CliExitCode.AppError)
+      expect(mockTelemetry.getEvents()).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
     })
 
     it('should not start the preview spinner', () => {

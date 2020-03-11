@@ -16,25 +16,33 @@
 import wu from 'wu'
 import { importFromCsvFile, file } from '@salto-io/core'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
+import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from '../types'
 import Prompts from '../prompts'
-import { loadWorkspace } from '../workspace'
+import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { getCliTelemetry } from '../telemetry'
+
 
 export const command = (
   workingDir: string,
   typeName: string,
   inputPath: string,
+  cliTelemetry: CliTelemetry,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     if (!(await file.exists(inputPath))) {
       stderr.write(Prompts.COULD_NOT_FIND_FILE)
+      cliTelemetry.failure()
       return CliExitCode.AppError
     }
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
+      cliTelemetry.failure()
       return CliExitCode.AppError
     }
+
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    cliTelemetry.start(workspaceTags)
     const result = await importFromCsvFile(
       typeName,
       inputPath,
@@ -44,22 +52,26 @@ export const command = (
     stdout.write(Prompts.IMPORT_ENDED_SUMMARY(result.successfulRows, result.failedRows))
     // Print the unique errors encountered during the import
     if (result.errors.size > 0) {
+      cliTelemetry.errors(result.errors.size, workspaceTags)
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
     }
     // If any rows failed, return error exit code
     if (result.failedRows > 0) {
+      cliTelemetry.failedRows(result.failedRows, workspaceTags)
+      cliTelemetry.failure(workspaceTags)
       return CliExitCode.AppError
     }
     // Otherwise return success
     stdout.write(Prompts.IMPORT_FINISHED_SUCCESSFULLY)
+    cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   },
 })
 
 type ImportArgs = {
-    'type-name': string
-    'input-path': string
-  }
+  'type-name': string
+  'input-path': string
+}
 type ImportParsedCliInput = ParsedCliInput<ImportArgs>
 
 const importBuilder = createCommandBuilder({
@@ -79,7 +91,13 @@ const importBuilder = createCommandBuilder({
   },
 
   async build(input: ImportParsedCliInput, output: CliOutput) {
-    return command('.', input.args['type-name'], input.args['input-path'], output)
+    return command(
+      '.',
+      input.args['type-name'],
+      input.args['input-path'],
+      getCliTelemetry(input.telemetry, 'import'),
+      output,
+    )
   },
 })
 

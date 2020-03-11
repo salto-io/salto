@@ -18,21 +18,29 @@ import wu from 'wu'
 import { exportToCsv } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
-import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
-import { loadWorkspace } from '../workspace'
+import {
+  ParsedCliInput, CliCommand,
+  CliOutput, CliExitCode, CliTelemetry,
+} from '../types'
+import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { getCliTelemetry } from '../telemetry'
 
 export const command = (
   workingDir: string,
   typeName: string,
   outputPath: string,
+  cliTelemetry: CliTelemetry,
   { stdout, stderr }: CliOutput
-):
-CliCommand => ({
+): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
+      cliTelemetry.failure()
       return CliExitCode.AppError
     }
+
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    cliTelemetry.start(workspaceTags)
 
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
@@ -41,9 +49,11 @@ CliCommand => ({
     stdout.write(Prompts.EXPORT_ENDED_SUMMARY(result.successfulRows, typeName, outputPath))
     if (result.errors.size > 0) {
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
+      cliTelemetry.failure(workspaceTags)
       return CliExitCode.AppError
     }
     stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
+    cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   },
 })
@@ -51,7 +61,7 @@ CliCommand => ({
 type ExportArgs = {
   'type-name': string
   'output-path': string
- }
+}
 type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
 const exportBuilder = createCommandBuilder({
@@ -76,7 +86,13 @@ const exportBuilder = createCommandBuilder({
   },
 
   async build(input: ExportParsedCliInput, output: CliOutput) {
-    return command('.', input.args['type-name'], input.args['output-path'], output)
+    return command(
+      '.',
+      input.args['type-name'],
+      input.args['output-path'],
+      getCliTelemetry(input.telemetry, 'export'),
+      output,
+    )
   },
 })
 

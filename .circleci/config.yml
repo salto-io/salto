@@ -206,7 +206,11 @@ jobs:
           environment:
             RUN_E2E_TESTS: '1'
             SALTO_LOG_LEVEL: 'warn'
-            SALTO_TELEMETRY_DISABLE: '1'
+            # enable telemetry for end2end so we can count more events
+            # webpack configuration is irrelevant in this case and therefore
+            # we explicitly configure it in here
+            SALTO_TELEMETRY_DISABLE: '0'
+            SALTO_TELEMETRY_URL: 'https://telemetry.salto.io'
             JEST_JUNIT_OUTPUT: 'reports/e2e/test-results.xml'
 
       - store_test_results:

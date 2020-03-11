@@ -20,7 +20,8 @@ import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import { createCommandBuilder } from '../command_builder'
 import {
-  CliCommand, CliOutput, ParsedCliInput, WriteStream, CliExitCode, SpinnerCreator,
+  CliCommand, CliOutput, ParsedCliInput, WriteStream,
+  CliExitCode, SpinnerCreator, CliTelemetry,
 } from '../types'
 import {
   formatActionStart, formatItemDone,
@@ -28,8 +29,9 @@ import {
   formatItemError, deployPhaseEpilogue,
 } from '../formatter'
 import { shouldDeploy } from '../callbacks'
-import { loadWorkspace, updateWorkspace } from '../workspace'
+import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
+import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
 
@@ -45,17 +47,20 @@ export class DeployCommand implements CliCommand {
   readonly stdout: WriteStream
   readonly stderr: WriteStream
   private actions: Map<string, Action>
+  private cliTelemetry: CliTelemetry
 
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
     readonly inputServices: string[],
+    cliTelemetry: CliTelemetry,
     { stdout, stderr }: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
   ) {
     this.stdout = stdout
     this.stderr = stderr
     this.actions = new Map<string, Action>()
+    this.cliTelemetry = cliTelemetry
   }
 
   private endAction(itemName: string): void {
@@ -118,9 +123,13 @@ export class DeployCommand implements CliCommand {
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout }, this.spinnerCreator)
     if (errored) {
+      this.cliTelemetry.failure()
       return CliExitCode.AppError
     }
 
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+
+    this.cliTelemetry.start(workspaceTags)
     const result = await deploy(
       workspace,
       shouldDeploy(this.stdout, workspace),
@@ -135,14 +144,28 @@ export class DeployCommand implements CliCommand {
     this.stdout.write(deployPhaseEpilogue(nonErroredActions.length, result.errors.length))
     this.stdout.write(EOL)
 
+    this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
+    this.cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
+
+    let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
     if (!_.isUndefined(result.changes)) {
       const changes = [...result.changes]
-      return await updateWorkspace(workspace, { stderr: this.stderr, stdout: this.stdout },
-        changes)
-        ? CliExitCode.Success
-        : CliExitCode.AppError
+      if (!await updateWorkspace(
+        workspace,
+        { stderr: this.stderr, stdout: this.stdout },
+        changes
+      )) {
+        cliExitCode = CliExitCode.AppError
+      }
     }
-    return result.success ? CliExitCode.Success : CliExitCode.AppError
+
+    if (cliExitCode === CliExitCode.Success) {
+      this.cliTelemetry.success(workspaceTags)
+    } else {
+      this.cliTelemetry.failure(workspaceTags)
+    }
+
+    return cliExitCode
   }
 }
 
@@ -173,7 +196,14 @@ const deployBuilder = createCommandBuilder({
     output: CliOutput,
     spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
-    return new DeployCommand('.', input.args.force, input.args.services, output, spinnerCreator)
+    return new DeployCommand(
+      '.',
+      input.args.force,
+      input.args.services,
+      getCliTelemetry(input.telemetry, 'deploy'),
+      output,
+      spinnerCreator,
+    )
   },
 })
 

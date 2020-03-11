@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { streams } from '@salto-io/lowerdash'
-import { Telemetry } from '@salto-io/core'
+import { Telemetry, Tags } from '@salto-io/core'
 import yargs from 'yargs'
 
 export type WriteStream = streams.MaybeTty & {
@@ -71,4 +71,32 @@ export interface ParsedCliInput<TParsedArgs = {}> extends Omit<CliInput, 'args'>
 
 export interface CliCommand {
   execute(): Promise<CliExitCode>
+}
+
+export type TelemetryEventNames = {
+  start: string
+  failure: string
+  success: string
+  mergeErrors: string
+  changes: string
+  changesToApply: string
+  errors: string
+  failedRows: string
+  actionsFailure: string
+  actionsSuccess: string
+}
+
+export type CliTelemetry = {
+  start(tags?: Tags): void
+  failure(tags?: Tags): void
+  success(tags?: Tags): void
+  mergeErrors(n: number, tags?: Tags): void
+  changes(n: number, tags?: Tags): void
+  changesToApply(n: number, tags?: Tags): void
+  errors(n: number, tags?: Tags): void
+  failedRows(n: number, tags?: Tags): void
+  actionsSuccess(n: number, tags?: Tags): void
+  actionsFailure(n: number, tags?: Tags): void
+
+  stacktrace(err: Error, tags?: Tags): void
 }

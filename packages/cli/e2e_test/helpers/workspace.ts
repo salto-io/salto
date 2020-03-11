@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { file, Plan, Workspace } from '@salto-io/core'
+import { file, Plan, Workspace, telemetrySender } from '@salto-io/core'
 import _ from 'lodash'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
@@ -31,6 +31,7 @@ import { loadWorkspace } from '../../src/workspace'
 import { DeployCommand } from '../../src/commands/deploy'
 import { command as preview } from '../../src/commands/preview'
 import { command as servicesCommand } from '../../src/commands/services'
+import { getCliTelemetry } from '../../src/telemetry'
 
 export type ReplacementPair = [string | RegExp, string]
 
@@ -41,6 +42,11 @@ const getSalesforceConfig = (): Promise<InstanceElement> =>
 
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
+
+const mockTelemetry = telemetrySender(
+  { url: 'http://0.0.0.0', token: '1234', enabled: false },
+  { installationID: 'abcd', app: 'test' },
+)
 
 export const runSalesforceLogin = async (workspaceDir: string): Promise<void> => {
   await servicesCommand(workspaceDir, 'login', mockCliOutput(), getSalesforceConfig, 'salesforce')
@@ -57,7 +63,16 @@ export const editBlueprint = async (filename: string, replacements: ReplacementP
 }
 
 export const runFetch = async (fetchOutputDir: string): Promise<void> => {
-  await fetch(fetchOutputDir, true, false, mockCliOutput(), mockSpinnerCreator([]), services, false)
+  await fetch(
+    fetchOutputDir,
+    true,
+    false,
+    mockTelemetry,
+    mockCliOutput(),
+    mockSpinnerCreator([]),
+    services,
+    false
+  )
     .execute()
 }
 
@@ -70,6 +85,7 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
     fetchOutputDir,
     false,
     services,
+    getCliTelemetry(mockTelemetry, 'deploy'),
     output,
     mockSpinnerCreator([])
   ).execute()
@@ -83,7 +99,11 @@ export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): P
   if (lastPlan) {
     lastPlan.clear()
   }
-  await preview(fetchOutputDir, mockCliOutput(), mockSpinnerCreator([]), services).execute()
+  await preview(
+    fetchOutputDir, getCliTelemetry(mockTelemetry, 'preview'),
+    mockCliOutput(), mockSpinnerCreator([]),
+    services,
+  ).execute()
   expect(_.isEmpty(lastPlan)).toBeTruthy()
 }
 

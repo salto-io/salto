@@ -16,15 +16,18 @@
 import { preview } from '@salto-io/core'
 import { createCommandBuilder } from '../command_builder'
 import {
-  ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
+  ParsedCliInput, CliCommand, CliOutput,
+  SpinnerCreator, CliExitCode, CliTelemetry,
 } from '../types'
 import { formatExecutionPlan } from '../formatter'
-import { loadWorkspace } from '../workspace'
+import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
+import { getCliTelemetry } from '../telemetry'
 
 export const command = (
   workspaceDir: string,
+  cliTelemetry: CliTelemetry,
   { stdout, stderr }: CliOutput,
   spinnerCreator: SpinnerCreator,
   inputServices: string[]
@@ -33,9 +36,12 @@ export const command = (
     const { workspace, errored } = await loadWorkspace(workspaceDir,
       { stdout, stderr }, spinnerCreator)
     if (errored) {
+      cliTelemetry.failure()
       return CliExitCode.AppError
     }
 
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+    cliTelemetry.start(workspaceTags)
     const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
       const workspacePlan = await preview(workspace, inputServices)
@@ -48,9 +54,12 @@ export const command = (
         planWorkspaceErrors
       )
       stdout.write(formattedPlanOutput)
+      cliTelemetry.success(workspaceTags)
       return CliExitCode.Success
     } catch (e) {
       spinner.fail(Prompts.PREVIEW_FAILED)
+      cliTelemetry.failure(workspaceTags)
+      // not sending a stack event in here because it'll be send in the cli module (the caller)
       throw e
     }
   },
@@ -76,7 +85,13 @@ const previewBuilder = createCommandBuilder({
   filters: [servicesFilter],
 
   async build(input: PreviewParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', output, spinnerCreator, input.args.services)
+    return command(
+      '.',
+      getCliTelemetry(input.telemetry, 'preview'),
+      output,
+      spinnerCreator,
+      input.args.services,
+    )
   },
 })
 

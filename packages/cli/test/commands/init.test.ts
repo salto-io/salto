@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Config, telemetrySender } from '@salto-io/core'
+import { Config } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import { CliTelemetry } from '../../src/types'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -45,25 +47,49 @@ jest.mock('@salto-io/core', () => ({
   ),
 }))
 
-const telemetry = telemetrySender(
-  { url: 'http://0.0.0.0', token: '1234', enabled: false },
-  { installationID: 'abcd', app: 'test' },
-)
+const commandName = 'init'
+const eventsNames = {
+  success: buildEventName(commandName, 'success'),
+  start: buildEventName(commandName, 'start'),
+  failure: buildEventName(commandName, 'failure'),
+}
 
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
+  let mockTelemetry: mocks.MockTelemetry
+  let mockCliTelemetry: CliTelemetry
 
   beforeEach(async () => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockTelemetry = mocks.getMockTelemetry()
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'init')
   })
 
   it('should invoke api\'s init', async () => {
-    await command('test', telemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
+    await command(
+      'test',
+      mockCliTelemetry,
+      cliOutput,
+      mocks.createMockEnvNameGetter(),
+    ).execute()
     expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
+    expect(mockTelemetry.getEvents()).toHaveLength(2)
+    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
   })
 
   it('should print errors', async () => {
-    await command('error', telemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
+    await command(
+      'error',
+      mockCliTelemetry,
+      cliOutput,
+      mocks.createMockEnvNameGetter(),
+    ).execute()
     expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
+    expect(mockTelemetry.getEvents()).toHaveLength(2)
+    expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+    expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
   })
 })

@@ -25,14 +25,17 @@ export class EditorWorkspace {
   private runningSetOperation?: Promise<void>
   private pendingSets: {[key: string]: Blueprint} = {}
   private pendingDeletes: Set<string> = new Set<string>()
-  private lastValidCopy? : Workspace
+  private lastValidCopy? : Promise<Workspace | undefined>
 
   constructor(workspace: Workspace, isCopy = false) {
     this.workspace = workspace
     this.isCopy = isCopy
-    if (!workspace.hasErrors()) {
-      this.lastValidCopy = _.clone(workspace)
-    }
+    this.lastValidCopy = workspace.hasErrors().then(hasErrors => {
+      if (!hasErrors) {
+        return _.clone(workspace)
+      }
+      return undefined
+    })
   }
 
   private hasPendingUpdates(): boolean {
@@ -67,8 +70,9 @@ export class EditorWorkspace {
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
-      if (_.isEmpty((await this.workspace.errors).parse) && !_.isEmpty(this.workspace.elements)) {
-        this.lastValidCopy = _.clone(this.workspace)
+      if (_.isEmpty((await this.workspace.errors).parse)
+        && !_.isEmpty(await this.workspace.elements)) {
+        this.lastValidCopy = Promise.resolve(_.clone(this.workspace))
       }
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
@@ -104,8 +108,9 @@ export class EditorWorkspace {
     return this.triggerAggregatedSetOperation()
   }
 
-  getValidCopy(): EditorWorkspace | undefined {
-    return this.lastValidCopy ? new EditorWorkspace(this.lastValidCopy, true) : undefined
+  async getValidCopy(): Promise<EditorWorkspace | undefined> {
+    const lastValidCopy = await this.lastValidCopy
+    return lastValidCopy ? new EditorWorkspace(lastValidCopy, true) : undefined
   }
 
   hasErrors(): Promise<boolean> {

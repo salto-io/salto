@@ -133,7 +133,7 @@ export interface Config {
 
 type PartialConfig = Required<Pick<Config, 'uid' | 'name' | 'currentEnv'>> & {
   envs: Record<string, {baseDir: string; config: Partial<EnvConfig>}>
-} & { localStorage?: string }
+}
 
 const getLocalStorage = (name: string, uid: string): string =>
   path.join(getSaltoHome(), `${name}-${uid}`)

@@ -16,7 +16,7 @@
 import { Config } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
-import { getEvents } from '../../src/telemetry'
+import { getEvents, getCLITelemetry, CLITelemetry } from '../../src/telemetry'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -51,14 +51,21 @@ const eventsNames = getEvents('init')
 describe('describe command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   let mockTelemetry: mocks.MockTelemetry
+  let mockCLITelemetry: CLITelemetry
 
   beforeEach(async () => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     mockTelemetry = mocks.getMockTelemetry()
+    mockCLITelemetry = getCLITelemetry(mockTelemetry, 'init')
   })
 
   it('should invoke api\'s init', async () => {
-    await command('test', mockTelemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
+    await command(
+      'test',
+      mockCLITelemetry,
+      cliOutput,
+      mocks.createMockEnvNameGetter(),
+    ).execute()
     expect(cliOutput.stdout.content.search('test')).toBeGreaterThan(0)
     expect(mockTelemetry.getEvents()).toHaveLength(2)
     expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toBeUndefined()
@@ -67,7 +74,12 @@ describe('describe command', () => {
   })
 
   it('should print errors', async () => {
-    await command('error', mockTelemetry, cliOutput, mocks.createMockEnvNameGetter()).execute()
+    await command(
+      'error',
+      mockCLITelemetry,
+      cliOutput,
+      mocks.createMockEnvNameGetter(),
+    ).execute()
     expect(cliOutput.stderr.content.search('failed')).toBeGreaterThan(0)
     expect(mockTelemetry.getEvents()).toHaveLength(2)
     expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()

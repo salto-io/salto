@@ -14,36 +14,34 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { init, Telemetry } from '@salto-io/core'
+import { init } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getEnvName } from '../callbacks'
 import { getWorkspaceTelemetryTags } from '../workspace'
-import { getEvents } from '../telemetry'
-
-const telemetryEvents = getEvents('init')
+import { getCLITelemetry, CLITelemetry } from '../telemetry'
 
 export const command = (
   workspaceName: string | undefined,
-  telemetry: Telemetry,
+  cliTelemetry: CLITelemetry,
   { stdout, stderr }: CliOutput,
   getEnvNameCallback: (currentEnvName?: string) => Promise<string>
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    telemetry.sendCountEvent(telemetryEvents.start, 1)
+    cliTelemetry.start()
     try {
       const defaultEnvName = await getEnvNameCallback()
       const workspace = await init(defaultEnvName, workspaceName)
       const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-      telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceTags)
+      cliTelemetry.success(workspaceTags)
       stdout.write(
         Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
       )
     } catch (e) {
       stderr.write(Prompts.initFailed(e.message))
-      telemetry.sendCountEvent(telemetryEvents.failure, 1)
-      telemetry.sendStackEvent(telemetryEvents.failure, e)
+      cliTelemetry.failure()
+      cliTelemetry.stacktrace(e)
       return CliExitCode.AppError
     }
     return CliExitCode.Success
@@ -70,7 +68,12 @@ const initBuilder = createCommandBuilder({
   },
 
   async build(input: InitParsedCliInput, output: CliOutput) {
-    return command(input.args['workspace-name'], input.telemetry, output, getEnvName)
+    return command(
+      input.args['workspace-name'],
+      getCLITelemetry(input.telemetry, 'init'),
+      output,
+      getEnvName,
+    )
   },
 })
 

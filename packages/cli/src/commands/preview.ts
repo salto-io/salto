@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { preview, Telemetry } from '@salto-io/core'
+import { preview } from '@salto-io/core'
 import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput, SpinnerCreator, CliExitCode,
@@ -22,13 +22,11 @@ import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { getEvents } from '../telemetry'
-
-const telemetryEvents = getEvents('preview')
+import { getCLITelemetry, CLITelemetry } from '../telemetry'
 
 export const command = (
   workspaceDir: string,
-  telemetry: Telemetry,
+  cliTelemetry: CLITelemetry,
   { stdout, stderr }: CliOutput,
   spinnerCreator: SpinnerCreator,
   inputServices: string[]
@@ -37,12 +35,12 @@ export const command = (
     const { workspace, errored } = await loadWorkspace(workspaceDir,
       { stdout, stderr }, spinnerCreator)
     if (errored) {
-      telemetry.sendCountEvent(telemetryEvents.failure, 1)
+      cliTelemetry.failure()
       return CliExitCode.AppError
     }
 
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-    telemetry.sendCountEvent(telemetryEvents.start, 1, workspaceTags)
+    cliTelemetry.start(workspaceTags)
     const spinner = spinnerCreator(Prompts.PREVIEW_STARTED, {})
     try {
       const workspacePlan = await preview(workspace, inputServices)
@@ -55,11 +53,11 @@ export const command = (
         planWorkspaceErrors
       )
       stdout.write(formattedPlanOutput)
-      telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceTags)
+      cliTelemetry.success(workspaceTags)
       return CliExitCode.Success
     } catch (e) {
       spinner.fail(Prompts.PREVIEW_FAILED)
-      telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceTags)
+      cliTelemetry.failure(workspaceTags)
       // not sending a stack event in here because it'll be send in the cli module (the caller)
       throw e
     }
@@ -86,7 +84,13 @@ const previewBuilder = createCommandBuilder({
   filters: [servicesFilter],
 
   async build(input: PreviewParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
-    return command('.', input.telemetry, output, spinnerCreator, input.args.services)
+    return command(
+      '.',
+      getCLITelemetry(input.telemetry, 'preview'),
+      output,
+      spinnerCreator,
+      input.args.services,
+    )
   },
 })
 

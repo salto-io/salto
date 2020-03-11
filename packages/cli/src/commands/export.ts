@@ -15,31 +15,29 @@
 */
 import path from 'path'
 import wu from 'wu'
-import { exportToCsv, Telemetry } from '@salto-io/core'
+import { exportToCsv } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
-import { getEvents } from '../telemetry'
-
-const telemetryEvents = getEvents('export')
+import { CLITelemetry, getCLITelemetry } from '../telemetry'
 
 export const command = (
   workingDir: string,
   typeName: string,
   outputPath: string,
-  telemetry: Telemetry,
+  cliTelemetry: CLITelemetry,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
     if (errored) {
-      telemetry.sendCountEvent(telemetryEvents.failure, 1)
+      cliTelemetry.failure()
       return CliExitCode.AppError
     }
 
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-    telemetry.sendCountEvent(telemetryEvents.start, 1, workspaceTags)
+    cliTelemetry.start(workspaceTags)
 
     // Check if output path is provided, otherwise use the template
     // <working dir>/<typeName>_<current timestamp>.csv
@@ -48,11 +46,11 @@ export const command = (
     stdout.write(Prompts.EXPORT_ENDED_SUMMARY(result.successfulRows, typeName, outputPath))
     if (result.errors.size > 0) {
       stdout.write(Prompts.ERROR_SUMMARY(wu(result.errors.values()).toArray()))
-      telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceTags)
+      cliTelemetry.failure(workspaceTags)
       return CliExitCode.AppError
     }
     stdout.write(Prompts.EXPORT_FINISHED_SUCCESSFULLY)
-    telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceTags)
+    cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   },
 })
@@ -85,7 +83,13 @@ const exportBuilder = createCommandBuilder({
   },
 
   async build(input: ExportParsedCliInput, output: CliOutput) {
-    return command('.', input.args['type-name'], input.args['output-path'], input.telemetry, output)
+    return command(
+      '.',
+      input.args['type-name'],
+      input.args['output-path'],
+      getCLITelemetry(input.telemetry, 'export'),
+      output,
+    )
   },
 })
 

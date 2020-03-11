@@ -24,6 +24,6 @@ describe('telemetry event names', () => {
   })
 
   it('should build event name for a some command', () => {
-    expect(buildEventName('some', 'ev')).toEqual('workspace.some.ev')
+    expect(buildEventName('some', 'start')).toEqual('workspace.some.start')
   })
 })

@@ -20,7 +20,7 @@ import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import * as mocks from '../mocks'
-import { getEvents } from '../../src/telemetry'
+import { getEvents, getCLITelemetry, CLITelemetry } from '../../src/telemetry'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -37,6 +37,7 @@ const eventsNames = getEvents('delete')
 describe('delete command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   let mockTelemetry: mocks.MockTelemetry
+  let mockCLITelemetry: CLITelemetry
   const workspaceDir = 'dummy_dir'
   let existsReturn = true
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
@@ -45,6 +46,7 @@ describe('delete command', () => {
     jest.spyOn(file, 'exists').mockImplementation(() => Promise.resolve(existsReturn))
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     mockTelemetry = mocks.getMockTelemetry()
+    mockCLITelemetry = getCLITelemetry(mockTelemetry, 'delete')
     mockLoadWorkspace.mockResolvedValue({
       workspace: mocks.mockLoadWorkspace(workspaceDir),
       errored: false,
@@ -53,7 +55,13 @@ describe('delete command', () => {
 
   it('should run delete successfully if CSV file is found', async () => {
     existsReturn = true
-    await command(workspaceDir, 'mockName', 'mockPath', mockTelemetry, cliOutput).execute()
+    await command(
+      workspaceDir,
+      'mockName',
+      'mockPath',
+      mockCLITelemetry,
+      cliOutput,
+    ).execute()
     expect(deleteFromCsvFile).toHaveBeenCalled()
     expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_ENDED_SUMMARY(5, 0))
     expect(cliOutput.stdout.content).toMatch(Prompts.DELETE_FINISHED_SUCCESSFULLY)
@@ -64,7 +72,13 @@ describe('delete command', () => {
 
   it('should fail if CSV file is not found', async () => {
     existsReturn = false
-    await command(workspaceDir, '', '', mockTelemetry, cliOutput).execute()
+    await command(
+      workspaceDir,
+      '',
+      '',
+      mockCLITelemetry,
+      cliOutput,
+    ).execute()
     expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
     expect(mockTelemetry.getEvents()).toHaveLength(1)
     expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
@@ -81,7 +95,7 @@ describe('delete command', () => {
       workspaceDir,
       'mockName',
       'mockPath',
-      mockTelemetry,
+      mockCLITelemetry,
       cliOutput,
     ).execute()
     expect(result).toBe(CliExitCode.AppError)
@@ -102,7 +116,7 @@ describe('delete command', () => {
       workspaceDir,
       'mockName',
       'mockPath',
-      mockTelemetry,
+      getCLITelemetry(mockTelemetry, 'delete'),
       cliOutput,
     ).execute()
     expect(exitCode).toEqual(CliExitCode.AppError)

@@ -28,6 +28,7 @@ import { loadWorkspace } from '../../src/workspace'
 import { DeployCommand } from '../../src/commands/deploy'
 import { command as preview } from '../../src/commands/preview'
 import { command as servicesCommand } from '../../src/commands/services'
+import { getCLITelemetry } from '../../src/telemetry'
 
 export type ReplacementPair = [string | RegExp, string]
 
@@ -81,7 +82,7 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
     fetchOutputDir,
     false,
     services,
-    mockTelemetry,
+    getCLITelemetry(mockTelemetry, 'deploy'),
     output,
     mockSpinnerCreator([])
   ).execute()
@@ -96,7 +97,7 @@ export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): P
     lastPlan.clear()
   }
   await preview(
-    fetchOutputDir, mockTelemetry,
+    fetchOutputDir, getCLITelemetry(mockTelemetry, 'preview'),
     mockCliOutput(), mockSpinnerCreator([]),
     services,
   ).execute()

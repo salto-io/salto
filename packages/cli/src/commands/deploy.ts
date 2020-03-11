@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { deploy, PlanItem, ItemStatus, Telemetry } from '@salto-io/core'
+import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -30,12 +30,11 @@ import {
 import { shouldDeploy } from '../callbacks'
 import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { getEvents } from '../telemetry'
+import { CLITelemetry, getCLITelemetry } from '../telemetry'
 
 const log = logger(module)
 
 const ACTION_INPROGRESS_INTERVAL = 5000
-const telemetryEvents = getEvents('deploy')
 
 type Action = {
   item: PlanItem
@@ -47,20 +46,20 @@ export class DeployCommand implements CliCommand {
   readonly stdout: WriteStream
   readonly stderr: WriteStream
   private actions: Map<string, Action>
-  private telemetry: Telemetry
+  private cliTelemetry: CLITelemetry
 
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
     readonly inputServices: string[],
-    telemetry: Telemetry,
+    cliTelemetry: CLITelemetry,
     { stdout, stderr }: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
   ) {
     this.stdout = stdout
     this.stderr = stderr
     this.actions = new Map<string, Action>()
-    this.telemetry = telemetry
+    this.cliTelemetry = cliTelemetry
   }
 
   private endAction(itemName: string): void {
@@ -123,13 +122,13 @@ export class DeployCommand implements CliCommand {
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout }, this.spinnerCreator)
     if (errored) {
-      this.telemetry.sendCountEvent(telemetryEvents.failure, 1)
+      this.cliTelemetry.failure()
       return CliExitCode.AppError
     }
 
-    const workspaceEventTags = await getWorkspaceTelemetryTags(workspace)
+    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
-    this.telemetry.sendCountEvent(telemetryEvents.start, 1, workspaceEventTags)
+    this.cliTelemetry.start(workspaceTags)
     const result = await deploy(
       workspace,
       shouldDeploy(this.stdout, workspace),
@@ -144,12 +143,8 @@ export class DeployCommand implements CliCommand {
     this.stdout.write(deployPhaseEpilogue(nonErroredActions.length, result.errors.length))
     this.stdout.write(EOL)
 
-    this.telemetry.sendCountEvent(
-      telemetryEvents.actionsSuccess, nonErroredActions.length, workspaceEventTags
-    )
-    this.telemetry.sendCountEvent(
-      telemetryEvents.actionsFailure, result.errors.length, workspaceEventTags
-    )
+    this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
+    this.cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
 
     let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
     if (!_.isUndefined(result.changes)) {
@@ -164,9 +159,9 @@ export class DeployCommand implements CliCommand {
     }
 
     if (cliExitCode === CliExitCode.Success) {
-      this.telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceEventTags)
+      this.cliTelemetry.success(workspaceTags)
     } else {
-      this.telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceEventTags)
+      this.cliTelemetry.failure(workspaceTags)
     }
 
     return cliExitCode
@@ -200,7 +195,14 @@ const deployBuilder = createCommandBuilder({
     output: CliOutput,
     spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
-    return new DeployCommand('.', input.args.force, input.args.services, input.telemetry, output, spinnerCreator)
+    return new DeployCommand(
+      '.',
+      input.args.force,
+      input.args.services,
+      getCLITelemetry(input.telemetry, 'deploy'),
+      output,
+      spinnerCreator,
+    )
   },
 })
 

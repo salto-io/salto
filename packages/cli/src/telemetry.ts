@@ -15,40 +15,109 @@
 * limitations under the License.
 */
 
+import { Telemetry, Tags } from '@salto-io/core'
 import { telemetryEventNames } from './types'
 
 const SEPARATOR = '.'
 const WORKSPACE = 'workspace'
 
-const baseEventActions: telemetryEventNames = {
-  failure: 'failure',
-  success: 'success',
-  start: 'start',
-  mergeErrors: 'merge_errors',
-  changes: 'changes',
-  changesToApply: 'changes_to_apply',
-  errors: 'errors',
-  failedRows: 'failed_rows',
-  actionsFailure: ['actions', 'failure'].join(SEPARATOR),
-  actionsSuccess: ['actions', 'success'].join(SEPARATOR),
-}
-
 export const buildEventName = (
   command: string,
-  action: string,
+  action: keyof telemetryEventNames,
 ): string => [WORKSPACE, command, action].join(SEPARATOR)
 
 export const getEvents = (
   commandName: string,
 ): telemetryEventNames => ({
-  start: buildEventName(commandName, baseEventActions.start),
-  success: buildEventName(commandName, baseEventActions.success),
-  failure: buildEventName(commandName, baseEventActions.failure),
-  mergeErrors: buildEventName(commandName, baseEventActions.mergeErrors),
-  changes: buildEventName(commandName, baseEventActions.changes),
-  changesToApply: buildEventName(commandName, baseEventActions.changesToApply),
-  errors: buildEventName(commandName, baseEventActions.errors),
-  failedRows: buildEventName(commandName, baseEventActions.failedRows),
-  actionsSuccess: buildEventName(commandName, baseEventActions.actionsSuccess),
-  actionsFailure: buildEventName(commandName, baseEventActions.actionsFailure),
+  start: buildEventName(commandName, 'start'),
+  success: buildEventName(commandName, 'success'),
+  failure: buildEventName(commandName, 'failure'),
+  mergeErrors: buildEventName(commandName, 'mergeErrors'),
+  changes: buildEventName(commandName, 'changes'),
+  changesToApply: buildEventName(commandName, 'changesToApply'),
+  errors: buildEventName(commandName, 'errors'),
+  failedRows: buildEventName(commandName, 'failedRows'),
+  actionsSuccess: buildEventName(commandName, 'actionsSuccess'),
+  actionsFailure: buildEventName(commandName, 'actionsFailure'),
 })
+
+export type CLITelemetry = {
+  start(tags?: Tags): void
+  failure(tags?: Tags): void
+  success(tags?: Tags): void
+  mergeErrors(n: number, tags?: Tags): void
+  changes(n: number, tags?: Tags): void
+  changesToApply(n: number, tags?: Tags): void
+  errors(n: number, tags?: Tags): void
+  failedRows(n: number, tags?: Tags): void
+  actionsSuccess(n: number, tags?: Tags): void
+  actionsFailure(n: number, tags?: Tags): void
+
+  stacktrace(err: Error, tags?: Tags): void
+}
+
+export const getCLITelemetry = (sender: Telemetry, command: string): CLITelemetry => {
+  const telemetryEvents = getEvents(command)
+
+  const sendCount = (name: string, value: number, tags: Tags): void => {
+    sender.sendCountEvent(name, value, tags)
+  }
+
+  const start = (tags: Tags): void => {
+    sendCount(telemetryEvents.start, 1, tags)
+  }
+
+  const failure = (tags = {}): void => {
+    sendCount(telemetryEvents.failure, 1, tags)
+  }
+
+  const success = (tags = {}): void => {
+    sendCount(telemetryEvents.success, 1, tags)
+  }
+
+  const mergeErrors = (numErrors: number, tags = {}): void => {
+    sendCount(telemetryEvents.mergeErrors, numErrors, tags)
+  }
+
+  const changes = (numChanges: number, tags = {}): void => {
+    sendCount(telemetryEvents.changes, numChanges, tags)
+  }
+
+  const changesToApply = (numChanges: number, tags = {}): void => {
+    sendCount(telemetryEvents.changesToApply, numChanges, tags)
+  }
+
+  const errors = (numErrors: number, tags = {}): void => {
+    sendCount(telemetryEvents.errors, numErrors, tags)
+  }
+
+  const failedRows = (numFailedRows: number, tags = {}): void => {
+    sendCount(telemetryEvents.failedRows, numFailedRows, tags)
+  }
+
+  const actionsSuccess = (numActions: number, tags = {}): void => {
+    sendCount(telemetryEvents.actionsSuccess, numActions, tags)
+  }
+
+  const actionsFailure = (numActions: number, tags = {}): void => {
+    sendCount(telemetryEvents.actionsFailure, numActions, tags)
+  }
+
+  const stacktrace = (err: Error, tags = {}): void => {
+    sender.sendStackEvent(telemetryEvents.failure, err, tags)
+  }
+
+  return {
+    start,
+    failure,
+    success,
+    mergeErrors,
+    changes,
+    changesToApply,
+    errors,
+    failedRows,
+    actionsSuccess,
+    actionsFailure,
+    stacktrace,
+  }
+}

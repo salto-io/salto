@@ -36,10 +36,9 @@ import { getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { getEvents } from '../telemetry'
+import { getCLITelemetry, CLITelemetry } from '../telemetry'
 
 const log = logger(module)
-const telemetryEvents = getEvents('fetch')
 
 type approveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
@@ -49,14 +48,14 @@ type approveChangesFunc = (
 export const fetchCommand = async (
   {
     workspace, force, interactive, strict,
-    inputServices, telemetry, output, fetch,
+    inputServices, cliTelemetry, output, fetch,
     getApprovedChanges,
   }: {
     workspace: Workspace
     force: boolean
     interactive: boolean
     strict?: boolean
-    telemetry: Telemetry
+    cliTelemetry: CLITelemetry
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
@@ -77,7 +76,7 @@ export const fetchCommand = async (
     })
   }
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-  telemetry.sendCountEvent(telemetryEvents.start, 1, workspaceTags)
+  cliTelemetry.start(workspaceTags)
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
   fetchProgress.on('adaptersDidInitialize', () => {
     outputLine(formatFetchHeader())
@@ -108,7 +107,7 @@ export const fetchCommand = async (
   )
   if (fetchResult.success === false) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
-    telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceTags)
+    cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
 
@@ -117,23 +116,19 @@ export const fetchCommand = async (
   // and only print the merge errors
   if (!_.isEmpty(fetchResult.mergeErrors)) {
     log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
-    telemetry.sendCountEvent(
-      telemetryEvents.mergeErrors,
-      fetchResult.mergeErrors.length,
-      workspaceTags,
-    )
+    cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
-  telemetry.sendCountEvent(telemetryEvents.changes, changes.length, workspaceTags)
+  cliTelemetry.changes(changes.length, workspaceTags)
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const changesToApply = force || (await workspace.isEmpty())
     ? changes
     : await getApprovedChanges(changes, interactive)
 
-  telemetry.sendCountEvent(telemetryEvents.changesToApply, changesToApply.length, workspaceTags)
+  cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
   const updatingWsEmitter = new StepEmitter()
   fetchProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
   const updatingWsSucceeded = await updateWorkspace(workspace, output, changesToApply, strict)
@@ -144,9 +139,9 @@ export const fetchCommand = async (
     updatingWsEmitter.emit('failed')
   }
   if (updatingWsSucceeded) {
-    telemetry.sendCountEvent(telemetryEvents.success, 1, workspaceTags)
+    cliTelemetry.success(workspaceTags)
   } else {
-    telemetry.sendCountEvent(telemetryEvents.failure, 1, workspaceTags)
+    cliTelemetry.failure(workspaceTags)
   }
   return updatingWsSucceeded
     ? CliExitCode.Success
@@ -167,9 +162,10 @@ export const command = (
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
       interactive}, strict=${strict}]`)
 
+    const cliTelemetry = getCLITelemetry(telemetry, 'fetch')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output, spinnerCreator)
     if (errored) {
-      telemetry.sendCountEvent(telemetryEvents.failure, 1)
+      cliTelemetry.failure()
       return CliExitCode.AppError
     }
     return fetchCommand({
@@ -177,7 +173,7 @@ export const command = (
       force,
       interactive,
       inputServices,
-      telemetry,
+      cliTelemetry,
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,

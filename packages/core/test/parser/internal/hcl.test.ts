@@ -321,7 +321,8 @@ describe('HCL dump', () => {
             mixedfunc: new FunctionExpression('mixtush', [false, [1, 2, 3], '4rlz']),
             lastfunc: new FunctionExpression('severalush', [false, 1, '4rlz']),
             nestedfunc: new FunctionExpression('nestush', [false, [1, 2, [3, 4]], '4rlz']),
-            superdeepnest: new FunctionExpression('nestbaabuabua', [false, [1, 2, [3, [4, 5]]], '4rlz']),
+            superdeepnest: new FunctionExpression('nestbaabuabua', [false, [1, 2, [3, [4, 5, { dsa: 321 }]]], '4rlz']),
+            objinfunc: new FunctionExpression('objfunc', [{ aaa: 123 }]),
             nested: {
               val: 'so deep',
             },
@@ -355,24 +356,20 @@ describe('HCL dump', () => {
     // eslint-disable-next-line no-template-curly-in-string
     expect(serialized).toMatch('exp = "test ${ a.b } test"')
   })
-  it('dumps functions with single parameters', () => {
-    expect(serialized).toMatch('somefunc = funcush("ZOMG")')
-  })
-  it('dumps functions with list', () => {
-    expect(serialized).toMatch('otherfunc = so_plenty([false, 1, "4rlz"])')
-  })
-  it('dumps functions mixed parameters', () => {
-    expect(serialized).toMatch('mixedfunc = mixtush(false, [1, 2, 3], "4rlz")')
-  })
-  it('dumps functions several parameters', () => {
-    expect(serialized).toMatch('lastfunc = severalush(false, 1, "4rlz")')
-  })
-  it('dumps functions nested parameters', () => {
-    expect(serialized).toMatch('nestedfunc = nestush(false, [1, 2, [3, 4]], "4rlz")')
-  })
-  it('dumps functions really nested parameters', () => {
-    expect(serialized).toMatch('superdeepnest = nestbaabuabua(false, [1, 2, [3, [4, 5]]], "4rlz")')
-  })
+  it('dumps functions with single parameters', () =>
+    expect(serialized).toMatch('somefunc = funcush("ZOMG")'))
+  it('dumps functions with list', () =>
+    expect(serialized).toMatch(/otherfunc = so_plenty\(\n.+\[\n.+false,\n.+1,\n.+"4rlz",\n.+\],\n.+\)/m))
+  it('dumps functions mixed parameters', () =>
+    expect(serialized).toMatch(/mixedfunc = mixtush\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+3,\n.+\],\n.+"4rlz",\n.+\)/m))
+  it('dumps functions several parameters', () =>
+    expect(serialized).toMatch(/lastfunc = severalush\(\n.+false,\n.+1,\n.+"4rlz",\n.+\)/m))
+  it('dumps functions nested parameters', () =>
+    expect(serialized).toMatch(/nestedfunc = nestush\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+\[\n.+3,\n.+4,\n.+\],\n.+\],\n.+"4rlz",\n.+\)/m))
+  it('dumps functions really nested parameters', () =>
+    expect(serialized).toMatch(/superdeepnest = nestbaabuabua\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+\[\n.+3,\n.+\[\n.+4,\n.+5,\n.+\{\n.+dsa = 321\n.+\},\n.+\],\n.+],\n.+],\n.+"4rlz",\n.+\)/m))
+  it('dumps function with objects', () =>
+    expect(serialized).toMatch(/objinfunc = objfunc\(\n.+\{\n.+aaa = 123\n.+\},\n.+\)/m))
 
   it('handles nested attributes', () => {
     expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep",*\s*}/m)
@@ -380,7 +377,7 @@ describe('HCL dump', () => {
   it('dumps parsable text', async () => {
     const parsed = parse(Buffer.from(serialized), 'none')
 
-    expect(parsed.errors.length).toEqual(0)
+    expect(parsed.errors).toHaveLength(0)
     // Filter out source ranges since they are only generated during parsing
     const removeSrcFromBlock = (block: Partial<ParsedHclBlock>): ParsedHclBlock =>
       _.mapValues(block, (val, key) => {

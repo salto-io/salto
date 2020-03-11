@@ -41,8 +41,8 @@ primitive ->
 	| %wildcard {% d => converters.convertWildcard(d[0]) %}
 
 
-func -> %word args {% d => converters.convertFunction(d[0], d[1][1], d[1][2]) %}
-args -> "(" arrayItems ")" {% d => d %}
+func -> %word args {% d => converters.convertFunction(d[0], d[1][2], d[1][3]) %}
+args -> "(" _nl arrayItems ")" {% d => d %}
 
 string -> "\"" (content {% id %} |reference {% id %}):* stringEnd {% d => converters.convertString(d[0], d[1], d[2]) %}
 multilineString -> %mlStart (content {% id %} | reference {% id %}):* %mlEnd {% d => converters.convertMultilineString(d[0], d[1], d[2]) %}

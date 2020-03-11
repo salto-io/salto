@@ -177,25 +177,20 @@ export const validateCredentials = async (
   }
 }
 
-const sendChunked = async <TIn, TOut>(input: TIn | TIn[],
+const sendChunked = async <TIn, TOut>(
+  input: TIn | TIn[],
   sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>,
-  chunkSize = MAX_ITEMS_IN_WRITE_REQUEST):
-  Promise<TOut[]> => {
-  const chunks = _.chunk(makeArray(input), chunkSize)
-  const promises: Promise<TOut[]>[] = chunks
-    .filter(chunk => !_.isEmpty(chunk))
-    .map(chunk => sendChunk(chunk)
-      .catch(async _e => {
-        log.error('failed to send chunk - iterting each element separtly')
-        const innerPromises = chunk.map(tin => sendChunk(makeArray(tin))
-          .then(makeArray)
-          .catch(e => {
-            log.error('failed to sendChunked on %o', tin)
-            throw e
-          }))
-        return Promise.all(innerPromises).then(_.flatten)
-      })
-      .then(makeArray))
+  chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
+): Promise<TOut[]> => {
+  const promises: Promise<TOut[]>[] = _.chunk(makeArray(input), chunkSize)
+    .map(chunk => sendChunk(chunk).catch(e => {
+      log.error('failed to send chunk - iterating each element separately: %o', e)
+      const innerPromises = chunk.map(tin => sendChunk(makeArray(tin)).catch(e2 => {
+        log.error('failed to sendChunked on %o', tin)
+        throw e2
+      }).then(makeArray))
+      return Promise.all(innerPromises).then(_.flatten)
+    }).then(makeArray))
   return _.flatten(await Promise.all(promises))
 }
 

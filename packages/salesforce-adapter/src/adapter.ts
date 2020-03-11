@@ -65,7 +65,6 @@ const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
-export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 const RECORDS_CHUNK_SIZE = 10000
 export const DEFAULT_FILTERS = [
   missingFieldsFilter,
@@ -138,7 +137,10 @@ export interface SalesforceAdapterParams {
   instancesRegexBlacklist?: string[]
 
   // Max retrieve requests that we want to send concurrently
-  maxRetrieveRequestConcurrently?: number
+  maxConcurrentRetrieveRequests?: number
+
+  // Max items to fetch in one retrieve request
+  maxItemsInRetrieveRequest?: number
 
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
@@ -191,13 +193,15 @@ type RetrieveMember = {
 export type SalesforceConfig = {
   metadataTypesBlacklist?: string[]
   instancesRegexBlacklist?: string[]
-  maxRetrieveRequestConcurrently?: number
+  maxConcurrentRetrieveRequests?: number
+  maxItemsInRetrieveRequest?: number
 }
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private instancesRegexBlacklist: RegExp[]
-  private maxRetrieveRequestConcurrently: number
+  private maxConcurrentRetrieveRequests: number
+  private maxItemsInRetrieveRequest: number
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
@@ -218,7 +222,8 @@ export default class SalesforceAdapter {
       'AssignmentRule', 'EscalationRule',
     ],
     instancesRegexBlacklist = [],
-    maxRetrieveRequestConcurrently = constants.MAX_RETRIEVE_REQUEST_CONCURRENTLY,
+    maxConcurrentRetrieveRequests = constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
+    maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
@@ -282,8 +287,9 @@ export default class SalesforceAdapter {
     this.instancesRegexBlacklist = instancesRegexBlacklist
       .concat(makeArray(config.instancesRegexBlacklist))
       .map(e => new RegExp(e))
-    this.maxRetrieveRequestConcurrently = config.maxRetrieveRequestConcurrently
-      ?? maxRetrieveRequestConcurrently
+    this.maxConcurrentRetrieveRequests = config.maxConcurrentRetrieveRequests
+      ?? maxConcurrentRetrieveRequests
+    this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
@@ -845,11 +851,11 @@ InstanceElement[] => {
       }
     }
 
-    const chunkedRetrieveMembers = _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
+    const chunkedRetrieveMembers = _.chunk(retrieveMembers, this.maxItemsInRetrieveRequest)
     const retrieveResults = _.flatten(
       await withLimitedConcurrency(chunkedRetrieveMembers.map(
         retrieveChunk => () => this.client.retrieve(createRetrieveRequest(retrieveChunk))
-      ), this.maxRetrieveRequestConcurrently)
+      ), this.maxConcurrentRetrieveRequests)
     )
     return fromRetrieveResults(retrieveResults)
   }

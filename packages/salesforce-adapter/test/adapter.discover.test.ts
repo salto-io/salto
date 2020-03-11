@@ -18,7 +18,7 @@ import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
-import SalesforceAdapter, { MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/adapter'
+import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
 import { createEncodedZipContent, findElements, ZipFile } from './utils'
@@ -529,7 +529,9 @@ describe('SalesforceAdapter fetch', () => {
       const generateInstancesMocks = (numberOfInstances: number): MetadataInfo[] =>
         Array.from(Array(numberOfInstances), (_x, index) => ({ fullName: `dummy${index}` }))
 
-      const metadataInfos = generateInstancesMocks(MAX_ITEMS_IN_RETRIEVE_REQUEST * 2)
+      const metadataInfos = generateInstancesMocks(
+        constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST * 2
+      )
       connection.metadata.list = jest.fn()
         .mockImplementation(async () => metadataInfos)
 

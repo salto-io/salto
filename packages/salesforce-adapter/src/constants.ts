@@ -227,7 +227,8 @@ export const INSTALLED_PACKAGES_PATH = 'InstalledPackages'
 
 // Limits
 export const MAX_METADATA_RESTRICTION_VALUES = 500
-export const MAX_RETRIEVE_REQUEST_CONCURRENTLY = 3
+export const DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS = 3
+export const DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST = 2500
 
 // Metadata types
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'

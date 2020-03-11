@@ -62,16 +62,29 @@ const configType = new ObjectType({
       },
       true,
     ),
-    maxRetrieveRequestConcurrently: new Field(
+    maxConcurrentRetrieveRequests: new Field(
       configID,
-      'maxRetrieveRequestConcurrently',
+      'maxConcurrentRetrieveRequests',
       BuiltinTypes.NUMBER,
       {
-        [CORE_ANNOTATIONS.DEFAULT]: constants.MAX_RETRIEVE_REQUEST_CONCURRENTLY,
+        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
         [CORE_ANNOTATIONS.RESTRICTION]: {
           [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
           [RESTRICTION_ANNOTATIONS.MIN]: 1,
           [RESTRICTION_ANNOTATIONS.MAX]: 25,
+        },
+      },
+    ),
+    maxItemsInRetrieveRequest: new Field(
+      configID,
+      'maxItemsInRetrieveRequest',
+      BuiltinTypes.NUMBER,
+      {
+        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+        [CORE_ANNOTATIONS.RESTRICTION]: {
+          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
+          [RESTRICTION_ANNOTATIONS.MIN]: 1000,
+          [RESTRICTION_ANNOTATIONS.MAX]: 10000,
         },
       },
     ),
@@ -90,7 +103,8 @@ SalesforceConfig => {
   const adapterConfig = {
     metadataTypesBlacklist: makeArray(config?.value?.metadataTypesBlacklist),
     instancesRegexBlacklist: makeArray(config?.value?.instancesRegexBlacklist),
-    maxRetrieveRequestConcurrently: config?.value?.maxRetrieveRequestConcurrently,
+    maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
+    maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

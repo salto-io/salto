@@ -34,16 +34,22 @@ export class DuplicateInstanceKeyError extends MergeError {
 }
 
 const buildDefaults = (
-  type: TypeElement
+  type: TypeElement,
+  knownTypes: Set<string> = new Set()
 ): Values | undefined => {
   const buildObjectDefaults = (object: ObjectType): Values | undefined => {
     const def = _(object.fields).mapValues(field =>
-      ((field.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && !field.isList)
-        ? buildDefaults(field.type)
+      ((field.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined
+        && !field.isList)
+        ? buildDefaults(field.type, knownTypes)
         : field.annotations[CORE_ANNOTATIONS.DEFAULT])).pickBy(v => v !== undefined).value()
     return _.isEmpty(def) ? undefined : def
   }
-
+  // Handle recursive types
+  if (knownTypes.has(type.elemID.getFullName())) {
+    return undefined
+  }
+  knownTypes.add(type.elemID.getFullName())
   return (type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && isObjectType(type)
     ? buildObjectDefaults(type)
     : type.annotations[CORE_ANNOTATIONS.DEFAULT])

@@ -66,7 +66,7 @@ describe('workflow filter', () => {
           },
         ],
         senderType: 'CurrentUser',
-        template: 'TestEmailFolder/TestEmailTemplate',
+        template: 'unfiled$public/SupportCaseResponse',
       } as MetadataInfo)
     }
 

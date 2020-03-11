@@ -388,17 +388,23 @@ export const repo = defaultOpts.withRequired<
           const leaseExpiresBy = Date.parse(d.leaseExpiresBy)
           const isLeased = leaseExpiresBy > now
 
-          return {
+          const base = {
             id: d.id,
             value: d.value,
-            ...isLeased ? {
-              status: (d.suspensionReason !== undefined ? 'suspended' : 'leased'),
+          }
+
+          if (isLeased) {
+            const unavailableBase = {
+              ...base,
               leaseExpiresBy: new Date(leaseExpiresBy),
               clientId: d.leasingClientId,
-            } : {
-              status: 'available',
-            },
+            }
+            return d.suspensionReason !== undefined
+              ? { status: 'suspended', ...unavailableBase, suspensionReason: d.suspensionReason }
+              : { status: 'leased', ...unavailableBase }
           }
+
+          return { status: 'available', ...base }
         }
 
         const iter = docUtils.queryIterator<LeaseDoc<T>>(queryInput(), opts.query)

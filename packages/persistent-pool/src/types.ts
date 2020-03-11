@@ -24,8 +24,14 @@ export type Lease<T = unknown> = {
   value: T
 }
 
+export type UnavailableLease = {
+  leaseExpiresBy: Date
+  clientId: string
+}
+
 export type LeaseWithStatus<T> = Lease<T> & (
-  { status: 'leased' | 'suspended'; leaseExpiresBy: Date; clientId: string }
+  ({ status: 'suspended'; suspensionReason: string } & UnavailableLease)
+  | ({ status: 'leased' } & UnavailableLease)
   | { status: 'available' }
 )
 

@@ -389,20 +389,32 @@ describe('argparser', () => {
   })
 
   describe('list', () => {
-    let lease: Lease<unknown>
+    let lease1: Lease<unknown>
+    let lease2: Lease<unknown>
     beforeEach(async () => {
+      // leased
       expect(await runCli(
         'register salesforce my-id1 --username="user1" --password="pass1"'
       )).toEqual(0)
+      lease1 = await realPool.lease(100000) as Lease<unknown>
+      expect(lease1).not.toBeNull()
+
+      // suspended
       expect(await runCli(
         'register salesforce my-id2 --username="user2" --password="pass2"'
       )).toEqual(0)
-      lease = await realPool.lease(100000) as Lease<unknown>
-      expect(lease).not.toBeNull()
+      lease2 = await realPool.lease(100000) as Lease<unknown>
+      await realPool.suspend(lease2.id, 'not being nice', 10000)
+
+      // available
+      expect(await runCli(
+        'register salesforce my-id3 --username="user3" --password="pass3"'
+      )).toEqual(0)
     })
 
     afterEach(async () => {
-      await realPool.return(lease.id)
+      await realPool.return(lease1.id)
+      await realPool.return(lease2.id)
     })
 
     describe('default format (pretty)', () => {
@@ -416,6 +428,8 @@ describe('argparser', () => {
 
       it('lists the sets of credentials with their status', () => {
         expect(stdout.toString()).toMatch(/my-id.*available/)
+        expect(stdout.toString()).toMatch(/my-id.*leased/)
+        expect(stdout.toString()).toMatch(/my-id.*suspended.*not being nice/)
       })
     })
 
@@ -428,16 +442,62 @@ describe('argparser', () => {
         expect(exitCode).toBe(0)
       })
 
-      it('lists the sets of credentials with their status', () => {
-        const [leasedEntry] = JSON.parse(stdout.toString()).filter(
-          (x: { id: string }): boolean => x.id === lease.id
+      const findEntry = <T>(
+        status: string
+      ): T => {
+        const result = JSON.parse(stdout.toString()).find(
+          (x: { status: string }): boolean => x.status === status
         )
-        expect(leasedEntry.status).toEqual('leased')
+        expect(result).toBeDefined()
+        return result
+      }
 
-        const [availableEntry] = JSON.parse(stdout.toString()).filter(
-          (x: { id: string }): boolean => x.id !== lease.id
-        )
-        expect(availableEntry.status).toEqual('available')
+      describe('leased entry', () => {
+        let entry: { clientId: string; leaseExpiresBy: string }
+
+        beforeEach(() => {
+          entry = findEntry('leased')
+        })
+
+        it('should have a clientId', () => {
+          expect(entry.clientId).toBeDefined()
+        })
+
+        it('should have a leaseExpiresBy property', () => {
+          expect(entry.leaseExpiresBy).toBeDefined()
+        })
+      })
+
+      describe('suspended entry', () => {
+        let entry: { clientId: string; leaseExpiresBy: string; suspensionReason: string }
+
+        beforeEach(() => {
+          entry = findEntry('suspended')
+        })
+
+        it('should have a clientId', () => {
+          expect(entry.clientId).toBeDefined()
+        })
+
+        it('should have a leaseExpiresBy property', () => {
+          expect(entry.leaseExpiresBy).toBeDefined()
+        })
+
+        it('should have a suspensionReason property', () => {
+          expect(entry.suspensionReason).toEqual('not being nice')
+        })
+      })
+
+      describe('available entry', () => {
+        let entry: { }
+
+        beforeEach(() => {
+          entry = findEntry('available')
+        })
+
+        it('should exist', () => {
+          expect(entry).toBeDefined()
+        })
       })
     })
   })

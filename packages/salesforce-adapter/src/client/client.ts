@@ -155,17 +155,24 @@ export const realConnection = (
 
 export class ApiLimitsTooLowError extends Error {}
 
+export const getRemainingDailyRequests = async (creds: Credentials): Promise<number> => {
+  const conn = realConnection(creds.isSandbox, {
+    maxAttempts: 2,
+    retryStrategy: RetryStrategies.HTTPOrNetworkError,
+  })
+  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
+  const limits = await conn.limits()
+  return limits.DailyApiRequests.Remaining
+}
+
 export const validateCredentials = async (
   creds: Credentials,
   minApiRequestsRemaining = 0,
 ): Promise<void> => {
-  const conn = realConnection(creds.isSandbox, { maxAttempts: 2,
-    retryStrategy: RetryStrategies.HTTPOrNetworkError })
-  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
-  const limits = await conn.limits()
-  if (limits.DailyApiRequests.Remaining < minApiRequestsRemaining) {
+  const remainingDailyRequests = await getRemainingDailyRequests(creds)
+  if (remainingDailyRequests < minApiRequestsRemaining) {
     throw new ApiLimitsTooLowError(
-      `Remaining limits: ${limits.DailyApiRequests.Remaining}, needed: ${minApiRequestsRemaining}`
+      `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
 }

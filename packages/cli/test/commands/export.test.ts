@@ -20,7 +20,7 @@ import * as mocks from '../mocks'
 import { command } from '../../src/commands/export'
 import { CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
-import { getEvents, getCliTelemetry } from '../../src/telemetry'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 
 jest.mock('@salto-io/core', () => ({
@@ -33,7 +33,12 @@ jest.mock('@salto-io/core', () => ({
 }))
 jest.mock('../../src/workspace')
 
-const eventsNames = getEvents('export')
+const commandName = 'export'
+const eventsNames = {
+  success: buildEventName(commandName, 'success'),
+  start: buildEventName(commandName, 'start'),
+  failure: buildEventName(commandName, 'failure'),
+}
 
 describe('export command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }

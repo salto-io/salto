@@ -20,7 +20,7 @@ import Prompts from '../../src/prompts'
 import { CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import * as mocks from '../mocks'
-import { getEvents, getCliTelemetry } from '../../src/telemetry'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -32,7 +32,14 @@ jest.mock('@salto-io/core', () => ({
 }))
 jest.mock('../../src/workspace')
 
-const eventsNames = getEvents('delete')
+const commandName = 'delete'
+const eventsNames = {
+  success: buildEventName(commandName, 'success'),
+  start: buildEventName(commandName, 'start'),
+  failure: buildEventName(commandName, 'failure'),
+  failedRows: buildEventName(commandName, 'failedRows'),
+  errors: buildEventName(commandName, 'errors'),
+}
 
 describe('delete command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }

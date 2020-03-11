@@ -15,7 +15,7 @@
 * limitations under the License.
 */
 
-import { getEvents, buildEventName, getCliTelemetry } from '../src/telemetry'
+import { buildEventName, getCliTelemetry } from '../src/telemetry'
 import { CliTelemetry } from '../src/types'
 import { getMockTelemetry, MockTelemetry } from './mocks'
 
@@ -33,7 +33,7 @@ describe('telemetry event names', () => {
     cliTelemetry.success()
 
     expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([getEvents(command).success])
+    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'success')])
   })
 
   it('should send success events with tags', () => {
@@ -43,10 +43,10 @@ describe('telemetry event names', () => {
     cliTelemetry.success(tags)
 
     expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([getEvents(command).success])
-    expect(mockTelemetry.getEventsMap()[getEvents(command).success]).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()[getEvents(command).success][0].tags).toHaveProperty('someTag')
-    expect(mockTelemetry.getEventsMap()[getEvents(command).success][0].tags.someTag)
+    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'success')])
+    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')]).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')][0].tags).toHaveProperty('someTag')
+    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'success')][0].tags.someTag)
       .toEqual(tags.someTag)
   })
 
@@ -57,13 +57,8 @@ describe('telemetry event names', () => {
     cliTelemetry.mergeErrors(42)
 
     expect(mockTelemetry.getEvents()).toHaveLength(1)
-    expect(mockTelemetry.getEventsMap()).toHaveProperty([getEvents(command).mergeErrors])
-    expect(mockTelemetry.getEventsMap()[getEvents(command).mergeErrors][0].value).toEqual(value)
-  })
-
-  it('should get events for some command name', () => {
-    expect(getEvents('ev')).toHaveProperty('start')
-    expect(getEvents('ev').start).toEqual('workspace.ev.start')
+    expect(mockTelemetry.getEventsMap()).toHaveProperty([buildEventName(command, 'mergeErrors')])
+    expect(mockTelemetry.getEventsMap()[buildEventName(command, 'mergeErrors')][0].value).toEqual(value)
   })
 
   it('should build event name for a some command', () => {

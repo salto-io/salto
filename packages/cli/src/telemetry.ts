@@ -26,70 +26,53 @@ export const buildEventName = (
   action: keyof TelemetryEventNames,
 ): string => [WORKSPACE, command, action].join(SEPARATOR)
 
-export const getEvents = (
-  commandName: string,
-): TelemetryEventNames => ({
-  start: buildEventName(commandName, 'start'),
-  success: buildEventName(commandName, 'success'),
-  failure: buildEventName(commandName, 'failure'),
-  mergeErrors: buildEventName(commandName, 'mergeErrors'),
-  changes: buildEventName(commandName, 'changes'),
-  changesToApply: buildEventName(commandName, 'changesToApply'),
-  errors: buildEventName(commandName, 'errors'),
-  failedRows: buildEventName(commandName, 'failedRows'),
-  actionsSuccess: buildEventName(commandName, 'actionsSuccess'),
-  actionsFailure: buildEventName(commandName, 'actionsFailure'),
-})
-
 export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetry => {
-  const telemetryEvents = getEvents(command)
-
   const sendCount = (name: string, value: number, tags: Tags): void => {
     sender.sendCountEvent(name, value, tags)
   }
 
   const start = (tags: Tags): void => {
-    sendCount(telemetryEvents.start, 1, tags)
+    sendCount(buildEventName(command, 'start'), 1, tags)
   }
 
   const failure = (tags = {}): void => {
-    sendCount(telemetryEvents.failure, 1, tags)
+    sendCount(buildEventName(command, 'failure'), 1, tags)
   }
 
   const success = (tags = {}): void => {
-    sendCount(telemetryEvents.success, 1, tags)
+    sendCount(buildEventName(command, 'success'), 1, tags)
   }
 
   const mergeErrors = (numErrors: number, tags = {}): void => {
-    sendCount(telemetryEvents.mergeErrors, numErrors, tags)
+    sendCount(buildEventName(command, 'mergeErrors'), numErrors, tags)
   }
 
   const changes = (numChanges: number, tags = {}): void => {
-    sendCount(telemetryEvents.changes, numChanges, tags)
+    sendCount(buildEventName(command, 'changes'), numChanges, tags)
   }
 
   const changesToApply = (numChanges: number, tags = {}): void => {
-    sendCount(telemetryEvents.changesToApply, numChanges, tags)
+    sendCount(buildEventName(command, 'changesToApply'), numChanges, tags)
   }
 
   const errors = (numErrors: number, tags = {}): void => {
-    sendCount(telemetryEvents.errors, numErrors, tags)
+    sendCount(buildEventName(command, 'errors'), numErrors, tags)
   }
 
   const failedRows = (numFailedRows: number, tags = {}): void => {
-    sendCount(telemetryEvents.failedRows, numFailedRows, tags)
+    sendCount(buildEventName(command, 'failedRows'), numFailedRows, tags)
   }
 
   const actionsSuccess = (numActions: number, tags = {}): void => {
-    sendCount(telemetryEvents.actionsSuccess, numActions, tags)
+    sendCount(buildEventName(command, 'actionsSuccess'), numActions, tags)
   }
 
   const actionsFailure = (numActions: number, tags = {}): void => {
-    sendCount(telemetryEvents.actionsFailure, numActions, tags)
+    sendCount(buildEventName(command, 'actionsFailure'), numActions, tags)
   }
 
   const stacktrace = (err: Error, tags = {}): void => {
-    sender.sendStackEvent(telemetryEvents.failure, err, tags)
+    sender.sendStackEvent(buildEventName(command, 'failure'), err, tags)
   }
 
   return {

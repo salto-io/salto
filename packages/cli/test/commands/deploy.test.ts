@@ -25,7 +25,7 @@ import {
 } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
-import { getEvents, getCliTelemetry } from '../../src/telemetry'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 
 const mockDeploy = deploy
@@ -48,7 +48,10 @@ jest.mock('@salto-io/core', () => ({
 }))
 jest.mock('../../src/workspace')
 
-const eventsNames = getEvents('deploy')
+const commandName = 'deploy'
+const eventsNames = {
+  failure: buildEventName(commandName, 'failure'),
+}
 
 describe('deploy command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }

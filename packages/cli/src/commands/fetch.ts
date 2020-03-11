@@ -36,7 +36,7 @@ import { getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { getCLITelemetry, CLITelemetry } from '../telemetry'
+import { getCliTelemetry, CliTelemetry } from '../telemetry'
 
 const log = logger(module)
 
@@ -55,7 +55,7 @@ export const fetchCommand = async (
     force: boolean
     interactive: boolean
     strict?: boolean
-    cliTelemetry: CLITelemetry
+    cliTelemetry: CliTelemetry
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
@@ -162,7 +162,7 @@ export const command = (
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
       interactive}, strict=${strict}]`)
 
-    const cliTelemetry = getCLITelemetry(telemetry, 'fetch')
+    const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output, spinnerCreator)
     if (errored) {
       cliTelemetry.failure()

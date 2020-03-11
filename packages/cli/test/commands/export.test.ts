@@ -20,7 +20,7 @@ import * as mocks from '../mocks'
 import { command } from '../../src/commands/export'
 import { CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
-import { getEvents, getCLITelemetry, CLITelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -37,7 +37,7 @@ const eventsNames = getEvents('export')
 describe('export command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   let mockTelemetry: mocks.MockTelemetry
-  let mockCLITelemetry: CLITelemetry
+  let mockCliTelemetry: CliTelemetry
   const workspaceDir = 'dummy_dir'
   const outputPath = 'dummy_outpath'
 
@@ -50,11 +50,11 @@ describe('export command', () => {
   beforeEach(() => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     mockTelemetry = mocks.getMockTelemetry()
-    mockCLITelemetry = getCLITelemetry(mockTelemetry, 'export')
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'export')
   })
 
   it('should run export', async () => {
-    await command(workspaceDir, 'Test', outputPath, mockCLITelemetry, cliOutput).execute()
+    await command(workspaceDir, 'Test', outputPath, mockCliTelemetry, cliOutput).execute()
     expect(exportToCsv).toHaveBeenCalled()
     expect(cliOutput.stdout.content).toMatch(Prompts.EXPORT_ENDED_SUMMARY(5, 'Test', outputPath))
     expect(mockTelemetry.getEvents()).toHaveLength(2)
@@ -70,7 +70,7 @@ describe('export command', () => {
       getWorkspaceErrors: mocks.getWorkspaceErrors,
     } as unknown as Workspace
     mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-    const result = await command(workspaceDir, 'Test', outputPath, mockCLITelemetry, cliOutput).execute()
+    const result = await command(workspaceDir, 'Test', outputPath, mockCliTelemetry, cliOutput).execute()
     expect(result).toBe(CliExitCode.AppError)
     expect(mockTelemetry.getEvents()).toHaveLength(1)
     expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
@@ -84,7 +84,7 @@ describe('export command', () => {
       errors: new Set<string>(errors),
     } as unknown as DataModificationResult
     (exportToCsv as jest.Mock).mockResolvedValueOnce(Promise.resolve(erroredModifyDataResult))
-    const exitCode = await command(workspaceDir, 'Test', outputPath, mockCLITelemetry, cliOutput).execute()
+    const exitCode = await command(workspaceDir, 'Test', outputPath, mockCliTelemetry, cliOutput).execute()
     expect(cliOutput.stdout.content).toMatch(Prompts.EXPORT_ENDED_SUMMARY(1, 'Test', outputPath))
     expect(cliOutput.stdout.content).toMatch(Prompts.ERROR_SUMMARY(errors))
     expect(exitCode).toEqual(CliExitCode.AppError)

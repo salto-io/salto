@@ -30,7 +30,7 @@ import {
 import { shouldDeploy } from '../callbacks'
 import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { CLITelemetry, getCLITelemetry } from '../telemetry'
+import { CliTelemetry, getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
 
@@ -46,13 +46,13 @@ export class DeployCommand implements CliCommand {
   readonly stdout: WriteStream
   readonly stderr: WriteStream
   private actions: Map<string, Action>
-  private cliTelemetry: CLITelemetry
+  private cliTelemetry: CliTelemetry
 
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
     readonly inputServices: string[],
-    cliTelemetry: CLITelemetry,
+    cliTelemetry: CliTelemetry,
     { stdout, stderr }: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
   ) {
@@ -199,7 +199,7 @@ const deployBuilder = createCommandBuilder({
       '.',
       input.args.force,
       input.args.services,
-      getCLITelemetry(input.telemetry, 'deploy'),
+      getCliTelemetry(input.telemetry, 'deploy'),
       output,
       spinnerCreator,
     )

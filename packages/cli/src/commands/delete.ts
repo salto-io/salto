@@ -19,13 +19,13 @@ import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import Prompts from '../prompts'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
-import { CLITelemetry, getCLITelemetry } from '../telemetry'
+import { CliTelemetry, getCliTelemetry } from '../telemetry'
 
 export const command = (
   workingDir: string,
   typeName: string,
   inputPath: string,
-  cliTelemetry: CLITelemetry,
+  cliTelemetry: CliTelemetry,
   { stdout, stderr }: CliOutput
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
@@ -94,7 +94,7 @@ const deleteBuilder = createCommandBuilder({
       '.',
       input.args['type-name'],
       input.args['input-path'],
-      getCLITelemetry(input.telemetry, 'delete'),
+      getCliTelemetry(input.telemetry, 'delete'),
       output
     )
   },

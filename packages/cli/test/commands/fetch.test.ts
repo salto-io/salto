@@ -26,7 +26,7 @@ import { command, fetchCommand } from '../../src/commands/fetch'
 import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace'
-import { getEvents, getCLITelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry } from '../../src/telemetry'
 
 const eventsNames = getEvents('fetch')
 
@@ -162,7 +162,7 @@ describe('fetch command', () => {
             interactive: false,
             output: cliOutput,
             inputServices: services,
-            cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+            cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockEmptyApprove,
           })
@@ -189,7 +189,7 @@ describe('fetch command', () => {
             interactive: false,
             output: cliOutput,
             inputServices: services,
-            cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+            cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
           })
@@ -226,7 +226,7 @@ describe('fetch command', () => {
               force: true,
               interactive: false,
               inputServices: services,
-              cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -251,7 +251,7 @@ describe('fetch command', () => {
               force: true,
               interactive: false,
               inputServices: services,
-              cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -276,7 +276,7 @@ describe('fetch command', () => {
               force: false,
               interactive: false,
               inputServices: services,
-              cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
@@ -300,7 +300,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
-                cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+                cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockEmptyApprove,
@@ -328,7 +328,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
-                cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+                cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -357,7 +357,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
-                cliTelemetry: getCLITelemetry(mocks.getMockTelemetry(), 'fetch'),
+                cliTelemetry: getCliTelemetry(mocks.getMockTelemetry(), 'fetch'),
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -383,7 +383,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
-                cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+                cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
@@ -405,7 +405,7 @@ describe('fetch command', () => {
                 force: false,
                 interactive: false,
                 inputServices: services,
-                cliTelemetry: getCLITelemetry(mockTelemetry, 'fetch'),
+                cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
                 output: cliOutput,
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockSingleChangeApprove,

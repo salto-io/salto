@@ -20,7 +20,7 @@ import Prompts from '../../src/prompts'
 import { CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import * as mocks from '../mocks'
-import { getEvents, getCLITelemetry, CLITelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -37,7 +37,7 @@ const eventsNames = getEvents('delete')
 describe('delete command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   let mockTelemetry: mocks.MockTelemetry
-  let mockCLITelemetry: CLITelemetry
+  let mockCliTelemetry: CliTelemetry
   const workspaceDir = 'dummy_dir'
   let existsReturn = true
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
@@ -46,7 +46,7 @@ describe('delete command', () => {
     jest.spyOn(file, 'exists').mockImplementation(() => Promise.resolve(existsReturn))
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     mockTelemetry = mocks.getMockTelemetry()
-    mockCLITelemetry = getCLITelemetry(mockTelemetry, 'delete')
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'delete')
     mockLoadWorkspace.mockResolvedValue({
       workspace: mocks.mockLoadWorkspace(workspaceDir),
       errored: false,
@@ -59,7 +59,7 @@ describe('delete command', () => {
       workspaceDir,
       'mockName',
       'mockPath',
-      mockCLITelemetry,
+      mockCliTelemetry,
       cliOutput,
     ).execute()
     expect(deleteFromCsvFile).toHaveBeenCalled()
@@ -76,7 +76,7 @@ describe('delete command', () => {
       workspaceDir,
       '',
       '',
-      mockCLITelemetry,
+      mockCliTelemetry,
       cliOutput,
     ).execute()
     expect(cliOutput.stderr.content).toMatch(Prompts.COULD_NOT_FIND_FILE)
@@ -95,7 +95,7 @@ describe('delete command', () => {
       workspaceDir,
       'mockName',
       'mockPath',
-      mockCLITelemetry,
+      mockCliTelemetry,
       cliOutput,
     ).execute()
     expect(result).toBe(CliExitCode.AppError)
@@ -116,7 +116,7 @@ describe('delete command', () => {
       workspaceDir,
       'mockName',
       'mockPath',
-      getCLITelemetry(mockTelemetry, 'delete'),
+      getCliTelemetry(mockTelemetry, 'delete'),
       cliOutput,
     ).execute()
     expect(exitCode).toEqual(CliExitCode.AppError)

@@ -25,7 +25,7 @@ import {
 } from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
-import { getEvents, getCLITelemetry, CLITelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
 
 const mockDeploy = deploy
 const mockServices = (ws: Workspace): string[] => currentEnvConfig(ws.config).services as string[]
@@ -53,7 +53,7 @@ describe('deploy command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let command: DeployCommand
   let mockTelemetry: MockTelemetry
-  let mockCLITelemetry: CLITelemetry
+  let mockCliTelemetry: CliTelemetry
   const spinners: Spinner[] = []
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
@@ -75,7 +75,7 @@ describe('deploy command', () => {
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     mockTelemetry = getMockTelemetry()
-    mockCLITelemetry = getCLITelemetry(mockTelemetry, 'deploy')
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'deploy')
     spinnerCreator = mockSpinnerCreator(spinners)
   })
 
@@ -85,7 +85,7 @@ describe('deploy command', () => {
         '',
         true,
         services,
-        mockCLITelemetry,
+        mockCliTelemetry,
         cliOutput,
         spinnerCreator,
       )
@@ -140,7 +140,7 @@ describe('deploy command', () => {
         'errorDir',
         true,
         services,
-        mockCLITelemetry,
+        mockCliTelemetry,
         cliOutput,
         spinnerCreator,
       )

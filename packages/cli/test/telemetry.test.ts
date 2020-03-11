@@ -15,12 +15,12 @@
 * limitations under the License.
 */
 
-import { getEvents, buildEventName, CLITelemetry, getCLITelemetry } from '../src/telemetry'
+import { getEvents, buildEventName, CliTelemetry, getCliTelemetry } from '../src/telemetry'
 import { getMockTelemetry, MockTelemetry } from './mocks'
 
 describe('telemetry event names', () => {
   let mockTelemetry: MockTelemetry
-  let cliTelemetry: CLITelemetry
+  let cliTelemetry: CliTelemetry
 
   beforeEach(() => {
     mockTelemetry = getMockTelemetry()
@@ -28,7 +28,7 @@ describe('telemetry event names', () => {
 
   it('should send success events without tags', () => {
     const command = 'import'
-    cliTelemetry = getCLITelemetry(mockTelemetry, command)
+    cliTelemetry = getCliTelemetry(mockTelemetry, command)
     cliTelemetry.success()
 
     expect(mockTelemetry.getEvents()).toHaveLength(1)
@@ -38,7 +38,7 @@ describe('telemetry event names', () => {
   it('should send success events with tags', () => {
     const command = 'import'
     const tags = { someTag: 'someValue' }
-    cliTelemetry = getCLITelemetry(mockTelemetry, command)
+    cliTelemetry = getCliTelemetry(mockTelemetry, command)
     cliTelemetry.success(tags)
 
     expect(mockTelemetry.getEvents()).toHaveLength(1)
@@ -52,7 +52,7 @@ describe('telemetry event names', () => {
   it('should send mergeErrors events with some value > 1', () => {
     const command = 'import'
     const value = 42
-    cliTelemetry = getCLITelemetry(mockTelemetry, command)
+    cliTelemetry = getCliTelemetry(mockTelemetry, command)
     cliTelemetry.mergeErrors(42)
 
     expect(mockTelemetry.getEvents()).toHaveLength(1)

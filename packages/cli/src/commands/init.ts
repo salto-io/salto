@@ -20,11 +20,11 @@ import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode } from '../types'
 import { getEnvName } from '../callbacks'
 import { getWorkspaceTelemetryTags } from '../workspace'
-import { getCLITelemetry, CLITelemetry } from '../telemetry'
+import { getCliTelemetry, CliTelemetry } from '../telemetry'
 
 export const command = (
   workspaceName: string | undefined,
-  cliTelemetry: CLITelemetry,
+  cliTelemetry: CliTelemetry,
   { stdout, stderr }: CliOutput,
   getEnvNameCallback: (currentEnvName?: string) => Promise<string>
 ): CliCommand => ({
@@ -70,7 +70,7 @@ const initBuilder = createCommandBuilder({
   async build(input: InitParsedCliInput, output: CliOutput) {
     return command(
       input.args['workspace-name'],
-      getCLITelemetry(input.telemetry, 'init'),
+      getCliTelemetry(input.telemetry, 'init'),
       output,
       getEnvName,
     )

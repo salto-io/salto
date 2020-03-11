@@ -22,7 +22,7 @@ import {
 } from '../mocks'
 import { SpinnerCreator, Spinner, CliExitCode } from '../../src/types'
 import * as workspace from '../../src/workspace'
-import { getEvents, getCLITelemetry, CLITelemetry } from '../../src/telemetry'
+import { getEvents, getCliTelemetry, CliTelemetry } from '../../src/telemetry'
 
 const mockPreview = preview
 jest.mock('@salto-io/core', () => ({
@@ -36,7 +36,7 @@ const eventsNames = getEvents('preview')
 describe('preview command', () => {
   let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
   let mockTelemetry: MockTelemetry
-  let mockCLITelemetry: CLITelemetry
+  let mockCliTelemetry: CliTelemetry
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
@@ -70,14 +70,14 @@ describe('preview command', () => {
   beforeEach(() => {
     cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
     mockTelemetry = getMockTelemetry()
-    mockCLITelemetry = getCLITelemetry(mockTelemetry, 'preview')
+    mockCliTelemetry = getCliTelemetry(mockTelemetry, 'preview')
     spinners = []
     spinnerCreator = mockSpinnerCreator(spinners)
   })
 
   describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
-      await command('', mockCLITelemetry, cliOutput, spinnerCreator, services).execute()
+      await command('', mockCliTelemetry, cliOutput, spinnerCreator, services).execute()
     })
 
     it('should load the workspace', async () => {
@@ -112,7 +112,7 @@ describe('preview command', () => {
   describe('when the workspace fails to load', () => {
     let result: number
     beforeEach(async () => {
-      result = await command('errdir', mockCLITelemetry, cliOutput, spinnerCreator, services).execute()
+      result = await command('errdir', mockCliTelemetry, cliOutput, spinnerCreator, services).execute()
     })
 
     it('should fail', () => {

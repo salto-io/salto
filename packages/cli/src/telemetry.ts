@@ -41,7 +41,7 @@ export const getEvents = (
   actionsFailure: buildEventName(commandName, 'actionsFailure'),
 })
 
-export type CLITelemetry = {
+export type CliTelemetry = {
   start(tags?: Tags): void
   failure(tags?: Tags): void
   success(tags?: Tags): void
@@ -56,7 +56,7 @@ export type CLITelemetry = {
   stacktrace(err: Error, tags?: Tags): void
 }
 
-export const getCLITelemetry = (sender: Telemetry, command: string): CLITelemetry => {
+export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetry => {
   const telemetryEvents = getEvents(command)
 
   const sendCount = (name: string, value: number, tags: Tags): void => {

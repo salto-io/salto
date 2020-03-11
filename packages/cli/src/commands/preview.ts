@@ -22,11 +22,11 @@ import { formatExecutionPlan } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
-import { getCLITelemetry, CLITelemetry } from '../telemetry'
+import { getCliTelemetry, CliTelemetry } from '../telemetry'
 
 export const command = (
   workspaceDir: string,
-  cliTelemetry: CLITelemetry,
+  cliTelemetry: CliTelemetry,
   { stdout, stderr }: CliOutput,
   spinnerCreator: SpinnerCreator,
   inputServices: string[]
@@ -86,7 +86,7 @@ const previewBuilder = createCommandBuilder({
   async build(input: PreviewParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
     return command(
       '.',
-      getCLITelemetry(input.telemetry, 'preview'),
+      getCliTelemetry(input.telemetry, 'preview'),
       output,
       spinnerCreator,
       input.args.services,

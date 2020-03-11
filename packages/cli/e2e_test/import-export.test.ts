@@ -28,7 +28,7 @@ import { command as importCommand } from '../src/commands/import'
 import { command as exportCommand } from '../src/commands/export'
 import { command as deleteCommand } from '../src/commands/delete'
 import Prompts from '../src/prompts'
-import { getCLITelemetry } from '../src/telemetry'
+import { getCliTelemetry } from '../src/telemetry'
 import { runSalesforceLogin } from './helpers/workspace'
 
 const { copyFile, rm, mkdirp, exists } = file
@@ -85,7 +85,7 @@ describe('Data migration operations E2E', () => {
     it('should save the data in csv file when running export', async () => {
       await exportCommand(
         fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, getCLITelemetry(telemetry, 'export'), cliOutput
+        exportOutputFullPath, getCliTelemetry(telemetry, 'export'), cliOutput
       ).execute()
       expect(await exists(exportOutputFullPath)).toBe(true)
       const exportObjects = await readAllCsvContents(exportOutputFullPath)
@@ -95,7 +95,7 @@ describe('Data migration operations E2E', () => {
     it('should succeed when running import from a CSV file', async () => {
       await importCommand(
         fetchOutputDir, sfLeadObjectName,
-        dataFilePath, getCLITelemetry(telemetry, 'import'), cliOutput,
+        dataFilePath, getCliTelemetry(telemetry, 'import'), cliOutput,
       ).execute()
       expect(cliOutput.stdout.content).toContain(Prompts.IMPORT_ENDED_SUMMARY(2, 0))
     })
@@ -105,13 +105,13 @@ describe('Data migration operations E2E', () => {
       const updatedDataFilePath = path.join(exportOutputDir, dataWithIdFileName)
       await importCommand(
         fetchOutputDir, sfLeadObjectName,
-        dataFilePath, getCLITelemetry(telemetry, 'import'), cliOutput,
+        dataFilePath, getCliTelemetry(telemetry, 'import'), cliOutput,
       ).execute()
 
       // Replicate the file with the Ids of the created items
       await exportCommand(
         fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, getCLITelemetry(telemetry, 'fetch'), cliOutput,
+        exportOutputFullPath, getCliTelemetry(telemetry, 'fetch'), cliOutput,
       ).execute()
       const exportObjects = await readAllCsvContents(exportOutputFullPath)
       const clark = exportObjects.find(object => object.FirstName === 'Clark' && object.LastName === 'Kent')
@@ -124,7 +124,7 @@ describe('Data migration operations E2E', () => {
       await dumpCsv(deletionObjects, updatedDataFilePath, false)
 
       await deleteCommand(fetchOutputDir, sfLeadObjectName,
-        updatedDataFilePath, getCLITelemetry(telemetry, 'delete'), cliOutput).execute()
+        updatedDataFilePath, getCliTelemetry(telemetry, 'delete'), cliOutput).execute()
       expect(cliOutput.stdout.content).toContain(Prompts.DELETE_ENDED_SUMMARY(2, 0))
     })
   })
@@ -142,7 +142,7 @@ describe('Data migration operations E2E', () => {
     it('should fail when running export', async () => {
       const command = exportCommand(
         fetchOutputDir, sfLeadObjectName,
-        exportOutputFullPath, getCLITelemetry(telemetry, 'export'), cliOutput,
+        exportOutputFullPath, getCliTelemetry(telemetry, 'export'), cliOutput,
       )
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
@@ -152,7 +152,7 @@ describe('Data migration operations E2E', () => {
     it('should fail when running import from a CSV file', async () => {
       const command = importCommand(
         fetchOutputDir, sfLeadObjectName,
-        dataFilePath, getCLITelemetry(telemetry, 'import'), cliOutput,
+        dataFilePath, getCliTelemetry(telemetry, 'import'), cliOutput,
       )
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
@@ -160,7 +160,7 @@ describe('Data migration operations E2E', () => {
 
     it('should fail when running delete instances read from a CSV file', async () => {
       const command = deleteCommand(fetchOutputDir, sfLeadObjectName,
-        dataFilePath, getCLITelemetry(telemetry, 'delete'), cliOutput)
+        dataFilePath, getCliTelemetry(telemetry, 'delete'), cliOutput)
       await expect(command.execute()).rejects
         .toThrow(`Couldn't find the type you are looking for: ${sfLeadObjectName}. Have you run salto fetch yet?`)
     })

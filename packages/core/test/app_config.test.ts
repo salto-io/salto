@@ -24,16 +24,23 @@ const mockReplaceContents = file.replaceContents as jest.Mock
 const mockExists = file.exists as jest.Mock
 const mockReadFile = file.readFile as unknown as jest.Mock
 
+const cleanEnvVars = (): void => (
+  [
+    'SALTO_TELEMETRY_URL',
+    'SALTO_TELEMETRY_DISABLE',
+    'SALTO_TELEMETRY_TOKEN',
+    'SALTO_HOME',
+  ].forEach(e => delete process.env[e])
+)
+
 let keepEnv: NodeJS.ProcessEnv = {}
 describe('app config', () => {
-  beforeAll(() => { keepEnv = process.env })
+  beforeAll(() => {
+    keepEnv = process.env
+    cleanEnvVars()
+  })
   afterEach(() => {
-    [
-      'SALTO_TELEMETRY_URL',
-      'SALTO_TELEMETRY_DISABLE',
-      'SALTO_TELEMETRY_TOKEN',
-      'SALTO_HOME',
-    ].forEach(e => delete process.env[e])
+    cleanEnvVars()
   })
   afterAll(() => { process.env = keepEnv })
 

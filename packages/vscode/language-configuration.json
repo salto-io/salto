@@ -75,5 +75,5 @@
 			"'"
 		]
 	],
-	"wordPattern" : "[\\w\\.]+"
+	"wordPattern" : "[\\w.]+"
 }

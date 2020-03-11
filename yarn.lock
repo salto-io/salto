@@ -1625,11 +1625,6 @@
   resolved "https://registry.yarnpkg.com/@types/wu/-/wu-2.1.40.tgz#12072855b9dd0cb3b11e9f102e3e07ab6a1e13cd"
   integrity sha512-Y1Eda7/w3lnPFOfaTnR1h6uu2xdqFe6VGzLRzxd9VBaH7rafVlp85QOgJzUfZW5a/OLDtIk5ovxxtyHMEIYB8Q==
 
-"@types/xmldom@^0.1.29":
-  version "0.1.29"
-  resolved "https://registry.yarnpkg.com/@types/xmldom/-/xmldom-0.1.29.tgz#c4428b0ca86d3b881475726fd94980b38a27c381"
-  integrity sha1-xEKLDKhtO4gUdXJv2UmAs4onw4E=
-
 "@types/yargs-parser@*":
   version "13.1.0"
   resolved "https://registry.yarnpkg.com/@types/yargs-parser/-/yargs-parser-13.1.0.tgz#c563aa192f39350a1d18da36c5a8da382bbd8228"
@@ -11129,16 +11124,6 @@ xmldom@0.1.27:
   version "0.1.27"
   resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.1.27.tgz#d501f97b3bdb403af8ef9ecc20573187aadac0e9"
   integrity sha1-1QH5ezvbQDr4757MIFcxh6rawOk=
-
-xmldom@^0.3.0:
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/xmldom/-/xmldom-0.3.0.tgz#e625457f4300b5df9c2e1ecb776147ece47f3e5a"
-  integrity sha512-z9s6k3wxE+aZHgXYxSTpGDo7BYOUfJsIRyoZiX6HTjwpwfS2wpQBQKa2fD+ShLyPkqDYo5ud7KitmLZ2Cd6r0g==
-
-xpath-ts@^1.3.13:
-  version "1.3.13"
-  resolved "https://registry.yarnpkg.com/xpath-ts/-/xpath-ts-1.3.13.tgz#abca4f15dd7010161acf5b9cd01566f7b8d9541f"
-  integrity sha512-eNVXzDWbCV9KEB6fGNQ3qHFGC9PWBH7y2h13vZ+CMPNqOTZ+fgYTG4Sb0p5bVHiAwZrzgE6/tx987003P3dYpA==
 
 xpath@0.0.27:
   version "0.0.27"

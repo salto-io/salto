@@ -15,9 +15,51 @@
 * limitations under the License.
 */
 
-import { getEvents, buildEventName } from '../src/telemetry'
+import { getEvents, buildEventName, CLITelemetry, getCLITelemetry } from '../src/telemetry'
+import { getMockTelemetry, MockTelemetry } from './mocks'
 
 describe('telemetry event names', () => {
+  let mockTelemetry: MockTelemetry
+  let cliTelemetry: CLITelemetry
+
+  beforeEach(() => {
+    mockTelemetry = getMockTelemetry()
+  })
+
+  it('should send success events without tags', () => {
+    const command = 'import'
+    cliTelemetry = getCLITelemetry(mockTelemetry, command)
+    cliTelemetry.success()
+
+    expect(mockTelemetry.getEvents()).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()).toHaveProperty([getEvents(command).success])
+  })
+
+  it('should send success events with tags', () => {
+    const command = 'import'
+    const tags = { someTag: 'someValue' }
+    cliTelemetry = getCLITelemetry(mockTelemetry, command)
+    cliTelemetry.success(tags)
+
+    expect(mockTelemetry.getEvents()).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()).toHaveProperty([getEvents(command).success])
+    expect(mockTelemetry.getEventsMap()[getEvents(command).success]).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()[getEvents(command).success][0].tags).toHaveProperty('someTag')
+    expect(mockTelemetry.getEventsMap()[getEvents(command).success][0].tags.someTag)
+      .toEqual(tags.someTag)
+  })
+
+  it('should send mergeErrors events with some value > 1', () => {
+    const command = 'import'
+    const value = 42
+    cliTelemetry = getCLITelemetry(mockTelemetry, command)
+    cliTelemetry.mergeErrors(42)
+
+    expect(mockTelemetry.getEvents()).toHaveLength(1)
+    expect(mockTelemetry.getEventsMap()).toHaveProperty([getEvents(command).mergeErrors])
+    expect(mockTelemetry.getEventsMap()[getEvents(command).mergeErrors][0].value).toEqual(value)
+  })
+
   it('should get events for some command name', () => {
     expect(getEvents('ev')).toHaveProperty('start')
     expect(getEvents('ev').start).toEqual('workspace.ev.start')

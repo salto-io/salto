@@ -30,7 +30,7 @@ import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
-  getAdapterDependencyChangers,
+  getAdapterDependencyChangers, createDefaultAdapterConfig,
 } from './core/adapters'
 import { addServiceToConfig, loadConfig, currentEnvConfig } from './workspace/config'
 import { getPlan, Plan, PlanItem } from './core/plan'
@@ -254,13 +254,15 @@ export const init = async (defaultEnvName: string, workspaceName?: string): Prom
 
 export const addAdapter = async (
   workspaceDir: string,
-  adapterName: string
+  adapterName: string,
+  workspace: Workspace,
 ): Promise<ObjectType> => {
   const adapterCredentials = getAdaptersCredentialsTypes([adapterName])[adapterName]
   if (!adapterCredentials) {
     throw new Error('No adapter available for this service')
   }
   await addServiceToConfig(await loadConfig(workspaceDir), adapterName)
+  await createDefaultAdapterConfig(adapterName, workspace.adapterConfig)
   return adapterCredentials
 }
 

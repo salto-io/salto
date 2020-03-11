@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, Adapter, ElemIdGetter, AdapterCreatorOpts, ElemID,
+  ObjectType, Adapter, ElemIdGetter, AdapterCreatorOpts, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
 import { ConfigSource } from '../../workspace/config_source'
@@ -44,6 +44,20 @@ export const initAdapters = (
     }
   )
 
+const getDefaultAdapterConfig = (adapterName: string): InstanceElement | undefined => {
+  const { configType } = adapterCreators[adapterName]
+  return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
+}
+
+export const createDefaultAdapterConfig = async (adapterName: string, config: ConfigSource):
+Promise<InstanceElement | undefined> => {
+  const defaultConfig = getDefaultAdapterConfig(adapterName)
+  if (defaultConfig) {
+    await config.set(adapterName, defaultConfig)
+  }
+  return defaultConfig
+}
+
 export const getAdapters = async (
   adapters: string[],
   credentials: ConfigSource,
@@ -54,16 +68,9 @@ export const getAdapters = async (
     .fromPairs(await Promise.all(adapters.map(
       async adapter => {
         const adapterConfig = await config.get(adapter)
-        const { configType } = adapterCreators[adapter]
-        const defaultConfig = configType
-          ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-          : undefined
-        if (_.isUndefined(adapterConfig) && defaultConfig) {
-          await config.set(adapter, defaultConfig)
-        }
         return ([adapter, {
           credentials: await credentials.get(adapter),
-          config: adapterConfig ?? defaultConfig,
+          config: adapterConfig ?? getDefaultAdapterConfig(adapter),
           getElemIdFunc: elemIdGetter,
         }])
       }

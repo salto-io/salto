@@ -66,11 +66,11 @@ const addService = async (
     return CliExitCode.UserInputError
   }
 
-  const adapterConfigType = await addAdapter(workspaceDir, serviceName)
+  const adapterCredentialsType = await addAdapter(workspaceDir, serviceName, workspace)
   stdout.write(formatServiceAdded(serviceName))
 
   try {
-    await getLoginInputFlow(workspace, adapterConfigType, getLoginInput, stdout)
+    await getLoginInputFlow(workspace, adapterCredentialsType, getLoginInput, stdout)
   } catch (e) {
     stderr.write(formatLoginToServiceFailed(serviceName, e.message))
   }

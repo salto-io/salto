@@ -131,7 +131,7 @@ describe('salesforce client', () => {
       expect(dodoScope.isDone()).toBeFalsy()
     })
 
-    it('continue in case of error in chunk - run on each element separtly', async () => {
+    it('continue in case of error in chunk - run on each element separately', async () => {
       const workingReplay = {
         'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
       }

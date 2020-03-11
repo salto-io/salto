@@ -177,20 +177,41 @@ export const validateCredentials = async (
   }
 }
 
-const sendChunked = async <TIn, TOut>(
-  input: TIn | TIn[],
-  sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>,
+export type ErrorFilter = (error: Error) => boolean
+type SendChunkedArgs<TIn, TOut> = {
+  input: TIn | TIn[]
+  sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>
+  operationName: keyof SalesforceClient
+  chunkSize?: number
+  isSuppressedError?: ErrorFilter
+}
+const sendChunked = async <TIn, TOut>({
+  input,
+  sendChunk,
+  operationName,
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
-): Promise<TOut[]> => {
-  const promises: Promise<TOut[]>[] = _.chunk(makeArray(input), chunkSize)
-    .map(chunk => sendChunk(chunk).catch(e => {
-      log.error('failed to send chunk - iterating each element separately: %o', e)
-      const innerPromises = chunk.map(tin => sendChunk(makeArray(tin)).catch(e2 => {
-        log.error('failed to sendChunked on %o', tin)
-        throw e2
-      }).then(makeArray))
-      return Promise.all(innerPromises).then(_.flatten)
-    }).then(makeArray))
+  isSuppressedError = () => false,
+}: SendChunkedArgs<TIn, TOut>): Promise<TOut[]> => {
+  const sendSingleChunk = async (chunkInput: TIn[]): Promise<TOut[]> => {
+    try {
+      return makeArray(await sendChunk(chunkInput))
+    } catch (error) {
+      if (chunkInput.length > 1) {
+        // Try each input individually to single out the one that caused the error
+        log.error('chunked %s failed on chunk, trying each element separately', operationName)
+        return _.flatten(await Promise.all(chunkInput.map(item => sendSingleChunk([item]))))
+      }
+      if (isSuppressedError(error)) {
+        log.warn('chunked %s ignoring recoverable error on %o: %s', operationName, chunkInput[0], error.message)
+        return []
+      }
+      log.error('chunked %s unrecoverable error on %o: %o', operationName, chunkInput[0], error)
+      throw error
+    }
+  }
+  const promises = _.chunk(makeArray(input), chunkSize)
+    .filter(chunk => !_.isEmpty(chunk))
+    .map(sendSingleChunk)
   return _.flatten(await Promise.all(promises))
 }
 
@@ -288,8 +309,12 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(listMetadataQuery: ListMetadataQuery | ListMetadataQuery[]):
     Promise<FileProperties[]> {
-    return sendChunked(makeArray(listMetadataQuery), chunk => this.conn.metadata.list(chunk),
-      MAX_ITEMS_IN_LIST_METADATA_REQUEST)
+    return sendChunked({
+      operationName: 'listMetadataObjects',
+      input: listMetadataQuery,
+      sendChunk: chunk => this.conn.metadata.list(chunk),
+      chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
+    })
   }
 
   /**
@@ -298,8 +323,15 @@ export default class SalesforceClient {
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
-    return sendChunked(makeArray(name), chunk => this.conn.metadata.read(type, chunk),
-      MAX_ITEMS_IN_READ_METADATA_REQUEST)
+    return sendChunked({
+      operationName: 'readMetadata',
+      input: name,
+      sendChunk: chunk => this.conn.metadata.read(type, chunk),
+      chunkSize: MAX_ITEMS_IN_READ_METADATA_REQUEST,
+      isSuppressedError: error => (
+        this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
+      ),
+    })
   }
 
   /**
@@ -314,8 +346,12 @@ export default class SalesforceClient {
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async describeSObjects(objectNames: string[]): Promise<DescribeSObjectResult[]> {
-    return sendChunked(objectNames, chunk => this.conn.soap.describeSObjects(chunk),
-      MAX_ITEMS_IN_DESCRIBE_REQUEST)
+    return sendChunked({
+      operationName: 'describeSObjects',
+      input: objectNames,
+      sendChunk: chunk => this.conn.soap.describeSObjects(chunk),
+      chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
+    })
   }
 
   /**
@@ -329,7 +365,11 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async upsert(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<UpsertResult[]> {
-    const result = await sendChunked(metadata, chunk => this.conn.metadata.upsert(type, chunk))
+    const result = await sendChunked({
+      operationName: 'upsert',
+      input: metadata,
+      sendChunk: chunk => this.conn.metadata.upsert(type, chunk),
+    })
     log.debug('upsert %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
       type, result)
     return result
@@ -345,7 +385,11 @@ export default class SalesforceClient {
   @validateDeleteResult
   @SalesforceClient.requiresLogin
   public async delete(type: string, fullNames: string | string[]): Promise<SaveResult[]> {
-    const result = await sendChunked(fullNames, chunk => this.conn.metadata.delete(type, chunk))
+    const result = await sendChunked({
+      operationName: 'delete',
+      input: fullNames,
+      sendChunk: chunk => this.conn.metadata.delete(type, chunk),
+    })
     log.debug('deleted %o of type %s [result=%o]', fullNames, type, result)
     return result
   }
@@ -361,7 +405,11 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async update(type: string, metadata: MetadataInfo | MetadataInfo[]):
     Promise<SaveResult[]> {
-    const result = await sendChunked(metadata, chunk => this.conn.metadata.update(type, chunk))
+    const result = await sendChunked({
+      operationName: 'update',
+      input: metadata,
+      sendChunk: chunk => this.conn.metadata.update(type, chunk),
+    })
     log.debug('updated %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
       type, result)
     return result

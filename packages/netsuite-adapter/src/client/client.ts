@@ -20,6 +20,7 @@ import { ATTRIBUTES, RECORD_REF } from '../constants'
 
 export type NetsuiteRecord = Record.Types.Record
 export type NetsuiteReference = Record.Types.Reference
+type ReferenceTypeAndId = { type: string; internalId: string }
 
 const API_VERSION = '2019_2'
 
@@ -56,6 +57,14 @@ export const realConnection = (credentials: Credentials): Connection => {
   return new Connection(config)
 }
 
+const toNetsuiteRecordRef = (recordReference: ReferenceTypeAndId):
+  NetsuiteReference => {
+  const recordRef = new Record.Types.Reference(RECORD_REF)
+  recordRef.internalId = recordReference.internalId
+  recordRef.type = recordReference.type
+  return recordRef
+}
+
 export default class NetsuiteClient {
   private isLoggedIn = false
   private readonly conn: Connection
@@ -86,29 +95,23 @@ export default class NetsuiteClient {
   )
 
   @NetsuiteClient.requiresLogin
-  async list(recordReferences: { type: string; internalId: number }[]):
+  async list(referenceTypeAndIds: ReferenceTypeAndId[]):
     Promise<NetsuiteRecord[]> {
-    const recordRefs = recordReferences
-      .map(recordReference => {
-        const recordRef = new Record.Types.Reference(RECORD_REF)
-        recordRef.internalId = recordReference.internalId
-        recordRef.type = recordReference.type
-        return recordRef
-      })
+    const recordRefs = referenceTypeAndIds.map(toNetsuiteRecordRef)
     const getListResponse = await this.conn.getList(recordRefs)
     return getListResponse.readResponseList.readResponse.map(item => item.record)
   }
 
   @NetsuiteClient.requiresLogin
-  private async getCustomizationIds(type: string, includeInactives = true): Promise<number[]> {
-    const getCustomizationIdResponse = await this.conn.getCustomizationId(type, includeInactives)
+  private async getCustomizationIds(type: string): Promise<string[]> {
+    const getCustomizationIdResponse = await this.conn.getCustomizationId(type, true)
     return getCustomizationIdResponse.getCustomizationIdResult.customizationRefList
       .customizationRef.map(customization => customization[ATTRIBUTES].internalId)
   }
 
   @NetsuiteClient.requiresLogin
-  async listCustomizations(type: string, includeInactives = true): Promise<NetsuiteRecord[]> {
-    const customizationInternalIds = await this.getCustomizationIds(type, includeInactives)
+  async listCustomizations(type: string): Promise<NetsuiteRecord[]> {
+    const customizationInternalIds = await this.getCustomizationIds(type)
     const customRecordRefs = customizationInternalIds.map(internalId => ({ type, internalId }))
     return this.list(customRecordRefs)
   }
@@ -117,5 +120,11 @@ export default class NetsuiteClient {
   async add(record: NetsuiteRecord): Promise<NetsuiteReference> {
     const addResponse = await this.conn.add(record)
     return addResponse.writeResponse.baseRef
+  }
+
+  @NetsuiteClient.requiresLogin
+  async delete(recordRef: NetsuiteReference): Promise<NetsuiteReference> {
+    const deleteResponse = await this.conn.delete(recordRef)
+    return deleteResponse.writeResponse.baseRef
   }
 }

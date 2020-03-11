@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { Element, InstanceElement, ObjectType, Change } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
-import { createInstanceElement, toNetsuiteRecord, Types } from './transformer'
+import { createInstanceElement, toNetsuiteRecord, toNetsuiteReference, Types } from './transformer'
 import { ATTRIBUTES, INTERNAL_ID, METADATA_TYPE, SCRIPT_ID } from './constants'
 
 
@@ -56,9 +56,8 @@ export default class NetsuiteAdapter {
     return post
   }
 
-  public async remove(_element: Element): Promise<void> { // todo: implement
-    // eslint-disable-next-line no-console
-    console.log(this.client)
+  public async remove(instance: InstanceElement): Promise<void> {
+    await this.client.delete(toNetsuiteReference(instance))
   }
 
   public async update(_before: Element, after: Element, _changes: Iterable<Change>):

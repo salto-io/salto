@@ -16,7 +16,7 @@
 import { Record } from 'node-suitetalk'
 import createClient from './client'
 import {
-  ATTRIBUTES, ENTITY_CUSTOM_FIELD, FAMILY_TYPE, INTERNAL_ID, SCRIPT_ID,
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, FAMILY_TYPE, INTERNAL_ID, RECORD_REF, SCRIPT_ID,
 } from '../../src/constants'
 import { NetsuiteRecord, NetsuiteReference } from '../../src/client/client'
 import { recordInList } from '../utils'
@@ -68,7 +68,7 @@ describe('Client', () => {
     let listResult: NetsuiteRecord[]
     beforeEach(async () => {
       connection.init = jest.fn().mockImplementation(() => Promise.resolve())
-      listResult = await client.list([{ type: 'entityCustomField', internalId: 19 }])
+      listResult = await client.list([{ type: 'entityCustomField', internalId: '19' }])
     })
 
     it('should return list records', async () => {
@@ -123,6 +123,38 @@ describe('Client', () => {
     it('should return list records', async () => {
       expect(addResult).toBeDefined()
       expect(addResult).toEqual(reference)
+    })
+
+    it('should call init once', async () => {
+      expect(connection.init).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('delete', () => {
+    let deleteResult: NetsuiteReference
+    const reference = {
+      [ATTRIBUTES]: {
+        [INTERNAL_ID]: '123',
+        type: 'entityCustomField',
+        'xsi:type': 'platformCore:RecordRef',
+      },
+    }
+    beforeEach(async () => {
+      connection.init = jest.fn().mockImplementation(() => Promise.resolve())
+      connection.delete = jest.fn().mockReturnValue(Promise.resolve({
+        writeResponse: {
+          baseRef: reference,
+        },
+      }))
+      const recordRef = new Record.Types.Reference(RECORD_REF)
+      recordRef.internalId = '123'
+      recordRef.type = 'entityCustomField'
+      deleteResult = await client.delete(recordRef)
+    })
+
+    it('should return list records', async () => {
+      expect(deleteResult).toBeDefined()
+      expect(deleteResult).toEqual(reference)
     })
 
     it('should call init once', async () => {

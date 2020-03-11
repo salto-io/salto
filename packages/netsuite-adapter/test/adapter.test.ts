@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { Record } from 'node-suitetalk'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
-import { ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, SCRIPT_ID } from '../src/constants'
+import {
+  ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, RECORD_REF, SCRIPT_ID,
+} from '../src/constants'
 import { recordInList } from './utils'
 import { Types } from '../src/transformer'
 
@@ -70,9 +73,20 @@ describe('Adapter', () => {
     })
   })
 
-  describe('remove', () => { // todo: implement tests once implemented
-    it('dummy test for coverage', async () => {
-      await netsuiteAdapter.remove(new ObjectType({ elemID: new ElemID(NETSUITE, 'test') }))
+  describe('remove', () => {
+    beforeAll(async () => {
+      client.delete = jest.fn().mockImplementation(() => Promise.resolve())
+      const instance = new InstanceElement('test', Types.customizationObjects.EntityCustomField, {
+        [INTERNAL_ID]: '123',
+      })
+      await netsuiteAdapter.remove(instance)
+    })
+
+    it('should call client.delete with the correct parameter', () => {
+      const recordRef = new Record.Types.Reference(RECORD_REF)
+      recordRef.internalId = '123'
+      recordRef.type = 'entityCustomField'
+      expect(client.delete).toHaveBeenCalledWith(recordRef)
     })
   })
 })

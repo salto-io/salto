@@ -16,9 +16,11 @@
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator, CORE_ANNOTATIONS,
+  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator,
+  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
+import * as constants from './constants'
 import { changeValidator } from './change_validator'
 import { dependencyChanger } from './dependency_changer'
 import SalesforceAdapter, { SalesforceConfig } from './adapter'
@@ -60,6 +62,32 @@ const configType = new ObjectType({
       },
       true,
     ),
+    maxConcurrentRetrieveRequests: new Field(
+      configID,
+      'maxConcurrentRetrieveRequests',
+      BuiltinTypes.NUMBER,
+      {
+        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
+        [CORE_ANNOTATIONS.RESTRICTION]: {
+          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
+          [RESTRICTION_ANNOTATIONS.MIN]: 1,
+          [RESTRICTION_ANNOTATIONS.MAX]: 25,
+        },
+      },
+    ),
+    maxItemsInRetrieveRequest: new Field(
+      configID,
+      'maxItemsInRetrieveRequest',
+      BuiltinTypes.NUMBER,
+      {
+        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+        [CORE_ANNOTATIONS.RESTRICTION]: {
+          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
+          [RESTRICTION_ANNOTATIONS.MIN]: 1000,
+          [RESTRICTION_ANNOTATIONS.MAX]: 10000,
+        },
+      },
+    ),
   },
 })
 
@@ -75,6 +103,8 @@ SalesforceConfig => {
   const adapterConfig = {
     metadataTypesBlacklist: makeArray(config?.value?.metadataTypesBlacklist),
     instancesRegexBlacklist: makeArray(config?.value?.instancesRegexBlacklist),
+    maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
+    maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

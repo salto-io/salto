@@ -28,7 +28,7 @@ import {
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { decorators, collections } from '@salto-io/lowerdash'
+import { decorators, collections, promises } from '@salto-io/lowerdash'
 import SalesforceClient, { API_VERSION } from './client/client'
 import * as constants from './constants'
 import {
@@ -62,9 +62,9 @@ import {
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 
 const { makeArray } = collections.array
+const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
-export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 10000
 const RECORDS_CHUNK_SIZE = 10000
 export const DEFAULT_FILTERS = [
   missingFieldsFilter,
@@ -136,6 +136,12 @@ export interface SalesforceAdapterParams {
   // For example: CustomObject.Lead
   instancesRegexBlacklist?: string[]
 
+  // Max retrieve requests that we want to send concurrently
+  maxConcurrentRetrieveRequests?: number
+
+  // Max items to fetch in one retrieve request
+  maxItemsInRetrieveRequest?: number
+
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
   metadataTypeBlacklist?: string[]
@@ -187,11 +193,15 @@ type RetrieveMember = {
 export type SalesforceConfig = {
   metadataTypesBlacklist?: string[]
   instancesRegexBlacklist?: string[]
+  maxConcurrentRetrieveRequests?: number
+  maxItemsInRetrieveRequest?: number
 }
 
 export default class SalesforceAdapter {
   private metadataTypeBlacklist: string[]
   private instancesRegexBlacklist: RegExp[]
+  private maxConcurrentRetrieveRequests: number
+  private maxItemsInRetrieveRequest: number
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
@@ -212,6 +222,8 @@ export default class SalesforceAdapter {
       'AssignmentRule', 'EscalationRule',
     ],
     instancesRegexBlacklist = [],
+    maxConcurrentRetrieveRequests = constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
+    maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieveAndDeploy = {
       ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
       ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
@@ -275,6 +287,9 @@ export default class SalesforceAdapter {
     this.instancesRegexBlacklist = instancesRegexBlacklist
       .concat(makeArray(config.instancesRegexBlacklist))
       .map(e => new RegExp(e))
+    this.maxConcurrentRetrieveRequests = config.maxConcurrentRetrieveRequests
+      ?? maxConcurrentRetrieveRequests
+    this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
@@ -836,13 +851,12 @@ InstanceElement[] => {
       }
     }
 
-    const retrieveResults = await _.chunk(retrieveMembers, MAX_ITEMS_IN_RETRIEVE_REQUEST)
-      .reduce(async (prevResults, membersChunk) => {
-        // Wait for prev results before triggering another request to avoid passing the API limit
-        const results = await prevResults
-        return [...results, await this.client.retrieve(createRetrieveRequest(membersChunk))]
-      },
-      Promise.resolve<RetrieveResult[]>([]))
+    const chunkedRetrieveMembers = _.chunk(retrieveMembers, this.maxItemsInRetrieveRequest)
+    const retrieveResults = _.flatten(
+      await withLimitedConcurrency(chunkedRetrieveMembers.map(
+        retrieveChunk => () => this.client.retrieve(createRetrieveRequest(retrieveChunk))
+      ), this.maxConcurrentRetrieveRequests)
+    )
     return fromRetrieveResults(retrieveResults)
   }
 

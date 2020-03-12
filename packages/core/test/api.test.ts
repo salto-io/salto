@@ -89,6 +89,10 @@ const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Work
   getWorkspaceErrors: async () => [],
 } as unknown as Workspace)
 
+jest.mock('../src/workspace/config', () => ({
+  ...jest.requireActual('../src/workspace/config'),
+  addServiceToConfig: jest.fn().mockImplementation(),
+}))
 jest.mock('../src/core/adapters/adapters')
 jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
@@ -344,6 +348,18 @@ describe('api.ts', () => {
       })
     })
 
+    describe('addAdapter', () => {
+      it('should set adapter config', async () => {
+        const serviceName = 'test'
+        const getAdaptersCredentialsTypes = adapters.getAdaptersCredentialsTypes as jest.Mock
+        getAdaptersCredentialsTypes.mockReturnValue({
+          [serviceName]: new ObjectType({ elemID: new ElemID(serviceName) }),
+        })
+        const workspace = mockWorkspace()
+        await api.addAdapter(workspace, serviceName)
+        expect((workspace.adapterConfig.set as jest.Mock).call).toHaveLength(1)
+      })
+    })
 
     it('should persist a new config', async () => {
       const newConf = mockConfigInstance.clone()

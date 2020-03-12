@@ -23,7 +23,7 @@ import * as workspace from '../../src/workspace'
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   addAdapter: jest.fn().mockImplementation((
-    _workspaceDir: string,
+    _workspace: Workspace,
     adapterName: string
   ): Promise<ObjectType> => {
     if (adapterName === 'noAdapter') {

@@ -82,8 +82,9 @@ const allListsToSort: ReadonlyArray<UnorderedList> = [
 // on every "node".
 const applyRecursive = (type: ObjectType, value: Values,
   innerChange: (field: Field, value: Value) => Value): void => {
+  if (!value) return
   Object.keys(type.fields).forEach(key => {
-    if (!value || !value[key]) return
+    if (value[key] === undefined) return
     value[key] = innerChange(type.fields[key], value[key])
     const fieldType = type.fields[key].type
     if (isObjectType(fieldType)) {

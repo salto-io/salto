@@ -43,6 +43,7 @@ describe('convert lists filter', () => {
       ordered: new Field(mockObjId, 'ordered', mockFieldType),
       unordered: new Field(mockObjId, 'unordered', mockFieldType),
       singleHardcoded: new Field(mockObjId, 'singleHardcoded', BuiltinTypes.STRING),
+      emptyHardcoded: new Field(mockObjId, 'emptyHardcoded', BuiltinTypes.STRING),
     },
   })
 
@@ -61,6 +62,7 @@ describe('convert lists filter', () => {
         { key: 'a', value: '2' },
       ],
       singleHardcoded: 'val',
+      emptyHardcoded: '',
     },
   )
 
@@ -82,6 +84,7 @@ describe('convert lists filter', () => {
 
   const hardcodedLists: ReadonlyArray<string> = [
     mockType.fields.singleHardcoded.elemID.getFullName(),
+    mockType.fields.emptyHardcoded.elemID.getFullName(),
   ]
 
   let testElements: Element[]
@@ -139,6 +142,11 @@ describe('convert lists filter', () => {
     it('should convent hardcoded fields to lists', () => {
       expect(type.fields.singleHardcoded.isList).toBe(true)
       expect(lstInst.value.singleHardcoded).toEqual(['val'])
+    })
+
+    it('should convent empty hardcoded fields to empty lists', () => {
+      expect(type.fields.emptyHardcoded.isList).toBe(true)
+      expect(lstInst.value.emptyHardcoded).toEqual([])
     })
   })
 })

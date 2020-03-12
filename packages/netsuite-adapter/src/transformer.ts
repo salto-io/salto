@@ -325,15 +325,11 @@ const toNetsuiteFields = (instance: InstanceElement): Record.Fields.Field[] =>
     .map(([name, value]) => {
       const fieldType = instance.type.fields[name].type
       if (fieldType.elemID.isEqual(recordRefElemID)) {
-        const field = new Record.Fields.RecordRef()
-        field.field = name
+        const field = new Record.Fields.RecordRef(name)
         _.assign(field, value)
         return field
       }
-      const field = new Record.Fields.Field(fieldType.elemID.name)
-      field.field = name
-      field.value = value
-      return field
+      return new Record.Fields.Field(name, value)
     })
 
 const setAttributes = (record: NetsuiteRecord, instance: InstanceElement): void => {
@@ -349,9 +345,5 @@ export const toNetsuiteRecord = (instance: InstanceElement): NetsuiteRecord => {
   return record
 }
 
-export const toNetsuiteReference = (instance: InstanceElement): NetsuiteReference => {
-  const recordRef = new Record.Types.Reference(RECORD_REF)
-  recordRef.internalId = internalId(instance)
-  recordRef.type = metadataType(instance)
-  return recordRef
-}
+export const toNetsuiteReference = (instance: InstanceElement): NetsuiteReference =>
+  new Record.Types.Reference(RECORD_REF, metadataType(instance), internalId(instance))

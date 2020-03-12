@@ -96,17 +96,20 @@ describe('Transformer', () => {
       expect(result.bodyFieldList).toHaveLength(3)
       expect(result.bodyFieldList).toMatchObject([
         {
-          field: 'label',
-          value: 'Labelo',
+          _name: 'label',
+          _value: 'Labelo',
+          _familyType: undefined,
+          _typeName: undefined,
         },
         {
-          field: 'scriptId',
-          value: 'my_script_id',
+          _name: 'scriptId',
+          _value: 'my_script_id',
+          _familyType: undefined,
+          _typeName: undefined,
         },
         {
           internalId: '-5',
-          field: 'owner',
-          name: 'Owner Name',
+          _name: 'owner',
         },
       ])
     })

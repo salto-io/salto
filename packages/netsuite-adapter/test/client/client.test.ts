@@ -170,9 +170,7 @@ describe('Client', () => {
           baseRef: reference,
         },
       }))
-      const recordRef = new Record.Types.Reference(RECORD_REF)
-      recordRef.internalId = '123'
-      recordRef.type = 'entityCustomField'
+      const recordRef = new Record.Types.Reference(RECORD_REF, 'entityCustomField', '123')
       deleteResult = await client.delete(recordRef)
     })
 

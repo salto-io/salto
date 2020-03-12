@@ -23,7 +23,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { apiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { generateApiNameToCustomObject, getInstancesOfMetadataType, customObjectApiName, instanceShortName } from './utils'
+import { getInstancesOfMetadataType, instanceShortName, instanceParent } from './utils'
 import { SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, VALIDATION_RULES_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
@@ -48,41 +48,40 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         .map(elem => Object.values((elem as ObjectType).fields))
         .flatten()
 
-    const apiNameToCustomObject = generateApiNameToCustomObject(elements)
     const apiNameToRules = _.groupBy(
       getInstancesOfMetadataType(elements, VALIDATION_RULES_METADATA_TYPE),
-      customObjectApiName
+      rule => instanceParent(rule)?.getFullName()
     )
 
     wu(findInstances(elements, CUSTOM_OBJ_METADATA_TYPE_ID))
       .forEach(customTranslation => {
-        const customObjApiName = customObjectApiName(customTranslation)
-        const customObject = apiNameToCustomObject.get(customObjApiName)
-        if (_.isUndefined(customObject)) {
-          log.warn('failed to find custom object %s for custom translation', customObjApiName,
+        const customObjectElemId = instanceParent(customTranslation)
+        if (_.isUndefined(customObjectElemId)) {
+          log.warn('failed to find custom object for custom translation %s',
             apiName(customTranslation))
           return
         }
 
         // Change fields to reference
         makeArray(customTranslation.value[FIELDS]).forEach(field => {
-          const customField = wu(allCustomObjectFields(customObject.elemID))
+          const customField = wu(allCustomObjectFields(customObjectElemId))
             .find(f => apiName(f, true) === field[NAME])
           if (customField) {
             field[NAME] = new ReferenceExpression(customField.elemID)
           } else {
-            log.warn('failed to find field %s in %s', field[NAME], customObjApiName)
+            log.warn('failed to find field %s in %s', field[NAME], customObjectElemId.getFullName())
           }
         })
 
         // Change validation rules to refs
-        const objRules = apiNameToRules[customObjApiName]
+        const objRules = apiNameToRules[customObjectElemId.getFullName()]
         makeArray(customTranslation.value[VALIDATION_RULES]).forEach(rule => {
           const ruleInstance = objRules?.find(r => instanceShortName(r) === rule[NAME])
           if (ruleInstance) {
             rule[NAME] = new ReferenceExpression(ruleInstance.elemID)
           } else {
-            log.warn('failed to validation rule %s for %s', rule[NAME], customObjApiName)
+            log.warn('failed to validation rule %s for %s', rule[NAME],
+              customObjectElemId.getFullName())
           }
         })
       })

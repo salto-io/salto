@@ -85,6 +85,7 @@ export const DEFAULT_FILTERS = [
   topicsForObjectsFilter,
   valueSetFilter,
   globalValueSetFilter,
+  // customObjectTranslationFilter depends on customObjectsFilter
   customObjectTranslationFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,

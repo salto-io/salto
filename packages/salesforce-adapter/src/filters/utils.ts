@@ -130,6 +130,9 @@ export const customObjectApiName = (instance: InstanceElement): string =>
 export const instanceShortName = (instance: InstanceElement): string =>
   apiName(instance).slice(customObjectApiName(instance).length + 1)
 
+export const instanceParent = (instance: InstanceElement): ElemID | undefined =>
+  instance.annotations[INSTANCE_ANNOTATIONS.PARENT]?.elemId
+
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
   const instanceDeps = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])

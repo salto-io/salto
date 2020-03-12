@@ -44,18 +44,18 @@ const credentialsType = new ObjectType({
 const configType = new ObjectType({
   elemID: configID,
   fields: {
-    metadataTypesBlacklist: new Field(
+    metadataTypesSkippedList: new Field(
       configID,
-      'metadataTypesBlacklist',
+      'metadataTypesSkippedList',
       BuiltinTypes.STRING,
       {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
       true,
     ),
-    instancesRegexBlacklist: new Field(
+    instancesRegexSkippedList: new Field(
       configID,
-      'instancesRegexBlacklist',
+      'instancesRegexSkippedList',
       BuiltinTypes.STRING,
       {
         [CORE_ANNOTATIONS.DEFAULT]: [],
@@ -101,8 +101,8 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 SalesforceConfig => {
   const adapterConfig = {
-    metadataTypesBlacklist: makeArray(config?.value?.metadataTypesBlacklist),
-    instancesRegexBlacklist: makeArray(config?.value?.instancesRegexBlacklist),
+    metadataTypesSkippedList: makeArray(config?.value?.metadataTypesSkippedList),
+    instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
     maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
   }

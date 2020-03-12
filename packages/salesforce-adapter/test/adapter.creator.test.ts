@@ -64,8 +64,8 @@ describe('SalesforceAdapter creator', () => {
       ElemID.CONFIG_NAME,
       creator.configType as ObjectType,
       {
-        metadataTypesBlacklist: ['test1'],
-        instancesRegexBlacklist: ['test3', 'test2'],
+        metadataTypesSkippedList: ['test1'],
+        instancesRegexSkippedList: ['test3', 'test2'],
         notExist: ['not exist'],
       }
     )
@@ -88,8 +88,8 @@ describe('SalesforceAdapter creator', () => {
     it('creates the adapter correctly', () => {
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
-          metadataTypesBlacklist: ['test1'],
-          instancesRegexBlacklist: ['test3', 'test2'],
+          metadataTypesSkippedList: ['test1'],
+          instancesRegexSkippedList: ['test3', 'test2'],
         },
         client: expect.any(Object),
         getElemIdFunc: undefined,

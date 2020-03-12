@@ -39,8 +39,8 @@ describe('SalesforceAdapter fetch', () => {
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
-        metadataTypeBlacklist: ['Test1', 'Ignored1'],
-        instancesRegexBlacklist: ['Test2.instance1', 'Blacklist$'],
+        metadataTypesSkippedList: ['Test1', 'Ignored1'],
+        instancesRegexSkippedList: ['Test2.instance1', 'SkippedList$'],
       },
     }))
   })
@@ -663,7 +663,7 @@ describe('SalesforceAdapter fetch', () => {
       )
     })
 
-    describe('should not fetch blacklist metadata types and instance', () => {
+    describe('should not fetch skippedlist metadata types and instance', () => {
       let result: Element[] = []
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
@@ -693,19 +693,19 @@ describe('SalesforceAdapter fetch', () => {
         result = await adapter.fetch()
       })
 
-      it('should skip blacklist types', () => {
+      it('should skip skippedlist types', () => {
         expect(findElements(result, 'Test1')).toHaveLength(0)
         expect(findElements(result, 'Test2')).toHaveLength(1)
         expect(findElements(result, 'Test3')).toHaveLength(1)
       })
 
-      it('should skip blacklist instances', () => {
+      it('should skip skippedlist instances', () => {
         expect(findElements(result, 'Test2', 'instance1')).toHaveLength(0)
         expect(findElements(result, 'Test3', 'instance1')).toHaveLength(1)
       })
     })
 
-    describe('should not fetch blacklist retrieve instance', () => {
+    describe('should not fetch skippedlist retrieve instance', () => {
       let result: Element[] = []
       beforeEach(async () => {
         mockSingleMetadataType('EmailTemplate', [{
@@ -724,9 +724,9 @@ describe('SalesforceAdapter fetch', () => {
           valueRequired: false,
         }])
 
-        mockSingleMetadataInstance('MyFolder/MyEmailTemplateBlacklist',
-          { fullName: 'MyFolder/MyEmailTemplateBlacklist' }, undefined,
-          [{ path: 'unpackaged/email/MyFolder/MyEmailTemplateBlacklist.email-meta.xml',
+        mockSingleMetadataInstance('MyFolder/MyEmailTemplateSkippedList',
+          { fullName: 'MyFolder/MyEmailTemplateSkippedList' }, undefined,
+          [{ path: 'unpackaged/email/MyFolder/MyEmailTemplateSkippedList.email-meta.xml',
             content: '<?xml version="1.0" encoding="UTF-8"?>\n'
               + '<EmailTemplate xmlns="http://soap.sforce.com/2006/04/metadata">\n'
               + '    <available>false</available>\n'
@@ -737,14 +737,14 @@ describe('SalesforceAdapter fetch', () => {
               + '    <type>text</type>\n'
               + '    <uiType>Aloha</uiType>\n'
               + '</EmailTemplate>\n' },
-          { path: 'unpackaged/email/MyFolder/MyEmailTemplateBlacklist.email',
+          { path: 'unpackaged/email/MyFolder/MyEmailTemplateSkippedList.email',
             content: 'Email Body' }])
 
         result = await adapter.fetch()
       })
 
-      it('should skip blacklist retrieve instances', () => {
-        expect(findElements(result, 'EmailTemplate', 'MyFolder_MyEmailTemplateBlacklist'))
+      it('should skip skippedlist retrieve instances', () => {
+        expect(findElements(result, 'EmailTemplate', 'MyFolder_MyEmailTemplateSkippedList'))
           .toHaveLength(0)
       })
     })

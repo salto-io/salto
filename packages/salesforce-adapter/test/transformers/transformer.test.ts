@@ -520,7 +520,7 @@ describe('transformer', () => {
         expect(_.get(customObj, DESCRIPTION)).toEqual('MyDescription')
       })
 
-      it('should not transform blacklisted annotations', () => {
+      it('should not transform skiplisted annotations', () => {
         expect(_.get(customObj, API_NAME)).toBeUndefined()
         expect(_.get(customObj, METADATA_TYPE)).toBeUndefined()
       })

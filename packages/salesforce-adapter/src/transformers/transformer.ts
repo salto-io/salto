@@ -823,7 +823,7 @@ export const toCustomField = (
   )
 
   // Skip the assignment of the following annotations that are defined as annotationType
-  const blacklistedAnnotations: string[] = [
+  const skiplistedAnnotations: string[] = [
     API_NAME, // used to mark the SERVICE_ID but does not exist in the CustomObject
     FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.VALUE_SET, // handled in the CustomField constructor
@@ -836,7 +836,7 @@ export const toCustomField = (
   ]
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)
-    && !blacklistedAnnotations.includes(annotationName)
+    && !skiplistedAnnotations.includes(annotationName)
     // Cannot specify label on standard field
     && (annotationName !== LABEL || isCustom(newField.fullName))
   )
@@ -862,7 +862,7 @@ export const toCustomObject = (
       : undefined
   )
   // Skip the assignment of the following annotations that are defined as annotationType
-  const blacklistedAnnotations: string[] = [
+  const skiplistedAnnotations: string[] = [
     API_NAME, // we use it as fullName
     METADATA_TYPE, // internal annotation
     LABEL, // we send it in CustomObject constructor to enable default for pluralLabels
@@ -870,7 +870,7 @@ export const toCustomObject = (
 
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(element.annotationTypes).includes(annotationName)
-    && !blacklistedAnnotations.includes(annotationName)
+    && !skiplistedAnnotations.includes(annotationName)
   )
 
   _.assign(

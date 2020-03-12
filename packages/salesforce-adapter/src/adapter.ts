@@ -134,7 +134,7 @@ export interface SalesforceAdapterParams {
   // Regular expressions for instances that we want to exclude from readMetadata
   // The regular expression would be matched against instances of the format METADATA_TYPE.INSTANCE
   // For example: CustomObject.Lead
-  instancesRegexBlacklist?: string[]
+  instancesRegexSkippedList?: string[]
 
   // Max retrieve requests that we want to send concurrently
   maxConcurrentRetrieveRequests?: number
@@ -144,7 +144,7 @@ export interface SalesforceAdapterParams {
 
   // Metadata types that we do not want to fetch even though they are returned as top level
   // types from the API
-  metadataTypeBlacklist?: string[]
+  metadataTypesSkippedList?: string[]
 
   // Metadata types that we have to fetch using the retrieve API endpoint and add update or remove
   // using the deploy API endpoint
@@ -191,15 +191,15 @@ type RetrieveMember = {
 }
 
 export type SalesforceConfig = {
-  metadataTypesBlacklist?: string[]
-  instancesRegexBlacklist?: string[]
+  metadataTypesSkippedList?: string[]
+  instancesRegexSkippedList?: string[]
   maxConcurrentRetrieveRequests?: number
   maxItemsInRetrieveRequest?: number
 }
 
 export default class SalesforceAdapter {
-  private metadataTypeBlacklist: string[]
-  private instancesRegexBlacklist: RegExp[]
+  private metadataTypesSkippedList: string[]
+  private instancesRegexSkippedList: RegExp[]
   private maxConcurrentRetrieveRequests: number
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieveAndDeploy: Record<string, string | undefined>
@@ -212,7 +212,7 @@ export default class SalesforceAdapter {
   private systemFields: string[]
 
   public constructor({
-    metadataTypeBlacklist = [
+    metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
       'Settings',
       'StaticResource',
@@ -221,7 +221,7 @@ export default class SalesforceAdapter {
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
     ],
-    instancesRegexBlacklist = [],
+    instancesRegexSkippedList = [],
     maxConcurrentRetrieveRequests = constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
     metadataToRetrieveAndDeploy = {
@@ -282,10 +282,10 @@ export default class SalesforceAdapter {
     ],
     config,
   }: SalesforceAdapterParams) {
-    this.metadataTypeBlacklist = metadataTypeBlacklist
-      .concat(makeArray(config.metadataTypesBlacklist))
-    this.instancesRegexBlacklist = instancesRegexBlacklist
-      .concat(makeArray(config.instancesRegexBlacklist))
+    this.metadataTypesSkippedList = metadataTypesSkippedList
+      .concat(makeArray(config.metadataTypesSkippedList))
+    this.instancesRegexSkippedList = instancesRegexSkippedList
+      .concat(makeArray(config.instancesRegexSkippedList))
       .map(e => new RegExp(e))
     this.maxConcurrentRetrieveRequests = config.maxConcurrentRetrieveRequests
       ?? maxConcurrentRetrieveRequests
@@ -748,7 +748,7 @@ InstanceElement[] => {
       types => types
         .map(x => x.xmlName)
         .concat(this.metadataAdditionalTypes)
-        .filter(name => !this.metadataTypeBlacklist.includes(name))
+        .filter(name => !this.metadataTypesSkippedList.includes(name))
     )
   }
 
@@ -805,7 +805,7 @@ InstanceElement[] => {
       .map(([type, files]) => _(files)
         .map(constants.INSTANCE_FULL_NAME_FIELD)
         .uniq()
-        .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexBlacklist))
+        .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexSkippedList))
         .map(name => ({ type, name }))
         .value())
       .flatten()
@@ -934,7 +934,7 @@ InstanceElement[] => {
       .value()
 
     const instancesFullNames = objs.map(getFullName)
-      .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexBlacklist))
+      .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexSkippedList))
     const instanceInfos = await this.client.readMetadata(type, instancesFullNames)
       .catch(err => {
         log.error('failed to read metadata for type %s', type)

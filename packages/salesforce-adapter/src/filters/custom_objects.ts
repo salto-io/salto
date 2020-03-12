@@ -45,7 +45,7 @@ import {
 import {
   id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue,
   buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference, apiNameParts,
-  customObjectApiName,
+  parentApiName,
 } from './utils'
 import { convertList } from './convert_lists'
 import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
@@ -202,7 +202,7 @@ const getFieldDependency = (values: Values): Values | undefined => {
   return undefined
 }
 
-const transfromAnnotationsNames = (fields: Values, parentApiName: string): Values => {
+const transfromAnnotationsNames = (fields: Values, parentName: string): Values => {
   const annotations: Values = {}
   const typeName = fields[INSTANCE_TYPE_FIELD]
   Object.entries(fields).forEach(([k, v]) => {
@@ -211,7 +211,7 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
         annotations[CORE_ANNOTATIONS.REQUIRED] = v
         break
       case INSTANCE_FULL_NAME_FIELD:
-        annotations[API_NAME] = [parentApiName, v].join(API_NAME_SEPERATOR)
+        annotations[API_NAME] = [parentName, v].join(API_NAME_SEPERATOR)
         break
       case FIELD_ANNOTATIONS.DEFAULT_VALUE:
         if (typeName === FIELD_TYPE_NAMES.CHECKBOX) {
@@ -262,7 +262,7 @@ const transfromAnnotationsNames = (fields: Values, parentApiName: string): Value
 
 export const transformFieldAnnotations = (
   instanceFieldValues: Values,
-  parentApiName: string
+  parentName: string
 ): Values => {
   // Ignores typeless/unknown typed instances
   if (!_.has(instanceFieldValues, INSTANCE_TYPE_FIELD)) {
@@ -274,7 +274,7 @@ export const transformFieldAnnotations = (
     return {}
   }
 
-  const annotations = transfromAnnotationsNames(instanceFieldValues, parentApiName)
+  const annotations = transfromAnnotationsNames(instanceFieldValues, parentName)
   const annotationsType = buildAnnotationsObjectType(fieldType.annotationTypes)
   convertList(annotationsType, annotations)
 
@@ -501,7 +501,7 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
   const apiNameToCustomObject = generateApiNameToCustomObject(elements)
 
   const getDependentCustomObj = (instance: InstanceElement): ObjectType | undefined => {
-    const customObject = apiNameToCustomObject.get(customObjectApiName(instance))
+    const customObject = apiNameToCustomObject.get(parentApiName(instance))
     if (_.isUndefined(customObject)
       && metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE) {
       return apiNameToCustomObject.get('Lead')

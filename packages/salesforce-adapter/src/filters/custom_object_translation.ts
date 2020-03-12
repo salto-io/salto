@@ -23,7 +23,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { apiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { instanceShortName, instanceParent, customObjectToMetadataTypeInstances } from './utils'
+import { relativeApiName, instanceParent, parentApiNameToMetadataTypeInstances } from './utils'
 import { SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, VALIDATION_RULES_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
@@ -45,7 +45,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         .map(elem => Object.values((elem as ObjectType).fields))
         .flatten()
 
-    const customToRule = customObjectToMetadataTypeInstances(
+    const customToRule = parentApiNameToMetadataTypeInstances(
       elements, VALIDATION_RULES_METADATA_TYPE
     )
 
@@ -72,7 +72,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         // Change validation rules to refs
         const objRules = customToRule[customObjectElemId.getFullName()]
         makeArray(customTranslation.value[VALIDATION_RULES]).forEach(rule => {
-          const ruleInstance = objRules?.find(r => instanceShortName(r) === rule[NAME])
+          const ruleInstance = objRules?.find(r => relativeApiName(r) === rule[NAME])
           if (ruleInstance) {
             rule[NAME] = new ReferenceExpression(ruleInstance.elemID)
           } else {

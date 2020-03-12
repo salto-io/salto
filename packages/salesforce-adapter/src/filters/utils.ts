@@ -124,11 +124,11 @@ export const generateApiNameToCustomObject = (elements: Element[]): Map<string, 
 export const apiNameParts = (instance: InstanceElement): string[] =>
   apiName(instance).split(/\.|-/g)
 
-export const customObjectApiName = (instance: InstanceElement): string =>
+export const parentApiName = (instance: InstanceElement): string =>
   apiNameParts(instance)[0]
 
-export const instanceShortName = (instance: InstanceElement): string =>
-  apiName(instance).slice(customObjectApiName(instance).length + 1)
+export const relativeApiName = (instance: InstanceElement): string =>
+  apiName(instance).slice(parentApiName(instance).length + 1)
 
 export const instanceParent = (instance: InstanceElement): ElemID | undefined =>
   instance.annotations[INSTANCE_ANNOTATIONS.PARENT]?.elemId
@@ -146,7 +146,7 @@ export const addObjectParentReference = (instance: InstanceElement,
 export const fullApiName = (parent: string, child: string): string =>
   ([parent, child].join(API_NAME_SEPERATOR))
 
-export const customObjectToMetadataTypeInstances = (elements: Element[], type: string):
+export const parentApiNameToMetadataTypeInstances = (elements: Element[], type: string):
 Dictionary<InstanceElement[]> => _(getInstancesOfMetadataType(elements, type))
   .groupBy(instance => instanceParent(instance)?.getFullName())
   .value() as Dictionary<InstanceElement[]>

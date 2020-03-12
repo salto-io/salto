@@ -26,7 +26,7 @@ describe('workspace', () => {
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(await mockWorkspace(bpFileName))
-    await validate(workspace, 14)
+    await validate(workspace, 15)
   })
 
   it('should collect errors', async () => {
@@ -52,7 +52,7 @@ describe('workspace', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    await validate(workspace, 14)
+    await validate(workspace, 15)
   })
 
   it('should support file removal', async () => {
@@ -78,7 +78,7 @@ describe('workspace', () => {
     await workspace.awaitAllUpdates()
     expect(await workspace.workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    await validate(workspace, 14)
+    await validate(workspace, 15)
     const lastValid = workspace.getValidCopy()
     if (!lastValid) throw new Error('lastValid not defined')
     expect(lastValid).not.toEqual(workspace)

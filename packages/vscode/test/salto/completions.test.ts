@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import {
@@ -27,7 +28,7 @@ interface Pos {
 }
 
 // TODO: figure how to fix this
-// eslint-disable-next-line jest/no-disabled-tests
+
 describe('Test auto complete', () => {
   const getLine = async (
     workspace: EditorWorkspace,
@@ -388,7 +389,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    // eslint-disable-next-line jest/no-disabled-tests
+
     it('should suggest annotations when base is an object type with 1 level nesting', async () => {
       const pos = { line: 145, col: 37 }
       const line = await getLine(workspace, bpFileName, pos)
@@ -438,7 +439,7 @@ describe('Test auto complete', () => {
       const exclude = [...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
-    // eslint-disable-next-line jest/no-disabled-tests
+
     it('should suggest all field\'s annotations inside string template', async () => {
       const pos = { line: 148, col: 41 }
       const line = await getLine(workspace, bpFileName, pos)
@@ -489,7 +490,7 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    // eslint-disable-next-line jest/no-disabled-tests
+
     it('should suggest all field\'s annotations inside string template with prefix', async () => {
       const pos = { line: 151, col: 45 }
       const line = await getLine(workspace, bpFileName, pos)
@@ -539,7 +540,7 @@ describe('Test auto complete', () => {
       const exclude = [...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
-    // eslint-disable-next-line jest/no-disabled-tests
+
     it('should suggest all field\'s annotations inside string template with empty prefix', async () => {
       const pos = { line: 154, col: 45 }
       const line = await getLine(workspace, bpFileName, pos)
@@ -592,7 +593,7 @@ describe('Test auto complete', () => {
       const exclude = [...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
-    // eslint-disable-next-line jest/no-disabled-tests
+
     it('should suggest all field\'s annotations inside string template with complex prefix', async () => {
       const pos = { line: 157, col: 45 }
       const line = await getLine(workspace, bpFileName, pos)
@@ -612,13 +613,23 @@ describe('Test auto complete', () => {
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
-    // eslint-disable-next-line jest/no-disabled-tests
+
     it('should return nothing on non-existing base element', async () => {
       const pos = { line: 139, col: 31 }
       const line = (await getLine(workspace, bpFileName, pos)).replace('vs_weekend_car', 'nothing')
       const ctx = await getPositionContext(workspace, bpFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include: string[] = []
+      const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+
+    it('should return instance annotations', async () => {
+      const pos = { line: 192, col: 40 }
+      const line = (await getLine(workspace, bpFileName, pos)).replace('vs_weekend_car', 'nothing')
+      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = [INSTANCE_ANNOTATIONS.PARENT]
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })

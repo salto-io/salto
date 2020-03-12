@@ -81,7 +81,7 @@ const refNameSuggestions = (
     case 'annotation':
       return isType(baseElement) ? _.keys(baseElement.annotationTypes) : []
     case 'attr':
-      return isType(baseElement) ? _.keys(baseElement.annotations) : []
+      return _.keys(baseElement.annotations)
     case 'field':
       return isObjectType(baseElement) ? _.keys(baseElement.fields) : []
     case 'instance':
@@ -105,7 +105,10 @@ const refValueSuggestions = (
     return _.keys(refValue.annotations)
   }
   if (isInstanceElement(refValue)) {
-    return _.keys(refValue.value)
+    return [
+      ..._.keys(refValue.value),
+      ..._.keys(refValue.annotations),
+    ]
   }
   if (_.isPlainObject(refValue)) {
     return _.keys(refValue)

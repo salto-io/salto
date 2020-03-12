@@ -183,3 +183,11 @@ type vs.foo {
         }
     }
 }
+
+vs.person hadar {
+    _parent = vs.loan.instance.weekend_car
+}
+
+vs.person parentTester {
+    _parent = vs.person.instance.hadar._parent
+}

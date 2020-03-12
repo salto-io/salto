@@ -103,10 +103,10 @@ describe('Test Salto Expressions', () => {
     })
 
     const instanceWithFunctions = new InstanceElement('withfunctions', base, {
-      simple: new FunctionExpression('simple', ['aaa']),
-      several: new FunctionExpression('several', [false, 123]),
-      list: new FunctionExpression('list', [['aaa', true, 123]]),
-      mixed: new FunctionExpression('mixed', ['aaa', [1, 2, 'aa']]),
+      simple: new FunctionExpression('simple', ['aaa'], 'none'),
+      several: new FunctionExpression('several', [false, 123], 'none'),
+      list: new FunctionExpression('list', [['aaa', true, 123]], 'none'),
+      mixed: new FunctionExpression('mixed', ['aaa', [1, 2, 'aa']], 'none'),
     })
 
     const elements = [

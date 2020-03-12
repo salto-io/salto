@@ -33,7 +33,7 @@ export class FunctionExpression {
   constructor(
     public readonly funcName: string,
     public readonly parameters: Value[],
-    public readonly bpPath: string = 'none'
+    public readonly bpPath: string
   ) {}
 
   static get serializedTypeName(): string { return 'FunctionExpression' }

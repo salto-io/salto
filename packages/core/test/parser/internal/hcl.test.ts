@@ -255,7 +255,7 @@ describe('HCL parse', () => {
   describe('source ranges with errors', () => {
     const blockDef = `
       type foo {
-        novalue = 
+        novalue =
         hasvalue = "value"
       }
     `
@@ -285,12 +285,12 @@ describe('HCL parse', () => {
       expect(block.source).toEqual({
         filename: 'none',
         start: { byte: 7, col: 7, line: 2 },
-        end: { byte: 86, col: 8, line: 5 },
+        end: { byte: 85, col: 8, line: 5 },
       })
       expect(block.attrs.hasvalue.source).toEqual({
         filename: 'none',
-        start: { byte: 60, col: 9, line: 4 },
-        end: { byte: 78, col: 27, line: 4 },
+        start: { byte: 59, col: 9, line: 4 },
+        end: { byte: 77, col: 27, line: 4 },
       })
     })
   })
@@ -335,13 +335,13 @@ describe('HCL dump', () => {
                 ' test',
               ],
             }),
-            somefunc: new FunctionExpression('funcush', ['ZOMG']),
-            otherfunc: new FunctionExpression('so_plenty', [[false, 1, '4rlz']]),
-            mixedfunc: new FunctionExpression('mixtush', [false, [1, 2, 3], '4rlz']),
-            lastfunc: new FunctionExpression('severalush', [false, 1, '4rlz']),
-            nestedfunc: new FunctionExpression('nestush', [false, [1, 2, [3, 4]], '4rlz']),
-            superdeepnest: new FunctionExpression('nestbaabuabua', [false, [1, 2, [3, [4, 5, { dsa: 321 }]]], '4rlz']),
-            objinfunc: new FunctionExpression('objfunc', [{ aaa: 123 }]),
+            somefunc: new FunctionExpression('funcush', ['ZOMG'], 'none'),
+            otherfunc: new FunctionExpression('so_plenty', [[false, 1, '4rlz']], 'none'),
+            mixedfunc: new FunctionExpression('mixtush', [false, [1, 2, 3], '4rlz'], 'none'),
+            lastfunc: new FunctionExpression('severalush', [false, 1, '4rlz'], 'none'),
+            nestedfunc: new FunctionExpression('nestush', [false, [1, 2, [3, 4]], '4rlz'], 'none'),
+            superdeepnest: new FunctionExpression('nestbaabuabua', [false, [1, 2, [3, [4, 5, { dsa: 321 }]]], '4rlz'], 'none'),
+            objinfunc: new FunctionExpression('objfunc', [{ aaa: 123 }], 'none'),
             nested: {
               val: 'so deep',
             },

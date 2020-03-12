@@ -90,12 +90,12 @@ describe('State serialization', () => {
     'also_me_function',
     model,
     {
-      singleparam: new FunctionExpression('funcadelic', ['aaa']),
-      multipleparams: new FunctionExpression('george', [false, 321]),
-      withlist: new FunctionExpression('washington', ['ZOMG', [3, 2, 1]]),
-      withobject: new FunctionExpression('maggot', [{ aa: '312' }]),
-      mixed: new FunctionExpression('brain', [1, [1, { aa: '312' }], false, 'aaa']),
-      withfile: new StaticFileAssetExpression('file', ['some/path.ext']),
+      singleparam: new FunctionExpression('funcadelic', ['aaa'], 'none'),
+      multipleparams: new FunctionExpression('george', [false, 321], 'none'),
+      withlist: new FunctionExpression('washington', ['ZOMG', [3, 2, 1]], 'none'),
+      withobject: new FunctionExpression('maggot', [{ aa: '312' }], 'none'),
+      mixed: new FunctionExpression('brain', [1, [1, { aa: '312' }], false, 'aaa'], 'none'),
+      withfile: new StaticFileAssetExpression('file', ['some/path.ext'], 'none'),
     },
   )
 

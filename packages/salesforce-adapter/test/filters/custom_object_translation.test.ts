@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, Field, BuiltinTypes, ElemID,
+  ObjectType, InstanceElement, Field, BuiltinTypes, ElemID, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_object_translation'
 import {
@@ -70,11 +70,11 @@ describe('custom object translation filter', () => {
     beforeAll(async () => {
       const filter = filterCreator() as FilterWith<'onFetch'>
       const testElements = [
-        _.clone(objTranslationInstance),
-        _.clone(customObject),
-        _.clone(objTranslationType),
-        _.clone(validationRuleType),
-        _.clone(validationRuleInstance),
+        objTranslationInstance.clone(),
+        customObject.clone(),
+        objTranslationType.clone(),
+        validationRuleType.clone(),
+        validationRuleInstance.clone(),
       ]
       await filter.onFetch(testElements)
       postFilter = testElements[0] as InstanceElement
@@ -83,7 +83,7 @@ describe('custom object translation filter', () => {
     describe('fields reference', () => {
       it('should transform fields to reference', async () => {
         expect(postFilter.value.fields[0].name)
-          .toEqual(customObject.fields[customFieldName].elemID)
+          .toEqual(new ReferenceExpression(customObject.fields[customFieldName].elemID))
       })
       it('should keep name as is if no referenced field was found', async () => {
         expect(postFilter.value.fields[1].name).toBe('not-exists')
@@ -93,7 +93,7 @@ describe('custom object translation filter', () => {
     describe('validation rules reference', () => {
       it('should transform validation rules to reference', async () => {
         expect(postFilter.value.validationRules[0].name)
-          .toEqual(validationRuleInstance.elemID)
+          .toEqual(new ReferenceExpression(validationRuleInstance.elemID))
       })
       it('should keep name as is if no referenced validation rules was found', async () => {
         expect(postFilter.value.validationRules[1].name).toBe('not-exists')

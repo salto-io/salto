@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Element, ElemID, findInstances, InstanceElement,
+  Element, ElemID, findInstances, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -51,12 +51,19 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       .forEach(customTranslation => {
         const customObjApiName = apiNameParts(customTranslation)[0]
 
-        // Change fields to reference
+        // Add parent annotation
         const customObj = apiNameToCustomObject.get(customObjApiName)
+        if (customObj) {
+          customTranslation.annotate({
+            [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(customObj.elemID),
+          })
+        }
+
+        // Change fields to reference
         makeArray(customTranslation.value[FIELDS]).forEach(field => {
           const customField = customObj?.fields[field[NAME]]
           if (customField) {
-            field[NAME] = customField.elemID
+            field[NAME] = new ReferenceExpression(customField.elemID)
           }
         })
 
@@ -65,7 +72,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         makeArray(customTranslation.value[VALIDATION_RULES]).forEach(rule => {
           const ruleInstance = objRules?.find(r => _.isEqual(ruleShortName(r), rule[NAME]))
           if (ruleInstance) {
-            rule[NAME] = ruleInstance.elemID
+            rule[NAME] = new ReferenceExpression(ruleInstance.elemID)
           }
         })
       })

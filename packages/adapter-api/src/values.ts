@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { types } from '@salto-io/lowerdash'
+import {
+  types,
+  files,
+} from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { ElemID } from './element_id'
 
@@ -29,10 +32,62 @@ export interface Values {
 export class FunctionExpression {
   constructor(
     public readonly funcName: string,
-    public readonly parameters: Value[]
+    public readonly parameters: Value[],
+    public readonly bpPath: string = 'none'
   ) {}
 
   static get serializedTypeName(): string { return 'FunctionExpression' }
+  static get functionNameAliases(): string[] { return [] }
+
+  public equals(other: FunctionExpression): boolean {
+    return this.funcName === other.funcName
+    && this.parameters.length === other.parameters.length
+    && this.parameters.every((param, index) => param === other.parameters[index])
+  }
+}
+
+export class StaticFileAssetExpression extends FunctionExpression {
+  public relativeFileName: string
+  private fileContent?: Buffer
+  public hash?: string
+  constructor(
+    // NOTE: Whilst it might look unnecessary,
+    // we need the func name here to ensure that we keep whatever aliases the user use manually
+    public readonly funcName: string,
+    public readonly parameters: Value[],
+    public readonly bpPath: string = 'none',
+    contentOrHash?: Buffer|string
+  ) {
+    super(funcName, parameters, bpPath)
+    const [relativeFileName] = parameters
+    this.relativeFileName = relativeFileName
+    if (contentOrHash) {
+      if (contentOrHash instanceof Buffer) {
+        this.content = contentOrHash
+      } else {
+        this.hash = contentOrHash as string
+      }
+    }
+  }
+
+  static get serializedTypeName(): string { return 'StaticFileAssetExpression' }
+  static get functionNameAliases(): string[] { return ['file'] }
+
+  get content(): Buffer | undefined {
+    return this.fileContent
+  }
+
+  set content(content: Buffer | undefined) {
+    if (content && content !== this.content) {
+      this.fileContent = content
+      this.hash = files.getMD5FromBuffer(content)
+    }
+  }
+
+  public equals(other: StaticFileAssetExpression): boolean {
+    return [this.hash, other.hash].every(x => x !== undefined)
+    && this.hash === other.hash
+  }
 }
 
 export class ReferenceExpression {
@@ -65,6 +120,9 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
   first,
   second,
   (f, s) => {
+    if (f instanceof FunctionExpression && s instanceof FunctionExpression) {
+      return f.equals(s)
+    }
     if (f instanceof ReferenceExpression || s instanceof ReferenceExpression) {
       const fValue = f instanceof ReferenceExpression ? f.value : f
       const sValue = s instanceof ReferenceExpression ? s.value : s

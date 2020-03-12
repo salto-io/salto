@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
-  FunctionExpression,
+  FunctionExpression, StaticFileAssetExpression,
 } from '@salto-io/adapter-api'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
@@ -93,6 +93,9 @@ describe('State serialization', () => {
       singleparam: new FunctionExpression('funcadelic', ['aaa']),
       multipleparams: new FunctionExpression('george', [false, 321]),
       withlist: new FunctionExpression('washington', ['ZOMG', [3, 2, 1]]),
+      withobject: new FunctionExpression('maggot', [{ aa: '312' }]),
+      mixed: new FunctionExpression('brain', [1, [1, { aa: '312' }], false, 'aaa']),
+      withfile: new StaticFileAssetExpression('file', ['some/path.ext']),
     },
   )
 

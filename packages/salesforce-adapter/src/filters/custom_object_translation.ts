@@ -23,15 +23,12 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { apiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { getInstancesOfMetadataType, instanceShortName, instanceParent } from './utils'
+import { getInstancesOfMetadataType, instanceShortName, instanceParent, customObjectToMetadataTypeInstances } from './utils'
 import { SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, VALIDATION_RULES_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
 
 const { makeArray } = collections.array
-
-export const CUSTOM_OBJ_METADATA_TYPE_ID = new ElemID(SALESFORCE,
-  CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE)
 
 const FIELDS = 'fields'
 const NAME = 'name'
@@ -48,12 +45,11 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         .map(elem => Object.values((elem as ObjectType).fields))
         .flatten()
 
-    const apiNameToRules = _.groupBy(
-      getInstancesOfMetadataType(elements, VALIDATION_RULES_METADATA_TYPE),
-      rule => instanceParent(rule)?.getFullName()
+    const customToRule = customObjectToMetadataTypeInstances(
+      elements, VALIDATION_RULES_METADATA_TYPE
     )
 
-    wu(findInstances(elements, CUSTOM_OBJ_METADATA_TYPE_ID))
+    wu(findInstances(elements, new ElemID(SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE)))
       .forEach(customTranslation => {
         const customObjectElemId = instanceParent(customTranslation)
         if (_.isUndefined(customObjectElemId)) {
@@ -74,7 +70,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         })
 
         // Change validation rules to refs
-        const objRules = apiNameToRules[customObjectElemId.getFullName()]
+        const objRules = customToRule[customObjectElemId.getFullName()]
         makeArray(customTranslation.value[VALIDATION_RULES]).forEach(rule => {
           const ruleInstance = objRules?.find(r => instanceShortName(r) === rule[NAME])
           if (ruleInstance) {

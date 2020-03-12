@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { Dictionary } from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
@@ -145,3 +145,9 @@ export const addObjectParentReference = (instance: InstanceElement,
 
 export const fullApiName = (parent: string, child: string): string =>
   ([parent, child].join(API_NAME_SEPERATOR))
+
+export const customObjectToMetadataTypeInstances = (elements: Element[], type: string):
+Dictionary<InstanceElement[]> => _(getInstancesOfMetadataType(elements, type))
+  .groupBy(instance => instanceParent(instance)?.getFullName())
+  .omitBy(_.isUndefined)
+  .value() as Dictionary<InstanceElement[]>

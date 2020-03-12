@@ -202,14 +202,14 @@ export const getPositionContext = async (
 ): Promise<PositionContext> => {
   const definitionsTree = buildDefinitionsTree(
     // TODO: check what to do if buffer is undefined
-    (await workspace.workspace.getBlueprint(filename))?.buffer as string,
-    await workspace.workspace.getSourceMap(filename),
-    await workspace.workspace.getElements(filename),
+    (await workspace.getBlueprint(filename))?.buffer as string,
+    await workspace.getSourceMap(filename),
+    await workspace.getElements(filename),
   )
   const partialContext = getPositionFromTree(definitionsTree, position)
   const fullRef = (partialContext.ref)
     ? { ...partialContext.ref,
-      element: getFullElement(await workspace.workspace.elements,
+      element: getFullElement(await workspace.elements,
         partialContext.ref.element) }
     : undefined
   return { ...partialContext, ref: fullRef }

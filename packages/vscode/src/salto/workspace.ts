@@ -14,10 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace, Blueprint, DetailedChange } from '@salto-io/core'
+import path from 'path'
+import { Workspace, Blueprint, DetailedChange, WorkspaceError, SourceMap, SourceRange, Config } from '@salto-io/core'
+import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
+import wu from 'wu'
 
 export class EditorWorkspace {
-  workspace: Workspace
+  private workspace: Workspace
   // Indicates that the workspace is not the active workspace
   // (which means that the active workspace contains errors)
   // attempting to modify a copy of a workspace will result in an error
@@ -36,6 +39,52 @@ export class EditorWorkspace {
       }
       return undefined
     })
+  }
+
+  get elements(): Promise<readonly Element[]> {
+    return this.workspace.elements
+  }
+
+  get config(): Config {
+    return this.workspace.config
+  }
+
+  private workspaceFilename(filename: string): string {
+    return path.relative(this.workspace.config.baseDir, filename)
+  }
+
+  private editorFilename(filename: string): string {
+    return path.resolve(this.workspace.config.baseDir, filename)
+  }
+
+  private editorBlueprint(blueprint: Blueprint): Blueprint {
+    return {
+      ...blueprint,
+      filename: this.editorFilename(blueprint.filename),
+    }
+  }
+
+  private workspaceBlueprint(blueprint: Blueprint): Blueprint {
+    return {
+      ...blueprint,
+      filename: this.workspaceFilename(blueprint.filename),
+    }
+  }
+
+  private editorSourceRange(range: SourceRange): SourceRange {
+    return {
+      ...range,
+      filename: this.editorFilename(range.filename),
+    }
+  }
+
+  private editorSourceMap(sourceMap: SourceMap): SourceMap {
+    return new Map(
+      wu(sourceMap.entries()).map(([filename, ranges]) => [
+        filename,
+        ranges.map(range => this.editorSourceRange(range)),
+      ])
+    )
   }
 
   private hasPendingUpdates(): boolean {
@@ -98,13 +147,46 @@ export class EditorWorkspace {
     throw new Error('Can not update blueprints during a running set operation')
   }
 
+  async getBlueprint(filename: string): Promise<Blueprint | undefined> {
+    const bp = await this.workspace.getBlueprint(this.workspaceFilename(filename))
+    return bp && this.editorBlueprint(bp)
+  }
+
+  async listBlueprints(): Promise<string[]> {
+    return (await this.workspace.listBlueprints()).map(filename => this.editorFilename(filename))
+  }
+
+  async getElements(filename: string): Promise<Element[]> {
+    return this.workspace.getElements(this.workspaceFilename(filename))
+  }
+
+  async getSourceMap(filename: string): Promise<SourceMap> {
+    return this.editorSourceMap(await this.workspace.getSourceMap(this.workspaceFilename(filename)))
+  }
+
+  async getSourceRanges(elemID: ElemID): Promise<SourceRange[]> {
+    return (await this.workspace.getSourceRanges(elemID))
+      .map(range => this.editorSourceRange(range))
+  }
+
+  async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
+    return (await this.workspace.getWorkspaceErrors())
+      .map(err => ({
+        ...err,
+        sourceFragments: err.sourceFragments.map(fragment => ({
+          ...fragment,
+          sourceRange: this.editorSourceRange(fragment.sourceRange),
+        })),
+      }))
+  }
+
   setBlueprints(...blueprints: Blueprint[]): Promise<void> {
-    this.addPendingBlueprints(blueprints)
+    this.addPendingBlueprints(blueprints.map(bp => this.workspaceBlueprint(bp)))
     return this.triggerAggregatedSetOperation()
   }
 
   removeBlueprints(...names: string[]): Promise<void> {
-    this.addPendingDeletes(names)
+    this.addPendingDeletes(names.map(name => this.workspaceFilename(name)))
     return this.triggerAggregatedSetOperation()
   }
 

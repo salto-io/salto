@@ -85,13 +85,12 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       ),
       vscode.workspace.onDidOpenTextDocument(onFileOpen)
     )
-
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.bp')
     fileWatcher.onDidCreate((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidChange((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.fsPath))
     const newDiag = toVSDiagnostics(
-      workspace.workspace.config.baseDir,
+      workspace.config.baseDir,
       await getDiagnostics(workspace)
     )
     diagCollection.set(newDiag)

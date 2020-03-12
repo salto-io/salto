@@ -31,10 +31,10 @@ export const getDiagnostics = async (
   workspace: EditorWorkspace,
 ): Promise<WorkspaceSaltoDiagnostics> => {
   const emptyDiagFiles: WorkspaceSaltoDiagnostics = _.fromPairs(
-    (await workspace.workspace.listBlueprints())
+    (await workspace.listBlueprints())
       .map(filename => [filename, []])
   )
-  const diag = _(await workspace.workspace.getWorkspaceErrors())
+  const diag = _(await workspace.getWorkspaceErrors())
     .map(err => err.sourceFragments.map(f => ({
       filename: f.sourceRange.filename,
       severity: err.severity,

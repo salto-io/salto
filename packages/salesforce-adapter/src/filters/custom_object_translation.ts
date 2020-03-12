@@ -15,14 +15,18 @@
 */
 import wu from 'wu'
 import {
-  Element, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
+  Element, ElemID, ReferenceExpression, Field, ObjectType,
 } from '@salto-io/adapter-api'
-import { findInstances } from '@salto-io/adapter-utils'
+import { findInstances, findElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
+import { apiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { generateApiNameToCustomObject, apiNameParts, getInstancesOfMetadataType } from './utils'
+import { generateApiNameToCustomObject, getInstancesOfMetadataType, customObjectApiName, instanceShortName } from './utils'
 import { SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, VALIDATION_RULES_METADATA_TYPE } from '../constants'
+
+const log = logger(module)
 
 const { makeArray } = collections.array
 
@@ -39,41 +43,46 @@ const VALIDATION_RULES = 'validationRules'
 */
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
-    const ruleObj = (rule: InstanceElement): string => apiNameParts(rule)[0]
-    const ruleShortName = (rule: InstanceElement): string => apiNameParts(rule)[1]
+    const allCustomObjectFields = (elemID: ElemID): Iterable<Field> =>
+      wu(findElements(elements, elemID))
+        .map(elem => Object.values((elem as ObjectType).fields))
+        .flatten()
 
     const apiNameToCustomObject = generateApiNameToCustomObject(elements)
     const apiNameToRules = _.groupBy(
       getInstancesOfMetadataType(elements, VALIDATION_RULES_METADATA_TYPE),
-      ruleObj
+      customObjectApiName
     )
 
     wu(findInstances(elements, CUSTOM_OBJ_METADATA_TYPE_ID))
       .forEach(customTranslation => {
-        const customObjApiName = apiNameParts(customTranslation)[0]
-
-        // Add parent annotation
-        const customObj = apiNameToCustomObject.get(customObjApiName)
-        if (customObj) {
-          customTranslation.annotate({
-            [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(customObj.elemID),
-          })
+        const customObjApiName = customObjectApiName(customTranslation)
+        const customObject = apiNameToCustomObject.get(customObjApiName)
+        if (_.isUndefined(customObject)) {
+          log.warn('failed to find custom object %s for custom translation', customObjApiName,
+            apiName(customTranslation))
+          return
         }
 
         // Change fields to reference
         makeArray(customTranslation.value[FIELDS]).forEach(field => {
-          const customField = customObj?.fields[field[NAME]]
+          const customField = wu(allCustomObjectFields(customObject.elemID))
+            .find(f => apiName(f, true) === field[NAME])
           if (customField) {
             field[NAME] = new ReferenceExpression(customField.elemID)
+          } else {
+            log.warn('failed to find field %s in %s', field[NAME], customObjApiName)
           }
         })
 
         // Change validation rules to refs
         const objRules = apiNameToRules[customObjApiName]
         makeArray(customTranslation.value[VALIDATION_RULES]).forEach(rule => {
-          const ruleInstance = objRules?.find(r => _.isEqual(ruleShortName(r), rule[NAME]))
+          const ruleInstance = objRules?.find(r => instanceShortName(r) === rule[NAME])
           if (ruleInstance) {
             rule[NAME] = new ReferenceExpression(ruleInstance.elemID)
+          } else {
+            log.warn('failed to validation rule %s for %s', rule[NAME], customObjApiName)
           }
         })
       })

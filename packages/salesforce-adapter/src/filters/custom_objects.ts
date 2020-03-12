@@ -45,6 +45,7 @@ import {
 import {
   id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue,
   buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference, apiNameParts,
+  customObjectApiName,
 } from './utils'
 import { convertList } from './convert_lists'
 import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
@@ -500,7 +501,7 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
   const apiNameToCustomObject = generateApiNameToCustomObject(elements)
 
   const getDependentCustomObj = (instance: InstanceElement): ObjectType | undefined => {
-    const customObject = apiNameToCustomObject.get(apiNameParts(instance)[0])
+    const customObject = apiNameToCustomObject.get(customObjectApiName(instance))
     if (_.isUndefined(customObject)
       && metadataType(instance) === LEAD_CONVERT_SETTINGS_METADATA_TYPE) {
       return apiNameToCustomObject.get('Lead')

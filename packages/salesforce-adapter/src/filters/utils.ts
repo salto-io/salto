@@ -124,6 +124,12 @@ export const generateApiNameToCustomObject = (elements: Element[]): Map<string, 
 export const apiNameParts = (instance: InstanceElement): string[] =>
   apiName(instance).split(/\.|-/g)
 
+export const customObjectApiName = (instance: InstanceElement): string =>
+  apiNameParts(instance)[0]
+
+export const instanceShortName = (instance: InstanceElement): string =>
+  apiName(instance).slice(customObjectApiName(instance).length + 1)
+
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
   const instanceDeps = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])

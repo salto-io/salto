@@ -28,19 +28,34 @@ describe('custom object translation filter', () => {
   const customObjName = 'MockCustomObject'
   const customFieldName = 'MockField'
   const customObjElemID = new ElemID(SALESFORCE, customObjName)
-  const customObject = new ObjectType(
+  const customObjectAnno = new ObjectType(
     {
       elemID: customObjElemID,
-      fields: {
-        [customFieldName]: new Field(customObjElemID, customFieldName, BuiltinTypes.STRING),
-      },
       annotations: {
         [METADATA_TYPE]: CUSTOM_OBJECT,
         [API_NAME]: customObjName,
       },
     }
   )
-  const validationRuleName = 'Last_Price'
+  const customObjectField = new ObjectType(
+    {
+      elemID: customObjElemID,
+      fields: {
+        [customFieldName]: new Field(customObjElemID, customFieldName, BuiltinTypes.STRING,
+          { [API_NAME]: `${customObjName}.${customFieldName}` }),
+      },
+    }
+  )
+  const customObjectAdditionalField = new ObjectType(
+    {
+      elemID: customObjElemID,
+      fields: {
+        additional: new Field(customObjElemID, 'additional', BuiltinTypes.STRING,
+          { [API_NAME]: `${customObjName}.additional` }),
+      },
+    }
+  )
+  const validationRuleName = 'Last_price_must_for_recently_sold'
   const validationRuleType = new ObjectType({
     elemID: new ElemID(SALESFORCE, VALIDATION_RULES_METADATA_TYPE),
     annotations: { [METADATA_TYPE]: VALIDATION_RULES_METADATA_TYPE },
@@ -49,6 +64,11 @@ describe('custom object translation filter', () => {
     `${customObjName}_${validationRuleName}`,
     validationRuleType,
     { [INSTANCE_FULL_NAME_FIELD]: `${customObjName}.${validationRuleName}` }
+  )
+  const fakeValidationRuleInstance = new InstanceElement(
+    `${customObjName}_BLA`,
+    validationRuleType,
+    { [INSTANCE_FULL_NAME_FIELD]: `${customObjName}.BLA` }
   )
   const objTranslationType = new ObjectType({
     elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE),
@@ -66,7 +86,7 @@ describe('custom object translation filter', () => {
     'BLA-en_US',
     objTranslationType,
     {
-      [INSTANCE_FULL_NAME_FIELD]: 'BLA-en_US',
+      [INSTANCE_FULL_NAME_FIELD]: 'BLA.en_US',
       // Use here also single element and not a list
       fields: { name: customFieldName },
       validationRules: { name: validationRuleName },
@@ -82,10 +102,13 @@ describe('custom object translation filter', () => {
       const testElements = [
         objTranslationInstance.clone(),
         objTranslationNoCustomObjInstance.clone(),
-        customObject.clone(),
+        customObjectAnno.clone(),
+        customObjectField.clone(),
+        customObjectAdditionalField.clone(),
         objTranslationType.clone(),
         validationRuleType.clone(),
         validationRuleInstance.clone(),
+        fakeValidationRuleInstance.clone(),
       ]
       await filter.onFetch(testElements)
       postFilter = testElements[0] as InstanceElement
@@ -95,7 +118,7 @@ describe('custom object translation filter', () => {
     describe('fields reference', () => {
       it('should transform fields to reference', async () => {
         expect(postFilter.value.fields[0].name)
-          .toEqual(new ReferenceExpression(customObject.fields[customFieldName].elemID))
+          .toEqual(new ReferenceExpression(customObjectField.fields[customFieldName].elemID))
       })
       it('should keep name as is if no referenced field was found', async () => {
         expect(postFilter.value.fields[1].name).toBe('not-exists')

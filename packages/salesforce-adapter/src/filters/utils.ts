@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { Dictionary } from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
@@ -121,6 +121,18 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
   new Map(getCustomObjects(elements).map(obj => [apiName(obj), obj]))
 
+export const apiNameParts = (instance: InstanceElement): string[] =>
+  apiName(instance).split(/\.|-/g)
+
+export const parentApiName = (instance: InstanceElement): string =>
+  apiNameParts(instance)[0]
+
+export const relativeApiName = (instance: InstanceElement): string =>
+  apiName(instance).slice(parentApiName(instance).length + 1)
+
+export const instanceParent = (instance: InstanceElement): ElemID | undefined =>
+  instance.annotations[INSTANCE_ANNOTATIONS.PARENT]?.elemId
+
 export const addObjectParentReference = (instance: InstanceElement,
   { elemID: objectID }: ObjectType): void => {
   const instanceDeps = makeArray(instance.annotations[INSTANCE_ANNOTATIONS.PARENT])
@@ -133,3 +145,8 @@ export const addObjectParentReference = (instance: InstanceElement,
 
 export const fullApiName = (parent: string, child: string): string =>
   ([parent, child].join(API_NAME_SEPERATOR))
+
+export const parentApiNameToMetadataTypeInstances = (elements: Element[], type: string):
+Dictionary<InstanceElement[]> => _(getInstancesOfMetadataType(elements, type))
+  .groupBy(instance => instanceParent(instance)?.getFullName())
+  .value() as Dictionary<InstanceElement[]>

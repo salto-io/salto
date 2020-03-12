@@ -15,7 +15,7 @@
 */
 import sourceMapSupport from 'source-map-support'
 import { configFromDisk, telemetrySender } from '@salto-io/core'
-import { versionString, versionObj } from './version'
+import { versionString, versionDetails } from './version'
 import cli from './cli'
 import { CliExitCode } from './types'
 import commandBuilders from './commands'
@@ -37,7 +37,7 @@ const main = async (): Promise<CliExitCode> => {
     {
       installationID: config.installationID,
       app: 'cli',
-      version: versionObj.version,
+      version: versionDetails.version,
       versionString,
     }
   )

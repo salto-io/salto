@@ -20,4 +20,4 @@ export const versionString = Object.entries(versionObj)
   .map(kv => kv.join(' '))
   .join(', ')
 
-export { versionObj }
+export { versionObj as versionDetails }

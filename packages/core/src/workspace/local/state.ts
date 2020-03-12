@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import path from 'path'
 import { Element, ElemID, ElementMap } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { exists, readTextFile, replaceContents } from '../../file'
+import { exists, readTextFile, replaceContents, mkdirp } from '../../file'
 import { serialize, deserialize } from '../../serializer/elements'
 import State from '../state'
 
@@ -65,6 +66,7 @@ export const localState = (filePath: string): State => {
         return
       }
       const stateElements = await elements()
+      await mkdirp(path.dirname(filePath))
       await replaceContents(filePath, serialize(Object.values(stateElements)))
       log.debug(`finish flushing state [#elements=${Object.values(stateElements).length}]`)
     },

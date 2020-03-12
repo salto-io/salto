@@ -23,7 +23,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { apiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { getInstancesOfMetadataType, instanceShortName, instanceParent, customObjectToMetadataTypeInstances } from './utils'
+import { instanceShortName, instanceParent, customObjectToMetadataTypeInstances } from './utils'
 import { SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, VALIDATION_RULES_METADATA_TYPE } from '../constants'
 
 const log = logger(module)

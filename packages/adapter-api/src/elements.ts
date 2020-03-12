@@ -298,6 +298,7 @@ export class InstanceElement extends Element {
    * @return {InstanceElement} the cloned instance
    */
   clone(): InstanceElement {
-    return new InstanceElement(this.elemID.name, this.type, _.cloneDeep(this.value), this.path)
+    return new InstanceElement(this.elemID.name, this.type, _.cloneDeep(this.value), this.path,
+      _.cloneDeep(this.annotations))
   }
 }

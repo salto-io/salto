@@ -15,6 +15,7 @@
 */
 import {
   ObjectType, InstanceElement, Field, BuiltinTypes, ElemID, ReferenceExpression,
+  INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_object_translation'
 import {
@@ -63,7 +64,9 @@ describe('custom object translation filter', () => {
   const validationRuleInstance = new InstanceElement(
     `${customObjName}_${validationRuleName}`,
     validationRuleType,
-    { [INSTANCE_FULL_NAME_FIELD]: `${customObjName}.${validationRuleName}` }
+    { [INSTANCE_FULL_NAME_FIELD]: `${customObjName}.${validationRuleName}` },
+    undefined,
+    { [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(customObjElemID) }
   )
   const fakeValidationRuleInstance = new InstanceElement(
     `${customObjName}_BLA`,
@@ -81,6 +84,8 @@ describe('custom object translation filter', () => {
       fields: [{ name: customFieldName }, { name: 'not-exists' }],
       validationRules: [{ name: validationRuleName }, { name: 'not-exists' }],
     },
+    undefined,
+    { [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(customObjElemID) }
   )
   const objTranslationNoCustomObjInstance = new InstanceElement(
     'BLA-en_US',

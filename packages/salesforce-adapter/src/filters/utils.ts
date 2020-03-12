@@ -149,5 +149,4 @@ export const fullApiName = (parent: string, child: string): string =>
 export const customObjectToMetadataTypeInstances = (elements: Element[], type: string):
 Dictionary<InstanceElement[]> => _(getInstancesOfMetadataType(elements, type))
   .groupBy(instance => instanceParent(instance)?.getFullName())
-  .omitBy(_.isUndefined)
   .value() as Dictionary<InstanceElement[]>

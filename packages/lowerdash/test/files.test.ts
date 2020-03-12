@@ -13,28 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as collections from './collections'
-import * as promises from './promises'
-import * as types from './types'
-import * as decorators from './decorators'
-import * as streams from './streams'
-import * as strings from './strings'
-import * as functions from './functions'
-import * as retry from './retry'
-import * as validators from './validators'
-import * as stack from './stack'
-import * as files from './files'
 
-export {
-  collections,
-  promises,
-  types,
-  decorators,
-  streams,
-  strings,
-  functions,
-  retry,
-  validators,
-  stack,
-  files,
-}
+import { getMD5FromBuffer } from '../src/files'
+
+describe('Files', () => {
+  it('should calculate MD5 from buffer', () =>
+    expect(getMD5FromBuffer(Buffer.from('ZOMG'))).toEqual('4dc55a74daa147a028360ee5687389d7'))
+})

@@ -13,28 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as collections from './collections'
-import * as promises from './promises'
-import * as types from './types'
-import * as decorators from './decorators'
-import * as streams from './streams'
-import * as strings from './strings'
-import * as functions from './functions'
-import * as retry from './retry'
-import * as validators from './validators'
-import * as stack from './stack'
-import * as files from './files'
+import { createHash } from 'crypto'
 
-export {
-  collections,
-  promises,
-  types,
-  decorators,
-  streams,
-  strings,
-  functions,
-  retry,
-  validators,
-  stack,
-  files,
-}
+export const getMD5FromBuffer = (buffer: Buffer): string =>
+  createHash('md5').update(buffer).digest('hex')

@@ -57,13 +57,8 @@ export const realConnection = (credentials: Credentials): Connection => {
   return new Connection(config)
 }
 
-const toNetsuiteRecordRef = (recordReference: ReferenceTypeAndId):
-  NetsuiteReference => {
-  const recordRef = new Record.Types.Reference(RECORD_REF)
-  recordRef.internalId = recordReference.internalId
-  recordRef.type = recordReference.type
-  return recordRef
-}
+const toNetsuiteRecordRef = (recordReference: ReferenceTypeAndId): NetsuiteReference =>
+  new Record.Types.Reference(RECORD_REF, recordReference.type, recordReference.internalId)
 
 export default class NetsuiteClient {
   private isLoggedIn = false

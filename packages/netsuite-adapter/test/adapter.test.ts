@@ -100,9 +100,7 @@ describe('Adapter', () => {
     })
 
     it('should call client.delete with the correct parameter', () => {
-      const recordRef = new Record.Types.Reference(RECORD_REF)
-      recordRef.internalId = '123'
-      recordRef.type = 'entityCustomField'
+      const recordRef = new Record.Types.Reference(RECORD_REF, 'entityCustomField', '123')
       expect(client.delete).toHaveBeenCalledWith(recordRef)
     })
   })

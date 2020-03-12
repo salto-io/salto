@@ -16,6 +16,8 @@
 */
 
 declare module 'node-suitetalk' {
+  import { Value } from '@salto-io/adapter-api'
+
   export class Service {
     constructor(config: Configuration)
     init(): Promise<void>
@@ -37,31 +39,35 @@ declare module 'node-suitetalk' {
   export namespace Record {
     export namespace Fields {
       export class Field {
-        constructor(fieldType: string)
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-        [key: string]: any
+        constructor(name: string, value: Value)
       }
+
       export class RecordRef {
-        constructor()
+        constructor(name: string)
         internalId: string
         externalId: string
         type: string
-        field: string
       }
     }
 
     export namespace Types {
       // eslint-disable-next-line no-shadow
       export class Record {
-        constructor(type: string, name: string)
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-        [key: string]: any
+        constructor(familyType: string, typeName: string)
+        internalId: string
+        externalId: string
+        bodyFieldList: Record.Fields.Field[]
       }
 
+      const ATTRIBUTES = '$attributes'
       export class Reference {
-        constructor(reference: string)
-        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-        [key: string]: any
+        constructor(reference: string, type: string, internalId: string, externalId?: string)
+        [ATTRIBUTES]: {
+          type: string
+          internalId: string
+          externalId: string
+          scriptId: string
+        }
       }
     }
   }

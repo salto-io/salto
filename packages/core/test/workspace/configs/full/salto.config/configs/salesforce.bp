@@ -1,5 +1,5 @@
 salesforce {
-  metadataTypesBlacklist = [
+  metadataTypesSkippedList = [
     "test1",
     "test2",
   ]

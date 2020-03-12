@@ -79,7 +79,7 @@ const refNameSuggestions = (
 
   switch (refElemID.idType) {
     case 'annotation':
-      return isType(baseElement) ? _.keys(baseElement.annotationTypes) : []
+      return _.keys(baseElement.annotationTypes)
     case 'attr':
       return _.keys(baseElement.annotations)
     case 'field':

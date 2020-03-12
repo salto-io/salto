@@ -36,7 +36,7 @@ const VALIDATION_RULES = 'validationRules'
 
 /**
 * This filter change CustomObjectTranslation logical references to fields and validation rules to
-* Salto referenes
+* Salto references
 */
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {

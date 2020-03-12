@@ -57,6 +57,7 @@ import globalValueSetFilter from './filters/global_value_sets'
 import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
+import recordTypeFilter from './filters/record_type'
 import {
   FilterCreator, Filter, filtersRunner,
 } from './filter'
@@ -85,8 +86,9 @@ export const DEFAULT_FILTERS = [
   topicsForObjectsFilter,
   valueSetFilter,
   globalValueSetFilter,
-  // customObjectTranslationFilter depends on customObjectsFilter
+  // customObjectTranslationFilter and recordTypeFilter depends on customObjectsFilter
   customObjectTranslationFilter,
+  recordTypeFilter,
   // The following filters should remain last in order to make sure they fix all elements
   convertListsFilter,
   convertTypeFilter,

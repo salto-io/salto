@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
   ObjectType, InstanceElement, Field, BuiltinTypes, ElemID, ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -63,14 +62,26 @@ describe('custom object translation filter', () => {
       validationRules: [{ name: validationRuleName }, { name: 'not-exists' }],
     },
   )
+  const objTranslationNoCustomObjInstance = new InstanceElement(
+    'BLA-en_US',
+    objTranslationType,
+    {
+      [INSTANCE_FULL_NAME_FIELD]: 'BLA-en_US',
+      // Use here also single element and not a list
+      fields: { name: customFieldName },
+      validationRules: { name: validationRuleName },
+    },
+  )
 
   describe('on fetch', () => {
     let postFilter: InstanceElement
+    let postFilterNoObj: InstanceElement
 
     beforeAll(async () => {
       const filter = filterCreator() as FilterWith<'onFetch'>
       const testElements = [
         objTranslationInstance.clone(),
+        objTranslationNoCustomObjInstance.clone(),
         customObject.clone(),
         objTranslationType.clone(),
         validationRuleType.clone(),
@@ -78,6 +89,7 @@ describe('custom object translation filter', () => {
       ]
       await filter.onFetch(testElements)
       postFilter = testElements[0] as InstanceElement
+      postFilterNoObj = testElements[1] as InstanceElement
     })
 
     describe('fields reference', () => {
@@ -88,6 +100,10 @@ describe('custom object translation filter', () => {
       it('should keep name as is if no referenced field was found', async () => {
         expect(postFilter.value.fields[1].name).toBe('not-exists')
       })
+
+      it('should keep name as is if no custom object', async () => {
+        expect(postFilterNoObj.value.fields.name).toBe(customFieldName)
+      })
     })
 
     describe('validation rules reference', () => {
@@ -97,6 +113,10 @@ describe('custom object translation filter', () => {
       })
       it('should keep name as is if no referenced validation rules was found', async () => {
         expect(postFilter.value.validationRules[1].name).toBe('not-exists')
+      })
+
+      it('should keep name as is if no custom object', async () => {
+        expect(postFilterNoObj.value.validationRules.name).toBe(validationRuleName)
       })
     })
   })

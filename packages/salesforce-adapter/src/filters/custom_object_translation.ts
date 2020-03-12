@@ -15,8 +15,9 @@
 */
 import wu from 'wu'
 import {
-  Element, ElemID, findInstances, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
+  Element, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { findInstances } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith } from '../filter'

@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Element, ElemID, ReferenceExpression, Field, ObjectType,
+  Element, ElemID, ReferenceExpression, Field, isObjectType,
 } from '@salto-io/adapter-api'
 import { findInstances, findElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -42,7 +42,8 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     const allCustomObjectFields = (elemID: ElemID): Iterable<Field> =>
       wu(findElements(elements, elemID))
-        .map(elem => Object.values((elem as ObjectType).fields))
+        .filter(isObjectType)
+        .map(elem => Object.values(elem.fields))
         .flatten()
 
     const customToRule = parentApiNameToMetadataTypeInstances(
@@ -59,9 +60,12 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         }
 
         // Change fields to reference
+        const customFields = new Map(
+          wu(allCustomObjectFields(customObjectElemId))
+            .map(f => [apiName(f, true), f])
+        )
         makeArray(customTranslation.value[FIELDS]).forEach(field => {
-          const customField = wu(allCustomObjectFields(customObjectElemId))
-            .find(f => apiName(f, true) === field[NAME])
+          const customField = customFields.get(field[NAME])
           if (customField) {
             field[NAME] = new ReferenceExpression(customField.elemID)
           } else {
@@ -70,9 +74,12 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         })
 
         // Change validation rules to refs
-        const objRules = customToRule[customObjectElemId.getFullName()]
+        const objRules = new Map(
+          makeArray(customToRule[customObjectElemId.getFullName()])
+            .map(r => [relativeApiName(r), r])
+        )
         makeArray(customTranslation.value[VALIDATION_RULES]).forEach(rule => {
-          const ruleInstance = objRules?.find(r => relativeApiName(r) === rule[NAME])
+          const ruleInstance = objRules.get(rule[NAME])
           if (ruleInstance) {
             rule[NAME] = new ReferenceExpression(ruleInstance.elemID)
           } else {

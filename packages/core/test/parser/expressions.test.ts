@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { FunctionExpression, ReferenceExpression, TemplateExpression, ElemID } from '@salto-io/adapter-api'
+import {
+  FunctionExpression, ReferenceExpression,
+  TemplateExpression, ElemID, StaticFileAssetExpression,
+} from '@salto-io/adapter-api'
 import devaluate from './internal/devaluate'
 import evaluate from '../../src/parser/expressions'
 import { UnresolvedReference } from '../../src/core/expressions'
@@ -79,24 +82,34 @@ describe('HCL Expression', () => {
 
   describe('should evaluate functions', () => {
     it('with single parameter', () => {
-      const ref = new FunctionExpression('funcush', ['aa'])
+      const ref = new FunctionExpression('funcush', ['aa'], 'dummy')
       const exp = devaluate(ref)
       expect(evaluate(exp)).toEqual(ref)
     })
     it('with several parameters', () => {
-      const ref = new FunctionExpression('funcush', ['aa', 312])
+      const ref = new FunctionExpression('funcush', ['aa', 312], 'dummy')
       const exp = devaluate(ref)
       expect(evaluate(exp)).toEqual(ref)
     })
     it('with list', () => {
-      const ref = new FunctionExpression('funcush', [['aa', 'bb']])
+      const ref = new FunctionExpression('funcush', [['aa', 'bb']], 'dummy')
+      const exp = devaluate(ref)
+      expect(evaluate(exp)).toEqual(ref)
+    })
+    it('with object', () => {
+      const ref = new FunctionExpression('funcush', [{ aa: 'bb' }], 'dummy')
       const exp = devaluate(ref)
       expect(evaluate(exp)).toEqual(ref)
     })
     it('with mixed', () => {
-      const ref = new FunctionExpression('funcush', [false, ['aa', 'bb']])
+      const ref = new FunctionExpression('funcush', [false, ['aa', 'bb', [1, 2, { wat: 'ZOMG' }]]], 'dummy')
       const exp = devaluate(ref)
       expect(evaluate(exp)).toEqual(ref)
+    })
+    it('file function', () => {
+      const ref = new FunctionExpression('file', ['aaasome/path.ext'], 'dummy')
+      const exp = devaluate(ref)
+      expect(evaluate(exp)).toEqual(new StaticFileAssetExpression('file', ['aaasome/path.ext'], 'dummy'))
     })
   })
 })

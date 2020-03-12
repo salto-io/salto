@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import {
   Value, ElemID, TemplateExpression, ReferenceExpression,
-  FunctionExpression,
 } from '@salto-io/adapter-api'
 import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
 import { UnresolvedReference } from '../core/expressions'
+import { functionFactory } from './internal/functions/factory'
 
 type ExpEvaluator = (expression: HclExpression) => Value
 
@@ -65,9 +65,10 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
       const params: Value[] = (parameters.type && parameters.type === 'list')
         ? evaluators[parameters.type as ExpressionType](parameters)
         : parameters.map((x: HclExpression) => evaluate(x, baseId, sourceMap))
-      return new FunctionExpression(
+      return functionFactory(
         funcName,
         params,
+        exp.source.filename
       )
     },
   }
@@ -75,6 +76,7 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
   if (sourceMap && baseId && expression.source) {
     sourceMap.push(baseId, expression as { source: SourceRange })
   }
+
   return evaluators[expression.type](expression)
 }
 

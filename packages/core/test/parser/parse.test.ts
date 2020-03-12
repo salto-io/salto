@@ -129,6 +129,7 @@ describe('Salto parser', () => {
           2,
           false
         ], 321)
+        contentWithFile                         = file("some/path.ext")
       }
        `
     beforeAll(() => {
@@ -427,28 +428,33 @@ describe('Salto parser', () => {
         instanceWithFunctions = elements[12] as InstanceElement
       })
 
+      describe('file', () => {
+        it('should have filepath', () =>
+          expect(instanceWithFunctions.value.contentWithFile).toHaveProperty('relativeFileName', 'some/path.ext'))
+      })
+
       describe('parameters', () => {
         it('number', () => {
-          expect(instanceWithFunctions.value.contentWithNumber).toHaveProperty('funcName')
-          expect(instanceWithFunctions.value.contentWithNumber.funcName).toEqual('funkynumber')
-          expect(instanceWithFunctions.value.contentWithNumber).toHaveProperty('parameters')
-          expect(instanceWithFunctions.value.contentWithNumber.parameters).toEqual([1])
+          expect(instanceWithFunctions.value.contentWithNumber)
+            .toHaveProperty('funcName', 'funkynumber')
+          expect(instanceWithFunctions.value.contentWithNumber)
+            .toHaveProperty('parameters', [1])
         })
         it('string', () => {
-          expect(instanceWithFunctions.value.content).toHaveProperty('funcName')
-          expect(instanceWithFunctions.value.content.funcName).toEqual('funcadelic')
-          expect(instanceWithFunctions.value.content).toHaveProperty('parameters')
-          expect(instanceWithFunctions.value.content.parameters).toEqual(['some.png'])
+          expect(instanceWithFunctions.value.content)
+            .toHaveProperty('funcName', 'funcadelic')
+          expect(instanceWithFunctions.value.content)
+            .toHaveProperty('parameters', ['some.png'])
         })
         it('boolean', () => {
-          expect(instanceWithFunctions.value.contentWithBoolean).toHaveProperty('funcName')
-          expect(instanceWithFunctions.value.contentWithBoolean.funcName).toEqual('pun_is_fun')
-          expect(instanceWithFunctions.value.contentWithBoolean).toHaveProperty('parameters')
-          expect(instanceWithFunctions.value.contentWithBoolean.parameters).toEqual([true])
+          expect(instanceWithFunctions.value.contentWithBoolean)
+            .toHaveProperty('funcName', 'pun_is_fun')
+          expect(instanceWithFunctions.value.contentWithBoolean)
+            .toHaveProperty('parameters', [true])
         })
         it('list', () => {
-          expect(instanceWithFunctions.value.contentWithList).toHaveProperty('funcName')
-          expect(instanceWithFunctions.value.contentWithList.funcName).toEqual('pun_is_really_fun')
+          expect(instanceWithFunctions.value.contentWithList)
+            .toHaveProperty('funcName', 'pun_is_really_fun')
           expect(instanceWithFunctions.value.contentWithList).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithList.parameters[0])
             .toHaveLength(3)
@@ -456,8 +462,8 @@ describe('Salto parser', () => {
             .toEqual(['yes', 'dad', true])
         })
         it('several paraams', () => {
-          expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('funcName')
-          expect(instanceWithFunctions.value.contentWithSeveralParams.funcName).toEqual('severability')
+          expect(instanceWithFunctions.value.contentWithSeveralParams)
+            .toHaveProperty('funcName', 'severability')
           expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithSeveralParams.parameters)
             .toHaveLength(3)
@@ -465,8 +471,8 @@ describe('Salto parser', () => {
             .toEqual([false, 3, 'WAT'])
         })
         it('mixed', () => {
-          expect(instanceWithFunctions.value.contentWithMixed).toHaveProperty('funcName')
-          expect(instanceWithFunctions.value.contentWithMixed.funcName).toEqual('mixer')
+          expect(instanceWithFunctions.value.contentWithMixed)
+            .toHaveProperty('funcName', 'mixer')
           expect(instanceWithFunctions.value.contentWithMixed).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithMixed.parameters)
             .toHaveLength(3)
@@ -474,8 +480,8 @@ describe('Salto parser', () => {
             .toEqual([false, [3, 3], 'WAT'])
         })
         it('nested', () => {
-          expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('funcName')
-          expect(instanceWithFunctions.value.contentWithNested.funcName).toEqual('nestush')
+          expect(instanceWithFunctions.value.contentWithNested)
+            .toHaveProperty('funcName', 'nestush')
           expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithNested.parameters)
             .toHaveLength(3)
@@ -483,8 +489,8 @@ describe('Salto parser', () => {
             .toEqual([false, [3, [1, 2]], 'WAT'])
         })
         it('multiline', () => {
-          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty('funcName')
-          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.funcName).toEqual('multish')
+          expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters)
+            .toHaveProperty('funcName', 'multish')
           expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters)
             .toHaveLength(3)

@@ -1024,7 +1024,10 @@ describe('Salesforce adapter E2E with real account', () => {
           verifyInnerMetadataInstanceFetch(NESTED_INSTANCE_TYPE_NAME.RECORD_TYPE,
             'Lead_TestRecordType', { [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead.TestRecordType',
               active: true,
-              businessProcess: 'TestBusinessProcess' })
+              businessProcess: new ReferenceExpression(
+                new ElemID(constants.SALESFORCE, constants.BUSINESS_PROCESS_METADATA_TYPE,
+                  'instance', 'Lead_TestBusinessProcess')
+              ) })
         })
 
         it('should fetch web links', async () => {

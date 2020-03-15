@@ -32,12 +32,15 @@ const mockConfigType = new ObjectType({
 const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
   username: 'test@test',
 })
-export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
-): Promise<Workspace> => {
+
+const buildMockWorkspace = (
+  blueprint?: string,
+  buffer?: string,
+  config?: Partial<Config>
+): Workspace => {
   const baseDir = blueprint ? path.dirname(blueprint) : 'default_base_dir'
   const filename = blueprint ? path.relative(baseDir, blueprint) : 'default.bp'
-  const buffer = blueprint ? await file.readTextFile(blueprint) : 'blabla'
-  const parseResult = blueprint
+  const parseResult = buffer
     ? parse(Buffer.from(buffer), filename)
     : { elements: [], errors: [] as ParseError[], sourceMap: { get: () => undefined } }
   const merged = mergeElements(parseResult.elements)
@@ -71,5 +74,12 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
     },
     listBlueprints: jest.fn().mockResolvedValue([filename]),
     getElements: jest.fn().mockResolvedValue(merged.merged),
+    clone: jest.fn().mockImplementation(() => buildMockWorkspace(blueprint, buffer, config)),
   } as unknown as Workspace
+}
+
+export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
+): Promise<Workspace> => {
+  const buffer = blueprint ? await file.readTextFile(blueprint) : 'blabla'
+  return buildMockWorkspace(blueprint, buffer, config)
 }

@@ -22,7 +22,7 @@ import { mockWorkspace } from './workspace'
 
 // TODO: enable this back
 // eslint-disable-next-line jest/no-disabled-tests
-describe.skip('Cursor context resolver', () => {
+describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
   const bpFilename = path.resolve(`${__dirname}/../../../test/salto/test-bps/all.bp`)
   beforeAll(async () => {

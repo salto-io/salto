@@ -19,8 +19,7 @@ import { getPositionContext } from '../../src/salto/context'
 import { mockWorkspace } from './workspace'
 
 // TODO: should enable this
-// eslint-disable-next-line jest/no-disabled-tests
-describe.skip('Cursor context resolver', () => {
+describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
   const bpFilename = 'context.bp'
   beforeAll(async () => {

@@ -1,4 +1,4 @@
-type salto_str is string {
+type salto.str is string {
 	annotations {
 		boolean _required {
 
@@ -6,8 +6,8 @@ type salto_str is string {
 	}
 }
 
-type salto_obj {
-	salto_str str {
+type salto.obj {
+	salto.str str {
 		_required = true
 	}
 	annotations {
@@ -17,19 +17,19 @@ type salto_obj {
 	}
 }
 
-type salto_complex {
+type salto.complex {
 
-	salto_obj object {
+	salto.obj object {
 		label = "LABEL"
 	}
 
-	salto_str name {
+	salto.str name {
 		_required = false
 	}
 
 }
 
-salto_complex inst {
+salto.complex inst {
 
 	obj = {
 		str = "STRING"
@@ -39,13 +39,13 @@ salto_complex inst {
 
 }
 
-type salto_complex {
+type salto.complex {
 	list str arr {
 
 	}
 }
 
-salto_complex inst2 {
+salto.complex inst2 {
 	arr = [
 		"A", 
 		"B", 

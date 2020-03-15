@@ -48,6 +48,6 @@ describe('Test go to definitions', () => {
   it('should give all instance AND field usages of a type', async () => {
     const token = 'vs.person'
     const defs = await provideWorkspaceReferences(workspace, token)
-    expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 125, 131])
+    expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 125, 131, 187, 191])
   })
 })

@@ -70,5 +70,6 @@ export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
       list: jest.fn().mockResolvedValue([filename]),
     },
     listBlueprints: jest.fn().mockResolvedValue([filename]),
+    getElements: jest.fn().mockResolvedValue(merged.merged),
   } as unknown as Workspace
 }

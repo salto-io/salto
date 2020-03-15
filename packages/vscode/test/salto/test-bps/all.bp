@@ -44,7 +44,7 @@ type vs.person {
 }
 
 type vs.car {
-    vs.person car.owner {
+    vs.person car_owner {
 
     }
     vs.str model {
@@ -92,7 +92,7 @@ vs.loan weekend_car {
         age = 35
     }
     propety = {
-        car.owner = {
+        car_owner = {
             first_name = "Ruth"
             last_name = "Ronn"
             age = 61
@@ -182,4 +182,12 @@ type vs.foo {
             last_name = "OKOK"
         }
     }
+}
+
+vs.person hadar {
+    _parent = vs.loan.instance.weekend_car
+}
+
+vs.person parentTester {
+    _parent = vs.person.instance.hadar._parent
 }

@@ -242,7 +242,7 @@ jobs:
 
       - run:
           name: Create a VSIX file
-          command: yarn workspace @salto-io/vscode package
+          command: yarn workspace salto-vscode package
 
       - upload_pkg:
           workspace_dir: vscode

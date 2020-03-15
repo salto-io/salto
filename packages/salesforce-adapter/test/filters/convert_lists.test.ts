@@ -25,6 +25,15 @@ import mockClient from '../client'
 describe('convert lists filter', () => {
   const { client } = mockClient()
 
+  const mockObjNoInstancesId = new ElemID(constants.SALESFORCE, 'noInstances')
+
+  const mockTypeNoInstances = new ObjectType({
+    elemID: mockObjNoInstancesId,
+    fields: {
+      single: new Field(mockObjNoInstancesId, 'single', BuiltinTypes.STRING),
+    },
+  })
+
   const mockInnerObjId = new ElemID(constants.SALESFORCE, 'inner')
   const mockFieldType = new ObjectType({
     elemID: mockInnerObjId,
@@ -85,6 +94,7 @@ describe('convert lists filter', () => {
   const hardcodedLists: ReadonlyArray<string> = [
     mockType.fields.singleHardcoded.elemID.getFullName(),
     mockType.fields.emptyHardcoded.elemID.getFullName(),
+    mockTypeNoInstances.fields.single.elemID.getFullName(),
   ]
 
   let testElements: Element[]
@@ -93,8 +103,10 @@ describe('convert lists filter', () => {
 
   beforeEach(() => {
     const typeClone = mockType.clone()
+    const typeNoInstancesClone = mockTypeNoInstances.clone()
     testElements = [
       typeClone,
+      typeNoInstancesClone,
       _.assign(_.clone(mockInstanceLst), { type: typeClone }),
       _.assign(_.clone(mockInstanceNonLst), { type: typeClone }),
     ]
@@ -102,14 +114,16 @@ describe('convert lists filter', () => {
 
   describe('on fetch', () => {
     let type: ObjectType
+    let typeNoInstances: ObjectType
     let nonLstInst: InstanceElement
     let lstInst: InstanceElement
 
     beforeEach(async () => {
       await filter.onFetch(testElements)
       type = testElements[0] as ObjectType
-      lstInst = testElements[1] as InstanceElement
-      nonLstInst = testElements[2] as InstanceElement
+      typeNoInstances = testElements[1] as ObjectType
+      lstInst = testElements[2] as InstanceElement
+      nonLstInst = testElements[3] as InstanceElement
     })
 
     it('should mark fields as list types', () => {
@@ -139,14 +153,18 @@ describe('convert lists filter', () => {
       expect(lstInst.value.ordered).toEqual(mockInstanceLst.value.ordered)
     })
 
-    it('should convent hardcoded fields to lists', () => {
+    it('should convert hardcoded fields to lists', () => {
       expect(type.fields.singleHardcoded.isList).toBe(true)
       expect(lstInst.value.singleHardcoded).toEqual(['val'])
     })
 
-    it('should convent empty hardcoded fields to empty lists', () => {
+    it('should convert empty hardcoded fields to empty lists', () => {
       expect(type.fields.emptyHardcoded.isList).toBe(true)
       expect(lstInst.value.emptyHardcoded).toEqual([])
+    })
+
+    it('should convert hardcoded fields to lists even when there are no instances', () => {
+      expect(typeNoInstances.fields.single.isList).toBe(true)
     })
   })
 })

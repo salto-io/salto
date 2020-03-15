@@ -55,7 +55,7 @@
     "pietile-eventemitter": "^1.0.0",
     "readdirp": "^3.1.1",
     "rimraf": "^3.0.0",
-    "uuid": "^3.3.3",
+    "uuid": "3.3.3",
     "wu": "^2.1.0"
   },
   "devDependencies": {

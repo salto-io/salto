@@ -21,13 +21,13 @@ import SalesforceClient from '../src/client/client'
 describe('salesforce client', () => {
   beforeEach(() => {
     nock.cleanAll()
-    nock('https://login.salesforce.com')
+    nock('https://test.salesforce.com')
       .persist()
       .post(/.*/)
       .reply(200, '<serverUrl>http://dodo22</serverUrl>/')
   })
   const client = new SalesforceClient({ credentials: {
-    isSandbox: false,
+    isSandbox: true,
     username: '',
     password: '',
   },
@@ -37,6 +37,9 @@ describe('salesforce client', () => {
     retryStrategy: RetryStrategies.NetworkError, // retry on network errors
   } })
   const headers = { 'content-type': 'application/json' }
+  const workingReadReplay = {
+    'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
+  }
 
   describe('with failed delete', () => {
     it('should not fail if the element is already deleted', async () => {
@@ -132,19 +135,16 @@ describe('salesforce client', () => {
     })
 
     it('continue in case of error in chunk - run on each element separately', async () => {
-      const workingReplay = {
-        'a:Envelope': { 'a:Body': { a: { result: { records: [{ fullName: 'BLA' }] } } } },
-      }
       const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
         .post(/.*/)
         .times(2)
-        .reply(200, workingReplay, headers)
+        .reply(200, workingReadReplay, headers)
         .post(/.*/)
         .times(1)
         .reply(500, 'server error')
         .post(/.*/)
         .times(10)
-        .reply(200, workingReplay, headers)
+        .reply(200, workingReadReplay, headers)
       // create an array with 30 names so we will have 3 calls (chunk size is 10 for readMetadata)
       const result = await client.readMetadata('FakeType', Array.from({ length: 30 }, () => 'FakeName'))
       expect(result).toHaveLength(12)
@@ -159,6 +159,30 @@ describe('salesforce client', () => {
       // create an array with 20 names so we will have 2 calls
       await expect(client.readMetadata('FakeType', Array.from({ length: 20 }, () => 'FakeName')))
         .rejects.toEqual(new Error('server error'))
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
+  describe('with suppressed errors', () => {
+    it('should not fail if all errors are suppressed', async () => {
+      const dodoScope = nock('http://dodo22/servies/Soap/m/47.0')
+        .post(/.*/)
+        .reply(500, 'targetObject is invalid')
+
+      await expect(client.readMetadata('QuickAction', 'SendEmail')).resolves.not.toThrow()
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
+
+    it('should return non error responses', async () => {
+      const dodoScope = nock('http://dodo22/servies/Soap/m/47.0')
+        .post(/.*/)
+        .times(2) // Once for the chunk and once for SendEmail
+        .reply(500, 'targetObject is invalid')
+        .post(/.*/)
+        .times(1)
+        .reply(200, workingReadReplay)
+
+      const result = await client.readMetadata('QuickAction', ['SendEmail', 'LogACall'])
+      expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
     })
   })

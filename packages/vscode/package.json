@@ -1,5 +1,5 @@
 {
-    "name": "@salto-io/vscode",
+    "name": "salto-vscode",
     "displayName": "Salto",
     "description": "Configure Salto patches in vscode.",
     "version": "0.1.11",

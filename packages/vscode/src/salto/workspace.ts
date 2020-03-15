@@ -35,7 +35,7 @@ export class EditorWorkspace {
     this.isCopy = isCopy
     this.lastValidCopy = workspace.hasErrors().then(hasErrors => {
       if (!hasErrors) {
-        return _.clone(workspace)
+        return workspace.clone()
       }
       return undefined
     })
@@ -121,7 +121,7 @@ export class EditorWorkspace {
       // errors. If so - we update the last valid state.
       if (_.isEmpty((await this.workspace.errors).parse)
         && !_.isEmpty(await this.workspace.elements)) {
-        this.lastValidCopy = Promise.resolve(_.clone(this.workspace))
+        this.lastValidCopy = Promise.resolve(this.workspace.clone())
       }
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller

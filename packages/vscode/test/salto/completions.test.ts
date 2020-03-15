@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { INSTANCE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { INSTANCE_ANNOTATIONS, ElemID } from '@salto-io/adapter-api'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import {
@@ -46,11 +46,11 @@ describe('Test auto complete', () => {
     exclude: string[]
   ): boolean => {
     const intersect = (
-      arrA: string[],
-      arrB: string[]
-    ): string[] => arrA.filter(x => arrB.includes(x))
+      arrA: unknown[],
+      arrB: unknown[]
+    ): unknown[] => arrA.filter(x => arrB.includes(x))
 
-    const labels = suggestions.map(s => s.label)
+    const labels = suggestions.map(s => _.last(s.label.split(ElemID.NAMESPACE_SEPARATOR)))
     return intersect(labels, include).length === include.length
            && intersect(labels, exclude).length === 0
   }
@@ -58,13 +58,13 @@ describe('Test auto complete', () => {
   const kw = ['type']
   const adapterRef = ['vs']
   const types = [
-    'vs.str',
-    'vs.num',
-    'vs.bool',
-    'vs.person',
-    'vs.car',
-    'vs.loan',
-    'vs.ref_tester',
+    'str',
+    'num',
+    'bool',
+    'person',
+    'car',
+    'loan',
+    'ref_tester',
   ]
   const instances = [
     'weekend_car',

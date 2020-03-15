@@ -29,7 +29,7 @@ interface InsertText {
 }
 type Suggestion = string|InsertText
 export type Suggestions = Suggestion[]
-
+type RefPartResolver = () => Suggestions
 interface SuggestionsParams {
   elements: ReadonlyArray<Element>
   ref?: ContextReference
@@ -131,12 +131,10 @@ const referenceSuggestions = (
   const refParts = match.split(ElemID.NAMESPACE_SEPARATOR)
     .slice(0, -1)
   const refPartIndex = refParts.length
-
   // try & catch here as we must consider the possibility of an illegal elemID here.
   try {
     const refElemID = ElemID.fromFullName(refParts.join(ElemID.NAMESPACE_SEPARATOR))
-
-    const refPartsResolvers = [
+    const refPartsResolvers: (RefPartResolver)[] = [
       () => getAdapterNames(elements),
       () => getAllTypes(elements || [], refElemID.adapter)
         .map(n => n.substring(refElemID.adapter.length + 1)),
@@ -144,10 +142,10 @@ const referenceSuggestions = (
       () => refNameSuggestions(elements, refElemID),
       () => refValueSuggestions(elements, refElemID),
     ]
-
-    return refPartIndex >= refPartsResolvers.length
+    const refPartSuggestions = refPartIndex >= refPartsResolvers.length
       ? refPartsResolvers[refPartsResolvers.length - 1]()
       : refPartsResolvers[refPartIndex]()
+    return refPartSuggestions.map(sug => [...refParts, sug].join(ElemID.NAMESPACE_SEPARATOR))
   } catch (e) {
     return []
   }

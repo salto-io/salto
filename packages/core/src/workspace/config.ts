@@ -20,8 +20,7 @@ import {
   ObjectType, ElemID, BuiltinTypes, Field, InstanceElement,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { dumpElements } from '../parser/dump'
-import { mkdirp, exists, replaceContents } from '../file'
+import { mkdirp, exists } from '../file'
 import { getSaltoHome } from '../app_config'
 import { configSource } from './config_source'
 import { localDirectoryStore } from './local/dir_store'
@@ -108,7 +107,7 @@ const saltoLocalWorkspaceType = new ObjectType({
   },
 })
 
-interface CurrentEnvConfig {
+interface LocalWorkspaceConfig {
   currentEnv: string
 }
 
@@ -174,9 +173,9 @@ const parseConfig = (configInstance: InstanceElement | undefined): PartialConfig
 }
 
 const parseLocalWorkspaceConfig = (configInstance: InstanceElement | undefined):
-CurrentEnvConfig => {
+LocalWorkspaceConfig => {
   if (!configInstance) throw new ConfigParseError()
-  return configInstance.value as unknown as CurrentEnvConfig
+  return configInstance.value as unknown as LocalWorkspaceConfig
 }
 
 const completeWorkspaceConfig = (baseDir: string, workspaceConfig: Partial<Config>): Config => {
@@ -229,7 +228,7 @@ Promise<Config> => {
     ? parseLocalWorkspaceConfig(
       await configSource(
         localDirectoryStore(getLocalWorkspaceConfigDir(baseDir, config.localStorage))
-      ).get(CONFIG_FILENAME.split('.')[0])
+      ).get(CONFIG_FILENAME)
     ).currentEnv
     : config.currentEnv
   return { ...config, currentEnv, envs }
@@ -261,13 +260,14 @@ export const getAdaptersConfigDir = (baseDir: string): string => (
 
 const dumpWorkspaceConfig = async (configPath: string, config: PartialConfig, type: ObjectType):
 Promise<void> => {
-  await mkdirp(path.dirname(configPath))
+  const configDir = path.dirname(configPath)
+  await mkdirp(configDir)
   const configInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
     type,
     _.pick(config, Object.keys(type.fields)),
   )
-  return replaceContents(configPath, dumpElements([configInstance]))
+  await configSource(localDirectoryStore(configDir)).set(path.basename(configPath), configInstance)
 }
 
 export const dumpConfig = async (
@@ -294,7 +294,7 @@ const baseDirFromLookup = async (lookupDir: string): Promise<string> => {
 
 const readConfig = async (baseDir: string): Promise<PartialConfig> =>
   parseConfig(await configSource(localDirectoryStore(getConfigDir(baseDir)))
-    .get(CONFIG_FILENAME.split('.')[0]))
+    .get(CONFIG_FILENAME))
 
 export const loadConfig = async (lookupDir: string): Promise<Config> => {
   const baseDir = await baseDirFromLookup(lookupDir)

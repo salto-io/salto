@@ -27,7 +27,8 @@ export interface ConfigSource {
 export const configSource = (
   dirStore: DirectoryStore,
 ): ConfigSource => {
-  const filename = (name: string): string => name.concat(BP_EXTENSION)
+  const filename = (name: string): string =>
+    (name.endsWith(BP_EXTENSION) ? name : name.concat(BP_EXTENSION))
 
   return {
     get: async (name: string): Promise<InstanceElement | undefined> => {

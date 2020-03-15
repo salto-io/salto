@@ -51,7 +51,7 @@ describe('configuration dir location', () => {
         }
       }
     }`,
-    '/.salto/workspace/config.bp': `salto.localWorkspace _config {
+    '/.salto/workspace/config.bp': `salto {
       currentEnv = "default"
     }`,
     'defaults/salto.config/config.bp': `salto {
@@ -61,10 +61,10 @@ describe('configuration dir location', () => {
         }
       }
     }`,
-    '.salto_home/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/config.bp': `salto.localWorkspace _config {
+    '.salto_home/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/config.bp': `salto {
       currentEnv = "default"
     }`,
-    '.salto/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/config.bp': `salto.localWorkspace _config {
+    '.salto/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/config.bp': `salto {
       currentEnv = "default"
     }`,
   }

@@ -16,6 +16,7 @@
 
 import {
   isField,
+  isFunctionValue,
 } from '../src/utils'
 import {
   Field, ObjectType,
@@ -26,6 +27,9 @@ import {
 import {
   BuiltinTypes,
 } from '../src/builtins'
+import {
+  StaticFileAsset,
+} from '../src/values'
 
 describe('Test utils.ts', () => {
   describe('isField func', () => {
@@ -55,5 +59,11 @@ describe('Test utils.ts', () => {
     it('should return true for field', () => {
       expect(isField(mockField)).toEqual(true)
     })
+  })
+  describe('isFunctionValue', () => {
+    it('works for a static asset', () =>
+      expect(isFunctionValue(new StaticFileAsset('some.bp', 'some/path.ext'))).toEqual(true))
+    it('doesn\'t quack when not ducked', () =>
+      expect(isFunctionValue('WAT')).toEqual(false))
   })
 })

@@ -17,9 +17,32 @@ import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID,
   isObjectType, InstanceElement, BuiltinTypes,
 } from '@salto-io/adapter-api'
+import {
+  TestFuncImpl,
+} from '@salto-io/adapter-utils'
+import {
+  registerFunctionValue,
+  resetFunctions,
+} from '../../src/parser/internal/functions/factory'
 import { SourceRange, SourceMap, parse } from '../../src/parser/parse'
+import { HclExpression } from '../../src/parser/internal/types'
+
+const functionNamesList = [
+  'funcadelic', 'funkynumber', 'pun_is_fun',
+  'pun_is_really_fun', 'severability', 'mixer',
+  'nestush', 'multish',
+]
 
 describe('Salto parser', () => {
+  beforeAll(() => {
+    registerFunctionValue<TestFuncImpl>(
+      functionNamesList,
+      (funcExp: HclExpression) => new TestFuncImpl(funcExp.value.funcName, funcExp.value.parameters)
+    )
+  })
+  afterAll(() => {
+    resetFunctions(functionNamesList)
+  })
   describe('primitive, model and extensions', () => {
     let elements: Element[]
     let sourceMap: SourceMap

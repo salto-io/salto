@@ -61,16 +61,16 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
       }
     },
     func: exp => {
-      const { value: { funcName, parameters } } = exp
+      const { value: { parameters } } = exp
       const params: Value[] = (parameters.type && parameters.type === 'list')
         ? evaluators[parameters.type as ExpressionType](parameters)
         : parameters.map((x: HclExpression) => evaluate(x, baseId, sourceMap))
+      exp.value.parameters = params
       return functionFactory(
-        funcName,
-        params,
-        exp.source.filename
+        exp
       )
     },
+
   }
 
   if (sourceMap && baseId && expression.source) {

@@ -30,8 +30,34 @@ import {
   isField,
   isReferenceExpression,
   ReferenceExpression,
+  FunctionValue,
+  FunctionDumpDetails,
   Field, InstanceAnnotationTypes, isType, isObjectType,
 } from '@salto-io/adapter-api'
+
+
+export class TestFuncImpl extends FunctionValue {
+  constructor(
+    public readonly funcName: string,
+    public readonly parameters: Value[],
+  ) {
+    super()
+  }
+
+  public equals(other?: FunctionValue | Value): boolean {
+    return other !== undefined
+    && other instanceof FunctionValue
+    && this.funcName === other.functionDumpDetails.funcName
+    && this.parameters === other.functionDumpDetails.parameters
+  }
+
+  public get functionDumpDetails(): FunctionDumpDetails {
+    return {
+      funcName: this.funcName,
+      parameters: this.parameters,
+    }
+  }
+}
 
 
 export const bpCase = (name?: string): string => (

@@ -15,40 +15,54 @@
 */
 
 import {
-  FunctionExpression,
-  StaticFileAssetExpression,
-  Value,
+  StaticFileAsset,
+  FunctionValue,
 } from '@salto-io/adapter-api'
+import { HclExpression } from 'src/parser/internal/types'
 
-type FunctionReturner =
-  (funcName: string, parameters: Value[], bpPath: string) =>
-    FunctionExpression
+interface FunctionReturner{
+  <T>(funcExp: HclExpression): T
+}
 
-// NOTE: This is where we'd replace this with a dynamic lookup to enable custom functions to be used
-const implementedFunctions = [
-  StaticFileAssetExpression,
-]
+type FunctionNameToFunctionReturner = Record<string, FunctionReturner>
 
-const functions: Record<string, FunctionReturner> = implementedFunctions
-  .reduce((acc, CurrentFunctionType) => ({
-    ...acc,
-    ...CurrentFunctionType.functionNameAliases.reduce((aliases, alias) => ({
-      ...aliases,
-      ...{
-        [alias]: (funcName: string, parameters: Value[], bpPath: string) =>
-          new CurrentFunctionType(funcName, parameters, bpPath),
-      },
-    }), {}),
-  }), {})
+const functions: FunctionNameToFunctionReturner = {}
 
 export const hasFunction = (funcName: string): boolean => funcName in functions
 
-export const functionFactory = (funcName: string, parameters: Value[], bpPath = 'none'): FunctionExpression => {
+export const functionFactory = (funcExp: HclExpression):
+  FunctionValue => {
+  const { funcName } = funcExp.value
+
   if (!hasFunction(funcName)) {
-    // NOTE: We don't want to throw in the middle of the parsing,
-    // the validators will take care of this on a higher level
-    return new FunctionExpression(funcName, parameters, bpPath)
+    throw new Error(`Invalid function name '${funcName}'`)
   }
 
-  return functions[funcName](funcName, parameters, bpPath)
+  return functions[funcName](funcExp)
+}
+
+type FunctionReturnerWithType <T extends FunctionValue> = (funcExp: HclExpression) => T
+
+export function registerFunctionValue<T extends FunctionValue>(
+  aliases: string[],
+  initializer: FunctionReturnerWithType<T>
+): void {
+  aliases.forEach((alias: string) => {
+    functions[alias] = initializer as FunctionReturner
+  })
+}
+
+// NOTE: This is where we'd replace this with a dynamic lookup to enable custom functions to be used
+registerFunctionValue<StaticFileAsset>(
+  ['file'],
+  (funcExp: HclExpression): StaticFileAsset => {
+    const [relativeFileName] = funcExp.value.parameters
+    const bpPath = funcExp.source.filename
+
+    return new StaticFileAsset(bpPath, relativeFileName)
+  }
+)
+
+export const resetFunctions = (keys: string[]): void => {
+  keys.forEach(key => delete functions[key])
 }

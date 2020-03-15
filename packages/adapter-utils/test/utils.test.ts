@@ -19,13 +19,14 @@ import {
   ReferenceExpression, Values, TemplateExpression, Value,
   ElemID, InstanceAnnotationTypes,
   BuiltinTypes, INSTANCE_ANNOTATIONS,
-  isPrimitiveType, FunctionExpression,
+  isPrimitiveType,
 } from '@salto-io/adapter-api'
 
 import {
   transformValues, resolvePath, TransformPrimitiveFunc,
   TransformReferenceFunc, restoreReferences, resolveReferences,
   bpCase, findElement, findElements, findObjectType, findInstances,
+  TestFuncImpl,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -128,12 +129,12 @@ describe('Test utils.ts', () => {
           },
         },
       ],
-      simplefunc: new FunctionExpression('funcush', ['aaa'], 'none'),
-      severalfunc: new FunctionExpression('several', [false, 123, 'aaa'], 'none'),
-      listfunc: new FunctionExpression('list', [[1, 2, 3]], 'none'),
-      objfunc: new FunctionExpression('obj', [{ aaa: 321, bbb: 'fff' }], 'none'),
-      mixedfunc: new FunctionExpression('mixed', [true, [1, 2, 3], 'ZOMG'], 'none'),
-      filefunc: new FunctionExpression('file', ['some/path.ext'], 'none'),
+      simplefunc: new TestFuncImpl('funcush', ['aaa']),
+      severalfunc: new TestFuncImpl('several', [false, 123, 'aaa']),
+      listfunc: new TestFuncImpl('list', [[1, 2, 3]]),
+      objfunc: new TestFuncImpl('obj', [{ aaa: 321, bbb: 'fff' }]),
+      mixedfunc: new TestFuncImpl('mixed', [true, [1, 2, 3], 'ZOMG']),
+      filefunc: new TestFuncImpl('file', ['some/path.ext']),
     },
     [],
     {
@@ -760,6 +761,43 @@ describe('Test utils.ts', () => {
       it('should find all instances of a given type', () => {
         expect([...findInstances(elements, ot.elemID)]).toEqual(instances)
       })
+    })
+  })
+  describe('TestFuncImpl', () => {
+    it('should save func name and parameters', () => {
+      const func = new TestFuncImpl('ZOMG', ['4rlz'])
+      expect(func).toHaveProperty('funcName', 'ZOMG')
+      expect(func).toHaveProperty('parameters', ['4rlz'])
+    })
+    it('should dump function parameters', () => {
+      const func = new TestFuncImpl('ZOMG', ['4rlz'])
+      expect(func).toHaveProperty('functionDumpDetails', {
+        funcName: 'ZOMG',
+        parameters: ['4rlz'],
+      })
+    })
+    describe('equality', () => {
+      const firstFunc = new TestFuncImpl('ZOMG', ['4rlz'])
+      it('should return true for equal parameters', () =>
+        expect(new TestFuncImpl(
+          firstFunc.funcName,
+          firstFunc.parameters,
+        ).equals(firstFunc)).toEqual(true))
+      it('should return false missing other', () =>
+        expect(firstFunc.equals()).toEqual(false))
+      it('should return false for other that\'s not a function value', () =>
+        expect(firstFunc.equals(111)).toEqual(false))
+      it('should return false for other with different function name', () =>
+        expect(new TestFuncImpl(
+          'WAT',
+          firstFunc.parameters,
+        ).equals(firstFunc)).toEqual(false))
+
+      it('should return false for other with different parameters', () =>
+        expect(new TestFuncImpl(
+          firstFunc.funcName,
+          ['AHA!'],
+        ).equals(firstFunc)).toEqual(false))
     })
   })
 })

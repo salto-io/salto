@@ -17,8 +17,11 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
-  FunctionExpression, StaticFileAssetExpression,
+  StaticFileAsset,
 } from '@salto-io/adapter-api'
+import {
+  TestFuncImpl,
+} from '@salto-io/adapter-utils'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 import { resolve } from '../../src/core/expressions'
@@ -90,12 +93,12 @@ describe('State serialization', () => {
     'also_me_function',
     model,
     {
-      singleparam: new FunctionExpression('funcadelic', ['aaa'], 'none'),
-      multipleparams: new FunctionExpression('george', [false, 321], 'none'),
-      withlist: new FunctionExpression('washington', ['ZOMG', [3, 2, 1]], 'none'),
-      withobject: new FunctionExpression('maggot', [{ aa: '312' }], 'none'),
-      mixed: new FunctionExpression('brain', [1, [1, { aa: '312' }], false, 'aaa'], 'none'),
-      withfile: new StaticFileAssetExpression('file', ['some/path.ext'], 'none'),
+      singleparam: new TestFuncImpl('funcadelic', ['aaa']),
+      multipleparams: new TestFuncImpl('george', [false, 321]),
+      withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
+      withobject: new TestFuncImpl('maggot', [{ aa: '312' }]),
+      mixed: new TestFuncImpl('brain', [1, [1, { aa: '312' }], false, 'aaa']),
+      withfile: new StaticFileAsset('some/path.ext', 'none'),
     },
   )
 

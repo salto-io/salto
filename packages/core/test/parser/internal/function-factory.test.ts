@@ -15,13 +15,24 @@
 */
 
 import {
-  FunctionExpression,
-  StaticFileAssetExpression,
+  StaticFileAsset,
 } from '@salto-io/adapter-api'
+import {
+  TestFuncImpl,
+} from '@salto-io/adapter-utils'
 import {
   hasFunction,
   functionFactory,
+  registerFunctionValue,
+  resetFunctions,
 } from '../../../src/parser/internal/functions/factory'
+import { HclExpression, SourcePos } from '../../../src/parser/internal/types'
+
+const sourcePos: SourcePos = {
+  line: 42,
+  col: 42,
+  byte: 42,
+}
 
 describe('Function factory', () => {
   describe('hasFunction', () => {
@@ -33,14 +44,79 @@ describe('Function factory', () => {
 
   describe('Factory', () => {
     it('should initiate file function', () => {
-      const fileFunc = functionFactory('file', ['some/path.ext'])
-      expect(fileFunc instanceof StaticFileAssetExpression).toEqual(true)
+      const hclFunc: HclExpression = {
+        type: 'func',
+        expressions: [],
+        value: {
+          parameters: ['some/path.ext'],
+          funcName: 'file',
+        },
+        source: {
+          filename: 'ZOMG',
+          start: sourcePos,
+          end: sourcePos,
+        },
+      }
+      const fileFunc = functionFactory(hclFunc)
+      expect(fileFunc instanceof StaticFileAsset).toEqual(true)
       expect(fileFunc).toHaveProperty('relativeFileName', 'some/path.ext')
     })
-    it('should initiate default function if missing function', () => {
-      const func = functionFactory('ZOMG', ['arg', 'us'])
-      expect(func instanceof FunctionExpression).toEqual(true)
-      expect(func instanceof StaticFileAssetExpression).toEqual(false)
+    it('should fail if missing function', () => {
+      const hclFunc: HclExpression = {
+        type: 'func',
+        expressions: [],
+        value: {
+          parameters: ['arg', 'us'],
+          funcName: 'ZOMG',
+        },
+        source: {
+          start: sourcePos,
+          end: sourcePos,
+          filename: 'ZOMG',
+        },
+      }
+
+      expect(() => functionFactory(hclFunc)).toThrow(new Error('Invalid function name \'ZOMG\''))
+    })
+  })
+  describe('register functions', () => {
+    beforeEach(() => resetFunctions(['w00t', 'zOMG']))
+
+    it('should register function for single alias', () => {
+      expect(hasFunction('w00t')).toEqual(false)
+      registerFunctionValue<TestFuncImpl>(['w00t'], (
+        funcExp: HclExpression
+      ) => new TestFuncImpl('w00t', funcExp.value.parameters))
+
+      expect(hasFunction('w00t')).toEqual(true)
+      const hclFunc: HclExpression = {
+        type: 'func',
+        expressions: [],
+        value: {
+          parameters: ['arg', 'us'],
+          funcName: 'w00t',
+        },
+        source: {
+          start: sourcePos,
+          end: sourcePos,
+          filename: 'ZOMG',
+        },
+      }
+
+      const func = functionFactory(hclFunc)
+
+      expect(func instanceof TestFuncImpl).toEqual(true)
+    })
+
+    it('should register function for multiple aliases', () => {
+      expect(hasFunction('w00t')).toEqual(false)
+      expect(hasFunction('zOMG')).toEqual(false)
+      registerFunctionValue<TestFuncImpl>(['w00t', 'zOMG'], (
+        funcExp: HclExpression
+      ) => new TestFuncImpl('w00t', funcExp.value.parameters))
+
+      expect(hasFunction('w00t')).toEqual(true)
+      expect(hasFunction('zOMG')).toEqual(true)
     })
   })
 })

@@ -15,9 +15,16 @@
 */
 import _ from 'lodash'
 import {
-  FunctionExpression, TemplateExpression,
+  TemplateExpression,
   ReferenceExpression, ElemID,
 } from '@salto-io/adapter-api'
+import {
+  TestFuncImpl,
+} from '@salto-io/adapter-utils'
+import {
+  registerFunctionValue,
+  resetFunctions,
+} from '../../../src/parser/internal/functions/factory'
 import { parse } from '../../../src/parser/internal/parse'
 import { dump } from '../../../src/parser/internal/dump'
 import {
@@ -55,6 +62,22 @@ const expectExpressionsMatch = (actual: HclExpression, expected: HclExpression):
     })
   expect(omitSource(actual)).toEqual(omitSource(expected))
 }
+
+const functionNamesList = [
+  'funcush', 'so_plenty', 'mixtush',
+  'severalush', 'nestush', 'nestbaabuabua',
+  'objfunc',
+]
+
+beforeAll(() => {
+  registerFunctionValue<TestFuncImpl>(
+    functionNamesList,
+    (funcExp: HclExpression) => new TestFuncImpl(funcExp.value.funcName, funcExp.value.parameters)
+  )
+})
+afterAll(() => {
+  resetFunctions(functionNamesList)
+})
 
 
 describe('HCL parse', () => {
@@ -335,13 +358,13 @@ describe('HCL dump', () => {
                 ' test',
               ],
             }),
-            somefunc: new FunctionExpression('funcush', ['ZOMG'], 'none'),
-            otherfunc: new FunctionExpression('so_plenty', [[false, 1, '4rlz']], 'none'),
-            mixedfunc: new FunctionExpression('mixtush', [false, [1, 2, 3], '4rlz'], 'none'),
-            lastfunc: new FunctionExpression('severalush', [false, 1, '4rlz'], 'none'),
-            nestedfunc: new FunctionExpression('nestush', [false, [1, 2, [3, 4]], '4rlz'], 'none'),
-            superdeepnest: new FunctionExpression('nestbaabuabua', [false, [1, 2, [3, [4, 5, { dsa: 321 }]]], '4rlz'], 'none'),
-            objinfunc: new FunctionExpression('objfunc', [{ aaa: 123 }], 'none'),
+            somefunc: new TestFuncImpl('funcush', ['ZOMG']),
+            otherfunc: new TestFuncImpl('so_plenty', [[false, 1, '4rlz']]),
+            mixedfunc: new TestFuncImpl('mixtush', [false, [1, 2, 3], '4rlz']),
+            lastfunc: new TestFuncImpl('severalush', [false, 1, '4rlz']),
+            nestedfunc: new TestFuncImpl('nestush', [false, [1, 2, [3, 4]], '4rlz']),
+            superdeepnest: new TestFuncImpl('nestbaabuabua', [false, [1, 2, [3, [4, 5, { dsa: 321 }]]], '4rlz']),
+            objinfunc: new TestFuncImpl('objfunc', [{ aaa: 123 }]),
             nested: {
               val: 'so deep',
             },

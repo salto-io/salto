@@ -39,6 +39,9 @@ declare module 'node-suitetalk' {
   export namespace Record {
     export namespace Fields {
       export class Field {
+      }
+
+      export class PrimitiveField {
         constructor(name: string, value: Value)
       }
 
@@ -47,6 +50,16 @@ declare module 'node-suitetalk' {
         internalId: string
         externalId: string
         type: string
+      }
+
+      export class List {
+        constructor(typeName: string, name: string)
+        list: Record.Fields.Line[]
+      }
+
+      export class Line {
+        constructor(typeName: string, name: string)
+        bodyFieldList: Record.Fields.Field[]
       }
     }
 

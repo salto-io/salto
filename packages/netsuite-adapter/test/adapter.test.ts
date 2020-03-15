@@ -44,7 +44,7 @@ describe('Adapter', () => {
     let result: InstanceElement
     beforeAll(async () => {
       client.add = jest.fn().mockReturnValue(Promise.resolve(returnedReferenceMock))
-      const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD],
+      const instance = new InstanceElement('test', Types.customizationTypes[ENTITY_CUSTOM_FIELD],
         {
           label: 'Labelo',
           [SCRIPT_ID]: 'my_script_id',
@@ -63,7 +63,7 @@ describe('Adapter', () => {
     beforeAll(async () => {
       client.update = jest.fn().mockReturnValue(Promise.resolve(returnedReferenceMock))
       beforeInstance = new InstanceElement('test',
-        Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
+        Types.customizationTypes[ENTITY_CUSTOM_FIELD], {
           [INTERNAL_ID]: '123',
           [SCRIPT_ID]: 'custentity_my_script_id',
           label: 'Labelo',
@@ -93,7 +93,7 @@ describe('Adapter', () => {
   describe('remove', () => {
     beforeAll(async () => {
       client.delete = jest.fn().mockImplementation(() => Promise.resolve())
-      const instance = new InstanceElement('test', Types.customizationObjects.EntityCustomField, {
+      const instance = new InstanceElement('test', Types.customizationTypes.EntityCustomField, {
         [INTERNAL_ID]: '123',
       })
       await netsuiteAdapter.remove(instance)

@@ -41,7 +41,7 @@ describe('Transformer', () => {
     let inst: InstanceElement
     beforeAll(() => {
       inst = createInstanceElement(entityCustomFieldRecord,
-        Types.customizationObjects[ENTITY_CUSTOM_FIELD])
+        Types.customizationTypes[ENTITY_CUSTOM_FIELD])
       expect(inst).toBeDefined()
     })
     it('should omit values that are not stated in the type', async () => {
@@ -76,7 +76,7 @@ describe('Transformer', () => {
   describe('toNetsuiteRecord func', () => {
     let result: NetsuiteRecord
     beforeEach(() => {
-      const instance = new InstanceElement('test', Types.customizationObjects[ENTITY_CUSTOM_FIELD], {
+      const instance = new InstanceElement('test', Types.customizationTypes[ENTITY_CUSTOM_FIELD], {
         label: 'Labelo',
         [INTERNAL_ID]: '123',
         [SCRIPT_ID]: 'my_script_id',

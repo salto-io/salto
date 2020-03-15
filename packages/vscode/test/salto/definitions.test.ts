@@ -19,8 +19,7 @@ import { getPositionContext } from '../../src/salto/context'
 import { mockWorkspace } from './workspace'
 
 // TODO: enable this
-// eslint-disable-next-line jest/no-disabled-tests
-describe.skip('Test go to definitions', () => {
+describe('Test go to definitions', () => {
   let workspace: EditorWorkspace
   const bpFileName = 'all.bp'
 
@@ -33,7 +32,7 @@ describe.skip('Test go to definitions', () => {
   it('should give a single definition for a type that is defined once', async () => {
     const pos = { line: 40, col: 8 }
     const ctx = await getPositionContext(workspace, bpFileName, pos)
-    const token = 'vs_num'
+    const token = 'vs.num'
 
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(1)
@@ -43,14 +42,13 @@ describe.skip('Test go to definitions', () => {
   it('should give all definitions for a type that is extended', async () => {
     const pos = { line: 86, col: 6 }
     const ctx = await getPositionContext(workspace, bpFileName, pos)
-    const token = 'vs_loan'
+    const token = 'vs.loan'
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(2)
   })
 
   // TODO: enable this back
-  // eslint-disable-next-line jest/no-disabled-tests
-  it.skip('should give the field definition for an instance attr', async () => {
+  it('should give the field definition for an instance attr', async () => {
     const pos = { line: 89, col: 8 }
     const ctx = await getPositionContext(workspace, bpFileName, pos)
     const token = 'loaner'
@@ -62,7 +60,7 @@ describe.skip('Test go to definitions', () => {
   it('should empty list for undefined type', async () => {
     const pos = { line: 74, col: 6 }
     const ctx = await getPositionContext(workspace, bpFileName, pos)
-    const token = 'vs_nope'
+    const token = 'vs.nope'
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(0)
   })

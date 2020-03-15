@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
+import { Record } from 'node-suitetalk'
 import { createInstanceElement, toNetsuiteRecord, Types } from '../src/transformer'
 import {
   ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, RECORDS_PATH, SCRIPT_ID,
@@ -34,6 +35,30 @@ describe('Transformer', () => {
         'xsi:type': 'setupCustom:EntityCustomField',
       },
       name: 'I am the owner',
+    },
+    roleAccessList: {
+      roleAccess: [
+        {
+          role: {
+            [ATTRIBUTES]: {
+              internalId: '6',
+            },
+            name: 'Bookkeeper',
+          },
+          accessLevel: '_view',
+          searchLevel: '_edit',
+        },
+        {
+          role: {
+            [ATTRIBUTES]: {
+              internalId: '50',
+            },
+            name: 'Buyer',
+          },
+          accessLevel: '_view',
+          searchLevel: '_run',
+        },
+      ],
     },
   }
 
@@ -60,6 +85,30 @@ describe('Transformer', () => {
       expect(owner.name).toEqual('I am the owner')
     })
 
+    it('should transform inner list fields', async () => {
+      const { roleAccessList } = inst.value
+      expect(roleAccessList).toEqual({
+        roleAccess: [
+          {
+            role: {
+              name: 'Bookkeeper',
+              internalId: '6',
+            },
+            accessLevel: '_view',
+            searchLevel: '_edit',
+          },
+          {
+            role: {
+              name: 'Buyer',
+              internalId: '50',
+            },
+            accessLevel: '_view',
+            searchLevel: '_run',
+          },
+        ],
+      })
+    })
+
     it('should transform primitive values ATTRIBUTES of inner value', async () => {
       expect(inst.value.label).toEqual('My Custom Field Record')
     })
@@ -84,6 +133,26 @@ describe('Transformer', () => {
           [INTERNAL_ID]: '-5',
           name: 'Owner Name',
         },
+        roleAccessList: {
+          roleAccess: [
+            {
+              role: {
+                name: 'Buyer',
+                internalId: '50',
+              },
+              accessLevel: '_view',
+              searchLevel: '_run',
+            },
+            {
+              role: {
+                name: 'Bookkeeper',
+                internalId: '6',
+              },
+              accessLevel: '_view',
+              searchLevel: '_edit',
+            },
+          ],
+        },
       })
       result = toNetsuiteRecord(instance)
     })
@@ -93,24 +162,37 @@ describe('Transformer', () => {
     })
 
     it('should transform body fields', () => {
-      expect(result.bodyFieldList).toHaveLength(3)
+      const createExpectedListField = (): Record.Fields.List => {
+        const expectedList = new Record.Fields.List('CustomFieldRoleAccessList', 'roleAccessList')
+        const roleRecordRef = new Record.Fields.RecordRef('role')
+        roleRecordRef.internalId = '50'
+        const bookkeeperRecordRef = new Record.Fields.RecordRef('role')
+        bookkeeperRecordRef.internalId = '6'
+        const expectedListItem1 = new Record.Fields.Line('CustomFieldRoleAccess', 'roleAccess')
+        expectedListItem1.bodyFieldList = [
+          roleRecordRef,
+          new Record.Fields.PrimitiveField('accessLevel', '_view'),
+          new Record.Fields.PrimitiveField('searchLevel', '_run'),
+        ]
+        const expectedListItem2 = new Record.Fields.Line('CustomFieldRoleAccess', 'roleAccess')
+        expectedListItem2.bodyFieldList = [
+          bookkeeperRecordRef,
+          new Record.Fields.PrimitiveField('accessLevel', '_view'),
+          new Record.Fields.PrimitiveField('searchLevel', '_edit'),
+        ]
+        expectedList.list = [expectedListItem1, expectedListItem2]
+        return expectedList
+      }
+
+      expect(result.bodyFieldList).toHaveLength(4)
+      const expectedListField = createExpectedListField()
+      const ownerRecordRef = new Record.Fields.RecordRef('owner')
+      ownerRecordRef.internalId = '-5'
       expect(result.bodyFieldList).toMatchObject([
-        {
-          _name: 'label',
-          _value: 'Labelo',
-          _familyType: undefined,
-          _typeName: undefined,
-        },
-        {
-          _name: 'scriptId',
-          _value: 'my_script_id',
-          _familyType: undefined,
-          _typeName: undefined,
-        },
-        {
-          internalId: '-5',
-          _name: 'owner',
-        },
+        new Record.Fields.PrimitiveField('label', 'Labelo'),
+        new Record.Fields.PrimitiveField('scriptId', 'my_script_id'),
+        ownerRecordRef,
+        expectedListField,
       ])
     })
   })

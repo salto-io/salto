@@ -7,7 +7,7 @@
       "packages/*"
     ],
     "nohoist": [
-      "vscode/**"
+      "salto-vscode/**"
     ]
   },
   "devDependencies": {

@@ -62,7 +62,7 @@ jobs:
             - v2-yarn-deps-{{ arch }}-
             - v2-yarn-deps-
 
-      - run: yarn --frozen-lockfile
+      - run: yarn #--frozen-lockfile
 
       - run:
           name: create packages_node_modules_cache.tar.gz

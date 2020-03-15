@@ -45,7 +45,7 @@ export default class NetsuiteAdapter {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<Element[]> {
-    const objects = Types.customizationObjects
+    const objects = Types.customizationTypes
     const instances = await this.fetchInstances(Object.values(objects))
     return _.flatten([objects, instances] as Element[][])
   }

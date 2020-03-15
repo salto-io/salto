@@ -97,13 +97,13 @@ const formatValue = (value: Element | Value): string => {
     ].join('')
   }
   if (isPrimitiveType(value)) {
-    const primitiveTypenames = {
+    const primitiveTypeNames = {
       [PrimitiveTypes.STRING]: 'string',
       [PrimitiveTypes.NUMBER]: 'number',
       [PrimitiveTypes.BOOLEAN]: 'boolean',
     }
     return [
-      indent(`\nTYPE: ${primitiveTypenames[value.primitive]}`, 2),
+      indent(`\nTYPE: ${primitiveTypeNames[value.primitive]}`, 2),
       formatAnnotations(value.annotations),
       formatAnnotationTypes(value.annotationTypes),
     ].join('')
@@ -149,11 +149,14 @@ const formatChangeData = (change: DetailedChange): string => {
   return `: ${formatValue(_.get(change.data, 'before', _.get(change.data, 'after')))}`
 }
 
-export const formatChange = (change: DetailedChange): string => {
+export const formatChange = (change: DetailedChange, withValue = false): string => {
   const modifierType = isDummyChange(change) ? 'eq' : change.action
   const modifier = Prompts.MODIFIERS[modifierType]
   const id = change.id.isTopLevel() ? change.id.getFullName() : change.id.name
-  return indent(`${modifier} ${id}${formatChangeData(change)}`, change.id.nestingLevel)
+  return indent(
+    `${modifier} ${id}${withValue ? formatChangeData(change) : ''}`,
+    change.id.nestingLevel,
+  )
 }
 
 const formatCountPlanItemTypes = (plan: Plan): string => {
@@ -167,7 +170,9 @@ const formatCountPlanItemTypes = (plan: Plan): string => {
     + `and ${singleOrPluralString(counter.instance || 0, 'instance', 'instances')}.`
 }
 
-export const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedChange>>): string => {
+export const formatDetailedChanges = (
+  changeGroups: Iterable<Iterable<DetailedChange>>, withValue = false,
+): string => {
   const addMissingEmptyChanges = (changes: DetailedChange[]): DetailedChange[] => {
     const emptyChange = (id: ElemID): DetailedChange => ({
       action: 'modify',
@@ -199,7 +204,7 @@ export const formatDetailedChanges = (changeGroups: Iterable<Iterable<DetailedCh
     // Sort changes so they show up nested correctly
     .map(changes => _.sortBy(changes, change => change.id.getFullName()))
     // Format changes
-    .map(changes => changes.map(formatChange).join('\n'))
+    .map(changes => changes.map(change => formatChange(change, withValue)).join('\n'))
     .toArray()
     .join('\n\n')
 }
@@ -227,15 +232,15 @@ export const formatChangeErrors = (
       return indent(`${firstErr.severity}: ${formatError(firstErr)} (${groupedChangeErrors.length} Elements)`,
         errorsIndent)
     }
-    const formattedWSerror = formatWorkspaceError(firstErr)
-    return indent(`${formattedWSerror}${firstErr.severity}: ${firstErr.detailedMessage}`,
+    const formattedError = formatWorkspaceError(firstErr)
+    return indent(`${formattedError}${firstErr.severity}: ${firstErr.detailedMessage}`,
       errorsIndent)
   }
   const ret = _(wsChangeErrors)
     .groupBy(ce => ce.message)
     .values()
     .sortBy(errs => -errs.length)
-    .map(cerrs => formatGroupedChangeErrors(cerrs))
+    .map(formatGroupedChangeErrors)
     .join('\n')
   return ret
 }
@@ -268,11 +273,11 @@ export const formatExecutionPlan = (
   )
   return [
     emptyLine(),
-    header(Prompts.PLANSTEPSHEADER),
+    header(Prompts.PLAN_STEPS_HEADER),
     planSteps,
     ...planErrorsOutput,
     emptyLine(),
-    subHeader(Prompts.EXPLAINPREVIEWRESULT),
+    subHeader(Prompts.EXPLAIN_PREVIEW_RESULT),
     actionCount,
     emptyLine(),
     emptyLine(),
@@ -308,13 +313,13 @@ const formatItemName = (itemName: string): string => indent(header(`${itemName}:
 
 export const deployPhaseHeader = header([
   emptyLine(),
-  Prompts.STARTDEPLOYEXEC,
+  Prompts.START_DEPLOY_EXEC,
   emptyLine(),
 ].join('\n'))
 
 export const cancelDeployOutput = [
   emptyLine(),
-  Prompts.CANCELDEPLOY,
+  Prompts.CANCEL_DEPLOY,
   emptyLine(),
 ].join('\n')
 
@@ -339,7 +344,7 @@ export const deployPhaseEpilogue = (numChanges: number, numErrors: number): stri
 
 export const formatCancelAction = (itemName: string, parentItemName: string): string => {
   const formattedItemName = formatItemName(itemName)
-  const formattedErrorMessage = error(`${Prompts.CANCELDEPLOYACTION} ${parentItemName}`)
+  const formattedErrorMessage = error(`${Prompts.CANCEL_DEPLOY_ACTION} ${parentItemName}`)
   const elements = [
     `${formattedItemName} ${formattedErrorMessage}`,
     emptyLine(),
@@ -359,7 +364,7 @@ export const formatItemError = (itemName: string, errorReason: string): string =
 export const formatItemDone = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
   const itemName = formatItemName(planItemName(item))
-  const completedText = success(`${Prompts.ENDACTION[item.parent().action]}`
+  const completedText = success(`${Prompts.END_ACTION[item.parent().action]}`
     + ` completed after ${elapsed}s`)
   const itemDone = [
     `${itemName} ${completedText}`,
@@ -372,7 +377,7 @@ export const formatActionStart = (action: PlanItem): string => {
   action.parent()
   const itemName = `${formatItemName(planItemName(action))}`
   const elements = [
-    body(`${itemName} ${Prompts.STARTACTION[action.parent().action]}`),
+    body(`${itemName} ${Prompts.START_ACTION[action.parent().action]}`),
     emptyLine(),
   ]
   return elements.join('\n')
@@ -386,7 +391,7 @@ export const formatActionInProgress = (
   const elapsed = getElapsedTime(start)
   const styledItemName = formatItemName(itemName)
   return body(`${styledItemName} Still ${
-    Prompts.STARTACTION[actionName]
+    Prompts.START_ACTION[actionName]
   } (${elapsed}s elapsed)\n`)
 }
 
@@ -395,10 +400,10 @@ export const formatFetchChangeForApproval = (
   idx: number,
   totalChanges: number
 ): string => {
-  const formattedChange = formatDetailedChanges([[change.serviceChange]])
+  const formattedChange = formatDetailedChanges([[change.serviceChange]], true)
   const formattedConflict = change.pendingChange === undefined ? [] : [
     header(Prompts.FETCH_CONFLICTING_CHANGE),
-    body(formatDetailedChanges([[change.pendingChange]])),
+    body(formatDetailedChanges([[change.pendingChange]], true)),
   ]
   return [
     header(Prompts.FETCH_CHANGE_HEADER(idx + 1, totalChanges)),
@@ -461,10 +466,10 @@ export const formatWorkspaceAbort = (numErrors: number): string =>
   formatSimpleError(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
 
 export const formatShouldContinueWithWarning = (numWarnings: number): string =>
-  warn(Prompts.SHOULDCONTINUE(numWarnings))
+  warn(Prompts.SHOULD_CONTINUE(numWarnings))
 
 export const formatShouldAbortWithValidationError = (numErrors: number): string =>
-  error(Prompts.SHOULDABORT(numErrors))
+  error(Prompts.SHOULD_ABORT(numErrors))
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 

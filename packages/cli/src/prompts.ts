@@ -16,15 +16,14 @@
 import chalk from 'chalk'
 
 export default class Prompts {
-  public static readonly SHOULDEXECUTEPLAN = 'Do you want to perform these actions?'
+  public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to perform these actions?'
 
-  public static readonly CANCELDEPLOYACTION = 'Cancelled: Due to an erroneous dependency -'
-  public static readonly STARTDEPLOYEXEC = 'Starting the deployment plan'
+  public static readonly CANCEL_DEPLOY_ACTION = 'Cancelled: Due to an erroneous dependency -'
+  public static readonly START_DEPLOY_EXEC = 'Starting the deployment plan'
   public static readonly FULL_DEPLOY_SUMMARY = (numChanges: number, numErrors: number): string => `Deployment partially succeeded with ${numChanges} applied change(s) and ${numErrors} error(s).`
   public static readonly CHANGES_DEPLOY_SUMMARY = (numChanges: number): string => `Deployment succeeded - ${numChanges} applied change(s).`
   public static readonly ERRORS_DEPLOY_SUMMARY = (numErrors: number): string => `Deployment failed with ${numErrors} error(s).`
-  public static readonly CANCELDEPLOY = 'Canceling deploy'
-  public static readonly PLANNEDFORPREVIEW = ''
+  public static readonly CANCEL_DEPLOY = 'Canceling deploy'
   public static readonly MODIFIERS = {
     modify: chalk.yellow('M'),
     add: chalk.green('+'),
@@ -32,14 +31,14 @@ export default class Prompts {
     eq: '|',
   }
 
-  public static readonly STARTACTION = {
+  public static readonly START_ACTION = {
     modify: 'Changing',
     add: 'Creating',
     remove: 'Removing',
     eq: '',
   }
 
-  public static readonly ENDACTION = {
+  public static readonly END_ACTION = {
     modify: 'Change',
     add: 'Creation',
     remove: 'Removal',
@@ -50,15 +49,15 @@ export default class Prompts {
   public static readonly PREVIEW_FINISHED = 'Calculated deployment plan!'
   public static readonly PREVIEW_FAILED = 'Deployment plan calculation failed'
 
-  public static readonly EXPLAINPREVIEWRESULT = `Resources and actions are indicated with the following symbols:
+  public static readonly EXPLAIN_PREVIEW_RESULT = `Resources and actions are indicated with the following symbols:
 
   ${Prompts.MODIFIERS.add} create
   ${Prompts.MODIFIERS.modify} change
   ${Prompts.MODIFIERS.remove} remove`
 
-  public static readonly PLANSTEPSHEADER = 'Salto will perform the following actions:'
+  public static readonly PLAN_STEPS_HEADER = 'Salto will perform the following actions:'
   public static readonly PLAN_CHANGE_ERRS_HEADER = 'Encountered the following validations and will ignore their execution:'
-  public static readonly PREVIEWDISCLAIMER = `Note: Salto cannot guarantee that exactly these actions will be performed if "salto deploy" is run.
+  public static readonly PREVIEW_DISCLAIMER = `Note: Salto cannot guarantee that exactly these actions will be performed if "salto deploy" is run.
 Be sure to go over the preview output when invoking the deploy command.`
 
   public static readonly EMPTY_PLAN = 'Nothing to do.'
@@ -128,11 +127,11 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly WORKSPACE_LOAD_FAILED = (numErrors: number): string =>
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`} - aborting!`
 
-  public static readonly SHOULDCONTINUE = (numWarning: number): string =>
+  public static readonly SHOULD_CONTINUE = (numWarning: number): string =>
     `Workspace has ${numWarning === 1 ? 'a warning' : `${numWarning} warnings`
     } - do you want to continue?`
 
-  public static readonly SHOULDABORT = (numErrors: number): string =>
+  public static readonly SHOULD_ABORT = (numErrors: number): string =>
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`
     } - do you want to abort?`
 

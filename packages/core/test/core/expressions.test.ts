@@ -16,8 +16,11 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
-  ReferenceExpression, TemplateExpression, FunctionExpression, ListType,
+  ReferenceExpression, TemplateExpression, StaticFile, ListType,
 } from '@salto-io/adapter-api'
+import {
+  TestFuncImpl,
+} from '../parser/functions.test'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/core/expressions'
 
 describe('Test Salto Expressions', () => {
@@ -103,10 +106,11 @@ describe('Test Salto Expressions', () => {
     })
 
     const instanceWithFunctions = new InstanceElement('withfunctions', base, {
-      simple: new FunctionExpression('simple', ['aaa'], 'none'),
-      several: new FunctionExpression('several', [false, 123], 'none'),
-      list: new FunctionExpression('list', [['aaa', true, 123]], 'none'),
-      mixed: new FunctionExpression('mixed', ['aaa', [1, 2, 'aa']], 'none'),
+      simple: new TestFuncImpl('simple', ['aaa']),
+      several: new TestFuncImpl('several', [false, 123]),
+      list: new TestFuncImpl('list', [['aaa', true, 123]]),
+      mixed: new TestFuncImpl('mixed', ['aaa', [1, 2, 'aa']]),
+      file: new StaticFile('some.bp', 'some/path.ext'),
     })
 
     const elements = [

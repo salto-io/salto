@@ -15,8 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  FunctionExpression, TemplateExpression,
-  ReferenceExpression, ElemID,
+  TemplateExpression, ReferenceExpression, ElemID,
 } from '@salto-io/adapter-api'
 import { parse } from '../../../src/parser/internal/parse'
 import { dump } from '../../../src/parser/internal/dump'
@@ -26,6 +25,16 @@ import {
 import devaluate from './devaluate'
 import evaluate from '../../../src/parser/expressions'
 import { SourceRange } from '../../../src/parser/parse'
+import {
+  Functions,
+} from '../../../src/parser/functions'
+import {
+  FunctionExpression,
+} from '../../../src/parser/internal/functions'
+import {
+  registerTestFunction,
+} from '../functions.test'
+
 
 const expectSourceLocation = (
   { source }: { source: SourceRange},
@@ -56,6 +65,11 @@ const expectExpressionsMatch = (actual: HclExpression, expected: HclExpression):
   expect(omitSource(actual)).toEqual(omitSource(expected))
 }
 
+let functions: Functions
+const funcName = 'funcush'
+beforeAll(() => {
+  functions = registerTestFunction(funcName)
+})
 
 describe('HCL parse', () => {
   it('parses adapter config block', async () => {
@@ -335,13 +349,34 @@ describe('HCL dump', () => {
                 ' test',
               ],
             }),
-            somefunc: new FunctionExpression('funcush', ['ZOMG'], 'none'),
-            otherfunc: new FunctionExpression('so_plenty', [[false, 1, '4rlz']], 'none'),
-            mixedfunc: new FunctionExpression('mixtush', [false, [1, 2, 3], '4rlz'], 'none'),
-            lastfunc: new FunctionExpression('severalush', [false, 1, '4rlz'], 'none'),
-            nestedfunc: new FunctionExpression('nestush', [false, [1, 2, [3, 4]], '4rlz'], 'none'),
-            superdeepnest: new FunctionExpression('nestbaabuabua', [false, [1, 2, [3, [4, 5, { dsa: 321 }]]], '4rlz'], 'none'),
-            objinfunc: new FunctionExpression('objfunc', [{ aaa: 123 }], 'none'),
+            somefunc: new FunctionExpression(
+              funcName,
+              ['ZOMG'],
+            ),
+            otherfunc: new FunctionExpression(
+              funcName,
+              [[false, 1, '4rlz']],
+            ),
+            mixedfunc: new FunctionExpression(
+              funcName,
+              [false, [1, 2, 3], '4rlz'],
+            ),
+            lastfunc: new FunctionExpression(
+              funcName,
+              [false, 1, '4rlz'],
+            ),
+            nestedfunc: new FunctionExpression(
+              funcName,
+              [false, [1, 2, [3, 4]], '4rlz'],
+            ),
+            superdeepnest: new FunctionExpression(
+              funcName,
+              [false, [1, 2, [3, [4, 5, { dsa: 321 }]]], '4rlz'],
+            ),
+            objinfunc: new FunctionExpression(
+              funcName,
+              [{ aaa: 123 }],
+            ),
             nested: {
               val: 'so deep',
             },
@@ -378,17 +413,17 @@ describe('HCL dump', () => {
   it('dumps functions with single parameters', () =>
     expect(serialized).toMatch('somefunc = funcush("ZOMG")'))
   it('dumps functions with list', () =>
-    expect(serialized).toMatch(/otherfunc = so_plenty\(\n.+\[\n.+false,\n.+1,\n.+"4rlz",\n.+\],\n.+\)/m))
+    expect(serialized).toMatch(/otherfunc = funcush\(\n.+\[\n.+false,\n.+1,\n.+"4rlz",\n.+\],\n.+\)/m))
   it('dumps functions mixed parameters', () =>
-    expect(serialized).toMatch(/mixedfunc = mixtush\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+3,\n.+\],\n.+"4rlz",\n.+\)/m))
+    expect(serialized).toMatch(/mixedfunc = funcush\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+3,\n.+\],\n.+"4rlz",\n.+\)/m))
   it('dumps functions several parameters', () =>
-    expect(serialized).toMatch(/lastfunc = severalush\(\n.+false,\n.+1,\n.+"4rlz",\n.+\)/m))
+    expect(serialized).toMatch(/lastfunc = funcush\(\n.+false,\n.+1,\n.+"4rlz",\n.+\)/m))
   it('dumps functions nested parameters', () =>
-    expect(serialized).toMatch(/nestedfunc = nestush\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+\[\n.+3,\n.+4,\n.+\],\n.+\],\n.+"4rlz",\n.+\)/m))
+    expect(serialized).toMatch(/nestedfunc = funcush\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+\[\n.+3,\n.+4,\n.+\],\n.+\],\n.+"4rlz",\n.+\)/m))
   it('dumps functions really nested parameters', () =>
-    expect(serialized).toMatch(/superdeepnest = nestbaabuabua\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+\[\n.+3,\n.+\[\n.+4,\n.+5,\n.+\{\n.+dsa = 321\n.+\},\n.+\],\n.+],\n.+],\n.+"4rlz",\n.+\)/m))
+    expect(serialized).toMatch(/superdeepnest = funcush\(\n.+false,\n.+\[\n.+1,\n.+2,\n.+\[\n.+3,\n.+\[\n.+4,\n.+5,\n.+\{\n.+dsa = 321\n.+\},\n.+\],\n.+],\n.+],\n.+"4rlz",\n.+\)/m))
   it('dumps function with objects', () =>
-    expect(serialized).toMatch(/objinfunc = objfunc\(\n.+\{\n.+aaa = 123\n.+\},\n.+\)/m))
+    expect(serialized).toMatch(/objinfunc = funcush\(\n.+\{\n.+aaa = 123\n.+\},\n.+\)/m))
 
   it('handles nested attributes', () => {
     expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep",*\s*}/m)
@@ -401,7 +436,12 @@ describe('HCL dump', () => {
     const removeSrcFromBlock = (block: Partial<ParsedHclBlock>): ParsedHclBlock =>
       _.mapValues(block, (val, key) => {
         if (key === 'attrs') {
-          return _.mapValues(val as Record<string, HclAttribute>, v => evaluate(v.expressions[0]))
+          return _.mapValues(val as Record<string, HclAttribute>, v => evaluate(
+            v.expressions[0],
+            undefined,
+            undefined,
+            functions,
+          ))
         }
         if (key === 'blocks') {
           return (val as ParsedHclBlock[]).map(blk => removeSrcFromBlock(blk))

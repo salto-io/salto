@@ -17,9 +17,21 @@ import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID,
   isObjectType, InstanceElement, BuiltinTypes, isListType, isType, ListType,
 } from '@salto-io/adapter-api'
+import {
+  registerTestFunction,
+} from './functions.test'
+import {
+  Functions,
+} from '../../src/parser/functions'
 import { SourceRange, SourceMap, parse } from '../../src/parser/parse'
 
+const funcName = 'funcush'
+
+let functions: Functions
 describe('Salto parser', () => {
+  beforeAll(() => {
+    functions = registerTestFunction(funcName)
+  })
   describe('primitive, model and extensions', () => {
     let elements: Element[]
     let sourceMap: SourceMap
@@ -114,26 +126,29 @@ describe('Salto parser', () => {
         path_assistant_enabled = false
       }
       adapter_id.some_asset {
-        content                                 = funcadelic("some.png")
-        contentWithNumber                       = funkynumber(1)
-        contentWithBoolean                      = pun_is_fun(true)
-        contentWithList                         = pun_is_really_fun(["yes", "dad", true])
-        contentWithSeveralParams                = severability(false, 3, "WAT")
-        contentWithMixed                        = mixer(false, [3, 3], "WAT")
-        contentWithNested                       = nestush(false, [3, [
+        content                                 = funcush("some.png")
+        contentWithNumber                       = funcush(1)
+        contentWithBoolean                      = funcush(true)
+        contentWithList                         = funcush(["yes", "dad", true])
+        contentWithSeveralParams                = funcush(false, 3, "WAT")
+        contentWithMixed                        = funcush(false, [3, 3], "WAT")
+        contentWithNested                       = funcush(false, [3, [
           1,
           2
         ]], "WAT")
-        contentWithMultilineArraysAndParameters = multish("regular", [
+        contentWithMultilineArraysAndParameters = funcush("regular", [
           "aa",
           2,
           false
         ], 321)
         contentWithFile                         = file("some/path.ext")
+        contentWithNestedFunction               = {
+          nestalicous                           = funcush("yeah")
+        }
       }
        `
     beforeAll(() => {
-      ({ elements, sourceMap } = parse(Buffer.from(body), 'none'))
+      ({ elements, sourceMap } = parse(Buffer.from(body), 'none', functions))
     })
 
     describe('parse result', () => {
@@ -441,30 +456,32 @@ describe('Salto parser', () => {
       describe('file', () => {
         it('should have filepath', () =>
           expect(instanceWithFunctions.value.contentWithFile).toHaveProperty('relativeFileName', 'some/path.ext'))
+        it('should have bpPath', () =>
+          expect(instanceWithFunctions.value.contentWithFile).toHaveProperty('bpPath', 'none'))
       })
 
       describe('parameters', () => {
         it('number', () => {
           expect(instanceWithFunctions.value.contentWithNumber)
-            .toHaveProperty('funcName', 'funkynumber')
+            .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithNumber)
             .toHaveProperty('parameters', [1])
         })
         it('string', () => {
           expect(instanceWithFunctions.value.content)
-            .toHaveProperty('funcName', 'funcadelic')
+            .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.content)
             .toHaveProperty('parameters', ['some.png'])
         })
         it('boolean', () => {
           expect(instanceWithFunctions.value.contentWithBoolean)
-            .toHaveProperty('funcName', 'pun_is_fun')
+            .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithBoolean)
             .toHaveProperty('parameters', [true])
         })
         it('list', () => {
           expect(instanceWithFunctions.value.contentWithList)
-            .toHaveProperty('funcName', 'pun_is_really_fun')
+            .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithList).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithList.parameters[0])
             .toHaveLength(3)
@@ -473,7 +490,7 @@ describe('Salto parser', () => {
         })
         it('several paraams', () => {
           expect(instanceWithFunctions.value.contentWithSeveralParams)
-            .toHaveProperty('funcName', 'severability')
+            .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithSeveralParams.parameters)
             .toHaveLength(3)
@@ -482,7 +499,7 @@ describe('Salto parser', () => {
         })
         it('mixed', () => {
           expect(instanceWithFunctions.value.contentWithMixed)
-            .toHaveProperty('funcName', 'mixer')
+            .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithMixed).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithMixed.parameters)
             .toHaveLength(3)
@@ -491,7 +508,7 @@ describe('Salto parser', () => {
         })
         it('nested', () => {
           expect(instanceWithFunctions.value.contentWithNested)
-            .toHaveProperty('funcName', 'nestush')
+            .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithNested).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithNested.parameters)
             .toHaveLength(3)
@@ -500,12 +517,22 @@ describe('Salto parser', () => {
         })
         it('multiline', () => {
           expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters)
-            .toHaveProperty('funcName', 'multish')
+            .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters).toHaveProperty('parameters')
           expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters)
             .toHaveLength(3)
           expect(instanceWithFunctions.value.contentWithMultilineArraysAndParameters.parameters)
             .toEqual(['regular', ['aa', 2, false], 321])
+        })
+        it('nested in object', () => {
+          expect(instanceWithFunctions.value.contentWithNestedFunction)
+            .toHaveProperty('nestalicous')
+          const func = instanceWithFunctions.value.contentWithNestedFunction.nestalicous
+          expect(func).toHaveProperty('parameters')
+          expect(func.parameters)
+            .toHaveLength(1)
+          expect(func.parameters)
+            .toEqual(['yeah'])
         })
       })
     })
@@ -516,12 +543,12 @@ describe('Salto parser', () => {
       const body = `
       type salesforce.string string {}
       `
-      expect(() => parse(Buffer.from(body), 'none')).toThrow()
+      expect(() => parse(Buffer.from(body), 'none', functions)).toThrow()
     })
   })
 
   it('fails on invalid top level syntax', async () => {
     const body = 'bla'
-    expect(parse(Buffer.from(body), 'none').errors).not.toHaveLength(0)
+    expect(parse(Buffer.from(body), 'none', functions).errors).not.toHaveLength(0)
   })
 })

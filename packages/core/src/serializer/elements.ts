@@ -18,7 +18,7 @@ import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType,
   ObjectType, InstanceElement, isType, isElement, isExpression,
   ReferenceExpression, TemplateExpression, Expression,
-  isInstanceElement, isReferenceExpression, FunctionExpression, StaticFileAssetExpression,
+  isInstanceElement, isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 
 // There are two issues with naive json stringification:
@@ -75,8 +75,10 @@ export const deserialize = (data: string): Element[] => {
     new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
   )
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const revivers: {[key: string]: (v: {[key: string]: any}) => Element|Expression} = {
+  const revivers: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    [key: string]: (v: {[key: string]: any}) => Element|Expression|StaticFile
+  } = {
     [InstanceElement.serializedTypeName]: v => new InstanceElement(
       reviveElemID(v.elemID).name,
       v.type,
@@ -107,16 +109,10 @@ export const deserialize = (data: string): Element[] => {
     ),
     [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
     [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
-    [FunctionExpression.serializedTypeName]: v => new FunctionExpression(
-      v.funcName,
-      v.parameters,
-      v.bpPath
-    ),
-    [StaticFileAssetExpression.serializedTypeName]: v => new StaticFileAssetExpression(
-      v.funcName,
-      v.parameters,
+    [StaticFile.serializedTypeName]: v => new StaticFile(
       v.bpPath,
-      v.content || v.hash
+      v.relativeFileName,
+      v.hash
     ),
   }
 

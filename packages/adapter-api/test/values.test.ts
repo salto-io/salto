@@ -15,106 +15,58 @@
 */
 
 import {
-  FunctionExpression,
-  StaticFileAssetExpression,
+  StaticFile,
   isEqualValues,
 } from '../src/values'
 
 describe('Values', () => {
-  describe('Function Expressions', () => {
-    describe('Vanilla', () => {
-      it('should be initialized', () => {
-        const funcExp = new FunctionExpression('zomg', ['WAT'], 'somefile.bp')
-        expect(funcExp)
-          .toHaveProperty('funcName', 'zomg')
-        expect(funcExp)
-          .toHaveProperty('parameters', ['WAT'])
-        expect(funcExp)
-          .toHaveProperty('bpPath', 'somefile.bp')
-      })
-    })
+  describe('StaticFile', () => {
     it('should have static serialize name', () =>
-      expect(FunctionExpression.serializedTypeName).toEqual('FunctionExpression'))
-    it('should have no function name aliases', () =>
-      expect(FunctionExpression.functionNameAliases).toEqual([]))
-    describe('equality', () => {
-      it('equals', () => {
-        const funcExp1 = new FunctionExpression('zomg', ['WAT'], 'somefile.bp')
-        const funcExp2 = new FunctionExpression('zomg', ['WAT'], 'somefile.bp')
-        expect(funcExp1.equals(funcExp2)).toEqual(true)
+      expect(StaticFile.serializedTypeName).toEqual('StaticFile'))
+
+    it('should be able to add buffer and set hash', () => {
+      const ZOMGBuffer = Buffer.from('ZOMG')
+      const fileFunc = new StaticFile('somefile.bp', 'some/path.ext', ZOMGBuffer)
+      expect(fileFunc.content).toEqual(ZOMGBuffer)
+      expect(fileFunc.hash).toEqual('4dc55a74daa147a028360ee5687389d7')
+    })
+    it('should not set hash if passed empty content', () => {
+      const fileFunc = new StaticFile('somefile.bp', 'some/path.ext')
+      expect(fileFunc.content).toBeUndefined()
+      expect(fileFunc.hash).toBeUndefined()
+    })
+    describe('equality (direct)', () => {
+      it('equals by hash', () => {
+        const fileFunc1 = new StaticFile('somefile.bp', 'some/path.ext', 'ZOMG')
+        const fileFunc2 = new StaticFile('somefile.bp', 'some/path.ext', 'ZOMG')
+        expect(fileFunc1.isEqual(fileFunc2)).toEqual(true)
       })
-      it('different name', () => {
-        const funcExp1 = new FunctionExpression('zomg1', ['WAT'], 'somefile.bp')
-        const funcExp2 = new FunctionExpression('zomg2', ['WAT'], 'somefile.bp')
-        expect(funcExp1.equals(funcExp2)).toEqual(false)
+      it('unequals by hash', () => {
+        const fileFunc1 = new StaticFile('somefile.bp', 'some/path.ext', 'ZOMG1')
+        const fileFunc2 = new StaticFile('somefile.bp', 'some/path.ext', 'ZOMG2')
+        expect(fileFunc1.isEqual(fileFunc2)).toEqual(false)
       })
-      it('different params', () => {
-        const funcExp1 = new FunctionExpression('zomg', ['WAT1'], 'somefile.bp')
-        const funcExp2 = new FunctionExpression('zomg', ['WAT2'], 'somefile.bp')
-        expect(funcExp1.equals(funcExp2)).toEqual(false)
-      })
-      it('should ignore bp filename', () => {
-        const funcExp1 = new FunctionExpression('zomg', ['WAT'], 'somefile1.bp')
-        const funcExp2 = new FunctionExpression('zomg', ['WAT'], 'somefile2.bp')
-        expect(funcExp1.equals(funcExp2)).toEqual(true)
+      it('unequals if both hashes are undefined', () => {
+        const fileFunc1 = new StaticFile('somefile.bp', 'some/path.ext')
+        const fileFunc2 = new StaticFile('somefile.bp', 'some/path.ext')
+        expect(fileFunc1.isEqual(fileFunc2)).toEqual(false)
       })
     })
-    describe('StaticFileAssetExpression', () => {
-      it('should be initialized with func expression', () => {
-        const fileFunc = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp')
-        expect(fileFunc).toHaveProperty('relativeFileName', 'some/path.ext')
-        expect(fileFunc).toHaveProperty('funcName', 'file')
+    describe('equality (via isEqualValues)', () => {
+      it('equals by hash', () => {
+        const fileFunc1 = new StaticFile('somefile.bp', 'some/path.ext', 'ZOMG')
+        const fileFunc2 = new StaticFile('somefile.bp', 'some/path.ext', 'ZOMG')
+        expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(true)
       })
-      it('should have static serialize name', () =>
-        expect(StaticFileAssetExpression.serializedTypeName).toEqual('StaticFileAssetExpression'))
-      it('should have one alias called "file"', () =>
-        expect(StaticFileAssetExpression.functionNameAliases).toEqual(['file']))
-
-      it('should be able to add buffer and set hash', () => {
-        const ZOMGBuffer = Buffer.from('ZOMG')
-        const fileFunc = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', ZOMGBuffer)
-        expect(fileFunc.content).toEqual(ZOMGBuffer)
-        expect(fileFunc.hash).toEqual('4dc55a74daa147a028360ee5687389d7')
+      it('unequals by hash', () => {
+        const fileFunc1 = new StaticFile('somefile.bp', 'some/path.ext', 'ZOMG1')
+        const fileFunc2 = new StaticFile('somefile.bp', 'some/path.ext', 'ZOMG2')
+        expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
       })
-      it('should not set hash if passed empty content', () => {
-        const fileFunc = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp')
-        expect(fileFunc.content).toBeUndefined()
-        expect(fileFunc.hash).toBeUndefined()
-      })
-
-      describe('equality (direct)', () => {
-        it('equals by hash', () => {
-          const fileFunc1 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', 'ZOMG')
-          const fileFunc2 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', 'ZOMG')
-          expect(fileFunc1.equals(fileFunc2)).toEqual(true)
-        })
-        it('unequals by hash', () => {
-          const fileFunc1 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', 'ZOMG1')
-          const fileFunc2 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', 'ZOMG2')
-          expect(fileFunc1.equals(fileFunc2)).toEqual(false)
-        })
-        it('unequals if both hashes are undefined', () => {
-          const fileFunc1 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp')
-          const fileFunc2 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp')
-          expect(fileFunc1.equals(fileFunc2)).toEqual(false)
-        })
-      })
-      describe('equality (via isEqualValues)', () => {
-        it('equals by hash', () => {
-          const fileFunc1 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', 'ZOMG')
-          const fileFunc2 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', 'ZOMG')
-          expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(true)
-        })
-        it('unequals by hash', () => {
-          const fileFunc1 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', 'ZOMG1')
-          const fileFunc2 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp', 'ZOMG2')
-          expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
-        })
-        it('unequals if both hashes are undefined', () => {
-          const fileFunc1 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp')
-          const fileFunc2 = new StaticFileAssetExpression('file', ['some/path.ext'], 'somefile.bp')
-          expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
-        })
+      it('unequals if both hashes are undefined', () => {
+        const fileFunc1 = new StaticFile('somefile.bp', 'some/path.ext')
+        const fileFunc2 = new StaticFile('somefile.bp', 'some/path.ext')
+        expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
       })
     })
   })

@@ -15,15 +15,29 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  Field, BuiltinTypes, INSTANCE_ANNOTATIONS, ListType,
+  Field, BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile, ListType,
 } from '@salto-io/adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser/parse'
 import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../src/parser/dump'
+import {
+  Functions,
+} from '../../src/parser/functions'
+import {
+  registerTestFunction,
+  TestFuncImpl,
+} from './functions.test'
+
+const funcName = 'ZOMG'
+let functions: Functions
 
 describe('Salto Dump', () => {
+  beforeAll(() => {
+    functions = registerTestFunction(funcName)
+  })
+
   const strType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'string'),
     primitive: PrimitiveTypes.STRING,
@@ -97,12 +111,33 @@ describe('Salto Dump', () => {
     { name: '3me', num: 7 },
   )
 
+  const instanceWithFunctions = new InstanceElement(
+    'functions',
+    model,
+    {
+      func2: new TestFuncImpl(funcName, ['aaa']),
+      func1: new StaticFile('none', 'some/path.ext'),
+      nested: {
+        before: 'something',
+        func3: new TestFuncImpl(funcName, ['well', [1, 2, [false, 'soo']]]),
+        deeper: {
+          befdep: 321,
+          func4: new TestFuncImpl(funcName, ['lanternfish']),
+        },
+        after: 'else',
+      },
+    }
+  )
+
   describe('dump elements', () => {
     let body: string
 
     beforeAll(() => {
-      body = dumpElements([strType, numType, boolType, fieldType, model, instance, config,
-        instanceStartsWithNumber])
+      body = dumpElements([
+        strType, numType, boolType,
+        fieldType, model, instance, config,
+        instanceStartsWithNumber, instanceWithFunctions,
+      ], functions)
     })
 
     it('dumps primitive types', () => {
@@ -116,6 +151,18 @@ describe('Salto Dump', () => {
       expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?number bob {/s)
       expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?boolean tom {/s)
       expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?string jerry {/s)
+    })
+
+    describe('dumps functions', () => {
+      it('static file', () => {
+        expect(body).toMatch(/func1\s=\sfile\("some\/path.ext"\)/)
+      })
+      it('custom function', () => {
+        expect(body).toMatch(/func2\s=\sZOMG\("aaa"\)/)
+      })
+      it('deep as duck', () => {
+        expect(body).toMatch(/func4\s=\sZOMG\("lanternfish"\)/)
+      })
     })
 
     describe('dumped instance elements', () => {
@@ -161,9 +208,9 @@ describe('Salto Dump', () => {
     })
 
     it('can be parsed back', () => {
-      const { elements, errors } = parse(Buffer.from(body), 'none')
-      expect(errors.length).toEqual(0)
-      expect(elements.length).toEqual(9)
+      const { elements, errors } = parse(Buffer.from(body), 'none', functions)
+      expect(errors).toHaveLength(0)
+      expect(elements).toHaveLength(10)
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
@@ -172,7 +219,8 @@ describe('Salto Dump', () => {
       TestHelpers.expectInstancesToMatch(elements[5] as InstanceElement, instance)
       TestHelpers.expectInstancesToMatch(elements[6] as InstanceElement, config)
       TestHelpers.expectInstancesToMatch(elements[7] as InstanceElement, instanceStartsWithNumber)
-      TestHelpers.expectTypesToMatch(elements[8] as ListType, model.fields.list.type)
+      TestHelpers.expectInstancesToMatch(elements[8] as InstanceElement, instanceWithFunctions)
+      TestHelpers.expectTypesToMatch(elements[9] as ListType, model.fields.list.type)
     })
   })
   describe('dump field', () => {
@@ -184,6 +232,55 @@ describe('Salto Dump', () => {
 
     it('should contain only field', () => {
       expect(body).toMatch(/^salesforce.string name {\s+label = "Name"\s+}$/m)
+    })
+  })
+
+  describe('dump function', () => {
+    it('static file', () => {
+      const body = dumpValues({ asset: new StaticFile('bpfile', 'some/path.ext') })
+
+      expect(body).toMatch(/^asset\s+=\s+file\("some\/path.ext"\)$/m)
+    })
+
+    it('should dump custom function a single parameter', () => {
+      const body = dumpValues({ attrush: new TestFuncImpl(funcName, [false]) }, functions)
+
+      expect(body).toMatch(/attrush = ZOMG\(false\)/)
+    })
+    it('should dump custom function that is nested', () => {
+      const body = dumpValues({ nestalicous: { nestFunc: new TestFuncImpl(funcName, ['yes']) } }, functions)
+
+      expect(body).toMatch(/nestFunc = ZOMG\("yes"\)/)
+    })
+    it('should dump custom function that is nested with other properties', () => {
+      const body = dumpValues({
+        nestalicous: {
+          ss: 321,
+          nestFunc: new TestFuncImpl(funcName, ['yes']),
+          cc: 321,
+        },
+        bb: 123,
+        nestFunc2: new TestFuncImpl(funcName, ['maybe']),
+        deep: {
+          very: {
+            nestFunc3: new TestFuncImpl(funcName, ['definitely']),
+          },
+        },
+      }, functions)
+
+      expect(body).toEqual(`nestalicous = {
+    ss = 321
+    nestFunc = ZOMG("yes")
+    cc = 321
+}
+bb = 123
+nestFunc2 = ZOMG("maybe")
+deep = {
+    very = {
+        nestFunc3 = ZOMG("definitely")
+    }
+}
+`)
     })
   })
   describe('dump attribute', () => {

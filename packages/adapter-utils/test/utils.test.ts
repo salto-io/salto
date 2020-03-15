@@ -17,9 +17,9 @@ import _ from 'lodash'
 import {
   Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
   ReferenceExpression, Values, TemplateExpression, Value,
-  ElemID, InstanceAnnotationTypes,
+  ElemID, InstanceAnnotationTypes, isListType, ListType,
   BuiltinTypes, INSTANCE_ANNOTATIONS,
-  isPrimitiveType, FunctionExpression, ListType, isListType,
+  isPrimitiveType,
 } from '@salto-io/adapter-api'
 
 import {
@@ -130,12 +130,6 @@ describe('Test utils.ts', () => {
           },
         },
       ],
-      simplefunc: new FunctionExpression('funcush', ['aaa'], 'none'),
-      severalfunc: new FunctionExpression('several', [false, 123, 'aaa'], 'none'),
-      listfunc: new FunctionExpression('list', [[1, 2, 3]], 'none'),
-      objfunc: new FunctionExpression('obj', [{ aaa: 321, bbb: 'fff' }], 'none'),
-      mixedfunc: new FunctionExpression('mixed', [true, [1, 2, 3], 'ZOMG'], 'none'),
-      filefunc: new FunctionExpression('file', ['some/path.ext'], 'none'),
     },
     [],
     {

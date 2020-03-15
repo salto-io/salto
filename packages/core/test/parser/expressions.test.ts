@@ -14,13 +14,28 @@
 * limitations under the License.
 */
 import {
-  FunctionExpression, ReferenceExpression,
-  TemplateExpression, ElemID, StaticFileAssetExpression,
+  ReferenceExpression, TemplateExpression,
+  ElemID, StaticFile,
 } from '@salto-io/adapter-api'
+import {
+  Functions,
+} from '../../src/parser/functions'
 import devaluate from './internal/devaluate'
 import evaluate from '../../src/parser/expressions'
 import { UnresolvedReference } from '../../src/core/expressions'
 import { HclExpression } from '../../src/parser/internal/types'
+import {
+  TestFuncImpl,
+  registerTestFunction,
+} from './functions.test'
+
+
+const funcName = 'funcush'
+let functions: Functions
+
+beforeAll(() => {
+  functions = registerTestFunction(funcName)
+})
 
 describe('HCL Expression', () => {
   it('should evaluate strings', () => {
@@ -82,34 +97,52 @@ describe('HCL Expression', () => {
 
   describe('should evaluate functions', () => {
     it('with single parameter', () => {
-      const ref = new FunctionExpression('funcush', ['aa'], 'dummy')
+      const ref = new TestFuncImpl('funcush', ['aa'])
       const exp = devaluate(ref)
-      expect(evaluate(exp)).toEqual(ref)
+      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
     it('with several parameters', () => {
-      const ref = new FunctionExpression('funcush', ['aa', 312], 'dummy')
+      const ref = new TestFuncImpl('funcush', ['aa', 312])
       const exp = devaluate(ref)
-      expect(evaluate(exp)).toEqual(ref)
+      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
     it('with list', () => {
-      const ref = new FunctionExpression('funcush', [['aa', 'bb']], 'dummy')
+      const ref = new TestFuncImpl('funcush', [['aa', 'bb']])
       const exp = devaluate(ref)
-      expect(evaluate(exp)).toEqual(ref)
+      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
     it('with object', () => {
-      const ref = new FunctionExpression('funcush', [{ aa: 'bb' }], 'dummy')
+      const ref = new TestFuncImpl('funcush', [{ aa: 'bb' }])
       const exp = devaluate(ref)
-      expect(evaluate(exp)).toEqual(ref)
+      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
     it('with mixed', () => {
-      const ref = new FunctionExpression('funcush', [false, ['aa', 'bb', [1, 2, { wat: 'ZOMG' }]]], 'dummy')
+      const ref = new TestFuncImpl('funcush', [false, ['aa', 'bb', [1, 2, { wat: 'ZOMG' }]]])
       const exp = devaluate(ref)
-      expect(evaluate(exp)).toEqual(ref)
+      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
     it('file function', () => {
-      const ref = new FunctionExpression('file', ['aaasome/path.ext'], 'dummy')
+      const exp: HclExpression = {
+        type: 'func',
+        value: {
+          funcName: 'file',
+          parameters: [devaluate('aaasome/path.ext')],
+        },
+        expressions: [],
+        source: {
+          filename: 'dummy',
+          start: { line: 0, col: 0, byte: 0 },
+          end: { line: 0, col: 0, byte: 0 },
+        },
+      }
+      expect(evaluate(exp)).toEqual(new StaticFile('dummy', 'aaasome/path.ext'))
+    })
+    it('nested', () => {
+      const ref = {
+        nestush: new TestFuncImpl('funcush', [false, ['aa', 'bb', [1, 2, { wat: 'ZOMG' }]]]),
+      }
       const exp = devaluate(ref)
-      expect(evaluate(exp)).toEqual(new StaticFileAssetExpression('file', ['aaasome/path.ext'], 'dummy'))
+      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
   })
 })

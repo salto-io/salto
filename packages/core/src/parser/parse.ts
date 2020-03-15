@@ -26,6 +26,9 @@ import {
 import { parse as hclParse } from './internal/parse'
 import evaluate from './expressions'
 import { Keywords } from './language'
+import {
+  Functions,
+} from './functions'
 
 const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 
@@ -80,7 +83,11 @@ export type ParseResult = {
  * @returns elements: Type elements found in the blueprint
  *          errors: Errors encountered during parsing
  */
-export const parse = (blueprint: Buffer, filename: string): ParseResult => {
+export const parse = (
+  blueprint: Buffer,
+  filename: string,
+  functions?: Functions,
+): ParseResult => {
   const { body, errors: parseErrors } = hclParse(blueprint, filename)
   const sourceMap = new SourceMapImpl()
   const listElements: Map<string, ListType> = new Map<string, ListType>()
@@ -105,7 +112,12 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
     _(block.attrs).mapValues((val, key) => {
       const exp = val.expressions[0]
       // Use attribute source as expression source so it includes the key as well
-      return evaluate({ ...exp, source: val.source }, parentId.createNestedID(key), sourceMap)
+      return evaluate(
+        { ...exp, source: val.source },
+        parentId.createNestedID(key),
+        sourceMap,
+        functions
+      )
     })
       .omitBy(_.isUndefined)
       .value()

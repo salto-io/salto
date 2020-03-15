@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import {
   Value, isExpression, ReferenceExpression,
-  TemplateExpression, isFunctionExpression,
+  TemplateExpression,
 } from '@salto-io/adapter-api'
 import { DumpedHclBlock, DumpedHclBody } from './types'
+import { isFunctionExpression } from './functions'
 
 const O_BLOCK = '{'
 const C_BLOCK = '}'
@@ -73,17 +74,6 @@ const dumpArray = (arr: Value): string[] => {
 
 const dumpExpresion = (exp: Value): string[] => {
   if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
-  if (isFunctionExpression(exp)) {
-    const { parameters, funcName } = exp
-    // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const dumpedParams = parameters.map(dumpValue)
-    if (dumpedParams.length === 1 && dumpedParams[0].length === 1) {
-      return [`${funcName}${O_PAREN}${dumpedParams[0][0]}${C_PAREN}`]
-    }
-    const paramsForDump = _.flatten(seperateByCommas(dumpedParams))
-
-    return [`${funcName}${O_PAREN}`, ...paramsForDump, C_PAREN]
-  }
   const { parts } = exp as TemplateExpression
   return [
     dumpPrimitive(parts
@@ -95,8 +85,20 @@ const dumpExpresion = (exp: Value): string[] => {
 
 const dumpValue = (value: Value): string[] => {
   if (_.isArray(value)) return dumpArray(value)
+  if (isFunctionExpression(value)) {
+    const { parameters, funcName } = value
+    const dumpedParams = parameters.map(dumpValue)
+    if (dumpedParams.length === 1 && dumpedParams[0].length === 1) {
+      return [`${funcName}${O_PAREN}${dumpedParams[0][0]}${C_PAREN}`]
+    }
+    const paramsForDump = _.flatten(seperateByCommas(dumpedParams))
+
+    return [`${funcName}${O_PAREN}`, ...paramsForDump, C_PAREN]
+  }
+
   if (_.isPlainObject(value)) return dumpObject(value)
   if (isExpression(value)) return dumpExpresion(value)
+
   return [dumpPrimitive(value)]
 }
 

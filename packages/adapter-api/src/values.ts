@@ -29,38 +29,14 @@ export interface Values {
   [key: string]: Value
 }
 
-export class FunctionExpression {
-  constructor(
-    public readonly funcName: string,
-    public readonly parameters: Value[],
-    public readonly bpPath: string
-  ) {}
-
-  static get serializedTypeName(): string { return 'FunctionExpression' }
-  static get functionNameAliases(): string[] { return [] }
-
-  public equals(other: FunctionExpression): boolean {
-    return this.funcName === other.funcName
-    && this.parameters.length === other.parameters.length
-    && this.parameters.every((param, index) => param === other.parameters[index])
-  }
-}
-
-export class StaticFileAssetExpression extends FunctionExpression {
-  public relativeFileName: string
+export class StaticFile {
   private fileContent?: Buffer
   public hash?: string
   constructor(
-    // NOTE: Whilst it might look unnecessary,
-    // we need the func name here to ensure that we keep whatever aliases the user use manually
-    public readonly funcName: string,
-    public readonly parameters: Value[],
-    public readonly bpPath: string = 'none',
+    public readonly bpPath: string,
+    public readonly relativeFileName: string,
     contentOrHash?: Buffer|string
   ) {
-    super(funcName, parameters, bpPath)
-    const [relativeFileName] = parameters
-    this.relativeFileName = relativeFileName
     if (contentOrHash) {
       if (contentOrHash instanceof Buffer) {
         this.content = contentOrHash
@@ -70,8 +46,7 @@ export class StaticFileAssetExpression extends FunctionExpression {
     }
   }
 
-  static get serializedTypeName(): string { return 'StaticFileAssetExpression' }
-  static get functionNameAliases(): string[] { return ['file'] }
+  static get serializedTypeName(): string { return 'StaticFile' }
 
   get content(): Buffer | undefined {
     return this.fileContent
@@ -84,9 +59,10 @@ export class StaticFileAssetExpression extends FunctionExpression {
     }
   }
 
-  public equals(other: StaticFileAssetExpression): boolean {
-    return [this.hash, other.hash].every(x => x !== undefined)
-    && this.hash === other.hash
+  public isEqual(other: StaticFile): boolean {
+    return this.hash === other.hash
+      && this.hash !== undefined
+      && other.hash !== undefined
   }
 }
 
@@ -112,7 +88,7 @@ export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {
   static get serializedTypeName(): string { return 'TemplateExpression' }
 }
 
-export type Expression = ReferenceExpression | TemplateExpression | FunctionExpression
+export type Expression = ReferenceExpression | TemplateExpression
 
 export type TemplatePart = string | Expression
 
@@ -120,8 +96,8 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
   first,
   second,
   (f, s) => {
-    if (f instanceof FunctionExpression && s instanceof FunctionExpression) {
-      return f.equals(s)
+    if (f instanceof StaticFile && s instanceof StaticFile) {
+      return f.isEqual(s)
     }
     if (f instanceof ReferenceExpression || s instanceof ReferenceExpression) {
       const fValue = f instanceof ReferenceExpression ? f.value : f
@@ -145,11 +121,6 @@ export const isTemplateExpression = (value: any): value is TemplateExpression =>
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isFunctionExpression = (value: any): value is FunctionExpression => (
-  value instanceof FunctionExpression
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isExpression = (value: any): value is Expression => (
-  isReferenceExpression(value) || isTemplateExpression(value) || isFunctionExpression(value)
+  isReferenceExpression(value) || isTemplateExpression(value)
 )

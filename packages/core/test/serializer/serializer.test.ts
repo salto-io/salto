@@ -17,8 +17,11 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
-  FunctionExpression, StaticFileAssetExpression,
+  StaticFile,
 } from '@salto-io/adapter-api'
+import {
+  TestFuncImpl,
+} from '../parser/functions.test'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 import { resolve } from '../../src/core/expressions'
@@ -92,12 +95,16 @@ describe('State serialization', () => {
     'also_me_function',
     model,
     {
-      singleparam: new FunctionExpression('funcadelic', ['aaa'], 'none'),
-      multipleparams: new FunctionExpression('george', [false, 321], 'none'),
-      withlist: new FunctionExpression('washington', ['ZOMG', [3, 2, 1]], 'none'),
-      withobject: new FunctionExpression('maggot', [{ aa: '312' }], 'none'),
-      mixed: new FunctionExpression('brain', [1, [1, { aa: '312' }], false, 'aaa'], 'none'),
-      withfile: new StaticFileAssetExpression('file', ['some/path.ext'], 'none'),
+      singleparam: new TestFuncImpl('funcadelic', ['aaa']),
+      multipleparams: new TestFuncImpl('george', [false, 321]),
+      withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
+      withobject: new TestFuncImpl('maggot', [{ aa: '312' }]),
+      mixed: new TestFuncImpl('brain', [1, [1, { aa: '312' }], false, 'aaa']),
+      file: new StaticFile('none', 'some/path.ext'),
+      filewithhash: new StaticFile('none', 'some/path.ext', 'hash'),
+      nested: {
+        WAT: new TestFuncImpl('nestalicous', ['a']),
+      },
     },
   )
 
@@ -141,6 +148,52 @@ describe('State serialization', () => {
       shuffledConfig,
     ])
     expect(serialized).toEqual(shuffledSer)
+  })
+  describe('functions', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let funcElement: InstanceElement
+    beforeAll(() => {
+      const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')
+      const serialized = serialize(elementsToSerialize)
+      funcElement = deserialize(serialized)[0] as InstanceElement
+    })
+
+    it('single parameter', () => {
+      expect(funcElement.value).toHaveProperty('singleparam', { funcName: 'funcadelic', parameters: ['aaa'] })
+    })
+    it('multiple parameters', () => {
+      expect(funcElement.value).toHaveProperty('multipleparams', { funcName: 'george', parameters: [false, 321] })
+    })
+    it('list', () => {
+      expect(funcElement.value).toHaveProperty('withlist', { funcName: 'washington', parameters: ['ZOMG', [3, 2, 1]] })
+    })
+    it('object', () => {
+      expect(funcElement.value).toHaveProperty('withobject', { funcName: 'maggot', parameters: [{ aa: '312' }] })
+    })
+    it('mixed', () => {
+      expect(funcElement.value).toHaveProperty('mixed', {
+        funcName: 'brain',
+        parameters: [1, [1, { aa: '312' }], false, 'aaa'],
+      })
+    })
+    it('file', () => {
+      expect(funcElement.value).toHaveProperty('file', { relativeFileName: 'some/path.ext', bpPath: 'none' })
+    })
+    it('file with hash', () => {
+      expect(funcElement.value).toHaveProperty('filewithhash', {
+        relativeFileName: 'some/path.ext',
+        bpPath: 'none',
+        hash: 'hash',
+      })
+    })
+    it('nested parameter', () => {
+      expect(funcElement.value).toHaveProperty('nested', {
+        WAT: {
+          funcName: 'nestalicous',
+          parameters: ['a'],
+        },
+      })
+    })
   })
   describe('when a field collides with the hidden class name attribute', () => {
     let deserialized: InstanceElement

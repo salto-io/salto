@@ -19,25 +19,33 @@ import {
 } from '@salto-io/adapter-api'
 import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
 import { UnresolvedReference } from '../core/expressions'
-import { functionFactory } from './internal/functions/factory'
+import {
+  evaluateFunction,
+  Functions,
+} from './functions'
 
 type ExpEvaluator = (expression: HclExpression) => Value
 
-const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: SourceMap): Value => {
+const evaluate = (
+  expression: HclExpression,
+  baseId?: ElemID,
+  sourceMap?: SourceMap,
+  functions?: Functions,
+): Value => {
   const evalSubExpression = (exp: HclExpression, key: string): Value =>
-    evaluate(exp, baseId && baseId.createNestedID(key), sourceMap)
+    evaluate(exp, baseId && baseId.createNestedID(key), sourceMap, functions)
 
   const evaluators: Record<ExpressionType, ExpEvaluator> = {
     list: exp => exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString())),
     template: exp => (
       exp.expressions.filter(e => e.type !== 'literal').length === 0
-        ? exp.expressions.map(e => evaluate(e)).join('')
+        ? exp.expressions.map(e => evaluate(e, undefined, undefined, functions)).join('')
         : new TemplateExpression({ parts: exp.expressions.map(e => evaluate(e)) })
     ),
     map: exp => _(exp.expressions)
       .chunk(2)
       .map(([keyExp, valExp]) => {
-        const key = evaluate(keyExp)
+        const key = evaluate(keyExp, undefined, undefined, functions)
         // Change source start to include the key expression as well
         const updatedValExp = {
           ...valExp,
@@ -61,16 +69,24 @@ const evaluate = (expression: HclExpression, baseId?: ElemID, sourceMap?: Source
       }
     },
     func: exp => {
-      const { value: { funcName, parameters } } = exp
+      const { value: { parameters } } = exp
       const params: Value[] = (parameters.type && parameters.type === 'list')
         ? evaluators[parameters.type as ExpressionType](parameters)
-        : parameters.map((x: HclExpression) => evaluate(x, baseId, sourceMap))
-      return functionFactory(
-        funcName,
-        params,
-        exp.source.filename
+        : parameters.map((x: HclExpression) => evaluate(x, baseId, sourceMap, functions))
+      return evaluateFunction(
+        {
+          ...exp,
+          ...{
+            value: {
+              ...exp.value,
+              parameters: params,
+            },
+          },
+        },
+        functions
       )
     },
+
   }
 
   if (sourceMap && baseId && expression.source) {

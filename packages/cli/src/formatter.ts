@@ -97,13 +97,13 @@ const formatValue = (value: Element | Value): string => {
     ].join('')
   }
   if (isPrimitiveType(value)) {
-    const primitiveTypenames = {
+    const primitiveTypeNames = {
       [PrimitiveTypes.STRING]: 'string',
       [PrimitiveTypes.NUMBER]: 'number',
       [PrimitiveTypes.BOOLEAN]: 'boolean',
     }
     return [
-      indent(`\nTYPE: ${primitiveTypenames[value.primitive]}`, 2),
+      indent(`\nTYPE: ${primitiveTypeNames[value.primitive]}`, 2),
       formatAnnotations(value.annotations),
       formatAnnotationTypes(value.annotationTypes),
     ].join('')
@@ -240,7 +240,7 @@ export const formatChangeErrors = (
     .groupBy(ce => ce.message)
     .values()
     .sortBy(errs => -errs.length)
-    .map(errCount => formatGroupedChangeErrors(errCount))
+    .map(formatGroupedChangeErrors)
     .join('\n')
   return ret
 }

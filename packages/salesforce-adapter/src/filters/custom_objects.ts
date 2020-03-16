@@ -355,15 +355,20 @@ const createNestedMetadataInstances = (instance: InstanceElement,
       if (_.isEmpty(nestedInstances)) {
         return []
       }
-      return nestedInstances.map(nestedInstance => {
-        const fullName = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
-          .join(API_NAME_SEPERATOR)
-        const elemIdName = bpCase(fullName)
-        nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
-        return new InstanceElement(elemIdName, type, nestedInstance,
-          [...(objPath as string[]).slice(0, -1), type.elemID.name, elemIdName],
-          { [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(objElemID) })
-      })
+      return _(nestedInstances)
+        // Sometimes we get duplicate instances, using keyBy here to drop the duplicates
+        .keyBy(INSTANCE_FULL_NAME_FIELD)
+        .values()
+        .map(nestedInstance => {
+          const fullName = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
+            .join(API_NAME_SEPERATOR)
+          const elemIdName = bpCase(fullName)
+          nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
+          return new InstanceElement(elemIdName, type, nestedInstance,
+            [...(objPath as string[]).slice(0, -1), type.elemID.name, elemIdName],
+            { [INSTANCE_ANNOTATIONS.PARENT]: new ReferenceExpression(objElemID) })
+        })
+        .value()
     }))
 
 const createFromInstance = (instance: InstanceElement,

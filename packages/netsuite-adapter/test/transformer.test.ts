@@ -98,12 +98,10 @@ describe('Transformer', () => {
         {
           field: 'label',
           value: 'Labelo',
-          _fieldType: 'string',
         },
         {
           field: 'scriptId',
           value: 'my_script_id',
-          _fieldType: 'string',
         },
         {
           internalId: '-5',

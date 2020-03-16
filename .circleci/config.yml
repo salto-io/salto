@@ -62,7 +62,6 @@ jobs:
             - v2-yarn-deps-{{ arch }}-
             - v2-yarn-deps-
 
-      - run: yarn cache clean
       - run: yarn --frozen-lockfile
 
       - run:

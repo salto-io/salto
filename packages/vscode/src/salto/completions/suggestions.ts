@@ -29,7 +29,7 @@ interface InsertText {
 }
 type Suggestion = string|InsertText
 export type Suggestions = Suggestion[]
-type RefPartResolver = () => Suggestions
+type RefPartResolver = () => string[]
 interface SuggestionsParams {
   elements: ReadonlyArray<Element>
   ref?: ContextReference
@@ -72,7 +72,7 @@ const getAdapterNames = (
 const refNameSuggestions = (
   elements: readonly Element[],
   refElemID: ElemID,
-): Suggestions => {
+): string[] => {
   const baseID = new ElemID(refElemID.adapter, refElemID.typeName)
   const baseElement = elements.find(e => e.elemID.getFullName() === baseID.getFullName())
   if (!baseElement) return []
@@ -94,7 +94,7 @@ const refNameSuggestions = (
 const refValueSuggestions = (
   elements: readonly Element[],
   refElemID: ElemID,
-): Suggestions => {
+): string[] => {
   const { parent } = refElemID.createTopLevelParentID()
   const parentElement = elements.find(
     e => e.elemID.getFullName() === parent.getFullName()
@@ -145,7 +145,11 @@ const referenceSuggestions = (
     const refPartSuggestions = refPartIndex >= refPartsResolvers.length
       ? refPartsResolvers[refPartsResolvers.length - 1]()
       : refPartsResolvers[refPartIndex]()
-    return refPartSuggestions.map(sug => [...refParts, sug].join(ElemID.NAMESPACE_SEPARATOR))
+    return refPartSuggestions.map(sug => ({
+      label: sug,
+      insertText: [...refParts, sug].join(ElemID.NAMESPACE_SEPARATOR),
+      filterText: [...refParts, sug].join(ElemID.NAMESPACE_SEPARATOR),
+    }))
   } catch (e) {
     return []
   }

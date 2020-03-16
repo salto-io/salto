@@ -272,10 +272,10 @@ const dumpWorkspaceConfig = async (
 export const dumpConfig = async (
   baseDir: string, config: PartialConfig, localStorage?: string,
 ): Promise<void> => {
-  await dumpWorkspaceConfig(baseDir, CONFIG_FILENAME, config, saltoConfigType)
+  await dumpWorkspaceConfig(getConfigDir(baseDir), CONFIG_FILENAME, config, saltoConfigType)
   if (localStorage) {
     await dumpWorkspaceConfig(
-      getLocalWorkspaceConfigDir(baseDir, localStorage),
+      getLocalWorkspaceConfigDir(getConfigDir(baseDir), localStorage),
       CONFIG_FILENAME,
       config,
       saltoLocalWorkspaceType,

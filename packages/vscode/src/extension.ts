@@ -25,7 +25,7 @@ import {
   createFoldingProvider,
 } from './providers'
 import { toVSDiagnostics } from './adapters'
-
+import { createCopyReferenceCommand } from './commands'
 /**
  * This files act as a bridge between VSC and the @salto-io/core specific functionality.
  */
@@ -83,7 +83,8 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       vscode.workspace.onDidChangeTextDocument(
         e => onReportErrorsEvent(e, workspace, diagCollection)
       ),
-      vscode.workspace.onDidOpenTextDocument(onFileOpen)
+      vscode.workspace.onDidOpenTextDocument(onFileOpen),
+      vscode.commands.registerCommand('salto.copyReference', createCopyReferenceCommand(workspace))
     )
     const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.bp')
     fileWatcher.onDidCreate((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))

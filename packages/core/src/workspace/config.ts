@@ -157,7 +157,7 @@ const createDefaultEnvConfig = (
   envDir: string,
 ): EnvConfig => ({
   stateLocation: path.join(baseDir, CONFIG_DIR_NAME, STATES_DIR_NAME, `${name}.bpc`),
-  credentialsLocation: path.resolve(localStorage, envDir, 'credentials'),
+  credentialsLocation: path.join(localStorage, envDir, 'credentials'),
   services: [],
 })
 

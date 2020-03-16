@@ -94,7 +94,7 @@ const loadBlueprintSource = (
     `*${BP_EXTENSION}`,
     (dirParh: string) => !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirParh),
   )
-  const cacheStore = localDirectoryStore(path.join(localStorage, '.cache'))
+  const cacheStore = localDirectoryStore(path.join(localStorage, 'cache'))
   return buildBlueprintSource(blueprintsStore, parseResultCache(cacheStore))
 }
 

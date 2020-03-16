@@ -68,7 +68,7 @@ describe('cli e2e', () => {
 
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
   const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
-  const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/environment.bp`
+  const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/local/config.bp`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 

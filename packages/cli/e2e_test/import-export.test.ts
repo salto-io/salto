@@ -43,7 +43,7 @@ let localStorageDir: string
 let telemetry: Telemetry
 
 const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
-const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/environment.bp`
+const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/local/config.bp`
 const exportFile = 'export_test.csv'
 const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 

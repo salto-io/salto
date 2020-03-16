@@ -23,7 +23,7 @@ import { stat, mkdirp, replaceContents, readTextFile, exists } from '../../../sr
 
 jest.mock('../../../src/file')
 describe('localParseResultCache', () => {
-  const mockBaseDirPath = '.salto/local/cache'
+  const mockBaseDirPath = '.salto/local/.cache'
   const mockStateNotFoundAsUndefine = stat.notFoundAsUndefined as unknown as jest.Mock
   const mockState = stat as unknown as jest.Mock
   const mockFileExists = exists as jest.Mock

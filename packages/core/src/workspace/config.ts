@@ -39,7 +39,7 @@ class NotAWorkspaceError extends Error {
 
 class ConfigParseError extends Error {
   constructor() {
-    super('failed to parsed config file')
+    super('failed to parse config file')
   }
 }
 
@@ -156,7 +156,7 @@ const createDefaultEnvConfig = (
   localStorage: string,
   envDir: string,
 ): EnvConfig => ({
-  stateLocation: path.resolve(baseDir, CONFIG_DIR_NAME, STATES_DIR_NAME, `${name}.bpc`),
+  stateLocation: path.join(baseDir, CONFIG_DIR_NAME, STATES_DIR_NAME, `${name}.bpc`),
   credentialsLocation: path.resolve(localStorage, envDir, 'credentials'),
   services: [],
 })
@@ -212,7 +212,7 @@ export const getLocalWorkspaceConfigPath = (baseDir: string, localStorage: strin
 
 export const completeConfig = async (baseDir: string, partialConfig: PartialConfig):
 Promise<Config> => {
-  const config = _.merge({}, completeWorkspaceConfig(baseDir, partialConfig)) as Config
+  const config = completeWorkspaceConfig(baseDir, partialConfig)
   const envs = _.mapValues(config.envs, (env, name) => ({
     ...env,
     config: completeEnvConfig(
@@ -255,28 +255,29 @@ export const getConfigPath = (baseDir: string): string => (
 )
 
 export const getAdaptersConfigDir = (baseDir: string): string => (
-  path.resolve(path.join(getConfigDir(baseDir), ADAPTERS_CONFIGS_DIR_NAME))
+  path.join(getConfigDir(baseDir), ADAPTERS_CONFIGS_DIR_NAME)
 )
 
-const dumpWorkspaceConfig = async (configPath: string, config: PartialConfig, type: ObjectType):
-Promise<void> => {
-  const configDir = path.dirname(configPath)
-  await mkdirp(configDir)
+const dumpWorkspaceConfig = async (
+  configDir: string, configFileName: string, config: PartialConfig, type: ObjectType
+): Promise<void> => {
   const configInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
     type,
     _.pick(config, Object.keys(type.fields)),
   )
-  await configSource(localDirectoryStore(configDir)).set(path.basename(configPath), configInstance)
+  await configSource(localDirectoryStore(configDir))
+    .set(path.basename(configFileName), configInstance)
 }
 
 export const dumpConfig = async (
   baseDir: string, config: PartialConfig, localStorage?: string,
 ): Promise<void> => {
-  await dumpWorkspaceConfig(getConfigPath(baseDir), config, saltoConfigType)
+  await dumpWorkspaceConfig(baseDir, CONFIG_FILENAME, config, saltoConfigType)
   if (localStorage) {
     await dumpWorkspaceConfig(
-      getLocalWorkspaceConfigPath(baseDir, localStorage),
+      getLocalWorkspaceConfigDir(baseDir, localStorage),
+      CONFIG_FILENAME,
       config,
       saltoLocalWorkspaceType,
     )

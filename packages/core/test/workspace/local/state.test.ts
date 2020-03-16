@@ -32,6 +32,7 @@ jest.mock('../../../src/file', () => ({
     }
     return Promise.resolve('[]')
   }),
+  mkdirp: jest.fn().mockImplementation(),
   exists: jest.fn().mockImplementation(((filename: string) => Promise.resolve(filename !== 'empty'))),
 }))
 

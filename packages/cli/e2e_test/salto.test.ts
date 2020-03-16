@@ -68,13 +68,14 @@ describe('cli e2e', () => {
 
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
   const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
-  const envConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/env.bp`
+  const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/local/config.bp`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 
   let homePath: string
   let fetchOutputDir: string
   let localStorageDir: string
+  let localWorkspaceDir: string
   let statePath: string
   let randomString: string
   let tmpBPRelativePath: string
@@ -95,7 +96,8 @@ describe('cli e2e', () => {
     homePath = tmp.dirSync().name
     fetchOutputDir = `${homePath}/BP/test_fetch`
     localStorageDir = `${homePath}/.salto/test_fetch`
-    statePath = `${fetchOutputDir}/envs/default/salto.config/state.bpc`
+    localWorkspaceDir = `${homePath}/e2e-375e3f65-be66-4fdc-a561-4c4f9735db94`
+    statePath = `${fetchOutputDir}/salto.config/states/default.bpc`
     randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
@@ -108,10 +110,10 @@ describe('cli e2e', () => {
     process.env[SALTO_HOME_VAR] = homePath
     client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials })
     await mkdirp(`${fetchOutputDir}/salto.config`)
-    await mkdirp(`${fetchOutputDir}/envs/default/salto.config`)
     await mkdirp(localStorageDir)
+    await mkdirp(localWorkspaceDir)
     await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-    await copyFile(envConfigFile, `${fetchOutputDir}/envs/default/salto.config/config.bp`)
+    await copyFile(localWorkspaceConfigFile, `${localWorkspaceDir}/config.bp`)
     await rm(fullPath(tmpBPRelativePath))
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)

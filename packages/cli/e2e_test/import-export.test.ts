@@ -39,10 +39,11 @@ let homePath: string
 let fetchOutputDir: string
 let exportOutputDir: string
 let exportOutputFullPath: string
+let localStorageDir: string
 let telemetry: Telemetry
 
 const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
-const envConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/env.bp`
+const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/local/config.bp`
 const exportFile = 'export_test.csv'
 const dataFilePath = `${__dirname}/../../e2e_test/CSV/import.csv`
 
@@ -55,6 +56,7 @@ describe('Data migration operations E2E', () => {
     exportOutputFullPath = path.join(exportOutputDir, exportFile)
 
     process.env[SALTO_HOME_VAR] = homePath
+    localStorageDir = `${homePath}/e2e-375e3f65-be66-4fdc-a561-4c4f9735db94`
   })
   afterAll(async () => {
     await telemetry.stop(1000)
@@ -71,9 +73,9 @@ describe('Data migration operations E2E', () => {
       await rm(exportOutputDir)
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
-      await mkdirp(`${fetchOutputDir}/envs/default/salto.config`)
+      await mkdirp(localStorageDir)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-      await copyFile(envConfigFile, `${fetchOutputDir}/envs/default/salto.config/config.bp`)
+      await copyFile(localWorkspaceConfigFile, `${localStorageDir}/config.bp`)
       await runSalesforceLogin(fetchOutputDir)
       await fetch(
         fetchOutputDir, true, false,
@@ -134,9 +136,9 @@ describe('Data migration operations E2E', () => {
       await rm(exportOutputDir)
       await rm(fetchOutputDir)
       await mkdirp(`${fetchOutputDir}/salto.config`)
-      await mkdirp(`${fetchOutputDir}/envs/default/salto.config`)
+      await mkdirp(localStorageDir)
       await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-      await copyFile(envConfigFile, `${fetchOutputDir}/envs/default/salto.config/config.bp`)
+      await copyFile(localWorkspaceConfigFile, `${localStorageDir}/config.bp`)
     })
 
     it('should fail when running export', async () => {

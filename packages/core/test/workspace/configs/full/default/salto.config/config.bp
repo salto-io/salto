@@ -1,4 +1,0 @@
-salto.env default {
-    stateLocation = "/states/test.bpc"
-    credentialsLocation = "/creds/default"
-}

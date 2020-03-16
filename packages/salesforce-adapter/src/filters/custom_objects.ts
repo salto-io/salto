@@ -355,7 +355,10 @@ const createNestedMetadataInstances = (instance: InstanceElement,
       if (_.isEmpty(nestedInstances)) {
         return []
       }
-      return nestedInstances.map(nestedInstance => {
+      const removeDuplicateInstances = (instances: Values[]): Values[] => (
+        _(instances).keyBy(INSTANCE_FULL_NAME_FIELD).values().value()
+      )
+      return removeDuplicateInstances(nestedInstances).map(nestedInstance => {
         const fullName = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
           .join(API_NAME_SEPERATOR)
         const elemIdName = bpCase(fullName)

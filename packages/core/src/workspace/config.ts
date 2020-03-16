@@ -266,8 +266,7 @@ const dumpWorkspaceConfig = async (
     type,
     _.pick(config, Object.keys(type.fields)),
   )
-  await configSource(localDirectoryStore(configDir))
-    .set(path.basename(configFileName), configInstance)
+  await configSource(localDirectoryStore(configDir)).set(configFileName, configInstance)
 }
 
 export const dumpConfig = async (

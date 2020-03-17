@@ -53,6 +53,7 @@ const formatError = (err: { message: string }): string => header(err.message)
   * Format workspace errors
   */
 const TAB = '  '
+const MAX_FAILURES_TO_LOG = 30
 const formatSourceFragment = (sf: Readonly<SourceFragment>): string =>
   `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
    + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${
@@ -470,6 +471,12 @@ export const formatShouldContinueWithWarning = (numWarnings: number): string =>
 
 export const formatShouldAbortWithValidationError = (numErrors: number): string =>
   error(Prompts.SHOULD_ABORT(numErrors))
+
+export const formatShouldWriteFailuresToSkippedList = (adapterName: string, messages: string[]):
+string =>
+  warn(Prompts.SHOULD_UPDATE_SKIPPED_LIST(
+    adapterName, messages.length, messages.slice(0, MAX_FAILURES_TO_LOG)
+  ))
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 

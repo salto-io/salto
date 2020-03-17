@@ -116,7 +116,7 @@ describe('SalesforceAdapter fetch', () => {
           ],
         },
       ])
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
@@ -170,7 +170,7 @@ describe('SalesforceAdapter fetch', () => {
         },
       ])
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
 
       expect(result).toHaveLength(_.concat(
         Object.keys(Types.primitiveDataTypes),
@@ -234,7 +234,7 @@ describe('SalesforceAdapter fetch', () => {
         bla: { bla: '55', bla2: 'false', bla3: 'true' },
       })
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
       expect(flow.value.bla.bla).toBe(55)
@@ -282,7 +282,7 @@ describe('SalesforceAdapter fetch', () => {
         bla: { bla: '55', bla2: 'false', bla3: 'true' },
       })
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const flow = findElements(result, 'Flow', 'my_FlowInstance').pop() as InstanceElement
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
       expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('FlowInstance')
@@ -375,7 +375,7 @@ describe('SalesforceAdapter fetch', () => {
           }],
       })
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const layout = findElements(result, 'Layout', 'Order_Layout').pop() as InstanceElement
       expect(layout.type.elemID).toEqual(LAYOUT_TYPE_ID)
       expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)
@@ -435,7 +435,7 @@ describe('SalesforceAdapter fetch', () => {
           },
         ]))
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
       expect((flow.type as ObjectType).fields.listTest.isList).toBe(true)
@@ -509,7 +509,7 @@ describe('SalesforceAdapter fetch', () => {
         { path: 'unpackaged/email/MyFolder/MyEmailTemplate.email',
           content: 'Email Body' }])
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const [testElem] = findElements(result, 'EmailTemplate', 'MyFolder_MyEmailTemplate')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
@@ -572,7 +572,7 @@ describe('SalesforceAdapter fetch', () => {
       )
       connection.metadata.retrieve = mockRetrieve
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       expect(mockRetrieve.mock.calls.length).toBe(2)
       const [first] = findElements(result, 'ApexClass', 'MyApexClass') as InstanceElement[]
       const [second] = findElements(result, 'ApexClass', 'MyApexClass2') as InstanceElement[]
@@ -610,7 +610,7 @@ describe('SalesforceAdapter fetch', () => {
             + '    <publicFolderAccess>ReadWrite</publicFolderAccess>\n'
             + '</EmailFolder>\n' }])
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const [testElem] = findElements(result, 'EmailFolder', 'MyFolder')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
@@ -634,7 +634,7 @@ describe('SalesforceAdapter fetch', () => {
           + '</ApexPage>\n' }, { path: 'unpackaged/pages/th_con_app__ThHomepage.page',
           content: '<apex:page sidebar="false" standardStylesheets="false"/>' }])
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const [testInst] = findElements(result, 'ApexPage', 'th_con_app__ThHomepage')
       expect(testInst).toBeDefined()
       expect(testInst.path)
@@ -647,7 +647,7 @@ describe('SalesforceAdapter fetch', () => {
       const namespaceName = 'asd'
       mockSingleMetadataInstance('Test', { fullName: 'asd__Test' }, namespaceName)
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path)
@@ -660,7 +660,7 @@ describe('SalesforceAdapter fetch', () => {
       mockSingleMetadataType('Test', [])
       mockSingleMetadataInstance('asd__Test', { fullName: 'asd__Test' }, namespaceName)
 
-      const result = await adapter.fetch()
+      const result = (await adapter.fetch()).elements
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path).toEqual(
@@ -696,7 +696,7 @@ describe('SalesforceAdapter fetch', () => {
           }
         )
 
-        result = await adapter.fetch()
+        result = (await adapter.fetch()).elements
       })
 
       it('should skip skippedlist types', () => {
@@ -746,7 +746,7 @@ describe('SalesforceAdapter fetch', () => {
           { path: 'unpackaged/email/MyFolder/MyEmailTemplateSkippedList.email',
             content: 'Email Body' }])
 
-        result = await adapter.fetch()
+        result = (await adapter.fetch()).elements
       })
 
       it('should skip skippedlist retrieve instances', () => {

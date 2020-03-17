@@ -23,6 +23,7 @@ import {
   StepEmitter,
   Telemetry,
 } from '@salto-io/core'
+import { collections } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -35,13 +36,15 @@ import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
 } from '../formatter'
-import { getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
+import { getApprovedChanges as cliGetApprovedChanges,
+  shouldWriteFailuresToSkippedList } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
+const { makeArray } = collections.array
 
 type approveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
@@ -121,6 +124,24 @@ export const fetchCommand = async (
     log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
     cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
+  }
+
+  if (_.some(await makeArray(fetchResult.configChanges)
+    .filter(change => !_.isEmpty(change.messages))
+    .reduce(async (prevRes, change): Promise<boolean[]> => {
+      await prevRes
+      const adapterName = change.config.elemID.adapter
+      log.debug(`Failed to fetch the following elements on ${adapterName
+      }:\n${change.messages.join('\n')}`)
+      const shouldWriteToConfig = await shouldWriteFailuresToSkippedList(
+        adapterName, change.messages
+      )
+      if (shouldWriteToConfig) {
+        await workspace.adapterConfig.set(adapterName, change.config)
+      }
+      return (await prevRes).concat(!shouldWriteToConfig)
+    }, Promise.resolve([] as boolean[])))) {
+    return CliExitCode.UserInputError
   }
 
   // Unpack changes to array so we can iterate on them more than once

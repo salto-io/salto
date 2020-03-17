@@ -25,6 +25,7 @@ import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
   formatConfigFieldInput, formatShouldAbortWithValidationError,
+  formatShouldWriteFailuresToSkippedList,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
@@ -68,6 +69,11 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
 
 export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):
 Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
+
+export const shouldWriteFailuresToSkippedList = async (adapterName: string, messages: string[]):
+Promise<boolean> => getUserBooleanInput(
+  formatShouldWriteFailuresToSkippedList(adapterName, messages)
+)
 
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,

@@ -17,7 +17,7 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
-  DataModificationResult, Values,
+  DataModificationResult, Values, FetchResult,
 } from '@salto-io/adapter-api'
 import {
   resolveReferences, restoreReferences,
@@ -313,7 +313,7 @@ export default class SalesforceAdapter {
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
-  public async fetch(): Promise<Element[]> {
+  public async fetch(): Promise<FetchResult> {
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const annotationTypes = Types.getAnnotationTypes()
@@ -326,7 +326,7 @@ export default class SalesforceAdapter {
         metadataTypes, metadataInstances]) as Element[][]
     )
     await this.filtersRunner.onFetch(elements)
-    return elements
+    return { elements }
   }
 
   /**

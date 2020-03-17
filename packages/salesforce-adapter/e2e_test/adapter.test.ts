@@ -903,7 +903,7 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyApexPageAndClassExist(),
       verifyLeadHasConvertSettings(),
     ])
-    result = await adapter.fetch()
+    result = (await adapter.fetch()).elements
   })
 
   describe('should fetch account settings', () => {

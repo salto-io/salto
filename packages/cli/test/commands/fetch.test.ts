@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
-import { ElemID, ObjectType, Element } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
 import {
   Workspace, fetch, FetchChange,
   DetailedChange, FetchProgressEvents,
-  StepEmitter,
+  StepEmitter, adapterCreators,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
@@ -27,6 +27,7 @@ import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import { shouldWriteFailuresToSkippedList } from '../../src/callbacks'
 
 const commandName = 'fetch'
 const eventsNames = {
@@ -42,10 +43,16 @@ jest.mock('@salto-io/core', () => ({
   fetch: jest.fn().mockImplementation(() => Promise.resolve({
     changes: [],
     mergeErrors: [],
+    configChanges: [],
     success: true,
   })),
+  // configSource: jest.fn().mockImplementation(() => ({ get: jest.fn(), set: jest.fn() })),
 }))
 jest.mock('../../src/workspace')
+jest.mock('../../src/callbacks', () => ({
+  ...jest.requireActual('../../src/callbacks'),
+  shouldWriteFailuresToSkippedList: jest.fn().mockImplementation(),
+}))
 describe('fetch command', () => {
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
@@ -132,16 +139,20 @@ describe('fetch command', () => {
     })
 
     describe('fetch command', () => {
-      const mockFetch = jest.fn().mockResolvedValue({ changes: [], mergeErrors: [], success: true })
+      const mockFetch = jest.fn().mockResolvedValue(
+        { changes: [], mergeErrors: [], configChanges: [], success: true }
+      )
       const mockFailedFetch = jest.fn().mockResolvedValue(
-        { changes: [], mergeErrors: [], success: false }
+        { changes: [], mergeErrors: [], configChanges: [], success: false }
       )
       const mockEmptyApprove = jest.fn().mockResolvedValue([])
+      const mockConfigSourceSet = jest.fn()
 
       const mockWorkspace = (elements?: Element[]): Workspace => ({
         hasErrors: () => false,
         elements: elements || [],
         config: { services },
+        adapterConfig: { get: jest.fn(), set: mockConfigSourceSet },
         updateBlueprints: jest.fn(),
         flush: jest.fn(),
         isEmpty: () => (elements || []).length === 0,
@@ -159,7 +170,9 @@ describe('fetch command', () => {
           const calculateDiffEmitter = new StepEmitter()
           progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
           calculateDiffEmitter.emit('failed')
-          return Promise.resolve({ changes: [], mergeErrors: [], success: true })
+          return Promise.resolve(
+            { changes: [], mergeErrors: [], configChanges: [], success: true }
+          )
         })
         beforeEach(async () => {
           mockTelemetry = mocks.getMockTelemetry()
@@ -210,6 +223,59 @@ describe('fetch command', () => {
           expect(mockTelemetry.getEventsMap()[eventsNames.changes][0].value).toEqual(0)
         })
       })
+      describe('with changes to write to config', () => {
+        const workspaceDir = 'with-config-changes'
+        let workspace: Workspace
+        (shouldWriteFailuresToSkippedList as jest.Mock)
+          .mockResolvedValueOnce(Promise.resolve(true))
+          .mockResolvedValueOnce(Promise.resolve(false))
+        const newConfig = new InstanceElement(
+          services[0],
+          adapterCreators[services[0]]?.configType as ObjectType,
+          {
+            metadataTypesSkippedList: ['Skipped'],
+          }
+        )
+        const mockFetchWithChanges = jest.fn().mockResolvedValue(
+          {
+            changes: [],
+            configChanges: [
+              {
+                config: newConfig,
+                messages: ['Skipped'],
+              },
+            ],
+            mergeErrors: [],
+            success: true,
+          }
+        )
+        beforeEach(async () => {
+          mockTelemetry = mocks.getMockTelemetry()
+          mockConfigSourceSet.mockReset()
+          workspace = mockWorkspace()
+          workspace.config.baseDir = workspaceDir
+          result = await fetchCommand({
+            workspace,
+            force: true,
+            interactive: false,
+            inputServices: services,
+            cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
+            output: cliOutput,
+            fetch: mockFetchWithChanges,
+            getApprovedChanges: mockEmptyApprove,
+          })
+        })
+
+        it('should write config when continue was requested', () => {
+          expect(result).toBe(CliExitCode.Success)
+          expect(mockConfigSourceSet).toHaveBeenCalledWith('salesforce', newConfig)
+        })
+
+        it('should not write config when abort was requested', () => {
+          expect(result).toBe(CliExitCode.UserInputError)
+          expect(mockConfigSourceSet).not.toHaveBeenCalled()
+        })
+      })
       describe('with upstream changes', () => {
         const changes = mocks.dummyChanges.map(
           (change: DetailedChange): FetchChange => ({ change, serviceChange: change })
@@ -217,6 +283,7 @@ describe('fetch command', () => {
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {
             changes,
+            configChanges: [],
             mergeErrors: [],
             success: true,
           }

@@ -15,7 +15,8 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { Record } from 'node-suitetalk'
-import { createInstanceElement, toNetsuiteRecord, Types } from '../src/transformer'
+import { createInstanceElement, toNetsuiteRecord } from '../src/transformer'
+import { Types } from '../src/types'
 import {
   ATTRIBUTES, ENTITY_CUSTOM_FIELD, INTERNAL_ID, NETSUITE, RECORDS_PATH, SCRIPT_ID,
 } from '../src/constants'

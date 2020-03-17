@@ -160,13 +160,13 @@ export const makeFilter = (
     const instances = elements
       .filter(isInstanceElement)
       .filter(inst => isObjectType(inst.type))
-    const types = elements.filter(isObjectType)
+    const objectTypes = elements.filter(isObjectType)
 
     const knownListIds = new Set(
       [...hardcodedLists, ...unorderedLists.map(sortDef => sortDef.fieldId.getFullName())]
     )
 
-    types.forEach(t => markHardcodedLists(t, knownListIds))
+    objectTypes.forEach(t => markHardcodedLists(t, knownListIds))
     instances.forEach(inst => markListRecursively(inst.type, inst.value))
     instances.forEach(inst => castListRecursively(inst.type, inst.value, unorderedLists))
   },

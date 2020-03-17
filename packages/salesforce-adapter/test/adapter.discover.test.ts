@@ -348,8 +348,14 @@ describe('SalesforceAdapter fetch', () => {
         fullName: layoutName,
         layoutSections: [{
           label: 'Description Information',
-          layoutColumns: [{ layoutItems: { behavior: 'Edit', field: 'Description' } },
-            { layoutItems: { behavior: 'Edit2', field: 'Description2' } }],
+          layoutColumns: [
+            {
+              layoutItems: [{ behavior: 'Edit', field: 'Description' }],
+            },
+            {
+              layoutItems: [{ behavior: 'Edit2', field: 'Description2' }],
+            },
+          ],
         }, {
           label: 'Additional Information',
           layoutColumns: ['', ''],
@@ -375,8 +381,8 @@ describe('SalesforceAdapter fetch', () => {
       expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)
       expect(layout.value.layoutSections.length).toBe(3)
       expect(layout.value.layoutSections[0].label).toBe('Description Information')
-      expect(layout.value.layoutSections[0].layoutColumns[0].layoutItems.behavior).toBe('Edit')
-      expect(layout.value.layoutSections[0].layoutColumns[1].layoutItems.field).toBe('Description2')
+      expect(layout.value.layoutSections[0].layoutColumns[0].layoutItems[0].behavior).toBe('Edit')
+      expect(layout.value.layoutSections[0].layoutColumns[1].layoutItems[0].field).toBe('Description2')
       expect(layout.value.layoutSections[1].layoutColumns).toBeUndefined()
       expect(layout.value.layoutSections[1].label).toBe('Additional Information')
       expect(layout.value.layoutSections[2].style).toBe('CustomLinks')

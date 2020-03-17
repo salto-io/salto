@@ -19,6 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
+import hardcodedListsData from './hardcoded_lists.json'
 
 type OrderFunc = (value: Value) => number
 export type UnorderedList = {
@@ -74,8 +75,9 @@ const allListsToSort: ReadonlyArray<UnorderedList> = [
 // on every "node".
 const applyRecursive = (type: ObjectType, value: Values,
   innerChange: (field: Field, value: Value) => Value): void => {
+  if (!value) return
   Object.keys(type.fields).forEach(key => {
-    if (!value || !value[key]) return
+    if (value[key] === undefined) return
     value[key] = innerChange(type.fields[key], value[key])
     const fieldType = type.fields[key].type
     if (isObjectType(fieldType)) {
@@ -88,14 +90,13 @@ const applyRecursive = (type: ObjectType, value: Values,
   })
 }
 
-const markListRecursivly = (
+const markListRecursively = (
   type: ObjectType,
   values: Values,
-  knownListIds = new Set<string>(),
 ): void => {
   // Mark all lists as isList=true
   const markList = (field: Field, value: Value): Value => {
-    if (_.isArray(value) || knownListIds.has(field.elemID.getFullName())) {
+    if (_.isArray(value)) {
       field.isList = true
     }
     return value
@@ -103,7 +104,7 @@ const markListRecursivly = (
   applyRecursive(type, values, markList)
 }
 
-const castListRecursivly = (
+const castListRecursively = (
   type: ObjectType,
   values: Values,
   unorderedLists: ReadonlyArray<UnorderedList> = [],
@@ -126,20 +127,30 @@ const castListRecursivly = (
   applyRecursive(type, values, castLists)
 }
 
+const markHardcodedLists = (
+  type: ObjectType,
+  knownListIds: Set<string>,
+): void => _.values(type.fields).filter(f => knownListIds.has(f.elemID.getFullName())).forEach(
+  f => { f.isList = true }
+)
+
 export const convertList = (type: ObjectType, values: Values): void => {
-  markListRecursivly(type, values)
-  castListRecursivly(type, values)
+  markListRecursively(type, values)
+  castListRecursively(type, values)
 }
 
-
 /**
- * Mark list fields as lists if there is any instance that has a list value in the field.
+ * Mark list fields as lists if there is any instance that has a list value in the field,
+ * or if the list field is explicitly hardcoded as list.
  * Unfortunately it seems like this is the only way to know if a field is a list or a single value
  * in the Salesforce API.
  * After marking all fields as lists we also convert all values that should be lists to a list
  * This step is needed because the API never returns lists of length 1
  */
-export const makeFilter = (unorderedLists: ReadonlyArray<UnorderedList>): FilterCreator => () => ({
+export const makeFilter = (
+  unorderedLists: ReadonlyArray<UnorderedList>,
+  hardcodedLists: ReadonlyArray<string>
+): FilterCreator => () => ({
   /**
    * Upon fetch, mark all list fields as list fields in all fetched types
    *
@@ -149,13 +160,16 @@ export const makeFilter = (unorderedLists: ReadonlyArray<UnorderedList>): Filter
     const instances = elements
       .filter(isInstanceElement)
       .filter(inst => isObjectType(inst.type))
+    const objectTypes = elements.filter(isObjectType)
 
     const knownListIds = new Set(
-      unorderedLists.map(sortDef => sortDef.fieldId.getFullName()),
+      [...hardcodedLists, ...unorderedLists.map(sortDef => sortDef.fieldId.getFullName())]
     )
-    instances.forEach(inst => markListRecursivly(inst.type, inst.value, knownListIds))
-    instances.forEach(inst => castListRecursivly(inst.type, inst.value, unorderedLists))
+
+    objectTypes.forEach(t => markHardcodedLists(t, knownListIds))
+    instances.forEach(inst => markListRecursively(inst.type, inst.value))
+    instances.forEach(inst => castListRecursively(inst.type, inst.value, unorderedLists))
   },
 })
 
-export default makeFilter(allListsToSort)
+export default makeFilter(allListsToSort, hardcodedListsData)

@@ -30,7 +30,7 @@ import {
   INSTANCE_TYPE_FIELD, NESTED_INSTANCE_TYPE_NAME,
   transformFieldAnnotations,
 } from '../src/filters/custom_objects'
-import { STANDARD_VALUE, STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
+import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
 import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import {
   CustomField, CustomObject, FieldPermissions, FilterItem, ObjectPermissions, ProfileInfo,
@@ -938,13 +938,13 @@ describe('Salesforce adapter E2E with real account', () => {
 
         // Test standard picklist values from a standard value set
         expect(lead.fields.LeadSource
-          .annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]).toEqual(
+          .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME]).toEqual(
           new ReferenceExpression(new ElemID(
             constants.SALESFORCE,
             STANDARD_VALUE_SET,
             'instance',
             'LeadSource',
-          ).createNestedID(STANDARD_VALUE))
+          ))
         )
 
         // Test picklist values

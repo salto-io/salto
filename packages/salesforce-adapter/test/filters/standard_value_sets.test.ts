@@ -126,8 +126,8 @@ describe('Standard Value Sets filter', () => {
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     const simpsonsSvs = elements[2]
-    expect(typeElement.fields.state.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
-      .toEqual(new ReferenceExpression(simpsonsSvs.elemID.createNestedID(STANDARD_VALUE)))
+    expect(typeElement.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+      .toEqual(new ReferenceExpression(simpsonsSvs.elemID))
   })
 
   it('should replace value list with references for standard multipicklist fields', async () => {
@@ -139,8 +139,8 @@ describe('Standard Value Sets filter', () => {
     await filter.onFetch(elements)
     expect(elements.length).toBe(4)
     const simpsonsSvs = elements[2]
-    expect(typeElement.fields.state.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET])
-      .toEqual(new ReferenceExpression(simpsonsSvs.elemID.createNestedID(STANDARD_VALUE)))
+    expect(typeElement.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+      .toEqual(new ReferenceExpression(simpsonsSvs.elemID))
   })
 
   it('should not replace value list with references for custom picklist fields', async () => {

@@ -22,7 +22,7 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import SalesforceClient from '../client/client'
 import { FilterCreator } from '../filter'
-import { FIELD_ANNOTATIONS } from '../constants'
+import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
   metadataType, apiName, createInstanceElement, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
@@ -116,7 +116,7 @@ const svsValuesToRef = (svsInstances: InstanceElement[]): StandartValueSetsLooku
       const standardValue = makeArray(i.value[STANDARD_VALUE])
       return [
         encodeValues(extractFullNamesFromValueList(standardValue)),
-        new ReferenceExpression(i.elemID.createNestedID(STANDARD_VALUE)),
+        new ReferenceExpression(i.elemID),
       ]
     })
 )
@@ -133,21 +133,22 @@ const isStandardPickList = (f: Field): boolean => {
 const calculatePicklistFieldsToUpdate = (
   custObjectFields: Record<string, Field>,
   svsValuesToName: StandartValueSetsLookup
-): Record<string, Field> => _.mapValues(custObjectFields, (f: Field) => {
-  if (!isStandardPickList(f) || _.isEmpty(f.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
-    return f
+): Record<string, Field> => _.mapValues(custObjectFields, field => {
+  if (!isStandardPickList(field) || _.isEmpty(field.annotations[FIELD_ANNOTATIONS.VALUE_SET])) {
+    return field
   }
 
   const encodedPlVals = encodeValues(extractFullNamesFromValueList(
-    f.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+    field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
   ))
   const foundStandardValueSet = svsValuesToName[encodedPlVals]
 
   if (!foundStandardValueSet) {
-    return f
+    return field
   }
-  const newField = f.clone()
-  newField.annotations[FIELD_ANNOTATIONS.VALUE_SET] = foundStandardValueSet
+  const newField = field.clone()
+  delete newField.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  newField.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = foundStandardValueSet
   return newField
 })
 

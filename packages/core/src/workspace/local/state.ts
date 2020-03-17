@@ -18,7 +18,7 @@ import path from 'path'
 import { Element, ElemID, ElementMap } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { exists, readTextFile, replaceContents, mkdirp } from '../../file'
+import { exists, readTextFile, replaceContents, mkdirp, stat, Stats } from '../../file'
 import { serialize, deserialize } from '../../serializer/elements'
 import State from '../state'
 
@@ -28,6 +28,7 @@ const log = logger(module)
 
 export const localState = (filePath: string): State => {
   let innerElements: Promise<ElementMap> | undefined
+  let lastUpdated: Date | null
   let dirty = false
 
   const loadFromFile = async (): Promise<ElementMap> => {
@@ -50,12 +51,14 @@ export const localState = (filePath: string): State => {
       Object.keys(await elements()).map(n => ElemID.fromFullName(n)),
     get: async (id: ElemID): Promise<Element> => ((await elements())[id.getFullName()]),
     set: async (element: Element | Element []): Promise<void> => {
+      lastUpdated = new Date(Date.now())
       makeArray(element).forEach(async e => {
         (await elements())[e.elemID.getFullName()] = e
       })
       dirty = true
     },
     remove: async (id: ElemID | ElemID[]): Promise<void> => {
+      lastUpdated = new Date(Date.now())
       makeArray(id).forEach(async i => {
         delete (await elements())[i.getFullName()]
       })
@@ -69,6 +72,12 @@ export const localState = (filePath: string): State => {
       await mkdirp(path.dirname(filePath))
       await replaceContents(filePath, serialize(Object.values(stateElements)))
       log.debug(`finish flushing state [#elements=${Object.values(stateElements).length}]`)
+    },
+    getUpdateDate: async (): Promise<Date | null> => {
+      if (lastUpdated === undefined) {
+        lastUpdated = await exists(filePath) ? (await stat(filePath) as Stats).mtime : null
+      }
+      return lastUpdated
     },
   }
 }

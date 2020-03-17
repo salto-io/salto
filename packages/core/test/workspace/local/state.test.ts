@@ -19,7 +19,7 @@ import { localState } from '../../../src/workspace/local/state'
 import { getAllElements } from '../../common/elements'
 import { expectTypesToMatch } from '../../common/helpers'
 import { serialize } from '../../../src/serializer/elements'
-import { replaceContents } from '../../../src/file'
+import { replaceContents, exists, stat } from '../../../src/file'
 
 jest.mock('../../../src/file', () => ({
   replaceContents: jest.fn().mockImplementation(() => Promise.resolve()),
@@ -34,6 +34,7 @@ jest.mock('../../../src/file', () => ({
   }),
   mkdirp: jest.fn().mockImplementation(),
   exists: jest.fn().mockImplementation(((filename: string) => Promise.resolve(filename !== 'empty'))),
+  stat: jest.fn(),
 }))
 
 describe('local state', () => {
@@ -114,9 +115,55 @@ describe('local state', () => {
     expect(onFlush[1]).toEqual(serialize([mockElement]))
   })
 
-  it('shouldnt write file if state was not loaded on flush', async () => {
+  it('shouldn\'t write file if state was not loaded on flush', async () => {
     const state = localState('not-flush')
     await state.flush()
     expect(findReplaceContentCall('not-flush')).toBeUndefined()
+  })
+
+  describe('getUpdateDate', () => {
+    const mockExists = exists as jest.Mock
+    const mockStat = stat as unknown as jest.Mock
+    it('should return null when the state does not exist', async () => {
+      mockExists.mockResolvedValueOnce(false)
+      const state = localState('filename')
+      const date = await state.getUpdateDate()
+      expect(date).toBe(null)
+    })
+    it('should return the modification date of the state', async () => {
+      mockExists.mockResolvedValueOnce(true)
+      const modificationDate = new Date(2010, 10, 10)
+      mockStat.mockImplementationOnce(() => Promise.resolve({
+        mtime: modificationDate,
+        mtimeMs: modificationDate.getTime(),
+      }))
+      const state = localState('filename')
+      const date = await state.getUpdateDate()
+      expect(date).toBe(modificationDate)
+    })
+    it('should update modification date on set/remove', async () => {
+      mockExists.mockResolvedValueOnce(true)
+      const modificationDate = new Date(2010, 10, 10)
+      mockStat.mockImplementationOnce(() => Promise.resolve({
+        mtime: modificationDate,
+        mtimeMs: modificationDate.getTime(),
+      }))
+      let now = new Date(2013, 6, 4).getTime()
+      jest.spyOn(Date, 'now').mockImplementation(() => now)
+      const state = localState('filename')
+
+      const beforeSetDate = await state.getUpdateDate()
+      expect(beforeSetDate?.getTime()).not.toBe(now)
+      await state.set([mockElement])
+      const setDate = await state.getUpdateDate()
+      expect(setDate?.getTime()).toBe(now)
+
+      now = new Date(2015, 8, 7).getTime()
+      const beforeRemoveDate = await state.getUpdateDate()
+      expect(beforeRemoveDate?.getTime()).not.toBe(now)
+      await state.remove(mockElement.elemID)
+      const removeDate = await state.getUpdateDate()
+      expect(removeDate?.getTime()).toBe(now)
+    })
   })
 })

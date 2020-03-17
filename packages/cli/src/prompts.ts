@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import chalk from 'chalk'
+import moment from 'moment'
 
 export default class Prompts {
   public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to perform these actions?'
@@ -112,7 +113,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
   public static readonly FETCH_CHANGE_HEADER = (changeIdx: number, totalChanges: number): string => `Change ${changeIdx} of ${totalChanges}:`
   public static readonly FETCH_SHOULD_APPROVE_CHANGE = 'Would you like to update your workspace with this change?'
   public static readonly FETCH_CHANGE_REJECTED = 'The change will not be applied to your workspace'
-  public static readonly FETCH_NO_CHANGES = 'No changes found, Workspace is up to date'
+  public static readonly FETCH_NO_CHANGES = 'No changes found, workspace is up to date'
   public static readonly FETCH_NOTHING_TO_UPDATE = 'No changes chosen, Leaving workspace unchanged'
   public static readonly FETCH_CHANGES_TO_APPLY = (numChanges: number): string => `Applying ${numChanges} changes to the local workspace`
   public static readonly FETCH_CONFLICTING_CHANGE = 'This change conflicts with the following pending change from your workspace:'
@@ -125,7 +126,10 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
 
 
   public static readonly WORKSPACE_LOAD_FAILED = (numErrors: number): string =>
-    `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`} - aborting!`
+    `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`}.`
+
+  public static readonly WORKSPACE_LOAD_ABORT = (numErrors: number): string =>
+    `${Prompts.WORKSPACE_LOAD_FAILED(numErrors)} Aborting!`
 
   public static readonly SHOULD_CONTINUE = (numWarning: number): string =>
     `Workspace has ${numWarning === 1 ? 'a warning' : `${numWarning} warnings`
@@ -140,6 +144,16 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     `Fetching ${adapterName} requires the following changes to the config in order to succeed:
 ${formattedChanges}
 Do you want to update your config file accordingly?`
+
+public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended to fetch more frequently so Salto\'s deployment plan can take into account the latest state - do you want to cancel?'
+  public static readonly SHOULD_CANCEL_WITH_NONEXISTENT_STATE = 'It is highly recommended to run salto fetch before deploying, to ensure the deploy plan takes into account the current state - do you want to cancel?'
+
+  public static readonly NONEXISTENT_STATE = 'Currently, the state of the target service(s) is unknown to Salto.'
+  public static readonly STATE_RECENCY = (date: Date): string =>
+    `The last time you fetched the state of your target service(s) was ${moment.duration(
+      Date.now() - date.getTime()
+    ).humanize()} ago.`
+
 
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`

@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import moment from 'moment'
+import inquirer from 'inquirer'
 import { Workspace, FetchChange, DetailedChange } from '@salto-io/core'
 import { Spinner } from '../src/types'
 import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG } from '../src/workspace'
@@ -25,8 +27,10 @@ const mockWs = {
   updateBlueprints: jest.fn(),
   isEmpty: jest.fn(),
   flush: jest.fn(),
+  getStateRecency: jest.fn().mockImplementation(() => Promise.resolve({ date: new Date(), status: 'Valid' })),
   config: {
     baseDir: '',
+    staleStateThresholdMinutes: 100,
     additionalBlueprints: [],
     services: ['salesforce'],
     cacheLocation: '',
@@ -66,7 +70,7 @@ describe('workspace', () => {
     describe('when there are no errors', () => {
       it('returns true', async () => {
         mockWs.hasErrors = jest.fn().mockResolvedValue(false)
-        const wsValid = await validateWorkspace(mockWs, cliOutput)
+        const wsValid = (await validateWorkspace(mockWs)).status
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(wsValid).toBe('Valid')
       })
@@ -87,7 +91,7 @@ describe('workspace', () => {
           }]
         ))
 
-        const wsValid = await validateWorkspace(mockWs, cliOutput)
+        const wsValid = (await validateWorkspace(mockWs)).status
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(mockWs.getWorkspaceErrors).toHaveBeenCalled()
         expect(wsValid).toBe('Warning')
@@ -108,7 +112,7 @@ describe('workspace', () => {
           }]
         ))
 
-        const wsValid = await validateWorkspace(mockWs, cliOutput)
+        const wsValid = (await validateWorkspace(mockWs)).status
         expect(mockWs.hasErrors).toHaveBeenCalled()
         expect(mockWs.getWorkspaceErrors).toHaveBeenCalled()
         expect(wsValid).toBe('Error')
@@ -118,46 +122,102 @@ describe('workspace', () => {
 
   describe('loadWorkspace', () => {
     let spinner: Spinner
+    let now: number
+    const mockPrompt = inquirer.prompt as jest.Mock
     beforeEach(() => {
+      now = Date.now()
+      jest.spyOn(Date, 'now').mockImplementation(() => now)
+      // Clear to reset the function calls count
+      mockPrompt.mockClear()
       spinner = {
         fail: jest.fn().mockImplementation(() => undefined),
         succeed: jest.fn().mockImplementation(() => undefined),
       }
-    })
-    it('mark spinner as success in case there are no errors', async () => {
       mockWs.hasErrors = jest.fn().mockResolvedValue(false)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([]))
-      await loadWorkspace('', cliOutput, true, () => spinner)
+    })
+    it('marks spinner as success in case there are no errors', async () => {
+      mockWs.hasErrors = jest.fn().mockResolvedValue(false)
+      mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([]))
+      await loadWorkspace('', cliOutput, () => spinner, { force: true })
 
       expect(cliOutput.stdout.content).toBe('')
       expect(cliOutput.stderr.content).toBe('')
       expect(spinner.succeed).toHaveBeenCalled()
     })
 
-    it('mark spinner as success in case of warning', async () => {
+    it('marks spinner as success in case of warning', async () => {
       mockWs.hasErrors = jest.fn().mockResolvedValue(true)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([{
         sourceFragments: [],
         message: 'Error BLA',
         severity: 'Warning',
       }]))
-      await loadWorkspace('', cliOutput, true, () => spinner)
+      await loadWorkspace('', cliOutput, () => spinner, { force: true })
 
       expect(cliOutput.stdout.content).toContain('Error BLA')
       expect(spinner.succeed).toHaveBeenCalled()
     })
 
-    it('mark spinner as failed in case of error', async () => {
+    it('marks spinner as failed in case of error', async () => {
       mockWs.hasErrors = jest.fn().mockResolvedValue(true)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([{
         sourceFragments: [],
         message: 'Error BLA',
         severity: 'Error',
       }]))
-      await loadWorkspace('', cliOutput, true, () => spinner)
+      await loadWorkspace('', cliOutput, () => spinner, { force: true })
 
       expect(cliOutput.stderr.content).toContain('Error BLA')
       expect(spinner.fail).toHaveBeenCalled()
+    })
+
+    it('prints the state recency when told to do so', async () => {
+      const durationAfterLastModificationMs = 1000 * 60 * 60 * 8 // 8 hours
+      mockWs.getStateRecency = jest.fn().mockImplementation(
+        () => Promise.resolve({ date: new Date(now - durationAfterLastModificationMs), status: 'Valid' })
+      )
+      await loadWorkspace('', cliOutput, () => spinner, { force: true, printStateRecency: true })
+      expect(cliOutput.stdout.content).toContain(
+        moment.duration(durationAfterLastModificationMs).humanize()
+      )
+    })
+
+    it('prints that the state does not exist', async () => {
+      mockWs.getStateRecency = jest.fn().mockImplementation(
+        () => Promise.resolve({ date: null, status: 'Nonexistent' })
+      )
+      await loadWorkspace('', cliOutput, () => spinner, { force: true, printStateRecency: true })
+      expect(cliOutput.stdout.content).toContain('unknown')
+    })
+
+    it('does not always print the state recency', async () => {
+      await loadWorkspace('', cliOutput, () => spinner, { force: true })
+      expect(cliOutput.stdout.content).toBe('')
+    })
+
+    it('prompts user when the state is too old and recommend recency is enabled', async () => {
+      mockWs.getStateRecency = jest.fn().mockImplementation(
+        () => Promise.resolve({ date: new Date(now), status: 'Old' })
+      )
+      await loadWorkspace('', cliOutput, () => spinner, { recommendStateRecency: true })
+      expect(mockPrompt).toHaveBeenCalledTimes(1)
+    })
+
+    it('prompts user when the state doesn\'t exist and recommend recency is enabled', async () => {
+      mockWs.getStateRecency = jest.fn().mockImplementation(
+        () => Promise.resolve({ date: new Date(now), status: 'Nonexistent' })
+      )
+      await loadWorkspace('', cliOutput, () => spinner, { recommendStateRecency: true })
+      expect(mockPrompt).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not prompt user when the state is valid and recommend recency is enabled', async () => {
+      mockWs.getStateRecency = jest.fn().mockImplementation(
+        () => Promise.resolve({ date: new Date(now), status: 'Valid' })
+      )
+      await loadWorkspace('', cliOutput, () => spinner, { recommendStateRecency: true })
+      expect(mockPrompt).not.toHaveBeenCalled()
     })
   })
 

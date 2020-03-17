@@ -27,6 +27,8 @@ import { localDirectoryStore } from './local/dir_store'
 
 export const CONFIG_DIR_NAME = 'salto.config'
 export const STATES_DIR_NAME = 'states'
+export const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
+
 const CONFIG_FILENAME = 'config.bp'
 const ADAPTERS_CONFIGS_DIR_NAME = 'adapters'
 const SALTO_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341'
@@ -86,6 +88,7 @@ export const saltoConfigType = new ObjectType({
     uid: new Field(saltoConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
     baseDir: new Field(saltoConfigElemID, 'baseDir', BuiltinTypes.STRING),
     localStorage: new Field(saltoConfigElemID, 'localStorage', BuiltinTypes.STRING),
+    staleStateThresholdMinutes: new Field(saltoConfigElemID, 'staleStateThresholdMinutes', BuiltinTypes.NUMBER),
     name: new Field(saltoConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
     envs: new Field(
       saltoConfigElemID,
@@ -122,6 +125,7 @@ export interface Config {
   envs: Record<string, {baseDir: string; config: EnvConfig}>
   currentEnv: string
   localStorage: string
+  staleStateThresholdMinutes: number
 }
 
 type PartialConfig = Required<Pick<Config, 'uid' | 'name' | 'currentEnv'>> & {
@@ -145,6 +149,7 @@ const createDefaultWorkspaceConfig = (
     name,
     envs: {},
     currentEnv: '',
+    staleStateThresholdMinutes: DEFAULT_STALE_STATE_THRESHOLD_MINUTES,
   }
 }
 

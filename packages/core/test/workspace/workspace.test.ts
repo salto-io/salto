@@ -27,7 +27,6 @@ import { blueprintsSource } from '../../src/workspace/blueprints/blueprints_sour
 import { Workspace } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import * as file from '../../src/file'
-
 import * as dump from '../../src/parser/dump'
 import * as config from '../../src/workspace/config'
 
@@ -55,6 +54,7 @@ const createWorkspace = (bpStore?: DirectoryStore): Workspace => {
     name: 'test',
     localStorage: path.join(os.homedir(), '.salto', 'test'),
     baseDir: '/salto',
+    staleStateThresholdMinutes: 3,
     envs: {
       default: {
         baseDir: 'envs/default',
@@ -436,6 +436,44 @@ describe('workspace', () => {
     it('should fail when run inside an existing workspace', async () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce('found')
       await expect(Workspace.init('bla', 'default')).rejects.toThrow()
+    })
+  })
+
+  describe('getStateRecency', () => {
+    let now: number
+    let modificationDate: Date
+    let ws: Workspace
+    const durationAfterLastModificationMinutes = 7
+    const durationAfterLastModificationMs = 1000 * 60 * durationAfterLastModificationMinutes
+    beforeEach(() => {
+      now = Date.now()
+      jest.spyOn(Date, 'now').mockImplementation(() => now)
+      modificationDate = new Date(now - durationAfterLastModificationMs)
+      ws = createWorkspace()
+    })
+    it('should return valid when the state is valid', async () => {
+      ws.config.staleStateThresholdMinutes = durationAfterLastModificationMinutes + 1
+      ws.state.getUpdateDate = jest.fn().mockImplementation(
+        () => Promise.resolve(modificationDate)
+      )
+      const recency = await ws.getStateRecency()
+      expect(recency.status).toBe('Valid')
+      expect(recency.date).toBe(modificationDate)
+    })
+    it('should return old when the state is old', async () => {
+      ws.config.staleStateThresholdMinutes = durationAfterLastModificationMinutes - 1
+      ws.state.getUpdateDate = jest.fn().mockImplementation(
+        () => Promise.resolve(modificationDate)
+      )
+      const recency = await ws.getStateRecency()
+      expect(recency.status).toBe('Old')
+      expect(recency.date).toBe(modificationDate)
+    })
+    it('should return nonexistent when the state does not exist', async () => {
+      ws.state.getUpdateDate = jest.fn().mockImplementation(() => Promise.resolve(null))
+      const recency = await ws.getStateRecency()
+      expect(recency.status).toBe('Nonexistent')
+      expect(recency.date).toBe(null)
     })
   })
 

@@ -21,7 +21,9 @@ import {
   ENTITY_CUSTOM_FIELD, INTERNAL_ID, RECORD_REF, SCRIPT_ID,
 } from '../src/constants'
 import { recordInList, returnedReferenceMock } from './utils'
-import { createInstanceElement, Types } from '../src/transformer'
+import { createInstanceElement } from '../src/transformer'
+import { Types } from '../src/types'
+
 
 describe('Adapter', () => {
   const { client } = createClient()

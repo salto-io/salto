@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import { Element, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
-import { createInstanceElement, internalId, toNetsuiteRecord, toNetsuiteReference, Types } from './transformer'
+import { createInstanceElement, internalId, toNetsuiteRecord, toNetsuiteReference } from './transformer'
+import { Types } from './types'
 import { ATTRIBUTES, INTERNAL_ID, METADATA_TYPE, SCRIPT_ID } from './constants'
 
 

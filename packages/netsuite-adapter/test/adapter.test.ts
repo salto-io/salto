@@ -21,7 +21,7 @@ import {
   ENTITY_CUSTOM_FIELD, INTERNAL_ID, RECORD_REF, SCRIPT_ID,
 } from '../src/constants'
 import { recordInList, returnedReferenceMock } from './utils'
-import { Types } from '../src/transformer'
+import { createInstanceElement, Types } from '../src/transformer'
 
 describe('Adapter', () => {
   const { client } = createClient()
@@ -36,7 +36,10 @@ describe('Adapter', () => {
         return Promise.resolve([])
       })
       const elements = await netsuiteAdapter.fetch()
-      expect(elements).toHaveLength(2)
+      expect(elements).toHaveLength(Types.getAllTypes().length + 1)
+      expect(elements).toContainEqual(Types.customizationTypes[ENTITY_CUSTOM_FIELD])
+      expect(elements).toContainEqual(createInstanceElement(recordInList,
+        Types.customizationTypes[ENTITY_CUSTOM_FIELD]))
     })
   })
 

@@ -16,6 +16,8 @@
 export const NETSUITE = 'netsuite'
 export const ATTRIBUTES = '$attributes'
 export const RECORDS_PATH = 'Records'
+export const TYPES_PATH = 'Types'
+export const SUBTYPES_PATH = 'Subtypes'
 
 // Family type names
 export const FAMILY_TYPE = {

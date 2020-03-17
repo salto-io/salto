@@ -25,7 +25,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import {
   ATTRIBUTES, ENTITY_CUSTOM_FIELD, EXTERNAL_ID, FAMILY_TYPE, INTERNAL_ID, IS_ATTRIBUTE,
-  METADATA_TYPE, NETSUITE, RECORDS_PATH, RECORD_REF, SCRIPT_ID,
+  METADATA_TYPE, NETSUITE, RECORDS_PATH, RECORD_REF, SCRIPT_ID, SUBTYPES_PATH, TYPES_PATH,
 } from './constants'
 import { NetsuiteRecord, NetsuiteReference } from './client/client'
 
@@ -35,7 +35,13 @@ const { makeArray } = collections.array
 const entityCustomFieldElemID = new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)
 const customFieldRoleAccessElemID = new ElemID(NETSUITE, 'CustomFieldRoleAccess')
 const customFieldRoleAccessListElemID = new ElemID(NETSUITE, 'CustomFieldRoleAccessList')
+const customizationAccessLevelElemID = new ElemID(NETSUITE, 'CustomizationAccessLevel')
+const customizationSearchLevelElemID = new ElemID(NETSUITE, 'CustomizationSearchLevel')
 const recordRefElemID = new ElemID(NETSUITE, RECORD_REF)
+const recordTypeElemID = new ElemID(NETSUITE, 'RecordType')
+
+const typesFolderPath = [NETSUITE, TYPES_PATH]
+const subtypesFolderPath = [NETSUITE, TYPES_PATH, SUBTYPES_PATH]
 
 /**
  * All supported Netsuite types.
@@ -43,7 +49,7 @@ const recordRefElemID = new ElemID(NETSUITE, RECORD_REF)
  */
 export class Types {
   private static recordTypeSubType = new PrimitiveType({
-    elemID: new ElemID(NETSUITE, 'RecordType'),
+    elemID: recordTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
@@ -241,6 +247,7 @@ export class Types {
         'workOrderClose',
       ],
     },
+    path: [...subtypesFolderPath, recordTypeElemID.name],
   })
 
   private static recordRefSubType = new ObjectType({
@@ -255,10 +262,11 @@ export class Types {
       name: new Field(recordRefElemID, 'name', BuiltinTypes.STRING),
       type: new Field(recordRefElemID, 'type', Types.recordTypeSubType, { [IS_ATTRIBUTE]: true }),
     },
+    path: [...subtypesFolderPath, recordRefElemID.name],
   })
 
   private static customizationAccessLevelSubType = new PrimitiveType({
-    elemID: new ElemID(NETSUITE, 'CustomizationAccessLevel'),
+    elemID: customizationAccessLevelElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
@@ -268,10 +276,11 @@ export class Types {
         '_view',
       ],
     },
+    path: [...subtypesFolderPath, customizationAccessLevelElemID.name],
   })
 
   private static customizationSearchLevelSubType = new PrimitiveType({
-    elemID: new ElemID(NETSUITE, 'CustomizationSearchLevel'),
+    elemID: customizationSearchLevelElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
@@ -281,6 +290,7 @@ export class Types {
         '_run',
       ],
     },
+    path: [...subtypesFolderPath, customizationSearchLevelElemID.name],
   })
 
   private static customFieldRoleAccessSubType = new ObjectType({
@@ -292,6 +302,7 @@ export class Types {
       searchLevel: new Field(customFieldRoleAccessElemID, 'searchLevel',
         Types.customizationSearchLevelSubType),
     },
+    path: [...subtypesFolderPath, customFieldRoleAccessElemID.name],
   })
 
   private static customFieldRoleAccessListSubType = new ObjectType({
@@ -300,6 +311,7 @@ export class Types {
       roleAccess: new Field(customFieldRoleAccessListElemID, 'roleAccess',
         Types.customFieldRoleAccessSubType, {}, true),
     },
+    path: [...subtypesFolderPath, customFieldRoleAccessListElemID.name],
   })
 
   public static customizationTypes: Record<string, ObjectType> = {
@@ -322,6 +334,7 @@ export class Types {
       annotations: {
         [METADATA_TYPE]: 'entityCustomField',
       },
+      path: [...typesFolderPath, entityCustomFieldElemID.name],
     }),
   }
 
@@ -330,6 +343,22 @@ export class Types {
       return FAMILY_TYPE.CUSTOMIZATION
     }
     throw new Error(`Unsupported Type: ${type.elemID.name}`)
+  }
+
+  public static getTypesWithInstances(): ObjectType[] {
+    return Object.values(Types.customizationTypes)
+  }
+
+  public static getAllTypes(): TypeElement[] {
+    return [
+      ...Object.values(Types.customizationTypes),
+      Types.recordTypeSubType,
+      Types.recordRefSubType,
+      Types.customizationAccessLevelSubType,
+      Types.customizationSearchLevelSubType,
+      Types.customFieldRoleAccessSubType,
+      Types.customFieldRoleAccessListSubType,
+    ]
   }
 }
 

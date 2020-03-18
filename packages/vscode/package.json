@@ -119,7 +119,6 @@
         "@salto-io/adapter-api": "0.1.11",
         "@salto-io/adapter-utils": "0.1.11",
         "@salto-io/core": "0.1.11",
-        "@types/copy-paste": "^1.1.30",
         "@types/diff": "^4.0.2",
         "copy-paste": "^1.3.0",
         "diff": "^4.0.1",
@@ -128,6 +127,7 @@
         "wu": "^2.1.0"
     },
     "devDependencies": {
+        "@types/copy-paste": "^1.1.30",
         "@types/glob": "^7.1.1",
         "@types/jest-cli": "^23.6.0",
         "@types/node": "^12.7.1",

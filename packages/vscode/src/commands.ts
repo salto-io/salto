@@ -26,21 +26,22 @@ export const createCopyReferenceCommand = (
 ): (
 ) => Promise<void> => async () => {
   const editor = vscode.window.activeTextEditor
-  if (editor) {
-    const position = editor.selection.active
-    await workspace.awaitAllUpdates()
-    const validWorkspace = await workspace.getValidCopy()
-    if (validWorkspace) {
-      const saltoPos = vsPosToSaltoPos(position)
-      const ctx = await getPositionContext(
-        validWorkspace,
-        editor.document.fileName,
-        saltoPos
-      )
-      const copyText = _.isEmpty(ctx.ref?.path)
-        ? ctx.ref?.element.elemID.getFullName()
-        : [ctx.ref?.element.elemID.getFullName(), ctx.ref?.path].join(ElemID.NAMESPACE_SEPARATOR)
-      copyToClipboard(copyText)
-    }
+  if (_.isUndefined(editor)) {
+    return
+  }
+  const position = editor.selection.active
+  await workspace.awaitAllUpdates()
+  const validWorkspace = await workspace.getValidCopy()
+  if (validWorkspace) {
+    const saltoPos = vsPosToSaltoPos(position)
+    const ctx = await getPositionContext(
+      validWorkspace,
+      editor.document.fileName,
+      saltoPos
+    )
+    const copyText = _.isEmpty(ctx.ref?.path)
+      ? ctx.ref?.element.elemID.getFullName()
+      : [ctx.ref?.element.elemID.getFullName(), ctx.ref?.path].join(ElemID.NAMESPACE_SEPARATOR)
+    copyToClipboard(copyText)
   }
 }

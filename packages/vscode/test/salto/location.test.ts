@@ -21,10 +21,11 @@ import { mockWorkspace } from './workspace'
 // eslint-disable-next-line jest/no-disabled-tests
 describe('workspace query locations', () => {
   let workspace: EditorWorkspace
-  const bpFileName = path.resolve(`${__dirname}/../../../test/salto/test-bps/all.bp`)
+  const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps/`)
+  const bpFileName = path.join(baseDir, 'all.bp')
 
   beforeAll(async () => {
-    workspace = new EditorWorkspace(await mockWorkspace(bpFileName))
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace(bpFileName))
   })
 
   it('should find prefixes', async () => {

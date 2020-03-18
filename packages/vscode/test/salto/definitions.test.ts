@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceDefinition } from '../../src/salto/definitions'
 import { getPositionContext } from '../../src/salto/context'
@@ -24,9 +25,8 @@ describe('Test go to definitions', () => {
   const bpFileName = 'all.bp'
 
   beforeAll(async () => {
-    workspace = new EditorWorkspace(await mockWorkspace(
-      `${__dirname}/../../../test/salto/test-bps/all.bp`
-    ))
+    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps`)
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.bp')))
   })
 
   it('should give a single definition for a type that is defined once', async () => {

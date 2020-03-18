@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import { command } from '../../src/commands/preview'
-import { preview, MockWriteStream, MockTelemetry, mockLoadConfig,
-  mockLoadWorkspaceEnvironment, withoutEnvironmentParam, withEnvironmentParam,
-  getMockTelemetry, mockSpinnerCreator, transformToWorkspaceError } from '../mocks'
+import {
+  preview, MockWriteStream, MockTelemetry, mockLoadWorkspaceEnvironment,
+  withoutEnvironmentParam, withEnvironmentParam, getMockTelemetry, mockSpinnerCreator,
+  mockLoadWorkspace as mockLoadWorkspaceGeneral,
+} from '../mocks'
 import { SpinnerCreator, Spinner, CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
@@ -49,21 +51,19 @@ describe('preview command', () => {
     if (baseDir === 'errdir') {
       return {
         workspace: {
+          ...mockLoadWorkspaceGeneral(baseDir),
           hasErrors: () => true,
-          errors: {
+          errors: () => ({
             strings: () => ['Error', 'Error'],
-          },
-          config: mockLoadConfig(baseDir),
-          transformToWorkspaceError,
+          }),
         },
         errored: true,
       }
     }
     return {
       workspace: {
+        ...mockLoadWorkspaceGeneral(baseDir),
         hasErrors: () => false,
-        config: mockLoadConfig(baseDir),
-        transformToWorkspaceError,
       },
       errored: false,
     }
@@ -142,7 +142,7 @@ describe('preview command', () => {
         services
       ).execute()
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
         withoutEnvironmentParam
       )
     })
@@ -157,7 +157,7 @@ describe('preview command', () => {
         withEnvironmentParam
       ).execute()
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
         withEnvironmentParam
       )
     })

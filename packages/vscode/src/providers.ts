@@ -89,7 +89,7 @@ export const createDefinitionsProvider = (
       )
       return (await provideWorkspaceDefinition(validWorkspace, context, currentToken)).map(
         def => new vscode.Location(
-          vscode.Uri.file(path.resolve(workspace.config.baseDir, def.filename)),
+          vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
           saltoPosToVsPos(def.range.start)
         )
       )
@@ -108,7 +108,7 @@ export const createReferenceProvider = (
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
     return (await provideWorkspaceReferences(workspace, currenToken)).map(
       def => new vscode.Location(
-        vscode.Uri.file(path.resolve(workspace.config.baseDir, def.filename)),
+        vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
         saltoPosToVsPos(def.range.start)
       )
     )
@@ -129,7 +129,7 @@ export const createWorkspaceSymbolProvider = (
     return Promise.all((await getQueryLocations(workspace, query))
       .map(async l => buildVSSymbol(
         await locToContext(l),
-        toVSFileName(workspace.config.baseDir, l.filename)
+        toVSFileName(workspace.baseDir, l.filename)
       )))
   },
 })

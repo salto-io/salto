@@ -27,10 +27,8 @@ import { promises } from '@salto-io/lowerdash'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
-  getAdapterDependencyChangers, createDefaultAdapterConfig, initAdapters,
-  getAdaptersCreatorConfigs,
+  getAdapterDependencyChangers, getDefaultAdapterConfig, initAdapters, getAdaptersCreatorConfigs,
 } from './core/adapters'
-import { addServiceToConfig, currentEnvConfig } from './workspace/config'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import { findElement, SearchResult } from './core/search'
 import {
@@ -58,21 +56,21 @@ export const updateLoginConfig = async (
   } else {
     throw new Error(`unknown adapter: ${newConfig.elemID.adapter}`)
   }
-  await workspace.adapterCredentials.set(newConfig.elemID.adapter, newConfig)
+  await workspace.updateServiceCredentials(newConfig.elemID.adapter, newConfig)
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }
 
 const filterElementsByServices = (
   elements: Element[] | readonly Element[],
-  services: string[]
+  services: ReadonlyArray<string>
 ): Element[] => elements.filter(e => services.includes(e.elemID.adapter))
 
 export const preview = async (
   workspace: Workspace,
-  services: string[] = currentEnvConfig(workspace.config).services
+  services = workspace.services(),
 ): Promise<Plan> => getPlan(
-  filterElementsByServices(await workspace.state.getAll(), services),
-  filterElementsByServices(await workspace.elements, services),
+  filterElementsByServices(await workspace.state().getAll(), services),
+  filterElementsByServices(await workspace.elements(), services),
   getAdapterChangeValidators(),
   defaultDependencyChangers.concat(getAdapterDependencyChangers()),
 )
@@ -87,27 +85,27 @@ export const deploy = async (
   workspace: Workspace,
   shouldDeploy: (plan: Plan) => Promise<boolean>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  services: string[] = currentEnvConfig(workspace.config).services,
+  services = workspace.services(),
   force = false
 ): Promise<DeployResult> => {
   const changedElements: Element[] = []
   const actionPlan = await preview(workspace, services)
   if (force || await shouldDeploy(actionPlan)) {
     const adapters = await getAdapters(
-      services, workspace.adapterCredentials, workspace.adapterConfig,
+      services, await workspace.servicesCredentials(), await workspace.servicesConfig(),
     )
 
     const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
       ((action === 'remove')
-        ? workspace.state.remove(element.elemID)
-        : workspace.state.set(element)
+        ? workspace.state().remove(element.elemID)
+        : workspace.state().set(element)
           .then(() => { changedElements.push(element) }))
     const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
     // Clone the elements because getDetailedChanges can change its input
     const clonedElements = changedElements.map(e => e.clone())
-    const relevantWorkspaceElements = (await workspace.elements)
+    const relevantWorkspaceElements = (await workspace.elements())
       .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)
 
     const changes = wu(await getDetailedChanges(relevantWorkspaceElements, clonedElements))
@@ -144,21 +142,19 @@ export const fetch: fetchFunc = async (
   services?,
 ) => {
   const overrideState = async (elements: Element[]): Promise<void> => {
-    await workspace.state.remove(await workspace.state.list())
-    await workspace.state.set(elements)
+    await workspace.state().remove(await workspace.state().list())
+    await workspace.state().set(elements)
     log.debug(`finish to override state with ${elements.length} elements`)
   }
   log.debug('fetch starting..')
-  const fetchServices = services ?? currentEnvConfig(workspace.config).services
-  const filteredStateElements = filterElementsByServices(
-    await workspace.state.getAll(),
-    fetchServices
-  )
+  const fetchServices = services ?? workspace.services()
+  const filteredStateElements = filterElementsByServices(await workspace.state().getAll(),
+    fetchServices)
 
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
-    workspace.adapterCredentials,
-    workspace.adapterConfig,
+    await workspace.servicesCredentials(),
+    await workspace.servicesConfig(),
     createElemIdGetter(filteredStateElements)
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
@@ -172,7 +168,7 @@ export const fetch: fetchFunc = async (
   try {
     const { changes, elements, mergeErrors, configChanges } = await fetchChanges(
       adapters,
-      filterElementsByServices(await workspace.elements, fetchServices),
+      filterElementsByServices(await workspace.elements(), fetchServices),
       filteredStateElements,
       currentConfigs,
       progressEmitter,
@@ -201,11 +197,7 @@ export const describeElement = async (
   workspace: Workspace,
   searchWords: string[],
 ): Promise<SearchResult> =>
-  findElement(searchWords, await workspace.elements)
-
-export const init = async (defaultEnvName: string, workspaceName?: string): Promise<Workspace> => (
-  Workspace.init('.', defaultEnvName, workspaceName)
-)
+  findElement(searchWords, await workspace.elements())
 
 export const addAdapter = async (
   workspace: Workspace,
@@ -215,21 +207,24 @@ export const addAdapter = async (
   if (!adapterCredentials) {
     throw new Error('No adapter available for this service')
   }
-  await addServiceToConfig(workspace.config, adapterName)
-  await createDefaultAdapterConfig(adapterName, workspace.adapterConfig)
+  await workspace.addService(adapterName)
+  const defaultConfig = getDefaultAdapterConfig(adapterName)
+  if (!_.isUndefined(defaultConfig)) {
+    await workspace.updateServiceConfig(adapterName, defaultConfig)
+  }
   return adapterCredentials
 }
 
 export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }
 export const getLoginStatuses = async (
   workspace: Workspace,
-  adapterNames = currentEnvConfig(workspace.config).services,
+  adapterNames = workspace.services(),
 ): Promise<Record<string, LoginStatus>> => {
   const logins = _.mapValues(getAdaptersCredentialsTypes(adapterNames),
     async (config, adapter) =>
       ({
         configType: config,
-        isLoggedIn: !!await workspace.adapterCredentials.get(adapter),
+        isLoggedIn: !!(await workspace.servicesCredentials())[adapter],
       }))
 
   return promises.object.resolveValues(logins)

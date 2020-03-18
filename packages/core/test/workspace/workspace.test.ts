@@ -13,25 +13,33 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import os from 'os'
-import path from 'path'
-import wu from 'wu'
 import _ from 'lodash'
+import wu from 'wu'
 import {
-  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes, ListType, isListType,
+  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes, InstanceElement, ListType,
+  isListType,
+  Values,
 } from '@salto-io/adapter-api'
 import {
   findElement,
 } from '@salto-io/adapter-utils'
-import { DirectoryStore } from '../../src/workspace/dir_store'
+import { ConfigSource } from 'src/workspace/config_source'
 import { blueprintsSource } from '../../src/workspace/blueprints/blueprints_source'
-import { Workspace } from '../../src/workspace/workspace'
+import State from '../../src/workspace/state'
+import mockState from '../common/state'
+import { createMockBlueprintSource } from '../common/blueprint_source'
+import { DirectoryStore } from '../../src/workspace/dir_store'
+import {
+  Workspace, initWorkspace, WORKSPACE_CONFIG, workspaceConfigType, preferencesWorkspaceConfigType,
+  PREFERENCE_CONFIG,
+  loadWorkspace,
+  COMMON_ENV_PREFIX,
+} from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
-import * as file from '../../src/file'
-import * as dump from '../../src/parser/dump'
-import * as config from '../../src/workspace/config'
 
-import { mockBpsStore, mockParseCache } from '../common/blueprint_store'
+import * as dump from '../../src/parser/dump'
+
+import { mockDirStore, mockParseCache } from '../common/blueprint_store'
 
 const changedBP = {
   filename: 'file.bp',
@@ -49,28 +57,33 @@ const newBP = {
 }
 const services = ['salesforce']
 
-const createWorkspace = (bpStore?: DirectoryStore): Workspace => {
-  const ws = new Workspace({
-    uid: '',
-    name: 'test',
-    localStorage: path.join(os.homedir(), '.salto', 'test'),
-    baseDir: '/salto',
-    staleStateThresholdMinutes: 3,
-    envs: {
-      default: {
-        baseDir: 'envs/default',
-        config: {
-          services,
-          stateLocation: '/salto/latest_state.bp',
-          credentialsLocation: 'credentials',
-        },
+const mockConfigSource = (conf?: Values): ConfigSource => ({
+  get: jest.fn().mockImplementation(name => (
+    (name === WORKSPACE_CONFIG)
+      ? new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType, {
+        uid: '',
+        name: 'test',
+        envs: [{ name: 'default', services }],
+        ...conf,
+      })
+      : new InstanceElement(PREFERENCE_CONFIG, preferencesWorkspaceConfigType, {
+        currentEnv: 'default',
+      })
+  )),
+  set: jest.fn(),
+})
+const createWorkspace = async (dirStore?: DirectoryStore, state?: State,
+  configSource?: ConfigSource): Promise<Workspace> =>
+  loadWorkspace(configSource || mockConfigSource(),
+    {
+      [COMMON_ENV_PREFIX]: {
+        blueprints: blueprintsSource(dirStore || mockDirStore(), mockParseCache()),
       },
-    },
-    currentEnv: 'default',
-  })
-  _.set(ws, 'blueprintsSource', blueprintsSource(bpStore || mockBpsStore(), mockParseCache()))
-  return ws
-}
+      default: {
+        blueprints: createMockBlueprintSource([]),
+        state: state || mockState(),
+      },
+    })
 
 const getElemMap = (elements: ReadonlyArray<Element>): Record<string, Element> =>
   _.keyBy(elements, elem => elem.elemID.getFullName())
@@ -78,10 +91,11 @@ const getElemMap = (elements: ReadonlyArray<Element>): Record<string, Element> =
 jest.mock('../../src/workspace/dir_store')
 describe('workspace', () => {
   describe('loaded elements', () => {
-    const workspace = createWorkspace()
+    let workspace: Workspace
     let elemMap: Record<string, Element>
     beforeAll(async () => {
-      elemMap = getElemMap(await workspace.elements)
+      workspace = await createWorkspace()
+      elemMap = getElemMap(await workspace.elements())
     })
     it('should contain types from all files', () => {
       expect(elemMap).toHaveProperty(['salesforce.lead'])
@@ -94,7 +108,10 @@ describe('workspace', () => {
   })
 
   describe('sourceMap', () => {
-    const workspace = createWorkspace()
+    let workspace: Workspace
+    beforeAll(async () => {
+      workspace = await createWorkspace()
+    })
 
     it('should have definitions from all files', async () => {
       const sourceRanges = await workspace.getSourceRanges(ElemID.fromFullName('salesforce.lead'))
@@ -104,12 +121,12 @@ describe('workspace', () => {
 
   describe('errors', () => {
     it('should be empty when there are no errors', async () => {
-      const workspace = createWorkspace()
+      const workspace = await createWorkspace()
       expect((await workspace.errors()).hasErrors()).toBeFalsy()
       expect(await workspace.hasErrors()).toBeFalsy()
     })
     it('should contain parse errors', async () => {
-      const erroredWorkspace = createWorkspace(mockBpsStore(['dup.bp']))
+      const erroredWorkspace = await createWorkspace(mockDirStore(['dup.bp']))
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
@@ -125,7 +142,7 @@ describe('workspace', () => {
       expect(workspaceErrors[0].sourceFragments).toHaveLength(1)
     })
     it('should contain merge errors', async () => {
-      const erroredWorkspace = createWorkspace(mockBpsStore(['error.bp']))
+      const erroredWorkspace = await createWorkspace(mockDirStore(['error.bp']))
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
@@ -153,7 +170,7 @@ describe('workspace', () => {
   describe('transformError', () => {
     describe('when no source is available', () => {
       it('should return empty source fragments', async () => {
-        const ws = createWorkspace()
+        const ws = await createWorkspace()
         const wsError = await ws.transformError({ severity: 'Warning', message: '' })
         expect(wsError.sourceFragments).toHaveLength(0)
       })
@@ -161,14 +178,15 @@ describe('workspace', () => {
   })
 
   describe('removeBlueprints', () => {
-    const bpStore = mockBpsStore()
-    const workspace = createWorkspace(bpStore)
+    const dirStore = mockDirStore()
+    let workspace: Workspace
     const removedPaths = ['file.bp', 'willbempty.bp']
     let elemMap: Record<string, Element>
 
     beforeAll(async () => {
+      workspace = await createWorkspace(dirStore)
       await workspace.removeBlueprints(...removedPaths)
-      elemMap = getElemMap(await workspace.elements)
+      elemMap = getElemMap(await workspace.elements())
     })
 
     it('should update elements to not include fields from removed blueprints', () => {
@@ -177,19 +195,20 @@ describe('workspace', () => {
     })
 
     it('should remove from store', () => {
-      const mockStoreDelete = bpStore.delete as jest.Mock
+      const mockStoreDelete = dirStore.delete as jest.Mock
       expect(mockStoreDelete.mock.calls.map(c => c[0])).toEqual(removedPaths)
     })
   })
 
   describe('setBlueprints', () => {
-    const bpStore = mockBpsStore()
-    const workspace = createWorkspace(bpStore)
+    const bpStore = mockDirStore()
+    let workspace: Workspace
     let elemMap: Record<string, Element>
 
     beforeAll(async () => {
+      workspace = await createWorkspace(bpStore)
       await workspace.setBlueprints(changedBP, newBP, emptyBP)
-      elemMap = getElemMap(await workspace.elements)
+      elemMap = getElemMap(await workspace.elements())
     })
 
     it('should add new elements', () => {
@@ -267,7 +286,13 @@ describe('workspace', () => {
       { // Remove element from multiple locations
         id: new ElemID('multi', 'loc'),
         action: 'remove',
-        data: { before: new ObjectType({ elemID: new ElemID('multi', 'loc') }) },
+        data: { before: new ObjectType({
+          elemID: new ElemID('multi', 'loc'),
+          annotations: {
+            a: 1,
+            b: 1,
+          },
+        }) },
       },
       { // Modify value in list
         id: new ElemID('salesforce', 'lead', 'field', 'list_field', CORE_ANNOTATIONS.DEFAULT, '3'),
@@ -339,12 +364,13 @@ describe('workspace', () => {
 
     let lead: ObjectType
     let elemMap: Record<string, Element>
+    let workspace: Workspace
+    const dirStore = mockDirStore()
 
-    const bpStore = mockBpsStore()
-    const workspace = createWorkspace(bpStore)
     beforeAll(async () => {
+      workspace = await createWorkspace(dirStore)
       await workspace.updateBlueprints(changes)
-      elemMap = getElemMap(await workspace.elements)
+      elemMap = getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
     })
 
@@ -357,7 +383,7 @@ describe('workspace', () => {
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('foo')
     })
     it('should update existing parsed blueprints content', () => {
-      const setBp = bpStore.set as jest.Mock
+      const setBp = dirStore.set as jest.Mock
       expect(setBp.mock.calls[0][0].buffer).toMatch(/base_field\s+{\s+_default = "foo"/s)
     })
     it('should add new element', () => {
@@ -405,70 +431,58 @@ describe('workspace', () => {
 
     it('should not fail in case one of the changes fails', async () => {
       jest.spyOn(dump, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
-      const realChange = _.cloneDeep(changes[0])
-      _.set(realChange.data, 'after', 'blabla')
-      const fakeChange = _.cloneDeep(changes[0])
-      fakeChange.id = new ElemID('salesforce', 'lead').createNestedID('field', 'fake')
+      const change1: DetailedChange = {
+        id: new ElemID('salesforce', 'lead', 'field', 'ext_field', CORE_ANNOTATIONS.DEFAULT),
+        action: 'modify',
+        data: { before: 'foo', after: 'blabla' },
+      }
+      const change2: DetailedChange = {
+        id: new ElemID('salesforce', 'lead', 'field', 'base_field', CORE_ANNOTATIONS.DEFAULT),
+        action: 'modify',
+        data: { before: 'foo', after: 'blabla' },
+      }
 
-      await workspace.updateBlueprints([fakeChange, realChange])
-      lead = findElement(await workspace.elements, new ElemID('salesforce', 'lead')) as ObjectType
+      await workspace.updateBlueprints([change1, change2])
+      lead = findElement(await workspace.elements(), new ElemID('salesforce', 'lead')) as ObjectType
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })
   })
 
   describe('init', () => {
-    const wsPath = 'test-ws-path'
-    const saltoHome = 'test-home-path'
-    let spyMkdir: jest.SpyInstance
-    let dumpConfig: jest.SpyInstance
-    beforeEach(async () => {
-      process.env.SALTO_HOME = saltoHome
-      spyMkdir = jest.spyOn(file, 'mkdirp').mockResolvedValue(true)
-      jest.spyOn(file, 'exists').mockResolvedValue(false)
-      dumpConfig = jest.spyOn(config, 'dumpConfig').mockResolvedValue()
-    })
-
+    const confSource = mockConfigSource({ name: 'ws-name' })
     afterEach(async () => {
       delete process.env.SALTO_HOME
     })
-
-    it('should init a basedir with no workspace name provided', async () => {
-      jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce(undefined)
-      const workspace = await Workspace.init(wsPath, 'default')
-      expect(dumpConfig).toHaveBeenCalled()
-      expect(spyMkdir.mock.calls[0][0]).toMatch(path.join(saltoHome, wsPath))
-      expect(workspace.config.name).toContain(path.basename(wsPath))
-    })
-    it('should init a basedir with workspace name provided', async () => {
-      jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce(undefined)
-      const wsName = 'test-with-name'
-      const workspace = await Workspace.init(wsPath, 'default', wsName)
-      expect(dumpConfig).toHaveBeenCalled()
-      // TODO: need to figure why this works with wsPath and not wsName
-      expect(spyMkdir.mock.calls[0][0]).toMatch(path.join(saltoHome, wsPath))
-      expect(workspace.config.name).toBe(wsName)
-    })
-    it('should fail when run inside an existing workspace', async () => {
-      jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce('found')
-      await expect(Workspace.init('bla', 'default')).rejects.toThrow()
+    it('should init workspace configuration', async () => {
+      const workspace = await initWorkspace('ws-name', 'uid', 'default', confSource, {})
+      expect(confSource.set).toHaveBeenCalled()
+      expect((confSource.set as jest.Mock).mock.calls[0][1]).toEqual(
+        new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType,
+          { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }] })
+      )
+      expect((confSource.set as jest.Mock).mock.calls[1][1]).toEqual(
+        new InstanceElement(PREFERENCE_CONFIG, preferencesWorkspaceConfigType,
+          { currentEnv: 'default' })
+      )
+      expect(workspace.name).toEqual('ws-name')
     })
   })
 
   describe('getStateRecency', () => {
     let now: number
     let modificationDate: Date
-    let ws: Workspace
     const durationAfterLastModificationMinutes = 7
     const durationAfterLastModificationMs = 1000 * 60 * durationAfterLastModificationMinutes
-    beforeEach(() => {
+    beforeEach(async () => {
       now = Date.now()
       jest.spyOn(Date, 'now').mockImplementation(() => now)
       modificationDate = new Date(now - durationAfterLastModificationMs)
-      ws = createWorkspace()
     })
     it('should return valid when the state is valid', async () => {
-      ws.config.staleStateThresholdMinutes = durationAfterLastModificationMinutes + 1
-      ws.state.getUpdateDate = jest.fn().mockImplementation(
+      const ws = await createWorkspace(undefined, undefined, mockConfigSource(
+        { staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }
+      ))
+      ws.state().getUpdateDate = jest.fn().mockImplementation(
         () => Promise.resolve(modificationDate)
       )
       const recency = await ws.getStateRecency()
@@ -476,8 +490,10 @@ describe('workspace', () => {
       expect(recency.date).toBe(modificationDate)
     })
     it('should return old when the state is old', async () => {
-      ws.config.staleStateThresholdMinutes = durationAfterLastModificationMinutes - 1
-      ws.state.getUpdateDate = jest.fn().mockImplementation(
+      const ws = await createWorkspace(undefined, undefined, mockConfigSource(
+        { staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }
+      ))
+      ws.state().getUpdateDate = jest.fn().mockImplementation(
         () => Promise.resolve(modificationDate)
       )
       const recency = await ws.getStateRecency()
@@ -485,7 +501,8 @@ describe('workspace', () => {
       expect(recency.date).toBe(modificationDate)
     })
     it('should return nonexistent when the state does not exist', async () => {
-      ws.state.getUpdateDate = jest.fn().mockImplementation(() => Promise.resolve(null))
+      const ws = await createWorkspace()
+      ws.state().getUpdateDate = jest.fn().mockImplementation(() => Promise.resolve(null))
       const recency = await ws.getStateRecency()
       expect(recency.status).toBe('Nonexistent')
       expect(recency.date).toBe(null)
@@ -496,9 +513,8 @@ describe('workspace', () => {
     it('should flush all data sources', async () => {
       const mockFlush = jest.fn()
       const flushable = { flush: mockFlush }
-      const workspace = createWorkspace()
-      _.set(workspace, 'state', flushable)
-      _.set(workspace, 'blueprintsSource', flushable)
+      const workspace = await createWorkspace(flushable as unknown as DirectoryStore,
+        flushable as unknown as State)
       await workspace.flush()
       expect(mockFlush).toHaveBeenCalledTimes(2)
     })

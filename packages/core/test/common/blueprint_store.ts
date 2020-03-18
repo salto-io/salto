@@ -69,7 +69,7 @@ string base_field {}
 const bps: Record<string, File> = _.mapValues(workspaceFiles,
   (buffer, filename) => ({ filename, buffer }))
 
-export const mockBpsStore = (exclude: string[] = ['error.bp', 'dup.bp']): DirectoryStore => (
+export const mockDirStore = (exclude: string[] = ['error.bp', 'dup.bp']): DirectoryStore => (
   {
     list: jest.fn().mockResolvedValue(Object.keys(bps).filter(name => !exclude.includes(name))),
     get: jest.fn().mockImplementation((filename: string) => Promise.resolve(bps[filename])),
@@ -79,7 +79,7 @@ export const mockBpsStore = (exclude: string[] = ['error.bp', 'dup.bp']): Direct
     mtimestamp: jest.fn(),
     getFiles: jest.fn().mockImplementation((filenames: string[]) =>
       Promise.resolve(filenames.map(f => bps[f]))),
-    clone: () => mockBpsStore(exclude),
+    clone: () => mockDirStore(exclude),
   }
 )
 

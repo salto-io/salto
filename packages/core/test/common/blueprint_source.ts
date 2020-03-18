@@ -30,7 +30,7 @@ export const createMockBlueprintSource = (
   get: async (id: ElemID) => elements.find(e => _.isEqual(id, e.elemID)),
   getAll: async () => elements,
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
-  update: jest.fn().mockImplementation(() => Promise.resolve()),
+  updateBlueprints: jest.fn().mockImplementation(() => Promise.resolve()),
   listBlueprints: jest.fn().mockImplementation(() => Promise.resolve(_.keys(blueprints))),
   getBlueprint: jest.fn().mockImplementation(
     (filename: string) => Promise.resolve(blueprints[filename] ? { filename, buffer: '' } : undefined)

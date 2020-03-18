@@ -76,24 +76,30 @@ const buildMultiEnvSource = (
     }
   }
 
-
   state = initState || buildMutiEnvState()
 
-  const getSourceForBlueprint = (
-    fullName: string
-  ): {source: BlueprintsSource; relPath: string} => {
+  const getSourcePrefixForBlueprint = (fullName: string): string | undefined => {
     const isContained = (relPath: string, basePath: string): boolean => {
       const baseDirParts = basePath.split(path.sep)
       const relPathParts = relPath.split(path.sep)
       return _.isEqual(baseDirParts, relPathParts.slice(0, baseDirParts.length))
     }
 
-    const [prefix, source] = _.entries(sources)
-      .filter(([srcPrefix, _v]) => srcPrefix !== commonSourceName)
-      .find(([srcPrefix, _v]) => isContained(fullName, srcPrefix)) || []
-    return prefix && source
-      ? { relPath: fullName.slice(prefix.length + 1), source }
-      : { relPath: fullName, source: commonSource() }
+    return Object.keys(sources).filter(srcPrefix => srcPrefix !== commonSourceName)
+      .find(srcPrefix => isContained(fullName, srcPrefix))
+  }
+
+  const getSourceFromPrefix = (prefix?: string): BlueprintsSource =>
+    (prefix && sources[prefix] ? sources[prefix] : commonSource())
+
+  const getRelativePath = (fullName: string, prefix?: string): string =>
+    (prefix && sources[prefix] ? fullName.slice(prefix.length + 1) : fullName)
+
+  const getSourceForBlueprint = (
+    fullName: string
+  ): {source: BlueprintsSource; relPath: string} => {
+    const prefix = getSourcePrefixForBlueprint(fullName)
+    return { relPath: getRelativePath(fullName, prefix), source: getSourceFromPrefix(prefix) }
   }
 
   const buidFullPath = (basePath: string, relPath: string): string => (
@@ -106,19 +112,7 @@ const buildMultiEnvSource = (
     return bp ? { ...bp, filename } : undefined
   }
 
-  const setBlueprint = async (blueprint: Blueprint): Promise<void> => {
-    const { source, relPath } = getSourceForBlueprint(blueprint.filename)
-    await source.setBlueprints({ ...blueprint, filename: relPath })
-    state = buildMutiEnvState()
-  }
-
-  const removeBlueprint = async (filename: string): Promise<void> => {
-    const { source, relPath } = getSourceForBlueprint(filename)
-    await source.removeBlueprints(relPath)
-    state = buildMutiEnvState()
-  }
-
-  const update = async (
+  const updateBlueprints = async (
     changes: DetailedChange[],
     mode: RoutingMode = 'default'
   ): Promise<void> => {
@@ -131,10 +125,10 @@ const buildMultiEnvSource = (
     )
     const secondaryChanges = routedChanges.secondarySources || {}
     await Promise.all([
-      primarySource().update(routedChanges.primarySource || []),
-      commonSource().update(routedChanges.commonSource || []),
+      primarySource().updateBlueprints(routedChanges.primarySource || []),
+      commonSource().updateBlueprints(routedChanges.commonSource || []),
       ..._.keys(secondaryChanges)
-        .map(srcName => secondarySources()[srcName].update(secondaryChanges[srcName])),
+        .map(srcName => secondarySources()[srcName].updateBlueprints(secondaryChanges[srcName])),
     ])
     state = buildMutiEnvState()
   }
@@ -149,7 +143,7 @@ const buildMultiEnvSource = (
 
   return {
     getBlueprint,
-    update,
+    updateBlueprints,
     flush,
     list: async (): Promise<ElemID[]> => _.values((await state).elements).map(e => e.elemID),
     get: async (id: ElemID): Promise<Element | Value> => (
@@ -162,11 +156,17 @@ const buildMultiEnvSource = (
           await source.listBlueprints()).map(p => buidFullPath(prefix, p)))))
     ),
     setBlueprints: async (...blueprints: Blueprint[]): Promise<void> => {
-      await Promise.all(blueprints.map(setBlueprint))
+      await Promise.all(Object.entries(_.groupBy(blueprints,
+        bp => getSourcePrefixForBlueprint(bp.filename)))
+        .map(([prefix, sourceBlueprints]) => getSourceFromPrefix(prefix)
+          .setBlueprints(...sourceBlueprints.map(bp =>
+            ({ ...bp, filename: getRelativePath(bp.filename, prefix) })))))
       state = buildMutiEnvState()
     },
     removeBlueprints: async (...names: string[]): Promise<void> => {
-      await Promise.all(names.map(name => removeBlueprint(name)))
+      await Promise.all(Object.entries(_.groupBy(names, getSourcePrefixForBlueprint))
+        .map(([prefix, sourceNames]) => getSourceFromPrefix(prefix)
+          .removeBlueprints(...sourceNames.map(fullName => getRelativePath(fullName, prefix)))))
       state = buildMutiEnvState()
     },
     getSourceMap: async (filename: string): Promise<SourceMap> => {

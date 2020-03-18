@@ -14,21 +14,21 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-
-import { Config, addEnvToConfig, setCurrentEnv, loadConfig } from '@salto-io/core'
+import { Workspace } from '@salto-io/core'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'
 import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv } from '../formatter'
+import { loadWorkspace } from '../workspace'
 
 const outputLine = ({ stdout }: CliOutput, text: string): void => stdout.write(`${text}\n`)
 
 const setEnvironment = async (
   envName: string,
   output: CliOutput,
-  config: Config
+  workspace: Workspace,
 ): Promise<CliExitCode> => {
-  await setCurrentEnv(config, envName)
+  await workspace.setCurrentEnv(envName)
   outputLine(output, formatSetEnv(envName))
   return CliExitCode.Success
 }
@@ -36,27 +36,27 @@ const setEnvironment = async (
 const createEnvironment = async (
   envName: string,
   output: CliOutput,
-  config: Config
+  workspace: Workspace,
 ): Promise<CliExitCode> => {
-  const newConfig = await addEnvToConfig(config, envName)
-  await setEnvironment(envName, output, newConfig)
+  await workspace.addEnvironment(envName)
+  await setEnvironment(envName, output, workspace)
   outputLine(output, formatCreateEnv(envName))
   return CliExitCode.Success
 }
 
 const getCurrentEnv = (
   output: CliOutput,
-  config: Config
+  workspace: Workspace,
 ): CliExitCode => {
-  outputLine(output, formatCurrentEnv(config.currentEnv))
+  outputLine(output, formatCurrentEnv(workspace.currentEnv()))
   return CliExitCode.Success
 }
 
 const listEnvs = (
   output: CliOutput,
-  config: Config
+  workspace: Workspace,
 ): CliExitCode => {
-  const list = formatEnvListItem(_.keys(config.envs), config.currentEnv)
+  const list = formatEnvListItem(workspace.envs(), workspace.currentEnv())
   outputLine(output, list)
   return CliExitCode.Success
 }
@@ -78,16 +78,16 @@ export const command = (
         + `Example usage: salto env ${commandName}`)
     }
 
-    const workspaceConfig = await loadConfig(workspaceDir)
+    const { workspace } = await loadWorkspace(workspaceDir, output)
     switch (commandName) {
       case 'create':
-        return createEnvironment(envName as string, output, workspaceConfig)
+        return createEnvironment(envName as string, output, workspace)
       case 'set':
-        return setEnvironment(envName as string, output, workspaceConfig)
+        return setEnvironment(envName as string, output, workspace)
       case 'list':
-        return listEnvs(output, workspaceConfig)
+        return listEnvs(output, workspace)
       case 'current':
-        return getCurrentEnv(output, workspaceConfig)
+        return getCurrentEnv(output, workspace)
       default:
         throw new Error('Unknown environment management command')
     }

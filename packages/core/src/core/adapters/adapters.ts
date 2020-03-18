@@ -18,13 +18,14 @@ import {
   ObjectType, Adapter, ElemIdGetter, AdapterCreatorOpts, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
-import { ConfigSource } from '../../workspace/config_source'
 import { createDefaultInstanceFromType } from '../merger/internal/instances'
 
 export const getAdaptersCredentialsTypes = (
-  names: string[]
+  names?: ReadonlyArray<string>
 ): Record<string, ObjectType> => {
-  const relevantAdapterCreators = _.pick(adapterCreators, names)
+  const relevantAdapterCreators = _.isUndefined(names)
+    ? adapterCreators
+    : _.pick(adapterCreators, names)
   return _.mapValues(relevantAdapterCreators, creator => creator.credentialsType)
 }
 
@@ -49,37 +50,28 @@ export const getDefaultAdapterConfig = (adapterName: string): InstanceElement | 
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
 
-export const createDefaultAdapterConfig = async (adapterName: string, config: ConfigSource):
-Promise<InstanceElement | undefined> => {
-  const adapterConfig = await config.get(adapterName)
-  const defaultConfig = getDefaultAdapterConfig(adapterName)
-  if (_.isUndefined(adapterConfig) && defaultConfig) {
-    await config.set(adapterName, defaultConfig)
-  }
-  return adapterConfig ?? defaultConfig
-}
-
 export const getAdaptersCreatorConfigs = async (
-  adapters: string[],
-  credentials: ConfigSource,
-  config: ConfigSource,
+  adapters: ReadonlyArray<string>,
+  credentials: Readonly<Record<string, InstanceElement>>,
+  config: Readonly<Record<string, InstanceElement>>,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, AdapterCreatorOpts>> =>
-  _.fromPairs(await Promise.all(adapters.map(
-    async adapter => {
-      const adapterConfig = await config.get(adapter)
-      return ([adapter, {
-        credentials: await credentials.get(adapter),
-        config: adapterConfig ?? getDefaultAdapterConfig(adapter),
-        getElemIdFunc: elemIdGetter,
-      }])
-    }
-  )))
+  (_
+    .fromPairs(await Promise.all(adapters.map(
+      async adapter => {
+        const adapterConfig = config[adapter]
+        return ([adapter, {
+          credentials: credentials[adapter],
+          config: adapterConfig ?? getDefaultAdapterConfig(adapter),
+          getElemIdFunc: elemIdGetter,
+        }])
+      }
+    ))))
 
 export const getAdapters = async (
-  adapters: string[],
-  credentials: ConfigSource,
-  config: ConfigSource,
+  adapters: ReadonlyArray<string>,
+  credentials: Readonly<Record<string, InstanceElement>>,
+  config: Readonly<Record<string, InstanceElement>>,
   elemIdGetter?: ElemIdGetter,
 ): Promise<Record<string, Adapter>> =>
   initAdapters(await getAdaptersCreatorConfigs(adapters, credentials, config, elemIdGetter))

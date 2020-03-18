@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as vscode from 'vscode'
-import { loadConfig, Workspace } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/core'
 import { EditorWorkspace } from './salto/workspace'
 import { getDiagnostics } from './salto/diagnostics'
 import { onTextChangeEvent, onFileChange, onFileDelete, onReportErrorsEvent, onFileOpen } from './events'
@@ -37,8 +37,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const diagCollection = vscode.languages.createDiagnosticCollection('@salto-io/core')
-    const config = await loadConfig(rootPath)
-    const workspace = new EditorWorkspace(new Workspace(config))
+    const workspace = new EditorWorkspace(rootPath, await loadLocalWorkspace(rootPath))
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
@@ -91,7 +90,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     fileWatcher.onDidChange((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.fsPath))
     const newDiag = toVSDiagnostics(
-      workspace.config.baseDir,
+      workspace.baseDir,
       await getDiagnostics(workspace)
     )
     diagCollection.set(newDiag)

@@ -52,7 +52,7 @@ export type Blueprint = {
 }
 
 export type BlueprintsSource = ElementsSource & {
-  update: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
+  updateBlueprints: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
   getElementBlueprints: (id: ElemID) => Promise<string[]>
@@ -281,7 +281,7 @@ const buildBlueprintsSource = (
       state
     ),
 
-    update,
+    updateBlueprints: update,
     setBlueprints,
     getSourceMap,
     getElementBlueprints,

@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { Config, Workspace, parse, file, Errors } from '@salto-io/core'
-import { InstanceElement, ElemID, ObjectType, Field, BuiltinTypes, SaltoError } from '@salto-io/adapter-api'
+import { Workspace, parse, file, Errors } from '@salto-io/core'
+import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ParseError } from '@salto-io/core/dist/src/parser/parse'
 import { mergeElements } from '@salto-io/core/dist/src/core/merger'
@@ -50,7 +50,6 @@ jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 const buildMockWorkspace = (
   blueprint?: string,
   buffer?: string,
-  config?: Partial<Config>
 ): Workspace => {
   const baseDir = blueprint ? path.dirname(blueprint) : 'default_base_dir'
   const filename = blueprint ? path.relative(baseDir, blueprint) : 'default.bp'
@@ -59,8 +58,8 @@ const buildMockWorkspace = (
     : { elements: [], errors: [] as ParseError[], sourceMap: new Map() as SourceMap }
   const merged = mergeElements(parseResult.elements)
   return {
-    elements: merged.merged,
-    errors: async () => ({
+    elements: () => merged.merged,
+    errors: () => ({
       all: () => parseResult.errors || [],
       strings: () => (parseResult.errors || []).map(err => err.message),
       parse: parseResult.errors || [],
@@ -73,7 +72,7 @@ const buildMockWorkspace = (
     getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockImplementation(async elemID =>
       (parseResult.sourceMap.get(elemID.getFullName()) || [])),
     getBlueprint: mockFunction<Workspace['getBlueprint']>().mockResolvedValue({ filename, buffer: buffer ?? '' }),
-    config: _.mergeWith(config, { stateLocation: '.', services: SERVICES, baseDir }),
+    services: () => SERVICES,
     updateBlueprints: mockFunction<Workspace['updateBlueprints']>(),
     flush: mockFunction<Workspace['flush']>(),
     credentials: {
@@ -95,12 +94,12 @@ const buildMockWorkspace = (
     removeBlueprints: mockFunction<Workspace['removeBlueprints']>().mockResolvedValue(),
     listBlueprints: mockFunction<Workspace['listBlueprints']>().mockResolvedValue([filename]),
     getElements: mockFunction<Workspace['getElements']>().mockResolvedValue(merged.merged),
-    clone: mockFunction<Workspace['clone']>().mockImplementation(() => buildMockWorkspace(blueprint, buffer, config)),
+    clone: mockFunction<Workspace['clone']>().mockImplementation(() => Promise.resolve(buildMockWorkspace(blueprint, buffer))),
   } as unknown as Workspace
 }
 
-export const mockWorkspace = async (blueprint?: string, config?: Partial<Config>
+export const mockWorkspace = async (blueprint?: string,
 ): Promise<Workspace> => {
   const buffer = blueprint ? await file.readTextFile(blueprint) : 'blabla'
-  return buildMockWorkspace(blueprint, buffer, config)
+  return buildMockWorkspace(blueprint, buffer)
 }

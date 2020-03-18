@@ -24,9 +24,10 @@ import { mockWorkspace } from './workspace'
 // eslint-disable-next-line jest/no-disabled-tests
 describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
-  const bpFilename = path.resolve(`${__dirname}/../../../test/salto/test-bps/all.bp`)
+  const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps`)
+  const bpFilename = path.join(baseDir, 'all.bp')
   beforeAll(async () => {
-    workspace = new EditorWorkspace(await mockWorkspace(bpFilename))
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.bp')))
   })
 
   it('should create type symbol', async () => {

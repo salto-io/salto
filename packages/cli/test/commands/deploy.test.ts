@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Workspace, Plan, PlanItem, currentEnvConfig,
+  Workspace, Plan, PlanItem,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import * as mocks from '../mocks'
@@ -25,7 +25,6 @@ import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 
 const mockDeploy = mocks.deploy
-const mockServices = (ws: Workspace): string[] => currentEnvConfig(ws.config).services as string[]
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   deploy: jest.fn().mockImplementation((
@@ -33,14 +32,13 @@ jest.mock('@salto-io/core', () => ({
     shouldDeploy: (plan: Plan) => Promise<boolean>,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
     force = false,
-    services = mockServices(ws)
   ) =>
   // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
   // Notice that blueprints are ignored in mockDeploy.
 
-    mockDeploy(ws, shouldDeploy, reportProgress, services, force)),
+    mockDeploy(ws, shouldDeploy, reportProgress, [], force)),
 }))
 jest.mock('../../src/workspace/workspace')
 
@@ -121,7 +119,7 @@ describe('deploy command', () => {
         expect(workspace.updateWorkspace as jest.Mock).toHaveBeenCalledTimes(1)
       })
       it('should use current env when env is not provided', () => {
-        expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual('active')
+        expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual('active')
       })
     })
   })
@@ -160,7 +158,7 @@ describe('deploy command', () => {
       await command.execute()
     })
     it('should use provided env', () => {
-      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(environment)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(environment)
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
     })
   })

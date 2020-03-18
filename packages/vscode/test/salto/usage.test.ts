@@ -21,14 +21,14 @@ import { mockWorkspace } from './workspace'
 
 describe('Test go to definitions', () => {
   let workspace: EditorWorkspace
-  const filename = path.resolve(`${__dirname}/../../../test/salto/test-bps/all.bp`)
 
   const getRefLines = (
     defs: SaltoElemLocation[]
   ): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
 
   beforeAll(async () => {
-    workspace = new EditorWorkspace(await mockWorkspace(filename))
+    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps/`)
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.bp')))
   })
 
   it('should give all fields usages of a type', async () => {

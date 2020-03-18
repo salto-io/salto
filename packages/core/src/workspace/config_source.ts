@@ -13,15 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { parse } from '../parser/parse'
 import { dumpElements } from '../parser/dump'
 import { BP_EXTENSION } from './blueprints/blueprints_source'
 import { DirectoryStore } from './dir_store'
 
+const log = logger(module)
+
 export interface ConfigSource {
   get(name: string): Promise<InstanceElement | undefined>
   set(name: string, config: Readonly<InstanceElement>): Promise<void>
+}
+
+class ConfigParseError extends Error {
+  constructor(name: string) {
+    super(`failed to parse config file ${name}`)
+  }
 }
 
 export const configSource = (
@@ -33,8 +43,20 @@ export const configSource = (
   return {
     get: async (name: string): Promise<InstanceElement | undefined> => {
       const bp = await dirStore.get(filename(name))
+      if (_.isUndefined(bp)) {
+        return undefined
+      }
+      const parseResult = parse(Buffer.from(bp.buffer), bp.filename)
+      if (!_.isEmpty(parseResult.errors)) {
+        log.error('failed to parse %s due to %o', name, parseResult.errors)
+        throw new ConfigParseError(name)
+      }
+      if (parseResult.elements.length > 1) {
+        log.warn('%s has more than a single element in the config file; returning the first element',
+          name)
+      }
       return bp
-        ? parse(Buffer.from(bp.buffer), bp.filename).elements.pop() as InstanceElement
+        ? parseResult.elements.pop() as InstanceElement
         : undefined
     },
 

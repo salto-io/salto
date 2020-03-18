@@ -15,7 +15,7 @@
 */
 import readdirp from 'readdirp'
 import tmp from 'tmp-promise'
-import { file, SALTO_HOME_VAR, Workspace } from '@salto-io/core'
+import { file, SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
 import { EditorWorkspace } from '../src/salto/workspace'
 import { getPositionContext } from '../src/salto/context'
 import { provideWorkspaceCompletionItems } from '../src/salto/completions/provider'
@@ -44,7 +44,7 @@ describe.skip('extension e2e', () => {
     })
     bps.forEach(bp => { copyFile(bp.fullPath, `${wsPath}/${bp.basename}`) })
 
-    workspace = new EditorWorkspace(await Workspace.init(wsPath, 'default'))
+    workspace = new EditorWorkspace(wsPath, await initLocalWorkspace(wsPath, 'default'))
   })
 
   afterAll(async () => {

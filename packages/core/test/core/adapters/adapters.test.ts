@@ -15,11 +15,9 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { creator } from '@salto-io/salesforce-adapter'
-import { initAdapters, getAdaptersCredentialsTypes, createDefaultAdapterConfig,
-  getAdaptersCreatorConfigs, getDefaultAdapterConfig } from '../../../src/core/adapters/adapters'
-import { configSource, ConfigSource } from '../../../src/workspace/config_source'
-import { adapterCreators } from '../../../src/core/adapters'
-import { createDefaultInstanceFromType } from '../../../src/core/merger/internal/instances'
+import {
+  initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
+} from '../../../src/core/adapters/adapters'
 
 jest.mock('../../../src/workspace/config_source')
 describe('adapters.ts', () => {
@@ -54,11 +52,11 @@ describe('adapters.ts', () => {
   describe('run get adapters creator configs', () => {
     const serviceName = 'salesforce'
 
-    it('should return default adapter config when there is no config file', async () => {
+    it('should return default adapter config when there is no config', async () => {
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
-        { get: jest.fn().mockResolvedValue(sfConfig), set: jest.fn() },
-        { get: jest.fn(), set: jest.fn() },
+        { [sfConfig.elemID.adapter]: sfConfig },
+        {}
       )
       expect(result).toEqual({
         [serviceName]: {
@@ -69,11 +67,11 @@ describe('adapters.ts', () => {
       })
     })
 
-    it('should return adapter config when there is config file', async () => {
+    it('should return adapter config when there is config', async () => {
       const result = await getAdaptersCreatorConfigs(
         [serviceName],
-        { get: jest.fn().mockResolvedValue(sfConfig), set: jest.fn() },
-        { get: jest.fn().mockResolvedValue(sfConfig), set: jest.fn() },
+        { [sfConfig.elemID.adapter]: sfConfig },
+        { [sfConfig.elemID.adapter]: sfConfig },
       )
       expect(result).toEqual({
         [serviceName]: {
@@ -105,6 +103,8 @@ describe('adapters.ts', () => {
     })
   })
 
+  // TODO: move this to workspace tests
+  /*
   describe('create default adapter config', () => {
     const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('test') }))
     const mockSet = jest.fn().mockImplementation()
@@ -122,7 +122,7 @@ describe('adapters.ts', () => {
       const defaultConfig = createDefaultInstanceFromType(
         ElemID.CONFIG_NAME, adapterCreators[serviceName].configType as ObjectType,
       )
-      expect(await createDefaultAdapterConfig(serviceName, mockConfigSource() as ConfigSource))
+      expect(default (serviceName, mockConfigSource() as ConfigSource))
         .toEqual(defaultConfig)
       expect(mockSet).toHaveBeenCalledTimes(1)
       expect(mockSet).toHaveBeenCalledWith(serviceName, defaultConfig)
@@ -134,5 +134,5 @@ describe('adapters.ts', () => {
         .toEqual(instance)
       expect(mockSet).not.toHaveBeenCalled()
     })
-  })
+  }) */
 })

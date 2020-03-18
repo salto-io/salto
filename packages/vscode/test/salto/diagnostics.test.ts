@@ -35,7 +35,7 @@ describe('diagnostics', () => {
         },
       }],
     }))
-    const workspace = new EditorWorkspace(baseWs)
+    const workspace = new EditorWorkspace('bla', baseWs)
     const diag = (await getDiagnostics(workspace))['/parse_error.bp'][0]
     expect(diag).toBeDefined()
     expect(diag.msg).toContain('Blabla')

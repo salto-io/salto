@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { init } from '@salto-io/core'
+import { initLocalWorkspace } from '@salto-io/core'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -32,11 +32,11 @@ export const command = (
     cliTelemetry.start()
     try {
       const defaultEnvName = await getEnvNameCallback()
-      const workspace = await init(defaultEnvName, workspaceName)
+      const workspace = await initLocalWorkspace('.', workspaceName, defaultEnvName)
       const workspaceTags = await getWorkspaceTelemetryTags(workspace)
       cliTelemetry.success(workspaceTags)
       stdout.write(
-        Prompts.initCompleted(workspace.config.name, path.resolve(workspace.config.baseDir))
+        Prompts.initCompleted(workspace.name, path.resolve('.'))
       )
     } catch (e) {
       stderr.write(Prompts.initFailed(e.message))

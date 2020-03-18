@@ -372,7 +372,7 @@ const instanceElementValidators = [
 const validateInstanceElements = (element: InstanceElement): ValidationError[] =>
   _.flatten(instanceElementValidators.map(v => v(element.elemID, element.value, element.type)))
 
-export const validateElements = (elements: Element[]): ValidationError[] => (
+export const validateElements = (elements: ReadonlyArray<Element>): ValidationError[] => (
   _(resolve(elements))
     .map(e => (isInstanceElement(e) ? validateInstanceElements(e) : validateType(e as TypeElement)))
     .flatten()

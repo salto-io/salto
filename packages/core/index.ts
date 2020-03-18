@@ -26,11 +26,11 @@ export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
   Workspace, WorkspaceError, SourceFragment,
 } from './src/workspace/workspace'
+export {
+  loadLocalWorkspace, initLocalWorkspace,
+} from './src/workspace/local/workspce'
 export { Errors } from './src/workspace/errors'
 export { Blueprint } from './src/workspace/blueprints/blueprints_source'
-export {
-  Config, loadConfig, addServiceToConfig, addEnvToConfig, setCurrentEnv, currentEnvConfig,
-} from './src/workspace/config'
 export { StateRecency } from './src/workspace/workspace'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dumpElements, dumpElemID } from './src/parser/dump'

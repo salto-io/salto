@@ -194,10 +194,10 @@ describe('multi env source', () => {
           id: envElemID,
         },
       ]
-      await source.update(changes)
-      expect(envSource.update).toHaveBeenCalled()
-      expect(commonSource.update).toHaveBeenCalled()
-      expect(inactiveSource.update).not.toHaveBeenCalled()
+      await source.updateBlueprints(changes)
+      expect(envSource.updateBlueprints).toHaveBeenCalled()
+      expect(commonSource.updateBlueprints).toHaveBeenCalled()
+      expect(inactiveSource.updateBlueprints).not.toHaveBeenCalled()
     })
   })
   describe('flush', () => {

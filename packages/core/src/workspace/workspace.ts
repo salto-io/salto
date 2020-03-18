@@ -14,44 +14,37 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import path from 'path'
-import uuidv4 from 'uuid/v4'
-import { Element, SaltoError, SaltoElementError, ElemID } from '@salto-io/adapter-api'
+import {
+  Element, SaltoError, SaltoElementError, ElemID, CORE_ANNOTATIONS, ObjectType, Field, BuiltinTypes,
+  InstanceElement,
+  ListType,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { DetailedChange } from '../core/plan'
 import { validateElements } from '../core/validator'
-import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
-import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
-  saltoConfigType, currentEnvConfig, getAdaptersConfigDir, getConfigDir } from './config'
-import { configSource, ConfigSource } from './config_source'
+import { ConfigSource } from './config_source'
 import State from './state'
-import { localState } from './local/state'
-import {
-  blueprintsSource as buildBlueprintSource, BP_EXTENSION, BlueprintsSource,
-  Blueprint, RoutingMode,
-} from './blueprints/blueprints_source'
-import { parseResultCache } from './cache'
-import { localDirectoryStore } from './local/dir_store'
+import { BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
 
-const COMMON_ENV_PREFIX = ''
 const log = logger(module)
 
-class ExistingWorkspaceError extends Error {
-  constructor() {
-    super('existing salto workspace')
-  }
-}
+const { makeArray } = collections.array
 
-class NotAnEmptyWorkspaceError extends Error {
-  constructor(exsitingPathes: string[]) {
-    super(`not an empty workspace. ${exsitingPathes.join('')} already exists.`)
-  }
-}
+export const COMMON_ENV_PREFIX = ''
+const MAX_ERROR_NUMBER = 30
 
-export type WorkspaceError<T extends SaltoError > = Readonly<T & {
+const SALTO = 'salto'
+export const WORKSPACE_CONFIG = 'config'
+export const PREFERENCE_CONFIG = 'preference'
+const ADAPTERS_CONFIGS = 'adapters'
+const ENV_CONFIG = 'env'
+const CREDENTIALS_CONFIG = 'credentials'
+
+export type WorkspaceError<T extends SaltoError> = Readonly<T & {
   sourceFragments: SourceFragment[]
 }>
 
@@ -60,69 +53,53 @@ export type SourceFragment = {
   fragment: string
 }
 
-const ensureEmptyWorkspace = async (config: Config): Promise<void> => {
-  if (await locateWorkspaceRoot(path.resolve(config.baseDir))) {
-    throw new ExistingWorkspaceError()
-  }
-  const configPath = getConfigPath(config.baseDir)
-  const shouldNotExist = [
-    configPath,
-    config.localStorage,
-    currentEnvConfig(config).stateLocation,
-  ]
-  const existenceMask = await Promise.all(shouldNotExist.map(exists))
-  const existing = shouldNotExist.filter((_p, i) => existenceMask[i])
-  if (existing.length > 0) {
-    throw new NotAnEmptyWorkspaceError(existing)
+class EnvDuplicationError extends Error {
+  constructor(envName: string) {
+    super(`${envName} is already defined at this workspace`)
   }
 }
 
-type MergedState = {
-  readonly mergedElements: Element[]
-  readonly errors: Errors
+class ServiceDuplicationError extends Error {
+  constructor(service: string) {
+    super(`${service} is already defined at this workspace`)
+  }
 }
 
-const loadBlueprintSource = (
-  sourceBaseDir: string,
-  localStorage: string,
-  excludeDirs: string[] = []
-): BlueprintsSource => {
-  const blueprintsStore = localDirectoryStore(
-    sourceBaseDir,
-    `*${BP_EXTENSION}`,
-    (dirParh: string) => !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirParh),
-  )
-  const cacheStore = localDirectoryStore(path.join(localStorage, 'cache'))
-  return buildBlueprintSource(blueprintsStore, parseResultCache(cacheStore))
+class UnknownEnvError extends Error {
+  constructor(envName: string) {
+    super(`Unkown enviornment ${envName}`)
+  }
 }
 
-const loadMultiEnvSource = (config: Config): BlueprintsSource => {
-  if (!config.currentEnv || _.isEmpty(config.envs)) {
-    throw new Error('can not load a multi env source without envs and current env settings')
-  }
-  const activeEnv = config.envs[config.currentEnv]
-  if (!activeEnv) {
-    throw new Error('Unknown active env')
-  }
+const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
+const envConfigElemID = new ElemID(SALTO, ENV_CONFIG)
+export const envConfigType = new ObjectType({
+  elemID: envConfigElemID,
+  fields: {
+    name: new Field(envConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    services: new Field(envConfigElemID, 'services', new ListType(BuiltinTypes.STRING)),
+  },
+})
 
-  const sources = {
-    ..._.fromPairs(_.values(config.envs).map(env =>
-      [
-        env.baseDir,
-        loadBlueprintSource(
-          path.resolve(config.baseDir, env.baseDir),
-          path.resolve(config.localStorage, env.baseDir),
-        ),
-      ])),
-    [COMMON_ENV_PREFIX]: loadBlueprintSource(
-      config.baseDir,
-      config.localStorage,
-      _.values(_.values(config.envs)
-        .map(env => path.join(config.baseDir, env.baseDir)))
-    ),
-  }
-  return multiEnvSource(sources, activeEnv.baseDir, COMMON_ENV_PREFIX)
-}
+const workspaceConfigElemID = new ElemID(SALTO)
+export const workspaceConfigType = new ObjectType({
+  elemID: workspaceConfigElemID,
+  fields: {
+    uid: new Field(workspaceConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
+    name: new Field(workspaceConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    envs: new Field(workspaceConfigElemID, 'envs', new ListType(envConfigType)),
+    staleStateThresholdMinutes: new Field(workspaceConfigElemID, 'staleStateThresholdMinutes', BuiltinTypes.NUMBER),
+  },
+  isSettings: true,
+})
+
+export const preferencesWorkspaceConfigType = new ObjectType({
+  elemID: workspaceConfigElemID,
+  fields: {
+    currentEnv: new Field(workspaceConfigElemID, 'currentEnv', BuiltinTypes.STRING, requireAnno),
+  },
+  isSettings: true,
+})
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
 export type StateRecency = {
@@ -130,207 +107,232 @@ export type StateRecency = {
   date: Date | null
 }
 
-export class Workspace {
-  readonly state: State
-  readonly adapterCredentials: ConfigSource
-  readonly adapterConfig: ConfigSource
-  private readonly blueprintsSource: BlueprintsSource
-  private mergedStatePromise?: Promise<MergedState>
+export type Workspace = {
+  uid: string
+  name: string
 
-  constructor(
-    public config: Config,
-    blueprintsSource? : BlueprintsSource,
-    state?: State,
-    adapterCredentials?: ConfigSource,
-    adapterConfig: ConfigSource = configSource(
-      localDirectoryStore(getAdaptersConfigDir(config.baseDir))
-    )
-  ) {
-    this.blueprintsSource = blueprintsSource || (_.isEmpty(config.envs)
-      ? loadBlueprintSource(config.baseDir, config.localStorage)
-      : loadMultiEnvSource(config))
-    this.state = state || localState(currentEnvConfig(config).stateLocation)
-    this.adapterCredentials = adapterCredentials || configSource(
-      localDirectoryStore(currentEnvConfig(config).credentialsLocation),
-    )
-    this.adapterConfig = adapterConfig || configSource(
-      localDirectoryStore(getAdaptersConfigDir(config.baseDir))
-    )
-  }
+  elements: () => Promise<ReadonlyArray<Element>>
+  state: () => State
+  envs: () => ReadonlyArray<string>
+  currentEnv: () => string
+  services: () => ReadonlyArray<string>
+  servicesCredentials: () => Promise<Readonly<Record<string, InstanceElement>>>
+  servicesConfig: () => Promise<Readonly<Record<string, InstanceElement>>>
 
-  static async init(
-    baseDir: string,
-    defaultEnvName: string,
-    workspaceName?: string,
-  ): Promise<Workspace> {
-    const absBaseDir = path.resolve(baseDir)
-    const minimalConfig = {
-      uid: uuidv4(),
-      name: workspaceName || path.basename(absBaseDir),
-      envs: {
-        [defaultEnvName]: {
-          baseDir: path.join('envs', defaultEnvName),
-          config: {},
-        },
-      },
-      currentEnv: defaultEnvName,
+  isEmpty(blueprintsOnly?: boolean): Promise<boolean>
+  getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
+  hasErrors(): Promise<boolean>
+  errors(): Promise<Readonly<Errors>>
+  transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
+    Promise<Readonly<WorkspaceError<T>>>
+  transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
+  getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>>
+  updateBlueprints: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
+  listBlueprints: () => Promise<string[]>
+  getBlueprint: (filename: string) => Promise<Blueprint | undefined>
+  setBlueprints: (...blueprints: Blueprint[]) => Promise<void>
+  removeBlueprints: (...names: string[]) => Promise<void>
+  getSourceMap: (filename: string) => Promise<SourceMap>
+  getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
+  getElements: (filename: string) => Promise<Element[]>
+  flush: () => Promise<void>
+  clone: () => Promise<Workspace>
+
+  addService: (service: string) => Promise<void>
+  addEnvironment: (env: string) => Promise<void>
+  setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
+  updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
+  updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
+
+  getStateRecency(): Promise<StateRecency>
+}
+
+// common source has no state
+export type EnviornmentSource = { blueprints: BlueprintsSource; state?: State }
+export type EnviornmentsSources = Record<string, EnviornmentSource>
+export const loadWorkspace = async (config: ConfigSource, elementsSources: EnviornmentsSources):
+  Promise<Workspace> => {
+    type EnvConfig = {
+      name: string
+      services: string[]
     }
-    const config = await completeConfig(absBaseDir, minimalConfig)
-    // We want to make sure that *ALL* of the paths we are going to create
-    // do not exist right now before writing anything to disk.
-    await ensureEmptyWorkspace(config)
-    await dumpConfig(absBaseDir, minimalConfig, config.localStorage)
-    await mkdirp(config.localStorage)
-    return new Workspace(config)
-  }
 
-  private get mergedState(): Promise<MergedState> {
-    const buildMergedState = async (): Promise<MergedState> => {
-      const mergedElements = await this.blueprintsSource.getAll()
-      mergedElements.push(saltoConfigType)
+    const workspaceConfig = await config.get(WORKSPACE_CONFIG) as InstanceElement
+    const preferences = await config.get(PREFERENCE_CONFIG) as InstanceElement
+    const currentEnv = (): string => preferences.value.currentEnv
+    const currentEnvConf = (): EnvConfig =>
+      makeArray(workspaceConfig.value.envs).find(e => e.name === currentEnv())
+    const envs = (): ReadonlyArray<string> => makeArray(workspaceConfig.value.envs).map(e => e.name)
+    const services = (): ReadonlyArray<string> => currentEnvConf().services
+    const state = (): State => elementsSources[currentEnv()].state as State
+    let blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),
+      currentEnv(), COMMON_ENV_PREFIX)
+    const elements = async (): Promise<ReadonlyArray<Element>> => (await blueprintsSource.getAll())
+      .concat(workspaceConfigType, envConfigType, preferencesWorkspaceConfigType)
+
+    const getSourceFragment = async (sourceRange: SourceRange): Promise<SourceFragment> => {
+      const bp = await blueprintsSource.getBlueprint(sourceRange.filename)
+      const fragment = bp ? bp.buffer.substring(sourceRange.start.byte, sourceRange.end.byte) : ''
+      if (!bp) {
+        log.warn('failed to resolve source fragment for %o', sourceRange)
+      }
       return {
-        mergedElements,
-        errors: new Errors({
-          ...await this.blueprintsSource.getErrors(),
-          validation: validateElements(mergedElements),
-        }),
+        sourceRange,
+        fragment,
       }
     }
-    if (_.isUndefined(this.mergedStatePromise)) {
-      this.mergedStatePromise = buildMergedState()
-    }
-    return this.mergedStatePromise as Promise<MergedState>
-  }
-
-  private resetMergedState(): void {
-    this.mergedStatePromise = undefined
-  }
-
-  async isEmpty(blueprintsOnly = false): Promise<boolean> {
-    const notConfig = (elem: Element): boolean => !elem.elemID.isConfig()
-    const isBlueprintsSourceEmpty = _.isEmpty((await this.elements).filter(notConfig))
-    const isStateEmpty = _.isEmpty((await this.state.getAll()).filter(notConfig))
-    return blueprintsOnly === true
-      ? isBlueprintsSourceEmpty
-      : isBlueprintsSourceEmpty && isStateEmpty
-  }
-
-  get elements(): Promise<ReadonlyArray<Element>> {
-    return this.mergedState.then(state => state.mergedElements)
-  }
-
-  errors(): Promise<Errors> {
-    return this.mergedState.then(state => state.errors)
-  }
-
-  hasErrors(): Promise<boolean> {
-    return this.errors().then(errors => errors.hasErrors())
-  }
-
-  getSourceMap(filename: string): Promise<SourceMap> {
-    return this.blueprintsSource.getSourceMap(filename)
-  }
-
-  getSourceRanges(elemID: ElemID): Promise<SourceRange[]> {
-    return this.blueprintsSource.getSourceRanges(elemID)
-  }
-
-  async listBlueprints(): Promise<string[]> {
-    return this.blueprintsSource.listBlueprints()
-  }
-
-  async getBlueprint(filename: string): Promise<Blueprint | undefined> {
-    return this.blueprintsSource.getBlueprint(filename)
-  }
-
-  async setBlueprints(...blueprints: Blueprint[]): Promise<void> {
-    this.resetMergedState()
-    return this.blueprintsSource.setBlueprints(...blueprints)
-  }
-
-  async getElements(filename: string): Promise<Element[]> {
-    return this.blueprintsSource.getElements(filename)
-  }
-
-  async removeBlueprints(...names: string[]): Promise<void> {
-    this.resetMergedState()
-    return this.blueprintsSource.removeBlueprints(...names)
-  }
-
-  async updateBlueprints(changes: DetailedChange[], mode?: RoutingMode): Promise<void> {
-    this.resetMergedState()
-    return this.blueprintsSource.update(changes, mode)
-  }
-
-  private async getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment> {
-    const bp = await this.blueprintsSource.getBlueprint(sourceRange.filename)
-    const fragment = bp ? bp.buffer.substring(sourceRange.start.byte, sourceRange.end.byte) : ''
-    if (!bp) {
-      log.warn('failed to resolve source fragment for %o', sourceRange)
-    }
-    return {
-      sourceRange,
-      fragment,
-    }
-  }
-
-  async transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
-  Promise<Readonly<WorkspaceError<T>>> {
-    const sourceRanges = await this.blueprintsSource.getSourceRanges(saltoElemErr.elemID)
-    const sourceFragments = await Promise.all(sourceRanges.map(sr => this.getSourceFragment(sr)))
-    return {
-      ...saltoElemErr,
-      message: saltoElemErr.message,
-      sourceFragments,
-    }
-  }
-
-  private async transformParseError(error: ParseError): Promise<WorkspaceError<SaltoError>> {
-    return {
+    const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({
       ...error,
-      sourceFragments: [await this.getSourceFragment(error.subject)],
-    }
-  }
-
-  async transformError(error: SaltoError): Promise<WorkspaceError<SaltoError>> {
-    const isParseError = (err: SaltoError): err is ParseError =>
-      _.has(err, 'subject')
-    const isElementError = (err: SaltoError): err is SaltoElementError =>
-      _.get(err, 'elemID') instanceof ElemID
-
-    if (isParseError(error)) {
-      return this.transformParseError(error)
-    }
-    if (isElementError(error)) {
-      return this.transformToWorkspaceError(error)
-    }
-    return { ...error, sourceFragments: [] }
-  }
-
-  async getStateRecency(): Promise<StateRecency> {
-    const staleStateThresholdMs = this.config.staleStateThresholdMinutes * 60 * 1000
-    const date = await this.state.getUpdateDate()
-    const status = (() => {
-      if (date === null) {
-        return 'Nonexistent'
+      sourceFragments: [await getSourceFragment(error.subject)],
+    })
+    const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
+    Promise<Readonly<WorkspaceError<T>>> => {
+      const sourceRanges = await blueprintsSource.getSourceRanges(saltoElemErr.elemID)
+      const sourceFragments = await Promise.all(sourceRanges.map(getSourceFragment))
+      return {
+        ...saltoElemErr,
+        message: saltoElemErr.message,
+        sourceFragments,
       }
-      if (Date.now() - date.getTime() >= staleStateThresholdMs) {
-        return 'Old'
+    }
+    const transformError = async (error: SaltoError): Promise<WorkspaceError<SaltoError>> => {
+      const isParseError = (err: SaltoError): err is ParseError =>
+        _.has(err, 'subject')
+      const isElementError = (err: SaltoError): err is SaltoElementError =>
+        _.get(err, 'elemID') instanceof ElemID
+
+      if (isParseError(error)) {
+        return transformParseError(error)
       }
-      return 'Valid'
-    })()
-    return { status, date }
-  }
+      if (isElementError(error)) {
+        return transformToWorkspaceError(error)
+      }
+      return { ...error, sourceFragments: [] }
+    }
 
-  async flush(): Promise<void> {
-    await this.state.flush()
-    await this.blueprintsSource.flush()
-  }
+    const errors = async (): Promise<Errors> => {
+      const resolvedElements = await elements()
+      return new Errors({
+        ...await blueprintsSource.getErrors(),
+        validation: validateElements(resolvedElements),
+      })
+    }
+    return {
+      uid: workspaceConfig.value.uid,
+      name: workspaceConfig.value.name,
+      elements,
+      state,
+      envs,
+      currentEnv,
+      services,
+      errors,
+      hasErrors: async () => (await errors()).hasErrors(),
+      servicesCredentials: async () => _.fromPairs(await Promise.all(services()
+        .map(async service => [service, await config.get(`${currentEnv}/${CREDENTIALS_CONFIG}/${service}`)]))),
+      servicesConfig: async () => _.fromPairs(await Promise.all(services()
+        .map(async service => [service, await config.get(`${ADAPTERS_CONFIGS}/${service}`)]))),
+      isEmpty: async (blueprintsOnly = false): Promise<boolean> => {
+        const notConfig = (elem: Element): boolean => !elem.elemID.isConfig()
+        const isBlueprintsSourceEmpty = _.isEmpty((await elements()).filter(notConfig))
+        const isStateEmpty = _.isEmpty((await state().getAll()).filter(notConfig))
+        return blueprintsOnly === true
+          ? isBlueprintsSourceEmpty
+          : isBlueprintsSourceEmpty && isStateEmpty
+      },
+      setBlueprints: blueprintsSource.setBlueprints,
+      updateBlueprints: blueprintsSource.updateBlueprints,
+      removeBlueprints: blueprintsSource.removeBlueprints,
+      getSourceMap: blueprintsSource.getSourceMap,
+      getSourceRanges: blueprintsSource.getSourceRanges,
+      listBlueprints: blueprintsSource.listBlueprints,
+      getBlueprint: blueprintsSource.getBlueprint,
+      getElements: blueprintsSource.getElements,
+      transformToWorkspaceError,
+      transformError,
+      getSourceFragment,
+      getWorkspaceErrors: async (): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> => {
+        const resolvedErrors = await errors()
+        return Promise.all(
+          _.flatten(_.partition(
+            [...resolvedErrors.parse, ...resolvedErrors.merge, ...resolvedErrors.validation],
+            val => val.severity === 'Error'
+          )).slice(0, MAX_ERROR_NUMBER).map(transformError)
+        )
+      },
+      flush: async (): Promise<void> => {
+        await state().flush()
+        await blueprintsSource.flush()
+      },
+      clone: (): Promise<Workspace> => {
+        const sources = _.mapValues(elementsSources, source =>
+          ({ blueprints: source.blueprints.clone(), state: source.state }))
+        return loadWorkspace(config, sources)
+      },
 
-  clone(): Workspace {
-    return new Workspace(
-      this.config,
-      this.blueprintsSource.clone()
-    )
-  }
+      addService: async (service: string): Promise<void> => {
+        const currentServices = services() || []
+        if (currentServices.includes(service)) {
+          throw new ServiceDuplicationError(service)
+        }
+        // TODO: verify this works!
+        currentEnvConf().services = [...services(), service]
+        await config.set(WORKSPACE_CONFIG, workspaceConfig)
+      },
+      updateServiceCredentials:
+      async (service: string, credentials: Readonly<InstanceElement>): Promise<void> =>
+        config.set(`${currentEnv}/${CREDENTIALS_CONFIG}/${service}`, credentials),
+      updateServiceConfig:
+      async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> =>
+        config.set(service, newConfig),
+      addEnvironment: async (env: string): Promise<void> => {
+        const currentEnvs = workspaceConfig.value.envs || []
+        if (currentEnvs.map((e: EnvConfig) => e.name).includes(env)) {
+          throw new EnvDuplicationError(env)
+        }
+        workspaceConfig.value.envs = [...currentEnvs, { name: env }]
+        await config.set(WORKSPACE_CONFIG, workspaceConfig)
+      },
+      setCurrentEnv: async (env: string, persist?: boolean): Promise<void> => {
+        if (!envs().includes(env)) {
+          throw new UnknownEnvError(env)
+        }
+        preferences.value.currentEnv = env
+        // TODO: think!
+        if (persist === false) {
+          await config.set(PREFERENCE_CONFIG, preferences)
+        }
+        blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),
+          currentEnv(), COMMON_ENV_PREFIX)
+      },
+
+      getStateRecency: async (): Promise<StateRecency> => {
+        const staleStateThresholdMs = workspaceConfig.value.staleStateThresholdMinutes * 60 * 1000
+        const date = await state().getUpdateDate()
+        const status = (() => {
+          if (date === null) {
+            return 'Nonexistent'
+          }
+          if (Date.now() - date.getTime() >= staleStateThresholdMs) {
+            return 'Old'
+          }
+          return 'Valid'
+        })()
+        return { status, date }
+      },
+    }
+}
+
+export const initWorkspace = async (
+  name: string,
+  uid: string,
+  defaultEnvName: string,
+  config: ConfigSource,
+  envs: EnviornmentsSources,
+): Promise<Workspace> => {
+  // TODO: validate we have single env + common?
+  await config.set(WORKSPACE_CONFIG, new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType,
+    { uid, name, envs: [{ name: defaultEnvName }] }))
+  await config.set(PREFERENCE_CONFIG, new InstanceElement(PREFERENCE_CONFIG,
+    preferencesWorkspaceConfigType, { currentEnv: defaultEnvName }))
+  return loadWorkspace(config, envs)
 }

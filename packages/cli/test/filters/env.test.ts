@@ -15,14 +15,13 @@
 */
 import { createCommandBuilder, YargsCommandBuilder } from '../../src/command_builder'
 import { CliExitCode } from '../../src/types'
-import { MockCliOutput, mockLoadConfig, cli } from '../mocks'
+import { MockCliOutput, cli, mockLoadWorkspace } from '../mocks'
 import { environmentFilter } from '../../src/filters/env'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
-  loadConfig: jest.fn().mockImplementation((workspaceDir: string) => mockLoadConfig(workspaceDir)),
+  loadLocalWorkspace: jest.fn().mockImplementation(() => mockLoadWorkspace('name')),
 }))
-
 describe('environment filter', () => {
   let out: MockCliOutput
   let buildFunc: jest.Mock

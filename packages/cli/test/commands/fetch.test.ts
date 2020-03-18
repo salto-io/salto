@@ -27,7 +27,7 @@ import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
-import { shouldWriteFailuresToSkippedList } from '../../src/callbacks'
+import { shouldUpdateConfig } from '../../src/callbacks'
 
 const commandName = 'fetch'
 const eventsNames = {
@@ -51,7 +51,7 @@ jest.mock('@salto-io/core', () => ({
 jest.mock('../../src/workspace')
 jest.mock('../../src/callbacks', () => ({
   ...jest.requireActual('../../src/callbacks'),
-  shouldWriteFailuresToSkippedList: jest.fn().mockImplementation(),
+  shouldUpdateConfig: jest.fn().mockImplementation(),
 }))
 describe('fetch command', () => {
   let spinners: Spinner[]
@@ -226,7 +226,7 @@ describe('fetch command', () => {
       describe('with changes to write to config', () => {
         const workspaceDir = 'with-config-changes'
         let workspace: Workspace
-        (shouldWriteFailuresToSkippedList as jest.Mock)
+        (shouldUpdateConfig as jest.Mock)
           .mockResolvedValueOnce(Promise.resolve(true))
           .mockResolvedValueOnce(Promise.resolve(false))
         const newConfig = new InstanceElement(

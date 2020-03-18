@@ -23,7 +23,7 @@ import {
   StepEmitter,
   Telemetry,
 } from '@salto-io/core'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -37,7 +37,7 @@ import {
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
-  shouldWriteFailuresToSkippedList } from '../callbacks'
+  shouldUpdateConfig } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
@@ -45,6 +45,7 @@ import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
 const { makeArray } = collections.array
+const { series } = promises.array
 
 type approveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
@@ -126,21 +127,24 @@ export const fetchCommand = async (
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
-  if (_.some(await makeArray(fetchResult.configChanges)
+  const adaptersConfigChanges = makeArray(fetchResult.configChanges)
     .filter(change => !_.isEmpty(change.messages))
-    .reduce(async (prevRes, change): Promise<boolean[]> => {
-      await prevRes
+  const adaptersRequiresConfigChanges: boolean[] = await series(
+    adaptersConfigChanges.map(change => async () => {
       const adapterName = change.config.elemID.adapter
       log.debug(`Failed to fetch the following elements on ${adapterName
       }:\n${change.messages.join('\n')}`)
-      const shouldWriteToConfig = await shouldWriteFailuresToSkippedList(
+      const shouldWriteToConfig = await shouldUpdateConfig(
         adapterName, change.messages
       )
       if (shouldWriteToConfig) {
         await workspace.adapterConfig.set(adapterName, change.config)
       }
-      return (await prevRes).concat(!shouldWriteToConfig)
-    }, Promise.resolve([] as boolean[])))) {
+      return Promise.resolve(!shouldWriteToConfig)
+    })
+  )
+
+  if (_.some(adaptersRequiresConfigChanges)) {
     return CliExitCode.UserInputError
   }
 

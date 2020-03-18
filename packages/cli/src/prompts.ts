@@ -135,11 +135,11 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`
     } - do you want to abort?`
 
-  public static readonly SHOULD_UPDATE_SKIPPED_LIST = (
-    adapterName: string, numFailures: number, messages: string[]
+  public static readonly SHOULD_UPDATE_CONFIG = (
+    adapterName: string, messages: string[]
   ): string =>
-    `Failed to fetch ${numFailures === 1 ? 'an element' : `${numFailures} elements`} from ${adapterName
-    }\n${messages.join('\n')}\nDo you want to add them to the skipped list?`
+    `Fetch on ${adapterName} imply that changes on the config needs to be done\n${
+      messages.join('\n')}\nDo you want to update your config file accordingly?`
 
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`

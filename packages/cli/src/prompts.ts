@@ -136,10 +136,12 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     } - do you want to abort?`
 
   public static readonly SHOULD_UPDATE_CONFIG = (
-    adapterName: string, messages: string[]
+    adapterName: string, numMessages: number, messages: string[]
   ): string =>
-    `Fetch on ${adapterName} imply that changes on the config needs to be done\n${
-      messages.join('\n')}\nDo you want to update your config file accordingly?`
+    `Fetching ${adapterName} requires the following changes to the config in order to succeed:
+${numMessages > messages.length ? `Showing ${messages.length} out of ${numMessages} messages\n` : ''
+}${messages.join('\n')}
+Do you want to update your config file accordingly?`
 
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`

@@ -37,7 +37,7 @@ import {
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
-  shouldUpdateConfig } from '../callbacks'
+  shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
@@ -52,11 +52,16 @@ type approveChangesFunc = (
   interactive: boolean
 ) => Promise<ReadonlyArray<FetchChange>>
 
+type shouldUpdateConfigFunc = (
+  adapterName: string,
+  messages: string[]
+) => Promise<boolean>
+
 export const fetchCommand = async (
   {
     workspace, force, interactive, strict,
     inputServices, cliTelemetry, output, fetch,
-    getApprovedChanges,
+    getApprovedChanges, shouldUpdateConfig,
   }: {
     workspace: Workspace
     force: boolean
@@ -66,6 +71,7 @@ export const fetchCommand = async (
     output: CliOutput
     fetch: fetchFunc
     getApprovedChanges: approveChangesFunc
+    shouldUpdateConfig: shouldUpdateConfigFunc
     inputServices: string[]
   }): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
@@ -129,7 +135,7 @@ export const fetchCommand = async (
 
   const adaptersConfigChanges = makeArray(fetchResult.configChanges)
     .filter(change => !_.isEmpty(change.messages))
-  const adaptersRequiresConfigChanges: boolean[] = await series(
+  const abortRequests = await series(
     adaptersConfigChanges.map(change => async () => {
       const adapterName = change.config.elemID.adapter
       log.debug(`Failed to fetch the following elements on ${adapterName
@@ -140,11 +146,11 @@ export const fetchCommand = async (
       if (shouldWriteToConfig) {
         await workspace.adapterConfig.set(adapterName, change.config)
       }
-      return Promise.resolve(!shouldWriteToConfig)
+      return !shouldWriteToConfig
     })
   )
 
-  if (_.some(adaptersRequiresConfigChanges)) {
+  if (_.some(abortRequests)) {
     return CliExitCode.UserInputError
   }
 
@@ -206,6 +212,7 @@ export const command = (
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
       strict,
+      shouldUpdateConfig: cliShouldUpdateConfig,
     })
   },
 })

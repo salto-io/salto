@@ -473,7 +473,9 @@ export const formatShouldAbortWithValidationError = (numErrors: number): string 
   error(Prompts.SHOULD_ABORT(numErrors))
 
 export const formatShouldUpdateConfig = (adapterName: string, messages: string[]):
-string => Prompts.SHOULD_UPDATE_CONFIG(adapterName, messages.slice(0, MAX_MESSAGES_TO_LOG))
+string => Prompts.SHOULD_UPDATE_CONFIG(
+  adapterName, messages.length, messages.slice(0, MAX_MESSAGES_TO_LOG)
+)
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 

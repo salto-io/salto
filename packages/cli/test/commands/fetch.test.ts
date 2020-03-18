@@ -19,7 +19,7 @@ import { ElemID, ObjectType, Element, InstanceElement } from '@salto-io/adapter-
 import {
   Workspace, fetch, FetchChange,
   DetailedChange, FetchProgressEvents,
-  StepEmitter, adapterCreators,
+  StepEmitter,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand } from '../../src/commands/fetch'
@@ -27,7 +27,6 @@ import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
-import { shouldUpdateConfig } from '../../src/callbacks'
 
 const commandName = 'fetch'
 const eventsNames = {
@@ -46,13 +45,8 @@ jest.mock('@salto-io/core', () => ({
     configChanges: [],
     success: true,
   })),
-  // configSource: jest.fn().mockImplementation(() => ({ get: jest.fn(), set: jest.fn() })),
 }))
 jest.mock('../../src/workspace')
-jest.mock('../../src/callbacks', () => ({
-  ...jest.requireActual('../../src/callbacks'),
-  shouldUpdateConfig: jest.fn().mockImplementation(),
-}))
 describe('fetch command', () => {
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
@@ -146,6 +140,7 @@ describe('fetch command', () => {
         { changes: [], mergeErrors: [], configChanges: [], success: false }
       )
       const mockEmptyApprove = jest.fn().mockResolvedValue([])
+      const mockUpdateConfig = jest.fn().mockResolvedValue(true)
       const mockConfigSourceSet = jest.fn()
 
       const mockWorkspace = (elements?: Element[]): Workspace => ({
@@ -185,6 +180,7 @@ describe('fetch command', () => {
             cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockEmptyApprove,
+            shouldUpdateConfig: mockUpdateConfig,
           })
         })
         it('should start at least one step', () => {
@@ -212,6 +208,7 @@ describe('fetch command', () => {
             cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
+            shouldUpdateConfig: mockUpdateConfig,
           })
         })
         it('should not update workspace', () => {
@@ -226,12 +223,12 @@ describe('fetch command', () => {
       describe('with changes to write to config', () => {
         const workspaceDir = 'with-config-changes'
         let workspace: Workspace
-        (shouldUpdateConfig as jest.Mock)
+        const mockShouldUpdateConfig = jest.fn()
           .mockResolvedValueOnce(Promise.resolve(true))
           .mockResolvedValueOnce(Promise.resolve(false))
         const newConfig = new InstanceElement(
           services[0],
-          adapterCreators[services[0]]?.configType as ObjectType,
+          new ObjectType({ elemID: new ElemID('salesforce') }),
           {
             metadataTypesSkippedList: ['Skipped'],
           }
@@ -263,6 +260,7 @@ describe('fetch command', () => {
             output: cliOutput,
             fetch: mockFetchWithChanges,
             getApprovedChanges: mockEmptyApprove,
+            shouldUpdateConfig: mockShouldUpdateConfig,
           })
         })
 
@@ -304,6 +302,7 @@ describe('fetch command', () => {
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
+              shouldUpdateConfig: mockUpdateConfig,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -330,6 +329,7 @@ describe('fetch command', () => {
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
               strict: true,
+              shouldUpdateConfig: mockUpdateConfig,
             })
             expect(result).toBe(CliExitCode.Success)
           })
@@ -354,6 +354,7 @@ describe('fetch command', () => {
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
+              shouldUpdateConfig: mockUpdateConfig,
             })
           })
           it('should deploy all changes', () => {
@@ -378,6 +379,7 @@ describe('fetch command', () => {
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockEmptyApprove,
+                shouldUpdateConfig: mockUpdateConfig,
               })
             })
             it('should not update workspace', () => {
@@ -406,6 +408,7 @@ describe('fetch command', () => {
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
+                shouldUpdateConfig: mockUpdateConfig,
               })
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(1)
@@ -435,6 +438,7 @@ describe('fetch command', () => {
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
+                shouldUpdateConfig: mockUpdateConfig,
               })
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(1)
@@ -461,6 +465,7 @@ describe('fetch command', () => {
                 output: cliOutput,
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
+                shouldUpdateConfig: mockUpdateConfig,
               })
               const calls = findWsUpdateCalls(workspaceDir)
               expect(calls).toHaveLength(1)
@@ -483,6 +488,7 @@ describe('fetch command', () => {
                 output: cliOutput,
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockSingleChangeApprove,
+                shouldUpdateConfig: mockUpdateConfig,
               })
               expect(cliOutput.stderr.content).toContain('Error')
               const calls = findWsUpdateCalls(workspaceDir)

@@ -126,18 +126,6 @@ jobs:
       - run: yarn build
 
       - run:
-          name: verify that the NOTICES files should not be changed
-          command: |
-            yarn run generate-notices-file
-            notices_diff=$(git diff NOTICES)
-            if [ ! -z "$notices_diff" ]; then
-              echo "NOTICES file need to be regenerated;"
-              echo "please run 'docker run --rm -it -v$(greadlink -f .):/salto --workdir /salto circleci/node:12.12 yarn run generate-notices-file'"
-              echo -e "diff:\n$notices_diff"
-              exit 1
-            fi
-
-      - run:
           name: create packages_build_cache.tar.gz
           # Note: The build cache cannot include the dist directories -
           # they might contain old (e.g. renamed) files, which will leak into the current dist.

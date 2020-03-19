@@ -138,8 +138,9 @@ export const fetchCommand = async (
   const abortRequests = await series(
     adaptersConfigChanges.map(change => async () => {
       const adapterName = change.config.elemID.adapter
-      log.debug(`Failed to fetch the following elements on ${adapterName
-      }:\n${change.messages.join('\n')}`)
+      log.debug(`Fetching ${adapterName} requires changes to the config in order to succeed:\n${
+        change.messages.join('\n')
+      }`)
       const shouldWriteToConfig = await shouldUpdateConfig(
         adapterName, change.messages
       )

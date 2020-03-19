@@ -146,7 +146,9 @@ describe('salesforce client', () => {
         .times(10)
         .reply(200, workingReadReplay, headers)
       // create an array with 30 names so we will have 3 calls (chunk size is 10 for readMetadata)
-      const result = await client.readMetadata('FakeType', Array.from({ length: 30 }, () => 'FakeName'))
+      const { result } = await client.readMetadata(
+        'FakeType', Array.from({ length: 30 }, () => 'FakeName')
+      )
       expect(result).toHaveLength(12)
       expect(dodoScope.isDone()).toBeTruthy()
     })
@@ -157,8 +159,9 @@ describe('salesforce client', () => {
         .times(22)
         .reply(500, 'server error')
       // create an array with 20 names so we will have 2 calls
-      await expect(client.readMetadata('FakeType', Array.from({ length: 20 }, () => 'FakeName')))
-        .rejects.toEqual(new Error('server error'))
+      const fakeTypes = Array.from({ length: 20 }, () => 'FakeName')
+      const { errors } = await client.readMetadata('FakeType', fakeTypes)
+      expect(errors).toEqual(fakeTypes)
       expect(dodoScope.isDone()).toBeTruthy()
     })
   })
@@ -181,7 +184,7 @@ describe('salesforce client', () => {
         .times(1)
         .reply(200, workingReadReplay)
 
-      const result = await client.readMetadata('QuickAction', ['SendEmail', 'LogACall'])
+      const { result } = await client.readMetadata('QuickAction', ['SendEmail', 'LogACall'])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
     })

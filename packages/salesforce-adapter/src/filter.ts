@@ -18,11 +18,12 @@ import { SaveResult, UpsertResult } from 'jsforce-types'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
+import { FetchError } from './types'
 
 // Filter interface, filters will be activated upon adapter fetch, add, update and remove
 // operations. The filter will be responsible for specific business logic.
 export type Filter = Partial<{
-  onFetch(elements: Element[]): Promise<void>
+  onFetch(elements: Element[]): Promise<FetchError[] | void>
   onAdd(after: Element): Promise<(SaveResult| UpsertResult)[]>
   onUpdate(before: Element, after: Element, changes: Iterable<Change>):
     Promise<(SaveResult| UpsertResult)[]>
@@ -43,10 +44,13 @@ export const filtersRunner = (client: SalesforceClient,
     _.flatten(await Promise.all(filtersWith(m).map(run)))
 
   return {
-    onFetch: async (elements: Element[]): Promise<void> =>
+    // TODO - Should return void or list of FetchError
+    onFetch: async (elements: Element[]): Promise<FetchError[]> =>
       filtersWith('onFetch').reduce(
-        (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
-        Promise.resolve(),
+        async (prevRes, filter) => {
+          await prevRes
+          return (await prevRes).concat(((await filter.onFetch(elements)) ?? []) as FetchError[])
+        }, Promise.resolve([] as FetchError[]),
       ),
 
     onAdd: async (after: Element): Promise<(SaveResult| UpsertResult)[]> =>

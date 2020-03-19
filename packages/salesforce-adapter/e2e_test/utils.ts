@@ -27,12 +27,13 @@ import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, createMetadataTypeElements } from '../src/transformers/transformer'
+import { FetchError } from '../src/types'
 
 const { makeArray } = collections.array
 
 export const getMetadata = async (client: SalesforceClient, type: string, fullName: string):
 Promise<MetadataInfo | undefined> => {
-  const instanceInfo = (await client.readMetadata(type, fullName))[0]
+  const instanceInfo = (await client.readMetadata(type, fullName)).result[0]
   if (instanceInfo && instanceInfo.fullName) {
     return instanceInfo
   }
@@ -130,5 +131,5 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
 }
 
 export const runFiltersOnFetch = async (client: SalesforceClient, fetchResult: Element[]):
-Promise<void> =>
+Promise<void | FetchError[]> =>
   filtersRunner(client, DEFAULT_FILTERS).onFetch(fetchResult)

@@ -88,8 +88,8 @@ describe('Standard Value Sets filter', () => {
 
   beforeEach(() => {
     client.readMetadata = jest.fn().mockImplementationOnce(() =>
-      [createStandardValueSetMetadataInfo('Simpsons', ['Bart', 'Homer', 'Lisa']),
-        createStandardValueSetMetadataInfo('Numbers', ['One', 'Two', 'Three'])])
+      ({ result: [createStandardValueSetMetadataInfo('Simpsons', ['Bart', 'Homer', 'Lisa']),
+        createStandardValueSetMetadataInfo('Numbers', ['One', 'Two', 'Three'])] }))
     filter = filterCreator(client)
   })
 

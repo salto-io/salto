@@ -19,18 +19,19 @@ import {
   Element, ObjectType, InstanceElement, isObjectType, Field, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
-import SalesforceClient from '../client/client'
+// import { logger } from '@salto-io/logging'
+import SalesforceClient, { SendChunkedResult } from '../client/client'
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import {
   metadataType, apiName, createInstanceElement, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
 import { extractFullNamesFromValueList } from './utils'
+import { FetchError, FetchElements } from '../types'
 
 const { makeArray } = collections.array
 
-const log = logger(module)
+// const log = logger(module)
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const STANDARD_VALUE = 'standardValue'
@@ -166,23 +167,23 @@ const findStandardValueSetType = (elements: Element[]): ObjectType | undefined =
     (element: Element) => metadataType(element) === STANDARD_VALUE_SET
   ) as ObjectType | undefined
 
-const fetchStandardValueSets = (
+const fetchStandardValueSets = async (
   standardValueSets: Set<string>,
   client: SalesforceClient
-): Promise<MetadataInfo[]> =>
+): Promise<SendChunkedResult<string, MetadataInfo>> =>
   client.readMetadata(STANDARD_VALUE_SET, [...standardValueSets])
 
 const createSVSInstances = async (
   standardValueSetNames: Set<string>,
   client: SalesforceClient,
-  svsMetadataType: ObjectType): Promise<InstanceElement[]> => {
-  try {
-    const valueSets = await fetchStandardValueSets(standardValueSetNames, client)
-    return createStandardValueSetInstances(valueSets, svsMetadataType)
-  } catch (e) {
-    log.error('failed to fetch standard value set %o reason: %o', standardValueSetNames, e)
-    return []
-  }
+  svsMetadataType: ObjectType): Promise<FetchElements<InstanceElement>> => {
+  const { result: valueSets, errors } = await fetchStandardValueSets(
+    standardValueSetNames, client
+  )
+  return { errors: makeArray(errors).map(e => (
+    { type: 'instancesRegexSkippedList', value: `${STANDARD_VALUE_SET}.${e}` }
+  )),
+  elements: createStandardValueSetInstances(valueSets, svsMetadataType) }
 }
 
 const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[]): void => {
@@ -212,18 +213,19 @@ export const makeFilter = (
    *
    * @param elements the already fetched elements
    */
-  onFetch: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<FetchError[]> => {
     const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
     if (svsMetadataType !== undefined) {
       const svsInstances = await createSVSInstances(standardValueSetNames, client, svsMetadataType)
-      elements.push(...svsInstances)
-      updateSVSReferences(elements, svsInstances)
-    } else {
-      // [GF] No StandardValueSet MetadataType was found.
-      // Is this considered an error?
-      // Not sure about handling this case,
-      // we want to at least log this for sure.
+      elements.push(...svsInstances.elements)
+      updateSVSReferences(elements, svsInstances.elements)
+      return svsInstances.errors
     }
+    // [GF] No StandardValueSet MetadataType was found.
+    // Is this considered an error?
+    // Not sure about handling this case,
+    // we want to at least log this for sure.
+    return [] as FetchError[]
   },
 })
 

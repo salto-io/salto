@@ -19,15 +19,17 @@ import {
   ObjectType, TypeElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { MetadataInfo } from 'jsforce-types'
+import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
 import {
   createInstanceElement, createMetadataTypeElements, apiName,
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { id } from './utils'
+import { FetchElements, FetchError, INSTANCES_REGEX_SKIPPED_LIST } from '../types'
 
 const log = logger(module)
+const { makeArray } = collections.array
 
 export const SETTINGS_METADATA_TYPE = 'Settings'
 
@@ -64,27 +66,28 @@ const extractSettingName = (settingType: string): string =>
 const createSettingsInstance = async (
   client: SalesforceClient,
   settingsType: ObjectType
-): Promise<InstanceElement[]> => {
+): Promise<FetchElements<InstanceElement>> => {
   const typeName = apiName(settingsType)
-  let metadataInfos: MetadataInfo[] = []
-  try {
-    metadataInfos = await client.readMetadata(typeName, extractSettingName(typeName))
-  } catch (e) {
-    log.error('failed to fetch settings instances of type %s reason: %o', typeName, e)
-  }
-  return metadataInfos
+  const { result: metadataInfos, errors } = await client.readMetadata(
+    typeName, extractSettingName(typeName)
+  )
+  return { elements: metadataInfos
     .filter(m => m.fullName !== undefined)
-    .map(m => createInstanceElement(m, settingsType))
+    .map(m => createInstanceElement(m, settingsType)),
+  errors: makeArray(errors).map(e => (
+    { type: INSTANCES_REGEX_SKIPPED_LIST, value: `${typeName}.${e}` }
+  )) }
 }
 
 const createSettingsInstances = async (
   client: SalesforceClient,
   settingsTypes: ObjectType[]
-): Promise<InstanceElement[]> => {
+): Promise<FetchElements<InstanceElement>> => {
   const settingInstances = await Promise.all((settingsTypes)
     .filter(s => s.isSettings)
     .map(s => createSettingsInstance(client, s)))
-  return _.flatten(settingInstances)
+  return { elements: _.flatten(settingInstances.map(ins => ins.elements)),
+    errors: _.flatten(settingInstances.map(ins => ins.errors)) }
 }
 
 /**
@@ -96,9 +99,11 @@ const filterCreator: FilterCreator = ({ client }) => ({
    *
    * @param elements
    */
-  onFetch: async (elements: Element[]): Promise<void> => {
+  onFetch: async (elements: Element[]): Promise<FetchError[]> => {
     // Fetch list of all settings types
-    const settingsList = await client.listMetadataObjects({ type: SETTINGS_METADATA_TYPE })
+    const { result: settingsList } = await client.listMetadataObjects(
+      { type: SETTINGS_METADATA_TYPE }
+    )
 
     // Extract settings names
     const settingsTypesNames = settingsList.map(set => set.fullName)
@@ -117,7 +122,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     // Create all settings instances
     const settingsInstances = await createSettingsInstances(client, settingsTypes)
 
-    settingsInstances.forEach(e => elements.push(e))
+    settingsInstances.elements.forEach(e => elements.push(e))
+    return settingsInstances.errors
   },
 })
 

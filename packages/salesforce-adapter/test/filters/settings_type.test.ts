@@ -71,7 +71,7 @@ describe('Test Settings Type', () => {
 
     beforeEach(() => {
       mockListMetadataObjects = jest.fn()
-        .mockImplementationOnce(async () => [{ fullName: 'Macro' }])
+        .mockImplementationOnce(async () => ({ result: [{ fullName: 'Macro' }] }))
 
       mockDescribeMetadata = jest.fn().mockImplementationOnce(async () => [
         {
@@ -107,9 +107,9 @@ describe('Test Settings Type', () => {
       ])
 
       mockReadMetadata = jest.fn()
-        .mockImplementationOnce(() => [
+        .mockImplementationOnce(() => ({ result: [
           { fullName: 'Macro', enableAdvancedSearch: false, macrosInFolders: false },
-        ])
+        ] }))
 
       SalesforceClient.prototype.listMetadataObjects = mockListMetadataObjects
       SalesforceClient.prototype.describeMetadataType = mockDescribeMetadata

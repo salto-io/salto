@@ -16,80 +16,16 @@
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator,
-  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, ListType,
+  InstanceElement, AdapterCreator,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
-import * as constants from './constants'
 import { changeValidator } from './change_validator'
 import { dependencyChanger } from './dependency_changer'
-import SalesforceAdapter, { SalesforceConfig } from './adapter'
+import SalesforceAdapter from './adapter'
+import { configType, credentialsType, SalesforceConfig } from './types'
 
 const { makeArray } = collections.array
 const log = logger(module)
-
-const configID = new ElemID('salesforce')
-
-const credentialsType = new ObjectType({
-  elemID: configID,
-  fields: {
-    username: new Field(configID, 'username', BuiltinTypes.STRING),
-    password: new Field(configID, 'password', BuiltinTypes.STRING),
-    token: new Field(configID, 'token', BuiltinTypes.STRING,
-      { message: 'Token (empty if your org uses IP whitelisting)' }),
-    sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
-  },
-})
-
-const configType = new ObjectType({
-  elemID: configID,
-  fields: {
-    metadataTypesSkippedList: new Field(
-      configID,
-      'metadataTypesSkippedList',
-      new ListType(BuiltinTypes.STRING),
-      {
-        [CORE_ANNOTATIONS.DEFAULT]: [
-          'Report', 'ReportType', 'ReportFolder', 'Dashboard', 'DashboardFolder',
-        ],
-      },
-    ),
-    instancesRegexSkippedList: new Field(
-      configID,
-      'instancesRegexSkippedList',
-      new ListType(BuiltinTypes.STRING),
-      {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
-      },
-    ),
-    maxConcurrentRetrieveRequests: new Field(
-      configID,
-      'maxConcurrentRetrieveRequests',
-      BuiltinTypes.NUMBER,
-      {
-        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
-        [CORE_ANNOTATIONS.RESTRICTION]: {
-          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
-          [RESTRICTION_ANNOTATIONS.MIN]: 1,
-          [RESTRICTION_ANNOTATIONS.MAX]: 25,
-        },
-      },
-    ),
-    maxItemsInRetrieveRequest: new Field(
-      configID,
-      'maxItemsInRetrieveRequest',
-      BuiltinTypes.NUMBER,
-      {
-        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-        [CORE_ANNOTATIONS.RESTRICTION]: {
-          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
-          [RESTRICTION_ANNOTATIONS.MIN]: 1000,
-          [RESTRICTION_ANNOTATIONS.MAX]: 10000,
-        },
-      },
-    ),
-  },
-})
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => ({
   username: config.value.username,

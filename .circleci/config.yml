@@ -1,17 +1,20 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@1.0.0
-  aws-s3: circleci/aws-s3@1.0.11
+  win: circleci/windows@2.2.0
+  aws-s3: circleci/aws-s3@1.0.15
 
 commands:
   set_s3_pkg_urls:
     steps:
       - run:
           name: Set S3 URLs according to date and git hash
+          environment:
+            GIT_REVISION: << pipeline.git.revision >>
+            PIPELINE_NUMBER: << pipeline.number >>
           command: |
             echo "export S3_PKG_BUCKET=salto-cli-releases" >> $BASH_ENV
-            echo "export PKG_PREFIX=$(git log -1 --format=format:'%cd_%h' --date=format:'%Y%m%d-%H%M%S')" >> $BASH_ENV
+            echo "export PKG_PREFIX=${GIT_REVISION:0:8}_${PIPELINE_NUMBER}" >> $BASH_ENV
             source $BASH_ENV
             echo "export S3_PKG_HASH_PREFIX=s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/${PKG_PREFIX}" >> $BASH_ENV
             source $BASH_ENV
@@ -232,6 +235,58 @@ jobs:
           workspace_dir: cli
           out_filename: cli
 
+  test_cli_mac:
+    macos:
+      xcode: 11.3.0
+
+    steps:
+      - set_s3_pkg_urls
+
+      - aws-s3/copy:
+          from: ${S3_PKG_HASH_PREFIX}/cli/mac/salto
+          to: .
+
+      - run:
+          command: chmod +x ./salto
+
+      - run:
+          name: run CLI --help
+          command: ./salto --help
+
+  test_cli_linux:
+    docker:
+      - image: circleci/node:12.12
+
+    steps:
+      - set_s3_pkg_urls
+
+      - aws-s3/copy:
+          from: ${S3_PKG_HASH_PREFIX}/cli/linux/salto
+          to: .
+
+      - run:
+          command: chmod +x ./salto
+
+      - run:
+          name: run CLI --help
+          command: ./salto --help
+
+  test_cli_win:
+    executor:
+      name: win/default
+      shell: bash.exe
+
+    steps:
+      - set_s3_pkg_urls
+
+      - aws-s3/copy:
+          from: ${S3_PKG_HASH_PREFIX}/cli/win/salto.exe
+          to: .
+
+      - run:
+          name: run CLI --help
+          command: ./salto.exe --help
+
   package_vscode_extension:
     docker:
       - image: circleci/node:12.12
@@ -253,10 +308,6 @@ jobs:
       - image: circleci/python
 
     steps:
-      # needed so set_s3_pkg_urls will have a git repo
-      - attach_workspace:
-          at: .
-
       - set_s3_pkg_urls
 
       - aws-s3/sync:
@@ -283,6 +334,18 @@ workflows:
       - e2e_test:
           requires:
             - build
+
+      - test_cli_mac:
+          requires:
+            - package_cli
+
+      - test_cli_linux:
+          requires:
+            - package_cli
+
+      - test_cli_win:
+          requires:
+            - package_cli
 
       - package_cli:
           requires:

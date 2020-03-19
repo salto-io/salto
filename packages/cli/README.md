@@ -2,6 +2,13 @@
 
 ### TODO high-level description of the project's goal
 
+### Download prebuilt executable binary releases
+
+Salto is releasing a prebuilt executable binary for all major operating systems.
+The prebuilt binaries are built using [`webpack`](https://github.com/webpack/webpack) and [`nexe`](https://github.com/nexe/nexe).
+
+> TODO specific instructions on how to download
+
 ### Build instructions
 
 ```bash
@@ -28,8 +35,10 @@ salto {
 
 ### Telemetry
 
-Salto CLI collects telemetry data. The data is being used by Salto to improve performance of the
-product as well as detect bugs and issues.
+Salto CLI collects and sends non personally identifiable usage data as part of its telemetry mechanism.
+
+The data is being used to improve the product's performance, as well as detect bugs and issues.
+
 Some of the things that telemetry helps us analyze are:
 
   * Slow `fetch` and `deploy`
@@ -39,7 +48,7 @@ Some of the things that telemetry helps us analyze are:
 #### Which data is being sent?
 
 The data that's being sent is strictly usage data along with metadata.
-No personal data being collected.
+No personal data is being collected.
 
 There are two main types of such data:
 
@@ -47,30 +56,26 @@ There are two main types of such data:
     * Number of changes upon `fetch`
     * Failed running some command (counting number of failures)
     * Started running some command
-  2. Stacktrace - Salto's binaries are being built with `webpack` and `next` - paths are always relative to the binary and not the user's paths
+  2. Stacktrace - the prebuilt binaries are being packaged with `webpack` ([see the prebuilt binary releases section](#download-prebuilt-executable-binary-releases)) so the file paths will be in the [custom webpack sourcemap protocol](https://webpack.js.org/configuration/output/#output-devtoolmodulefilenametemplate), thus no personal data will be sent.
 
 In addition to the usage data, the following metadata is being sent;
 
   * Operating system (platform, arch and release version)
   * Workspace ID: the ID of the specific workspace (uuidv4)
-  * Installation ID: an ID that is being generated in the first ever `salto init`. It's common to all of the workspaces
+  * Installation ID: an ID that is being generated in the first ever `salto init`. It's common to all of the workspaces on the same installation / computer
   * App (CLI) version
 
 #### Disable telemetry
 
-Any user can opt-out from sending usage data.
+Any user can opt-out of sending usage data.
 There are generally two ways of doing so:
 
   1. Setup the `SALTO_TELEMETRY_DISABLE` environment variables value to be `1`
-  2. In the CLI configuration file (`$SALTO_HOME/salto.config/config.bp` by default), setup the value of `telemetry` to be `false`.
+  2. In the CLI configuration file (`$SALTO_HOME/salto.config/config.bp` by default), set the value of `telemetry` to be `false`.
 
 By default, binary releases are generating the configuration file to be populated
 with telemetry enabled, however the environment variable `SALTO_TELEMETRY_DISABLE=1` will always
 have precedence over the config file.
 
-**For dev builds**, i.e. builds that are not binary builds released by Salto, the telemetry will be
-**disabled**, unless explicitly configured to send telemetry.
-If you want to enable telemetry for dev builds, please setup the following environment variables:
-
-  * `SALTO_TELEMETRY_URL` - the URL to which the usage data will be sent
-  * `SALTO_TELEMETRY_TOKEN` - the authorization token for the telemetry service
+**For dev builds**, i.e. builds that are not the prebuilt executables released by Salto, the telemetry will be
+**disabled**.

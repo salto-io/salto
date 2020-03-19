@@ -27,8 +27,18 @@ export interface DataModificationResult {
   errors: Set<string>
 }
 
+export interface ConfigChange {
+  config: InstanceElement
+  messages: string[]
+}
+
+export interface FetchResult {
+  elements: Element[]
+  configChange?: ConfigChange
+}
+
 export interface Adapter {
-  fetch(): Promise<Element[]>
+  fetch(): Promise<FetchResult>
   add(element: Element): Promise<Element>
   remove(element: Element): Promise<void>
   update(before: Element, after: Element, changes: Iterable<Change>): Promise<Element>

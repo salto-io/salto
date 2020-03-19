@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, InstanceElement, ObjectType,
+  Element, InstanceElement, ObjectType, FetchResult,
 } from '@salto-io/adapter-api'
 import {
   resolveReferences, restoreReferences,
@@ -70,7 +70,7 @@ export default class HubspotAdapter {
    * Fetch configuration elements: objects, types and instances for the given HubSpot account.
    * Account credentials were given in the constructor.
    */
-  public async fetch(): Promise<Element[]> {
+  public async fetch(): Promise<FetchResult> {
     const fieldTypes = Types.getAllFieldTypes()
     const objects = Object.values(Types.hubspotObjects)
     const subTypes = Types.hubspotSubTypes
@@ -80,7 +80,7 @@ export default class HubspotAdapter {
       [fieldTypes, objects, subTypes, instances] as Element[][]
     )
     await this.runFiltersOnFetch(elements)
-    return elements
+    return { elements }
   }
 
   private async fetchHubInstances(

@@ -23,6 +23,7 @@ import {
   StepEmitter,
   Telemetry,
 } from '@salto-io/core'
+import { collections, promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -35,35 +36,46 @@ import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
 } from '../formatter'
-import { getApprovedChanges as cliGetApprovedChanges } from '../callbacks'
+import { getApprovedChanges as cliGetApprovedChanges,
+  shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
+const { makeArray } = collections.array
+const { series } = promises.array
 
 type approveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
   interactive: boolean
 ) => Promise<ReadonlyArray<FetchChange>>
 
+type shouldUpdateConfigFunc = (
+  adapterName: string,
+  messages: string[]
+) => Promise<boolean>
+
+export type FetchCommandArgs = {
+  workspace: Workspace
+  force: boolean
+  interactive: boolean
+  strict?: boolean
+  cliTelemetry: CliTelemetry
+  output: CliOutput
+  fetch: fetchFunc
+  getApprovedChanges: approveChangesFunc
+  shouldUpdateConfig: shouldUpdateConfigFunc
+  inputServices: string[]
+}
+
 export const fetchCommand = async (
   {
     workspace, force, interactive, strict,
     inputServices, cliTelemetry, output, fetch,
-    getApprovedChanges,
-  }: {
-    workspace: Workspace
-    force: boolean
-    interactive: boolean
-    strict?: boolean
-    cliTelemetry: CliTelemetry
-    output: CliOutput
-    fetch: fetchFunc
-    getApprovedChanges: approveChangesFunc
-    inputServices: string[]
-  }): Promise<CliExitCode> => {
+    getApprovedChanges, shouldUpdateConfig,
+  }: FetchCommandArgs): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
     startText: string,
@@ -121,6 +133,28 @@ export const fetchCommand = async (
     log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
     cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
+  }
+
+  const adaptersConfigChanges = makeArray(fetchResult.configChanges)
+    .filter(change => !_.isEmpty(change.messages))
+  const abortRequests = await series(
+    adaptersConfigChanges.map(change => async () => {
+      const adapterName = change.config.elemID.adapter
+      log.debug(`Fetching ${adapterName} requires changes to the config in order to succeed:\n${
+        change.messages.join('\n')
+      }`)
+      const shouldWriteToConfig = await shouldUpdateConfig(
+        adapterName, change.messages
+      )
+      if (shouldWriteToConfig) {
+        await workspace.adapterConfig.set(adapterName, change.config)
+      }
+      return !shouldWriteToConfig
+    })
+  )
+
+  if (_.some(abortRequests)) {
+    return CliExitCode.UserInputError
   }
 
   // Unpack changes to array so we can iterate on them more than once
@@ -181,6 +215,7 @@ export const command = (
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
       strict,
+      shouldUpdateConfig: cliShouldUpdateConfig,
     })
   },
 })

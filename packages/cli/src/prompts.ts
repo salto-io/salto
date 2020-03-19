@@ -135,6 +135,14 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`
     } - do you want to abort?`
 
+  public static readonly SHOULD_UPDATE_CONFIG = (
+    adapterName: string, numMessages: number, messages: string[]
+  ): string =>
+    `Fetching ${adapterName} requires the following changes to the config in order to succeed:
+${numMessages > messages.length ? `Showing ${messages.length} out of ${numMessages} messages\n` : ''
+}${messages.join('\n')}
+Do you want to update your config file accordingly?`
+
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`
   public static readonly SERVICE_HOW_ADD = (serviceName: string): string => `Use \`salto services add ${serviceName}\` to add the service to the workspace`

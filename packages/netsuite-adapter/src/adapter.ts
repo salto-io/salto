@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Element, InstanceElement, ObjectType, FetchResult } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
 import { createInstanceElement, internalId, toNetsuiteRecord, toNetsuiteReference } from './transformer'
 import { Types } from './types'
@@ -45,10 +45,10 @@ export default class NetsuiteAdapter {
    * Fetch configuration elements: objects, types and instances for the given Netsuite account.
    * Account credentials were given in the constructor.
    */
-  public async fetch(): Promise<Element[]> {
+  public async fetch(): Promise<FetchResult> {
     const types = Types.getAllTypes()
     const instances = await this.fetchInstances(Types.getTypesWithInstances())
-    return _.flatten([types, instances] as Element[][])
+    return { elements: _.flatten([types, instances] as Element[][]) }
   }
 
   private async fetchInstances(types: ObjectType[]): Promise<InstanceElement[]> {

@@ -37,7 +37,7 @@ describe('Adapter', () => {
         }
         return Promise.resolve([])
       })
-      const elements = await netsuiteAdapter.fetch()
+      const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(Types.getAllTypes().length + 1)
       expect(elements).toContainEqual(Types.customizationTypes[ENTITY_CUSTOM_FIELD])
       expect(elements).toContainEqual(createInstanceElement(recordInList,

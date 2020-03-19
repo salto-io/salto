@@ -19,7 +19,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, ElemIdGetter,
+  ADAPTER, ElemIdGetter, ConfigChange,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -142,6 +142,7 @@ export type FetchChangesResult = {
   changes: Iterable<FetchChange>
   elements: Element[]
   mergeErrors: MergeErrorWithElements[]
+  configChanges: ConfigChange[]
 }
 
 export class FatalFetchMergeError extends Error {
@@ -207,11 +208,17 @@ const fetchAndProcessMergeErrors = async (
   adapters: Record<string, Adapter>,
   stateElements: ReadonlyArray<Element>,
   getChangesEmitter: StepEmitter):
-  Promise<{ serviceElements: Element[]; processErrorsResult: ProcessMergeErrorsResult }> => {
+  Promise<{
+    serviceElements: Element[]
+    processErrorsResult: ProcessMergeErrorsResult
+    configChanges: ConfigChange[]
+  }> => {
   try {
-    const serviceElements = _.flatten(await Promise.all(
-      Object.values(adapters).map(adapter => adapter.fetch())
-    ))
+    const fetchResults = await Promise.all(Object.values(adapters).map(adapter => adapter.fetch()))
+    const serviceElements = _.flatten(fetchResults.map(res => res.elements))
+    const configChanges = fetchResults
+      .map(res => res.configChange)
+      .filter(c => !_.isUndefined(c)) as ConfigChange[]
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
     log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
@@ -225,7 +232,7 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
       mergeErrors.length}]`)
-    return { serviceElements, processErrorsResult }
+    return { serviceElements, processErrorsResult, configChanges }
   } catch (error) {
     getChangesEmitter.emit('failed')
     throw error
@@ -270,7 +277,9 @@ export const fetchChanges = async (
   if (progressEmitter) {
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
-  const { serviceElements, processErrorsResult } = await fetchAndProcessMergeErrors(
+  const {
+    serviceElements, processErrorsResult, configChanges,
+  } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
     getChangesEmitter
@@ -303,6 +312,7 @@ export const fetchChanges = async (
     changes,
     elements: processErrorsResult.keptElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
+    configChanges,
   }
 }
 

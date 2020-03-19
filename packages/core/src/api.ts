@@ -21,6 +21,7 @@ import {
   ElemID,
   InstanceElement,
   ObjectType,
+  ConfigChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -132,6 +133,7 @@ export type FetchResult = {
   changes: Iterable<FetchChange>
   mergeErrors: MergeErrorWithElements[]
   success: boolean
+  configChanges: ConfigChange[]
 }
 export type fetchFunc = (
   workspace: Workspace,
@@ -164,7 +166,7 @@ export const fetch: fetchFunc = async (
     progressEmitter.emit('adaptersDidInitialize')
   }
   try {
-    const { changes, elements, mergeErrors } = await fetchChanges(
+    const { changes, elements, mergeErrors, configChanges } = await fetchChanges(
       adapters,
       filterElementsByServices(await workspace.elements, services),
       filteredStateElements,
@@ -176,6 +178,7 @@ export const fetch: fetchFunc = async (
       changes,
       mergeErrors,
       success: true,
+      configChanges,
     }
   } catch (error) {
     if (error instanceof FatalFetchMergeError) {
@@ -183,6 +186,7 @@ export const fetch: fetchFunc = async (
         changes: [],
         mergeErrors: error.causes,
         success: false,
+        configChanges: [],
       }
     }
     throw error

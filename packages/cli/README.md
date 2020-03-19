@@ -74,5 +74,3 @@ If you want to enable telemetry for dev builds, please setup the following envir
 
   * `SALTO_TELEMETRY_URL` - the URL to which the usage data will be sent
   * `SALTO_TELEMETRY_TOKEN` - the authorization token for the telemetry service
-
-Some events

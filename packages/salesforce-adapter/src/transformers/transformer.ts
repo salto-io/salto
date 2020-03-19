@@ -746,7 +746,7 @@ export class Types {
 
   public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
     return (customObject && this.getElemIdFunc && serviceIds)
-      ? (this.getElemIdFunc as ElemIdGetter)(SALESFORCE, serviceIds as ServiceIds, bpCase(name))
+      ? this.getElemIdFunc(SALESFORCE, serviceIds, bpCase(name))
       : new ElemID(SALESFORCE, bpCase(name))
   }
 

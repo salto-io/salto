@@ -57,23 +57,25 @@ type shouldUpdateConfigFunc = (
   messages: string[]
 ) => Promise<boolean>
 
+export type FetchCommandArgs = {
+  workspace: Workspace
+  force: boolean
+  interactive: boolean
+  strict?: boolean
+  cliTelemetry: CliTelemetry
+  output: CliOutput
+  fetch: fetchFunc
+  getApprovedChanges: approveChangesFunc
+  shouldUpdateConfig: shouldUpdateConfigFunc
+  inputServices: string[]
+}
+
 export const fetchCommand = async (
   {
     workspace, force, interactive, strict,
     inputServices, cliTelemetry, output, fetch,
     getApprovedChanges, shouldUpdateConfig,
-  }: {
-    workspace: Workspace
-    force: boolean
-    interactive: boolean
-    strict?: boolean
-    cliTelemetry: CliTelemetry
-    output: CliOutput
-    fetch: fetchFunc
-    getApprovedChanges: approveChangesFunc
-    shouldUpdateConfig: shouldUpdateConfigFunc
-    inputServices: string[]
-  }): Promise<CliExitCode> => {
+  }: FetchCommandArgs): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
     startText: string,

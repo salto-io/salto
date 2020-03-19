@@ -22,7 +22,7 @@ import {
   StepEmitter,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
-import { command, fetchCommand } from '../../src/commands/fetch'
+import { command, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
 import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
 import * as mockCliWorkspace from '../../src/workspace'
@@ -221,11 +221,8 @@ describe('fetch command', () => {
         })
       })
       describe('with changes to write to config', () => {
-        const workspaceDir = 'with-config-changes'
-        let workspace: Workspace
         const mockShouldUpdateConfig = jest.fn()
-          .mockResolvedValueOnce(Promise.resolve(true))
-          .mockResolvedValueOnce(Promise.resolve(false))
+        let fetchArgs: FetchCommandArgs
         const newConfig = new InstanceElement(
           services[0],
           new ObjectType({ elemID: new ElemID('salesforce') }),
@@ -233,25 +230,27 @@ describe('fetch command', () => {
             metadataTypesSkippedList: ['Skipped'],
           }
         )
-        const mockFetchWithChanges = jest.fn().mockResolvedValue(
-          {
-            changes: [],
-            configChanges: [
-              {
-                config: newConfig,
-                messages: ['Skipped'],
-              },
-            ],
-            mergeErrors: [],
-            success: true,
-          }
-        )
+
         beforeEach(async () => {
+          const workspaceDir = 'with-config-changes'
+          const mockFetchWithChanges = jest.fn().mockResolvedValue(
+            {
+              changes: [],
+              configChanges: [
+                {
+                  config: newConfig,
+                  messages: ['Skipped'],
+                },
+              ],
+              mergeErrors: [],
+              success: true,
+            }
+          )
           mockTelemetry = mocks.getMockTelemetry()
           mockConfigSourceSet.mockReset()
-          workspace = mockWorkspace()
+          const workspace = mockWorkspace()
           workspace.config.baseDir = workspaceDir
-          result = await fetchCommand({
+          fetchArgs = {
             workspace,
             force: true,
             interactive: false,
@@ -261,15 +260,19 @@ describe('fetch command', () => {
             fetch: mockFetchWithChanges,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockShouldUpdateConfig,
-          })
+          }
         })
 
-        it('should write config when continue was requested', () => {
+        it('should write config when continue was requested', async () => {
+          mockShouldUpdateConfig.mockResolvedValueOnce(Promise.resolve(true))
+          result = await fetchCommand(fetchArgs)
           expect(result).toBe(CliExitCode.Success)
           expect(mockConfigSourceSet).toHaveBeenCalledWith('salesforce', newConfig)
         })
 
-        it('should not write config when abort was requested', () => {
+        it('should not write config when abort was requested', async () => {
+          mockShouldUpdateConfig.mockResolvedValueOnce(Promise.resolve(false))
+          result = await fetchCommand(fetchArgs)
           expect(result).toBe(CliExitCode.UserInputError)
           expect(mockConfigSourceSet).not.toHaveBeenCalled()
         })

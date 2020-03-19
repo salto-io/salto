@@ -368,9 +368,10 @@ describe('formatter', () => {
       const formatted = formatShouldUpdateConfig(
         adapterName,
         Array.from(Array(MAX_MESSAGES_TO_LOG).keys()).map(num => num.toString())
+          .concat('not-exists')
       )
       expect(formatted).toContain((MAX_MESSAGES_TO_LOG - 1).toString())
-      expect(formatted).not.toContain((MAX_MESSAGES_TO_LOG + 1).toString())
+      expect(formatted).not.toContain('not-exists')
     })
   })
 

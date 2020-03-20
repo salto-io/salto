@@ -348,13 +348,11 @@ export default class SalesforceAdapter {
         metadataTypes, (await metadataInstances).elements]) as Element[][]
     )
     const filtersFetchErrors = ((await this.filtersRunner.onFetch(elements)) ?? []) as FetchError[]
-    // TODO should organize the errors
     const { errors } = (await metadataInstances)
     const allErrors = SalesforceAdapter.organizeErrorsByPriority(
       Array.from(new Set(errors.concat(filtersFetchErrors)))
     )
-    const config = this.getConfigChangeFromErrors(allErrors)
-    return { elements, configChange: config }
+    return { elements, configChange: this.getConfigChangeFromErrors(allErrors) }
   }
 
   /**
@@ -679,8 +677,16 @@ InstanceElement[] => {
   }
 
   private static organizeErrorsByPriority(errors: FetchError[]): FetchError[] {
-    // TODO implement this func
-    return errors
+    const metadataTypesSkippedList = errors.filter(e => e.type === METADATA_TYPES_SKIPPED_LIST)
+    const instancesRegexSkippedList = errors.filter(e => e.type === INSTANCES_REGEX_SKIPPED_LIST)
+    const instancesFirstIteration = _(instancesRegexSkippedList)
+      .groupBy(e => e.value.split('__')[0])
+      .values()
+      .map(e => e[0])
+      .value()
+    const otherInstances = instancesRegexSkippedList
+      .filter(e => !instancesFirstIteration.includes(e))
+    return metadataTypesSkippedList.concat(instancesFirstIteration).concat(otherInstances)
   }
 
   private getConfigChangeFromErrors(errors: FetchError[]): ConfigChange | undefined {
@@ -967,12 +973,10 @@ InstanceElement[] => {
     const retrievedInstances = await retrieveInstances(metadataTypesToRetrieve)
     const instances = await readInstances(metadataTypesToRead)
     const typesAndInstances = _.flatten([retrievedInstances, instances.elements])
-    // const typesAndInstances = _.flatten(await Promise.all(
-    //   [retrieveInstances(metadataTypesToRetrieve), readInstances(metadataTypesToRead)]
-    // ))
     return {
       elements: _(typesAndInstances)
         .map(typeAndInstances => typeAndInstances.namespaceAndInstances
+          .filter(namespaceAndInstance => !_.isEmpty(namespaceAndInstance))
           .filter(namespaceAndInstance => namespaceAndInstance.instanceInfo.fullName !== undefined)
           .map(namespaceAndInstance => createInstanceElement(namespaceAndInstance.instanceInfo,
             typeAndInstances.type, namespaceAndInstance.namespace)))
@@ -1013,7 +1017,7 @@ InstanceElement[] => {
       .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexSkippedList))
     const readMetadataResult = await this.client.readMetadata(type, instancesFullNames)
     const errors = readMetadataResult.errors
-      .map(e => ({ type: INSTANCES_REGEX_SKIPPED_LIST, value: e } as FetchError))
+      .map(e => ({ type: INSTANCES_REGEX_SKIPPED_LIST, value: `${type}.${e}` } as FetchError))
       .concat(listErrors)
 
     return {

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes,
-  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType,
+  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType, ConfigChange,
 } from '@salto-io/adapter-api'
 import { MetadataInfo, ListMetadataQuery } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
@@ -27,10 +27,16 @@ import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
+import { INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST,
+  MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
+  const defaultMetadataTypesSkippedList = ['Test1', 'Ignored1']
+  const defaultInstancesRegexSkippedList = ['Test2.instance1', 'SkippedList$']
+  const defaultMaxConcurrentRetrieveRequests = 4
+  const defaultMaxItemsInRetrieveRequest = 3000
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)
@@ -40,8 +46,12 @@ describe('SalesforceAdapter fetch', () => {
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
-        metadataTypesSkippedList: ['Test1', 'Ignored1'],
-        instancesRegexSkippedList: ['Test2.instance1', 'SkippedList$'],
+        config: {
+          metadataTypesSkippedList: defaultMetadataTypesSkippedList,
+          instancesRegexSkippedList: defaultInstancesRegexSkippedList,
+          maxConcurrentRetrieveRequests: defaultMaxConcurrentRetrieveRequests,
+          maxItemsInRetrieveRequest: defaultMaxItemsInRetrieveRequest,
+        },
       },
     }))
   })
@@ -759,6 +769,8 @@ describe('SalesforceAdapter fetch', () => {
 
     describe('should return errors when fetch on certain instances failed', () => {
       let result: FetchResult
+      let configChange: ConfigChange
+
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
         connection.metadata.describe = jest.fn().mockImplementation(async () => ({
@@ -784,11 +796,28 @@ describe('SalesforceAdapter fetch', () => {
           ({ complete: async () => ({ zipFile: '' }) }))
 
         result = await adapter.fetch()
+        configChange = result?.configChange as ConfigChange
       })
 
       it('should return configChange upon errors', () => {
-        const { configChange } = result
         expect(configChange).toBeDefined()
+      })
+
+      it('should return correct messages', () => {
+        expect(configChange.messages).toEqual(['MetadataTest2', 'MetadataTest1.instance1'])
+      })
+
+      it('should return correct config', () => {
+        expect(configChange.config.value).toEqual(
+          {
+            [INSTANCES_REGEX_SKIPPED_LIST]: ['MetadataTest1.instance1']
+              .concat(defaultInstancesRegexSkippedList),
+            [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
+              .concat(defaultMetadataTypesSkippedList),
+            [MAX_CONCURRENT_RETRIEVE_REQUESTS]: defaultMaxConcurrentRetrieveRequests,
+            [MAX_ITEMS_IN_RETRIEVE_REQUEST]: defaultMaxItemsInRetrieveRequest,
+          }
+        )
       })
     })
   })

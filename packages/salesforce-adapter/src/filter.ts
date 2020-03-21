@@ -44,7 +44,6 @@ export const filtersRunner = (client: SalesforceClient,
     _.flatten(await Promise.all(filtersWith(m).map(run)))
 
   return {
-    // TODO - Should return void or list of FetchError
     onFetch: async (elements: Element[]): Promise<FetchError[]> =>
       filtersWith('onFetch').reduce(
         async (prevRes, filter) => {

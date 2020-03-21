@@ -19,7 +19,6 @@ import {
   Element, ObjectType, InstanceElement, isObjectType, Field, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-// import { logger } from '@salto-io/logging'
 import SalesforceClient, { SendChunkedResult } from '../client/client'
 import { FilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
@@ -30,8 +29,6 @@ import { extractFullNamesFromValueList } from './utils'
 import { FetchError, FetchElements } from '../types'
 
 const { makeArray } = collections.array
-
-// const log = logger(module)
 
 export const STANDARD_VALUE_SET = 'StandardValueSet'
 export const STANDARD_VALUE = 'standardValue'

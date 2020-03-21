@@ -184,6 +184,7 @@ type SendChunkedArgs<TIn, TOut> = {
   operationName: keyof SalesforceClient
   chunkSize?: number
   isSuppressedError?: ErrorFilter
+  isUnhandledError?: ErrorFilter
 }
 export type SendChunkedResult<TIn, TOut> = {
   result: TOut[]
@@ -195,6 +196,7 @@ const sendChunked = async <TIn, TOut>({
   operationName,
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
   isSuppressedError = () => false,
+  isUnhandledError = () => true,
 }: SendChunkedArgs<TIn, TOut>): Promise<SendChunkedResult<TIn, TOut>> => {
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
@@ -215,7 +217,11 @@ const sendChunked = async <TIn, TOut>({
           operationName, chunkInput[0], error.message)
         return { result: [], errors: [] }
       }
-      log.error('chunked %s unrecoverable error on %o: %o', operationName, chunkInput[0], error)
+      if (isUnhandledError(error)) {
+        log.error('chunked %s unrecoverable error on %o: %o', operationName, chunkInput[0], error)
+        throw error
+      }
+      log.warn('chunked %s unknown error on %o: %o', operationName, chunkInput[0], error)
       return { result: [], errors: chunkInput }
     }
   }
@@ -327,6 +333,7 @@ export default class SalesforceClient {
       input: listMetadataQuery,
       sendChunk: chunk => this.conn.metadata.list(chunk),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
+      isUnhandledError: error => (!['sf:INVALID_TYPE'].includes(error.name)),
     })
   }
 
@@ -345,6 +352,7 @@ export default class SalesforceClient {
       isSuppressedError: error => (
         this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
       ),
+      isUnhandledError: error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
     })
   }
 

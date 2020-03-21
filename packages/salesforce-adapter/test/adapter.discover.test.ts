@@ -768,6 +768,12 @@ describe('SalesforceAdapter fetch', () => {
     })
 
     describe('should return errors when fetch on certain instances failed', () => {
+      class SFError extends Error {
+        constructor(name: string, message?: string) {
+          super(message)
+          this.name = name
+        }
+      }
       let result: FetchResult
       let configChange: ConfigChange
 
@@ -784,12 +790,12 @@ describe('SalesforceAdapter fetch', () => {
             if (typeName[0].type === 'MetadataTest1') {
               return [{ fullName: 'instance1' }]
             }
-            throw new Error('fake error')
+            throw new SFError('sf:INVALID_TYPE')
           }
         )
         connection.metadata.read = jest.fn().mockImplementation(
           async (_typeName: string, _fullNames: string | string[]) => {
-            throw new Error('fake error')
+            throw new SFError('sf:UNKNOWN_EXCEPTION')
           }
         )
         connection.metadata.retrieve = jest.fn().mockImplementation(() =>

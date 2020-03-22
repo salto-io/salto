@@ -134,7 +134,7 @@ export class UnresolvedReferenceValidationError extends ValidationError {
     { elemID, ref }:
     { elemID: ElemID; ref: string }
   ) {
-    super({ elemID, error: `unresolved reference ${ref}`, severity: 'Error' })
+    super({ elemID, error: `unresolved reference ${ref}`, severity: 'Warning' })
   }
 }
 

@@ -775,7 +775,7 @@ describe('SalesforceAdapter fetch', () => {
         }
       }
       let result: FetchResult
-      let configChange: ConfigChange
+      let config: ConfigInfo
 
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
@@ -802,19 +802,19 @@ describe('SalesforceAdapter fetch', () => {
           ({ complete: async () => ({ zipFile: '' }) }))
 
         result = await adapter.fetch()
-        configChange = result?.configChange as ConfigChange
+        config = result?.config as ConfigInfo
       })
 
-      it('should return configChange upon errors', () => {
-        expect(configChange).toBeDefined()
+      it('should return config upon errors', () => {
+        expect(config).toBeDefined()
       })
 
       it('should return correct messages', () => {
-        expect(configChange.messages).toEqual(['MetadataTest2', 'MetadataTest1.instance1'])
+        expect(config.messages).toEqual(['MetadataTest2', 'MetadataTest1.instance1'])
       })
 
       it('should return correct config', () => {
-        expect(configChange.config.value).toEqual(
+        expect(config.config.value).toEqual(
           {
             [INSTANCES_REGEX_SKIPPED_LIST]: ['MetadataTest1.instance1']
               .concat(defaultInstancesRegexSkippedList),

@@ -17,7 +17,7 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
-  DataModificationResult, Values, FetchResult, ConfigChange,
+  DataModificationResult, Values, FetchResult, ConfigInfo,
 } from '@salto-io/adapter-api'
 import {
   resolveReferences, restoreReferences,
@@ -58,12 +58,13 @@ import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
-import { configType, FetchError, FetchElements, SalesforceConfig,
-  METADATA_TYPES_SKIPPED_LIST, INSTANCES_REGEX_SKIPPED_LIST } from './types'
+import { FetchError, FetchElements, SalesforceConfig,
+  METADATA_TYPES_SKIPPED_LIST, INSTANCES_REGEX_SKIPPED_LIST, configType } from './types'
 import {
   FilterCreator, Filter, filtersRunner,
 } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
+import { sortErrorsForDisplay } from './adapter_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -134,29 +135,6 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
       )} and new=${apiName(newElement)} are different`
     )
   }
-}
-
-const calculateMergedConfig = (config: SalesforceConfig, otherConfig: SalesforceConfig):
-InstanceElement | undefined => {
-  const metadataTypesSkippedList = makeArray(otherConfig.metadataTypesSkippedList)
-    .filter(e => !makeArray(config.metadataTypesSkippedList).includes(e))
-  const instancesRegexSkippedList = makeArray(otherConfig.instancesRegexSkippedList)
-    .filter(e => !makeArray(config.instancesRegexSkippedList).includes(e))
-  if ([metadataTypesSkippedList, instancesRegexSkippedList].every(_.isEmpty)) {
-    return undefined
-  }
-  return new InstanceElement(
-    ElemID.CONFIG_NAME,
-    configType,
-    {
-      metadataTypesSkippedList: metadataTypesSkippedList
-        .concat(makeArray(config.metadataTypesSkippedList)),
-      instancesRegexSkippedList: instancesRegexSkippedList
-        .concat(makeArray(config.instancesRegexSkippedList)),
-      maxConcurrentRetrieveRequests: config.maxConcurrentRetrieveRequests,
-      maxItemsInRetrieveRequest: config.maxItemsInRetrieveRequest,
-    }
-  )
 }
 
 export interface SalesforceAdapterParams {
@@ -345,14 +323,16 @@ export default class SalesforceAdapter {
 
     const elements = _.flatten(
       await Promise.all([annotationTypes, fieldTypes,
-        metadataTypes, (await metadataInstances).elements]) as Element[][]
+        metadataTypes]) as Element[][]
     )
+    const { elements: metadataInstancesElements,
+      errors: metadataInstancesErrors } = await metadataInstances
+    elements.push(...metadataInstancesElements)
     const filtersFetchErrors = ((await this.filtersRunner.onFetch(elements)) ?? []) as FetchError[]
-    const { errors } = (await metadataInstances)
-    const allErrors = SalesforceAdapter.organizeErrorsByPriority(
-      Array.from(new Set(errors.concat(filtersFetchErrors)))
+    const allErrors = sortErrorsForDisplay(
+      Array.from(new Set(metadataInstancesErrors.concat(filtersFetchErrors)))
     )
-    return { elements, configChange: this.getConfigChangeFromErrors(allErrors) }
+    return { elements, config: this.getConfigInfoFromErrors(allErrors) }
   }
 
   /**
@@ -676,33 +656,30 @@ InstanceElement[] => {
     return []
   }
 
-  private static organizeErrorsByPriority(errors: FetchError[]): FetchError[] {
-    const metadataTypesSkippedList = errors.filter(e => e.type === METADATA_TYPES_SKIPPED_LIST)
-    const instancesRegexSkippedList = errors.filter(e => e.type === INSTANCES_REGEX_SKIPPED_LIST)
-    const instancesFirstIteration = _(instancesRegexSkippedList)
-      .groupBy(e => e.value.split('__')[0])
-      .values()
-      .map(e => e[0])
-      .value()
-    const otherInstances = instancesRegexSkippedList
-      .filter(e => !instancesFirstIteration.includes(e))
-    return metadataTypesSkippedList.concat(instancesFirstIteration).concat(otherInstances)
-  }
-
-  private getConfigChangeFromErrors(errors: FetchError[]): ConfigChange | undefined {
+  private getConfigInfoFromErrors(errors: FetchError[]): ConfigInfo | undefined {
     const errorsByType = _.groupBy(errors, 'type')
-    const newConfig = {
-      metadataTypesSkippedList: _.flatten(makeArray(errorsByType.metadataTypesSkippedList)
-        .map(e => e.value)),
-      instancesRegexSkippedList: _.flatten(makeArray(errorsByType.instancesRegexSkippedList)
-        .map(e => e.value)),
-    } as SalesforceConfig
-    const mergedConfig = calculateMergedConfig(this.config, newConfig)
-    if (_.isUndefined(mergedConfig)) {
+    const metadataTypesSkippedList = makeArray(errorsByType.metadataTypesSkippedList)
+      .map(e => e.value)
+      .filter(e => !makeArray(this.config.metadataTypesSkippedList).includes(e))
+    const instancesRegexSkippedList = makeArray(errorsByType.instancesRegexSkippedList)
+      .map(e => e.value)
+      .filter(e => !makeArray(this.config.instancesRegexSkippedList).includes(e))
+    if ([metadataTypesSkippedList, instancesRegexSkippedList].every(_.isEmpty)) {
       return undefined
     }
     return {
-      config: mergedConfig,
+      config: new InstanceElement(
+        ElemID.CONFIG_NAME,
+        configType,
+        {
+          metadataTypesSkippedList: metadataTypesSkippedList
+            .concat(makeArray(this.config.metadataTypesSkippedList)),
+          instancesRegexSkippedList: instancesRegexSkippedList
+            .concat(makeArray(this.config.instancesRegexSkippedList)),
+          maxConcurrentRetrieveRequests: this.config.maxConcurrentRetrieveRequests,
+          maxItemsInRetrieveRequest: this.config.maxItemsInRetrieveRequest,
+        }
+      ),
       messages: _.flatten(errors.map(e => e.value)),
     }
   }
@@ -970,8 +947,9 @@ InstanceElement[] => {
       t => this.isMetadataTypeToRetrieveAndDeploy(metadataType(t)),
     )
 
-    const retrievedInstances = await retrieveInstances(metadataTypesToRetrieve)
-    const instances = await readInstances(metadataTypesToRead)
+    const [retrievedInstances, instances] = await Promise.all(
+      [retrieveInstances(metadataTypesToRetrieve), readInstances(metadataTypesToRead)]
+    )
     const typesAndInstances = _.flatten([retrievedInstances, instances.elements])
     return {
       elements: _(typesAndInstances)

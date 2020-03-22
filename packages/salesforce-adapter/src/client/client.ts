@@ -333,7 +333,7 @@ export default class SalesforceClient {
       input: listMetadataQuery,
       sendChunk: chunk => this.conn.metadata.list(chunk),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
-      isUnhandledError: error => (!['sf:INVALID_TYPE'].includes(error.name)),
+      isUnhandledError: error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
     })
   }
 

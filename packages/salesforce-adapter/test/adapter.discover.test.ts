@@ -790,7 +790,7 @@ describe('SalesforceAdapter fetch', () => {
             if (typeName[0].type === 'MetadataTest1') {
               return [{ fullName: 'instance1' }]
             }
-            throw new SFError('sf:INVALID_TYPE')
+            throw new SFError('sf:UNKNOWN_EXCEPTION')
           }
         )
         connection.metadata.read = jest.fn().mockImplementation(

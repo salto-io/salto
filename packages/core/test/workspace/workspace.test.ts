@@ -27,7 +27,6 @@ import { blueprintsSource } from '../../src/workspace/blueprints/blueprints_sour
 import { Workspace } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 import * as file from '../../src/file'
-import { UnresolvedReferenceValidationError, InvalidValueValidationError } from '../../src/core/validator'
 
 import * as dump from '../../src/parser/dump'
 import * as config from '../../src/workspace/config'
@@ -389,7 +388,7 @@ describe('workspace', () => {
       expect(isListType(lead.fields.not_a_list_yet_field.type)).toBeTruthy()
     })
 
-    it('shouldnt fail in case one of the changes fails', async () => {
+    it('should not fail in case one of the changes fails', async () => {
       jest.spyOn(dump, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
       const realChange = _.cloneDeep(changes[0])
       _.set(realChange.data, 'after', 'blabla')
@@ -437,24 +436,6 @@ describe('workspace', () => {
     it('should fail when run inside an existing workspace', async () => {
       jest.spyOn(config, 'locateWorkspaceRoot').mockResolvedValueOnce('found')
       await expect(Workspace.init('bla', 'default')).rejects.toThrow()
-    })
-  })
-
-  describe('validation errors serverity', () => {
-    const elemID = new ElemID('salesforce', 'new_elem')
-    it('should be Error for reference error', () => {
-      expect((new UnresolvedReferenceValidationError({
-        elemID,
-        ref: '',
-      })).severity).toBe('Error')
-    })
-    it('should be Warning for other errors', () => {
-      expect(new InvalidValueValidationError({
-        elemID,
-        value: '',
-        fieldName: '',
-        expectedValue: 'baba',
-      }).severity).toBe('Warning')
     })
   })
 

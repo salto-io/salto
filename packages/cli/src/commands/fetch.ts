@@ -137,6 +137,7 @@ export const fetchCommand = async (
   }
 
   const { configs } = fetchResult
+  let configIdx = 0
   const abortRequests = await series(
     configs.map(config => async () => {
       const adapterName = config.elemID.adapter
@@ -146,7 +147,7 @@ export const fetchCommand = async (
         : { id: config.elemID, action: 'modify', data: { before: currentConfig, after: config } }
       const fetchChange = { change, serviceChange: change } as FetchChange
       const shouldWriteToConfig = await shouldUpdateConfig(
-        adapterName, formatFetchChangeForApproval(fetchChange, 0, 1)
+        adapterName, formatFetchChangeForApproval(fetchChange, configIdx++, configs.length)
       )
       if (shouldWriteToConfig) {
         await workspace.adapterConfig.set(adapterName, config)

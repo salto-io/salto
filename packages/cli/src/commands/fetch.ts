@@ -147,8 +147,9 @@ export const fetchCommand = async (
         : { id: config.elemID, action: 'modify', data: { before: currentConfig, after: config } }
       const fetchChange = { change, serviceChange: change } as FetchChange
       const shouldWriteToConfig = await shouldUpdateConfig(
-        adapterName, formatFetchChangeForApproval(fetchChange, configIdx++, configs.length)
+        adapterName, formatFetchChangeForApproval(fetchChange, configIdx, configs.length)
       )
+      configIdx += 1
       if (shouldWriteToConfig) {
         await workspace.adapterConfig.set(adapterName, config)
       }

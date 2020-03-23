@@ -81,11 +81,13 @@ const applyRecursive = (type: ObjectType, value: Values,
     if (value[key] === undefined) return
     value[key] = innerChange(type.fields[key], value[key])
     const fieldType = type.fields[key].type
-    if (isObjectType(fieldType)) {
+    if (!isListType(fieldType) && !isObjectType(fieldType)) return
+    const actualFieldType = isListType(fieldType) ? fieldType.innerType : fieldType
+    if (isObjectType(actualFieldType)) {
       if (_.isArray(value[key])) {
-        value[key].forEach((val: Values) => applyRecursive(fieldType, val, innerChange))
+        value[key].forEach((val: Values) => applyRecursive(actualFieldType, val, innerChange))
       } else {
-        applyRecursive(fieldType, value[key], innerChange)
+        applyRecursive(actualFieldType, value[key], innerChange)
       }
     }
   })
@@ -124,7 +126,6 @@ const castListRecursively = (
       return []
     }
 
-    // TODO: Check this does not break
     const orderBy = listOrders[field.elemID.getFullName()]
     return orderBy ? _.orderBy(value, orderBy) : value
   }

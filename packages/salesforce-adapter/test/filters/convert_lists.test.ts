@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, Value, isListType,
+  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, Value,
+  isListType, isObjectType, ListType,
 } from '@salto-io/adapter-api'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
 import * as constants from '../../src/constants'
@@ -34,12 +35,41 @@ describe('convert lists filter', () => {
     },
   })
 
+  const mockInnerInnerObjId = new ElemID(constants.SALESFORCE, 'innerInner')
+  const mockInnerFieldType = new ObjectType({
+    elemID: mockInnerInnerObjId,
+    fields: {
+      key: new Field(mockInnerInnerObjId, 'key', BuiltinTypes.STRING),
+      list: new Field(mockInnerInnerObjId, 'list', BuiltinTypes.STRING),
+    },
+  })
+
   const mockInnerObjId = new ElemID(constants.SALESFORCE, 'inner')
   const mockFieldType = new ObjectType({
     elemID: mockInnerObjId,
     fields: {
       key: new Field(mockInnerObjId, 'key', BuiltinTypes.STRING),
       value: new Field(mockInnerObjId, 'value', BuiltinTypes.STRING),
+      list: new Field(mockInnerObjId, 'list', BuiltinTypes.STRING),
+      listOfObj: new Field(mockInnerObjId, 'innerOfObj', mockInnerFieldType),
+    },
+  })
+  const mockInnerInnerObjIdB = new ElemID(constants.SALESFORCE, 'innerInnerB')
+  const mockInnerFieldTypeB = new ObjectType({
+    elemID: mockInnerInnerObjIdB,
+    fields: {
+      key: new Field(mockInnerInnerObjIdB, 'key', BuiltinTypes.STRING),
+      list: new Field(mockInnerInnerObjIdB, 'list', BuiltinTypes.STRING),
+    },
+  })
+  const mockInnerObjIdB = new ElemID(constants.SALESFORCE, 'innerB')
+  const mockFieldTypeB = new ObjectType({
+    elemID: mockInnerObjIdB,
+    fields: {
+      key: new Field(mockInnerObjIdB, 'keyB', BuiltinTypes.STRING),
+      value: new Field(mockInnerObjIdB, 'valueB', BuiltinTypes.STRING),
+      list: new Field(mockInnerObjIdB, 'listB', BuiltinTypes.STRING),
+      listOfObj: new Field(mockInnerObjIdB, 'innerOfObjB', mockInnerFieldTypeB),
     },
   })
 
@@ -52,6 +82,7 @@ describe('convert lists filter', () => {
       ordered: new Field(mockObjId, 'ordered', mockFieldType),
       unordered: new Field(mockObjId, 'unordered', mockFieldType),
       singleHardcoded: new Field(mockObjId, 'singleHardcoded', BuiltinTypes.STRING),
+      singleObjHardcoded: new Field(mockObjId, 'singleObjHardcoded', mockFieldTypeB),
       emptyHardcoded: new Field(mockObjId, 'emptyHardcoded', BuiltinTypes.STRING),
     },
   })
@@ -63,14 +94,15 @@ describe('convert lists filter', () => {
       lst: ['val1', 'val2'],
       single: 'val',
       ordered: [
-        { key: 'b', value: '1' },
-        { key: 'a', value: '2' },
+        { key: 'b', value: '1', list: ['val1', 'val2'], listOfObj: [{ key: 'b', list: ['val1', 'val2'] }, { key: 'a', list: ['val1', 'val2'] }] },
+        { key: 'a', value: '2', list: ['val1', 'val2'], listOfObj: [{ key: 'b', list: ['val1', 'val2'] }, { key: 'a', list: ['val1', 'val2'] }] },
       ],
       unordered: [
-        { key: 'b', value: '1' },
-        { key: 'a', value: '2' },
+        { key: 'b', value: '1', list: ['val1', 'val2'] },
+        { key: 'a', value: '2', list: ['val1', 'val2'] },
       ],
       singleHardcoded: 'val',
+      singleObjHardcoded: { key: 'b', value: '1', list: ['val1', 'val2'] },
       emptyHardcoded: '',
     },
   )
@@ -93,6 +125,7 @@ describe('convert lists filter', () => {
 
   const hardcodedLists: ReadonlyArray<string> = [
     mockType.fields.singleHardcoded.elemID.getFullName(),
+    mockType.fields.singleObjHardcoded.elemID.getFullName(),
     mockType.fields.emptyHardcoded.elemID.getFullName(),
     mockTypeNoInstances.fields.single.elemID.getFullName(),
   ]
@@ -153,9 +186,38 @@ describe('convert lists filter', () => {
       expect(lstInst.value.ordered).toEqual(mockInstanceLst.value.ordered)
     })
 
+    it('should convert list inside objs in lists', () => {
+      expect(isListType(type.fields.ordered.type)).toBeTruthy()
+      const { innerType } = (type.fields.ordered.type as ListType)
+      expect(isObjectType(innerType)).toBeTruthy()
+      expect(isListType((innerType as ObjectType).fields.list.type)).toBeTruthy()
+    })
+
+    it('should convert list inside objs in list inside list of obj', () => {
+      expect(isListType(type.fields.ordered.type)).toBeTruthy()
+      const { innerType } = (type.fields.ordered.type as ListType)
+      expect(isObjectType(innerType)).toBeTruthy()
+      expect(isListType((innerType as ObjectType).fields.listOfObj.type)).toBeTruthy()
+      const innerInnerType = ((innerType as ObjectType).fields.listOfObj.type as ListType).innerType
+      expect(isObjectType(innerInnerType)).toBeTruthy()
+      expect(isListType((innerInnerType as ObjectType).fields.list.type)).toBeTruthy()
+    })
+
     it('should convert hardcoded fields to lists', () => {
       expect(isListType(type.fields.singleHardcoded.type)).toBeTruthy()
       expect(lstInst.value.singleHardcoded).toEqual(['val'])
+    })
+
+    it('should convert a list inside an hardcoded field to list', () => {
+      const hardcodedObjType = type.fields.singleObjHardcoded.type
+      expect(isListType(hardcodedObjType)).toBeTruthy()
+      const innerObj = (hardcodedObjType as ListType).innerType
+      expect(isObjectType(innerObj)).toBeTruthy()
+      expect(isListType((innerObj as ObjectType).fields.list.type)).toBeTruthy()
+    })
+
+    it('should convert val of a list inside an hardcoded field to list', () => {
+      expect(lstInst.value.singleObjHardcoded).toEqual([{ key: 'b', value: '1', list: ['val1', 'val2'] }])
     })
 
     it('should convert empty hardcoded fields to empty lists', () => {

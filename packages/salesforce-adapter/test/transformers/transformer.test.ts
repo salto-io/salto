@@ -26,6 +26,7 @@ import {
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements, getLookUpName,
+  METADATA_TYPES_TO_RENAME,
 } from '../../src/transformers/transformer'
 import {
   FIELD_ANNOTATIONS,
@@ -1259,6 +1260,14 @@ describe('transformer', () => {
       expect(restored.fields.field.annotations.regValue).toEqual(newValue)
       expect(restored.fields.field.annotations.changeToRef).toEqual(instanceRef)
       expect(restored.annotations.changeToRef).toEqual(instanceRef)
+    })
+  })
+  describe('Renaming metadatatype tests', () => {
+    it('Verify renaming function', () => {
+      METADATA_TYPES_TO_RENAME.forEach((_value, key) => {
+        const elemId: ElemID = Types.getElemId(key, false, undefined)
+        expect(elemId.name).toEqual(METADATA_TYPES_TO_RENAME.get(key))
+      })
     })
   })
 })

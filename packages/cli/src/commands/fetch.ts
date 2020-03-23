@@ -22,8 +22,8 @@ import {
   FetchProgressEvents,
   StepEmitter,
   Telemetry,
-  DetailedChange,
 } from '@salto-io/core'
+import { getChangeElement } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -136,22 +136,15 @@ export const fetchCommand = async (
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
-  const { configs } = fetchResult
-  let configIdx = 0
+  const configChanges = [...fetchResult.configChanges]
   const abortRequests = await series(
-    configs.map(config => async () => {
-      const adapterName = config.elemID.adapter
-      const currentConfig = await workspace.adapterConfig.get(adapterName)
-      const change: DetailedChange = _.isUndefined(currentConfig)
-        ? { id: config.elemID, action: 'add', data: { after: config } }
-        : { id: config.elemID, action: 'modify', data: { before: currentConfig, after: config } }
-      const fetchChange = { change, serviceChange: change } as FetchChange
+    configChanges.map((configChange, configIdx) => async () => {
+      const adapterName = configChange.change.id.adapter
       const shouldWriteToConfig = await shouldUpdateConfig(
-        adapterName, formatFetchChangeForApproval(fetchChange, configIdx, configs.length)
+        adapterName, formatFetchChangeForApproval(configChange, configIdx, configChanges.length)
       )
-      configIdx += 1
       if (shouldWriteToConfig) {
-        await workspace.adapterConfig.set(adapterName, config)
+        await workspace.adapterConfig.set(adapterName, getChangeElement(configChange.change))
       }
       return !shouldWriteToConfig
     })

@@ -132,7 +132,7 @@ export type FetchResult = {
   changes: Iterable<FetchChange>
   mergeErrors: MergeErrorWithElements[]
   success: boolean
-  configs: InstanceElement[]
+  configChanges: Iterable<FetchChange>
 }
 export type fetchFunc = (
   workspace: Workspace,
@@ -171,13 +171,18 @@ export const fetch: fetchFunc = async (
       filteredStateElements,
       progressEmitter,
     )
+    const currentConfigs = (await Promise.all(configs
+      .map(async config => workspace.adapterConfig.get(config.elemID.adapter)))
+    ).filter(config => !_.isUndefined(config)) as InstanceElement[]
+    const configChanges = wu(await getDetailedChanges(configs, currentConfigs))
+      .map(change => ({ change, serviceChange: change } as FetchChange))
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     await overrideState(elements)
     return {
       changes,
       mergeErrors,
       success: true,
-      configs,
+      configChanges,
     }
   } catch (error) {
     if (error instanceof FatalFetchMergeError) {
@@ -185,7 +190,7 @@ export const fetch: fetchFunc = async (
         changes: [],
         mergeErrors: error.causes,
         success: false,
-        configs: [],
+        configChanges: [],
       }
     }
     throw error

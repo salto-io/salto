@@ -133,6 +133,7 @@ describe('api.ts', () => {
       changes: [],
       elements: fetchedElements,
       mergeErrors: [],
+      configs: [],
     })
 
     const stateElements = [{ elemID: new ElemID(SERVICES[0], 'test') }]
@@ -228,7 +229,8 @@ describe('api.ts', () => {
         expect(mockedDeployActions).toHaveBeenCalledTimes(1)
       })
       it('should get detailed changes', async () => {
-        expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(1)
+        // One time for the workspace and one time for the configs
+        expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(2)
       })
 
       it('should return fetch changes', async () => {

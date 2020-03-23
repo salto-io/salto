@@ -366,7 +366,7 @@ describe('formatter', () => {
       expect(formattedString).toContain(adapterName)
     })
 
-    it('should print messages', () => {
+    it('should print formatted changes', () => {
       expect(formattedString).toContain('test')
     })
   })

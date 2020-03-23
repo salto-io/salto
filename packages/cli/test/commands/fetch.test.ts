@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import wu from 'wu'
 import { EventEmitter } from 'pietile-eventemitter'
 import { ElemID, ObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
 import {
@@ -42,7 +43,7 @@ jest.mock('@salto-io/core', () => ({
   fetch: jest.fn().mockImplementation(() => Promise.resolve({
     changes: [],
     mergeErrors: [],
-    configs: [],
+    configChanges: [],
     success: true,
   })),
 }))
@@ -134,10 +135,10 @@ describe('fetch command', () => {
 
     describe('fetch command', () => {
       const mockFetch = jest.fn().mockResolvedValue(
-        { changes: [], mergeErrors: [], configs: [], success: true }
+        { changes: [], mergeErrors: [], configChanges: [], success: true }
       )
       const mockFailedFetch = jest.fn().mockResolvedValue(
-        { changes: [], mergeErrors: [], configs: [], success: false }
+        { changes: [], mergeErrors: [], configChanges: [], success: false }
       )
       const mockEmptyApprove = jest.fn().mockResolvedValue([])
       const mockUpdateConfig = jest.fn().mockResolvedValue(true)
@@ -166,7 +167,7 @@ describe('fetch command', () => {
           progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
           calculateDiffEmitter.emit('failed')
           return Promise.resolve(
-            { changes: [], mergeErrors: [], configs: [], success: true }
+            { changes: [], mergeErrors: [], configChanges: [], success: true }
           )
         })
         beforeEach(async () => {
@@ -233,10 +234,11 @@ describe('fetch command', () => {
 
         beforeEach(async () => {
           const workspaceDir = 'with-config-changes'
+          const change = { id: newConfig.elemID, action: 'add', data: { after: newConfig } }
           const mockFetchWithChanges = jest.fn().mockResolvedValue(
             {
               changes: [],
-              configs: [newConfig],
+              configChanges: wu([{ change, serviceChange: change }]),
               mergeErrors: [],
               success: true,
             }
@@ -279,7 +281,7 @@ describe('fetch command', () => {
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {
             changes,
-            configs: [],
+            configChanges: [],
             mergeErrors: [],
             success: true,
           }

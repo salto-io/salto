@@ -129,16 +129,23 @@ describe('api.ts', () => {
       new InstanceElement('instance_1', objType, {}),
       new InstanceElement('instance_2', objType, {}),
     ]
+    const mockAdapterConfigType = new ObjectType({
+      elemID: configID,
+      fields: {
+        test: new Field(configID, 'test', BuiltinTypes.STRING, {}, true),
+      },
+    })
     mockedFetchChanges.mockReturnValue({
       changes: [],
       elements: fetchedElements,
       mergeErrors: [],
-      configs: [],
+      configs: [new InstanceElement(SERVICES[0], mockAdapterConfigType, { test: ['skipMe'] })],
     })
 
     const stateElements = [{ elemID: new ElemID(SERVICES[0], 'test') }]
     const ws = mockWorkspace()
     const mockFlush = ws.flush as jest.Mock
+    const mockedGetDetailedChanges = fetch.getDetailedChanges as jest.Mock
     ws.state.list = jest.fn().mockImplementation(() => Promise.resolve(stateElements))
 
     beforeAll(async () => {
@@ -155,6 +162,10 @@ describe('api.ts', () => {
 
     it('should call flush', () => {
       expect(mockFlush).not.toHaveBeenCalled()
+    })
+
+    it('should get detail changes for config', () => {
+      expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(1)
     })
   })
 

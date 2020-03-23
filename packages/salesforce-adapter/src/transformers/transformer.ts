@@ -40,8 +40,7 @@ import {
   CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS,
-  CUSTOM_FIELD,
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -139,6 +138,12 @@ const restrictedNumber = (name: RestrictedNumberName, min: number, max: number, 
     },
   }),
 })
+
+export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
+  ['FlexiPage', 'LightningPage'],
+  ['FlexiPageRegion', 'LightningPageRegion'],
+  ['FlexiPageTemplateInstance', 'LightningPageTemplateInstance'],
+])
 
 export class Types {
   private static getElemIdFunc: ElemIdGetter
@@ -745,9 +750,10 @@ export class Types {
   }
 
   public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
+    const updatedName = METADATA_TYPES_TO_RENAME.get(name) ?? name
     return (customObject && this.getElemIdFunc && serviceIds)
-      ? this.getElemIdFunc(SALESFORCE, serviceIds, bpCase(name))
-      : new ElemID(SALESFORCE, bpCase(name))
+      ? this.getElemIdFunc(SALESFORCE, serviceIds, bpCase(updatedName))
+      : new ElemID(SALESFORCE, bpCase(updatedName))
   }
 
   static getAllFieldTypes(): TypeElement[] {
@@ -1163,6 +1169,7 @@ export const createMetadataTypeElements = async (
     // Already created this type, no new types to return here
     return []
   }
+
   const element = Types.get(objectName, false, isSettings) as ObjectType
   knownTypes.set(objectName, element)
   element.annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID

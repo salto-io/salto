@@ -22,8 +22,9 @@ import {
   FetchProgressEvents,
   StepEmitter,
   Telemetry,
+  DetailedChange,
 } from '@salto-io/core'
-import { collections, promises } from '@salto-io/lowerdash'
+import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -35,6 +36,7 @@ import {
 import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
+  formatFetchChangeForApproval,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
   shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
@@ -44,7 +46,6 @@ import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
-const { makeArray } = collections.array
 const { series } = promises.array
 
 type approveChangesFunc = (
@@ -54,7 +55,7 @@ type approveChangesFunc = (
 
 type shouldUpdateConfigFunc = (
   adapterName: string,
-  messages: string[]
+  formattedChanges: string
 ) => Promise<boolean>
 
 export type FetchCommandArgs = {
@@ -135,19 +136,20 @@ export const fetchCommand = async (
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
-  const adaptersConfigChanges = makeArray(fetchResult.configChanges)
-    .filter(change => !_.isEmpty(change.messages))
+  const { configs } = fetchResult
   const abortRequests = await series(
-    adaptersConfigChanges.map(change => async () => {
-      const adapterName = change.config.elemID.adapter
-      log.debug(`Fetching ${adapterName} requires changes to the config in order to succeed:\n${
-        change.messages.join('\n')
-      }`)
+    configs.map(config => async () => {
+      const adapterName = config.elemID.adapter
+      const currentConfig = await workspace.adapterConfig.get(adapterName)
+      const change: DetailedChange = _.isUndefined(currentConfig)
+        ? { id: config.elemID, action: 'add', data: { after: config } }
+        : { id: config.elemID, action: 'modify', data: { before: currentConfig, after: config } }
+      const fetchChange = { change, serviceChange: change } as FetchChange
       const shouldWriteToConfig = await shouldUpdateConfig(
-        adapterName, change.messages
+        adapterName, formatFetchChangeForApproval(fetchChange, 0, 1)
       )
       if (shouldWriteToConfig) {
-        await workspace.adapterConfig.set(adapterName, change.config)
+        await workspace.adapterConfig.set(adapterName, config)
       }
       return !shouldWriteToConfig
     })

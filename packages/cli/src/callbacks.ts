@@ -69,8 +69,8 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
 export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):
 Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
 
-export const shouldUpdateConfig = async (adapterName: string, messages: string[]):
-Promise<boolean> => getUserBooleanInput(formatShouldUpdateConfig(adapterName, messages))
+export const shouldUpdateConfig = async (adapterName: string, formattedChanges: string):
+Promise<boolean> => getUserBooleanInput(formatShouldUpdateConfig(adapterName, formattedChanges))
 
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,

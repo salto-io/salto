@@ -20,7 +20,7 @@ import {
 import { WorkspaceError, FetchChange } from '@salto-io/core'
 import { formatSearchResults, formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceErrors,
-  formatChangeErrors, formatShouldUpdateConfig, MAX_MESSAGES_TO_LOG } from '../src/formatter'
+  formatChangeErrors, formatShouldUpdateConfig } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
@@ -355,23 +355,19 @@ describe('formatter', () => {
     })
   })
   describe('formatShouldUpdateConfig', () => {
+    let formattedString: string
     const adapterName = 'FakeAdapter'
+
+    beforeAll(() => {
+      formattedString = formatShouldUpdateConfig(adapterName, 'test')
+    })
+
     it('should print adapter name', () => {
-      expect(formatShouldUpdateConfig(adapterName, [])).toContain(adapterName)
+      expect(formattedString).toContain(adapterName)
     })
 
     it('should print messages', () => {
-      expect(formatShouldUpdateConfig(adapterName, ['1'])).toContain('1')
-    })
-
-    it('should not print more than max messages to log', () => {
-      const formatted = formatShouldUpdateConfig(
-        adapterName,
-        Array.from(Array(MAX_MESSAGES_TO_LOG).keys()).map(num => num.toString())
-          .concat('not-exists')
-      )
-      expect(formatted).toContain((MAX_MESSAGES_TO_LOG - 1).toString())
-      expect(formatted).not.toContain('not-exists')
+      expect(formattedString).toContain('test')
     })
   })
 

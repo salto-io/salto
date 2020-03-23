@@ -27,14 +27,9 @@ export interface DataModificationResult {
   errors: Set<string>
 }
 
-export interface ConfigChange {
-  config: InstanceElement
-  messages: string[]
-}
-
 export interface FetchResult {
   elements: Element[]
-  configChange?: ConfigChange
+  config?: InstanceElement
 }
 
 export interface Adapter {

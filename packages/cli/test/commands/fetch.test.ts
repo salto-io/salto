@@ -42,7 +42,7 @@ jest.mock('@salto-io/core', () => ({
   fetch: jest.fn().mockImplementation(() => Promise.resolve({
     changes: [],
     mergeErrors: [],
-    configChanges: [],
+    configs: [],
     success: true,
   })),
 }))
@@ -134,10 +134,10 @@ describe('fetch command', () => {
 
     describe('fetch command', () => {
       const mockFetch = jest.fn().mockResolvedValue(
-        { changes: [], mergeErrors: [], configChanges: [], success: true }
+        { changes: [], mergeErrors: [], configs: [], success: true }
       )
       const mockFailedFetch = jest.fn().mockResolvedValue(
-        { changes: [], mergeErrors: [], configChanges: [], success: false }
+        { changes: [], mergeErrors: [], configs: [], success: false }
       )
       const mockEmptyApprove = jest.fn().mockResolvedValue([])
       const mockUpdateConfig = jest.fn().mockResolvedValue(true)
@@ -166,7 +166,7 @@ describe('fetch command', () => {
           progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
           calculateDiffEmitter.emit('failed')
           return Promise.resolve(
-            { changes: [], mergeErrors: [], configChanges: [], success: true }
+            { changes: [], mergeErrors: [], configs: [], success: true }
           )
         })
         beforeEach(async () => {
@@ -236,12 +236,7 @@ describe('fetch command', () => {
           const mockFetchWithChanges = jest.fn().mockResolvedValue(
             {
               changes: [],
-              configChanges: [
-                {
-                  config: newConfig,
-                  messages: ['Skipped'],
-                },
-              ],
+              configs: [newConfig],
               mergeErrors: [],
               success: true,
             }
@@ -284,7 +279,7 @@ describe('fetch command', () => {
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {
             changes,
-            configChanges: [],
+            configs: [],
             mergeErrors: [],
             success: true,
           }

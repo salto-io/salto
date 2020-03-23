@@ -179,6 +179,7 @@ describe('Test elements.ts', () => {
     })
 
     const strField = new Field(new ElemID('test', 'obj'), 'str_field', primStr)
+    const lstField = new Field(new ElemID('test', 'objList'), 'list_field', new ListType(primStr))
     const inst = new InstanceElement('inst', objT, { str: 'test' })
 
     it('should identify equal primitive types', () => {
@@ -199,6 +200,10 @@ describe('Test elements.ts', () => {
 
     it('should identify equal fields', () => {
       expect(isEqualElements(strField, _.cloneDeep(strField))).toBeTruthy()
+    })
+
+    it('should identify equal list fields', () => {
+      expect(isEqualElements(lstField, _.cloneDeep(lstField))).toBeTruthy()
     })
 
     it('should identify equal instance elements', () => {

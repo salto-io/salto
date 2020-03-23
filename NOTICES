@@ -4808,6 +4808,33 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
+** nexe; version 4.0.0-beta.4 -- https://github.com/nexe/nexe#readme
+Copyright (c) 2013-2018 Nexe
+
+Copyright (c) 2013-2018 Nexe Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** exit; version 0.1.2 -- https://github.com/cowboy/node-exit
 Copyright (c) 2013 Cowboy Ben Alman
 
@@ -8253,6 +8280,35 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
+** reachdown; version 1.0.0 -- https://github.com/vweevers/reachdown
+(c) 2019-present Vincent Weevers
+Copyright (c) 2019-present Vincent Weevers
+
+# The MIT License (MIT)
+
+**Copyright © 2019-present Vincent Weevers**
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+------
+
 ** escape-html; version 1.0.3 -- https://github.com/component/escape-html
 Copyright (c) 2015 Andreas Lubbe
 Copyright (c) 2012-2013 TJ Holowaychuk
@@ -10736,6 +10792,22 @@ SOFTWARE.
 
 ------
 
+** jest-dynalite; version 1.1.1 -- 
+Copyright (c) Gemshelf Inc. (shelf.io) & Oliver Bell
+
+MIT License
+
+Copyright (c) Gemshelf Inc. (shelf.io) & Oliver Bell
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** randexp; version 0.4.6 -- http://fent.github.io/randexp.js/
 Copyright (c) 2011 by Roly Fentanes
 ** ret; version 0.1.15 -- https://github.com/fent/ret.js#readme
@@ -12043,6 +12115,35 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
+** subleveldown; version 4.1.4 -- https://github.com/level/subleveldown
+(c) 2014-present Mathias Buus (https://github.com/mafintosh) and Contributors
+Copyright (c) 2014-present Mathias Buus (https://github.com/mafintosh) and Contributors
+
+# The MIT License (MIT)
+
+**Copyright © 2014-present [Mathias Buus](https://github.com/mafintosh) and [Contributors](CONTRIBUTORS.md).**
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+------
+
 ** @octokit/endpoint; version 5.5.1 -- https://github.com/octokit/endpoint.js#readme
 Copyright (c) 2018 Octokit
 Copyright (c) 2012-2014, Bram Stein
@@ -12721,6 +12822,8 @@ Copyright (c) Microsoft Corporation.
 Copyright (c) Microsoft Corporation.
 ** @types/json-schema; version 7.0.3 -- 
 Copyright (c) Microsoft Corporation.
+** @types/json2csv; version 4.5.1 -- 
+Copyright (c) Microsoft Corporation.
 ** @types/jszip; version 3.1.6 -- 
 Copyright (c) Microsoft Corporation.
 ** @types/lodash; version 4.14.149 -- 
@@ -12730,6 +12833,8 @@ Copyright (c) Microsoft Corporation.
 ** @types/mkdirp; version 0.5.2 -- 
 Copyright (c) Microsoft Corporation.
 ** @types/moo; version 0.5.1 -- 
+Copyright (c) Microsoft Corporation.
+** @types/nearley; version 2.11.1 -- 
 Copyright (c) Microsoft Corporation.
 ** @types/node; version 13.1.0 -- 
 Copyright (c) Microsoft Corporation.
@@ -12778,6 +12883,8 @@ Copyright (c) Microsoft Corporation.
 ** @types/uuid; version 3.4.6 -- 
 Copyright (c) Microsoft Corporation.
 ** @types/vscode; version 1.37.0 -- 
+Copyright (c) Microsoft Corporation.
+** @types/wu; version 2.1.40 -- 
 Copyright (c) Microsoft Corporation.
 ** @types/yargs; version 13.0.3 -- 
 Copyright (c) Microsoft Corporation.
@@ -14297,6 +14404,34 @@ THE SOFTWARE.
 
 ------
 
+** ts-cleaner; version 1.0.5 -- https://github.com/TarVK/ts-cleaner#readme
+Copyright (c) 2019 Tar
+
+MIT License
+
+Copyright (c) 2019 Tar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+------
+
 ** convert-source-map; version 1.7.0 -- https://github.com/thlorenz/convert-source-map
 Copyright 2013 Thorsten Lorenz.
 
@@ -15162,6 +15297,34 @@ Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com>
 The MIT License (MIT)
 
 Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+------
+
+** resolve-dependencies; version 3.0.3 -- https://github.com/nexe/resolve-dependencies#readme
+Copyright (c) 2017-2018 Caleb Boyd
+
+The MIT License (MIT)
+
+Copyright (c) 2017-2018 Caleb Boyd
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -17686,9 +17849,9 @@ SOFTWARE.
 ** is-typedarray; version 1.0.0 -- https://github.com/hughsk/is-typedarray
 ** json-stable-stringify-without-jsonify; version 1.0.1 -- https://github.com/samn/json-stable-stringify
 ** level-option-wrap; version 1.1.0 -- https://github.com/substack/level-option-wrap
+** minimist; version 0.0.8 -- https://github.com/substack/minimist
 ** minimist; version 0.0.10 -- https://github.com/substack/minimist
 ** minimist; version 1.2.5 -- https://github.com/substack/minimist
-** minimist; version 0.0.8 -- https://github.com/substack/minimist
 ** path-browserify; version 0.0.1 -- https://github.com/substack/path-browserify
 Copyright Joyent, Inc. and other Node contributors.
 ** resolve; version 1.1.7 -- https://github.com/substack/node-resolve#readme
@@ -18288,6 +18451,8 @@ IN THE SOFTWARE.
 ------
 
 ** aws4; version 1.9.0 -- https://github.com/mhart/aws4#readme
+Copyright 2013 Michael Hart (michael.hart.au@gmail.com)
+** dynalite; version 3.1.2 -- https://github.com/mhart/dynalite#readme
 Copyright 2013 Michael Hart (michael.hart.au@gmail.com)
 
 Copyright 2013 Michael Hart (michael.hart.au@gmail.com)
@@ -20449,17 +20614,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
-** @types/json2csv; version 4.5.1 -- 
-** @types/nearley; version 2.11.1 -- 
-** @types/wu; version 2.1.40 -- 
-** dynalite; version 3.1.2 -- 
 ** jest-core; version 0.0.0 -- 
-** jest-dynalite; version 1.1.1 -- 
 ** jsforce; version https: -- 
 ** jsforce-types; version https: -- 
-** nexe; version 4.0.0-beta.4 -- 
-** reachdown; version 1.0.0 -- 
-** resolve-dependencies; version 3.0.3 -- 
-** subleveldown; version 4.1.4 -- 
-** ts-cleaner; version 1.0.5 -- 
 

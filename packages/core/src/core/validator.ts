@@ -274,12 +274,7 @@ const validateValue = (elemID: ElemID, value: Value,
 
   if (isPrimitiveType(type)) {
     if (!primitiveValidators[type.primitive](value)) {
-      // NOTE: this area should be deleted as soon as
-      //  we complete the implementation of SALTO-228 (Support annotationTypes list) is implemented
-      if (!isAnnotations || !_.isArray(value)) {
-        return [new InvalidValueTypeValidationError({ elemID, value, type })]
-      }
-      return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, false)))
+      return [new InvalidValueTypeValidationError({ elemID, value, type })]
     }
   }
 

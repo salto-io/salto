@@ -15,6 +15,7 @@
 */
 import wu from 'wu'
 import { deleteFromCsvFile, file } from '@salto-io/core'
+import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from '../types'
 import Prompts from '../prompts'
@@ -26,7 +27,8 @@ export const command = (
   typeName: string,
   inputPath: string,
   cliTelemetry: CliTelemetry,
-  { stdout, stderr }: CliOutput
+  { stdout, stderr }: CliOutput,
+  inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     if (!(await file.exists(inputPath))) {
@@ -35,7 +37,12 @@ export const command = (
       return CliExitCode.UserInputError
     }
 
-    const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
+    const { workspace, errored } = await loadWorkspace(
+      workingDir,
+      { stdout, stderr },
+      undefined,
+      { sessionEnv: inputEnvironment }
+    )
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError
@@ -70,6 +77,7 @@ export const command = (
 type DeleteArgs = {
   'type-name': string
   'input-path': string
+  env?: string
 }
 type DeleteParsedCliInput = ParsedCliInput<DeleteArgs>
 
@@ -88,6 +96,7 @@ const deleteBuilder = createCommandBuilder({
       },
     },
   },
+  filters: [environmentFilter],
 
   async build(input: DeleteParsedCliInput, output: CliOutput) {
     return command(
@@ -95,7 +104,8 @@ const deleteBuilder = createCommandBuilder({
       input.args['type-name'],
       input.args['input-path'],
       getCliTelemetry(input.telemetry, 'delete'),
-      output
+      output,
+      input.args.env,
     )
   },
 })

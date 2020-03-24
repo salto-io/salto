@@ -137,14 +137,14 @@ export type FetchResult = {
 }
 export type fetchFunc = (
   workspace: Workspace,
-  services: string[],
   progressEmitter?: EventEmitter<FetchProgressEvents>,
+  services?: string[],
 ) => Promise<FetchResult>
 
 export const fetch: fetchFunc = async (
   workspace,
-  services = currentEnvConfig(workspace.config).services,
-  progressEmitter?
+  progressEmitter?,
+  services?,
 ) => {
   const overrideState = async (elements: Element[]): Promise<void> => {
     await workspace.state.remove(await workspace.state.list())
@@ -152,10 +152,14 @@ export const fetch: fetchFunc = async (
     log.debug(`finish to override state with ${elements.length} elements`)
   }
   log.debug('fetch starting..')
-  const filteredStateElements = filterElementsByServices(await workspace.state.getAll(), services)
+  const fetchServices = services ?? currentEnvConfig(workspace.config).services
+  const filteredStateElements = filterElementsByServices(
+    await workspace.state.getAll(),
+    fetchServices
+  )
 
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
-    services,
+    fetchServices,
     workspace.adapterCredentials,
     workspace.adapterConfig,
     createElemIdGetter(filteredStateElements)
@@ -171,7 +175,7 @@ export const fetch: fetchFunc = async (
   try {
     const { changes, elements, mergeErrors, configChanges } = await fetchChanges(
       adapters,
-      filterElementsByServices(await workspace.elements, services),
+      filterElementsByServices(await workspace.elements, fetchServices),
       filteredStateElements,
       currentConfigs,
       progressEmitter,

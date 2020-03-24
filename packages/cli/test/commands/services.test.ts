@@ -139,6 +139,33 @@ describe('services command', () => {
           expect(cliOutput.stdout.content).toContain('notConfigured is not configured in this workspace')
         })
       })
+      describe('Environment flag', () => {
+        beforeEach(async () => {
+          mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+          mockLoadWorkspace.mockClear()
+        })
+        it('should use current env when env is not provided', async () => {
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+          expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+            mocks.withoutEnvironmentParam
+          )
+        })
+        it('should use provided env', async () => {
+          await command(
+            '',
+            'list',
+            cliOutput,
+            mockGetCredentialsFromUser,
+            'salesforce',
+            mocks.withEnvironmentParam,
+          ).execute()
+          expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+            mocks.withEnvironmentParam
+          )
+        })
+      })
     })
   })
 
@@ -191,6 +218,33 @@ describe('services command', () => {
 
           it('should print try again text', async () => {
             expect(cliOutput.stderr.content).toContain('To try again run: `salto services login newAdapter`')
+          })
+        })
+        describe('Environment flag', () => {
+          beforeEach(async () => {
+            mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+            mockLoadWorkspace.mockClear()
+          })
+          it('should use current env when env is not provided', async () => {
+            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+            expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+            expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+              mocks.withoutEnvironmentParam
+            )
+          })
+          it('should use provided env', async () => {
+            await command(
+              '',
+              'add',
+              cliOutput,
+              mockGetCredentialsFromUser,
+              'salesforce',
+              mocks.withEnvironmentParam
+            ).execute()
+            expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+            expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+              mocks.withEnvironmentParam
+            )
           })
         })
       })
@@ -246,6 +300,33 @@ describe('services command', () => {
 
         it('should print it logged in', async () => {
           expect(cliOutput.stdout.content).toContain('Login information successfully updated')
+        })
+      })
+      describe('Environment flag', () => {
+        beforeEach(async () => {
+          mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+          mockLoadWorkspace.mockClear()
+        })
+        it('should use current env when env is not provided', async () => {
+          await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+          expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+            mocks.withoutEnvironmentParam
+          )
+        })
+        it('should use provided env', async () => {
+          await command(
+            '',
+            'login',
+            cliOutput,
+            mockGetCredentialsFromUser,
+            'salesforce',
+            mocks.withEnvironmentParam
+          ).execute()
+          expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+            mocks.withEnvironmentParam
+          )
         })
       })
     })

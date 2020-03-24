@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Config, addEnvToConfig, setCurrentEnv, loadConfig } from '@salto-io/core'
 import _ from 'lodash'
+
+import { Config, addEnvToConfig, setCurrentEnv, loadConfig } from '@salto-io/core'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'
@@ -120,5 +121,9 @@ const envsBuilder = createCommandBuilder({
     return command('.', input.args.command, output, input.args.name)
   },
 })
+
+export interface EnvironmentArgs { env: string }
+
+export type EnvironmentParsedCliInput = ParsedCliInput<EnvironmentArgs>
 
 export default envsBuilder

@@ -18,6 +18,7 @@ import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
+import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream,
@@ -52,15 +53,18 @@ export class DeployCommand implements CliCommand {
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
-    readonly inputServices: string[],
     cliTelemetry: CliTelemetry,
     { stdout, stderr }: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
+    readonly inputServices?: string[],
+    readonly inputEnv?: string,
   ) {
     this.stdout = stdout
     this.stderr = stderr
     this.actions = new Map<string, Action>()
     this.cliTelemetry = cliTelemetry
+    this.inputServices = inputServices
+    this.inputEnv = inputEnv
   }
 
   private endAction(itemName: string): void {
@@ -122,7 +126,10 @@ export class DeployCommand implements CliCommand {
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout }, this.spinnerCreator,
-      { force: this.force, printStateRecency: true, recommendStateRecency: true })
+      { force: this.force,
+        printStateRecency: true,
+        recommendStateRecency: true,
+        sessionEnv: this.inputEnv })
     if (errored) {
       this.cliTelemetry.failure()
       return CliExitCode.AppError
@@ -190,7 +197,7 @@ const deployBuilder = createCommandBuilder({
     },
   },
 
-  filters: [servicesFilter],
+  filters: [servicesFilter, environmentFilter],
 
   async build(
     input: DeployParsedCliInput,
@@ -200,10 +207,11 @@ const deployBuilder = createCommandBuilder({
     return new DeployCommand(
       '.',
       input.args.force,
-      input.args.services,
       getCliTelemetry(input.telemetry, 'deploy'),
       output,
       spinnerCreator,
+      input.args.services,
+      input.args.env,
     )
   },
 })

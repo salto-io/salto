@@ -80,7 +80,7 @@ describe('Data migration operations E2E', () => {
       await fetch(
         fetchOutputDir, true, false,
         telemetry, cliOutput,
-        spinnerCreator, services, false
+        spinnerCreator, false, services,
       ).execute()
     })
 

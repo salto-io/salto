@@ -18,9 +18,9 @@ import { Workspace, file, deleteFromCsvFile } from '@salto-io/core'
 import { command } from '../../src/commands/delete'
 import Prompts from '../../src/prompts'
 import { CliExitCode, CliTelemetry } from '../../src/types'
-import * as workspace from '../../src/workspace'
-import * as mocks from '../mocks'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import * as mocks from '../mocks'
+import { loadWorkspace } from '../../src/workspace'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -47,7 +47,7 @@ describe('delete command', () => {
   let mockCliTelemetry: CliTelemetry
   const workspaceDir = 'dummy_dir'
   let existsReturn = true
-  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
+  const mockLoadWorkspace = loadWorkspace as jest.Mock
 
   beforeEach(() => {
     jest.spyOn(file, 'exists').mockImplementation(() => Promise.resolve(existsReturn))
@@ -55,9 +55,10 @@ describe('delete command', () => {
     mockTelemetry = mocks.getMockTelemetry()
     mockCliTelemetry = getCliTelemetry(mockTelemetry, 'delete')
     mockLoadWorkspace.mockResolvedValue({
-      workspace: mocks.mockLoadWorkspace(workspaceDir),
+      workspace: mockLoadWorkspace(workspaceDir),
       errored: false,
     })
+    mockLoadWorkspace.mockClear()
   })
 
   it('should run delete successfully if CSV file is found', async () => {
@@ -137,5 +138,34 @@ describe('delete command', () => {
     expect(mockTelemetry.getEventsMap()[eventsNames.errors]).not.toBeUndefined()
     expect(mockTelemetry.getEventsMap()[eventsNames.errors]).toHaveLength(1)
     expect(mockTelemetry.getEventsMap()[eventsNames.errors][0].value).toEqual(errors.length)
+  })
+  it('should use current env when env is not provided', async () => {
+    mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+    await command(
+      workspaceDir,
+      'mockName',
+      'mockPath',
+      getCliTelemetry(mockTelemetry, 'delete'),
+      cliOutput,
+    ).execute()
+    expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+    expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+      mocks.withoutEnvironmentParam
+    )
+  })
+  it('should use provided env', async () => {
+    mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+    await command(
+      workspaceDir,
+      'mockName',
+      'mockPath',
+      getCliTelemetry(mockTelemetry, 'delete'),
+      cliOutput,
+      mocks.withEnvironmentParam,
+    ).execute()
+    expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+    expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+      mocks.withEnvironmentParam
+    )
   })
 })

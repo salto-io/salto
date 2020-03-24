@@ -15,19 +15,20 @@
 */
 import wu from 'wu'
 import { importFromCsvFile, file } from '@salto-io/core'
+import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from '../types'
 import Prompts from '../prompts'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
 import { getCliTelemetry } from '../telemetry'
 
-
 export const command = (
   workingDir: string,
   typeName: string,
   inputPath: string,
   cliTelemetry: CliTelemetry,
-  { stdout, stderr }: CliOutput
+  { stdout, stderr }: CliOutput,
+  inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     if (!(await file.exists(inputPath))) {
@@ -35,7 +36,12 @@ export const command = (
       cliTelemetry.failure()
       return CliExitCode.AppError
     }
-    const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
+    const { workspace, errored } = await loadWorkspace(
+      workingDir,
+      { stdout, stderr },
+      undefined,
+      inputEnvironment
+    )
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError
@@ -71,6 +77,7 @@ export const command = (
 type ImportArgs = {
   'type-name': string
   'input-path': string
+  env?: string
 }
 type ImportParsedCliInput = ParsedCliInput<ImportArgs>
 
@@ -89,6 +96,7 @@ const importBuilder = createCommandBuilder({
       },
     },
   },
+  filters: [environmentFilter],
 
   async build(input: ImportParsedCliInput, output: CliOutput) {
     return command(
@@ -97,6 +105,7 @@ const importBuilder = createCommandBuilder({
       input.args['input-path'],
       getCliTelemetry(input.telemetry, 'import'),
       output,
+      input.args.env,
     )
   },
 })

@@ -305,10 +305,13 @@ const readConfig = async (baseDir: string): Promise<PartialConfig> =>
   parseConfig(await configSource(localDirectoryStore(getConfigDir(baseDir)))
     .get(CONFIG_FILENAME))
 
-export const loadConfig = async (lookupDir: string): Promise<Config> => {
+export const loadConfig = async (
+  lookupDir: string):
+  Promise<Config> => {
   const baseDir = await baseDirFromLookup(lookupDir)
   const config = await readConfig(baseDir)
-  return completeConfig(baseDir, config)
+  const completeCfg = await completeConfig(baseDir, config)
+  return completeCfg
 }
 
 export const addServiceToConfig = async (currentConfig: Config, service: string

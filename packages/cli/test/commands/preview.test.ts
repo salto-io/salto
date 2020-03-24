@@ -14,12 +14,18 @@
 * limitations under the License.
 */
 import { command } from '../../src/commands/preview'
+<<<<<<< HEAD
 import {
   preview, MockWriteStream,
   mockSpinnerCreator, mockLoadConfig,
   transformToWorkspaceError, getMockTelemetry,
   MockTelemetry,
 } from '../mocks'
+=======
+import { preview, mockLoadConfig, MockWriteStream, MockTelemetry,
+  getWorkspaceErrors, transformToWorkspaceError, getMockTelemetry, mockSpinnerCreator,
+  withoutEnvironmentParam, withEnvironmentParam, mockLoadWorkspaceEnvironment } from '../mocks'
+>>>>>>> salto-625
 import { SpinnerCreator, Spinner, CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
@@ -128,6 +134,40 @@ describe('preview command', () => {
 
     it('should not start the preview spinner', () => {
       expect(spinners[1]).toBeUndefined()
+    })
+  })
+  describe('Env flag for command', () => {
+    beforeEach(() => {
+      mockLoadWorkspace.mockImplementation(mockLoadWorkspaceEnvironment)
+      mockLoadWorkspace.mockClear()
+    })
+
+    it('should use current env when env is not provided', async () => {
+      await command(
+        '',
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services
+      ).execute()
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+        withoutEnvironmentParam
+      )
+    })
+    it('should use provided env', async () => {
+      await command(
+        '',
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services,
+        withEnvironmentParam
+      ).execute()
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+        withEnvironmentParam
+      )
     })
   })
 })

@@ -70,8 +70,8 @@ export const runFetch = async (fetchOutputDir: string): Promise<void> => {
     mockTelemetry,
     mockCliOutput(),
     mockSpinnerCreator([]),
+    false,
     services,
-    false
   )
     .execute()
 }
@@ -86,10 +86,10 @@ export const runDeploy = async (
   const result = await new DeployCommand(
     fetchOutputDir,
     force,
-    services,
     getCliTelemetry(mockTelemetry, 'deploy'),
     output,
-    mockSpinnerCreator([])
+    mockSpinnerCreator([]),
+    services
   ).execute()
   const errs = (output.stderr as MockWriteStream).content
   // This assert is before result assert so will see the error

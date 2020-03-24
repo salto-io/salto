@@ -64,7 +64,7 @@ export const serviceCmdFilter: ServiceCmdFilter = {
   },
 }
 
-export interface ServicesArgs { services: string[] }
+export interface ServicesArgs { services: string[]; env: string }
 
 export type ServicesParsedCliInput = ParsedCliInput<ServicesArgs>
 
@@ -89,9 +89,12 @@ export const servicesFilter: ServicesFilter = {
   ): Promise<ParsedCliInput<ServicesArgs>> {
     const args = input.args as yargs.Arguments<ServicesArgs>
     const workspaceConfig = (await loadConfig('.'))
+    workspaceConfig.currentEnv = args.env ?? workspaceConfig.currentEnv
     const workspaceServices = currentEnvConfig(workspaceConfig).services
     if (workspaceServices.length === 0) {
-      throw new Error('No services are configured for this workspace. Use \'salto services add\'.')
+      throw new Error(
+        `No services are configured for env=${workspaceConfig.currentEnv}. Use salto services add'.`
+      )
     }
     // This assumes the default value for input services is all configured
     // so use the default (workspace services) if nothing was inputted

@@ -48,6 +48,7 @@ type LoadWorkspaceOptions = {
   force: boolean
   printStateRecency: boolean
   recommendStateRecency: boolean
+  sessionEnv: string
 }
 
 export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusErrors> => {
@@ -85,12 +86,15 @@ const printWorkspaceErrors = async (
 
 export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   spinnerCreator?: SpinnerCreator,
-  { force = false, printStateRecency = false, recommendStateRecency = false }:
-    Partial<LoadWorkspaceOptions> = {}): Promise<LoadWorkspaceResult> => {
+  { force = false,
+    printStateRecency = false,
+    recommendStateRecency = false,
+    sessionEnv = undefined }: Partial<LoadWorkspaceOptions> = {}): Promise<LoadWorkspaceResult> => {
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
     : { succeed: () => undefined, fail: () => undefined }
   const workspace = new Workspace(await loadConfig(workingDir))
+  workspace.config.currentEnv = sessionEnv ?? workspace.config.currentEnv
   const { status, errors } = await validateWorkspace(workspace)
   // Stop the spinner
   if (status === 'Error') {

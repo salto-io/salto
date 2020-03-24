@@ -76,7 +76,7 @@ describe('fetch command', () => {
           config: { services },
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, services, false)
+        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, false, services,)
           .execute()
       })
 
@@ -103,8 +103,8 @@ describe('fetch command', () => {
           mockTelemetry,
           cliOutput,
           spinnerCreator,
+          false,
           services,
-          false
         ).execute()
       })
 
@@ -154,8 +154,8 @@ describe('fetch command', () => {
       describe('with emitters called', () => {
         const mockFetchWithEmitter: jest.Mock = jest.fn((
           _workspace,
+          progressEmitter: EventEmitter<FetchProgressEvents>,
           _services,
-          progressEmitter: EventEmitter<FetchProgressEvents>
         ) => {
           const getChangesEmitter = new StepEmitter()
           progressEmitter.emit('changesWillBeFetched', getChangesEmitter, ['adapterName'])
@@ -174,11 +174,11 @@ describe('fetch command', () => {
             force: true,
             interactive: false,
             output: cliOutput,
-            inputServices: services,
             cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
+            inputServices: services,
           })
         })
         it('should start at least one step', () => {
@@ -486,6 +486,45 @@ describe('fetch command', () => {
           })
         })
       })
+    })
+  })
+  describe('Verify using env command', () => {
+    const mockTelemetry: mocks.MockTelemetry = mocks.getMockTelemetry()
+    const workspaceDir = 'valid-ws'
+    beforeEach(() => {
+      mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+      mockLoadWorkspace.mockClear()
+    })
+    it('should use current env when env is not provided', async () => {
+      await command(
+        workspaceDir,
+        true, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        false,
+        services,
+      ).execute()
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+        mocks.withoutEnvironmentParam
+      )
+    })
+    it('should use provided env', async () => {
+      await command(
+        workspaceDir,
+        true, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        false,
+        services,
+        mocks.withEnvironmentParam,
+      ).execute()
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+        mocks.withEnvironmentParam
+      )
     })
   })
 })

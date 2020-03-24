@@ -65,6 +65,7 @@ describe('import command', () => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     mockTelemetry = mocks.getMockTelemetry()
     mockCliTelemetry = getCliTelemetry(mockTelemetry, 'import')
+    mockLoadWorkspace.mockClear()
   })
 
   it('should run import successfully if given a correct path to a real CSV file', async () => {
@@ -110,5 +111,35 @@ describe('import command', () => {
     expect(mockTelemetry.getEventsMap()[eventsNames.failedRows]).not.toBeUndefined()
     expect(mockTelemetry.getEventsMap()[eventsNames.failedRows]).toHaveLength(1)
     expect(mockTelemetry.getEventsMap()[eventsNames.failedRows][0].value).toEqual(5)
+  })
+
+  it('should use current env when env is not provided', async () => {
+    mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+    await command(
+      workspaceDir,
+      'mockName',
+      'mockPath',
+      getCliTelemetry(mockTelemetry, 'delete'),
+      cliOutput,
+    ).execute()
+    expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+    expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+      mocks.withoutEnvironmentParam
+    )
+  })
+  it('should use provided env', async () => {
+    mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+    await command(
+      workspaceDir,
+      'mockName',
+      'mockPath',
+      getCliTelemetry(mockTelemetry, 'delete'),
+      cliOutput,
+      mocks.withEnvironmentParam,
+    ).execute()
+    expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+    expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+      mocks.withEnvironmentParam
+    )
   })
 })

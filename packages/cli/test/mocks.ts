@@ -28,7 +28,7 @@ import { EVENT_TYPES } from '@salto-io/core/dist/src/telemetry'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
 import { YargsCommandBuilder } from '../src/command_builder'
-import { Spinner, SpinnerCreator } from '../src/types'
+import { Spinner, SpinnerCreator, CliOutput } from '../src/types'
 
 export const mockFunction = <T extends (...args: never[]) => unknown>():
 jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
@@ -255,14 +255,57 @@ export const mockLoadConfig = (workspaceDir: string): Config =>
     currentEnv: 'active',
   })
 
-export const mockErrors = (errors: SaltoError[]): Errors => ({
-  all: () => errors,
-  hasErrors: () => errors.length !== 0,
-  merge: [],
-  parse: [],
-  validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
-  strings: () => errors.map(err => err.message),
+export const transformToWorkspaceError = (): Readonly<WorkspaceError<SaltoError>> => ({
+  sourceFragments: [],
+  message: 'Error',
+  severity: 'Error',
 })
+
+export type MockWorkspaceType = {
+  config?: Config
+  currentEnv?: string
+  transformToWorkspaceError?: () => Readonly<
+    Readonly<SaltoError & { sourceFragments: SourceFragment[]} >>
+}
+export type mockLoadWorkspaceReturnType = {
+  workspace: MockWorkspaceType
+  errored: boolean
+}
+
+export const withoutEnvironmentParam = 'active'
+export const withEnvironmentParam = 'inactive'
+
+export const mockLoadWorkspaceEnvironment = (
+  baseDir: string,
+  _cliOutput: CliOutput,
+  _spinnerCreator: SpinnerCreator,
+  sessionEnvironment: string,
+): mockLoadWorkspaceReturnType => {
+  if (baseDir === 'errorDir') {
+    return {
+      workspace: ({}),
+      errored: true,
+    }
+  }
+  if (sessionEnvironment === withEnvironmentParam) {
+    return {
+      workspace: {
+        currentEnv: withEnvironmentParam,
+        config: mockLoadConfig(''),
+        transformToWorkspaceError,
+      },
+      errored: false,
+    }
+  }
+  return {
+    workspace: {
+      currentEnv: withoutEnvironmentParam,
+      config: mockLoadConfig(''),
+      transformToWorkspaceError,
+    },
+    errored: false,
+  }
+}
 
 export const mockLoadWorkspace = (workspaceDir: string): Workspace =>
   ({

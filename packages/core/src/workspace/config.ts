@@ -172,11 +172,20 @@ const parseConfig = (configInstance: InstanceElement | undefined): PartialConfig
   return configInstance.value as PartialConfig
 }
 
-const parseLocalWorkspaceConfig = (configInstance: InstanceElement | undefined):
-LocalWorkspaceConfig => {
-  if (!configInstance) throw new ConfigParseError()
-  return configInstance.value as unknown as LocalWorkspaceConfig
-}
+const createDefaultLocalWorkspaceConfig = (
+  environments: ReadonlyArray<string>,
+): LocalWorkspaceConfig => ({
+  currentEnv: environments[0],
+})
+
+const parseLocalWorkspaceConfig = (
+  configInstance: InstanceElement | undefined,
+  environments: ReadonlyArray<string>,
+): LocalWorkspaceConfig => (
+  configInstance
+    ? configInstance.value as unknown as LocalWorkspaceConfig
+    : createDefaultLocalWorkspaceConfig(environments)
+)
 
 const completeWorkspaceConfig = (baseDir: string, workspaceConfig: Partial<Config>): Config => {
   const defaultWorkspaceConfig = createDefaultWorkspaceConfig(
@@ -228,7 +237,8 @@ Promise<Config> => {
     ? parseLocalWorkspaceConfig(
       await configSource(
         localDirectoryStore(getLocalWorkspaceConfigDir(baseDir, config.localStorage))
-      ).get(CONFIG_FILENAME)
+      ).get(CONFIG_FILENAME),
+      Object.keys(envs),
     ).currentEnv
     : config.currentEnv
   return { ...config, currentEnv, envs }

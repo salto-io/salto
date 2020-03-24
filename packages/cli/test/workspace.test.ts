@@ -127,7 +127,7 @@ describe('workspace', () => {
     it('mark spinner as success in case there are no errors', async () => {
       mockWs.hasErrors = jest.fn().mockResolvedValue(false)
       mockWs.getWorkspaceErrors = jest.fn().mockImplementation(() => ([]))
-      await loadWorkspace('', cliOutput, () => spinner)
+      await loadWorkspace('', cliOutput, true, () => spinner)
 
       expect(cliOutput.stdout.content).toBe('')
       expect(cliOutput.stderr.content).toBe('')
@@ -141,7 +141,7 @@ describe('workspace', () => {
         message: 'Error BLA',
         severity: 'Warning',
       }]))
-      await loadWorkspace('', cliOutput, () => spinner)
+      await loadWorkspace('', cliOutput, true, () => spinner)
 
       expect(cliOutput.stdout.content).toContain('Error BLA')
       expect(spinner.succeed).toHaveBeenCalled()
@@ -154,7 +154,7 @@ describe('workspace', () => {
         message: 'Error BLA',
         severity: 'Error',
       }]))
-      await loadWorkspace('', cliOutput, () => spinner)
+      await loadWorkspace('', cliOutput, true, () => spinner)
 
       expect(cliOutput.stderr.content).toContain('Error BLA')
       expect(spinner.fail).toHaveBeenCalled()

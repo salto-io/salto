@@ -30,11 +30,12 @@ export const command = (
   cliTelemetry: CliTelemetry,
   { stdout, stderr }: CliOutput,
   spinnerCreator: SpinnerCreator,
-  inputServices: string[]
+  inputServices: string[],
+  force = false,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir,
-      { stdout, stderr }, spinnerCreator)
+      { stdout, stderr }, force, spinnerCreator)
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError
@@ -66,6 +67,7 @@ export const command = (
 })
 
 type PreviewArgs = {
+  force: boolean
 } & ServicesArgs
 type PreviewParsedCliInput = ParsedCliInput<PreviewArgs>
 
@@ -74,11 +76,12 @@ const previewBuilder = createCommandBuilder({
     command: 'preview',
     description: 'Shows Salto\'s execution plan next time deploy is run',
     keyed: {
-      'workspace-dir': {
-        alias: 'w',
-        describe: 'Path to the workspace directory',
-        string: true,
-        default: '.',
+      force: {
+        alias: ['f'],
+        describe: 'Do not ask for approval if there are warnings in the workspace',
+        boolean: true,
+        default: false,
+        demandOption: false,
       },
     },
   },
@@ -91,6 +94,7 @@ const previewBuilder = createCommandBuilder({
       output,
       spinnerCreator,
       input.args.services,
+      input.args.force,
     )
   },
 })

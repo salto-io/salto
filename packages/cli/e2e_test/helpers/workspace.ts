@@ -76,14 +76,16 @@ export const runFetch = async (fetchOutputDir: string): Promise<void> => {
     .execute()
 }
 
-export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {
+export const runDeploy = async (
+  lastPlan: Plan | undefined, fetchOutputDir: string, force = false,
+): Promise<void> => {
   if (lastPlan) {
     lastPlan.clear()
   }
   const output = mockCliOutput()
   const result = await new DeployCommand(
     fetchOutputDir,
-    false,
+    force,
     services,
     getCliTelemetry(mockTelemetry, 'deploy'),
     output,
@@ -95,15 +97,20 @@ export const runDeploy = async (lastPlan: Plan, fetchOutputDir: string): Promise
   expect(result).toBe(CliExitCode.Success)
 }
 
+export const runPreview = async (fetchOutputDir: string): Promise<CliExitCode> => (
+  preview(
+    fetchOutputDir, getCliTelemetry(mockTelemetry, 'preview'),
+    mockCliOutput(), mockSpinnerCreator([]),
+    services,
+    true,
+  ).execute()
+)
+
 export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {
   if (lastPlan) {
     lastPlan.clear()
   }
-  await preview(
-    fetchOutputDir, getCliTelemetry(mockTelemetry, 'preview'),
-    mockCliOutput(), mockSpinnerCreator([]),
-    services,
-  ).execute()
+  await runPreview(fetchOutputDir)
   expect(_.isEmpty(lastPlan)).toBeTruthy()
 }
 

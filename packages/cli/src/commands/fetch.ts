@@ -200,7 +200,7 @@ export const command = (
       interactive}, strict=${strict}]`)
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
-    const { workspace, errored } = await loadWorkspace(workspaceDir, output, spinnerCreator)
+    const { workspace, errored } = await loadWorkspace(workspaceDir, output, force, spinnerCreator)
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError

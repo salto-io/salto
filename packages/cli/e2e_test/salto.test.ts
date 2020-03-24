@@ -21,19 +21,16 @@ import { testHelpers as salesforceTestHelpers, SalesforceClient } from '@salto-i
 import { Plan, file, Workspace, SALTO_HOME_VAR, SourceMap } from '@salto-io/core'
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
-  API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE, PROFILE_METADATA_TYPE, RECORDS_PATH,
+  API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE,
 } from '@salto-io/salesforce-adapter/dist/src/constants'
 import {
-  ActionName, BuiltinTypes, ElemID, InstanceElement, ObjectType,
+  BuiltinTypes, ObjectType,
 } from '@salto-io/adapter-api'
-import {
-  findInstances,
-} from '@salto-io/adapter-utils'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {
   editBlueprint, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
-  verifyObject, runEmptyPreview, runSalesforceLogin,
+  verifyObject, runEmptyPreview, runSalesforceLogin, runPreview,
 } from './helpers/workspace'
 import { instanceExists, objectExists } from './helpers/salesforce'
 
@@ -272,43 +269,21 @@ describe('cli e2e', () => {
   })
 
   describe('deploy after deleting the object and the instance', () => {
-    let profiles: InstanceElement[]
     beforeAll(async () => {
-      const workspace = await loadValidWorkspace(fetchOutputDir)
       await rm(fullPath(tmpBPRelativePath))
       await rm(fullPath(newObjectAnnotationsRelativePath))
       await rm(fullPath(newObjectStandardFieldRelativePath))
-      // delete references from SearchSettings
-      await editBlueprint(fullPath(`${SALESFORCE}/${RECORDS_PATH}/Settings/Search.bp`),
-        [
-          [new RegExp(`{\\W+enhancedLookupEnabled = false\\W+lookupAutoCompleteEnabled = false\\W+name = salesforce.${newObjectElemName}\\W+resultsPerPageCount = 0\\W+},`), ''],
-        ])
-      // delete references from Profiles
-      profiles = [...findInstances(await workspace.elements,
-        new ElemID(SALESFORCE, PROFILE_METADATA_TYPE))]
-      await Promise.all(profiles
-        .map(profile =>
-          editBlueprint(fullPath(`${SALESFORCE}/${RECORDS_PATH}/${PROFILE_METADATA_TYPE}/${profile.elemID.name}.bp`),
-            [
-              // fieldPermissions
-              [new RegExp(`{\\W+editable = (true|false)\\W+field = salesforce.${newObjectElemName}.field.Alpha\\W+readable = (true|false)\\W+},`), ''],
-              [new RegExp(`{\\W+editable = (true|false)\\W+field = salesforce.${newObjectElemName}.field.Modified\\W+readable = (true|false)\\W+},`), ''],
-              // objectPermissions
-              [new RegExp(`{\\W+allowCreate = (true|false)\\W+allowDelete = (true|false)\\W+allowEdit = (true|false)\\W+allowRead = (true|false)\\W+modifyAllRecords = (true|false)\\W+object = salesforce.${newObjectElemName}\\W+viewAllRecords = (true|false)\\W+},`), ''],
-              // layoutAssignments
-              [new RegExp(`{\\W+layout = salesforce.Layout.instance.${newObjectElemName}_Layout\\W+},`), ''],
-            ])))
-      await runDeploy(lastPlan, fetchOutputDir)
+      // We have to run preview first, otherwise the last plan won't be updated
+      lastPlan.clear()
+      await runPreview(fetchOutputDir)
+      // We have to run deploy with force = true because after we delete the new object
+      // there are unresolved reference warnings in the workspace
+      await runDeploy(undefined, fetchOutputDir, true)
     })
     it('should have "remove" changes', async () => {
       verifyChanges(lastPlan, [
         { action: 'remove', element: newObjectElemName },
         { action: 'remove', element: newInstanceElemName },
-        // modify on SearchSettings
-        { action: 'modify', element: '_config' },
-        // modify on all Profiles
-        ...profiles.map(profile =>
-          ({ action: 'modify' as ActionName, element: profile.elemID.name })),
       ])
     })
     it('should remove the object in salesforce', async () => {

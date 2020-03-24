@@ -53,14 +53,14 @@ export const validateWorkspace = async (ws: Workspace,
 }
 
 export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
-  spinnerCreator?: SpinnerCreator): Promise<LoadWorkspaceResult> => {
+  force = false, spinnerCreator?: SpinnerCreator): Promise<LoadWorkspaceResult> => {
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
     : { succeed: () => undefined, fail: () => undefined }
   const workspace = new Workspace(await loadConfig(workingDir))
   const wsStatus = await validateWorkspace(workspace, cliOutput)
 
-  if (wsStatus === 'Warning') {
+  if (wsStatus === 'Warning' && !force) {
     spinner.succeed(formatFinishedLoading(workspace.config.currentEnv))
     const numWarnings = (await workspace.getWorkspaceErrors()).filter(e => !isError(e)).length
     const shouldContinue = await shouldContinueInCaseOfWarnings(numWarnings, cliOutput)

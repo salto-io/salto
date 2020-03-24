@@ -161,20 +161,21 @@ export const fetch: fetchFunc = async (
     createElemIdGetter(filteredStateElements)
   )
 
+  const currentConfigs = (await Promise.all(services
+    .map(async service => workspace.adapterConfig.get(service)))
+  ).filter(config => !_.isUndefined(config)) as InstanceElement[]
+
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
   }
   try {
-    const { changes, elements, mergeErrors, configs } = await fetchChanges(
+    const { changes, elements, mergeErrors, configChanges } = await fetchChanges(
       adapters,
       filterElementsByServices(await workspace.elements, services),
       filteredStateElements,
+      currentConfigs,
       progressEmitter,
     )
-    const currentConfigs = (await Promise.all(configs
-      .map(async config => workspace.adapterConfig.get(config.elemID.adapter)))
-    ).filter(config => !_.isUndefined(config)) as InstanceElement[]
-    const configChanges = wu(await getDetailedChanges(configs, currentConfigs))
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     await overrideState(elements)
     return {

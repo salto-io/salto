@@ -142,7 +142,7 @@ export type FetchChangesResult = {
   changes: Iterable<FetchChange>
   elements: Element[]
   mergeErrors: MergeErrorWithElements[]
-  configs: InstanceElement[]
+  configChanges: Iterable<DetailedChange>
 }
 
 export class FatalFetchMergeError extends Error {
@@ -216,9 +216,9 @@ const fetchAndProcessMergeErrors = async (
   try {
     const fetchResults = await Promise.all(Object.values(adapters).map(adapter => adapter.fetch()))
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
-    const configs = fetchResults
+    const configs = _.flatten(fetchResults
       .map(res => res.config)
-      .filter(c => !_.isUndefined(c)) as InstanceElement[]
+      .filter(c => !_.isUndefined(c))) as InstanceElement[]
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
     log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
@@ -270,6 +270,7 @@ export const fetchChanges = async (
   adapters: Record<string, Adapter>,
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
+  currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>
 ): Promise<FetchChangesResult> => {
   const adapterNames = _.keys(adapters)
@@ -308,11 +309,16 @@ export const fetchChanges = async (
   if (progressEmitter) {
     calculateDiffEmitter.emit('completed')
   }
+  const configsNames = configs.map(c => c.elemID.getFullName())
+  const configChanges = _.isEmpty(configs)
+    ? []
+    : await getDetailedChanges(currentConfigs
+      .filter(config => configsNames.includes(config.elemID.getFullName())), configs)
   return {
     changes,
     elements: processErrorsResult.keptElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
-    configs,
+    configChanges,
   }
 }
 

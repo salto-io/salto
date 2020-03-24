@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import wu from 'wu'
 import { EventEmitter } from 'pietile-eventemitter'
 import { ElemID, ObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
 import {
@@ -238,7 +237,7 @@ describe('fetch command', () => {
           const mockFetchWithChanges = jest.fn().mockResolvedValue(
             {
               changes: [],
-              configChanges: wu([change]),
+              configChanges: [change],
               mergeErrors: [],
               success: true,
             }

@@ -86,8 +86,66 @@ describe('fetch', () => {
           mockAdapters as unknown as Record<string, Adapter>,
           [],
           [],
+          [],
         )
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
+      })
+    })
+    describe('when there are config changes', () => {
+      const configElemID = new ElemID('dummy')
+      const configType = new ObjectType({
+        elemID: configElemID,
+        fields: {
+          test: new Field(configElemID, 'test', BuiltinTypes.STRING, {}, true),
+        },
+      })
+      const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
+      const currentConfigInstance = new InstanceElement('ins', configType, { test: [] })
+      beforeEach(() => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          Promise.resolve({ elements: [], config: [configInstance] }),
+        )
+      })
+      it('should return config change when there is no current config', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>,
+          [],
+          [],
+          [],
+        )
+        const configChanges = [...fetchChangesResult.configChanges]
+        expect(configChanges).toHaveLength(1)
+        const configChange = configChanges[0]
+        expect(configChange.id).toEqual(configInstance.elemID)
+        expect(configChange.action).toEqual('add')
+        expect(configChange.data).toEqual({ after: configInstance })
+      })
+
+      it('should return merged config change when there is current config', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>,
+          [],
+          [],
+          [currentConfigInstance],
+        )
+        const configChanges = [...fetchChangesResult.configChanges]
+        expect(configChanges).toHaveLength(1)
+        const configChange = configChanges[0]
+        expect(configChange.action).toEqual('modify')
+        expect(configChange.data).toEqual({
+          before: currentConfigInstance.value.test,
+          after: configInstance.value.test,
+        })
+      })
+
+      it('should not return unchanged configs', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>,
+          [],
+          [],
+          [currentConfigInstance, new InstanceElement('not-exist', configType, { test: ['bla'] })],
+        )
+        expect([...fetchChangesResult.configChanges]).toHaveLength(1)
       })
     })
     describe('when merge elements returns errors', () => {
@@ -102,7 +160,7 @@ describe('fetch', () => {
             })
 
             try {
-              await fetchChanges({}, [], [newTypeBase])
+              await fetchChanges({}, [], [newTypeBase], [])
               expect(false).toBeTruthy()
             } catch (e) {
               expect(e.message).toMatch(/.*duplicate annotation.*/)
@@ -120,7 +178,7 @@ describe('fetch', () => {
               ],
             })
 
-            fetchChangesResult = await fetchChanges({}, [], [])
+            fetchChangesResult = await fetchChanges({}, [], [], [])
           })
           it('should return errors', async () => {
             expect(fetchChangesResult.mergeErrors).toHaveLength(1)
@@ -142,7 +200,7 @@ describe('fetch', () => {
               new DuplicateAnnotationError({ elemID: newTypeBase.elemID, key: 'bla' }),
             ],
           })
-          fetchChangesResult = await fetchChanges({}, [], [])
+          fetchChangesResult = await fetchChanges({}, [], [], [])
         })
         it('should return errors', async () => {
           expect(fetchChangesResult.mergeErrors).toHaveLength(1)
@@ -164,6 +222,7 @@ describe('fetch', () => {
           mockAdapters as unknown as Record<string, Adapter>,
           [newTypeMerged],
           [newTypeMerged],
+          [],
         )
         elements = result.elements
         changes = [...result.changes]
@@ -184,6 +243,7 @@ describe('fetch', () => {
           mockAdapters as unknown as Record<string, Adapter>,
           [typeWithField],
           [typeWithField],
+          [],
         )
         changes = [...result.changes]
       })
@@ -201,6 +261,7 @@ describe('fetch', () => {
         progressEmitter = new EventEmitter<FetchProgressEvents>()
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
+          [],
           [],
           [],
           progressEmitter
@@ -221,6 +282,7 @@ describe('fetch', () => {
         )
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
+          [],
           [],
           [],
         )
@@ -251,6 +313,7 @@ describe('fetch', () => {
               mockAdapters as unknown as Record<string, Adapter>,
               [newTypeBaseWPath],
               [newTypeBaseWPath],
+              [],
             )
             changes = [...result.changes]
           })
@@ -286,6 +349,7 @@ describe('fetch', () => {
               mockAdapters as unknown as Record<string, Adapter>,
               [newTypeA],
               [newTypeA],
+              [],
             )
             changes = [...result.changes]
           })
@@ -309,6 +373,7 @@ describe('fetch', () => {
             mockAdapters as unknown as Record<string, Adapter>,
             [typeWithFieldChange],
             [typeWithField],
+            [],
           )
           changes = [...result.changes]
         })
@@ -326,6 +391,7 @@ describe('fetch', () => {
             mockAdapters as unknown as Record<string, Adapter>,
             [typeWithFieldConflict],
             [typeWithField],
+            [],
           )
           changes = [...result.changes]
         })
@@ -343,6 +409,7 @@ describe('fetch', () => {
             mockAdapters as unknown as Record<string, Adapter>,
             [],
             [typeWithField],
+            [],
           )
           changes = [...result.changes]
         })
@@ -502,6 +569,7 @@ describe('fetch', () => {
         )
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
+          [],
           [],
           [],
         )

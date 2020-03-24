@@ -19,10 +19,11 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, ElemIdGetter,
+  ADAPTER, ElemIdGetter, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
-  resolvePath, flattenElementStr,
+  resolvePath, TransformPrimitiveFunc, transformValues,
+  flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
@@ -40,11 +41,39 @@ export type FetchChange = {
   pendingChange?: DetailedChange
 }
 
+export const removeElementHiddenValues = (elem: Element):
+  Element => {
+  if (isInstanceElement(elem)) {
+    const removeHiddenValue: TransformPrimitiveFunc = (val, _pathID, field) => {
+      if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
+        return undefined
+      }
+      return val
+    }
+
+    const transformedValues = transformValues({
+      values: elem.value,
+      type: elem.type,
+      transformPrimitives: removeHiddenValue,
+      strict: false,
+    }) || {}
+
+    return new InstanceElement(
+      elem.elemID.name,
+      elem.type,
+      transformedValues,
+      elem.path,
+      elem.annotations
+    )
+  }
+  return elem
+}
+
 export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {
     id: elem.elemID,
     action: 'add',
-    data: { after: elem },
+    data: { after: removeElementHiddenValues(elem) },
   }
   return { change, serviceChange: change }
 }
@@ -250,6 +279,9 @@ const fetchAndProcessMergeErrors = async (
   }
 }
 
+const removeElementsHiddenValues = (serviceElements: ReadonlyArray<Element>):
+  Element[] => serviceElements.map(elem => removeElementHiddenValues(elem))
+
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all service elements should be consider as "add" changes.
 const calcFetchChanges = async (
@@ -258,16 +290,21 @@ const calcFetchChanges = async (
   stateElements: ReadonlyArray<Element>,
   workspaceElements: ReadonlyArray<Element>
 ): Promise<Iterable<FetchChange>> => {
+  const serviceElementsHiddenRemoved = removeElementsHiddenValues(serviceElements)
+  const mergedServiceElementsHiddenRemoved = removeElementsHiddenValues(mergedServiceElements)
+  const stateElementsHiddenRemoved = removeElementsHiddenValues(stateElements)
   const serviceChanges = await log.time(() =>
-    getDetailedChanges(stateElements, mergedServiceElements),
+    getDetailedChanges(stateElementsHiddenRemoved, mergedServiceElementsHiddenRemoved),
   'finished to calculate service-state changes')
-  const pendingChanges = await log.time(() => getChangeMap(stateElements, workspaceElements),
-    'finished to calculate pending changes')
+  const pendingChanges = await log.time(() => getChangeMap(
+    stateElementsHiddenRemoved,
+    workspaceElements
+  ), 'finished to calculate pending changes')
   const workspaceToServiceChanges = await log.time(() => getChangeMap(workspaceElements,
-    mergedServiceElements), 'finished to calculate service-workspace changes')
+    mergedServiceElementsHiddenRemoved), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
-    serviceElements,
+    serviceElementsHiddenRemoved,
     se => se.elemID.getFullName()
   )
   return wu(serviceChanges)

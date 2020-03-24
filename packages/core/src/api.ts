@@ -19,18 +19,26 @@ import {
   Element,
   InstanceElement,
   ObjectType,
+  Value,
+  isInstanceElement,
+  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
+import {
+  transformElement, TransformPrimitiveFunc,
+} from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
   getAdapterDependencyChangers, getDefaultAdapterConfig, initAdapters, getAdaptersCreatorConfigs,
 } from './core/adapters'
 import { getPlan, Plan, PlanItem } from './core/plan'
-import { findElement, SearchResult } from './core/search'
+import {
+  createElementsMap, findElement, SearchResult,
+} from './core/search'
 import {
   createElemIdGetter,
   FatalFetchMergeError,
@@ -39,6 +47,7 @@ import {
   FetchProgressEvents,
   getDetailedChanges,
   MergeErrorWithElements,
+  removeElementHiddenValues,
   toChangesWithPath,
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
@@ -65,15 +74,50 @@ const filterElementsByServices = (
   services: ReadonlyArray<string>
 ): Element[] => elements.filter(e => services.includes(e.elemID.adapter))
 
+const addHiddenValues = (
+  workspaceElements: ReadonlyArray<Element>,
+  stateElements: Element[],
+): Element[] => {
+  const stateElementsMap = createElementsMap(stateElements)
+
+  return workspaceElements.map(elem => {
+    const stateElement = stateElementsMap[elem.elemID.getFullName()]
+    if (isInstanceElement(elem) && stateElement !== undefined) {
+      const hiddenPathsValuesMap = new Map<string, Value>()
+      const createHiddenMapCallback: TransformPrimitiveFunc = (val, pathID, field) => {
+        if (pathID && field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
+          hiddenPathsValuesMap.set(pathID.getFullName(), val)
+          return val
+        }
+        return undefined
+      }
+
+      const hiddenValuesInstance = transformElement({
+        element: stateElement,
+        transformPrimitives: createHiddenMapCallback,
+        strict: false,
+      }) as InstanceElement
+
+      elem.value = _.mergeWith(elem.value, hiddenValuesInstance.value)
+    }
+    return elem
+  })
+}
 export const preview = async (
   workspace: Workspace,
   services = workspace.services(),
-): Promise<Plan> => getPlan(
-  filterElementsByServices(await workspace.state().getAll(), services),
-  filterElementsByServices(await workspace.elements(), services),
-  getAdapterChangeValidators(),
-  defaultDependencyChangers.concat(getAdapterDependencyChangers()),
-)
+): Promise<Plan> => {
+  const stateElements = await workspace.state().getAll()
+  return getPlan(
+    filterElementsByServices(stateElements, services),
+    filterElementsByServices(
+      addHiddenValues(await workspace.elements(), stateElements),
+      services
+    ),
+    getAdapterChangeValidators(),
+    defaultDependencyChangers.concat(getAdapterDependencyChangers()),
+  )
+}
 
 export interface DeployResult {
   success: boolean
@@ -101,7 +145,7 @@ export const deploy = async (
       ((action === 'remove')
         ? workspace.state().remove(element.elemID)
         : workspace.state().set(element)
-          .then(() => { changedElements.push(element) }))
+          .then(() => { changedElements.push(removeElementHiddenValues(element)) }))
     const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())

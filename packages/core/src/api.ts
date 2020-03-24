@@ -33,7 +33,7 @@ import {
   getAdapterDependencyChangers, createDefaultAdapterConfig,
 } from './core/adapters'
 import { addServiceToConfig, currentEnvConfig } from './workspace/config'
-import { getPlan, Plan, PlanItem } from './core/plan'
+import { getPlan, Plan, PlanItem, DetailedChange } from './core/plan'
 import { findElement, SearchResult } from './core/search'
 import {
   createElemIdGetter,
@@ -132,7 +132,7 @@ export type FetchResult = {
   changes: Iterable<FetchChange>
   mergeErrors: MergeErrorWithElements[]
   success: boolean
-  configChanges: Iterable<FetchChange>
+  configChanges: Iterable<DetailedChange>
 }
 export type fetchFunc = (
   workspace: Workspace,
@@ -175,7 +175,6 @@ export const fetch: fetchFunc = async (
       .map(async config => workspace.adapterConfig.get(config.elemID.adapter)))
     ).filter(config => !_.isUndefined(config)) as InstanceElement[]
     const configChanges = wu(await getDetailedChanges(configs, currentConfigs))
-      .map(change => ({ change, serviceChange: change } as FetchChange))
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     await overrideState(elements)
     return {

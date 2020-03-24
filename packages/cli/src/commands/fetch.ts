@@ -36,7 +36,7 @@ import {
 import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
-  formatFetchChangeForApproval,
+  formatDetailedChanges,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
   shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
@@ -138,13 +138,13 @@ export const fetchCommand = async (
 
   const configChanges = [...fetchResult.configChanges]
   const abortRequests = await series(
-    configChanges.map((configChange, configIdx) => async () => {
-      const adapterName = configChange.change.id.adapter
+    configChanges.map(configChange => async () => {
+      const adapterName = configChange.id.adapter
       const shouldWriteToConfig = await shouldUpdateConfig(
-        adapterName, formatFetchChangeForApproval(configChange, configIdx, configChanges.length)
+        adapterName, formatDetailedChanges([[configChange]], true)
       )
       if (shouldWriteToConfig) {
-        await workspace.adapterConfig.set(adapterName, getChangeElement(configChange.change))
+        await workspace.adapterConfig.set(adapterName, getChangeElement(configChange))
       }
       return !shouldWriteToConfig
     })

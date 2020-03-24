@@ -238,7 +238,7 @@ describe('fetch command', () => {
           const mockFetchWithChanges = jest.fn().mockResolvedValue(
             {
               changes: [],
-              configChanges: wu([{ change, serviceChange: change }]),
+              configChanges: wu([change]),
               mergeErrors: [],
               success: true,
             }

@@ -215,10 +215,6 @@ export const getLocalWorkspaceConfigDir = (baseDir: string, localStorage: string
   path.resolve(baseDir, localStorage)
 )
 
-export const getLocalWorkspaceConfigPath = (baseDir: string, localStorage: string): string => (
-  path.join(getLocalWorkspaceConfigDir(baseDir, localStorage), CONFIG_FILENAME)
-)
-
 export const completeConfig = async (baseDir: string, partialConfig: PartialConfig):
 Promise<Config> => {
   const config = completeWorkspaceConfig(baseDir, partialConfig)

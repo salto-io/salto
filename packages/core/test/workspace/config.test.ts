@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import * as path from 'path'
 import os from 'os'
 import { Values } from '@salto-io/adapter-api'
@@ -21,12 +22,12 @@ import { loadConfig, addEnvToConfig, setCurrentEnv,
 import { readTextFile, exists } from '../../src/file'
 import { SALTO_HOME_VAR } from '../../src/app_config'
 
-const workspacesDir = path.join(__dirname, '../../../test/workspace/configs')
-const fullWorkspaceDir = path.resolve(workspacesDir, 'full')
-const defaultsWorkspaceDir = path.resolve(workspacesDir, 'defaults')
+const workspacesDir = '/workspaces'
+const fullWorkspaceDir = path.join(workspacesDir, 'full')
+const defaultsWorkspaceDir = path.join(workspacesDir, 'defaults')
+const missingLocalWorkspaceDir = path.join(workspacesDir, 'missing')
 
 jest.mock('../../src/file', () => ({
-  ...jest.requireActual('../../src/file'),
   readTextFile: jest.fn(),
   exists: jest.fn(),
   stat: jest.fn().mockResolvedValue({}),
@@ -37,7 +38,7 @@ describe('configuration dir location', () => {
   const mockReadFileText = readTextFile as unknown as jest.Mock
   const mockExists = exists as unknown as jest.Mock
   const filenamesToContent: Values = {
-    'full/salto.config/config.bp': `salto {
+    '/workspaces/full/salto.config/config.bp': `salto {
       name = "workspace"
       localStorage = "/.salto/workspace"
       uid = "uid"
@@ -54,30 +55,38 @@ describe('configuration dir location', () => {
     '/.salto/workspace/config.bp': `salto {
       currentEnv = "default"
     }`,
-    'defaults/salto.config/config.bp': `salto {
+    '/workspaces/defaults/salto.config/config.bp': `salto {
       envs = {
         default = {
           baseDir = "default"
         }
       }
     }`,
-    '.salto_home/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/config.bp': `salto {
+    '/home/.salto_home/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/config.bp': `salto {
       currentEnv = "default"
     }`,
-    '.salto/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/config.bp': `salto {
+    [path.join(os.homedir(), '.salto/defaults-56816ffc-1457-55da-bd68-6e02c87f908f/config.bp')]: `salto {
       currentEnv = "default"
+    }`,
+    '/workspaces/missing/salto.config/config.bp': `salto {
+      uid = "uid"
+      envs = {
+        first = {
+          baseDir = "first"
+        }
+        second = {
+          baseDir = "second"
+        }
+      }
     }`,
   }
-  mockExists.mockImplementation(async (filename: string): Promise<boolean> => {
-    if (Object.keys(filenamesToContent).some(name => filename.endsWith(name))) {
-      return true
-    }
-    return jest.requireActual('../../src/file').exists(filename)
-  })
-  mockReadFileText.mockImplementation(async (filename: string): Promise<string> => {
-    const relativeFilename = Object.keys(filenamesToContent).find(name => filename.endsWith(name))
-    return relativeFilename ? filenamesToContent[relativeFilename] : ''
-  })
+  const getAllPaths = (p: string): string[] => {
+    if (p === '.' || p === '/') return []
+    return [...getAllPaths(path.dirname(p)), p]
+  }
+  const allPaths = new Set(_.flatten(Object.keys(filenamesToContent).map(getAllPaths)))
+  mockExists.mockImplementation(async filename => allPaths.has(filename))
+  mockReadFileText.mockImplementation(async filename => filenamesToContent[filename] ?? '')
 
   it('should load config from workspace root', async () => {
     const config = await loadConfig(fullWorkspaceDir)
@@ -142,8 +151,39 @@ describe('load proper configuration', () => {
       }
     )
   })
+  it('should use default values for local config', async () => {
+    const config = await loadConfig(missingLocalWorkspaceDir)
+    const localStorage = path.join(os.homedir(), '.salto', 'missing-uid')
+    expect(config).toEqual(
+      {
+        name: path.basename(missingLocalWorkspaceDir),
+        localStorage,
+        baseDir: missingLocalWorkspaceDir,
+        uid: 'uid',
+        currentEnv: 'first',
+        envs: {
+          first: {
+            baseDir: 'first',
+            config: {
+              credentialsLocation: path.join(localStorage, 'first', 'credentials'),
+              services: [],
+              stateLocation: path.join(missingLocalWorkspaceDir, CONFIG_DIR_NAME, STATES_DIR_NAME, 'first.bpc'),
+            },
+          },
+          second: {
+            baseDir: 'second',
+            config: {
+              credentialsLocation: path.join(localStorage, 'second', 'credentials'),
+              services: [],
+              stateLocation: path.join(missingLocalWorkspaceDir, CONFIG_DIR_NAME, STATES_DIR_NAME, 'second.bpc'),
+            },
+          },
+        },
+      }
+    )
+  })
   it('should use salto home env var for default values', async () => {
-    const homeVar = path.join(os.homedir(), '.salto_home')
+    const homeVar = '/home/.salto_home'
     process.env[SALTO_HOME_VAR] = homeVar
     const config = await loadConfig(defaultsWorkspaceDir)
     const localStorage = path.join(homeVar, defaultLocalStorageName)

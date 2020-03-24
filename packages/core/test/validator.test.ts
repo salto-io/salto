@@ -660,6 +660,24 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(0)
       })
 
+      it('should return error when not a list in list of lists', () => {
+        extInst.value.listOfList = [1]
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfList', '0'))
+      })
+
+      it('should return error when item instead of list', () => {
+        extInst.value.listOfObject = {
+          str: 'str',
+          num: 3,
+          bool: false,
+        }
+        const errors = validateElements([extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject'))
+      })
+
       it('should return an error when not matching list object item (missing req)', () => {
         extInst.value.listOfObject.push({
           abc: 'dsadas',

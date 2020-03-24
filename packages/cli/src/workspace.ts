@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import _ from 'lodash'
-import { Workspace, loadConfig, FetchChange, WorkspaceError, Tags } from '@salto-io/core'
+import wu from 'wu'
+import { Workspace, loadConfig, FetchChange, Tags } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { formatWorkspaceErrors, formatWorkspaceLoadFailed, formatDetailedChanges,
+import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
   formatFinishedLoading, formatWorkspaceAbort } from './formatter'
 import { CliOutput, SpinnerCreator } from './types'
 import {
@@ -31,7 +31,8 @@ import Prompts from './prompts'
 const log = logger(module)
 
 export const MAX_DETAIL_CHANGES_TO_LOG = 100
-const isError = (e: WorkspaceError<SaltoError>): boolean => (e.severity === 'Error')
+export const MAX_WORKSPACE_ERRORS_TO_LOG = 30
+const isError = (e: SaltoError): boolean => (e.severity === 'Error')
 
 export type LoadWorkspaceResult = {
   workspace: Workspace
@@ -40,7 +41,7 @@ export type LoadWorkspaceResult = {
 type WorkspaceStatus = 'Error' | 'Warning' | 'Valid'
 type WorkspaceStatusErrors = {
   status: WorkspaceStatus
-  errors: ReadonlyArray<WorkspaceError<SaltoError>>
+  errors: SaltoError[]
 }
 
 type LoadWorkspaceOptions = {
@@ -50,22 +51,36 @@ type LoadWorkspaceOptions = {
 }
 
 export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusErrors> => {
-  if (!(await ws.hasErrors())) {
+  const errors = await ws.errors()
+  if (!errors.hasErrors()) {
     return { status: 'Valid', errors: [] }
   }
-  const workspaceErrors = await ws.getWorkspaceErrors()
-  const severeErrors = workspaceErrors.filter(isError)
-  if (!_.isEmpty(severeErrors)) {
-    return { status: 'Error', errors: severeErrors }
+  if (wu.some(isError, errors.all())) {
+    return { status: 'Error', errors: [...wu.filter(isError, errors.all())] }
   }
-  return { status: 'Warning', errors: workspaceErrors }
+  return { status: 'Warning', errors: [...errors.all()] }
 }
 
-const printWorkspaceErrors = ({ status, errors }: WorkspaceStatusErrors,
-  { stdout, stderr }: CliOutput): void => {
+export const formatWorkspaceErrors = async (
+  workspace: Workspace,
+  errors: Iterable<SaltoError>,
+): Promise<string> => (
+  (await Promise.all(
+    wu(errors)
+      .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
+      .map(err => workspace.transformError(err))
+      .map(async err => formatWorkspaceError(await err))
+  )).join('\n')
+)
+
+const printWorkspaceErrors = async (
+  status: WorkspaceStatusErrors['status'],
+  errorsStr: string,
+  { stdout, stderr }: CliOutput,
+): Promise<void> => {
   if (status === 'Valid') return
   const stream = (status === 'Error' ? stderr : stdout)
-  stream.write(`\n${formatWorkspaceErrors(errors)}`)
+  stream.write(`\n${errorsStr}\n`)
 }
 
 export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
@@ -76,9 +91,9 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
     : { succeed: () => undefined, fail: () => undefined }
   const workspace = new Workspace(await loadConfig(workingDir))
-  const { status: wsStatus, errors } = await validateWorkspace(workspace)
+  const { status, errors } = await validateWorkspace(workspace)
   // Stop the spinner
-  if (wsStatus === 'Error') {
+  if (status === 'Error') {
     spinner.fail(formatWorkspaceLoadFailed(errors.length))
   } else {
     spinner.succeed(formatFinishedLoading(workspace.config.currentEnv))
@@ -92,22 +107,22 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   }
   // Offer to cancel because of stale state
   if (recommendStateRecency && !force
-    && stateRecency.status !== 'Valid' && wsStatus !== 'Error') {
+    && stateRecency.status !== 'Valid' && status !== 'Error') {
     const shouldCancel = await shouldCancelInCaseOfNoRecentState(stateRecency, cliOutput)
     if (shouldCancel) {
       return { workspace, errored: true }
     }
   }
   // Handle warnings/errors
-  printWorkspaceErrors({ status: wsStatus, errors }, cliOutput)
-  if (wsStatus === 'Warning' && !force) {
+  await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), cliOutput)
+  if (status === 'Warning' && !force) {
     const shouldContinue = await shouldContinueInCaseOfWarnings(errors.length, cliOutput)
     return { workspace, errored: !shouldContinue }
   }
-  if (wsStatus === 'Error') {
+  if (status === 'Error') {
     cliOutput.stdout.write(formatWorkspaceAbort(errors.length))
   }
-  return { workspace, errored: wsStatus === 'Error' }
+  return { workspace, errored: status === 'Error' }
 }
 
 export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
@@ -127,15 +142,15 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
       changes.map(c => c.change),
       strict ? 'strict' : undefined
     )
-    const wsStatusErrors = await validateWorkspace(ws)
-    printWorkspaceErrors(wsStatusErrors, cliOutput)
-    if (wsStatusErrors.status === 'Error') {
-      const numErrors = wsStatusErrors.errors.length
-      const shouldAbort = await shouldAbortWorkspaceInCaseOfValidationError(numErrors)
+    const { status, errors } = await validateWorkspace(ws)
+    const formattedErrors = await formatWorkspaceErrors(ws, errors)
+    await printWorkspaceErrors(status, formattedErrors, cliOutput)
+    if (status === 'Error') {
+      const shouldAbort = await shouldAbortWorkspaceInCaseOfValidationError(errors.length)
       if (!shouldAbort) {
         await ws.flush()
       }
-      log.warn(formatWorkspaceErrors(wsStatusErrors.errors))
+      log.warn(formattedErrors)
       return false
     }
   }

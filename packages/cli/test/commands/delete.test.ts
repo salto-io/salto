@@ -95,7 +95,6 @@ describe('delete command', () => {
     const erroredWorkspace = {
       hasErrors: () => true,
       errors: { strings: () => ['some error'] },
-      getWorkspaceErrors: mocks.getWorkspaceErrors,
     } as unknown as Workspace
     mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
     const result = await command(

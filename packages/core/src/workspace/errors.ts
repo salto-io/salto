@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import { types } from '@salto-io/lowerdash'
+import { SaltoError } from '@salto-io/adapter-api'
 import { MergeError } from '../core/merger'
 import { ValidationError } from '../core/validator'
 import { ParseError } from '../parser/parse'
@@ -25,6 +27,10 @@ export class Errors extends types.Bean<Readonly<{
   }>> {
   hasErrors(): boolean {
     return [this.parse, this.merge, this.validation].some(errors => errors.length > 0)
+  }
+
+  all(): Iterable<SaltoError> {
+    return wu.chain<SaltoError>(this.parse, this.merge, this.validation)
   }
 
   strings(): ReadonlyArray<string> {

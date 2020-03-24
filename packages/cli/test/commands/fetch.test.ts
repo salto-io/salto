@@ -74,7 +74,6 @@ describe('fetch command', () => {
           hasErrors: () => true,
           errors: { strings: () => ['some error'] },
           config: { services },
-          getWorkspaceErrors: mocks.getWorkspaceErrors,
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
         result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, services, false)
@@ -414,11 +413,9 @@ describe('fetch command', () => {
               const workspace = mockWorkspace(mocks.elements())
               const workspaceDir = 'exist-on-error'
               workspace.config.baseDir = workspaceDir
-              workspace.getWorkspaceErrors = async () => [{
-                sourceFragments: [],
-                message: 'BLA Error',
-                severity: 'Error',
-              }]
+              workspace.errors = async () => mocks.mockErrors([
+                { message: 'BLA Error', severity: 'Error' },
+              ])
               workspace.hasErrors = () => Promise.resolve(true)
 
               const res = await fetchCommand({
@@ -441,11 +438,9 @@ describe('fetch command', () => {
               const workspace = mockWorkspace(mocks.elements())
               const workspaceDir = 'warn'
               workspace.config.baseDir = workspaceDir
-              workspace.getWorkspaceErrors = async () => [{
-                sourceFragments: [],
-                message: 'BLA Warning',
-                severity: 'Warning',
-              }]
+              workspace.errors = async () => mocks.mockErrors([
+                { message: 'BLA Warning', severity: 'Warning' },
+              ])
               workspace.hasErrors = () => Promise.resolve(true)
 
               const res = await fetchCommand({

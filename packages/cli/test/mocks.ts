@@ -22,13 +22,16 @@ import {
 import _ from 'lodash'
 import {
   DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError,
-  DeployResult, Config, telemetrySender, Telemetry, Tags, TelemetryEvent,
+  DeployResult, Config, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors,
 } from '@salto-io/core'
 import { EVENT_TYPES } from '@salto-io/core/dist/src/telemetry'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
 import { YargsCommandBuilder } from '../src/command_builder'
 import { Spinner, SpinnerCreator } from '../src/types'
+
+export const mockFunction = <T extends (...args: never[]) => unknown>():
+jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
 
@@ -252,11 +255,21 @@ export const mockLoadConfig = (workspaceDir: string): Config =>
     currentEnv: 'active',
   })
 
+export const mockErrors = (errors: SaltoError[]): Errors => ({
+  all: () => errors,
+  hasErrors: () => errors.length !== 0,
+  merge: [],
+  parse: [],
+  validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
+  strings: () => errors.map(err => err.message),
+})
+
 export const mockLoadWorkspace = (workspaceDir: string): Workspace =>
   ({
     config: mockLoadConfig(workspaceDir),
     elements: jest.fn().mockResolvedValue([] as ReadonlyArray<Element>),
     hasErrors: () => jest.fn().mockResolvedValue(false),
+    errors: () => jest.fn().mockResolvedValue(mockErrors([])),
     isEmpty: jest.fn().mockResolvedValue(false),
   } as unknown as Workspace)
 
@@ -470,12 +483,6 @@ export const describe = async (_searchWords: string[]):
     element: elements()[2],
     isGuess: false,
   })
-
-export const getWorkspaceErrors = (): ReadonlyArray<WorkspaceError<SaltoError>> => [{
-  sourceFragments: [],
-  message: 'Error',
-  severity: 'Error',
-}]
 
 export const transformToWorkspaceError = (): Readonly<WorkspaceError<SaltoError>> => ({
   sourceFragments: [],

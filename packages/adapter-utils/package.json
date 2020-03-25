@@ -34,6 +34,7 @@
   "dependencies": {
     "@salto-io/adapter-api": "0.1.11",
     "@salto-io/dag": "0.1.11",
+    "@salto-io/logging": "^0.1.11",
     "@salto-io/lowerdash": "0.1.11",
     "lodash": "^4.17.11",
     "wu": "^2.1.0"

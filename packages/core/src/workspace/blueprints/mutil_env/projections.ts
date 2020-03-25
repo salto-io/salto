@@ -65,11 +65,11 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement | undef
 }
 
 const projectField = (src: Field, target: Field): Field | undefined => {
-  if (src.isList !== target.isList) return src
+  if (src.type !== target.type) return src
   const annotations = projectValue(src.annotations, target.annotations)
   return _.isEmpty(annotations)
     ? undefined
-    : new Field(src.parentID, src.name, src.type, annotations, src.isList)
+    : new Field(src.parentID, src.name, src.type, annotations)
 }
 
 const projectInstance = (

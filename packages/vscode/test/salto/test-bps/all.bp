@@ -123,7 +123,10 @@ type vs.loan {
 }
 
 type vs.person {
-    list vs.str nicknames {
+    "List<vs.str>" nicknames {
+
+    }
+    "List<List<vs.str>>" friends_group {
 
     }
 }
@@ -132,6 +135,7 @@ vs.person hadar {
     first_name = "hadar"
     last_name = "sharir"
     nicknames = ["You", "would", "have", "loved", "to", "know", "wouldn't", "you"]
+    friends_group = [["Roi", "Roy"], ["Amit G1", "Amit G2"]]
 }
 
 type vs.ref_tester {

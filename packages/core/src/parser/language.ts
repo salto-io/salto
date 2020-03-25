@@ -27,4 +27,8 @@ export enum Keywords {
   TYPE_NUMBER = 'number',
   TYPE_BOOL = 'boolean',
   TYPE_OBJECT = 'object',
+
+  // Generics Types
+  LIST_PREFIX = 'List<',
+  GENERICS_SUFFIX = '>'
 }

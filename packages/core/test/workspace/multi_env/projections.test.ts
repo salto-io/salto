@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes } from '@salto-io/adapter-api'
+import {
+  ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag'
 import { createMockBlueprintSource } from '../../common/blueprint_source'
@@ -75,7 +77,7 @@ describe('projections', () => {
       },
     },
     fields: _.mapValues(annotationsObject, (v, k) => new Field(
-      objectTypeElemID, k, v, {}, k.includes('list')
+      objectTypeElemID, k, k.includes('list') ? new ListType(v) : v, {}
     )),
   })
   const field = new Field(
@@ -139,7 +141,7 @@ describe('projections', () => {
       },
     },
     fields: _.mapValues(annotationsObject, (v, k) => new Field(
-      objectTypeElemID, k, v, {}, k.includes('list')
+      objectTypeElemID, k, k.includes('list') ? new ListType(v) : v, {}
     )),
   })
   const partialField = new Field(

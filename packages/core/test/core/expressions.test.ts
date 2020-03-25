@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
-  ReferenceExpression, TemplateExpression, FunctionExpression,
+  ReferenceExpression, TemplateExpression, FunctionExpression, ListType,
 } from '@salto-io/adapter-api'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/core/expressions'
 
@@ -40,7 +40,7 @@ describe('Test Salto Expressions', () => {
             value: new Field(objElemID, 'objField', BuiltinTypes.STRING),
           },
         })),
-        arr: new Field(baseElemID, 'arr', BuiltinTypes.STRING, {}, true),
+        arr: new Field(baseElemID, 'arr', new ListType(BuiltinTypes.STRING), {}),
       },
       annotations: {
         anno: 'base_anno',

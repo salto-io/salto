@@ -24,7 +24,7 @@ type salesforce.lead {
 salesforce.text base_field {
   ${CORE_ANNOTATIONS.DEFAULT} = "asd"
 }
-list number list_field {
+"List<number>" list_field {
   ${CORE_ANNOTATIONS.DEFAULT} = [
     1,
     2,

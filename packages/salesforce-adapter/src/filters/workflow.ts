@@ -15,7 +15,7 @@
 */
 import {
   Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
-  ObjectType, Values, BuiltinTypes,
+  ObjectType, Values, BuiltinTypes, ListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -109,8 +109,7 @@ const filterCreator: FilterCreator = () => ({
       .filter(isWorkflowType)
       .forEach(wfType => {
         Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(fieldName => {
-          wfType.fields[fieldName].type = BuiltinTypes.STRING
-          wfType.fields[fieldName].isList = true
+          wfType.fields[fieldName].type = new ListType(BuiltinTypes.STRING)
         })
       })
 

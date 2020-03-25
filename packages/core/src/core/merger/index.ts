@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, isType, isObjectType, isInstanceElement, Element,
-  isPrimitiveType, BuiltinTypes, TypeMap,
+  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isListType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mergeObjectTypes } from './internal/object_types'
@@ -55,6 +55,18 @@ const updateMergedTypes = (
       elem.fields,
       field => {
         field.type = mergedTypes[field.type.elemID.getFullName()] || field.type
+        const fieldType = field.type
+        if (isListType(fieldType)) {
+          const resolveListType = (listType: ListType): void => {
+            if (isListType(listType.innerType)) {
+              resolveListType(listType.innerType)
+            } else {
+              listType.innerType = mergedTypes[listType.innerType.elemID.getFullName()]
+                || listType.innerType
+            }
+          }
+          resolveListType(fieldType)
+        }
         return field
       }
     )
@@ -65,6 +77,9 @@ const updateMergedTypes = (
   return elem
 })
 
+const getListTypes = (listTypes: ListType[]): Record<string, ListType> =>
+  _.keyBy(listTypes, type => type.elemID.getFullName())
+
 /**
  * Merge a list of elements by applying all updates, and replacing the pointers
  * to the updated elements.
@@ -74,6 +89,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
   const instances = mergeInstances(elements.filter(isInstanceElement))
   const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]
   const primitives = mergePrimitives(primitiveElements)
+  const listTypes = getListTypes(elements.filter(isListType))
 
   const mergedElements = [
     ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e)),
@@ -83,7 +99,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
 
   const updated = updateMergedTypes(
     mergedElements,
-    _.merge({}, objects.merged, primitives.merged)
+    _.merge({}, objects.merged, primitives.merged, listTypes)
   )
 
   const errors = [

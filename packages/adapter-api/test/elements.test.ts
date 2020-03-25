@@ -14,21 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { BuiltinTypes } from '../src/builtins'
 import {
-  Field,
-  InstanceElement,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes,
+  Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
+  PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements,
 } from '../src/elements'
 import { ElemID } from '../src/element_id'
-import {
-  isEqualElements,
-  isInstanceElement,
-  isObjectType,
-  isPrimitiveType,
-  isType,
-} from '../src/utils'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */
@@ -62,6 +53,8 @@ describe('Test elements.ts', () => {
     annotationTypes: {},
     annotations: {},
   })
+
+  const lt = new ListType(primStr)
 
   it('should create a basic primitive type with all params passed to the constructor', () => {
     expect(primStr.elemID).toEqual(primID)
@@ -175,6 +168,7 @@ describe('Test elements.ts', () => {
     })
 
     const strField = new Field(new ElemID('test', 'obj'), 'str_field', primStr)
+    const lstField = new Field(new ElemID('test', 'objList'), 'list_field', new ListType(primStr))
     const inst = new InstanceElement('inst', objT, { str: 'test' })
 
     it('should identify equal primitive types', () => {
@@ -195,6 +189,26 @@ describe('Test elements.ts', () => {
 
     it('should identify equal fields', () => {
       expect(isEqualElements(strField, _.cloneDeep(strField))).toBeTruthy()
+    })
+
+    it('should identify equal list fields', () => {
+      expect(isEqualElements(lstField, _.cloneDeep(lstField))).toBeTruthy()
+    })
+
+    it('should identify equal list types', () => {
+      expect(isEqualElements(lstField.type, _.cloneDeep(lstField.type))).toBeTruthy()
+    })
+
+    it('should identify not equal for diff list types', () => {
+      expect(isEqualElements(new ListType(BuiltinTypes.STRING), new ListType(BuiltinTypes.BOOLEAN)))
+        .toBeFalsy()
+    })
+
+    it('should identify not equal for diff list types when inner is list', () => {
+      expect(isEqualElements(
+        new ListType(BuiltinTypes.STRING),
+        new ListType(new ListType(BuiltinTypes.STRING))
+      )).toBeFalsy()
     })
 
     it('should identify equal instance elements', () => {
@@ -223,6 +237,11 @@ describe('Test elements.ts', () => {
     it('should identify object types', () => {
       expect(isObjectType(inst)).toBeFalsy()
       expect(isObjectType(ot)).toBeTruthy()
+    })
+
+    it('should identify list types', () => {
+      expect(isListType(inst)).toBeFalsy()
+      expect(isListType(lt)).toBeTruthy()
     })
 
     it('should identify instance elements', () => {

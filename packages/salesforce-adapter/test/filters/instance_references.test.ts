@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, ObjectType, ElemID, BuiltinTypes, Field, ReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemID, BuiltinTypes, Field, ReferenceExpression, ListType } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CUSTOM_FIELD } from '../../src/constants'
 import { replaceInstances, groupByAPIName } from '../../src/filters/instance_references'
 
@@ -40,7 +40,9 @@ describe('instance_reference filter', () => {
       parentObj: new Field(objTypeID, parentObjFieldName, BuiltinTypes.STRING),
       otherRefObj: new Field(objTypeID, otherRefObjName, BuiltinTypes.STRING),
       parentObjNested: new Field(objTypeID, 'parentObjNested', nestedType, {}),
-      parentObjArr: new Field(objTypeID, parentObjFieldName, BuiltinTypes.STRING, {}, true),
+      parentObjArr: new Field(
+        objTypeID, parentObjFieldName, new ListType(BuiltinTypes.STRING), {},
+      ),
     },
   })
 

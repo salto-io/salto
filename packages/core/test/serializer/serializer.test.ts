@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement,
+  PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
   FunctionExpression, StaticFileAssetExpression,
 } from '@salto-io/adapter-api'
@@ -39,12 +39,14 @@ describe('State serialization', () => {
     primitive: PrimitiveTypes.BOOLEAN,
   })
 
+  const strListType = new ListType(strType)
+
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
   })
   model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
   model.fields.num = new Field(model.elemID, 'num', numType)
-  model.fields.list = new Field(model.elemID, 'list', strType, {}, true)
+  model.fields.list = new Field(model.elemID, 'list', strListType, {})
 
   model.annotate({
     LeadConvertSettings: {
@@ -105,7 +107,7 @@ describe('State serialization', () => {
     { name: 'other', num: 5 },
   )
 
-  const elements = [strType, numType, boolType, model,
+  const elements = [strType, numType, boolType, model, strListType,
     instance, refInstance, templateRefInstance, functionRefInstance, config]
 
   it('should serialize and deserialize all element types', () => {

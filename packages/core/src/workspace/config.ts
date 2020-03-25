@@ -18,7 +18,7 @@ import uuidv5 from 'uuid/v5'
 import _ from 'lodash'
 import {
   ObjectType, ElemID, BuiltinTypes, Field, InstanceElement,
-  CORE_ANNOTATIONS,
+  CORE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import { mkdirp, exists } from '../file'
 import { getSaltoHome } from '../app_config'
@@ -73,9 +73,8 @@ const saltoEnvConfigType = new ObjectType({
     services: new Field(
       saltoEnvConfigElemID,
       'services',
-      BuiltinTypes.STRING,
+      new ListType(BuiltinTypes.STRING),
       {},
-      true
     ),
   },
 })
@@ -91,9 +90,8 @@ export const saltoConfigType = new ObjectType({
     envs: new Field(
       saltoConfigElemID,
       'envs',
-      saltoEnvConfigType,
+      new ListType(saltoEnvConfigType),
       {},
-      true
     ),
   },
   annotationTypes: {},

@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  Field, BuiltinTypes, INSTANCE_ANNOTATIONS,
+  Field, BuiltinTypes, INSTANCE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser/parse'
@@ -58,7 +58,7 @@ describe('Salto Dump', () => {
   })
   model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
   model.fields.num = new Field(model.elemID, 'num', numType)
-  model.fields.list = new Field(model.elemID, 'list', strType, {}, true)
+  model.fields.list = new Field(model.elemID, 'list', new ListType(strType), {})
   model.fields.field = new Field(model.elemID, 'field', fieldType, {
     alice: 1,
     bob: 2,
@@ -152,7 +152,7 @@ describe('Salto Dump', () => {
           /salesforce.number num {/m,
         )
         expect(body).toMatch(
-          /list salesforce.string list {/m
+          /"List<salesforce.string>" list {/m
         )
       })
     })
@@ -163,7 +163,7 @@ describe('Salto Dump', () => {
     it('can be parsed back', () => {
       const { elements, errors } = parse(Buffer.from(body), 'none')
       expect(errors.length).toEqual(0)
-      expect(elements.length).toEqual(8)
+      expect(elements.length).toEqual(9)
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)
@@ -172,6 +172,7 @@ describe('Salto Dump', () => {
       TestHelpers.expectInstancesToMatch(elements[5] as InstanceElement, instance)
       TestHelpers.expectInstancesToMatch(elements[6] as InstanceElement, config)
       TestHelpers.expectInstancesToMatch(elements[7] as InstanceElement, instanceStartsWithNumber)
+      TestHelpers.expectTypesToMatch(elements[8] as ListType, model.fields.list.type)
     })
   })
   describe('dump field', () => {

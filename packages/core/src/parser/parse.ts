@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS,
+  Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -83,6 +83,7 @@ export type ParseResult = {
 export const parse = (blueprint: Buffer, filename: string): ParseResult => {
   const { body, errors: parseErrors } = hclParse(blueprint, filename)
   const sourceMap = new SourceMapImpl()
+  const listElements: Map<string, ListType> = new Map<string, ListType>()
 
   const annotationTypes = (block: ParsedHclBlock, annotationTypesId: ElemID):
     Record <string, TypeElement> =>
@@ -124,26 +125,34 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
     sourceMap.push(typeObj.elemID, typeBlock.source)
 
     const isFieldBlock = (block: ParsedHclBlock): boolean =>
-      (block.type === Keywords.LIST_DEFINITION || block.labels.length === 1)
+      block.labels.length === 1
+
+    const createFieldType = (blockType: string): TypeElement => {
+      if (blockType.startsWith(Keywords.LIST_PREFIX)
+        && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
+        const listType = new ListType(createFieldType(
+          blockType.substring(
+            Keywords.LIST_PREFIX.length,
+            blockType.length - Keywords.GENERICS_SUFFIX.length
+          )
+        ))
+        listElements.set(listType.elemID.getFullName(), listType)
+        return listType
+      }
+      return new ObjectType({ elemID: parseElemID(blockType) })
+    }
 
     // Parse type fields
     typeBlock.blocks
       .filter(isFieldBlock)
       .forEach(block => {
-        const isList = block.type === Keywords.LIST_DEFINITION
-        const fieldName = isList ? block.labels[1] : block.labels[0]
-        const fieldTypeName = isList ? block.labels[0] : block.type
+        const fieldName = block.labels[0]
+        const objectType = createFieldType(block.type)
         const field = new Field(
           typeObj.elemID,
           fieldName,
-          new ObjectType(
-            {
-              elemID: parseElemID(fieldTypeName),
-              isSettings: block.type === Keywords.SETTINGS_DEFINITION,
-            }
-          ),
+          objectType,
           attrValues(block, typeObj.elemID.createNestedID('field', fieldName)),
-          isList,
         )
         sourceMap.push(field.elemID, block)
         typeObj.fields[fieldName] = field
@@ -222,6 +231,5 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
       severity: 'Error',
       message: err.detail,
     } }) as ParseError)
-
-  return { elements, errors, sourceMap }
+  return { elements: _.concat(elements, [...listElements.values()]), errors, sourceMap }
 }

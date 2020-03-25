@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
-  RESTRICTION_ANNOTATIONS,
+  RESTRICTION_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
@@ -38,14 +38,14 @@ describe('convert types filter', () => {
       numAsNum: new Field(mockObjId, 'numAsNum', BuiltinTypes.NUMBER),
       numAsStr: new Field(mockObjId, 'numAsStr', BuiltinTypes.NUMBER),
       nullStr: new Field(mockObjId, 'nullStr', BuiltinTypes.STRING),
-      values: new Field(mockObjId, 'values', new ObjectType({
+      values: new Field(mockObjId, 'values', new ListType(new ObjectType({
         elemID: mockObjId,
         fields: {
           field: new Field(mockObjId, 'field', BuiltinTypes.STRING),
           value: new Field(mockObjId, 'value', BuiltinTypes.STRING),
         },
-      }), {}, true),
-      numArray: new Field(mockObjId, 'numArray', BuiltinTypes.NUMBER, {}, true),
+      })), {}),
+      numArray: new Field(mockObjId, 'numArray', new ListType(BuiltinTypes.NUMBER), {}),
       picklist: new Field(mockObjId, 'picklist', BuiltinTypes.STRING,
         { [CORE_ANNOTATIONS.VALUES]: ['a', 'b', 'c'],
           [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true } }),

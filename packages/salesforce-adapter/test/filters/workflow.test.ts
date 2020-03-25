@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, Field, BuiltinTypes } from '@salto-io/adapter-api'
+import {
+  ElemID, InstanceElement, ObjectType, Element, ReferenceExpression, Field,
+  BuiltinTypes, isListType, ListType,
+} from '@salto-io/adapter-api'
 import {
   findElement,
 } from '@salto-io/adapter-utils'
@@ -84,7 +87,7 @@ describe('Workflow filter', () => {
               annotations: { [METADATA_TYPE]: subType },
             })
             workflowType.fields[fieldName] = new Field(
-              workflowType.elemID, fieldName, fieldType, {}, true,
+              workflowType.elemID, fieldName, new ListType(fieldType), {},
             )
             return fieldType
           })
@@ -99,8 +102,9 @@ describe('Workflow filter', () => {
       it('should change workflow field types to lists of strings', () => {
         Object.keys(WORKFLOW_FIELD_TO_TYPE).forEach(
           fieldName => {
-            expect(workflowType.fields[fieldName].type).toEqual(BuiltinTypes.STRING)
-            expect(workflowType.fields[fieldName].isList).toBeTruthy()
+            const workflowFieldType = workflowType.fields[fieldName].type
+            expect(isListType(workflowFieldType)).toBeTruthy()
+            expect((workflowFieldType as ListType).innerType).toEqual(BuiltinTypes.STRING)
           }
         )
       })

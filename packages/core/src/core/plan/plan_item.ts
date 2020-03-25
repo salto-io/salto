@@ -20,6 +20,7 @@ import { RemovalDiff, ModificationDiff, AdditionDiff, NodeId, Group } from '@sal
 import {
   ChangeDataType, Values, Value, ElemID, Change, isEqualElements, isEqualValues, getChangeElement,
   Element, isField, isInstanceElement, isObjectType, isPrimitiveType, ObjectType, PrimitiveType,
+  isListType,
 } from '@salto-io/adapter-api'
 import { getOrCreateGroupLevelChange } from './group'
 
@@ -98,7 +99,7 @@ export const addPlanItemAccessors = (
         // in fetch. See SALTO-322
         if (isField(change.data.before)
           && isField(change.data.after)
-          && change.data.after.isList !== change.data.before.isList) {
+          && isListType(change.data.after.type) !== isListType(change.data.before)) {
           return { ...change, id: elem.elemID }
         }
 

@@ -15,6 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import {
   ObjectType,
   ElemID,
@@ -30,9 +31,10 @@ import {
   isField,
   isReferenceExpression,
   ReferenceExpression,
-  Field, InstanceAnnotationTypes, isType, isObjectType,
+  Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
 } from '@salto-io/adapter-api'
 
+const log = logger(module)
 
 export const bpCase = (name?: string): string => (
   // unescape changes HTML escaped parts (&gt; for example), then the regex
@@ -77,21 +79,50 @@ export const transformValues = (
       return transformReferences(value, keyPathID)
     }
 
+    const fieldType = field.type
+
+    if (isListType(fieldType)) {
+      const transformListInnerValue = (item: Value, index?: number): Value =>
+        (transformValue(
+          item,
+          index ? keyPathID?.createNestedID(String(index)) : keyPathID,
+          new Field(
+            field.elemID.createParentID(),
+            field.name,
+            fieldType.innerType,
+            field.annotations
+          ),
+        ))
+      if (!_.isArray(value)) {
+        if (strict) {
+          log.warn(`Array value and isListType mis-match for field - ${field.name}. Got non-array for ListType.`)
+        }
+        return transformListInnerValue(value)
+      }
+      const transformed = value
+        .map(transformListInnerValue)
+        .filter((val: Value) => !_.isUndefined(val))
+      return transformed.length === 0 ? undefined : transformed
+    }
+    // It shouldn't get here because only ListType should have array values
     if (_.isArray(value)) {
+      if (strict) {
+        log.warn(`Array value and isListType mis-match for field - ${field.name}. Only ListTypes should have array values.`)
+      }
       const transformed = value
         .map((item, index) => transformValue(item, keyPathID?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
 
-    if (isPrimitiveType(field.type)) {
+    if (isPrimitiveType(fieldType)) {
       return transformPrimitives(value, keyPathID, field as PrimitiveField)
     }
-    if (isObjectType(field.type)) {
+    if (isObjectType(fieldType)) {
       const transformed = _.omitBy(
         transformValues({
           values: value,
-          type: field.type,
+          type: fieldType,
           transformPrimitives,
           transformReferences,
           strict,
@@ -202,7 +233,6 @@ export const transformElement = <T extends Element>(
       element.name,
       element.type,
       transformedAnnotations,
-      element.isList
     )
     return newElement as T
   }

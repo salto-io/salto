@@ -133,3 +133,23 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
     return undefined
   }
 )
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isReferenceExpression = (value: any): value is ReferenceExpression => (
+  value instanceof ReferenceExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isTemplateExpression = (value: any): value is TemplateExpression => (
+  value instanceof TemplateExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isFunctionExpression = (value: any): value is FunctionExpression => (
+  value instanceof FunctionExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isExpression = (value: any): value is Expression => (
+  isReferenceExpression(value) || isTemplateExpression(value) || isFunctionExpression(value)
+)

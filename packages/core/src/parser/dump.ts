@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  TypeElement, Field, Values, isObjectType, PrimitiveTypes, TypeMap,
+  TypeElement, Field, Values, isObjectType, PrimitiveTypes, TypeMap, isListType,
   isPrimitiveType, Element, isInstanceElement, isField, isElement, Value, INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { dump as hclDump } from './internal/dump'
@@ -39,11 +39,15 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   return Keywords.TYPE_OBJECT
 }
 
-export const dumpElemID = ({ elemID }: TypeElement): string => {
-  if (elemID.isConfig()) {
-    return elemID.adapter
+export const dumpElemID = (type: TypeElement, isTopLevel = true): string => {
+  if (type.elemID.isConfig()) {
+    return type.elemID.adapter
   }
-  return [elemID.adapter, elemID.name]
+  if (isListType(type)) {
+    const listDumpStr = `${Keywords.LIST_PREFIX}${dumpElemID(type.innerType, false)}${Keywords.GENERICS_SUFFIX}`
+    return isTopLevel ? `"${listDumpStr}"` : listDumpStr
+  }
+  return [type.elemID.adapter, type.elemID.name]
     .filter(part => !_.isEmpty(part))
     .join(Keywords.NAMESPACE_SEPARATOR)
 }
@@ -51,13 +55,6 @@ export const dumpElemID = ({ elemID }: TypeElement): string => {
 const dumpFieldBlock = (field: Field): DumpedHclBlock => ({
   type: dumpElemID(field.type),
   labels: [field.elemID.name],
-  attrs: field.annotations,
-  blocks: [],
-})
-
-const dumpListFieldBlock = (field: Field): DumpedHclBlock => ({
-  type: Keywords.LIST_DEFINITION,
-  labels: [dumpElemID(field.type), field.elemID.name],
   attrs: field.annotations,
   blocks: [],
 })
@@ -120,7 +117,7 @@ const dumpElementBlock = (elem: Element): DumpedHclBlock => {
 
 dumpBlock = (value: Element | Values): DumpedHclBlock => {
   if (isField(value)) {
-    return value.isList ? dumpListFieldBlock(value) : dumpFieldBlock(value)
+    return dumpFieldBlock(value)
   }
   if (isElement(value)) {
     return dumpElementBlock(value)

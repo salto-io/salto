@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import jszip from 'jszip'
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, ListType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { fromRetrieveResult, toMetadataPackageZip } from '../../src/transformers/xml_transformer'
@@ -39,7 +39,7 @@ describe('XML Transformer', () => {
         },
         fields: {
           str: new Field(ASSIGNMENT_RULES_TYPE_ID, 'str', BuiltinTypes.STRING),
-          lst: new Field(ASSIGNMENT_RULES_TYPE_ID, 'lst', BuiltinTypes.NUMBER, {}, true),
+          lst: new Field(ASSIGNMENT_RULES_TYPE_ID, 'lst', new ListType(BuiltinTypes.NUMBER), {}),
           bool: new Field(ASSIGNMENT_RULES_TYPE_ID, 'bool', BuiltinTypes.BOOLEAN),
         },
       })

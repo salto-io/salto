@@ -107,8 +107,33 @@ export enum PrimitiveTypes {
   BOOLEAN,
 }
 
-export type TypeElement = PrimitiveType | ObjectType
+export type TypeElement = PrimitiveType | ObjectType | ListType
 export type TypeMap = Record<string, TypeElement>
+
+export class ListType extends Element {
+  public constructor(
+   public innerType: TypeElement
+  ) {
+    super({
+      elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
+      annotations: innerType.annotations,
+      annotationTypes: innerType.annotationTypes,
+    })
+  }
+
+  static get serializedTypeName(): string { return 'ListType' }
+
+  isEqual(other: ListType): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
+  }
+
+  clone(): ListType {
+    return new ListType(
+      this.innerType
+    )
+  }
+}
 
 /**
  * Represents a field inside a type
@@ -119,7 +144,6 @@ export class Field extends Element {
     public name: string,
     public type: TypeElement,
     annotations: Values = {},
-    public isList: boolean = false,
   ) {
     super({ elemID: parentID.createNestedID('field', name), annotations })
   }
@@ -130,7 +154,6 @@ export class Field extends Element {
     return _.isEqual(this.type.elemID, other.type.elemID)
       && _.isEqual(this.elemID, other.elemID)
       && isEqualValues(this.annotations, other.annotations)
-      && this.isList === other.isList
   }
 
   /**
@@ -144,7 +167,6 @@ export class Field extends Element {
       this.name,
       this.type,
       _.cloneDeep(this.annotations),
-      this.isList,
     )
   }
 }
@@ -301,4 +323,69 @@ export class InstanceElement extends Element {
     return new InstanceElement(this.elemID.name, this.type, _.cloneDeep(this.value), this.path,
       _.cloneDeep(this.annotations))
   }
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isElement(value: any): value is Element {
+  return value && value.elemID && value.elemID instanceof ElemID
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isInstanceElement(element: any): element is InstanceElement {
+  return element instanceof InstanceElement
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isObjectType(element: any): element is ObjectType {
+  return element instanceof ObjectType
+}
+
+export function isPrimitiveType(
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  element: any,
+): element is PrimitiveType {
+  return element instanceof PrimitiveType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isListType(element: any): element is ListType {
+  return element instanceof ListType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isType(element: any): element is TypeElement {
+  return isPrimitiveType(element) || isObjectType(element) || isListType(element)
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isField(element: any): element is Field {
+  return element instanceof Field
+}
+
+const isEqualTypes = (first: TypeElement, second: TypeElement): boolean => {
+  if (isPrimitiveType(first) && isPrimitiveType(second)) {
+    return first.isEqual(second)
+  } if (isObjectType(first) && isObjectType(second)) {
+    return first.isEqual(second)
+  } if (isListType(first) && isListType(second)) {
+    return first.isEqual(second)
+  }
+  return false
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isEqualElements(first?: any, second?: any): boolean {
+  if (!(first && second)) {
+    return false
+  }
+  // first.isEqual line appears multiple times since the compiler is not smart
+  // enough to understand the 'they are the same type' concept when using or
+  if (isType(first) && isType(second)) {
+    return isEqualTypes(first, second)
+  } if (isField(first) && isField(second)) {
+    return first.isEqual(second)
+  } if (isInstanceElement(first) && isInstanceElement(second)) {
+    return first.isEqual(second)
+  }
+  return false
 }

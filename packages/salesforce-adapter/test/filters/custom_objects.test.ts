@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, ServiceIds, BuiltinTypes, Element, InstanceElement, isObjectType,
   CORE_ANNOTATIONS, Value, FieldMap, Field, isInstanceElement, INSTANCE_ANNOTATIONS,
-  ReferenceExpression,
+  ReferenceExpression, isListType,
 } from '@salto-io/adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -946,18 +946,18 @@ describe('Custom Objects filter', () => {
 
           const listViewType = customObjectType
             .fields[NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS].type as ObjectType
-          expect(listViewType.fields.columns.isList).toBeTruthy()
-          expect(listViewType.fields.filters.isList).toBeTruthy()
+          expect(isListType(listViewType.fields.columns.type)).toBeTruthy()
+          expect(isListType(listViewType.fields.filters.type)).toBeTruthy()
 
           const fieldSetType = customObjectType
             .fields[NESTED_INSTANCE_VALUE_NAME.FIELD_SETS].type as ObjectType
-          expect(fieldSetType.fields.availableFields.isList).toBeTruthy()
-          expect(fieldSetType.fields.displayedFields.isList).toBeTruthy()
+          expect(isListType(fieldSetType.fields.availableFields.type)).toBeTruthy()
+          expect(isListType(fieldSetType.fields.displayedFields.type)).toBeTruthy()
 
           const compactLayoutType = customObjectType
             .fields[NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS].type as
             ObjectType
-          expect(compactLayoutType.fields.fields.isList).toBeTruthy()
+          expect(isListType(compactLayoutType.fields.fields.type)).toBeTruthy()
         })
 
         it('should remove the custom object type and its instances from the fetch result', async () => {

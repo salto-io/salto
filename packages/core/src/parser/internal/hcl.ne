@@ -12,7 +12,7 @@
 
 main -> _nl (blockItem __nl:? {% d=> d[0] %}):* {% d=> _.flatten(d.filter(d => d)) %}
 block -> blockLabels oObj _nl (blockItem __nl {% id %}):* cObj {% d => converters.convertBlock(d[0], d[3], d[4]) %}
-blockLabels -> word __ (label __ {% d => d[0] %}):* {% d=> _.flatten([d[0], d[2]]) %}
+blockLabels -> label __ (label __ {% d => d[0] %}):* {% d=> _.flatten([d[0], d[2]]) %}
 label ->
 	  %word {% id %}
 	| string {% id %}

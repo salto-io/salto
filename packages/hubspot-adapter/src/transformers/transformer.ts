@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field as TypeField,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS,
-  TypeMap, Values, isPrimitiveType, Value,
+  TypeMap, Values, isPrimitiveType, Value, ListType,
 } from '@salto-io/adapter-api'
 import {
   TransformPrimitiveFunc, bpCase, transformValues,
@@ -151,12 +151,11 @@ export class Types {
           },
         ),
         [FIELD_FILTER_FIELDS.STRVALUES]: new TypeField(
-          fieldFilterElemID, FIELD_FILTER_FIELDS.STRVALUES, BuiltinTypes.STRING, {
+          fieldFilterElemID, FIELD_FILTER_FIELDS.STRVALUES, new ListType(BuiltinTypes.STRING), {
             name: FIELD_FILTER_FIELDS.STRVALUES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         [FIELD_FILTER_FIELDS.BOOLVALUE]: new TypeField(
           fieldFilterElemID, FIELD_FILTER_FIELDS.BOOLVALUE, BuiltinTypes.BOOLEAN, {
@@ -173,12 +172,11 @@ export class Types {
           },
         ),
         [FIELD_FILTER_FIELDS.NUMVALUES]: new TypeField(
-          fieldFilterElemID, FIELD_FILTER_FIELDS.NUMVALUES, BuiltinTypes.NUMBER, {
+          fieldFilterElemID, FIELD_FILTER_FIELDS.NUMVALUES, new ListType(BuiltinTypes.NUMBER), {
             name: FIELD_FILTER_FIELDS.NUMVALUES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', fieldFilterElemID.name],
@@ -215,12 +213,11 @@ export class Types {
           ),
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: new TypeField(
             contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
-            Types.optionsType, {
+            new ListType(Types.optionsType), {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
-            true,
           ),
         },
         path: [HUBSPOT, 'types', 'subtypes', contactPropertyOverridesElemID.name],
@@ -268,15 +265,14 @@ export class Types {
               name: FORM_PROPERTY_FIELDS.REQUIRED,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
-            }
+            },
           ),
           [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: new TypeField(
-            elemID, FORM_PROPERTY_FIELDS.SELECTEDOPTIONS, BuiltinTypes.STRING, {
+            elemID, FORM_PROPERTY_FIELDS.SELECTEDOPTIONS, new ListType(BuiltinTypes.STRING), {
               name: FORM_PROPERTY_FIELDS.SELECTEDOPTIONS,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
-            true,
           ),
           [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
@@ -292,12 +288,11 @@ export class Types {
         Object.assign(formPropertyType.fields, {
           [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]: new TypeField(
             elemID, FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
-            Types.dependentFormFieldFiltersType, {
+            new ListType(Types.dependentFormFieldFiltersType), {
               name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
-            true,
           ),
         })
       }
@@ -324,12 +319,11 @@ export class Types {
         ),
         [DEPENDENT_FIELD_FILTER_FIELDS.FILTERS]: new TypeField(
           dependentFormFieldFiltersElemID, DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
-          Types.fieldFilterType, {
+          new ListType(Types.fieldFilterType), {
             name: DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
-          true,
         ),
         [DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD]: new TypeField(
           dependentFormFieldFiltersElemID, DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
@@ -375,12 +369,12 @@ export class Types {
           },
         ),
         [FORM_PROPERTY_GROUP_FIELDS.FIELDS]: new TypeField(
-          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.FIELDS, Types.dependentFormFieldType, {
+          propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.FIELDS,
+          new ListType(Types.dependentFormFieldType), {
             name: FORM_PROPERTY_GROUP_FIELDS.FIELDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         [FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP]: new TypeField(
           propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP, BuiltinTypes.BOOLEAN, {
@@ -549,12 +543,11 @@ export class Types {
           },
         ),
         [ACTION_FIELDS.ACCEPTACTIONS]: new TypeField(
-          actionElemID, ACTION_FIELDS.ACCEPTACTIONS, Types.conditionActionType, {
+          actionElemID, ACTION_FIELDS.ACCEPTACTIONS, new ListType(Types.conditionActionType), {
             name: ACTION_FIELDS.ACCEPTACTIONS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         [ACTION_FIELDS.PROPERTYNAME]: new TypeField(
           actionElemID, ACTION_FIELDS.PROPERTYNAME, BuiltinTypes.STRING, {
@@ -564,12 +557,11 @@ export class Types {
           },
         ),
         [ACTION_FIELDS.REJECTACTIONS]: new TypeField(
-          actionElemID, ACTION_FIELDS.REJECTACTIONS, Types.conditionActionType, {
+          actionElemID, ACTION_FIELDS.REJECTACTIONS, new ListType(Types.conditionActionType), {
             name: ACTION_FIELDS.REJECTACTIONS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', actionElemID.name],
@@ -749,12 +741,11 @@ export class Types {
           },
         ),
         [FORM_FIELDS.FORMFIELDGROUPS]: new TypeField(
-          formElemID, FORM_FIELDS.FORMFIELDGROUPS, Types.propertyGroupType, {
+          formElemID, FORM_FIELDS.FORMFIELDGROUPS, new ListType(Types.propertyGroupType), {
             name: FORM_FIELDS.FORMFIELDGROUPS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         [FORM_FIELDS.CAPTCHAENABLED]: new TypeField(
           formElemID, FORM_FIELDS.CAPTCHAENABLED, BuiltinTypes.BOOLEAN, {
@@ -876,12 +867,11 @@ export class Types {
           }
         ),
         [WORKFLOWS_FIELDS.ACTIONS]: new TypeField(
-          workflowsElemID, WORKFLOWS_FIELDS.ACTIONS, Types.actionType, {
+          workflowsElemID, WORKFLOWS_FIELDS.ACTIONS, new ListType(Types.actionType), {
             name: WORKFLOWS_FIELDS.ACTIONS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         [WORKFLOWS_FIELDS.LISTENING]: new TypeField(
           workflowsElemID, WORKFLOWS_FIELDS.LISTENING, BuiltinTypes.BOOLEAN, {
@@ -920,12 +910,11 @@ export class Types {
           },
         ),
         [WORKFLOWS_FIELDS.SUPRESSIONLISTIDS]: new TypeField(
-          workflowsElemID, WORKFLOWS_FIELDS.SUPRESSIONLISTIDS, BuiltinTypes.NUMBER, {
+          workflowsElemID, WORKFLOWS_FIELDS.SUPRESSIONLISTIDS, new ListType(BuiltinTypes.NUMBER), {
             name: WORKFLOWS_FIELDS.SUPRESSIONLISTIDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
       },
       path: [HUBSPOT, 'objects', workflowsElemID.name],
@@ -1008,12 +997,12 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new TypeField(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS, BuiltinTypes.NUMBER, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
+          new ListType(BuiltinTypes.NUMBER), {
             name: MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         [MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID]: new TypeField(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID, BuiltinTypes.STRING, {
@@ -1265,21 +1254,21 @@ export class Types {
         ),
         [MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED]: new TypeField(
           // TODO: Convert this to reference
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED, BuiltinTypes.NUMBER, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED,
+          new ListType(BuiltinTypes.NUMBER), {
             name: MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         [MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED]: new TypeField(
           // TODO: Convert this to reference
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED, BuiltinTypes.NUMBER, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED,
+          new ListType(BuiltinTypes.NUMBER), {
             name: MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
         [MARKETING_EMAIL_FIELDS.MAXRSSENTRIES]: new TypeField(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAXRSSENTRIES, BuiltinTypes.NUMBER, {
@@ -1582,21 +1571,21 @@ export class Types {
         ),
         [MARKETING_EMAIL_FIELDS.VIDSEXCLUDED]: new TypeField(
           // TODO: No contact instances (maybe convert to email)
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.VIDSEXCLUDED, BuiltinTypes.NUMBER, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.VIDSEXCLUDED,
+          new ListType(BuiltinTypes.NUMBER), {
             name: MARKETING_EMAIL_FIELDS.VIDSEXCLUDED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true
         ),
         [MARKETING_EMAIL_FIELDS.VIDSINCLUDED]: new TypeField(
           // TODO: No contact instances (maybe convert to email)
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.VIDSINCLUDED, BuiltinTypes.NUMBER, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.VIDSINCLUDED,
+          new ListType(BuiltinTypes.NUMBER), {
             name: MARKETING_EMAIL_FIELDS.VIDSINCLUDED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true
         ),
         [MARKETING_EMAIL_FIELDS.WIDGETS]: new TypeField(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.WIDGETS, BuiltinTypes.JSON, {
@@ -1606,12 +1595,12 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.WORKFLOWNAMES]: new TypeField( // TODO: Convert to reference
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.WORKFLOWNAMES, BuiltinTypes.STRING, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.WORKFLOWNAMES,
+          new ListType(BuiltinTypes.STRING), {
             name: MARKETING_EMAIL_FIELDS.WORKFLOWNAMES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true,
         ),
       },
       path: [HUBSPOT, 'objects', marketingEmailElemID.name],
@@ -1664,12 +1653,11 @@ export class Types {
           },
         ),
         [CONTACT_PROPERTY_FIELDS.OPTIONS]: new TypeField(
-          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.OPTIONS, Types.optionsType, {
+          contactPropertyElemID, CONTACT_PROPERTY_FIELDS.OPTIONS, new ListType(Types.optionsType), {
             name: CONTACT_PROPERTY_FIELDS.OPTIONS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-          true
         ),
         [CONTACT_PROPERTY_FIELDS.DELETED]: new TypeField(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DELETED, BuiltinTypes.BOOLEAN, {
@@ -1823,7 +1811,7 @@ export const transformAfterUpdateOrAdd = async (
   clonedInstance.value = transformValues(
     {
       values: mergedValues,
-      type: clonedInstance.type as ObjectType,
+      type: instance.type,
       transformPrimitives: transformPrimitive,
     }
   ) || {}

@@ -17,7 +17,7 @@ import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   BuiltinTypes, ObjectType, ElemID, InstanceElement, Field, AdapterCreator,
-  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
+  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
 import * as constants from './constants'
@@ -47,20 +47,18 @@ const configType = new ObjectType({
     metadataTypesSkippedList: new Field(
       configID,
       'metadataTypesSkippedList',
-      BuiltinTypes.STRING,
+      new ListType(BuiltinTypes.STRING),
       {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
-      true,
     ),
     instancesRegexSkippedList: new Field(
       configID,
       'instancesRegexSkippedList',
-      BuiltinTypes.STRING,
+      new ListType(BuiltinTypes.STRING),
       {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
-      true,
     ),
     maxConcurrentRetrieveRequests: new Field(
       configID,

@@ -71,7 +71,7 @@ describe('formatter', () => {
         element: (find('salto.employee') as ObjectType).fields.nicknames.type,
         isGuess: false,
       })
-      expect(output).toMatch('=== string ===')
+      expect(output).toMatch('=== list<string> ===')
     })
 
     it('should output proper value when proper desc is provided for inner fields', async () => {

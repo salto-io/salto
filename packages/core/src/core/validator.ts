@@ -206,6 +206,8 @@ const validateAnnotationsValue = (
   // Checking restrictions
   if ((isPrimitiveType(type)
     || (isListType(type) && isPrimitiveType(type.innerType))) && shouldEnforceValue()) {
+    // TODO: This currently only checks one level of nesting for primitive types inside lists.
+    // We should add support for List of list of primitives
     return validateRestrictionsValue(value)
   }
 

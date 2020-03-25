@@ -124,7 +124,7 @@ export class ListType extends Element {
   static get serializedTypeName(): string { return 'ListType' }
 
   isEqual(other: ListType): boolean {
-    return super.isEqual(other) && this.innerType === other.innerType
+    return super.isEqual(other) && _.isEqual(this.innerType, other.innerType)
   }
 
   clone(): ListType {

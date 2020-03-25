@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { BuiltinTypes } from '../src/builtins'
 import {
   Field,
   InstanceElement,
@@ -204,6 +205,15 @@ describe('Test elements.ts', () => {
 
     it('should identify equal list fields', () => {
       expect(isEqualElements(lstField, _.cloneDeep(lstField))).toBeTruthy()
+    })
+
+    it('should identify equal list types', () => {
+      expect(isEqualElements(lstField.type, _.cloneDeep(lstField.type))).toBeTruthy()
+    })
+
+    it('should identify not equal for diff list types', () => {
+      expect(isEqualElements(new ListType(BuiltinTypes.STRING), new ListType(BuiltinTypes.BOOLEAN)))
+        .toBeFalsy()
     })
 
     it('should identify equal instance elements', () => {

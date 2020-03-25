@@ -362,10 +362,7 @@ export function isField(element: any): element is Field {
   return element instanceof Field
 }
 
-const isEqualType = (first?: TypeElement, second?: TypeElement): boolean => {
-  if (!(first && second)) {
-    return false
-  }
+const isEqualType = (first: TypeElement, second: TypeElement): boolean => {
   if (isPrimitiveType(first) && isPrimitiveType(second)) {
     return first.isEqual(second)
   } if (isObjectType(first) && isObjectType(second)) {

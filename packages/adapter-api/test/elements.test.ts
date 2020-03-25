@@ -204,6 +204,13 @@ describe('Test elements.ts', () => {
         .toBeFalsy()
     })
 
+    it('should identify not equal for diff list types when inner is list', () => {
+      expect(isEqualElements(
+        new ListType(BuiltinTypes.STRING),
+        new ListType(new ListType(BuiltinTypes.STRING))
+      )).toBeFalsy()
+    })
+
     it('should identify equal instance elements', () => {
       expect(isEqualElements(inst, _.cloneDeep(inst))).toBeTruthy()
     })

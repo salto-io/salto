@@ -77,9 +77,9 @@ export const DEFAULT_FILTERS = [
   customObjectsFilter,
   removeFieldsFilter,
   layoutFilter,
-  profilePermissionsFilter,
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
+  profilePermissionsFilter,
   standardValueSetFilter,
   flowFilter,
   lookupFiltersFilter,

@@ -18,7 +18,6 @@ import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement,
 } from '@salto-io/adapter-api'
-import * as plan from '../../src/core/plan'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
@@ -100,52 +99,26 @@ describe('fetch', () => {
         },
       })
       const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
-      const currentConfigInstance = new InstanceElement('ins', configType, { test: [] })
       beforeEach(() => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [], config: [configInstance] }),
+          Promise.resolve({ elements: [], config: configInstance }),
         )
       })
       it('should return config change when there is no current config', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
-          [],
-          [],
-          [],
+          mockAdapters as unknown as Record<string, Adapter>, [], [], [],
         )
-        const configChanges = [...fetchChangesResult.configChanges]
+        expect(fetchChangesResult).toBeDefined()
+        const configChanges = [...fetchChangesResult.configChanges.itemsByEvalOrder()]
         expect(configChanges).toHaveLength(1)
         const configChange = configChanges[0]
-        expect(configChange.id).toEqual(configInstance.elemID)
-        expect(configChange.action).toEqual('add')
-        expect(configChange.data).toEqual({ after: configInstance })
-      })
-
-      it('should return merged config change when there is current config', async () => {
-        const fetchChangesResult = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
-          [],
-          [],
-          [currentConfigInstance],
-        )
-        const configChanges = [...fetchChangesResult.configChanges]
-        expect(configChanges).toHaveLength(1)
-        const configChange = configChanges[0]
-        expect(configChange.action).toEqual('modify')
-        expect(configChange.data).toEqual({
-          before: currentConfigInstance.value.test,
-          after: configInstance.value.test,
+        expect(configChange.items.get(configChange.groupKey)).toEqual({
+          action: 'add',
+          originalId: configChange.groupKey,
+          data: {
+            after: configInstance,
+          },
         })
-      })
-
-      it('should not return unchanged configs', async () => {
-        const fetchChangesResult = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
-          [],
-          [],
-          [currentConfigInstance, new InstanceElement('not-exist', configType, { test: ['bla'] })],
-        )
-        expect([...fetchChangesResult.configChanges]).toHaveLength(1)
       })
     })
     describe('when merge elements returns errors', () => {
@@ -561,9 +534,7 @@ describe('fetch', () => {
     })
 
     describe('first fetch', () => {
-      let planSpy: jest.SpyInstance
       beforeEach(async () => {
-        planSpy = jest.spyOn(plan, 'getPlan')
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [typeWithField] })
         )
@@ -578,10 +549,6 @@ describe('fetch', () => {
       it('should return the change with no conflict', () => {
         expect(changes).toHaveLength(1)
         expect(changes[0].pendingChange).toBeUndefined()
-      })
-
-      it('shouldn\'t call plan', () => {
-        expect(planSpy).not.toHaveBeenCalled()
       })
     })
   })

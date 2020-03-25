@@ -295,43 +295,88 @@ export const dummyChanges: DetailedChange[] = [
   detailedChange('remove', ['adapter', 'dummy2'], 'before-remove-dummy2', undefined),
 ]
 
-export const preview = (): Plan => {
-  const change = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {
-    const elemID = new ElemID('salesforce', ...path)
-    if (action === 'add') {
-      return { action, data: { after: new ObjectType({ elemID }) } }
-    }
-    if (action === 'remove') {
-      return { action, data: { before: new ObjectType({ elemID }) } }
-    }
-    return {
-      action,
-      data: { before: new ObjectType({ elemID }), after: new ObjectType({ elemID }) },
-    }
-  }
-  const toPlanItem = (
-    parent: Change,
-    subChanges: Change[],
-    detailed: DetailedChange[]
-  ): PlanItem => ({
-    groupKey: getChangeElement(parent).elemID.getFullName(),
-    items: new Map<string, Change>(
-      [parent, ...subChanges].map(c => [getChangeElement(c).elemID.getFullName(), c])
-    ),
-    parent: () => parent,
-    changes: () => [parent, ...subChanges],
-    detailedChanges: () => detailed,
-    getElementName: () => getChangeElement(parent).elemID.getFullName(),
-  })
+const toPlanItem = (
+  parent: Change,
+  subChanges: Change[],
+  detailed: DetailedChange[]
+): PlanItem => ({
+  groupKey: getChangeElement(parent).elemID.getFullName(),
+  items: new Map<string, Change>(
+    [parent, ...subChanges].map(c => [getChangeElement(c).elemID.getFullName(), c])
+  ),
+  parent: () => parent,
+  changes: () => [parent, ...subChanges],
+  detailedChanges: () => detailed,
+  getElementName: () => getChangeElement(parent).elemID.getFullName(),
+})
 
+const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {
+  const elemID = new ElemID('salesforce', ...path)
+  if (action === 'add') {
+    return { action, data: { after: new ObjectType({ elemID }) } }
+  }
+  if (action === 'remove') {
+    return { action, data: { before: new ObjectType({ elemID }) } }
+  }
+  return {
+    action,
+    data: { before: new ObjectType({ elemID }), after: new ObjectType({ elemID }) },
+  }
+}
+
+export const configChangePlan = (): Plan => {
+  const result = new GroupedNodeMap<Change>()
+  const configElemID = new ElemID('salesforce')
+  const configType = new ObjectType({
+    elemID: configElemID,
+    fields: {
+      test: new Field(configElemID, 'test', BuiltinTypes.STRING, {}, true),
+    },
+  })
+  const configInstance = new InstanceElement(ElemID.CONFIG_NAME, configType, { test: [] })
+  const updatedConfig = _.cloneDeep(configInstance)
+  updatedConfig.value.test = ['SkipMe']
+  const configChange: Change = {
+    action: 'modify',
+    data: {
+      before: configInstance,
+      after: updatedConfig,
+    },
+  }
+  const instancePlanItem = toPlanItem(
+    configChange,
+    [],
+    [
+      {
+        id: configInstance.elemID.createNestedID('test'),
+        action: 'modify',
+        data: { before: configInstance.value.test, after: updatedConfig.value.test },
+      },
+    ],
+  )
+  result.addNode(_.uniqueId('instance'), [], instancePlanItem)
+
+  Object.assign(result, {
+    itemsByEvalOrder(): Iterable<PlanItem> {
+      return [instancePlanItem]
+    },
+    getItem(_id: string): PlanItem {
+      return instancePlanItem
+    },
+    changeErrors: [],
+  })
+  return result as Plan
+}
+
+export const preview = (): Plan => {
   const result = new GroupedNodeMap<Change>()
 
   const leadPlanItem = toPlanItem(
-    change('modify', 'lead'),
+    createChange('modify', 'lead'),
     [
-      change('add', 'lead', 'do_you_have_a_sales_team'),
-      change('modify', 'lead', 'how_many_sales_people'),
-      change('remove', 'lead', 'status'),
+      createChange('add', 'lead', 'do_you_have_a_sales_team'),
+      createChange('modify', 'lead', 'how_many_sales_people'),
+      createChange('remove', 'lead', 'status'),
     ],
     [
       detailedChange('modify', ['lead', 'field', 'label'], 'old', 'new'),
@@ -343,10 +388,10 @@ export const preview = (): Plan => {
   result.addNode(_.uniqueId('lead'), [], leadPlanItem)
 
   const accountPlanItem = toPlanItem(
-    change('modify', 'account'),
+    createChange('modify', 'account'),
     [
-      change('add', 'account', 'status'),
-      change('modify', 'account', 'name'),
+      createChange('add', 'account', 'status'),
+      createChange('modify', 'account', 'name'),
     ],
     [
       detailedChange('add', ['account', 'field', 'status'], undefined, { name: 'field', type: 'picklist' }),

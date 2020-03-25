@@ -129,16 +129,10 @@ describe('api.ts', () => {
       new InstanceElement('instance_1', objType, {}),
       new InstanceElement('instance_2', objType, {}),
     ]
-    const mockAdapterConfigType = new ObjectType({
-      elemID: configID,
-      fields: {
-        test: new Field(configID, 'test', BuiltinTypes.STRING, {}, true),
-      },
-    })
     mockedFetchChanges.mockReturnValue({
       elements: fetchedElements,
       mergeErrors: [],
-      configs: [new InstanceElement(SERVICES[0], mockAdapterConfigType, { test: ['skipMe'] })],
+      configs: [],
     })
 
     const stateElements = [{ elemID: new ElemID(SERVICES[0], 'test') }]
@@ -147,6 +141,8 @@ describe('api.ts', () => {
     ws.state.list = jest.fn().mockImplementation(() => Promise.resolve(stateElements))
 
     beforeAll(async () => {
+      const mockGetAdaptersCreatorConfigs = adapters.getAdaptersCreatorConfigs as jest.Mock
+      mockGetAdaptersCreatorConfigs.mockReturnValue({})
       await api.fetch(ws, SERVICES)
     })
 
@@ -234,7 +230,6 @@ describe('api.ts', () => {
         expect(mockedDeployActions).toHaveBeenCalledTimes(1)
       })
       it('should get detailed changes', async () => {
-        // One time for the workspace and one time for the configs
         expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(1)
       })
 

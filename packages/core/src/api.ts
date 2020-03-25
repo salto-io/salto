@@ -30,10 +30,11 @@ import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
-  getAdapterDependencyChangers, createDefaultAdapterConfig,
+  getAdapterDependencyChangers, createDefaultAdapterConfig, initAdapters,
+  getAdaptersCreatorConfigs,
 } from './core/adapters'
 import { addServiceToConfig, currentEnvConfig } from './workspace/config'
-import { getPlan, Plan, PlanItem, DetailedChange } from './core/plan'
+import { getPlan, Plan, PlanItem } from './core/plan'
 import { findElement, SearchResult } from './core/search'
 import {
   createElemIdGetter,
@@ -132,7 +133,7 @@ export type FetchResult = {
   changes: Iterable<FetchChange>
   mergeErrors: MergeErrorWithElements[]
   success: boolean
-  configChanges: Iterable<DetailedChange>
+  configChanges?: Plan
 }
 export type fetchFunc = (
   workspace: Workspace,
@@ -151,19 +152,18 @@ export const fetch: fetchFunc = async (
     log.debug(`finish to override state with ${elements.length} elements`)
   }
   log.debug('fetch starting..')
-  const filteredStateElements = filterElementsByServices(await workspace.state.getAll(),
-    services)
+  const filteredStateElements = filterElementsByServices(await workspace.state.getAll(), services)
 
-  const adapters = await getAdapters(
+  const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     services,
     workspace.adapterCredentials,
     workspace.adapterConfig,
     createElemIdGetter(filteredStateElements)
   )
-
-  const currentConfigs = (await Promise.all(services
-    .map(async service => workspace.adapterConfig.get(service)))
-  ).filter(config => !_.isUndefined(config)) as InstanceElement[]
+  const currentConfigs = Object.values(adaptersCreatorConfigs)
+    .map(creatorConfig => creatorConfig.config)
+    .filter(config => !_.isUndefined(config)) as InstanceElement[]
+  const adapters = initAdapters(adaptersCreatorConfigs)
 
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
@@ -190,7 +190,6 @@ export const fetch: fetchFunc = async (
         changes: [],
         mergeErrors: error.causes,
         success: false,
-        configChanges: [],
       }
     }
     throw error

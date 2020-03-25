@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import wu from 'wu'
+import { getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
 import {
   fetch as apiFetch,
   Workspace,
@@ -23,7 +25,6 @@ import {
   StepEmitter,
   Telemetry,
 } from '@salto-io/core'
-import { getChangeElement } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -136,22 +137,28 @@ export const fetchCommand = async (
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
-  const configChanges = [...fetchResult.configChanges]
-  const abortRequests = await series(
-    configChanges.map(configChange => async () => {
-      const adapterName = configChange.id.adapter
-      const shouldWriteToConfig = await shouldUpdateConfig(
-        adapterName, formatDetailedChanges([[configChange]], true)
-      )
-      if (shouldWriteToConfig) {
-        await workspace.adapterConfig.set(adapterName, getChangeElement(configChange))
-      }
-      return !shouldWriteToConfig
-    })
-  )
+  if (!_.isUndefined(fetchResult.configChanges)) {
+    const abortRequests = await series(
+      wu(fetchResult.configChanges.itemsByEvalOrder()).map(change => async () => {
+        const newConfig = getChangeElement(change.parent())
+        const adapterName = newConfig.elemID.adapter
+        if (!isInstanceElement(newConfig)) {
+          log.error('Got non instance config from adapter %s - %o', adapterName, newConfig)
+          return false
+        }
+        const shouldWriteToConfig = await shouldUpdateConfig(
+          adapterName, formatDetailedChanges([change.detailedChanges()], true)
+        )
+        if (shouldWriteToConfig) {
+          await workspace.adapterConfig.set(adapterName, newConfig)
+        }
+        return !shouldWriteToConfig
+      })
+    )
 
-  if (_.some(abortRequests)) {
-    return CliExitCode.UserInputError
+    if (_.some(abortRequests)) {
+      return CliExitCode.UserInputError
+    }
   }
 
   // Unpack changes to array so we can iterate on them more than once

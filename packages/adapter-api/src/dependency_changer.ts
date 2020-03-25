@@ -15,8 +15,7 @@
 */
 import { NodeId } from '@salto-io/dag'
 import { Change, ChangeDataType, getChangeElement } from './change'
-import { Field, InstanceElement, ObjectType } from './elements'
-import { isField, isInstanceElement, isObjectType } from './utils'
+import { Field, InstanceElement, ObjectType, isField, isInstanceElement, isObjectType } from './elements'
 
 export type ChangeId = NodeId
 type Dependency = {

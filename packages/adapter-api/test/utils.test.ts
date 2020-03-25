@@ -15,10 +15,10 @@
 */
 
 import {
-  isField, isListType, getDeepInnerType, isElement,
+  getDeepInnerType,
 } from '../src/utils'
 import {
-  Field, ObjectType, ListType,
+  Field, ObjectType, ListType, isElement, isField, isListType,
 } from '../src/elements'
 import {
   ElemID,
@@ -27,7 +27,7 @@ import {
   BuiltinTypes,
 } from '../src/builtins'
 
-describe('Test utils.ts', () => {
+describe('Test utils.ts & isXXX in elements.ts', () => {
   const mockElemID = new ElemID('test-utils', 'obj')
   const mockField = new Field(mockElemID, 'num_field', BuiltinTypes.NUMBER)
   const mockListField = new Field(mockElemID, 'list_field', new ListType(BuiltinTypes.NUMBER))

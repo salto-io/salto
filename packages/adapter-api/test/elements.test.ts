@@ -16,22 +16,10 @@
 import _ from 'lodash'
 import { BuiltinTypes } from '../src/builtins'
 import {
-  Field,
-  InstanceElement,
-  ObjectType,
-  PrimitiveType,
-  PrimitiveTypes,
-  ListType,
+  Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
+  PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements,
 } from '../src/elements'
 import { ElemID } from '../src/element_id'
-import {
-  isEqualElements,
-  isInstanceElement,
-  isObjectType,
-  isPrimitiveType,
-  isType,
-  isListType,
-} from '../src/utils'
 
 describe('Test elements.ts', () => {
   /**   ElemIDs   * */

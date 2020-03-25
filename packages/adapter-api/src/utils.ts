@@ -15,95 +15,16 @@
 */
 import _ from 'lodash'
 import {
-  TypeElement, Field, ObjectType, Element, InstanceElement, PrimitiveType, ListType,
+  TypeElement, Field, ObjectType, Element, PrimitiveType, ListType,
+  isListType, isObjectType, isField,
 } from './elements'
-import {
-  Values, Expression, ReferenceExpression, TemplateExpression, FunctionExpression,
-} from './values'
+import { Values } from './values'
 import { ElemID } from './element_id'
 
 interface AnnoRef {
   annoType?: TypeElement
   annoName?: string
 }
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isElement(value: any): value is Element {
-  return value && value.elemID && value.elemID instanceof ElemID
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isInstanceElement(element: any): element is InstanceElement {
-  return element instanceof InstanceElement
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isObjectType(element: any): element is ObjectType {
-  return element instanceof ObjectType
-}
-
-export function isPrimitiveType(
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  element: any,
-): element is PrimitiveType {
-  return element instanceof PrimitiveType
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isListType(element: any): element is ListType {
-  return element instanceof ListType
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isType(element: any): element is TypeElement {
-  return isPrimitiveType(element) || isObjectType(element) || isListType(element)
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isField(element: any): element is Field {
-  return element instanceof Field
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isEqualElements(first?: any, second?: any): boolean {
-  if (!(first && second)) {
-    return false
-  }
-  // first.isEqual line appears multiple times since the compiler is not smart
-  // enough to understand the 'they are the same type' concept when using or
-  if (isPrimitiveType(first) && isPrimitiveType(second)) {
-    return first.isEqual(second)
-  } if (isObjectType(first) && isObjectType(second)) {
-    return first.isEqual(second)
-  } if (isListType(first) && isListType(second)) {
-    return first.isEqual(second)
-  } if (isField(first) && isField(second)) {
-    return first.isEqual(second)
-  } if (isInstanceElement(first) && isInstanceElement(second)) {
-    return first.isEqual(second)
-  }
-  return false
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isReferenceExpression = (value: any): value is ReferenceExpression => (
-  value instanceof ReferenceExpression
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isTemplateExpression = (value: any): value is TemplateExpression => (
-  value instanceof TemplateExpression
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isFunctionExpression = (value: any): value is FunctionExpression => (
-  value instanceof FunctionExpression
-)
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isExpression = (value: any): value is Expression => (
-  isReferenceExpression(value) || isTemplateExpression(value) || isFunctionExpression(value)
-)
 
 export const getDeepInnerType = (listType: ListType): ObjectType | PrimitiveType => {
   const { innerType } = listType

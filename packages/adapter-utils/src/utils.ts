@@ -94,7 +94,9 @@ export const transformValues = (
           ),
         ))
       if (!_.isArray(value)) {
-        log.warn(`Array value and isListType mis-match for field - ${field.name}. Got non-array for ListType.`)
+        if (strict) {
+          log.warn(`Array value and isListType mis-match for field - ${field.name}. Got non-array for ListType.`)
+        }
         return transformListInnerValue(value)
       }
       const transformed = value
@@ -104,7 +106,9 @@ export const transformValues = (
     }
     // It shouldn't get here because only ListType should have array values
     if (_.isArray(value)) {
-      log.warn(`Array value and isListType mis-match for field - ${field.name}. Only ListTypes should have array values.`)
+      if (strict) {
+        log.warn(`Array value and isListType mis-match for field - ${field.name}. Only ListTypes should have array values.`)
+      }
       const transformed = value
         .map((item, index) => transformValue(item, keyPathID?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))

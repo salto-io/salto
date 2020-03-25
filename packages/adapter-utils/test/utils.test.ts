@@ -50,6 +50,7 @@ describe('Test utils.ts', () => {
       bool: new Field(mockElem, 'bool', BuiltinTypes.BOOLEAN),
       num: new Field(mockElem, 'num', BuiltinTypes.NUMBER),
       numArray: new Field(mockElem, 'numArray', new ListType(BuiltinTypes.NUMBER), {}),
+      strArray: new Field(mockElem, 'strArray', new ListType(BuiltinTypes.STRING), {}),
       obj: new Field(mockElem, 'obj', new ListType(new ObjectType({
         elemID: mockElem,
         fields: {
@@ -86,6 +87,7 @@ describe('Test utils.ts', () => {
       bool: 'true',
       num: '99',
       numArray: ['12', '13', '14'],
+      strArray: 'should be list',
       notExist: 'notExist',
       notExistArray: ['', ''],
       obj: [
@@ -188,6 +190,20 @@ describe('Test utils.ts', () => {
               mockInstance.value[field], undefined,
             )
           })
+        })
+
+        it('should call transform on non-list types even for list types', () => {
+          expect(isListType(mockType.fields.strArray.type)).toBeTruthy()
+          expect(transformPrimitiveFunc).toHaveBeenCalledWith(
+            mockInstance.value.strArray,
+            undefined,
+            new Field(
+              mockType.fields.strArray.elemID.createParentID(),
+              mockType.fields.strArray.name,
+              (mockType.fields.strArray.type as ListType).innerType,
+              mockType.fields.strArray.annotations,
+            )
+          )
         })
 
         it('should call transform on array elements', () => {

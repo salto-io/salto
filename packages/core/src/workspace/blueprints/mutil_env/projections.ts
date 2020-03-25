@@ -66,9 +66,7 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement | undef
 
 const projectField = (src: Field, target: Field): Field | undefined => {
   if (src.type !== target.type) return src
-  // if (src.isList !== target.isList) return src
   const annotations = projectValue(src.annotations, target.annotations)
-  // TODO: Check if need to wrap type with isList here in some cases
   return _.isEmpty(annotations)
     ? undefined
     : new Field(src.parentID, src.name, src.type, annotations)

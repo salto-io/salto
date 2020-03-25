@@ -92,9 +92,10 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
 
   planWithFieldIsListChanges: async () => {
     const afterElements = mock.getAllElements()
-    afterElements[2].fields.name.type = new ListType(afterElements[2].fields.name.type)
+    const saltoOffice = afterElements[2]
+    saltoOffice.fields.name.type = new ListType(saltoOffice.fields.name.type)
     const plan = await getPlan(allElements, afterElements)
-    return [plan, afterElements[2]]
+    return [plan, saltoOffice]
   },
 
   planWithSplitElem: async isAdd => {

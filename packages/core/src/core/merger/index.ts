@@ -78,7 +78,7 @@ const updateMergedTypes = (
 })
 
 const getListTypes = (listTypes: ListType[]): Record<string, ListType> =>
-  (_(listTypes).groupBy((l => l.elemID.getFullName())).mapValues(lg => lg[0]).value())
+  _.keyBy(listTypes, type => type.elemID.getFullName())
 
 /**
  * Merge a list of elements by applying all updates, and replacing the pointers

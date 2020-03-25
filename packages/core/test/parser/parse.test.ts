@@ -373,7 +373,7 @@ describe('Salto parser', () => {
         model = elements[4] as ObjectType
       })
 
-      it('should contain all top level elements', () => {
+      it('should contain all top level elements except list types', () => {
         elements.filter(elem => !(isType(elem) && isListType(elem))).forEach(
           elem => expect(sourceMap.get(elem.elemID.getFullName())).not.toHaveLength(0)
         )

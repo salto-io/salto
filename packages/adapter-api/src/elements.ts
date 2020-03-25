@@ -125,7 +125,7 @@ export class ListType extends Element {
 
   isEqual(other: ListType): boolean {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return super.isEqual(other) && isEqualType(this.innerType, other.innerType)
+    return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
   }
 
   clone(): ListType {
@@ -362,7 +362,7 @@ export function isField(element: any): element is Field {
   return element instanceof Field
 }
 
-const isEqualType = (first: TypeElement, second: TypeElement): boolean => {
+const isEqualTypes = (first: TypeElement, second: TypeElement): boolean => {
   if (isPrimitiveType(first) && isPrimitiveType(second)) {
     return first.isEqual(second)
   } if (isObjectType(first) && isObjectType(second)) {
@@ -381,7 +381,7 @@ export function isEqualElements(first?: any, second?: any): boolean {
   // first.isEqual line appears multiple times since the compiler is not smart
   // enough to understand the 'they are the same type' concept when using or
   if (isType(first) && isType(second)) {
-    return isEqualType(first, second)
+    return isEqualTypes(first, second)
   } if (isField(first) && isField(second)) {
     return first.isEqual(second)
   } if (isInstanceElement(first) && isInstanceElement(second)) {

@@ -49,7 +49,9 @@ const configType = new ObjectType({
       'metadataTypesSkippedList',
       new ListType(BuiltinTypes.STRING),
       {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
+        [CORE_ANNOTATIONS.DEFAULT]: [
+          'Report', 'ReportType', 'ReportFolder', 'Dashboard', 'DashboardFolder',
+        ],
       },
     ),
     instancesRegexSkippedList: new Field(

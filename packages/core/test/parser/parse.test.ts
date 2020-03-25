@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID,
-  isObjectType, InstanceElement, BuiltinTypes, isListType, isType,
+  isObjectType, InstanceElement, BuiltinTypes, isListType, isType, ListType,
 } from '@salto-io/adapter-api'
 import { SourceRange, SourceMap, parse } from '../../src/parser/parse'
 
@@ -169,6 +169,17 @@ describe('Salto parser', () => {
       })
       it('should have the correct type', () => {
         expect(booleanType.primitive).toBe(PrimitiveTypes.BOOLEAN)
+      })
+    })
+
+    describe('list type', () => {
+      let listType: ListType
+      beforeEach(() => {
+        expect(isListType(elements[13])).toBeTruthy()
+        listType = elements[13] as ListType
+      })
+      it('should have the corect inner type', () => {
+        expect(listType.innerType.elemID).toEqual(new ElemID('salesforce', 'string'))
       })
     })
 

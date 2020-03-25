@@ -136,7 +136,7 @@ export const parse = (blueprint: Buffer, filename: string): ParseResult => {
             blockType.length - Keywords.GENERICS_SUFFIX.length
           )
         ))
-        listElements.set(listType.elemID.name, listType)
+        listElements.set(listType.elemID.getFullName(), listType)
         return listType
       }
       return new ObjectType({ elemID: parseElemID(blockType) })

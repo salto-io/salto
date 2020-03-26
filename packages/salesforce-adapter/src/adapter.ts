@@ -17,7 +17,7 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement,
   Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
-  DataModificationResult, Values, FetchResult, ConfigInfo,
+  DataModificationResult, Values, FetchResult,
 } from '@salto-io/adapter-api'
 import {
   resolveReferences, restoreReferences,
@@ -64,7 +64,6 @@ import {
   FilterCreator, Filter, filtersRunner,
 } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
-import { sortErrorsForDisplay } from './adapter_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -329,10 +328,8 @@ export default class SalesforceAdapter {
       errors: metadataInstancesErrors } = await metadataInstances
     elements.push(...metadataInstancesElements)
     const filtersFetchErrors = ((await this.filtersRunner.onFetch(elements)) ?? []) as FetchError[]
-    const allErrors = sortErrorsForDisplay(
-      Array.from(new Set(metadataInstancesErrors.concat(filtersFetchErrors)))
-    )
-    return { elements, config: this.getConfigInfoFromErrors(allErrors) }
+    const allErrors = Array.from(new Set(metadataInstancesErrors.concat(filtersFetchErrors)))
+    return { elements, config: this.getConfigFromErrors(allErrors) }
   }
 
   /**
@@ -656,32 +653,31 @@ InstanceElement[] => {
     return []
   }
 
-  private getConfigInfoFromErrors(errors: FetchError[]): ConfigInfo | undefined {
+  private getConfigFromErrors(errors: FetchError[]): InstanceElement | undefined {
     const errorsByType = _.groupBy(errors, 'type')
+    const currentMetadataTypesSkippedList = makeArray(this.config.metadataTypesSkippedList)
+    const currentInstancesRegexSkippedList = makeArray(this.config.instancesRegexSkippedList)
     const metadataTypesSkippedList = makeArray(errorsByType.metadataTypesSkippedList)
       .map(e => e.value)
-      .filter(e => !makeArray(this.config.metadataTypesSkippedList).includes(e))
+      .filter(e => !currentMetadataTypesSkippedList.includes(e))
     const instancesRegexSkippedList = makeArray(errorsByType.instancesRegexSkippedList)
       .map(e => e.value)
-      .filter(e => !makeArray(this.config.instancesRegexSkippedList).includes(e))
+      .filter(e => !currentInstancesRegexSkippedList.includes(e))
     if ([metadataTypesSkippedList, instancesRegexSkippedList].every(_.isEmpty)) {
       return undefined
     }
-    return {
-      config: new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          metadataTypesSkippedList: metadataTypesSkippedList
-            .concat(makeArray(this.config.metadataTypesSkippedList)),
-          instancesRegexSkippedList: instancesRegexSkippedList
-            .concat(makeArray(this.config.instancesRegexSkippedList)),
-          maxConcurrentRetrieveRequests: this.config.maxConcurrentRetrieveRequests,
-          maxItemsInRetrieveRequest: this.config.maxItemsInRetrieveRequest,
-        }
-      ),
-      messages: _.flatten(errors.map(e => e.value)),
-    }
+    return new InstanceElement(
+      ElemID.CONFIG_NAME,
+      configType,
+      {
+        metadataTypesSkippedList: metadataTypesSkippedList
+          .concat(currentMetadataTypesSkippedList),
+        instancesRegexSkippedList: instancesRegexSkippedList
+          .concat(currentInstancesRegexSkippedList),
+        maxConcurrentRetrieveRequests: this.config.maxConcurrentRetrieveRequests,
+        maxItemsInRetrieveRequest: this.config.maxItemsInRetrieveRequest,
+      }
+    )
   }
 
   private async deleteRemovedMetadataObjects(oldInstance: InstanceElement,
@@ -908,17 +904,13 @@ InstanceElement[] => {
     type TypeAndInstances = { type: ObjectType; namespaceAndInstances: NamespaceAndInstances[] }
     const readInstances = async (metadataTypesToRead: ObjectType[]):
       Promise<FetchElements<TypeAndInstances>> => {
-      const result = await Promise.all(metadataTypesToRead.map(async type => {
-        let namespaceAndInstances: NamespaceAndInstances[] = []
-        let errors: FetchError[] = []
+      const result = await Promise.all(metadataTypesToRead
         // Just fetch metadata instances of the types that we receive from the describe call
-        if (!this.metadataAdditionalTypes.includes(apiName(type))) {
-          const listResult = await this.listMetadataInstances(apiName(type))
-          namespaceAndInstances = listResult.elements
-          errors = listResult.errors
-        }
-        return { elements: { type, namespaceAndInstances }, errors }
-      }))
+        .filter(type => !this.metadataAdditionalTypes.includes(apiName(type)))
+        .map(async type => {
+          const { elements, errors } = await this.listMetadataInstances(apiName(type))
+          return { elements: { type, namespaceAndInstances: elements }, errors }
+        }))
       return {
         elements: _.flatten(result.map(r => r.elements)),
         errors: _.flatten(result.map(r => r.errors)),

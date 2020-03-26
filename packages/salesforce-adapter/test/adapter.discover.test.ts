@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes,
-  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType, ConfigChange,
+  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType,
 } from '@salto-io/adapter-api'
 import { MetadataInfo, ListMetadataQuery } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
@@ -775,7 +775,7 @@ describe('SalesforceAdapter fetch', () => {
         }
       }
       let result: FetchResult
-      let config: ConfigInfo
+      let config: InstanceElement
 
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
@@ -802,19 +802,15 @@ describe('SalesforceAdapter fetch', () => {
           ({ complete: async () => ({ zipFile: '' }) }))
 
         result = await adapter.fetch()
-        config = result?.config as ConfigInfo
+        config = result?.config as InstanceElement
       })
 
       it('should return config upon errors', () => {
         expect(config).toBeDefined()
       })
 
-      it('should return correct messages', () => {
-        expect(config.messages).toEqual(['MetadataTest2', 'MetadataTest1.instance1'])
-      })
-
       it('should return correct config', () => {
-        expect(config.config.value).toEqual(
+        expect(config.value).toEqual(
           {
             [INSTANCES_REGEX_SKIPPED_LIST]: ['MetadataTest1.instance1']
               .concat(defaultInstancesRegexSkippedList),

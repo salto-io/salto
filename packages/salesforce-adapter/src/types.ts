@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, BuiltinTypes, Field, CORE_ANNOTATIONS,
-  RESTRICTION_ANNOTATIONS } from '@salto-io/adapter-api'
+  RESTRICTION_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
 import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
@@ -57,20 +57,18 @@ export const configType = new ObjectType({
     [METADATA_TYPES_SKIPPED_LIST]: new Field(
       configID,
       METADATA_TYPES_SKIPPED_LIST,
-      BuiltinTypes.STRING,
+      new ListType(BuiltinTypes.STRING),
       {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
-      true,
     ),
     [INSTANCES_REGEX_SKIPPED_LIST]: new Field(
       configID,
       INSTANCES_REGEX_SKIPPED_LIST,
-      BuiltinTypes.STRING,
+      new ListType(BuiltinTypes.STRING),
       {
         [CORE_ANNOTATIONS.DEFAULT]: [],
       },
-      true,
     ),
     [MAX_CONCURRENT_RETRIEVE_REQUESTS]: new Field(
       configID,

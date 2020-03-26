@@ -96,7 +96,7 @@ describe('fetch', () => {
       const configType = new ObjectType({
         elemID: configElemID,
         fields: {
-          test: new Field(configElemID, 'test', BuiltinTypes.STRING, {}, true),
+          test: new Field(configElemID, 'test', new ListType(BuiltinTypes.STRING)),
         },
       })
       const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })

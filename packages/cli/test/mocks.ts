@@ -329,7 +329,7 @@ export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement
   const configType = new ObjectType({
     elemID: configElemID,
     fields: {
-      test: new Field(configElemID, 'test', BuiltinTypes.STRING, {}, true),
+      test: new Field(configElemID, 'test', new ListType(BuiltinTypes.STRING)),
     },
   })
   const configInstance = new InstanceElement(ElemID.CONFIG_NAME, configType, { test: [] })

@@ -142,7 +142,12 @@ describe('api.ts', () => {
 
     beforeAll(async () => {
       const mockGetAdaptersCreatorConfigs = adapters.getAdaptersCreatorConfigs as jest.Mock
-      mockGetAdaptersCreatorConfigs.mockReturnValue({})
+      mockGetAdaptersCreatorConfigs.mockReturnValue({
+        [SERVICES[0]]: {
+          config: mockConfigInstance.clone(),
+          credentials: mockConfigInstance.clone(),
+        },
+      })
       await api.fetch(ws, SERVICES)
     })
 

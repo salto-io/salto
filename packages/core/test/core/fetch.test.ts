@@ -23,6 +23,7 @@ import {
   FetchChangesResult, FetchProgressEvents,
 } from '../../src/core/fetch'
 import * as merger from '../../src/core/merger'
+import { getPlan, Plan } from '../../src/core/plan'
 
 const { DuplicateAnnotationError } = merger
 
@@ -90,7 +91,7 @@ describe('fetch', () => {
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
       })
     })
-    describe('when there are config changes', () => {
+    describe('config changes', () => {
       const configElemID = new ElemID('dummy')
       const configType = new ObjectType({
         elemID: configElemID,
@@ -99,26 +100,42 @@ describe('fetch', () => {
         },
       })
       const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
+      const currentInstanceConfig = new InstanceElement('ins', configType, { test: [] })
+
+      const verifyPlan = (plan: Plan, expectedPlan: Plan, expectedPlanLength: number): void => {
+        const configChanges = [...plan.itemsByEvalOrder()]
+        const expectedConfigChanges = [...expectedPlan.itemsByEvalOrder()]
+        expect(configChanges).toHaveLength(expectedPlanLength)
+        expect(configChanges.map(change => [...change.items.values()]))
+          .toEqual(expectedConfigChanges.map(change => [...change.items.values()]))
+      }
+
       beforeEach(() => {
-        mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [], config: configInstance }),
-        )
+        mockAdapters.dummy.fetch.mockResolvedValueOnce({ elements: [], config: configInstance })
       })
-      it('should return config change when there is no current config', async () => {
+      it('should return config change plan when there is no current config', async () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>, [], [], [],
         )
-        expect(fetchChangesResult).toBeDefined()
-        const configChanges = [...fetchChangesResult.configChanges.itemsByEvalOrder()]
-        expect(configChanges).toHaveLength(1)
-        const configChange = configChanges[0]
-        expect(configChange.items.get(configChange.groupKey)).toEqual({
-          action: 'add',
-          originalId: configChange.groupKey,
-          data: {
-            after: configInstance,
-          },
-        })
+        verifyPlan(fetchChangesResult.configChanges, await getPlan([], [configInstance]), 1)
+      })
+
+      it('should return config change plan when there is current config', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>, [], [], [currentInstanceConfig],
+        )
+        verifyPlan(
+          fetchChangesResult.configChanges,
+          await getPlan([currentInstanceConfig], [configInstance]),
+          1
+        )
+      })
+
+      it('should return empty plan when there is no change', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>, [], [], [configInstance],
+        )
+        expect([...fetchChangesResult.configChanges.itemsByEvalOrder()]).toHaveLength(0)
       })
     })
     describe('when merge elements returns errors', () => {

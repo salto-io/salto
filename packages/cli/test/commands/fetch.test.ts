@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
-import { ElemID, ObjectType, Element, InstanceElement, BuiltinTypes, Field } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
 import {
   Workspace, fetch, FetchChange,
   DetailedChange, FetchProgressEvents,
@@ -222,26 +222,16 @@ describe('fetch command', () => {
       describe('with changes to write to config', () => {
         const mockShouldUpdateConfig = jest.fn()
         let fetchArgs: FetchCommandArgs
-        const configElemID = new ElemID(services[0])
-        const newConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          new ObjectType({
-            elemID: configElemID,
-            fields: {
-              test: new Field(configElemID, 'test', BuiltinTypes.STRING, {}, true),
-            },
-          }),
-          {
-            test: ['SkipMe'],
-          }
-        )
+        let newConfig: InstanceElement
 
         beforeEach(async () => {
           const workspaceDir = 'with-config-changes'
+          const { plan, updatedConfig } = mocks.configChangePlan()
+          newConfig = updatedConfig
           const mockFetchWithChanges = jest.fn().mockResolvedValue(
             {
               changes: [],
-              configChanges: mocks.configChangePlan(),
+              configChanges: plan,
               mergeErrors: [],
               success: true,
             }

@@ -324,7 +324,7 @@ const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): C
   }
 }
 
-export const configChangePlan = (): Plan => {
+export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement} => {
   const result = new GroupedNodeMap<Change>()
   const configElemID = new ElemID('salesforce')
   const configType = new ObjectType({
@@ -334,7 +334,7 @@ export const configChangePlan = (): Plan => {
     },
   })
   const configInstance = new InstanceElement(ElemID.CONFIG_NAME, configType, { test: [] })
-  const updatedConfig = _.cloneDeep(configInstance)
+  const updatedConfig = configInstance.clone()
   updatedConfig.value.test = ['SkipMe']
   const configChange: Change = {
     action: 'modify',
@@ -365,7 +365,7 @@ export const configChangePlan = (): Plan => {
     },
     changeErrors: [],
   })
-  return result as Plan
+  return { plan: result as Plan, updatedConfig }
 }
 
 export const preview = (): Plan => {

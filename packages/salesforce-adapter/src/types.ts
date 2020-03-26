@@ -59,7 +59,9 @@ export const configType = new ObjectType({
       METADATA_TYPES_SKIPPED_LIST,
       new ListType(BuiltinTypes.STRING),
       {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
+        [CORE_ANNOTATIONS.DEFAULT]: [
+          'Report', 'ReportType', 'ReportFolder', 'Dashboard', 'DashboardFolder',
+        ],
       },
     ),
     [INSTANCES_REGEX_SKIPPED_LIST]: new Field(

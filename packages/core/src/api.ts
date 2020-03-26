@@ -21,7 +21,6 @@ import {
   ElemID,
   InstanceElement,
   ObjectType,
-  ConfigChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -31,7 +30,8 @@ import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
-  getAdapterDependencyChangers, createDefaultAdapterConfig,
+  getAdapterDependencyChangers, createDefaultAdapterConfig, initAdapters,
+  getAdaptersCreatorConfigs,
 } from './core/adapters'
 import { addServiceToConfig, currentEnvConfig } from './workspace/config'
 import { getPlan, Plan, PlanItem } from './core/plan'
@@ -133,7 +133,7 @@ export type FetchResult = {
   changes: Iterable<FetchChange>
   mergeErrors: MergeErrorWithElements[]
   success: boolean
-  configChanges: ConfigChange[]
+  configChanges?: Plan
 }
 export type fetchFunc = (
   workspace: Workspace,
@@ -152,15 +152,18 @@ export const fetch: fetchFunc = async (
     log.debug(`finish to override state with ${elements.length} elements`)
   }
   log.debug('fetch starting..')
-  const filteredStateElements = filterElementsByServices(await workspace.state.getAll(),
-    services)
+  const filteredStateElements = filterElementsByServices(await workspace.state.getAll(), services)
 
-  const adapters = await getAdapters(
+  const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     services,
     workspace.adapterCredentials,
     workspace.adapterConfig,
     createElemIdGetter(filteredStateElements)
   )
+  const currentConfigs = Object.values(adaptersCreatorConfigs)
+    .map(creatorConfig => creatorConfig.config)
+    .filter(config => !_.isUndefined(config)) as InstanceElement[]
+  const adapters = initAdapters(adaptersCreatorConfigs)
 
   if (progressEmitter) {
     progressEmitter.emit('adaptersDidInitialize')
@@ -170,6 +173,7 @@ export const fetch: fetchFunc = async (
       adapters,
       filterElementsByServices(await workspace.elements, services),
       filteredStateElements,
+      currentConfigs,
       progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
@@ -186,7 +190,6 @@ export const fetch: fetchFunc = async (
         changes: [],
         mergeErrors: error.causes,
         success: false,
-        configChanges: [],
       }
     }
     throw error

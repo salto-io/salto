@@ -42,7 +42,6 @@ jest.mock('@salto-io/core', () => ({
   fetch: jest.fn().mockImplementation(() => Promise.resolve({
     changes: [],
     mergeErrors: [],
-    configChanges: [],
     success: true,
   })),
 }))
@@ -134,10 +133,10 @@ describe('fetch command', () => {
 
     describe('fetch command', () => {
       const mockFetch = jest.fn().mockResolvedValue(
-        { changes: [], mergeErrors: [], configChanges: [], success: true }
+        { changes: [], mergeErrors: [], success: true }
       )
       const mockFailedFetch = jest.fn().mockResolvedValue(
-        { changes: [], mergeErrors: [], configChanges: [], success: false }
+        { changes: [], mergeErrors: [], success: false }
       )
       const mockEmptyApprove = jest.fn().mockResolvedValue([])
       const mockUpdateConfig = jest.fn().mockResolvedValue(true)
@@ -166,7 +165,7 @@ describe('fetch command', () => {
           progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
           calculateDiffEmitter.emit('failed')
           return Promise.resolve(
-            { changes: [], mergeErrors: [], configChanges: [], success: true }
+            { changes: [], mergeErrors: [], success: true }
           )
         })
         beforeEach(async () => {
@@ -223,25 +222,16 @@ describe('fetch command', () => {
       describe('with changes to write to config', () => {
         const mockShouldUpdateConfig = jest.fn()
         let fetchArgs: FetchCommandArgs
-        const newConfig = new InstanceElement(
-          services[0],
-          new ObjectType({ elemID: new ElemID('salesforce') }),
-          {
-            metadataTypesSkippedList: ['Skipped'],
-          }
-        )
+        let newConfig: InstanceElement
 
         beforeEach(async () => {
           const workspaceDir = 'with-config-changes'
+          const { plan, updatedConfig } = mocks.configChangePlan()
+          newConfig = updatedConfig
           const mockFetchWithChanges = jest.fn().mockResolvedValue(
             {
               changes: [],
-              configChanges: [
-                {
-                  config: newConfig,
-                  messages: ['Skipped'],
-                },
-              ],
+              configChanges: plan,
               mergeErrors: [],
               success: true,
             }
@@ -284,7 +274,6 @@ describe('fetch command', () => {
         const mockFetchWithChanges = jest.fn().mockResolvedValue(
           {
             changes,
-            configChanges: [],
             mergeErrors: [],
             success: true,
           }

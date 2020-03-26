@@ -18,12 +18,12 @@ import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, ListType,
 } from '@salto-io/adapter-api'
-import * as plan from '../../src/core/plan'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
 } from '../../src/core/fetch'
 import * as merger from '../../src/core/merger'
+import { getPlan, Plan } from '../../src/core/plan'
 
 const { DuplicateAnnotationError } = merger
 
@@ -86,8 +86,56 @@ describe('fetch', () => {
           mockAdapters as unknown as Record<string, Adapter>,
           [],
           [],
+          [],
         )
         expect(fetchChangesResult.mergeErrors).toHaveLength(1)
+      })
+    })
+    describe('config changes', () => {
+      const configElemID = new ElemID('dummy')
+      const configType = new ObjectType({
+        elemID: configElemID,
+        fields: {
+          test: new Field(configElemID, 'test', BuiltinTypes.STRING, {}, true),
+        },
+      })
+      const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
+      const currentInstanceConfig = new InstanceElement('ins', configType, { test: [] })
+
+      const verifyPlan = (plan: Plan, expectedPlan: Plan, expectedPlanLength: number): void => {
+        const configChanges = [...plan.itemsByEvalOrder()]
+        const expectedConfigChanges = [...expectedPlan.itemsByEvalOrder()]
+        expect(configChanges).toHaveLength(expectedPlanLength)
+        expect(configChanges.map(change => [...change.items.values()]))
+          .toEqual(expectedConfigChanges.map(change => [...change.items.values()]))
+      }
+
+      beforeEach(() => {
+        mockAdapters.dummy.fetch.mockResolvedValueOnce({ elements: [], config: configInstance })
+      })
+      it('should return config change plan when there is no current config', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>, [], [], [],
+        )
+        verifyPlan(fetchChangesResult.configChanges, await getPlan([], [configInstance]), 1)
+      })
+
+      it('should return config change plan when there is current config', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>, [], [], [currentInstanceConfig],
+        )
+        verifyPlan(
+          fetchChangesResult.configChanges,
+          await getPlan([currentInstanceConfig], [configInstance]),
+          1
+        )
+      })
+
+      it('should return empty plan when there is no change', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>, [], [], [configInstance],
+        )
+        expect([...fetchChangesResult.configChanges.itemsByEvalOrder()]).toHaveLength(0)
       })
     })
     describe('when merge elements returns errors', () => {
@@ -102,7 +150,7 @@ describe('fetch', () => {
             })
 
             try {
-              await fetchChanges({}, [], [newTypeBase])
+              await fetchChanges({}, [], [newTypeBase], [])
               expect(false).toBeTruthy()
             } catch (e) {
               expect(e.message).toMatch(/.*duplicate annotation.*/)
@@ -120,7 +168,7 @@ describe('fetch', () => {
               ],
             })
 
-            fetchChangesResult = await fetchChanges({}, [], [])
+            fetchChangesResult = await fetchChanges({}, [], [], [])
           })
           it('should return errors', async () => {
             expect(fetchChangesResult.mergeErrors).toHaveLength(1)
@@ -142,7 +190,7 @@ describe('fetch', () => {
               new DuplicateAnnotationError({ elemID: newTypeBase.elemID, key: 'bla' }),
             ],
           })
-          fetchChangesResult = await fetchChanges({}, [], [])
+          fetchChangesResult = await fetchChanges({}, [], [], [])
         })
         it('should return errors', async () => {
           expect(fetchChangesResult.mergeErrors).toHaveLength(1)
@@ -164,6 +212,7 @@ describe('fetch', () => {
           mockAdapters as unknown as Record<string, Adapter>,
           [newTypeMerged],
           [newTypeMerged],
+          [],
         )
         elements = result.elements
         changes = [...result.changes]
@@ -184,6 +233,7 @@ describe('fetch', () => {
           mockAdapters as unknown as Record<string, Adapter>,
           [typeWithField],
           [typeWithField],
+          [],
         )
         changes = [...result.changes]
       })
@@ -201,6 +251,7 @@ describe('fetch', () => {
         progressEmitter = new EventEmitter<FetchProgressEvents>()
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
+          [],
           [],
           [],
           progressEmitter
@@ -221,6 +272,7 @@ describe('fetch', () => {
         )
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
+          [],
           [],
           [],
         )
@@ -251,6 +303,7 @@ describe('fetch', () => {
               mockAdapters as unknown as Record<string, Adapter>,
               [newTypeBaseWPath],
               [newTypeBaseWPath],
+              [],
             )
             changes = [...result.changes]
           })
@@ -286,6 +339,7 @@ describe('fetch', () => {
               mockAdapters as unknown as Record<string, Adapter>,
               [newTypeA],
               [newTypeA],
+              [],
             )
             changes = [...result.changes]
           })
@@ -309,6 +363,7 @@ describe('fetch', () => {
             mockAdapters as unknown as Record<string, Adapter>,
             [typeWithFieldChange],
             [typeWithField],
+            [],
           )
           changes = [...result.changes]
         })
@@ -326,6 +381,7 @@ describe('fetch', () => {
             mockAdapters as unknown as Record<string, Adapter>,
             [typeWithFieldConflict],
             [typeWithField],
+            [],
           )
           changes = [...result.changes]
         })
@@ -343,6 +399,7 @@ describe('fetch', () => {
             mockAdapters as unknown as Record<string, Adapter>,
             [],
             [typeWithField],
+            [],
           )
           changes = [...result.changes]
         })
@@ -494,14 +551,13 @@ describe('fetch', () => {
     })
 
     describe('first fetch', () => {
-      let planSpy: jest.SpyInstance
       beforeEach(async () => {
-        planSpy = jest.spyOn(plan, 'getPlan')
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [typeWithField] })
         )
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
+          [],
           [],
           [],
         )
@@ -510,10 +566,6 @@ describe('fetch', () => {
       it('should return the change with no conflict', () => {
         expect(changes).toHaveLength(1)
         expect(changes[0].pendingChange).toBeUndefined()
-      })
-
-      it('shouldn\'t call plan', () => {
-        expect(planSpy).not.toHaveBeenCalled()
       })
     })
   })

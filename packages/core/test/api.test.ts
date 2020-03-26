@@ -130,9 +130,9 @@ describe('api.ts', () => {
       new InstanceElement('instance_2', objType, {}),
     ]
     mockedFetchChanges.mockReturnValue({
-      changes: [],
       elements: fetchedElements,
       mergeErrors: [],
+      configs: [],
     })
 
     const stateElements = [{ elemID: new ElemID(SERVICES[0], 'test') }]
@@ -141,6 +141,13 @@ describe('api.ts', () => {
     ws.state.list = jest.fn().mockImplementation(() => Promise.resolve(stateElements))
 
     beforeAll(async () => {
+      const mockGetAdaptersCreatorConfigs = adapters.getAdaptersCreatorConfigs as jest.Mock
+      mockGetAdaptersCreatorConfigs.mockReturnValue({
+        [SERVICES[0]]: {
+          config: mockConfigInstance.clone(),
+          credentials: mockConfigInstance.clone(),
+        },
+      })
       await api.fetch(ws, SERVICES)
     })
 

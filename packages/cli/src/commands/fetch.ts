@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import wu from 'wu'
+import { getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
 import {
   fetch as apiFetch,
   Workspace,
@@ -23,7 +25,7 @@ import {
   StepEmitter,
   Telemetry,
 } from '@salto-io/core'
-import { collections, promises } from '@salto-io/lowerdash'
+import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -35,6 +37,7 @@ import {
 import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
+  formatDetailedChanges,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
   shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
@@ -44,7 +47,6 @@ import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
 
 const log = logger(module)
-const { makeArray } = collections.array
 const { series } = promises.array
 
 type approveChangesFunc = (
@@ -54,7 +56,7 @@ type approveChangesFunc = (
 
 type shouldUpdateConfigFunc = (
   adapterName: string,
-  messages: string[]
+  formattedChanges: string
 ) => Promise<boolean>
 
 export type FetchCommandArgs = {
@@ -135,26 +137,28 @@ export const fetchCommand = async (
     output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
-  const adaptersConfigChanges = makeArray(fetchResult.configChanges)
-    .filter(change => !_.isEmpty(change.messages))
-  const abortRequests = await series(
-    adaptersConfigChanges.map(change => async () => {
-      const adapterName = change.config.elemID.adapter
-      log.debug(`Fetching ${adapterName} requires changes to the config in order to succeed:\n${
-        change.messages.join('\n')
-      }`)
-      const shouldWriteToConfig = await shouldUpdateConfig(
-        adapterName, change.messages
-      )
-      if (shouldWriteToConfig) {
-        await workspace.adapterConfig.set(adapterName, change.config)
-      }
-      return !shouldWriteToConfig
-    })
-  )
+  if (!_.isUndefined(fetchResult.configChanges)) {
+    const abortRequests = await series(
+      wu(fetchResult.configChanges.itemsByEvalOrder()).map(change => async () => {
+        const newConfig = getChangeElement(change.parent())
+        const adapterName = newConfig.elemID.adapter
+        if (!isInstanceElement(newConfig)) {
+          log.error('Got non instance config from adapter %s - %o', adapterName, newConfig)
+          return false
+        }
+        const shouldWriteToConfig = await shouldUpdateConfig(
+          adapterName, formatDetailedChanges([change.detailedChanges()], true)
+        )
+        if (shouldWriteToConfig) {
+          await workspace.adapterConfig.set(adapterName, newConfig)
+        }
+        return !shouldWriteToConfig
+      })
+    )
 
-  if (_.some(abortRequests)) {
-    return CliExitCode.UserInputError
+    if (_.some(abortRequests)) {
+      return CliExitCode.UserInputError
+    }
   }
 
   // Unpack changes to array so we can iterate on them more than once

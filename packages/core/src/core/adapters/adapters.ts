@@ -44,7 +44,7 @@ export const initAdapters = (
     }
   )
 
-const getDefaultAdapterConfig = (adapterName: string): InstanceElement | undefined => {
+export const getDefaultAdapterConfig = (adapterName: string): InstanceElement | undefined => {
   const { configType } = adapterCreators[adapterName]
   return configType ? createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType) : undefined
 }
@@ -59,22 +59,27 @@ Promise<InstanceElement | undefined> => {
   return adapterConfig ?? defaultConfig
 }
 
+export const getAdaptersCreatorConfigs = async (
+  adapters: string[],
+  credentials: ConfigSource,
+  config: ConfigSource,
+  elemIdGetter?: ElemIdGetter,
+): Promise<Record<string, AdapterCreatorOpts>> =>
+  _.fromPairs(await Promise.all(adapters.map(
+    async adapter => {
+      const adapterConfig = await config.get(adapter)
+      return ([adapter, {
+        credentials: await credentials.get(adapter),
+        config: adapterConfig ?? getDefaultAdapterConfig(adapter),
+        getElemIdFunc: elemIdGetter,
+      }])
+    }
+  )))
+
 export const getAdapters = async (
   adapters: string[],
   credentials: ConfigSource,
   config: ConfigSource,
   elemIdGetter?: ElemIdGetter,
-): Promise<Record<string, Adapter>> => {
-  const creatorConfig: Record<string, AdapterCreatorOpts> = _
-    .fromPairs(await Promise.all(adapters.map(
-      async adapter => {
-        const adapterConfig = await config.get(adapter)
-        return ([adapter, {
-          credentials: await credentials.get(adapter),
-          config: adapterConfig ?? getDefaultAdapterConfig(adapter),
-          getElemIdFunc: elemIdGetter,
-        }])
-      }
-    )))
-  return initAdapters(creatorConfig)
-}
+): Promise<Record<string, Adapter>> =>
+  initAdapters(await getAdaptersCreatorConfigs(adapters, credentials, config, elemIdGetter))

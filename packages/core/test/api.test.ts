@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
   Adapter,
   BuiltinTypes,
@@ -75,7 +74,6 @@ const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Work
     },
   },
   state: mockState(),
-  resolvePath: _.identity,
   updateBlueprints: jest.fn(),
   flush: jest.fn(),
   adapterCredentials: {

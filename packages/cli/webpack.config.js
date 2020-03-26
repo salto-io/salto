@@ -54,10 +54,6 @@ module.exports = {
       SALTO_TELEMETRY_DISABLE: '0',
       SALTO_TELEMETRY_URL: 'https://telemetry.salto.io',
     }),
-    // https://github.com/node-formidable/formidable/issues/452
-    new webpack.DefinePlugin({
-      'global.GENTLY': false,
-    }),
     // // This plugin fixes __dirname and __filename references from sibling
     // // projects in the monorepo. However it conflicts with nexe packaging so
     // // it is not used for now. Kept here for documentation purposes.

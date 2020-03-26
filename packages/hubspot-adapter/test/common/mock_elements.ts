@@ -297,6 +297,59 @@ const firstWorkflowMock = {
     startHour: 9,
     stopHour: 10,
   },
+  segmentCriteria: [
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'hs_email_domain',
+        value: 'gmail.com;salto.io',
+      },
+    ],
+    [
+      {
+        filterFamily: 'CompanyPropertyValue',
+        withinTimeMode: 'PAST',
+        propertyObjectType: 'COMPANY',
+        operator: 'EQ',
+        type: 'string',
+        property: 'name',
+        value: 'Salto',
+      },
+    ],
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'hs_email_domain',
+        value: 'salto.com',
+      },
+    ],
+  ],
+  goalCriteria: [
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'firstname',
+        value: 'Adam;Ben;Maayan',
+      },
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'industry',
+        value: 'abc',
+      },
+    ],
+  ],
   actions: [
     {
       type: 'DELAY',
@@ -370,6 +423,59 @@ const secondWorkflowMock = {
     startHour: 9,
     stopHour: 10,
   },
+  segmentCriteria: [
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'hs_email_domain',
+        value: 'gmail.com;salto.io',
+      },
+    ],
+    [
+      {
+        filterFamily: 'CompanyPropertyValue',
+        withinTimeMode: 'PAST',
+        propertyObjectType: 'COMPANY',
+        operator: 'EQ',
+        type: 'string',
+        property: 'name',
+        value: 'Salto',
+      },
+    ],
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'hs_email_domain',
+        value: 'salto.com',
+      },
+    ],
+  ],
+  goalCriteria: [
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'firstname',
+        value: 'Adam;Ben;Maayan',
+      },
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'industry',
+        value: 'abc',
+      },
+    ],
+  ],
   actions: [
     {
       type: 'DELAY',
@@ -443,6 +549,59 @@ export const workflowsMock = {
     startHour: 9,
     stopHour: 10,
   },
+  segmentCriteria: [
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'hs_email_domain',
+        value: 'gmail.com;salto.io',
+      },
+    ],
+    [
+      {
+        filterFamily: 'CompanyPropertyValue',
+        withinTimeMode: 'PAST',
+        propertyObjectType: 'COMPANY',
+        operator: 'EQ',
+        type: 'string',
+        property: 'name',
+        value: 'Salto',
+      },
+    ],
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'hs_email_domain',
+        value: 'salto.com',
+      },
+    ],
+  ],
+  goalCriteria: [
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'firstname',
+        value: 'Adam;Ben;Maayan',
+      },
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'industry',
+        value: 'abc',
+      },
+    ],
+  ],
   actions: [
     {
       type: 'DELAY',
@@ -558,6 +717,59 @@ export const workflowsCreateResponse = {
     startHour: 9,
     stopHour: 10,
   },
+  segmentCriteria: [
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'hs_email_domain',
+        value: 'gmail.com;salto.io',
+      },
+    ],
+    [
+      {
+        filterFamily: 'CompanyPropertyValue',
+        withinTimeMode: 'PAST',
+        propertyObjectType: 'COMPANY',
+        operator: 'EQ',
+        type: 'string',
+        property: 'name',
+        value: 'Salto',
+      },
+    ],
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'hs_email_domain',
+        value: 'salto.com',
+      },
+    ],
+  ],
+  goalCriteria: [
+    [
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'firstname',
+        value: 'Adam;Ben;Maayan',
+      },
+      {
+        filterFamily: 'PropertyValue',
+        withinTimeMode: 'PAST',
+        operator: 'EQ',
+        type: 'string',
+        property: 'industry',
+        value: 'abc',
+      },
+    ],
+  ],
   actions: [
     {
       type: 'DELAY',

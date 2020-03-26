@@ -203,6 +203,7 @@ interface Criteria {
   operator: string
   type: string
   property: string
+  propertyObjectType: string
   value: string
 }
 

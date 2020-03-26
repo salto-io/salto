@@ -263,7 +263,8 @@ describe('Hubspot Adapter Operations', () => {
           expect(result.value.enrollOnCriteriaUpdate)
             .toEqual(workflowsInstance.value.enrollOnCriteriaUpdate)
           expect(result.value.eventAnchor).toEqual(workflowsInstance.value.eventAnchor)
-
+          expect(result.value.goalCriteria).toEqual(workflowsInstance.value.goalCriteria)
+          expect(result.value.segmentCriteria).toEqual(workflowsInstance.value.segmentCriteria)
 
           // Filtered out unsupported fields
           expect(result.value.description).toBeUndefined()

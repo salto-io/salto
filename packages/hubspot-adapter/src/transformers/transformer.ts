@@ -498,42 +498,49 @@ export class Types {
             name: CRITERIA_FIELDS.FILTERFAMILY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
+          },
         ),
         [CRITERIA_FIELDS.OPERATOR]: new TypeField(
           criteriaElemID, CRITERIA_FIELDS.OPERATOR, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.OPERATOR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
+          },
         ),
         [CRITERIA_FIELDS.PROPERTY]: new TypeField(
           criteriaElemID, CRITERIA_FIELDS.PROPERTY, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.PROPERTY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
+          },
+        ),
+        [CRITERIA_FIELDS.PROPERTYOBJECTTYPE]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.PROPERTYOBJECTTYPE, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.PROPERTYOBJECTTYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
         ),
         [CRITERIA_FIELDS.TYPE]: new TypeField(
           criteriaElemID, CRITERIA_FIELDS.TYPE, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.TYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
+          },
         ),
         [CRITERIA_FIELDS.VALUE]: new TypeField(
           criteriaElemID, CRITERIA_FIELDS.VALUE, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.VALUE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
+          },
         ),
         [CRITERIA_FIELDS.WITHINTIMEMODE]: new TypeField(
           criteriaElemID, CRITERIA_FIELDS.WITHINTIMEMODE, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.WITHINTIMEMODE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
+          },
         ),
       },
       path: [HUBSPOT, 'types', 'subtypes', criteriaElemID.name],

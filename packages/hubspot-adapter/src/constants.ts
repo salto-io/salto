@@ -304,6 +304,7 @@ export const CRITERIA_FIELDS = {
   OPERATOR: 'operator',
   TYPE: 'type',
   PROPERTY: 'property',
+  PROPERTYOBJECTTYPE: 'propertyObjectType',
   VALUE: 'value',
 }
 

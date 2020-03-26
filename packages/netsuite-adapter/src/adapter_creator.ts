@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  AdapterCreator, BuiltinTypes, ElemID, Field, InstanceElement, ObjectType,
+  AdapterCreator, ElemID, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter from './adapter'
@@ -24,13 +24,7 @@ const configID = new ElemID(NETSUITE)
 
 const credentialsType = new ObjectType({
   elemID: configID,
-  fields: {
-    account: new Field(configID, 'account', BuiltinTypes.STRING),
-    consumerKey: new Field(configID, 'consumerKey', BuiltinTypes.STRING),
-    consumerSecret: new Field(configID, 'consumerSecret', BuiltinTypes.STRING),
-    tokenId: new Field(configID, 'tokenId', BuiltinTypes.STRING),
-    tokenSecret: new Field(configID, 'tokenSecret', BuiltinTypes.STRING),
-  },
+  fields: {},
   annotationTypes: {},
   annotations: {},
 })

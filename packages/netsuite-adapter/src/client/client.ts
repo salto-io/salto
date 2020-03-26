@@ -14,118 +14,21 @@
 * limitations under the License.
 */
 
-import { Configuration, Record, Service as Connection } from 'node-suitetalk'
-import { decorators } from '@salto-io/lowerdash'
-import { ATTRIBUTES, RECORD_REF } from '../constants'
-
-export type NetsuiteRecord = Record.Types.Record
-export type NetsuiteReference = Record.Types.Reference
-type ReferenceTypeAndId = { type: string; internalId: string }
-
-const API_VERSION = '2019_2'
 
 export type Credentials = {
-  account: string
-  consumerKey: string
-  consumerSecret: string
-  tokenId: string
-  tokenSecret: string
 }
 
 export type NetsuiteClientOpts = {
   credentials: Credentials
-  connection?: Connection
 }
-
-export const realConnection = (credentials: Credentials): Connection => {
-  const config = new Configuration({
-    account: credentials.account,
-    apiVersion: API_VERSION,
-    accountSpecificUrl: true,
-    token: {
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      consumer_key: credentials.consumerKey,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      consumer_secret: credentials.consumerSecret,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      token_key: credentials.tokenId,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      token_secret: credentials.tokenSecret,
-    },
-    wsdlPath: `https://webservices.netsuite.com/wsdl/v${API_VERSION}_0/netsuite.wsdl`,
-  })
-  return new Connection(config)
-}
-
-const toNetsuiteRecordRef = (recordReference: ReferenceTypeAndId): NetsuiteReference =>
-  new Record.Types.Reference(RECORD_REF, recordReference.type, recordReference.internalId)
 
 export default class NetsuiteClient {
-  private isLoggedIn = false
-  private readonly conn: Connection
-
-  static validateCredentials(credentials: Credentials): Promise<void> {
-    return realConnection(credentials).init()
+  static validateCredentials(_credentials: Credentials): Promise<void> {
+    return Promise.resolve()
   }
 
-  constructor({ credentials, connection }: NetsuiteClientOpts) {
-    this.conn = connection ?? realConnection(credentials)
-  }
-
-  private async ensureLoggedIn(): Promise<void> {
-    if (!this.isLoggedIn) {
-      await this.conn.init()
-      // this.isLoggedIn = true // todo uncomment -> currently each API call requires a new init()
-    }
-  }
-
-  private static requiresLogin = decorators.wrapMethodWith(
-    async function withLogin(
-      this: NetsuiteClient,
-      originalMethod: decorators.OriginalCall
-    ): Promise<unknown> {
-      await this.ensureLoggedIn()
-      return originalMethod.call()
-    }
-  )
-
-  @NetsuiteClient.requiresLogin
-  async list(referenceTypeAndIds: ReferenceTypeAndId[]):
-    Promise<NetsuiteRecord[]> {
-    const recordRefs = referenceTypeAndIds.map(toNetsuiteRecordRef)
-    const getListResponse = await this.conn.getList(recordRefs)
-    return getListResponse.readResponseList.readResponse.map(item => item.record)
-  }
-
-  @NetsuiteClient.requiresLogin
-  private async getCustomizationIds(type: string): Promise<string[]> {
-    const getCustomizationIdResponse = await this.conn.getCustomizationId(type, true)
-    return getCustomizationIdResponse.getCustomizationIdResult.customizationRefList
-      .customizationRef.map(customization => customization[ATTRIBUTES].internalId)
-  }
-
-  @NetsuiteClient.requiresLogin
-  async listCustomizations(type: string): Promise<NetsuiteRecord[]> {
-    const customizationInternalIds = await this.getCustomizationIds(type)
-    const customRecordRefs = customizationInternalIds.map(internalId => ({ type, internalId }))
-    return this.list(customRecordRefs)
-  }
-
-  @NetsuiteClient.requiresLogin
-  async add(record: NetsuiteRecord): Promise<NetsuiteReference> {
-    const addResponse = await this.conn.add(record)
-    return addResponse.writeResponse.baseRef
-  }
-
-  @NetsuiteClient.requiresLogin
-  async update(record: NetsuiteRecord): Promise<NetsuiteReference> {
-    const updateResponse = await this.conn.update(record)
-    return updateResponse.writeResponse.baseRef
-  }
-
-  @NetsuiteClient.requiresLogin
-  async delete(recordRef: NetsuiteReference): Promise<NetsuiteReference> {
-    const deleteResponse = await this.conn.delete(recordRef)
-    return deleteResponse.writeResponse.baseRef
+  constructor({ credentials }: NetsuiteClientOpts) {
+    // eslint-disable-next-line no-console
+    console.log(credentials)
   }
 }

@@ -32,7 +32,6 @@
     "@salto-io/logging": "0.1.11",
     "@salto-io/lowerdash": "0.1.11",
     "lodash": "^4.17.11",
-    "node-suitetalk": "https://github.com/salto-io/node-suitetalk.git",
     "wu": "^2.1.0"
   },
   "devDependencies": {

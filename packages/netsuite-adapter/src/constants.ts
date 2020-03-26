@@ -14,27 +14,3 @@
 * limitations under the License.
 */
 export const NETSUITE = 'netsuite'
-export const ATTRIBUTES = '$attributes'
-export const RECORDS_PATH = 'Records'
-export const TYPES_PATH = 'Types'
-export const SUBTYPES_PATH = 'Subtypes'
-
-// Family type names
-export const FAMILY_TYPE = {
-  CUSTOMIZATION: 'setupCustom',
-}
-
-// Type names
-export const RECORD_REF = 'RecordRef'
-export const ENTITY_CUSTOM_FIELD = 'EntityCustomField'
-
-// Fields
-export const INTERNAL_ID = 'internalId'
-export const EXTERNAL_ID = 'externalId'
-export const SCRIPT_ID = 'scriptId'
-
-// Object annotations
-export const METADATA_TYPE = 'type'
-
-// Field annotations
-export const IS_ATTRIBUTE = 'isAttribute'

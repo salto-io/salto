@@ -193,6 +193,17 @@ export interface Workflows extends HubspotMetadata {
   lastUpdatedBy: string
   eventAnchor: EventAnchor
   supressionListIds: number[]
+  segmentCriteria: Criteria[][]
+  goalCriteria: Criteria[][]
+}
+
+interface Criteria {
+  filterFamily: string
+  withinTimeMode: string
+  operator: string
+  type: string
+  property: string
+  value: string
 }
 
 interface EventAnchor {

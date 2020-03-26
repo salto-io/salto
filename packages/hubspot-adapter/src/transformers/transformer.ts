@@ -29,9 +29,9 @@ import {
   EVENTANCHOR_FIELDS, ACTION_FIELDS, FORM_PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS,
   CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS,
   DEPENDENT_FIELD_FILTER_FIELDS, FIELD_FILTER_FIELDS, WORKFLOWS_FIELDS,
-  MARKETING_EMAIL_FIELDS, RICHTEXT_FIELDS, formElemID, workflowsElemID,
+  MARKETING_EMAIL_FIELDS, RICHTEXT_FIELDS, formElemID, workflowsElemID, CRITERIA_FIELDS,
   propertyGroupElemID, propertyElemID, dependeeFormPropertyElemID, optionsElemID,
-  contactListIdsElemID, marketingEmailElemID, rssToEmailTimingElemID,
+  contactListIdsElemID, marketingEmailElemID, rssToEmailTimingElemID, criteriaElemID,
   nurtureTimeRangeElemID, anchorSettingElemID, actionElemID, eventAnchorElemID,
   conditionActionElemID, contactPropertyElemID, dependentFormFieldFiltersElemID,
   fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyFieldTypeValues,
@@ -489,6 +489,56 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', conditionActionElemID.name],
     })
 
+  private static criteriaType: ObjectType =
+    new ObjectType({
+      elemID: criteriaElemID,
+      fields: {
+        [CRITERIA_FIELDS.FILTERFAMILY]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.FILTERFAMILY, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.FILTERFAMILY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [CRITERIA_FIELDS.OPERATOR]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.OPERATOR, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.OPERATOR,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [CRITERIA_FIELDS.PROPERTY]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.PROPERTY, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.PROPERTY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [CRITERIA_FIELDS.TYPE]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [CRITERIA_FIELDS.VALUE]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.VALUE, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.VALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [CRITERIA_FIELDS.WITHINTIMEMODE]: new TypeField(
+          criteriaElemID, CRITERIA_FIELDS.WITHINTIMEMODE, BuiltinTypes.STRING, {
+            name: CRITERIA_FIELDS.WITHINTIMEMODE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+      },
+      path: [HUBSPOT, 'types', 'subtypes', criteriaElemID.name],
+    })
+
   private static actionType: ObjectType =
     new ObjectType({
       elemID: actionElemID,
@@ -808,6 +858,22 @@ export class Types {
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
+        ),
+        [WORKFLOWS_FIELDS.SEGMENTCRITERIA]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.SEGMENTCRITERIA,
+          new ListType(new ListType(Types.criteriaType)), {
+            name: WORKFLOWS_FIELDS.SEGMENTCRITERIA,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [WORKFLOWS_FIELDS.GOALCRITERIA]: new TypeField(
+          workflowsElemID, WORKFLOWS_FIELDS.GOALCRITERIA,
+          new ListType(new ListType(Types.criteriaType)), {
+            name: WORKFLOWS_FIELDS.GOALCRITERIA,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
         ),
         [WORKFLOWS_FIELDS.TYPE]: new TypeField(
           workflowsElemID, WORKFLOWS_FIELDS.TYPE, BuiltinTypes.STRING, {
@@ -1757,6 +1823,7 @@ export class Types {
     Types.dependentFormFieldFiltersType,
     Types.dependentFormFieldType,
     Types.dependeeFormFieldType,
+    Types.criteriaType,
   ]
 
   /**

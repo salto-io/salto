@@ -37,7 +37,6 @@ export const OBJECTS_NAMES = {
   ACTION: 'action',
   ANCHORSETTING: 'anchorSetting',
   CRITERIA: 'criteria',
-  CRITERIALIST: 'criteriaList',
   EVENTANCHOR: 'eventAnchor',
   CONDITIONACTION: 'conditionAction',
   CONTACT_PROPERTY: 'contactProperty',
@@ -299,6 +298,15 @@ export const WORKFLOWS_FIELDS = {
   EVENTANCHOR: 'eventAnchor',
 }
 
+export const CRITERIA_FIELDS = {
+  FILTERFAMILY: 'filterFamily',
+  WITHINTIMEMODE: 'withinTimeMode',
+  OPERATOR: 'operator',
+  TYPE: 'type',
+  PROPERTY: 'property',
+  VALUE: 'value',
+}
+
 export const EVENTANCHOR_FIELDS = {
   STATICDATEANCHOR: 'staticDateAnchor',
   CONTACTPROPERTYANCHOR: 'contactPropertyAnchor',
@@ -352,6 +360,7 @@ export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file
 // ElemIDs
 export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
 export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
+export const criteriaElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CRITERIA)
 export const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
 export const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)
 export const dependeeFormPropertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.DEPENDEE_FORM_PROPERTY)

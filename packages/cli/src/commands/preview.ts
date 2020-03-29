@@ -35,7 +35,8 @@ export const command = (
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir,
-      { stdout, stderr }, force, spinnerCreator)
+      { stdout, stderr }, spinnerCreator,
+      { force, printStateRecency: true, recommendStateRecency: true })
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError

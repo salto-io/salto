@@ -462,8 +462,13 @@ export const formatFatalFetchError = (causes: MergeError[]): string =>
     causes.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
   }`)
 
+export const formatWorkspaceLoadFailed = (numErrors: number): string =>
+  formatSimpleError(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}`)
+
 export const formatWorkspaceAbort = (numErrors: number): string =>
-  formatSimpleError(`${Prompts.WORKSPACE_LOAD_FAILED(numErrors)}\n`)
+  formatSimpleError(
+    `${Prompts.WORKSPACE_LOAD_ABORT(numErrors)}\n`
+  )
 
 export const formatShouldContinueWithWarning = (numWarnings: number): string =>
   warn(Prompts.SHOULD_CONTINUE(numWarnings))
@@ -473,6 +478,12 @@ export const formatShouldAbortWithValidationError = (numErrors: number): string 
 
 export const formatShouldUpdateConfig = (adapterName: string, formattedChanges: string):
 string => Prompts.SHOULD_UPDATE_CONFIG(adapterName, formattedChanges)
+
+export const formatShouldCancelWithOldState = warn(Prompts.SHOULD_CANCEL_WITH_OLD_STATE)
+
+export const formatShouldCancelWithNonexistentState = warn(
+  Prompts.SHOULD_CANCEL_WITH_NONEXISTENT_STATE
+)
 
 export const formatCancelCommand = header(`${Prompts.CANCELED}\n`)
 

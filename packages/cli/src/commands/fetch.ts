@@ -204,7 +204,8 @@ export const command = (
       interactive}, strict=${strict}]`)
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
-    const { workspace, errored } = await loadWorkspace(workspaceDir, output, force, spinnerCreator)
+    const { workspace, errored } = await loadWorkspace(workspaceDir, output,
+      spinnerCreator, { force, printStateRecency: true })
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError
@@ -252,7 +253,7 @@ const fetchBuilder = createCommandBuilder({
       },
       strict: {
         alias: ['t'],
-        describe: 'Restrict fetch from modifing common configuration '
+        describe: 'Restrict fetch from modifying common configuration '
           + '(might result in changes in other env folders)',
         boolean: true,
         default: false,

@@ -29,6 +29,7 @@ jest.mock('@salto-io/core', () => ({
           name: workspaceName,
           localStorage: '',
           baseDir: '',
+          staleStateThresholdMinutes: 1,
           uid: '',
           envs: {
             default: {

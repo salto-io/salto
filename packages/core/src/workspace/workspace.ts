@@ -126,6 +126,12 @@ const loadMultiEnvSource = (config: Config): BlueprintsSource => {
   return multiEnvSource(sources, activeEnv.baseDir, COMMON_ENV_PREFIX)
 }
 
+type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
+export type StateRecency = {
+  status: RecencyStatus
+  date: Date | null
+}
+
 export class Workspace {
   readonly state: State
   readonly adapterCredentials: ConfigSource
@@ -305,6 +311,21 @@ export class Workspace {
         val => val.severity === 'Error'
       )).slice(0, MAX_ERROR_NUMBER).map(error => this.transformError(error))
     )
+  }
+
+  async getStateRecency(): Promise<StateRecency> {
+    const staleStateThresholdMs = this.config.staleStateThresholdMinutes * 60 * 1000
+    const date = await this.state.getUpdateDate()
+    const status = (() => {
+      if (date === null) {
+        return 'Nonexistent'
+      }
+      if (Date.now() - date.getTime() >= staleStateThresholdMs) {
+        return 'Old'
+      }
+      return 'Valid'
+    })()
+    return { status, date }
   }
 
   async flush(): Promise<void> {

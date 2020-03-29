@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import * as path from 'path'
 import os from 'os'
+import _ from 'lodash'
 import { Values } from '@salto-io/adapter-api'
 import { loadConfig, addEnvToConfig, setCurrentEnv,
-  CONFIG_DIR_NAME, STATES_DIR_NAME } from '../../src/workspace/config'
+  CONFIG_DIR_NAME, STATES_DIR_NAME,
+  DEFAULT_STALE_STATE_THRESHOLD_MINUTES } from '../../src/workspace/config'
 import { readTextFile, exists } from '../../src/file'
 import { SALTO_HOME_VAR } from '../../src/app_config'
 
@@ -40,6 +41,7 @@ describe('configuration dir location', () => {
   const filenamesToContent: Values = {
     '/workspaces/full/salto.config/config.bp': `salto {
       name = "workspace"
+      staleStateThresholdMinutes = 4444
       localStorage = "/.salto/workspace"
       uid = "uid"
       envs = {
@@ -111,6 +113,7 @@ describe('load proper configuration', () => {
     expect(config).toEqual(
       {
         name: 'workspace',
+        staleStateThresholdMinutes: 4444,
         localStorage: '/.salto/workspace',
         baseDir: fullWorkspaceDir,
         uid: 'uid',
@@ -134,6 +137,7 @@ describe('load proper configuration', () => {
     expect(config).toEqual(
       {
         name: path.basename(defaultsWorkspaceDir),
+        staleStateThresholdMinutes: DEFAULT_STALE_STATE_THRESHOLD_MINUTES,
         localStorage,
         baseDir: defaultsWorkspaceDir,
         uid: defaultUUID,
@@ -159,6 +163,7 @@ describe('load proper configuration', () => {
         name: path.basename(missingLocalWorkspaceDir),
         localStorage,
         baseDir: missingLocalWorkspaceDir,
+        staleStateThresholdMinutes: DEFAULT_STALE_STATE_THRESHOLD_MINUTES,
         uid: 'uid',
         currentEnv: 'first',
         envs: {
@@ -191,6 +196,7 @@ describe('load proper configuration', () => {
       {
         name: path.basename(defaultsWorkspaceDir),
         localStorage,
+        staleStateThresholdMinutes: DEFAULT_STALE_STATE_THRESHOLD_MINUTES,
         baseDir: defaultsWorkspaceDir,
         uid: defaultUUID,
         currentEnv: 'default',
@@ -216,6 +222,7 @@ describe('update environment settings', () => {
     baseDir: fullWorkspaceDir,
     stateLocation: '/states/test.bpc',
     credentialsLocation: '/creds/default',
+    staleStateThresholdMinutes: 44444444,
     services: [],
     uid: 'uid',
     currentEnv: 'default',

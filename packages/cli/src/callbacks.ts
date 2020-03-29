@@ -20,11 +20,12 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
-import { Plan, FetchChange, Workspace } from '@salto-io/core'
+import { Plan, FetchChange, Workspace, StateRecency } from '@salto-io/core'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
   formatConfigFieldInput, formatShouldAbortWithValidationError, formatShouldUpdateConfig,
+  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
@@ -56,6 +57,17 @@ export const shouldDeploy = (stdout: WriteStream, workspace: Workspace) =>
     }
     return shouldExecute
   }
+
+export const shouldCancelInCaseOfNoRecentState = async (recency: StateRecency,
+  { stdout }: CliOutput): Promise<boolean> => {
+  const prompt = recency.status === 'Nonexistent'
+    ? formatShouldCancelWithNonexistentState : formatShouldCancelWithOldState
+  const shouldCancel = await getUserBooleanInput(prompt)
+  if (shouldCancel) {
+    stdout.write(formatCancelCommand)
+  }
+  return shouldCancel
+}
 
 export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
   { stdout }: CliOutput): Promise<boolean> => {

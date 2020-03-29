@@ -121,7 +121,8 @@ export class DeployCommand implements CliCommand {
   async execute(): Promise<CliExitCode> {
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
-      { stderr: this.stderr, stdout: this.stdout }, this.force, this.spinnerCreator)
+      { stderr: this.stderr, stdout: this.stdout }, this.spinnerCreator,
+      { force: this.force, printStateRecency: true, recommendStateRecency: true })
     if (errored) {
       this.cliTelemetry.failure()
       return CliExitCode.AppError

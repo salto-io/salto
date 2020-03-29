@@ -44,6 +44,7 @@ export { Blueprint } from './src/workspace/blueprints/blueprints_source'
 export {
   Config, loadConfig, addServiceToConfig, addEnvToConfig, setCurrentEnv, currentEnvConfig,
 } from './src/workspace/config'
+export { StateRecency } from './src/workspace/workspace'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dumpElements, dumpElemID } from './src/parser/dump'
 export { readAllCsvContents } from './test/common/helpers'

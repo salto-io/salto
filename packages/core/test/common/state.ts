@@ -22,6 +22,7 @@ const mockState = (): State => ({
   set: jest.fn().mockImplementation(() => Promise.resolve()),
   remove: jest.fn().mockImplementation(() => Promise.resolve()),
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
+  getUpdateDate: jest.fn().mockImplementation(() => Promise.resolve()),
 })
 
 export default mockState

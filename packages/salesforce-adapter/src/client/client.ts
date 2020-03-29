@@ -342,7 +342,11 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
-  public async readMetadata(type: string, name: string | string[]):
+  public async readMetadata(
+    type: string,
+    name: string | string[],
+    isUnhandledError: (error: Error) => boolean = error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
+  ):
   Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({
       operationName: 'readMetadata',
@@ -352,7 +356,7 @@ export default class SalesforceClient {
       isSuppressedError: error => (
         this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
       ),
-      isUnhandledError: error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
+      isUnhandledError,
     })
   }
 

@@ -26,7 +26,7 @@ import {
   metadataType, apiName, createInstanceElement, isCustomObject, Types, isCustom,
 } from '../transformers/transformer'
 import { extractFullNamesFromValueList } from './utils'
-import { FetchError, FetchElements } from '../types'
+import { ConfigChangeSuggestion, FetchElements } from '../types'
 
 const { makeArray } = collections.array
 
@@ -210,7 +210,7 @@ export const makeFilter = (
    *
    * @param elements the already fetched elements
    */
-  onFetch: async (elements: Element[]): Promise<FetchError[]> => {
+  onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     const svsMetadataType: ObjectType | undefined = findStandardValueSetType(elements)
     if (svsMetadataType !== undefined) {
       const svsInstances = await createSVSInstances(standardValueSetNames, client, svsMetadataType)
@@ -222,7 +222,7 @@ export const makeFilter = (
     // Is this considered an error?
     // Not sure about handling this case,
     // we want to at least log this for sure.
-    return [] as FetchError[]
+    return [] as ConfigChangeSuggestion[]
   },
 })
 

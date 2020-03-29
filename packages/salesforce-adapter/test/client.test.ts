@@ -159,8 +159,19 @@ describe('salesforce client', () => {
         .times(22)
         .reply(500, 'server error')
       // create an array with 20 names so we will have 2 calls
-      await expect(client.readMetadata('FakeType', Array.from({ length: 20 }, () => 'FakeName')))
-        .rejects.toEqual(new Error('server error'))
+      await expect(client.readMetadata(
+        'FakeType', Array.from({ length: 20 }, () => 'FakeName')
+      )).rejects.toEqual(new Error('server error'))
+      expect(dodoScope.isDone()).toBeTruthy()
+    })
+
+    it('should return errors in case of handled error', async () => {
+      const dodoScope = nock('http://dodo22/services/Soap/m/47.0')
+        .post(/.*/)
+        .times(1)
+        .reply(500, 'server error')
+      expect(await client.readMetadata('FakeType', 'FakeName', _err => false))
+        .toEqual({ result: [], errors: ['FakeName'] })
       expect(dodoScope.isDone()).toBeTruthy()
     })
   })

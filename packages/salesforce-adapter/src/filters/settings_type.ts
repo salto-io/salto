@@ -26,7 +26,7 @@ import {
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { id } from './utils'
-import { FetchElements, FetchError, INSTANCES_REGEX_SKIPPED_LIST } from '../types'
+import { FetchElements, ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST } from '../types'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -99,7 +99,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
    *
    * @param elements
    */
-  onFetch: async (elements: Element[]): Promise<FetchError[]> => {
+  onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     // Fetch list of all settings types
     const { result: settingsList } = await client.listMetadataObjects(
       { type: SETTINGS_METADATA_TYPE }

@@ -29,12 +29,12 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
 }
 
-export type FetchError = {
-  type: 'metadataTypesSkippedList' | 'instancesRegexSkippedList'
+export type ConfigChangeSuggestion = {
+  type: keyof SalesforceConfig & ('metadataTypesSkippedList' | 'instancesRegexSkippedList')
   value: string
 }
 export type FetchElements<T> = {
-  errors: FetchError[]
+  errors: ConfigChangeSuggestion[]
   elements: T[]
 }
 

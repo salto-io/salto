@@ -58,7 +58,7 @@ import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
-import { FetchError, FetchElements, SalesforceConfig,
+import { ConfigChangeSuggestion, FetchElements, SalesforceConfig,
   METADATA_TYPES_SKIPPED_LIST, INSTANCES_REGEX_SKIPPED_LIST, configType } from './types'
 import {
   FilterCreator, Filter, filtersRunner,
@@ -327,7 +327,9 @@ export default class SalesforceAdapter {
     const { elements: metadataInstancesElements,
       errors: metadataInstancesErrors } = await metadataInstances
     elements.push(...metadataInstancesElements)
-    const filtersFetchErrors = ((await this.filtersRunner.onFetch(elements)) ?? []) as FetchError[]
+    const filtersFetchErrors = (
+      (await this.filtersRunner.onFetch(elements)) ?? []
+    ) as ConfigChangeSuggestion[]
     const allErrors = Array.from(new Set(metadataInstancesErrors.concat(filtersFetchErrors)))
     return { elements, config: this.getConfigFromErrors(allErrors) }
   }
@@ -653,7 +655,7 @@ InstanceElement[] => {
     return []
   }
 
-  private getConfigFromErrors(errors: FetchError[]): InstanceElement | undefined {
+  private getConfigFromErrors(errors: ConfigChangeSuggestion[]): InstanceElement | undefined {
     const errorsByType = _.groupBy(errors, 'type')
     const currentMetadataTypesSkippedList = makeArray(this.config.metadataTypesSkippedList)
     const currentInstancesRegexSkippedList = makeArray(this.config.instancesRegexSkippedList)
@@ -968,7 +970,7 @@ InstanceElement[] => {
   private async listMetadataInstances(type: string): Promise<FetchElements<NamespaceAndInstances>> {
     const listResult = await this.client.listMetadataObjects({ type })
     const listErrors = listResult.errors
-      .map(e => ({ type: METADATA_TYPES_SKIPPED_LIST, value: e.type } as FetchError))
+      .map(e => ({ type: METADATA_TYPES_SKIPPED_LIST, value: e.type } as ConfigChangeSuggestion))
     const objs = listResult.result
     if (!objs) {
       return { elements: [], errors: listErrors }
@@ -987,7 +989,9 @@ InstanceElement[] => {
       .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexSkippedList))
     const readMetadataResult = await this.client.readMetadata(type, instancesFullNames)
     const errors = readMetadataResult.errors
-      .map(e => ({ type: INSTANCES_REGEX_SKIPPED_LIST, value: `${type}.${e}` } as FetchError))
+      .map(e => (
+        { type: INSTANCES_REGEX_SKIPPED_LIST, value: `${type}.${e}` } as ConfigChangeSuggestion
+      ))
       .concat(listErrors)
 
     return {

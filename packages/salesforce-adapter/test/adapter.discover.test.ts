@@ -15,10 +15,10 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, Element,
-  CORE_ANNOTATIONS, isListType, ListType,
+  ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes,
+  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType,
 } from '@salto-io/adapter-api'
-import { MetadataInfo } from 'jsforce'
+import { MetadataInfo, ListMetadataQuery } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
 import { Types } from '../src/transformers/transformer'
@@ -27,10 +27,16 @@ import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
+import { INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST,
+  MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
+  const defaultMetadataTypesSkippedList = ['Test1', 'Ignored1']
+  const defaultInstancesRegexSkippedList = ['Test2.instance1', 'SkippedList$']
+  const defaultMaxConcurrentRetrieveRequests = 4
+  const defaultMaxItemsInRetrieveRequest = 3000
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)
@@ -40,8 +46,12 @@ describe('SalesforceAdapter fetch', () => {
       adapterParams: {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
-        metadataTypesSkippedList: ['Test1', 'Ignored1'],
-        instancesRegexSkippedList: ['Test2.instance1', 'SkippedList$'],
+        config: {
+          metadataTypesSkippedList: defaultMetadataTypesSkippedList,
+          instancesRegexSkippedList: defaultInstancesRegexSkippedList,
+          maxConcurrentRetrieveRequests: defaultMaxConcurrentRetrieveRequests,
+          maxItemsInRetrieveRequest: defaultMaxItemsInRetrieveRequest,
+        },
       },
     }))
   })
@@ -117,7 +127,7 @@ describe('SalesforceAdapter fetch', () => {
           ],
         },
       ])
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
 
       const describeMock = connection.metadata.describeValueType as jest.Mock<unknown>
       expect(describeMock).toHaveBeenCalled()
@@ -171,7 +181,7 @@ describe('SalesforceAdapter fetch', () => {
         },
       ])
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
 
       expect(result).toHaveLength(_.concat(
         Object.keys(Types.primitiveDataTypes),
@@ -235,7 +245,7 @@ describe('SalesforceAdapter fetch', () => {
         bla: { bla: '55', bla2: 'false', bla3: 'true' },
       })
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
       expect(flow.value.bla.bla).toBe(55)
@@ -283,7 +293,7 @@ describe('SalesforceAdapter fetch', () => {
         bla: { bla: '55', bla2: 'false', bla3: 'true' },
       })
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const flow = findElements(result, 'Flow', 'my_FlowInstance').pop() as InstanceElement
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
       expect(flow.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('FlowInstance')
@@ -376,7 +386,7 @@ describe('SalesforceAdapter fetch', () => {
           }],
       })
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const layout = findElements(result, 'Layout', 'Order_Layout').pop() as InstanceElement
       expect(layout.type.elemID).toEqual(LAYOUT_TYPE_ID)
       expect(layout.value[constants.INSTANCE_FULL_NAME_FIELD]).toBe(layoutName)
@@ -437,7 +447,7 @@ describe('SalesforceAdapter fetch', () => {
           },
         ]))
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const flow = findElements(result, 'Flow', 'FlowInstance').pop() as InstanceElement
       expect(flow.type.elemID).toEqual(new ElemID(constants.SALESFORCE, 'Flow'))
       expect(isListType((flow.type as ObjectType).fields.listTest.type)).toBeTruthy()
@@ -511,7 +521,7 @@ describe('SalesforceAdapter fetch', () => {
         { path: 'unpackaged/email/MyFolder/MyEmailTemplate.email',
           content: 'Email Body' }])
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const [testElem] = findElements(result, 'EmailTemplate', 'MyFolder_MyEmailTemplate')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
@@ -574,7 +584,7 @@ describe('SalesforceAdapter fetch', () => {
       )
       connection.metadata.retrieve = mockRetrieve
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       expect(mockRetrieve.mock.calls.length).toBe(2)
       const [first] = findElements(result, 'ApexClass', 'MyApexClass') as InstanceElement[]
       const [second] = findElements(result, 'ApexClass', 'MyApexClass2') as InstanceElement[]
@@ -612,7 +622,7 @@ describe('SalesforceAdapter fetch', () => {
             + '    <publicFolderAccess>ReadWrite</publicFolderAccess>\n'
             + '</EmailFolder>\n' }])
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const [testElem] = findElements(result, 'EmailFolder', 'MyFolder')
       const testInst = testElem as InstanceElement
       expect(testInst).toBeDefined()
@@ -636,7 +646,7 @@ describe('SalesforceAdapter fetch', () => {
           + '</ApexPage>\n' }, { path: 'unpackaged/pages/th_con_app__ThHomepage.page',
           content: '<apex:page sidebar="false" standardStylesheets="false"/>' }])
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const [testInst] = findElements(result, 'ApexPage', 'th_con_app__ThHomepage')
       expect(testInst).toBeDefined()
       expect(testInst.path)
@@ -649,7 +659,7 @@ describe('SalesforceAdapter fetch', () => {
       const namespaceName = 'asd'
       mockSingleMetadataInstance('Test', { fullName: 'asd__Test' }, namespaceName)
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path)
@@ -662,7 +672,7 @@ describe('SalesforceAdapter fetch', () => {
       mockSingleMetadataType('Test', [])
       mockSingleMetadataInstance('asd__Test', { fullName: 'asd__Test' }, namespaceName)
 
-      const result = (await adapter.fetch()).elements
+      const { elements: result } = await adapter.fetch()
       const [testInst] = findElements(result, 'Test', 'asd__Test')
       expect(testInst).toBeDefined()
       expect(testInst.path).toEqual(
@@ -754,6 +764,62 @@ describe('SalesforceAdapter fetch', () => {
       it('should skip skippedlist retrieve instances', () => {
         expect(findElements(result, 'EmailTemplate', 'MyFolder_MyEmailTemplateSkippedList'))
           .toHaveLength(0)
+      })
+    })
+
+    describe('should return errors when fetch on certain instances failed', () => {
+      class SFError extends Error {
+        constructor(name: string, message?: string) {
+          super(message)
+          this.name = name
+        }
+      }
+      let result: FetchResult
+      let config: InstanceElement
+
+      beforeEach(async () => {
+        connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
+        connection.metadata.describe = jest.fn().mockImplementation(async () => ({
+          metadataObjects: [{ xmlName: 'MetadataTest1' }, { xmlName: 'MetadataTest2' }],
+        }))
+        connection.metadata.describeValueType = jest.fn().mockImplementation(
+          async (_typeName: string) => ({ valueTypeFields: [] })
+        )
+        connection.metadata.list = jest.fn().mockImplementation(
+          async (typeName: ListMetadataQuery[]) => {
+            if (typeName[0].type === 'MetadataTest1') {
+              return [{ fullName: 'instance1' }]
+            }
+            throw new SFError('sf:UNKNOWN_EXCEPTION')
+          }
+        )
+        connection.metadata.read = jest.fn().mockImplementation(
+          async (_typeName: string, _fullNames: string | string[]) => {
+            throw new SFError('sf:UNKNOWN_EXCEPTION')
+          }
+        )
+        connection.metadata.retrieve = jest.fn().mockImplementation(() =>
+          ({ complete: async () => ({ zipFile: '' }) }))
+
+        result = await adapter.fetch()
+        config = result?.config as InstanceElement
+      })
+
+      it('should return config upon errors', () => {
+        expect(config).toBeDefined()
+      })
+
+      it('should return correct config', () => {
+        expect(config.value).toEqual(
+          {
+            [INSTANCES_REGEX_SKIPPED_LIST]: ['MetadataTest1.instance1']
+              .concat(defaultInstancesRegexSkippedList),
+            [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
+              .concat(defaultMetadataTypesSkippedList),
+            [MAX_CONCURRENT_RETRIEVE_REQUESTS]: defaultMaxConcurrentRetrieveRequests,
+            [MAX_ITEMS_IN_RETRIEVE_REQUEST]: defaultMaxItemsInRetrieveRequest,
+          }
+        )
       })
     })
   })

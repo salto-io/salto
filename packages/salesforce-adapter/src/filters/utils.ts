@@ -102,8 +102,11 @@ export const hasNamespace = (customElement: Field | ObjectType): boolean => (
   && apiName(customElement, true).split(NAMESPACE_SEPARATOR).length === 3
 )
 
+export const getNamespaceFromString = (name: string): string =>
+  name.split(NAMESPACE_SEPARATOR)[0]
+
 export const getNamespace = (customElement: Field | ObjectType): string =>
-  apiName(customElement, true).split(NAMESPACE_SEPARATOR)[0]
+  getNamespaceFromString(apiName(customElement, true))
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>

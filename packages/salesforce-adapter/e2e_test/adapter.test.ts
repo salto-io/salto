@@ -3249,7 +3249,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
       // Checks if the new topic' object exists
       const results = (await client.readMetadata(constants.TOPICS_FOR_OBJECTS_METADATA_TYPE,
-        apiName(addResult))) as TopicsForObjectsInfo[]
+        apiName(addResult))).result as TopicsForObjectsInfo[]
       expect(results).toHaveLength(1)
       expect(results[0].enableTopics).toBe('true')
     })

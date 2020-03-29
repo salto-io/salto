@@ -184,6 +184,11 @@ type SendChunkedArgs<TIn, TOut> = {
   operationName: keyof SalesforceClient
   chunkSize?: number
   isSuppressedError?: ErrorFilter
+  isUnhandledError?: ErrorFilter
+}
+export type SendChunkedResult<TIn, TOut> = {
+  result: TOut[]
+  errors: TIn[]
 }
 const sendChunked = async <TIn, TOut>({
   input,
@@ -191,28 +196,42 @@ const sendChunked = async <TIn, TOut>({
   operationName,
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
   isSuppressedError = () => false,
-}: SendChunkedArgs<TIn, TOut>): Promise<TOut[]> => {
-  const sendSingleChunk = async (chunkInput: TIn[]): Promise<TOut[]> => {
+  isUnhandledError = () => true,
+}: SendChunkedArgs<TIn, TOut>): Promise<SendChunkedResult<TIn, TOut>> => {
+  const sendSingleChunk = async (chunkInput: TIn[]):
+  Promise<SendChunkedResult<TIn, TOut>> => {
     try {
-      return makeArray(await sendChunk(chunkInput))
+      return { result: makeArray(await sendChunk(chunkInput)), errors: [] }
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
         log.error('chunked %s failed on chunk, trying each element separately', operationName)
-        return _.flatten(await Promise.all(chunkInput.map(item => sendSingleChunk([item]))))
+        const sendChunkResult = await Promise.all(chunkInput.map(item => sendSingleChunk([item])))
+        return {
+          result: _.flatten(sendChunkResult.map(e => e.result)),
+          errors: _.flatten(sendChunkResult.map(e => e.errors)),
+        }
       }
       if (isSuppressedError(error)) {
-        log.warn('chunked %s ignoring recoverable error on %o: %s', operationName, chunkInput[0], error.message)
-        return []
+        log.warn('chunked %s ignoring recoverable error on %o: %s',
+          operationName, chunkInput[0], error.message)
+        return { result: [], errors: [] }
       }
-      log.error('chunked %s unrecoverable error on %o: %o', operationName, chunkInput[0], error)
-      throw error
+      if (isUnhandledError(error)) {
+        log.error('chunked %s unrecoverable error on %o: %o', operationName, chunkInput[0], error)
+        throw error
+      }
+      log.warn('chunked %s unknown error on %o: %o', operationName, chunkInput[0], error)
+      return { result: [], errors: chunkInput }
     }
   }
-  const promises = _.chunk(makeArray(input), chunkSize)
+  const result = await Promise.all(_.chunk(makeArray(input), chunkSize)
     .filter(chunk => !_.isEmpty(chunk))
-    .map(sendSingleChunk)
-  return _.flatten(await Promise.all(promises))
+    .map(sendSingleChunk))
+  return {
+    result: _.flatten(result.map(e => e.result)),
+    errors: _.flatten(result.map(e => e.errors)),
+  }
 }
 
 export default class SalesforceClient {
@@ -308,12 +327,13 @@ export default class SalesforceClient {
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(listMetadataQuery: ListMetadataQuery | ListMetadataQuery[]):
-    Promise<FileProperties[]> {
+    Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
     return sendChunked({
       operationName: 'listMetadataObjects',
       input: listMetadataQuery,
       sendChunk: chunk => this.conn.metadata.list(chunk),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
+      isUnhandledError: error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
     })
   }
 
@@ -322,7 +342,12 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
-  public async readMetadata(type: string, name: string | string[]): Promise<MetadataInfo[]> {
+  public async readMetadata(
+    type: string,
+    name: string | string[],
+    isUnhandledError: (error: Error) => boolean = error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
+  ):
+  Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({
       operationName: 'readMetadata',
       input: name,
@@ -331,6 +356,7 @@ export default class SalesforceClient {
       isSuppressedError: error => (
         this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
       ),
+      isUnhandledError,
     })
   }
 
@@ -345,13 +371,14 @@ export default class SalesforceClient {
 
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
-  public async describeSObjects(objectNames: string[]): Promise<DescribeSObjectResult[]> {
-    return sendChunked({
+  public async describeSObjects(objectNames: string[]):
+  Promise<DescribeSObjectResult[]> {
+    return (await sendChunked({
       operationName: 'describeSObjects',
       input: objectNames,
       sendChunk: chunk => this.conn.soap.describeSObjects(chunk),
       chunkSize: MAX_ITEMS_IN_DESCRIBE_REQUEST,
-    })
+    })).result
   }
 
   /**
@@ -371,8 +398,8 @@ export default class SalesforceClient {
       sendChunk: chunk => this.conn.metadata.upsert(type, chunk),
     })
     log.debug('upsert %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
-      type, result)
-    return result
+      type, result.result)
+    return result.result
   }
 
   /**
@@ -390,8 +417,8 @@ export default class SalesforceClient {
       input: fullNames,
       sendChunk: chunk => this.conn.metadata.delete(type, chunk),
     })
-    log.debug('deleted %o of type %s [result=%o]', fullNames, type, result)
-    return result
+    log.debug('deleted %o of type %s [result=%o]', fullNames, type, result.result)
+    return result.result
   }
 
   /**
@@ -411,8 +438,8 @@ export default class SalesforceClient {
       sendChunk: chunk => this.conn.metadata.update(type, chunk),
     })
     log.debug('updated %o of type %s [result=%o]', makeArray(metadata).map(f => f.fullName),
-      type, result)
-    return result
+      type, result.result)
+    return result.result
   }
 
   @SalesforceClient.logDecorator

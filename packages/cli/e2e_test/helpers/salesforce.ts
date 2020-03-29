@@ -23,7 +23,7 @@ import _ from 'lodash'
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
   missingFields: string[] = []): Promise<boolean> => {
   const result = (
-    await client.readMetadata(salesforceTestHelpers().CUSTOM_OBJECT, name)
+    (await client.readMetadata(salesforceTestHelpers().CUSTOM_OBJECT, name)).result
   )[0] as salesforceTestTypes.CustomObject
   if (!result || !result.fullName) {
     return false
@@ -41,7 +41,7 @@ export const objectExists = async (client: SalesforceClient, name: string, field
 
 export const instanceExists = async (client: SalesforceClient, type: string, name: string,
   expectedValues?: Record<string, string>): Promise<boolean> => {
-  const result = (await client.readMetadata(type, name))[0]
+  const result = (await client.readMetadata(type, name)).result[0]
   if (!result || !result.fullName) {
     return false
   }

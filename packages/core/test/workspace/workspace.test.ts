@@ -15,6 +15,7 @@
 */
 import os from 'os'
 import path from 'path'
+import wu from 'wu'
 import _ from 'lodash'
 import {
   Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes, ListType, isListType,
@@ -104,34 +105,38 @@ describe('workspace', () => {
   describe('errors', () => {
     it('should be empty when there are no errors', async () => {
       const workspace = createWorkspace()
-      expect((await workspace.errors).hasErrors()).toBeFalsy()
+      expect((await workspace.errors()).hasErrors()).toBeFalsy()
       expect(await workspace.hasErrors()).toBeFalsy()
-      expect(await workspace.getWorkspaceErrors()).toHaveLength(0)
     })
     it('should contain parse errors', async () => {
       const erroredWorkspace = createWorkspace(mockBpsStore(['dup.bp']))
 
-      const errors = await erroredWorkspace.errors
+      const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
       const err = 'Expected ws, comment or word token but found: } instead.'
       expect(errors.strings()[0]).toMatch(err)
       expect(errors.parse[0].detail).toMatch(err)
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
-      const workspaceErrors = await erroredWorkspace.getWorkspaceErrors()
+      const workspaceErrors = await Promise.all(
+        wu(errors.all()).map(error => erroredWorkspace.transformError(error))
+      )
       expect(workspaceErrors.length).toBeGreaterThanOrEqual(1)
+      expect(workspaceErrors[0].sourceFragments).toHaveLength(1)
     })
     it('should contain merge errors', async () => {
       const erroredWorkspace = createWorkspace(mockBpsStore(['error.bp']))
 
-      const errors = await erroredWorkspace.errors
+      const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
       const mergeError = /Cannot merge/
       expect(errors.strings()[0]).toMatch(mergeError)
       expect(errors.merge[0].error).toMatch(mergeError)
 
       expect(await erroredWorkspace.hasErrors()).toBeTruthy()
-      const workspaceErrors = await erroredWorkspace.getWorkspaceErrors()
+      const workspaceErrors = await Promise.all(
+        wu(errors.all()).map(error => erroredWorkspace.transformError(error))
+      )
       expect(workspaceErrors).toHaveLength(1)
       const wsErros = workspaceErrors[0]
       expect(wsErros.sourceFragments).toHaveLength(2)
@@ -142,6 +147,16 @@ describe('workspace', () => {
       expect(firstSourceFragment.sourceRange.start).toEqual({ byte: 24, col: 1, line: 3 })
       expect(firstSourceFragment.sourceRange.end).toEqual({ byte: 73, col: 2, line: 5 })
       expect(firstSourceFragment.fragment).toContain('salesforce.text base_field')
+    })
+  })
+
+  describe('transformError', () => {
+    describe('when no source is available', () => {
+      it('should return empty source fragments', async () => {
+        const ws = createWorkspace()
+        const wsError = await ws.transformError({ severity: 'Warning', message: '' })
+        expect(wsError.sourceFragments).toHaveLength(0)
+      })
     })
   })
 
@@ -335,7 +350,7 @@ describe('workspace', () => {
 
     it('should not cause parse errors', async () => {
       expect(await workspace.hasErrors()).toBeFalsy()
-      expect((await workspace.errors).hasErrors()).toBeFalsy()
+      expect((await workspace.errors()).hasErrors()).toBeFalsy()
     })
     it('should modify existing element', () => {
       expect(lead).toBeDefined()

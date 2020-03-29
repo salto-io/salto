@@ -86,7 +86,6 @@ const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Work
     get: () => jest.fn().mockImplementation(() => Promise.resolve()),
     set: () => jest.fn().mockImplementation(() => Promise.resolve()),
   },
-  getWorkspaceErrors: async () => [],
 } as unknown as Workspace)
 
 jest.mock('../src/workspace/config', () => ({

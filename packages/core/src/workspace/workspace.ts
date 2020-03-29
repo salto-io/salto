@@ -19,7 +19,7 @@ import uuidv4 from 'uuid/v4'
 import { Element, SaltoError, SaltoElementError, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { DetailedChange } from '../core/plan'
-import { validateElements, ValidationError } from '../core/validator'
+import { validateElements } from '../core/validator'
 import { mkdirp, exists } from '../file'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
 import { Config, dumpConfig, locateWorkspaceRoot, getConfigPath, completeConfig,
@@ -35,10 +35,8 @@ import { parseResultCache } from './cache'
 import { localDirectoryStore } from './local/dir_store'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
-import { MergeError } from '../core/merger'
 
 const COMMON_ENV_PREFIX = ''
-const MAX_ERROR_NUMBER = 30
 const log = logger(module)
 
 class ExistingWorkspaceError extends Error {
@@ -221,12 +219,12 @@ export class Workspace {
     return this.mergedState.then(state => state.mergedElements)
   }
 
-  get errors(): Promise<Errors> {
+  errors(): Promise<Errors> {
     return this.mergedState.then(state => state.errors)
   }
 
   hasErrors(): Promise<boolean> {
-    return this.errors.then(errors => errors.hasErrors())
+    return this.errors().then(errors => errors.hasErrors())
   }
 
   getSourceMap(filename: string): Promise<SourceMap> {
@@ -294,23 +292,19 @@ export class Workspace {
     }
   }
 
-  private async transformError(error: ParseError | MergeError | ValidationError):
-  Promise<WorkspaceError<SaltoError>> {
-    const isParseError = (err: ParseError | MergeError | ValidationError): err is ParseError =>
+  async transformError(error: SaltoError): Promise<WorkspaceError<SaltoError>> {
+    const isParseError = (err: SaltoError): err is ParseError =>
       _.has(err, 'subject')
-    return (isParseError(error))
-      ? this.transformParseError(error)
-      : this.transformToWorkspaceError(error)
-  }
+    const isElementError = (err: SaltoError): err is SaltoElementError =>
+      _.get(err, 'elemID') instanceof ElemID
 
-  async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
-    const wsErrors = await this.errors
-    return Promise.all(
-      _.flatten(_.partition(
-        [...wsErrors.parse, ...wsErrors.merge, ...wsErrors.validation],
-        val => val.severity === 'Error'
-      )).slice(0, MAX_ERROR_NUMBER).map(error => this.transformError(error))
-    )
+    if (isParseError(error)) {
+      return this.transformParseError(error)
+    }
+    if (isElementError(error)) {
+      return this.transformToWorkspaceError(error)
+    }
+    return { ...error, sourceFragments: [] }
   }
 
   async getStateRecency(): Promise<StateRecency> {

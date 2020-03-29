@@ -64,7 +64,7 @@ const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): 
     : '')
 
 
-const formatWorkspaceError = (we: Readonly<WorkspaceError<SaltoError>>): string =>
+export const formatWorkspaceError = (we: Readonly<WorkspaceError<SaltoError>>): string =>
   `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`
 
 
@@ -444,11 +444,6 @@ export const formatFetchFinish = (): string => [
 export const formatStepStart = (text: string, indentLevel?: number): string => indent(`${chalk.yellow('>>>')} ${text}`, indentLevel ?? 1)
 export const formatStepCompleted = (text: string, indentLevel?: number): string => indent(`${chalk.green('vvv')} ${text}`, indentLevel ?? 1)
 export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)
-
-export const formatWorkspaceErrors = (
-  workspaceErrors: ReadonlyArray<WorkspaceError<SaltoError>>
-): string =>
-  `${workspaceErrors.map(formatWorkspaceError).join('\n')}\n`
 
 export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): string =>
   `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(

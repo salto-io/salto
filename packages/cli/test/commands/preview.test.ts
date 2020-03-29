@@ -15,7 +15,7 @@
 */
 import { command } from '../../src/commands/preview'
 import {
-  preview, MockWriteStream, getWorkspaceErrors,
+  preview, MockWriteStream,
   mockSpinnerCreator, mockLoadConfig,
   transformToWorkspaceError, getMockTelemetry,
   MockTelemetry,
@@ -56,7 +56,6 @@ describe('preview command', () => {
           errors: {
             strings: () => ['Error', 'Error'],
           },
-          getWorkspaceErrors,
           config: mockLoadConfig(baseDir),
           transformToWorkspaceError,
         },

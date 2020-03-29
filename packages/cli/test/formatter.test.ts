@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { WorkspaceError, FetchChange } from '@salto-io/core'
 import { formatSearchResults, formatExecutionPlan, formatChange,
-  formatFetchChangeForApproval, formatWorkspaceErrors,
+  formatFetchChangeForApproval, formatWorkspaceError,
   formatChangeErrors, formatShouldUpdateConfig } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
@@ -374,7 +374,7 @@ describe('formatter', () => {
   describe('workspace error format', () => {
     let formattedErrors: string
     beforeEach(() => {
-      formattedErrors = formatWorkspaceErrors([workspaceErrorWithSourceFragments])
+      formattedErrors = formatWorkspaceError(workspaceErrorWithSourceFragments)
     })
     it('should print the start line', () => {
       expect(formattedErrors).toContain('2')

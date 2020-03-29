@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Workspace, Blueprint, DetailedChange, WorkspaceError, SourceMap, SourceRange, Config } from '@salto-io/core'
+import { Workspace, Blueprint, DetailedChange, WorkspaceError, SourceMap, SourceRange, Config, Errors } from '@salto-io/core'
 import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
 import wu from 'wu'
 
@@ -47,6 +47,10 @@ export class EditorWorkspace {
 
   get config(): Config {
     return this.workspace.config
+  }
+
+  errors(): Promise<Errors> {
+    return this.workspace.errors()
   }
 
   private workspaceFilename(filename: string): string {
@@ -119,7 +123,7 @@ export class EditorWorkspace {
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
-      if (_.isEmpty((await this.workspace.errors).parse)
+      if (_.isEmpty((await this.workspace.errors()).parse)
         && !_.isEmpty(await this.workspace.elements)) {
         this.lastValidCopy = Promise.resolve(this.workspace.clone())
       }
@@ -169,15 +173,15 @@ export class EditorWorkspace {
       .map(range => this.editorSourceRange(range))
   }
 
-  async getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> {
-    return (await this.workspace.getWorkspaceErrors())
-      .map(err => ({
-        ...err,
-        sourceFragments: err.sourceFragments.map(fragment => ({
-          ...fragment,
-          sourceRange: this.editorSourceRange(fragment.sourceRange),
-        })),
-      }))
+  async transformError(error: SaltoError): Promise<WorkspaceError<SaltoError>> {
+    const wsError = await this.workspace.transformError(error)
+    return {
+      ...wsError,
+      sourceFragments: wsError.sourceFragments.map(fragment => ({
+        ...fragment,
+        sourceRange: this.editorSourceRange(fragment.sourceRange),
+      })),
+    }
   }
 
   setBlueprints(...blueprints: Blueprint[]): Promise<void> {

@@ -13,18 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Workspace } from '@salto-io/core'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getDiagnostics } from '../../src/salto/diagnostics'
-import { mockWorkspace } from './workspace'
+import { mockWorkspace, mockErrors, mockFunction } from './workspace'
 
 describe('diagnostics', () => {
   it('should diagnostics on errors', async () => {
     const baseWs = await mockWorkspace()
-    baseWs.getWorkspaceErrors = jest.fn().mockImplementation(() => Promise.resolve([{
-      severity: 'Error',
-      message: 'Blabla',
-      sourceFragments: [{ sourceRange: { filename: '/parse_error.bp', start: 1, end: 2 } }],
-    }]))
+    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([
+      { severity: 'Error', message: 'Blabla' },
+    ]))
+    baseWs.transformError = mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
+      ...err,
+      sourceFragments: [{
+        fragment: '',
+        sourceRange: {
+          start: { col: 1, line: 1, byte: 1 },
+          end: { col: 2, line: 1, byte: 2 },
+          filename: '/parse_error.bp',
+        },
+      }],
+    }))
     const workspace = new EditorWorkspace(baseWs)
     const diag = (await getDiagnostics(workspace))['/parse_error.bp'][0]
     expect(diag).toBeDefined()

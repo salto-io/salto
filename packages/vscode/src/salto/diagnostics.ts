@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import _ from 'lodash'
 import { SaltoErrorSeverity } from '@salto-io/adapter-api'
 import { EditorRange } from './context'
@@ -27,6 +28,8 @@ export interface SaltoDiagnostic {
 
 export type WorkspaceSaltoDiagnostics = Record<string, SaltoDiagnostic[]>
 
+const MAX_WORKSPACE_ERRORS = 30
+
 export const getDiagnostics = async (
   workspace: EditorWorkspace,
 ): Promise<WorkspaceSaltoDiagnostics> => {
@@ -34,16 +37,25 @@ export const getDiagnostics = async (
     (await workspace.listBlueprints())
       .map(filename => [filename, []])
   )
-  const diag = _(await workspace.getWorkspaceErrors())
-    .map(err => err.sourceFragments.map(f => ({
-      filename: f.sourceRange.filename,
-      severity: err.severity,
-      msg: err.message,
-      range: {
-        start: f.sourceRange.start,
-        end: f.sourceRange.end,
-      },
-    })))
+  const workspaceErrors = await Promise.all(
+    wu((await workspace.errors()).all())
+      .slice(0, MAX_WORKSPACE_ERRORS)
+      .map(err => workspace.transformError(err))
+      .map(async errPromise => {
+        const err = await errPromise
+        return err.sourceFragments.map(f => ({
+          filename: f.sourceRange.filename,
+          severity: err.severity,
+          msg: err.message,
+          range: {
+            start: f.sourceRange.start,
+            end: f.sourceRange.end,
+          },
+        }))
+      })
+  )
+
+  const diag = _(workspaceErrors)
     .flatten()
     .groupBy('filename')
     .value()

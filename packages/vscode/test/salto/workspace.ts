@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { Config, Workspace, parse, file, SourceRange } from '@salto-io/core'
-import { InstanceElement, ElemID, ObjectType, Field, BuiltinTypes } from '@salto-io/adapter-api'
+import { Config, Workspace, parse, file, Errors } from '@salto-io/core'
+import { InstanceElement, ElemID, ObjectType, Field, BuiltinTypes, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ParseError } from '@salto-io/core/dist/src/parser/parse'
 import { mergeElements } from '@salto-io/core/dist/src/core/merger'
+import { SourceMap } from '@salto-io/core/dist/src/parser/internal/types'
+import { ConfigSource } from '@salto-io/core/dist/src/workspace/config_source'
 
 const SERVICES = ['salesforce']
 
@@ -33,6 +35,18 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
   username: 'test@test',
 })
 
+export const mockErrors = (errors: SaltoError[]): Errors => ({
+  all: () => errors,
+  hasErrors: () => errors.length !== 0,
+  merge: [],
+  parse: [],
+  validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
+  strings: () => errors.map(err => err.message),
+})
+
+export const mockFunction = <T extends (...args: never[]) => unknown>():
+jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
+
 const buildMockWorkspace = (
   blueprint?: string,
   buffer?: string,
@@ -42,39 +56,46 @@ const buildMockWorkspace = (
   const filename = blueprint ? path.relative(baseDir, blueprint) : 'default.bp'
   const parseResult = buffer
     ? parse(Buffer.from(buffer), filename)
-    : { elements: [], errors: [] as ParseError[], sourceMap: { get: () => undefined } }
+    : { elements: [], errors: [] as ParseError[], sourceMap: new Map() as SourceMap }
   const merged = mergeElements(parseResult.elements)
   return {
     elements: merged.merged,
-    errors: {
+    errors: async () => ({
+      all: () => parseResult.errors || [],
+      strings: () => (parseResult.errors || []).map(err => err.message),
       parse: parseResult.errors || [],
       merge: [],
       validation: [],
       hasErrors: () => (!_.isEmpty(parseResult.errors)),
-    },
-    hasErrors: jest.fn().mockImplementation(async () => !_.isEmpty(parseResult.errors)),
-    getSourceMap: jest.fn().mockResolvedValue(parseResult.sourceMap),
-    getSourceRanges: jest.fn().mockImplementation((elemID: ElemID): SourceRange[] =>
+    }),
+    hasErrors: mockFunction<Workspace['hasErrors']>().mockResolvedValue(!_.isEmpty(parseResult.errors)),
+    getSourceMap: mockFunction<Workspace['getSourceMap']>().mockResolvedValue(parseResult.sourceMap),
+    getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockImplementation(async elemID =>
       (parseResult.sourceMap.get(elemID.getFullName()) || [])),
-    getBlueprint: jest.fn().mockResolvedValue({ filename, buffer }),
+    getBlueprint: mockFunction<Workspace['getBlueprint']>().mockResolvedValue({ filename, buffer: buffer ?? '' }),
     config: _.mergeWith(config, { stateLocation: '.', services: SERVICES, baseDir }),
-    updateBlueprints: jest.fn(),
-    flush: jest.fn(),
+    updateBlueprints: mockFunction<Workspace['updateBlueprints']>(),
+    flush: mockFunction<Workspace['flush']>(),
     credentials: {
-      get: jest.fn().mockImplementation(() => Promise.resolve(mockConfigInstance)),
-      set: jest.fn().mockImplementation(() => Promise.resolve()),
+      get: mockFunction<ConfigSource['get']>().mockResolvedValue(mockConfigInstance),
+      set: mockFunction<ConfigSource['set']>().mockResolvedValue(),
     },
-    getWorkspaceErrors: jest.fn().mockImplementation(() => parseResult.errors.map(e => e && {
-      sourceFragments: [{ sourceRange: { filename, start: 1, end: 2 } }],
+    transformError: mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
+      ...err,
+      sourceFragments: [{
+        fragment: '',
+        sourceRange: {
+          start: { line: 1, col: 1, byte: 1 },
+          end: { line: 1, col: 2, byte: 2 },
+          filename: 'test.bp',
+        },
+      }],
     })),
-    setBlueprints: jest.fn().mockReturnValue(Promise.resolve()),
-    removeBlueprints: jest.fn().mockReturnValue(Promise.resolve()),
-    blueprintsStore: {
-      list: jest.fn().mockResolvedValue([filename]),
-    },
-    listBlueprints: jest.fn().mockResolvedValue([filename]),
-    getElements: jest.fn().mockResolvedValue(merged.merged),
-    clone: jest.fn().mockImplementation(() => buildMockWorkspace(blueprint, buffer, config)),
+    setBlueprints: mockFunction<Workspace['setBlueprints']>().mockResolvedValue(),
+    removeBlueprints: mockFunction<Workspace['removeBlueprints']>().mockResolvedValue(),
+    listBlueprints: mockFunction<Workspace['listBlueprints']>().mockResolvedValue([filename]),
+    getElements: mockFunction<Workspace['getElements']>().mockResolvedValue(merged.merged),
+    clone: mockFunction<Workspace['clone']>().mockImplementation(() => buildMockWorkspace(blueprint, buffer, config)),
   } as unknown as Workspace
 }
 

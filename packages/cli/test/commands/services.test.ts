@@ -72,7 +72,6 @@ describe('services command', () => {
         errors: {
           strings: () => ['Error', 'Error'],
         },
-        getWorkspaceErrors: mocks.getWorkspaceErrors,
         config: mocks.mockLoadConfig(baseDir),
       },
       errored: true }

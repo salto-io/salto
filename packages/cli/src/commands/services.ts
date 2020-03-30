@@ -28,7 +28,7 @@ import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
-import { loadWorkspace } from '../workspace'
+import { loadWorkspace } from '../workspace/workspace'
 import { getCredentialsFromUser } from '../callbacks'
 import { serviceCmdFilter, ServiceCmdArgs } from '../filters/services'
 import {

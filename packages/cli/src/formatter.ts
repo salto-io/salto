@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,
-  SourceFragment, FetchChange, MergeError,
+  SourceFragment, FetchChange, FetchResult,
 } from '@salto-io/core'
 import Prompts from './prompts'
 
@@ -445,16 +445,16 @@ export const formatStepStart = (text: string, indentLevel?: number): string => i
 export const formatStepCompleted = (text: string, indentLevel?: number): string => indent(`${chalk.green('vvv')} ${text}`, indentLevel ?? 1)
 export const formatStepFailed = (text: string, indentLevel?: number): string => indent(`${error('xxx')} ${text}`, indentLevel ?? 1)
 
-export const formatMergeErrors = (mergeErrors: ReadonlyArray<MergeError>): string =>
+export const formatMergeErrors = ({ mergeErrors }: FetchResult): string =>
   `${Prompts.FETCH_MERGE_ERRORS}${mergeErrors.map(
     me => `${formatError(me.error)}, dropped elements: ${
       me.elements.map(e => e.elemID.getFullName()).join(', ')
     }`
   ).join('\n')}`
 
-export const formatFatalFetchError = (causes: MergeError[]): string =>
+export const formatFatalFetchError = ({ mergeErrors }: FetchResult): string =>
   formatSimpleError(`${Prompts.FETCH_FATAL_MERGE_ERROR_PREFIX}${
-    causes.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
+    mergeErrors.map(c => `Error: ${c.error.message}, Elements: ${c.elements.map(e => e.elemID.getFullName()).join(', ')}\n`)
   }`)
 
 export const formatWorkspaceLoadFailed = (numErrors: number): string =>

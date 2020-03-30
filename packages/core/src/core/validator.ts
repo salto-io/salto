@@ -14,14 +14,16 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types } from '@salto-io/lowerdash'
+import { types, collections } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, RESTRICTION_ANNOTATIONS, isListType,
 } from '@salto-io/adapter-api'
-import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
+import { IllegalReference } from '../parser/expressions'
+
+const { makeArray } = collections.array
 
 export abstract class ValidationError extends types.Bean<Readonly<{
   elemID: ElemID
@@ -130,14 +132,24 @@ export class MissingRequiredFieldValidationError extends ValidationError {
 }
 
 export class UnresolvedReferenceValidationError extends ValidationError {
+  readonly target: ElemID
   constructor(
-    { elemID, ref }:
-    { elemID: ElemID; ref: string }
+    { elemID, target }:
+    { elemID: ElemID; target: ElemID }
   ) {
-    super({ elemID, error: `unresolved reference ${ref}`, severity: 'Warning' })
+    super({ elemID, error: `unresolved reference ${target.getFullName()}`, severity: 'Warning' })
+    this.target = target
   }
 }
 
+export class IllegalReferenceValidationError extends ValidationError {
+  constructor(
+    { elemID, message }:
+    { elemID: ElemID; message: string }
+  ) {
+    super({ elemID, error: `illegal reference target, ${message}`, severity: 'Warning' })
+  }
+}
 
 export class CircularReferenceValidationError extends ValidationError {
   constructor(
@@ -262,7 +274,10 @@ const validateValue = (elemID: ElemID, value: Value,
     return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
   }
   if (value instanceof UnresolvedReference) {
-    return [new UnresolvedReferenceValidationError({ elemID, ref: value.ref })]
+    return [new UnresolvedReferenceValidationError({ elemID, target: value.target })]
+  }
+  if (value instanceof IllegalReference) {
+    return [new IllegalReferenceValidationError({ elemID, message: value.message })]
   }
   if (value instanceof CircularReference) {
     return [new CircularReferenceValidationError({ elemID, ref: value.ref })]

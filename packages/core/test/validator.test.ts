@@ -19,8 +19,11 @@ import {
   ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
   RESTRICTION_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
-import { validateElements, InvalidValueValidationError,
-  InvalidValueRangeValidationError } from '../src/core/validator'
+import {
+  validateElements, InvalidValueValidationError,
+  InvalidValueRangeValidationError, IllegalReferenceValidationError,
+} from '../src/core/validator'
+import { IllegalReference } from '../src/parser/expressions'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')
@@ -300,6 +303,14 @@ describe('Elements validation', () => {
         str: 'str',
         num: 12,
         bool: new ReferenceExpression(nestedInstance.elemID.createNestedID('nope')),
+      }
+    )
+
+    const illegalRefInst = new InstanceElement(
+      'illegalRef',
+      simpleType,
+      {
+        bool: new IllegalReference('foo.bla.bar', 'illegal elem id type "bar"'),
       }
     )
 
@@ -721,6 +732,13 @@ describe('Elements validation', () => {
         const errors = validateElements([wrongRefInst, extInst])
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(wrongRefInst.elemID.createNestedID('bool'))
+      })
+
+      it('should return error when encountering an illegal reference target', () => {
+        const errors = validateElements([illegalRefInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(illegalRefInst.elemID.createNestedID('bool'))
+        expect(errors[0]).toBeInstanceOf(IllegalReferenceValidationError)
       })
     })
   })

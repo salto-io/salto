@@ -25,7 +25,7 @@ import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
 import * as mocks from '../mocks'
 import Prompts from '../../src/prompts'
-import * as mockCliWorkspace from '../../src/workspace'
+import * as mockCliWorkspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 const commandName = 'fetch'
@@ -45,7 +45,7 @@ jest.mock('@salto-io/core', () => ({
     success: true,
   })),
 }))
-jest.mock('../../src/workspace')
+jest.mock('../../src/workspace/workspace')
 describe('fetch command', () => {
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator

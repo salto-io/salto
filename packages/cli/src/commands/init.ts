@@ -19,7 +19,7 @@ import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import { ParsedCliInput, CliCommand, CliOutput, CliExitCode, CliTelemetry } from '../types'
 import { getEnvName } from '../callbacks'
-import { getWorkspaceTelemetryTags } from '../workspace'
+import { getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { getCliTelemetry } from '../telemetry'
 
 export const command = (

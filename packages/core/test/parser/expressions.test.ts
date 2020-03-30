@@ -21,8 +21,7 @@ import {
   Functions,
 } from '../../src/parser/functions'
 import devaluate from './internal/devaluate'
-import evaluate from '../../src/parser/expressions'
-import { UnresolvedReference } from '../../src/core/expressions'
+import evaluate, { IllegalReference } from '../../src/parser/expressions'
 import { HclExpression } from '../../src/parser/internal/types'
 import {
   TestFuncImpl,
@@ -85,7 +84,7 @@ describe('HCL Expression', () => {
         end: { line: 0, col: 0, byte: 0 },
       },
     }
-    expect(evaluate(exp)).toBeInstanceOf(UnresolvedReference)
+    expect(evaluate(exp)).toBeInstanceOf(IllegalReference)
   })
 
   it('should evaluate template reference', () => {

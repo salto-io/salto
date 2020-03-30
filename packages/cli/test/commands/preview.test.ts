@@ -18,7 +18,7 @@ import { preview, MockWriteStream, MockTelemetry, mockLoadConfig,
   mockLoadWorkspaceEnvironment, withoutEnvironmentParam, withEnvironmentParam,
   getMockTelemetry, mockSpinnerCreator, transformToWorkspaceError } from '../mocks'
 import { SpinnerCreator, Spinner, CliExitCode, CliTelemetry } from '../../src/types'
-import * as workspace from '../../src/workspace'
+import * as workspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 
@@ -27,7 +27,7 @@ jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   preview: jest.fn().mockImplementation(() => mockPreview()),
 }))
-jest.mock('../../src/workspace')
+jest.mock('../../src/workspace/workspace')
 
 const commandName = 'preview'
 const eventsNames = {

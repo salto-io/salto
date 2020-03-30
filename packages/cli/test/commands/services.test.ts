@@ -18,7 +18,7 @@ import { ObjectType } from '@salto-io/adapter-api'
 import { CliExitCode } from '../../src/types'
 import { command } from '../../src/commands/services'
 import * as mocks from '../mocks'
-import * as workspace from '../../src/workspace'
+import * as workspace from '../../src/workspace/workspace'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -55,7 +55,7 @@ jest.mock('@salto-io/core', () => ({
   loadConfig: jest.fn().mockImplementation((workspaceDir: string) =>
     mocks.mockLoadConfig(workspaceDir)),
 }))
-jest.mock('../../src/workspace')
+jest.mock('../../src/workspace/workspace')
 describe('services command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockGetCredentialsFromUser = mocks.createMockGetCredentialsFromUser({

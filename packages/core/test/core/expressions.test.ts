@@ -229,15 +229,16 @@ describe('Test Salto Expressions', () => {
     })
 
     it('should fail on unresolvable roots', () => {
+      const target = new ElemID('noop', 'test')
       const firstRef = new InstanceElement(
         'first',
         simpleRefType,
-        { test: new ReferenceExpression(new ElemID('noop', 'test')) },
+        { test: new ReferenceExpression(target) },
       )
       const bad = [firstRef]
       const res = resolve(bad)[0] as InstanceElement
       expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
-      expect(res.value.test.value.ref).toEqual('noop.test')
+      expect(res.value.test.value.target).toEqual(target)
     })
   })
 

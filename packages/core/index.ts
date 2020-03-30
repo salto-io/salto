@@ -13,31 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as v from './src/core/validator'
-import * as f from './src/file'
-// eslint-disable-next-line @typescript-eslint/no-namespace
-export namespace validator {
-  export type ValidationError = v.ValidationError
-  export type InvalidValueTypeValidationError = v.InvalidValueTypeValidationError
-  export type InvalidValueValidationError = v.InvalidValueValidationError
-  export type MissingRequiredFieldValidationError = v.MissingRequiredFieldValidationError
-  export const {
-    validateElements,
-    ValidationError,
-    InvalidValueTypeValidationError, InvalidValueValidationError,
-    MissingRequiredFieldValidationError,
-  } = v
-}
+import * as file from './src/file'
+import * as ErrorTypes from './src/errors'
 
+export { file, ErrorTypes }
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
 export { dumpCsv, readCsvFromStream } from './src/core/csv'
-export { FetchChange, FetchProgressEvents, StepEmitter, MergeErrorWithElements as MergeError } from './src/core/fetch'
+export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
-  Workspace, WorkspaceError, SourceFragment,
+  Workspace, WorkspaceError, SourceFragment, // TODO:ORI - remove workspace error from here
 } from './src/workspace/workspace'
 export { Errors } from './src/workspace/errors'
 export { Blueprint } from './src/workspace/blueprints/blueprints_source'
@@ -54,5 +42,3 @@ export {
   CountEvent, StackEvent, Tags, isCountEvent,
   isStackEvent,
 } from './src/telemetry'
-
-export const file = f

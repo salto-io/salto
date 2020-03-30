@@ -42,7 +42,7 @@ import {
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
   shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
-import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
@@ -125,7 +125,7 @@ export const fetchCommand = async (
     inputServices,
   )
   if (fetchResult.success === false) {
-    output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
+    output.stderr.write(formatFatalFetchError(fetchResult))
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
@@ -136,7 +136,7 @@ export const fetchCommand = async (
   if (!_.isEmpty(fetchResult.mergeErrors)) {
     log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
     cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
-    output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
+    output.stderr.write(formatMergeErrors(fetchResult))
   }
 
   if (!_.isUndefined(fetchResult.configChanges)) {

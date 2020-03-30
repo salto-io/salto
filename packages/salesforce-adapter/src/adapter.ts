@@ -137,6 +137,11 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
   }
 }
 
+const createListMetadataObjectsError = (res: ListMetadataQuery): ConfigChangeSuggestion => ({
+  type: METADATA_TYPES_SKIPPED_LIST,
+  value: res.folder ? `${res.type}.${res.folder}` : res.type,
+})
+
 export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
   metadataAdditionalTypes?: string[]
@@ -815,34 +820,43 @@ InstanceElement[] => {
     errors: ConfigChangeSuggestion[]
     typeNameToNamespaceAndInfos: Record<string, NamespaceAndInstances[]>
   }> {
-    const getFolders = async (typeToRetrieve: string): Promise<FileProperties[]> => {
+    const getFolders = async (typeToRetrieve: string): Promise<FetchElements<FileProperties>> => {
       const folderType = this.metadataToRetrieveAndDeploy[typeToRetrieve]
       if (folderType) {
-        return (await this.client.listMetadataObjects({ type: folderType })).result
+        const { errors, result } = await this.client.listMetadataObjects({ type: folderType })
+        return { elements: result, errors: errors.map(createListMetadataObjectsError) }
       }
-      return []
+      return { elements: [], errors: [] }
     }
 
     const isFolder = (type: string): boolean =>
       Object.values(this.metadataToRetrieveAndDeploy).includes(type)
 
-    const retrieveMetadataTypes = metadataTypes.filter(type => !isFolder(type))
-    const retrieveTypeToFiles: Record<string, FileProperties[]> = await Promise.all(
+    const retrieveMetadataTypes = metadataTypes
+      .filter(type => !isFolder(type))
+      .filter(type => !this.metadataTypesSkippedList.includes(type))
+    const retrieveTypeAndFiles = await Promise.all(
       retrieveMetadataTypes
         .map(async type => {
-          const folders = await getFolders(type)
+          const { elements: folders, errors: folderErrors } = await getFolders(type)
           let listMetadataQuery: ListMetadataQuery | ListMetadataQuery[]
           if (_.isEmpty(folders)) {
             listMetadataQuery = { type }
           } else {
-            listMetadataQuery = folders.map(folder => ({ type, folder: folder.fullName }))
+            listMetadataQuery = folders
+              .filter(folder => !this.metadataTypesSkippedList
+                .includes(`${type}.${folder.fullName}`))
+              .map(folder => ({ type, folder: folder.fullName }))
           }
-          return [
-            type,
-            [...(await this.client.listMetadataObjects(listMetadataQuery)).result, ...folders],
-          ]
+          const { result: objs,
+            errors } = await this.client.listMetadataObjects(listMetadataQuery)
+          return { errors: _.flatten([folderErrors, errors.map(createListMetadataObjectsError)]),
+            retrieveTypeAndFiles: [type, [...objs, ...folders]] }
         })
-    ).then(pairs => _(pairs).fromPairs().value())
+    )
+    const listTypesErrors = _.flatten(retrieveTypeAndFiles.map(r => r.errors))
+    const retrieveTypeToFiles: Record<string, FileProperties[]> = _(retrieveTypeAndFiles
+      .map(r => r.retrieveTypeAndFiles)).fromPairs().value()
 
     const retrieveMembers: RetrieveMember[] = _(retrieveTypeToFiles)
       .entries()
@@ -869,7 +883,7 @@ InstanceElement[] => {
           ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))])
       .fromPairs()
       .value(),
-    errors }
+    errors: [...errors, ...listTypesErrors] }
   }
 
   private async retrieveChunked(retrieveMembers: RetrieveMember[], metadataTypes: string[]):
@@ -992,8 +1006,7 @@ InstanceElement[] => {
    */
   private async listMetadataInstances(type: string): Promise<FetchElements<NamespaceAndInstances>> {
     const listResult = await this.client.listMetadataObjects({ type })
-    const listErrors = listResult.errors
-      .map(e => ({ type: METADATA_TYPES_SKIPPED_LIST, value: e.type } as ConfigChangeSuggestion))
+    const listErrors = listResult.errors.map(createListMetadataObjectsError)
     const objs = listResult.result
     if (!objs) {
       return { elements: [], errors: listErrors }

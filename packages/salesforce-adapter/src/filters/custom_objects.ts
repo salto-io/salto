@@ -427,7 +427,9 @@ const fetchSObjects = async (client: SalesforceClient):
   }
 
   const getCustomObjectNames = async (): Promise<Set<string>> => {
-    const { result: customObjects } = await client.listMetadataObjects({ type: CUSTOM_OBJECT })
+    const { result: customObjects } = await client.listMetadataObjects(
+      { type: CUSTOM_OBJECT }, () => true
+    )
     return new Set(customObjects.map(o => o.fullName))
   }
 

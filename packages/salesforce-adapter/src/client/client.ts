@@ -326,14 +326,17 @@ export default class SalesforceClient {
 
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
-  public async listMetadataObjects(listMetadataQuery: ListMetadataQuery | ListMetadataQuery[]):
+  public async listMetadataObjects(
+    listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
+    isUnhandledError: ErrorFilter = error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
+  ):
     Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
     return sendChunked({
       operationName: 'listMetadataObjects',
       input: listMetadataQuery,
       sendChunk: chunk => this.conn.metadata.list(chunk),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
-      isUnhandledError: error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
+      isUnhandledError,
     })
   }
 
@@ -345,7 +348,7 @@ export default class SalesforceClient {
   public async readMetadata(
     type: string,
     name: string | string[],
-    isUnhandledError: (error: Error) => boolean = error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
+    isUnhandledError: ErrorFilter = error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
   ):
   Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({

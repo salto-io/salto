@@ -70,6 +70,7 @@ const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
 const RECORDS_CHUNK_SIZE = 10000
+const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
 export const DEFAULT_FILTERS = [
   missingFieldsFilter,
   settingsFilter,
@@ -810,7 +811,10 @@ InstanceElement[] => {
   }
 
   private async retrieveMetadata(metadataTypes: string[]):
-    Promise<Record<string, NamespaceAndInstances[]>> {
+  Promise<{
+    errors: ConfigChangeSuggestion[]
+    typeNameToNamespaceAndInfos: Record<string, NamespaceAndInstances[]>
+  }> {
     const getFolders = async (typeToRetrieve: string): Promise<FileProperties[]> => {
       const folderType = this.metadataToRetrieveAndDeploy[typeToRetrieve]
       if (folderType) {
@@ -851,22 +855,28 @@ InstanceElement[] => {
       .flatten()
       .value()
 
-    const typeToInstanceInfos = await this.retrieveChunked(retrieveMembers, metadataTypes)
+    const { typeToInstanceInfos, errors } = await this.retrieveChunked(
+      retrieveMembers, metadataTypes
+    )
     const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
       .flatten()
       .map(file => [file.fullName, file.namespacePrefix])
       .fromPairs()
       .value()
-    return _(Object.entries(typeToInstanceInfos))
+    return { typeNameToNamespaceAndInfos: _(Object.entries(typeToInstanceInfos))
       .map(([type, instanceInfos]) =>
         [type, instanceInfos.map(instanceInfo =>
           ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))])
       .fromPairs()
-      .value()
+      .value(),
+    errors }
   }
 
   private async retrieveChunked(retrieveMembers: RetrieveMember[], metadataTypes: string[]):
-    Promise<Record<string, MetadataInfo[]>> {
+    Promise<{
+      typeToInstanceInfos: Record<string, MetadataInfo[]>
+      errors: ConfigChangeSuggestion[]
+    }> {
     const fromRetrieveResults = async (retrieveResults: RetrieveResult[]):
       Promise<Record<string, MetadataInfo[]>> => {
       const typesToInstances = await Promise.all(retrieveResults
@@ -891,13 +901,23 @@ InstanceElement[] => {
       }
     }
 
+    const createRetrieveError = (result: RetrieveResult): ConfigChangeSuggestion[] =>
+      makeArray(result.messages)
+        .map((msg: Values) => RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg?.problem ?? ''))
+        .filter(regexRes => !_.isUndefined(regexRes?.groups))
+        .map(regexRes => ({
+          type: INSTANCES_REGEX_SKIPPED_LIST,
+          value: `${regexRes?.groups?.type}.${regexRes?.groups?.instance}`,
+        }))
+
     const chunkedRetrieveMembers = _.chunk(retrieveMembers, this.maxItemsInRetrieveRequest)
     const retrieveResults = _.flatten(
       await withLimitedConcurrency(chunkedRetrieveMembers.map(
         retrieveChunk => () => this.client.retrieve(createRetrieveRequest(retrieveChunk))
       ), this.maxConcurrentRetrieveRequests)
     )
-    return fromRetrieveResults(retrieveResults)
+    const errors = _.flatten(retrieveResults.map(createRetrieveError))
+    return { typeToInstanceInfos: await fromRetrieveResults(retrieveResults), errors }
   }
 
   @logDuration('fetching instances')
@@ -920,15 +940,18 @@ InstanceElement[] => {
     }
 
     const retrieveInstances = async (metadataTypesToRetrieve: ObjectType[]):
-      Promise<TypeAndInstances[]> => {
+      Promise<FetchElements<TypeAndInstances>> => {
       const nameToType: Record<string, ObjectType> = _(metadataTypesToRetrieve)
         .map(t => [apiName(t), t])
         .fromPairs()
         .value()
-      const typeNameToNamespaceAndInfos = await this.retrieveMetadata(Object.keys(nameToType))
-      return Object.entries(typeNameToNamespaceAndInfos)
+      const { typeNameToNamespaceAndInfos, errors } = await this.retrieveMetadata(
+        Object.keys(nameToType)
+      )
+      return { elements: Object.entries(typeNameToNamespaceAndInfos)
         .map(([typeName, namespaceAndInstances]) =>
-          ({ type: nameToType[typeName], namespaceAndInstances }))
+          ({ type: nameToType[typeName], namespaceAndInstances })),
+      errors }
     }
 
     const topLevelTypeNames = await typeNames
@@ -944,7 +967,7 @@ InstanceElement[] => {
     const [retrievedInstances, instances] = await Promise.all(
       [retrieveInstances(metadataTypesToRetrieve), readInstances(metadataTypesToRead)]
     )
-    const typesAndInstances = _.flatten([retrievedInstances, instances.elements])
+    const typesAndInstances = _.flatten([retrievedInstances.elements, instances.elements])
     return {
       elements: _(typesAndInstances)
         .map(typeAndInstances => typeAndInstances.namespaceAndInstances
@@ -954,7 +977,7 @@ InstanceElement[] => {
             typeAndInstances.type, namespaceAndInstance.namespace)))
         .flatten()
         .value(),
-      errors: instances.errors,
+      errors: _.flatten([instances.errors, retrievedInstances.errors]),
     }
   }
 

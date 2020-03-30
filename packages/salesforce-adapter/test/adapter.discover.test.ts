@@ -780,7 +780,11 @@ describe('SalesforceAdapter fetch', () => {
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
         connection.metadata.describe = jest.fn().mockImplementation(async () => ({
-          metadataObjects: [{ xmlName: 'MetadataTest1' }, { xmlName: 'MetadataTest2' }],
+          metadataObjects: [
+            { xmlName: 'MetadataTest1' },
+            { xmlName: 'MetadataTest2' },
+            { xmlName: 'InstalledPackage' },
+          ],
         }))
         connection.metadata.describeValueType = jest.fn().mockImplementation(
           async (_typeName: string) => ({ valueTypeFields: [] })
@@ -789,6 +793,9 @@ describe('SalesforceAdapter fetch', () => {
           async (typeName: ListMetadataQuery[]) => {
             if (typeName[0].type === 'MetadataTest1') {
               return [{ fullName: 'instance1' }]
+            }
+            if (typeName[0].type === 'InstalledPackage') {
+              return [{ fullName: 'instance2' }]
             }
             throw new SFError('sf:UNKNOWN_EXCEPTION')
           }
@@ -799,7 +806,14 @@ describe('SalesforceAdapter fetch', () => {
           }
         )
         connection.metadata.retrieve = jest.fn().mockImplementation(() =>
-          ({ complete: async () => ({ zipFile: '' }) }))
+          ({ complete: async () => ({ zipFile: await createEncodedZipContent([]),
+            messages: {
+              fileName: 'unpackaged/package.xml',
+              problem: 'Metadata API received improper input.'
+                + 'Please ensure file name and capitalization is correct.'
+                + 'Load of metadata from db failed for metadata of '
+                + 'type:InstalledPackage and file name:Test2.',
+            } }) }))
 
         result = await adapter.fetch()
         config = result?.config as InstanceElement
@@ -812,7 +826,7 @@ describe('SalesforceAdapter fetch', () => {
       it('should return correct config', () => {
         expect(config.value).toEqual(
           {
-            [INSTANCES_REGEX_SKIPPED_LIST]: ['MetadataTest1.instance1']
+            [INSTANCES_REGEX_SKIPPED_LIST]: ['MetadataTest1.instance1', 'InstalledPackage.Test2']
               .concat(defaultInstancesRegexSkippedList),
             [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
               .concat(defaultMetadataTypesSkippedList),

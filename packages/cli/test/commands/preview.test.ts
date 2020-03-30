@@ -14,18 +14,9 @@
 * limitations under the License.
 */
 import { command } from '../../src/commands/preview'
-<<<<<<< HEAD
-import {
-  preview, MockWriteStream,
-  mockSpinnerCreator, mockLoadConfig,
-  transformToWorkspaceError, getMockTelemetry,
-  MockTelemetry,
-} from '../mocks'
-=======
-import { preview, mockLoadConfig, MockWriteStream, MockTelemetry,
-  getWorkspaceErrors, transformToWorkspaceError, getMockTelemetry, mockSpinnerCreator,
-  withoutEnvironmentParam, withEnvironmentParam, mockLoadWorkspaceEnvironment } from '../mocks'
->>>>>>> salto-625
+import { preview, MockWriteStream, MockTelemetry, mockLoadConfig,
+  mockLoadWorkspaceEnvironment, withoutEnvironmentParam, withEnvironmentParam,
+  getMockTelemetry, mockSpinnerCreator, transformToWorkspaceError } from '../mocks'
 import { SpinnerCreator, Spinner, CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
@@ -88,7 +79,7 @@ describe('preview command', () => {
 
   describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
-      await command('', mockCliTelemetry, cliOutput, spinnerCreator, services).execute()
+      await command('', mockCliTelemetry, cliOutput, spinnerCreator, services, undefined, '').execute()
     })
 
     it('should load the workspace', async () => {
@@ -123,7 +114,7 @@ describe('preview command', () => {
   describe('when the workspace fails to load', () => {
     let result: number
     beforeEach(async () => {
-      result = await command('errdir', mockCliTelemetry, cliOutput, spinnerCreator, services).execute()
+      result = await command('errdir', mockCliTelemetry, cliOutput, spinnerCreator, services, undefined, '').execute()
     })
 
     it('should fail', () => {
@@ -162,6 +153,7 @@ describe('preview command', () => {
         cliOutput,
         spinnerCreator,
         services,
+        undefined,
         withEnvironmentParam
       ).execute()
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)

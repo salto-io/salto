@@ -44,11 +44,12 @@ type WorkspaceStatusErrors = {
   errors: SaltoError[]
 }
 
-type LoadWorkspaceOptions = {
+export type LoadWorkspaceOptions = {
   force: boolean
   printStateRecency: boolean
   recommendStateRecency: boolean
-  sessionEnv: string
+  spinnerCreator: SpinnerCreator
+  sessionEnv?: string
 }
 
 export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusErrors> => {
@@ -85,10 +86,10 @@ const printWorkspaceErrors = async (
 }
 
 export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
-  spinnerCreator?: SpinnerCreator,
   { force = false,
     printStateRecency = false,
     recommendStateRecency = false,
+    spinnerCreator = undefined,
     sessionEnv = undefined }: Partial<LoadWorkspaceOptions> = {}): Promise<LoadWorkspaceResult> => {
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})

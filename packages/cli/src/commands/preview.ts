@@ -33,12 +33,16 @@ export const command = (
   spinnerCreator: SpinnerCreator,
   inputServices: string[],
   force = false,
-  inputEnvironment: string,
+  inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir,
-      { stdout, stderr }, spinnerCreator,
-      { force, printStateRecency: true, recommendStateRecency: true, sessionEnv: inputEnvironment })
+      { stdout, stderr },
+      { force,
+        printStateRecency: true,
+        recommendStateRecency: true,
+        spinnerCreator,
+        sessionEnv: inputEnvironment })
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError

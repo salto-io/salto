@@ -140,7 +140,7 @@ describe('delete command', () => {
     expect(mockTelemetry.getEventsMap()[eventsNames.errors][0].value).toEqual(errors.length)
   })
   it('should use current env when env is not provided', async () => {
-    mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+    mockLoadWorkspace.mockImplementationOnce(mocks.mockLoadWorkspaceEnvironment)
     await command(
       workspaceDir,
       'mockName',
@@ -154,7 +154,8 @@ describe('delete command', () => {
     )
   })
   it('should use provided env', async () => {
-    mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+    mockLoadWorkspace.mockClear()
+    mockLoadWorkspace.mockImplementationOnce(mocks.mockLoadWorkspaceEnvironment)
     await command(
       workspaceDir,
       'mockName',

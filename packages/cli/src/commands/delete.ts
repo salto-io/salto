@@ -40,8 +40,7 @@ export const command = (
     const { workspace, errored } = await loadWorkspace(
       workingDir,
       { stdout, stderr },
-      undefined,
-      { sessionEnv: inputEnvironment }
+      { sessionEnv: inputEnvironment },
     )
     if (errored) {
       cliTelemetry.failure()

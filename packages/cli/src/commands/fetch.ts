@@ -208,7 +208,7 @@ export const command = (
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output,
-      spinnerCreator, { force, printStateRecency: true, sessionEnv: inputEnvironment })
+      { force, printStateRecency: true, spinnerCreator, sessionEnv: inputEnvironment })
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError

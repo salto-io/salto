@@ -61,7 +61,6 @@ const addService = async (
   const { workspace, errored } = await loadWorkspace(
     workspaceDir,
     { stdout, stderr },
-    undefined,
     { sessionEnv: inputEnvironment }
   )
   if (errored) {
@@ -93,7 +92,6 @@ const listServices = async (
   const { workspace, errored } = await loadWorkspace(
     workspaceDir,
     { stdout, stderr },
-    undefined,
     { sessionEnv: inputEnvironment },
   )
   if (errored) {
@@ -120,7 +118,6 @@ const loginService = async (
   const { workspace, errored } = await loadWorkspace(
     workspaceDir,
     { stdout, stderr },
-    undefined,
     { sessionEnv: inputEnvironment },
   )
   if (errored) {

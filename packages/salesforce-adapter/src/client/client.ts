@@ -65,6 +65,12 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
   && error.message.match(/no.*named.*found/) !== null
 )
 
+export type ErrorFilter = (error: Error) => boolean
+
+const isSFDCUnknownException = (error: Error): boolean => (
+  !['sf:UNKNOWN_EXCEPTION'].includes(error.name)
+)
+
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(
     async (original: decorators.OriginalCall): Promise<unknown> => {
@@ -177,7 +183,6 @@ export const validateCredentials = async (
   }
 }
 
-export type ErrorFilter = (error: Error) => boolean
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]
   sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>
@@ -328,7 +333,7 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async listMetadataObjects(
     listMetadataQuery: ListMetadataQuery | ListMetadataQuery[],
-    isUnhandledError: ErrorFilter = error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
+    isUnhandledError: ErrorFilter = isSFDCUnknownException,
   ):
     Promise<SendChunkedResult<ListMetadataQuery, FileProperties>> {
     return sendChunked({
@@ -348,7 +353,7 @@ export default class SalesforceClient {
   public async readMetadata(
     type: string,
     name: string | string[],
-    isUnhandledError: ErrorFilter = error => (!['sf:UNKNOWN_EXCEPTION'].includes(error.name)),
+    isUnhandledError: ErrorFilter = isSFDCUnknownException,
   ):
   Promise<SendChunkedResult<string, MetadataInfo>> {
     return sendChunked({

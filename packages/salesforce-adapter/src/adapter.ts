@@ -58,8 +58,9 @@ import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
-import { ConfigChangeSuggestion, FetchElements, SalesforceConfig,
-  METADATA_TYPES_SKIPPED_LIST, INSTANCES_REGEX_SKIPPED_LIST, configType } from './types'
+import { ConfigChangeSuggestion, FetchElements, SalesforceConfig, configType } from './types'
+import { createListMetadataObjectsConfigChange, createReadMetadataConfigChange,
+  createRetrieveConfigChange } from './config_change'
 import {
   FilterCreator, Filter, filtersRunner,
 } from './filter'
@@ -70,7 +71,6 @@ const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
 const RECORDS_CHUNK_SIZE = 10000
-const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
 export const DEFAULT_FILTERS = [
   missingFieldsFilter,
   settingsFilter,
@@ -136,11 +136,6 @@ const validateApiName = (prevElement: Element, newElement: Element): void => {
     )
   }
 }
-
-const createListMetadataObjectsError = (res: ListMetadataQuery): ConfigChangeSuggestion => ({
-  type: METADATA_TYPES_SKIPPED_LIST,
-  value: res.folder ? `${res.type}.${res.folder}` : res.type,
-})
 
 export interface SalesforceAdapterParams {
   // Metadata types that we want to fetch that exist in the SOAP API but not in the metadata API
@@ -330,14 +325,22 @@ export default class SalesforceAdapter {
       await Promise.all([annotationTypes, fieldTypes,
         metadataTypes]) as Element[][]
     )
-    const { elements: metadataInstancesElements,
-      errors: metadataInstancesErrors } = await metadataInstances
+    const {
+      elements: metadataInstancesElements,
+      configChanges: metadataInstancesConfigInstances,
+    } = await metadataInstances
     elements.push(...metadataInstancesElements)
-    const filtersFetchErrors = (
+
+    const filtersConfigChanges = (
       (await this.filtersRunner.onFetch(elements)) ?? []
     ) as ConfigChangeSuggestion[]
-    const allErrors = Array.from(new Set(metadataInstancesErrors.concat(filtersFetchErrors)))
-    return { elements, config: this.getConfigFromErrors(allErrors) }
+
+    return {
+      elements,
+      config: this.getConfigFromConfigChanges(
+        Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges]))
+      ),
+    }
   }
 
   /**
@@ -661,14 +664,15 @@ InstanceElement[] => {
     return []
   }
 
-  private getConfigFromErrors(errors: ConfigChangeSuggestion[]): InstanceElement | undefined {
-    const errorsByType = _.groupBy(errors, 'type')
+  private getConfigFromConfigChanges(configChanges: ConfigChangeSuggestion[]):
+  InstanceElement | undefined {
+    const configChangesByType = _.groupBy(configChanges, 'type')
     const currentMetadataTypesSkippedList = makeArray(this.config.metadataTypesSkippedList)
     const currentInstancesRegexSkippedList = makeArray(this.config.instancesRegexSkippedList)
-    const metadataTypesSkippedList = makeArray(errorsByType.metadataTypesSkippedList)
+    const metadataTypesSkippedList = makeArray(configChangesByType.metadataTypesSkippedList)
       .map(e => e.value)
       .filter(e => !currentMetadataTypesSkippedList.includes(e))
-    const instancesRegexSkippedList = makeArray(errorsByType.instancesRegexSkippedList)
+    const instancesRegexSkippedList = makeArray(configChangesByType.instancesRegexSkippedList)
       .map(e => e.value)
       .filter(e => !currentInstancesRegexSkippedList.includes(e))
     if ([metadataTypesSkippedList, instancesRegexSkippedList].every(_.isEmpty)) {
@@ -816,17 +820,18 @@ InstanceElement[] => {
   }
 
   private async retrieveMetadata(metadataTypes: string[]):
-  Promise<{
-    errors: ConfigChangeSuggestion[]
-    typeNameToNamespaceAndInfos: Record<string, NamespaceAndInstances[]>
-  }> {
-    const getFolders = async (typeToRetrieve: string): Promise<FetchElements<FileProperties>> => {
+  Promise<FetchElements<Record<string, NamespaceAndInstances[]>>> {
+    const getFolders = async (typeToRetrieve: string):
+    Promise<FetchElements<FileProperties[]>> => {
       const folderType = this.metadataToRetrieveAndDeploy[typeToRetrieve]
       if (folderType) {
         const { errors, result } = await this.client.listMetadataObjects({ type: folderType })
-        return { elements: result, errors: errors.map(createListMetadataObjectsError) }
+        return {
+          elements: result,
+          configChanges: errors.map(createListMetadataObjectsConfigChange),
+        }
       }
-      return { elements: [], errors: [] }
+      return { elements: [], configChanges: [] }
     }
 
     const isFolder = (type: string): boolean =>
@@ -838,23 +843,29 @@ InstanceElement[] => {
     const retrieveTypeAndFiles = await Promise.all(
       retrieveMetadataTypes
         .map(async type => {
-          const { elements: folders, errors: folderErrors } = await getFolders(type)
+          const { elements: folders, configChanges } = await getFolders(type)
           let listMetadataQuery: ListMetadataQuery | ListMetadataQuery[]
           if (_.isEmpty(folders)) {
             listMetadataQuery = { type }
           } else {
             listMetadataQuery = folders
-              .filter(folder => !this.metadataTypesSkippedList
-                .includes(`${type}.${folder.fullName}`))
+              .filter(folder => !instanceNameMatchRegex(
+                `${type}.${folder.fullName}`,
+                this.instancesRegexSkippedList
+              ))
               .map(folder => ({ type, folder: folder.fullName }))
           }
-          const { result: objs,
-            errors } = await this.client.listMetadataObjects(listMetadataQuery)
-          return { errors: _.flatten([folderErrors, errors.map(createListMetadataObjectsError)]),
-            retrieveTypeAndFiles: [type, [...objs, ...folders]] }
+          const { result: objs, errors } = await this.client.listMetadataObjects(listMetadataQuery)
+          return {
+            configChanges: _.flatten([
+              configChanges,
+              errors.map(createListMetadataObjectsConfigChange),
+            ]),
+            retrieveTypeAndFiles: [type, [...objs, ...folders]],
+          }
         })
     )
-    const listTypesErrors = _.flatten(retrieveTypeAndFiles.map(r => r.errors))
+    const listTypesConfigChanges = _.flatten(retrieveTypeAndFiles.map(r => r.configChanges))
     const retrieveTypeToFiles: Record<string, FileProperties[]> = _(retrieveTypeAndFiles
       .map(r => r.retrieveTypeAndFiles)).fromPairs().value()
 
@@ -869,7 +880,7 @@ InstanceElement[] => {
       .flatten()
       .value()
 
-    const { typeToInstanceInfos, errors } = await this.retrieveChunked(
+    const { elements: typeToInstanceInfos, configChanges } = await this.retrieveChunked(
       retrieveMembers, metadataTypes
     )
     const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
@@ -877,20 +888,19 @@ InstanceElement[] => {
       .map(file => [file.fullName, file.namespacePrefix])
       .fromPairs()
       .value()
-    return { typeNameToNamespaceAndInfos: _(Object.entries(typeToInstanceInfos))
-      .map(([type, instanceInfos]) =>
-        [type, instanceInfos.map(instanceInfo =>
-          ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))])
-      .fromPairs()
-      .value(),
-    errors: [...errors, ...listTypesErrors] }
+    return {
+      elements: _(Object.entries(typeToInstanceInfos))
+        .map(([type, instanceInfos]) =>
+          [type, instanceInfos.map(instanceInfo =>
+            ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))])
+        .fromPairs()
+        .value(),
+      configChanges: [...configChanges, ...listTypesConfigChanges],
+    }
   }
 
   private async retrieveChunked(retrieveMembers: RetrieveMember[], metadataTypes: string[]):
-    Promise<{
-      typeToInstanceInfos: Record<string, MetadataInfo[]>
-      errors: ConfigChangeSuggestion[]
-    }> {
+    Promise<FetchElements<Record<string, MetadataInfo[]>>> {
     const fromRetrieveResults = async (retrieveResults: RetrieveResult[]):
       Promise<Record<string, MetadataInfo[]>> => {
       const typesToInstances = await Promise.all(retrieveResults
@@ -915,57 +925,53 @@ InstanceElement[] => {
       }
     }
 
-    const createRetrieveError = (result: RetrieveResult): ConfigChangeSuggestion[] =>
-      makeArray(result.messages)
-        .map((msg: Values) => RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg?.problem ?? ''))
-        .filter(regexRes => !_.isUndefined(regexRes?.groups))
-        .map(regexRes => ({
-          type: INSTANCES_REGEX_SKIPPED_LIST,
-          value: `${regexRes?.groups?.type}.${regexRes?.groups?.instance}`,
-        }))
-
     const chunkedRetrieveMembers = _.chunk(retrieveMembers, this.maxItemsInRetrieveRequest)
     const retrieveResults = _.flatten(
       await withLimitedConcurrency(chunkedRetrieveMembers.map(
         retrieveChunk => () => this.client.retrieve(createRetrieveRequest(retrieveChunk))
       ), this.maxConcurrentRetrieveRequests)
     )
-    const errors = _.flatten(retrieveResults.map(createRetrieveError))
-    return { typeToInstanceInfos: await fromRetrieveResults(retrieveResults), errors }
+
+    return {
+      elements: await fromRetrieveResults(retrieveResults),
+      configChanges: _.flatten(retrieveResults.map(createRetrieveConfigChange)),
+    }
   }
 
   @logDuration('fetching instances')
   private async fetchMetadataInstances(typeNames: Promise<string[]>, types: Promise<TypeElement[]>):
-    Promise<FetchElements<InstanceElement>> {
+    Promise<FetchElements<InstanceElement[]>> {
     type TypeAndInstances = { type: ObjectType; namespaceAndInstances: NamespaceAndInstances[] }
     const readInstances = async (metadataTypesToRead: ObjectType[]):
-      Promise<FetchElements<TypeAndInstances>> => {
+      Promise<FetchElements<TypeAndInstances[]>> => {
       const result = await Promise.all(metadataTypesToRead
         // Just fetch metadata instances of the types that we receive from the describe call
         .filter(type => !this.metadataAdditionalTypes.includes(apiName(type)))
         .map(async type => {
-          const { elements, errors } = await this.listMetadataInstances(apiName(type))
-          return { elements: { type, namespaceAndInstances: elements }, errors }
+          const { elements, configChanges } = await this.listMetadataInstances(apiName(type))
+          return { elements: { type, namespaceAndInstances: elements }, configChanges }
         }))
       return {
         elements: _.flatten(result.map(r => r.elements)),
-        errors: _.flatten(result.map(r => r.errors)),
+        configChanges: _.flatten(result.map(r => r.configChanges)),
       }
     }
 
     const retrieveInstances = async (metadataTypesToRetrieve: ObjectType[]):
-      Promise<FetchElements<TypeAndInstances>> => {
+      Promise<FetchElements<TypeAndInstances[]>> => {
       const nameToType: Record<string, ObjectType> = _(metadataTypesToRetrieve)
         .map(t => [apiName(t), t])
         .fromPairs()
         .value()
-      const { typeNameToNamespaceAndInfos, errors } = await this.retrieveMetadata(
+      const { elements: typeNameToNamespaceAndInfos, configChanges } = await this.retrieveMetadata(
         Object.keys(nameToType)
       )
-      return { elements: Object.entries(typeNameToNamespaceAndInfos)
-        .map(([typeName, namespaceAndInstances]) =>
-          ({ type: nameToType[typeName], namespaceAndInstances })),
-      errors }
+      return {
+        elements: Object.entries(typeNameToNamespaceAndInfos)
+          .map(([typeName, namespaceAndInstances]) =>
+            ({ type: nameToType[typeName], namespaceAndInstances })),
+        configChanges,
+      }
     }
 
     const topLevelTypeNames = await typeNames
@@ -991,7 +997,7 @@ InstanceElement[] => {
             typeAndInstances.type, namespaceAndInstance.namespace)))
         .flatten()
         .value(),
-      errors: _.flatten([instances.errors, retrievedInstances.errors]),
+      configChanges: _.flatten([instances.configChanges, retrievedInstances.configChanges]),
     }
   }
 
@@ -1004,12 +1010,12 @@ InstanceElement[] => {
    * List all the instances of specific metadataType
    * @param type the metadata type
    */
-  private async listMetadataInstances(type: string): Promise<FetchElements<NamespaceAndInstances>> {
-    const listResult = await this.client.listMetadataObjects({ type })
-    const listErrors = listResult.errors.map(createListMetadataObjectsError)
-    const objs = listResult.result
+  private async listMetadataInstances(type: string):
+  Promise<FetchElements<NamespaceAndInstances[]>> {
+    const { result: objs, errors: listErrors } = await this.client.listMetadataObjects({ type })
+    const listObjectsConfigChanges = listErrors.map(createListMetadataObjectsConfigChange)
     if (!objs) {
-      return { elements: [], errors: listErrors }
+      return { elements: [], configChanges: listObjectsConfigChanges }
     }
     const getFullName = (obj: FileProperties): string => {
       const namePrefix = obj.namespacePrefix
@@ -1024,16 +1030,13 @@ InstanceElement[] => {
     const instancesFullNames = objs.map(getFullName)
       .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexSkippedList))
     const readMetadataResult = await this.client.readMetadata(type, instancesFullNames)
-    const errors = readMetadataResult.errors
-      .map(e => (
-        { type: INSTANCES_REGEX_SKIPPED_LIST, value: `${type}.${e}` } as ConfigChangeSuggestion
-      ))
-      .concat(listErrors)
+    const readMetadataConfigChanges = readMetadataResult.errors
+      .map(e => createReadMetadataConfigChange(type, e))
 
     return {
       elements: readMetadataResult.result.map(instanceInfo =>
         ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo })),
-      errors,
+      configChanges: [...readMetadataConfigChanges, ...listObjectsConfigChanges],
     }
   }
 

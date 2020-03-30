@@ -27,6 +27,7 @@ import {
 } from '../transformers/transformer'
 import { extractFullNamesFromValueList } from './utils'
 import { ConfigChangeSuggestion, FetchElements } from '../types'
+import { createReadMetadataConfigChange } from '../config_change'
 
 const { makeArray } = collections.array
 
@@ -173,14 +174,15 @@ const fetchStandardValueSets = async (
 const createSVSInstances = async (
   standardValueSetNames: Set<string>,
   client: SalesforceClient,
-  svsMetadataType: ObjectType): Promise<FetchElements<InstanceElement>> => {
+  svsMetadataType: ObjectType): Promise<FetchElements<InstanceElement[]>> => {
   const { result: valueSets, errors } = await fetchStandardValueSets(
     standardValueSetNames, client
   )
-  return { errors: makeArray(errors).map(e => (
-    { type: 'instancesRegexSkippedList', value: `${STANDARD_VALUE_SET}.${e}` }
-  )),
-  elements: createStandardValueSetInstances(valueSets, svsMetadataType) }
+  return {
+    elements: createStandardValueSetInstances(valueSets, svsMetadataType),
+    configChanges: makeArray(errors)
+      .map(e => createReadMetadataConfigChange(STANDARD_VALUE_SET, e)),
+  }
 }
 
 const updateSVSReferences = (elements: Element[], svsInstances: InstanceElement[]): void => {
@@ -216,7 +218,7 @@ export const makeFilter = (
       const svsInstances = await createSVSInstances(standardValueSetNames, client, svsMetadataType)
       elements.push(...svsInstances.elements)
       updateSVSReferences(elements, svsInstances.elements)
-      return svsInstances.errors
+      return svsInstances.configChanges
     }
     // [GF] No StandardValueSet MetadataType was found.
     // Is this considered an error?

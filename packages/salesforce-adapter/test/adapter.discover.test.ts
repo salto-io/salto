@@ -784,6 +784,7 @@ describe('SalesforceAdapter fetch', () => {
             { xmlName: 'MetadataTest1' },
             { xmlName: 'MetadataTest2' },
             { xmlName: 'InstalledPackage' },
+            { xmlName: 'Report' },
           ],
         }))
         connection.metadata.describeValueType = jest.fn().mockImplementation(
@@ -798,6 +799,12 @@ describe('SalesforceAdapter fetch', () => {
               return [{ fullName: 'instance2' }]
             }
             if (typeName[0].type === 'MetadataTest2') {
+              throw new SFError('sf:UNKNOWN_EXCEPTION')
+            }
+            if (typeName[0].type === 'ReportFolder') {
+              return [{ fullName: 'testFolder' }]
+            }
+            if (_.isEqual(typeName[0], { type: 'Report', folder: 'testFolder' })) {
               throw new SFError('sf:UNKNOWN_EXCEPTION')
             }
             return []
@@ -829,7 +836,11 @@ describe('SalesforceAdapter fetch', () => {
       it('should return correct config', () => {
         expect(config.value).toEqual(
           {
-            [INSTANCES_REGEX_SKIPPED_LIST]: ['MetadataTest1.instance1', 'InstalledPackage.Test2']
+            [INSTANCES_REGEX_SKIPPED_LIST]: [
+              '^MetadataTest1.instance1$',
+              '^InstalledPackage.Test2$',
+              '^Report.testFolder$',
+            ]
               .concat(defaultInstancesRegexSkippedList),
             [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
               .concat(defaultMetadataTypesSkippedList),

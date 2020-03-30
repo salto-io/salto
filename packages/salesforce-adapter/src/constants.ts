@@ -243,3 +243,6 @@ export const QUICK_ACTION_METADATA_TYPE = 'QuickAction'
 export const CUSTOM_TAB_METADATA_TYPE = 'CustomTab'
 export const DUPLICATE_RULE_METADATA_TYPE = 'DuplicateRule'
 export const CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE = 'CustomObjectTranslation'
+
+// Retrieve constants
+export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/

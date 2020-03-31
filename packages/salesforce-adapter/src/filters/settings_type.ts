@@ -26,7 +26,8 @@ import {
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { id } from './utils'
-import { FetchElements, ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST } from '../types'
+import { FetchElements, ConfigChangeSuggestion } from '../types'
+import { createSkippedListConfigChange } from '../config_change'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -66,28 +67,30 @@ const extractSettingName = (settingType: string): string =>
 const createSettingsInstance = async (
   client: SalesforceClient,
   settingsType: ObjectType
-): Promise<FetchElements<InstanceElement>> => {
+): Promise<FetchElements<InstanceElement[]>> => {
   const typeName = apiName(settingsType)
   const { result: metadataInfos, errors } = await client.readMetadata(
     typeName, extractSettingName(typeName)
   )
-  return { elements: metadataInfos
-    .filter(m => m.fullName !== undefined)
-    .map(m => createInstanceElement(m, settingsType)),
-  errors: makeArray(errors).map(e => (
-    { type: INSTANCES_REGEX_SKIPPED_LIST, value: `${typeName}.${e}` }
-  )) }
+  return {
+    elements: metadataInfos
+      .filter(m => m.fullName !== undefined)
+      .map(m => createInstanceElement(m, settingsType)),
+    configChanges: makeArray(errors).map(e => createSkippedListConfigChange(typeName, e)),
+  }
 }
 
 const createSettingsInstances = async (
   client: SalesforceClient,
   settingsTypes: ObjectType[]
-): Promise<FetchElements<InstanceElement>> => {
+): Promise<FetchElements<InstanceElement[]>> => {
   const settingInstances = await Promise.all((settingsTypes)
     .filter(s => s.isSettings)
     .map(s => createSettingsInstance(client, s)))
-  return { elements: _.flatten(settingInstances.map(ins => ins.elements)),
-    errors: _.flatten(settingInstances.map(ins => ins.errors)) }
+  return {
+    elements: _.flatten(settingInstances.map(ins => ins.elements)),
+    configChanges: _.flatten(settingInstances.map(ins => ins.configChanges)),
+  }
 }
 
 /**
@@ -102,7 +105,9 @@ const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<ConfigChangeSuggestion[]> => {
     // Fetch list of all settings types
     const { result: settingsList } = await client.listMetadataObjects(
-      { type: SETTINGS_METADATA_TYPE }
+      { type: SETTINGS_METADATA_TYPE },
+      // All errors are considered to be unhandled errors. If an error occur, throws an exception
+      () => true
     )
 
     // Extract settings names
@@ -123,7 +128,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const settingsInstances = await createSettingsInstances(client, settingsTypes)
 
     settingsInstances.elements.forEach(e => elements.push(e))
-    return settingsInstances.errors
+    return settingsInstances.configChanges
   },
 })
 

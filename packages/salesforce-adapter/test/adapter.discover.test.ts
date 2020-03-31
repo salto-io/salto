@@ -34,7 +34,7 @@ describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
   const defaultMetadataTypesSkippedList = ['Test1', 'Ignored1']
-  const defaultInstancesRegexSkippedList = ['Test2.instance1', 'SkippedList$']
+  const defaultInstancesRegexSkippedList = ['Test2.instance1', 'SkippedList$', '^Report.skip$']
   const defaultMaxConcurrentRetrieveRequests = 4
   const defaultMaxItemsInRetrieveRequest = 3000
 
@@ -681,12 +681,18 @@ describe('SalesforceAdapter fetch', () => {
       )
     })
 
-    describe('should not fetch skippedlist metadata types and instance', () => {
-      let result: Element[] = []
+    describe('should not fetch skippedlist metadata types, instance and folders', () => {
+      let result: FetchResult
+      let elements: Element[] = []
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
         connection.metadata.describe = jest.fn().mockImplementation(async () => ({
-          metadataObjects: [{ xmlName: 'Test1' }, { xmlName: 'Test2' }, { xmlName: 'Test3' }],
+          metadataObjects: [
+            { xmlName: 'Test1' },
+            { xmlName: 'Test2' },
+            { xmlName: 'Test3' },
+            { xmlName: 'Report' },
+          ],
         }))
         connection.metadata.describeValueType = jest.fn().mockImplementation(
           async (typeName: string) => {
@@ -697,7 +703,15 @@ describe('SalesforceAdapter fetch', () => {
           }
         )
         connection.metadata.list = jest.fn().mockImplementation(
-          async () => [{ fullName: 'instance1' }]
+          async (typeName: ListMetadataQuery[]) => {
+            if (typeName[0].type === 'ReportFolder') {
+              return [{ fullName: 'skip' }]
+            }
+            if (_.isEqual(typeName[0], { type: 'Report', folder: 'skip' })) {
+              throw new Error('fake error')
+            }
+            return [{ fullName: 'instance1' }]
+          }
         )
         connection.metadata.read = jest.fn().mockImplementation(
           async (typeName: string, fullNames: string | string[]) => {
@@ -708,18 +722,24 @@ describe('SalesforceAdapter fetch', () => {
           }
         )
 
-        result = (await adapter.fetch()).elements
+        result = await adapter.fetch()
+        elements = result.elements
+      })
+
+      it('should not consist config changes', () => {
+        expect(result.config).toBeUndefined()
       })
 
       it('should skip skippedlist types', () => {
-        expect(findElements(result, 'Test1')).toHaveLength(0)
-        expect(findElements(result, 'Test2')).toHaveLength(1)
-        expect(findElements(result, 'Test3')).toHaveLength(1)
+        expect(findElements(elements, 'Test1')).toHaveLength(0)
+        expect(findElements(elements, 'Test2')).toHaveLength(1)
+        expect(findElements(elements, 'Test3')).toHaveLength(1)
       })
 
       it('should skip skippedlist instances', () => {
-        expect(findElements(result, 'Test2', 'instance1')).toHaveLength(0)
-        expect(findElements(result, 'Test3', 'instance1')).toHaveLength(1)
+        expect(findElements(elements, 'Test2', 'instance1')).toHaveLength(0)
+        expect(findElements(elements, 'Test3', 'instance1')).toHaveLength(1)
+        expect(findElements(elements, 'Report', 'instance1')).toHaveLength(0)
       })
     })
 
@@ -780,7 +800,12 @@ describe('SalesforceAdapter fetch', () => {
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
         connection.metadata.describe = jest.fn().mockImplementation(async () => ({
-          metadataObjects: [{ xmlName: 'MetadataTest1' }, { xmlName: 'MetadataTest2' }],
+          metadataObjects: [
+            { xmlName: 'MetadataTest1' },
+            { xmlName: 'MetadataTest2' },
+            { xmlName: 'InstalledPackage' },
+            { xmlName: 'Report' },
+          ],
         }))
         connection.metadata.describeValueType = jest.fn().mockImplementation(
           async (_typeName: string) => ({ valueTypeFields: [] })
@@ -790,7 +815,19 @@ describe('SalesforceAdapter fetch', () => {
             if (typeName[0].type === 'MetadataTest1') {
               return [{ fullName: 'instance1' }]
             }
-            throw new SFError('sf:UNKNOWN_EXCEPTION')
+            if (typeName[0].type === 'InstalledPackage') {
+              return [{ fullName: 'instance2' }]
+            }
+            if (typeName[0].type === 'MetadataTest2') {
+              throw new SFError('sf:UNKNOWN_EXCEPTION')
+            }
+            if (typeName[0].type === 'ReportFolder') {
+              return [{ fullName: 'testFolder' }]
+            }
+            if (_.isEqual(typeName[0], { type: 'Report', folder: 'testFolder' })) {
+              throw new SFError('sf:UNKNOWN_EXCEPTION')
+            }
+            return []
           }
         )
         connection.metadata.read = jest.fn().mockImplementation(
@@ -799,7 +836,14 @@ describe('SalesforceAdapter fetch', () => {
           }
         )
         connection.metadata.retrieve = jest.fn().mockImplementation(() =>
-          ({ complete: async () => ({ zipFile: '' }) }))
+          ({ complete: async () => ({ zipFile: await createEncodedZipContent([]),
+            messages: {
+              fileName: 'unpackaged/package.xml',
+              problem: 'Metadata API received improper input.'
+                + 'Please ensure file name and capitalization is correct.'
+                + 'Load of metadata from db failed for metadata of '
+                + 'type:InstalledPackage and file name:Test2.',
+            } }) }))
 
         result = await adapter.fetch()
         config = result?.config as InstanceElement
@@ -812,7 +856,11 @@ describe('SalesforceAdapter fetch', () => {
       it('should return correct config', () => {
         expect(config.value).toEqual(
           {
-            [INSTANCES_REGEX_SKIPPED_LIST]: ['MetadataTest1.instance1']
+            [INSTANCES_REGEX_SKIPPED_LIST]: [
+              '^MetadataTest1.instance1$',
+              '^InstalledPackage.Test2$',
+              '^Report.testFolder$',
+            ]
               .concat(defaultInstancesRegexSkippedList),
             [METADATA_TYPES_SKIPPED_LIST]: ['MetadataTest2']
               .concat(defaultMetadataTypesSkippedList),

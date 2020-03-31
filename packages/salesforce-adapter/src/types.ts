@@ -34,8 +34,8 @@ export type ConfigChangeSuggestion = {
   value: string
 }
 export type FetchElements<T> = {
-  errors: ConfigChangeSuggestion[]
-  elements: T[]
+  configChanges: ConfigChangeSuggestion[]
+  elements: T
 }
 
 const configID = new ElemID('salesforce')

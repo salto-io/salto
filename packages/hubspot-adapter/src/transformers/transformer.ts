@@ -25,17 +25,16 @@ import {
 import { isFormInstance } from '../filters/form_field'
 import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
-  NURTURETIMERANGE_FIELDS, CONDITIONACTION_FIELDS, ANCHOR_SETTING_FIELDS,
+  NURTURETIMERANGE_FIELDS, ANCHOR_SETTING_FIELDS, FORM_PROPERTY_INNER_FIELDS,
   EVENTANCHOR_FIELDS, ACTION_FIELDS, FORM_PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS,
   CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS,
-  DEPENDENT_FIELD_FILTER_FIELDS, FIELD_FILTER_FIELDS, WORKFLOWS_FIELDS,
+  DEPENDENT_FIELD_FILTER_FIELDS, FIELD_FILTER_FIELDS, WORKFLOWS_FIELDS, optionsElemID,
   MARKETING_EMAIL_FIELDS, RICHTEXT_FIELDS, formElemID, workflowsElemID, CRITERIA_FIELDS,
-  propertyGroupElemID, propertyElemID, dependeeFormPropertyElemID, optionsElemID,
-  contactListIdsElemID, marketingEmailElemID, rssToEmailTimingElemID, criteriaElemID,
+  propertyGroupElemID, propertyElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS, rssToEmailTimingElemID,
+  contactListIdsElemID, marketingEmailElemID, dependeeFormPropertyElemID, criteriaElemID,
   nurtureTimeRangeElemID, anchorSettingElemID, actionElemID, eventAnchorElemID,
-  conditionActionElemID, contactPropertyElemID, dependentFormFieldFiltersElemID,
-  fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyFieldTypeValues,
-  CONTACT_PROPERTY_OVERRIDES_FIELDS, contactPropertyOverridesElemID, FORM_PROPERTY_INNER_FIELDS,
+  contactPropertyElemID, dependentFormFieldFiltersElemID, contactPropertyFieldTypeValues,
+  fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyOverridesElemID,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -223,7 +222,7 @@ export class Types {
         path: [HUBSPOT, 'types', 'subtypes', contactPropertyOverridesElemID.name],
       })
 
-    static createFormFieldType = (
+    private static createFormFieldType = (
       elemID: ElemID,
       isFatherProperty: boolean
     ): ObjectType => {
@@ -446,49 +445,6 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', anchorSettingElemID.name],
     })
 
-  private static conditionActionType: ObjectType =
-    new ObjectType({
-      elemID: conditionActionElemID,
-      fields: {
-        [CONDITIONACTION_FIELDS.TYPE]: new TypeField(
-          conditionActionElemID, CONDITIONACTION_FIELDS.TYPE, BuiltinTypes.STRING, {
-            name: CONDITIONACTION_FIELDS.TYPE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CONDITIONACTION_FIELDS.BODY]: new TypeField(
-          conditionActionElemID, CONDITIONACTION_FIELDS.BODY, BuiltinTypes.STRING, {
-            name: CONDITIONACTION_FIELDS.BODY,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CONDITIONACTION_FIELDS.STATICTO]: new TypeField(
-          conditionActionElemID, CONDITIONACTION_FIELDS.STATICTO, BuiltinTypes.STRING, {
-            name: CONDITIONACTION_FIELDS.STATICTO,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CONDITIONACTION_FIELDS.ACTIONID]: new TypeField(
-          conditionActionElemID, CONDITIONACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
-            name: CONDITIONACTION_FIELDS.ACTIONID,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [CONDITIONACTION_FIELDS.STEPID]: new TypeField(
-          conditionActionElemID, CONDITIONACTION_FIELDS.STEPID, BuiltinTypes.NUMBER, {
-            name: CONDITIONACTION_FIELDS.STEPID,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-      },
-      path: [HUBSPOT, 'types', 'subtypes', conditionActionElemID.name],
-    })
-
   private static criteriaType: ObjectType =
     new ObjectType({
       elemID: criteriaElemID,
@@ -546,83 +502,112 @@ export class Types {
       path: [HUBSPOT, 'types', 'subtypes', criteriaElemID.name],
     })
 
-  private static actionType: ObjectType =
-    new ObjectType({
-      elemID: actionElemID,
-      fields: {
-        [ACTION_FIELDS.TYPE]: new TypeField(
-          actionElemID, ACTION_FIELDS.TYPE, BuiltinTypes.STRING, {
-            name: ACTION_FIELDS.TYPE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.ACTIONID]: new TypeField(
-          actionElemID, ACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
-            name: ACTION_FIELDS.ACTIONID,
-            _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.DELAYMILLS]: new TypeField(
-          actionElemID, ACTION_FIELDS.DELAYMILLS, BuiltinTypes.NUMBER, {
-            name: ACTION_FIELDS.DELAYMILLS,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.STEPID]: new TypeField(
-          actionElemID, ACTION_FIELDS.STEPID, BuiltinTypes.NUMBER, {
-            name: ACTION_FIELDS.STEPID,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.ANCHORSETTING]: new TypeField(
-          actionElemID, ACTION_FIELDS.ANCHORSETTING, Types.anchorSettingType, {
-            name: ACTION_FIELDS.ANCHORSETTING,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.FILTERSLISTID]: new TypeField(
-          actionElemID, ACTION_FIELDS.FILTERSLISTID, BuiltinTypes.NUMBER, {
-            name: ACTION_FIELDS.FILTERSLISTID,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.NEWVALUE]: new TypeField(
-          actionElemID, ACTION_FIELDS.NEWVALUE, BuiltinTypes.STRING, {
-            name: ACTION_FIELDS.NEWVALUE,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.ACCEPTACTIONS]: new TypeField(
-          actionElemID, ACTION_FIELDS.ACCEPTACTIONS, new ListType(Types.conditionActionType), {
-            name: ACTION_FIELDS.ACCEPTACTIONS,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.PROPERTYNAME]: new TypeField(
-          actionElemID, ACTION_FIELDS.PROPERTYNAME, BuiltinTypes.STRING, {
-            name: ACTION_FIELDS.PROPERTYNAME,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-        [ACTION_FIELDS.REJECTACTIONS]: new TypeField(
-          actionElemID, ACTION_FIELDS.REJECTACTIONS, new ListType(Types.conditionActionType), {
-            name: ACTION_FIELDS.REJECTACTIONS,
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          },
-        ),
-      },
-      path: [HUBSPOT, 'types', 'subtypes', actionElemID.name],
-    })
+    // Create action type in steps cause of recursive fields
+    private static createActionType = (): ObjectType => {
+      const actionType = new ObjectType({
+        elemID: actionElemID,
+        fields: {
+          [ACTION_FIELDS.TYPE]: new TypeField(
+            actionElemID, ACTION_FIELDS.TYPE, BuiltinTypes.STRING, {
+              name: ACTION_FIELDS.TYPE,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.ACTIONID]: new TypeField(
+            actionElemID, ACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
+              name: ACTION_FIELDS.ACTIONID,
+              _readOnly: true,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.DELAYMILLS]: new TypeField(
+            actionElemID, ACTION_FIELDS.DELAYMILLS, BuiltinTypes.NUMBER, {
+              name: ACTION_FIELDS.DELAYMILLS,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.STEPID]: new TypeField(
+            actionElemID, ACTION_FIELDS.STEPID, BuiltinTypes.NUMBER, {
+              name: ACTION_FIELDS.STEPID,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.ANCHORSETTING]: new TypeField(
+            actionElemID, ACTION_FIELDS.ANCHORSETTING, Types.anchorSettingType, {
+              name: ACTION_FIELDS.ANCHORSETTING,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.FILTERSLISTID]: new TypeField(
+            actionElemID, ACTION_FIELDS.FILTERSLISTID, BuiltinTypes.NUMBER, {
+              name: ACTION_FIELDS.FILTERSLISTID,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.FILTERS]: new TypeField(
+            actionElemID, ACTION_FIELDS.FILTERS, new ListType(new ListType(Types.criteriaType)), {
+              name: ACTION_FIELDS.FILTERS,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.PROPERTYNAME]: new TypeField(
+            actionElemID, ACTION_FIELDS.PROPERTYNAME, BuiltinTypes.STRING, {
+              name: ACTION_FIELDS.PROPERTYNAME,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.BODY]: new TypeField(
+            actionElemID, ACTION_FIELDS.BODY, BuiltinTypes.STRING, {
+              name: ACTION_FIELDS.BODY,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.NEWVALUE]: new TypeField(
+            actionElemID, ACTION_FIELDS.NEWVALUE, BuiltinTypes.STRING, {
+              name: ACTION_FIELDS.NEWVALUE,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+          [ACTION_FIELDS.STATICTO]: new TypeField(
+            actionElemID, ACTION_FIELDS.STATICTO, BuiltinTypes.STRING, {
+              name: ACTION_FIELDS.STATICTO,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            },
+          ),
+        },
+        path: [HUBSPOT, 'types', 'subtypes', actionElemID.name],
+      })
+
+      const acceptActionsField = new TypeField(
+        actionElemID, ACTION_FIELDS.ACCEPTACTIONS, new ListType(actionType), {
+          name: ACTION_FIELDS.ACCEPTACTIONS,
+          _readOnly: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
+        },
+      )
+      const rejectActionsField = new TypeField(
+        actionElemID, ACTION_FIELDS.REJECTACTIONS, new ListType(actionType), {
+          name: ACTION_FIELDS.REJECTACTIONS,
+          _readOnly: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
+        },
+      )
+      actionType.fields[ACTION_FIELDS.ACCEPTACTIONS] = acceptActionsField
+      actionType.fields[ACTION_FIELDS.REJECTACTIONS] = rejectActionsField
+      return actionType
+    }
+
+  private static actionType: ObjectType = Types.createActionType()
 
   private static nurtureTimeRangeType: ObjectType =
     new ObjectType({
@@ -856,7 +841,7 @@ export class Types {
           workflowsElemID, WORKFLOWS_FIELDS.ID, BuiltinTypes.NUMBER, {
             name: WORKFLOWS_FIELDS.ID,
             _readOnly: true,
-            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
         [WORKFLOWS_FIELDS.NAME]: new TypeField(

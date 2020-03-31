@@ -215,23 +215,17 @@ interface EventAnchor {
 interface Action {
   type: string
   anchorSetting: AnchorSetting
-  actionId: number
   delayMillis: number
-  stepId: number
   filterListId: number
-  filters: string[]
+  filters: Criteria[][]
   newValue: string
   propertyName: string
-  acceptActions: ConditionAction[]
-  rejectActions: ConditionAction[]
-}
-
-interface ConditionAction {
-  type: string
-  body: string
-  staticTo: string
   actionId: number
   stepId: number
+  body: string
+  staticTo: string
+  acceptActions: Action[]
+  rejectActions: Action[]
 }
 
 interface AnchorSetting {

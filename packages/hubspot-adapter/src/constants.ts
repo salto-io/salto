@@ -326,18 +326,13 @@ export const ACTION_FIELDS = {
   DELAYMILLS: 'delayMillis',
   STEPID: 'stepId',
   FILTERSLISTID: 'filtersListId',
+  FILTERS: 'filters',
   NEWVALUE: 'newValue',
   ACCEPTACTIONS: 'acceptActions',
   PROPERTYNAME: 'propertyName',
   REJECTACTIONS: 'rejectActions',
-}
-
-export const CONDITIONACTION_FIELDS = {
-  TYPE: 'type',
-  BODY: 'body',
   STATICTO: 'staticTo',
-  ACTIONID: 'actionId',
-  STEPID: 'stepId',
+  BODY: 'body',
 }
 
 export const ANCHOR_SETTING_FIELDS = {

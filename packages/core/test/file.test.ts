@@ -62,9 +62,19 @@ describe('file', () => {
 
     describe('when the file exists', () => {
       it('should return its stats', async () => {
-        const r = await file.stat(__filename)
+        const r = await file.stat.notFoundAsUndefined(__filename)
         expect(r).toEqual(await promisify(fs.stat)(__filename))
       })
+    })
+
+    describe('when there is another error', () => {
+      const tooLongFilename = 'a'.repeat(1000).repeat(1000)
+      it(
+        'should reject with the error',
+        () => expect(
+          file.stat.notFoundAsUndefined(tooLongFilename),
+        ).rejects.toThrow(/ENAMETOOLONG/),
+      )
     })
   })
 
@@ -422,35 +432,58 @@ describe('file', () => {
       })
     })
   })
-  describe('emptyDir', () => {
-    let dirTmp: tmp.DirectoryResult
-    let emptyDirPath: string
-    let fullDirPath: string
+  describe('isEmptyDir', () => {
+    let dir: string
 
     beforeEach(async () => {
-      dirTmp = await tmp.dir()
-      emptyDirPath = path.join(dirTmp.path, 'empty')
-      fullDirPath = path.join(dirTmp.path, 'full')
-      await file.mkdirp(emptyDirPath)
-      await file.mkdirp(fullDirPath)
-      await file.writeFile(path.join(fullDirPath, 'file.bp'), '')
+      dir = (await tmp.dir()).path
     })
 
-    it('detect an empty dir', async () => {
-      expect(await file.emptyDir(emptyDirPath)).toBeTruthy()
+    afterEach(async () => {
+      await file.rm(dir)
     })
 
-    it('detect a dir with files', async () => {
-      expect(await file.emptyDir(fullDirPath)).toBeFalsy()
+    describe('when given an empty directory', () => {
+      it('returns true', async () => {
+        expect(await file.isEmptyDir(dir)).toBe(true)
+      })
+    })
+
+    describe('when given a non-empty directory', () => {
+      describe('with a subdirectory', () => {
+        beforeEach(async () => {
+          await file.mkdirp(path.join(dir, 'subdir'))
+        })
+
+        it('returns false', async () => {
+          expect(await file.isEmptyDir(dir)).toBe(false)
+        })
+      })
+
+      describe('with a file', () => {
+        beforeEach(async () => {
+          await file.writeFile(path.join(dir, 'somefile'), '')
+        })
+
+        it('returns false', async () => {
+          expect(await file.isEmptyDir(dir)).toBe(false)
+        })
+      })
     })
   })
 
-  describe('is sub folder', () => {
-    it('detect a sub folder', () => {
-      expect(file.isSubFolder('/base/child', '/base')).toBeTruthy()
-      expect(file.isSubFolder('../base/child', '../base')).toBeTruthy()
-      expect(file.isSubFolder('../base/child', '../test')).toBeFalsy()
-      expect(file.isSubFolder('/base/child', '/test')).toBeFalsy()
+  describe('isSubDirectory', () => {
+    describe('when given a subdirectory', () => {
+      it('returns true', () => {
+        expect(file.isSubDirectory('/base/child', '/base')).toBe(true)
+        expect(file.isSubDirectory('../base/child', '../base')).toBe(true)
+      })
+    })
+    describe('when given a non-subdirectory', () => {
+      it('returns false', () => {
+        expect(file.isSubDirectory('../base/child', '../test')).toBe(false)
+        expect(file.isSubDirectory('/base/child', '/test')).toBe(false)
+      })
     })
   })
 })

@@ -53,7 +53,7 @@ export const stat = (filename: string): Promise<fs.Stats> => statP(filename)
 
 stat.notFoundAsUndefined = notFoundAsUndefined(stat)
 
-export const isSubFolder = (
+export const isSubDirectory = (
   subFolder: string,
   folder: string
 ): boolean => {
@@ -61,7 +61,7 @@ export const isSubFolder = (
   return !relative.startsWith('..') && !path.isAbsolute(relative)
 }
 
-export const emptyDir = async (
+export const isEmptyDir = async (
   dirName: string
 ): Promise<boolean> => (await readDirP(dirName)).length === 0
 

@@ -44,13 +44,12 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
   return Keywords.TYPE_OBJECT
 }
 
-export const dumpElemID = (type: TypeElement, isTopLevel = true): string => {
+export const dumpElemID = (type: TypeElement): string => {
   if (type.elemID.isConfig()) {
     return type.elemID.adapter
   }
   if (isListType(type)) {
-    const listDumpStr = `${Keywords.LIST_PREFIX}${dumpElemID(type.innerType, false)}${Keywords.GENERICS_SUFFIX}`
-    return isTopLevel ? `"${listDumpStr}"` : listDumpStr
+    return `${Keywords.LIST_PREFIX}${dumpElemID(type.innerType)}${Keywords.GENERICS_SUFFIX}`
   }
   return [type.elemID.adapter, type.elemID.name]
     .filter(part => !_.isEmpty(part))

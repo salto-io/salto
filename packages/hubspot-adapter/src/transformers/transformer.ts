@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field as TypeField,
+  ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS,
   TypeMap, Values, isPrimitiveType, Value, ListType,
 } from '@salto-io/adapter-api'
@@ -84,42 +84,42 @@ export class Types {
     new ObjectType({
       elemID: optionsElemID,
       fields: {
-        [OPTIONS_FIELDS.LABEL]: new TypeField(
+        [OPTIONS_FIELDS.LABEL]: new Field(
           optionsElemID, OPTIONS_FIELDS.LABEL, BuiltinTypes.STRING, {
             name: OPTIONS_FIELDS.LABEL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [OPTIONS_FIELDS.VALUE]: new TypeField(
+        [OPTIONS_FIELDS.VALUE]: new Field(
           optionsElemID, OPTIONS_FIELDS.VALUE, BuiltinTypes.STRING, {
             name: OPTIONS_FIELDS.VALUE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [OPTIONS_FIELDS.READONLY]: new TypeField(
+        [OPTIONS_FIELDS.READONLY]: new Field(
           optionsElemID, OPTIONS_FIELDS.READONLY, BuiltinTypes.BOOLEAN, {
             name: OPTIONS_FIELDS.READONLY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [OPTIONS_FIELDS.DISPLAYORDER]: new TypeField(
+        [OPTIONS_FIELDS.DISPLAYORDER]: new Field(
           optionsElemID, OPTIONS_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
             name: OPTIONS_FIELDS.DISPLAYORDER,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [OPTIONS_FIELDS.HIDDEN]: new TypeField(
+        [OPTIONS_FIELDS.HIDDEN]: new Field(
           optionsElemID, OPTIONS_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
             name: OPTIONS_FIELDS.HIDDEN,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [OPTIONS_FIELDS.DESCRIPTION]: new TypeField(
+        [OPTIONS_FIELDS.DESCRIPTION]: new Field(
           optionsElemID, OPTIONS_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
             name: OPTIONS_FIELDS.DESCRIPTION,
             _readOnly: false,
@@ -134,7 +134,7 @@ export class Types {
     new ObjectType({
       elemID: fieldFilterElemID,
       fields: {
-        [FIELD_FILTER_FIELDS.OPERATOR]: new TypeField(
+        [FIELD_FILTER_FIELDS.OPERATOR]: new Field(
           fieldFilterElemID, FIELD_FILTER_FIELDS.OPERATOR, BuiltinTypes.STRING, {
             name: FIELD_FILTER_FIELDS.OPERATOR,
             _readOnly: false,
@@ -142,35 +142,35 @@ export class Types {
             // TODO: Find the values
           },
         ),
-        [FIELD_FILTER_FIELDS.STRVALUE]: new TypeField(
+        [FIELD_FILTER_FIELDS.STRVALUE]: new Field(
           fieldFilterElemID, FIELD_FILTER_FIELDS.STRVALUE, BuiltinTypes.STRING, {
             name: FIELD_FILTER_FIELDS.STRVALUE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FIELD_FILTER_FIELDS.STRVALUES]: new TypeField(
+        [FIELD_FILTER_FIELDS.STRVALUES]: new Field(
           fieldFilterElemID, FIELD_FILTER_FIELDS.STRVALUES, new ListType(BuiltinTypes.STRING), {
             name: FIELD_FILTER_FIELDS.STRVALUES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FIELD_FILTER_FIELDS.BOOLVALUE]: new TypeField(
+        [FIELD_FILTER_FIELDS.BOOLVALUE]: new Field(
           fieldFilterElemID, FIELD_FILTER_FIELDS.BOOLVALUE, BuiltinTypes.BOOLEAN, {
             name: FIELD_FILTER_FIELDS.BOOLVALUE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FIELD_FILTER_FIELDS.NUMBERVALUE]: new TypeField(
+        [FIELD_FILTER_FIELDS.NUMBERVALUE]: new Field(
           fieldFilterElemID, FIELD_FILTER_FIELDS.NUMBERVALUE, BuiltinTypes.NUMBER, {
             name: FIELD_FILTER_FIELDS.NUMBERVALUE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FIELD_FILTER_FIELDS.NUMVALUES]: new TypeField(
+        [FIELD_FILTER_FIELDS.NUMVALUES]: new Field(
           fieldFilterElemID, FIELD_FILTER_FIELDS.NUMVALUES, new ListType(BuiltinTypes.NUMBER), {
             name: FIELD_FILTER_FIELDS.NUMVALUES,
             _readOnly: false,
@@ -185,7 +185,7 @@ export class Types {
       new ObjectType({
         elemID: contactPropertyOverridesElemID,
         fields: {
-          [CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL]: new TypeField(
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL]: new Field(
             contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
             BuiltinTypes.STRING, {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
@@ -193,7 +193,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER]: new TypeField(
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER]: new Field(
             contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
             BuiltinTypes.NUMBER,
             {
@@ -202,7 +202,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION]: new TypeField(
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION]: new Field(
             contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
             BuiltinTypes.STRING, {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
@@ -210,7 +210,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             }
           ),
-          [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: new TypeField(
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: new Field(
             contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
             new ListType(Types.optionsType), {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
@@ -229,7 +229,7 @@ export class Types {
       const formPropertyType = new ObjectType({
         elemID,
         fields: {
-          [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]: new TypeField(
+          [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]: new Field(
             // TODO: This is not really a string
             elemID, FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY, BuiltinTypes.STRING, {
               name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY,
@@ -237,7 +237,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: true,
             }
           ),
-          [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES]: new TypeField(
+          [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES]: new Field(
             elemID, FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
             Types.contactPropertyOverridesType, {
               name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
@@ -245,35 +245,35 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [FORM_PROPERTY_FIELDS.DEFAULTVALUE]: new TypeField(
+          [FORM_PROPERTY_FIELDS.DEFAULTVALUE]: new Field(
             elemID, FORM_PROPERTY_FIELDS.DEFAULTVALUE, BuiltinTypes.STRING, {
               name: FORM_PROPERTY_FIELDS.DEFAULTVALUE,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [FORM_PROPERTY_FIELDS.PLACEHOLDER]: new TypeField(
+          [FORM_PROPERTY_FIELDS.PLACEHOLDER]: new Field(
             elemID, FORM_PROPERTY_FIELDS.PLACEHOLDER, BuiltinTypes.STRING, {
               name: FORM_PROPERTY_FIELDS.PLACEHOLDER,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [FORM_PROPERTY_FIELDS.REQUIRED]: new TypeField(
+          [FORM_PROPERTY_FIELDS.REQUIRED]: new Field(
             elemID, FORM_PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
               name: FORM_PROPERTY_FIELDS.REQUIRED,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: new TypeField(
+          [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: new Field(
             elemID, FORM_PROPERTY_FIELDS.SELECTEDOPTIONS, new ListType(BuiltinTypes.STRING), {
               name: FORM_PROPERTY_FIELDS.SELECTEDOPTIONS,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: new TypeField(
+          [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: new Field(
             elemID, FORM_PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
               name: FORM_PROPERTY_FIELDS.ISSMARTFIELD,
               _readOnly: false,
@@ -285,7 +285,7 @@ export class Types {
       })
       if (isFatherProperty) {
         Object.assign(formPropertyType.fields, {
-          [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]: new TypeField(
+          [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]: new Field(
             elemID, FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
             new ListType(Types.dependentFormFieldFiltersType), {
               name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
@@ -307,7 +307,7 @@ export class Types {
     new ObjectType({
       elemID: dependentFormFieldFiltersElemID,
       fields: {
-        [DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION]: new TypeField(
+        [DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION]: new Field(
           dependentFormFieldFiltersElemID, DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
           BuiltinTypes.STRING, {
             name: DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
@@ -316,7 +316,7 @@ export class Types {
             // TODO: See if this can be anything else other than DISPLAY
           },
         ),
-        [DEPENDENT_FIELD_FILTER_FIELDS.FILTERS]: new TypeField(
+        [DEPENDENT_FIELD_FILTER_FIELDS.FILTERS]: new Field(
           dependentFormFieldFiltersElemID, DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
           new ListType(Types.fieldFilterType), {
             name: DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
@@ -324,7 +324,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
-        [DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD]: new TypeField(
+        [DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD]: new Field(
           dependentFormFieldFiltersElemID, DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
           Types.dependeeFormFieldType, {
             name: DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
@@ -345,7 +345,7 @@ export class Types {
     new ObjectType({
       elemID: richTextElemID,
       fields: {
-        [RICHTEXT_FIELDS.CONTENT]: new TypeField(
+        [RICHTEXT_FIELDS.CONTENT]: new Field(
           richTextElemID, RICHTEXT_FIELDS.CONTENT, BuiltinTypes.STRING, {
             name: RICHTEXT_FIELDS.CONTENT,
             _readOnly: false,
@@ -360,14 +360,14 @@ export class Types {
     new ObjectType({
       elemID: propertyGroupElemID,
       fields: {
-        [FORM_PROPERTY_GROUP_FIELDS.DEFAULT]: new TypeField(
+        [FORM_PROPERTY_GROUP_FIELDS.DEFAULT]: new Field(
           propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.DEFAULT, BuiltinTypes.BOOLEAN, {
             name: FORM_PROPERTY_GROUP_FIELDS.DEFAULT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_PROPERTY_GROUP_FIELDS.FIELDS]: new TypeField(
+        [FORM_PROPERTY_GROUP_FIELDS.FIELDS]: new Field(
           propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.FIELDS,
           new ListType(Types.dependentFormFieldType), {
             name: FORM_PROPERTY_GROUP_FIELDS.FIELDS,
@@ -375,14 +375,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP]: new TypeField(
+        [FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP]: new Field(
           propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP, BuiltinTypes.BOOLEAN, {
             name: FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_PROPERTY_GROUP_FIELDS.RICHTEXT]: new TypeField(
+        [FORM_PROPERTY_GROUP_FIELDS.RICHTEXT]: new Field(
           propertyGroupElemID, FORM_PROPERTY_GROUP_FIELDS.RICHTEXT, Types.richTextType, {
             name: FORM_PROPERTY_GROUP_FIELDS.RICHTEXT,
             _readOnly: false,
@@ -397,14 +397,14 @@ export class Types {
     new ObjectType({
       elemID: eventAnchorElemID,
       fields: {
-        [EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR]: new TypeField(
+        [EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR]: new Field(
           eventAnchorElemID, EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR, BuiltinTypes.STRING, {
             name: EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [EVENTANCHOR_FIELDS.STATICDATEANCHOR]: new TypeField(
+        [EVENTANCHOR_FIELDS.STATICDATEANCHOR]: new Field(
           eventAnchorElemID, EVENTANCHOR_FIELDS.STATICDATEANCHOR,
           BuiltinTypes.STRING, {
             name: EVENTANCHOR_FIELDS.STATICDATEANCHOR,
@@ -420,21 +420,21 @@ export class Types {
     new ObjectType({
       elemID: anchorSettingElemID,
       fields: {
-        [ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY]: new TypeField(
+        [ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY]: new Field(
           anchorSettingElemID, ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY, BuiltinTypes.STRING, {
             name: ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES]: new TypeField(
+        [ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES]: new Field(
           anchorSettingElemID, ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES, BuiltinTypes.NUMBER, {
             name: ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [ANCHOR_SETTING_FIELDS.BOUNDARY]: new TypeField(
+        [ANCHOR_SETTING_FIELDS.BOUNDARY]: new Field(
           anchorSettingElemID, ANCHOR_SETTING_FIELDS.BOUNDARY, BuiltinTypes.STRING, {
             name: ANCHOR_SETTING_FIELDS.BOUNDARY,
             _readOnly: false,
@@ -449,49 +449,49 @@ export class Types {
     new ObjectType({
       elemID: criteriaElemID,
       fields: {
-        [CRITERIA_FIELDS.FILTERFAMILY]: new TypeField(
+        [CRITERIA_FIELDS.FILTERFAMILY]: new Field(
           criteriaElemID, CRITERIA_FIELDS.FILTERFAMILY, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.FILTERFAMILY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CRITERIA_FIELDS.OPERATOR]: new TypeField(
+        [CRITERIA_FIELDS.OPERATOR]: new Field(
           criteriaElemID, CRITERIA_FIELDS.OPERATOR, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.OPERATOR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CRITERIA_FIELDS.PROPERTY]: new TypeField(
+        [CRITERIA_FIELDS.PROPERTY]: new Field(
           criteriaElemID, CRITERIA_FIELDS.PROPERTY, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.PROPERTY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CRITERIA_FIELDS.PROPERTYOBJECTTYPE]: new TypeField(
+        [CRITERIA_FIELDS.PROPERTYOBJECTTYPE]: new Field(
           criteriaElemID, CRITERIA_FIELDS.PROPERTYOBJECTTYPE, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.PROPERTYOBJECTTYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CRITERIA_FIELDS.TYPE]: new TypeField(
+        [CRITERIA_FIELDS.TYPE]: new Field(
           criteriaElemID, CRITERIA_FIELDS.TYPE, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.TYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CRITERIA_FIELDS.VALUE]: new TypeField(
+        [CRITERIA_FIELDS.VALUE]: new Field(
           criteriaElemID, CRITERIA_FIELDS.VALUE, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.VALUE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CRITERIA_FIELDS.WITHINTIMEMODE]: new TypeField(
+        [CRITERIA_FIELDS.WITHINTIMEMODE]: new Field(
           criteriaElemID, CRITERIA_FIELDS.WITHINTIMEMODE, BuiltinTypes.STRING, {
             name: CRITERIA_FIELDS.WITHINTIMEMODE,
             _readOnly: false,
@@ -507,77 +507,77 @@ export class Types {
       const actionType = new ObjectType({
         elemID: actionElemID,
         fields: {
-          [ACTION_FIELDS.TYPE]: new TypeField(
+          [ACTION_FIELDS.TYPE]: new Field(
             actionElemID, ACTION_FIELDS.TYPE, BuiltinTypes.STRING, {
               name: ACTION_FIELDS.TYPE,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.ACTIONID]: new TypeField(
+          [ACTION_FIELDS.ACTIONID]: new Field(
             actionElemID, ACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
               name: ACTION_FIELDS.ACTIONID,
               _readOnly: true,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.DELAYMILLS]: new TypeField(
+          [ACTION_FIELDS.DELAYMILLS]: new Field(
             actionElemID, ACTION_FIELDS.DELAYMILLS, BuiltinTypes.NUMBER, {
               name: ACTION_FIELDS.DELAYMILLS,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.STEPID]: new TypeField(
+          [ACTION_FIELDS.STEPID]: new Field(
             actionElemID, ACTION_FIELDS.STEPID, BuiltinTypes.NUMBER, {
               name: ACTION_FIELDS.STEPID,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.ANCHORSETTING]: new TypeField(
+          [ACTION_FIELDS.ANCHORSETTING]: new Field(
             actionElemID, ACTION_FIELDS.ANCHORSETTING, Types.anchorSettingType, {
               name: ACTION_FIELDS.ANCHORSETTING,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.FILTERSLISTID]: new TypeField(
+          [ACTION_FIELDS.FILTERSLISTID]: new Field(
             actionElemID, ACTION_FIELDS.FILTERSLISTID, BuiltinTypes.NUMBER, {
               name: ACTION_FIELDS.FILTERSLISTID,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.FILTERS]: new TypeField(
+          [ACTION_FIELDS.FILTERS]: new Field(
             actionElemID, ACTION_FIELDS.FILTERS, new ListType(new ListType(Types.criteriaType)), {
               name: ACTION_FIELDS.FILTERS,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.PROPERTYNAME]: new TypeField(
+          [ACTION_FIELDS.PROPERTYNAME]: new Field(
             actionElemID, ACTION_FIELDS.PROPERTYNAME, BuiltinTypes.STRING, {
               name: ACTION_FIELDS.PROPERTYNAME,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.BODY]: new TypeField(
+          [ACTION_FIELDS.BODY]: new Field(
             actionElemID, ACTION_FIELDS.BODY, BuiltinTypes.STRING, {
               name: ACTION_FIELDS.BODY,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.NEWVALUE]: new TypeField(
+          [ACTION_FIELDS.NEWVALUE]: new Field(
             actionElemID, ACTION_FIELDS.NEWVALUE, BuiltinTypes.STRING, {
               name: ACTION_FIELDS.NEWVALUE,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [ACTION_FIELDS.STATICTO]: new TypeField(
+          [ACTION_FIELDS.STATICTO]: new Field(
             actionElemID, ACTION_FIELDS.STATICTO, BuiltinTypes.STRING, {
               name: ACTION_FIELDS.STATICTO,
               _readOnly: false,
@@ -588,14 +588,14 @@ export class Types {
         path: [HUBSPOT, 'types', 'subtypes', actionElemID.name],
       })
 
-      const acceptActionsField = new TypeField(
+      const acceptActionsField = new Field(
         actionElemID, ACTION_FIELDS.ACCEPTACTIONS, new ListType(actionType), {
           name: ACTION_FIELDS.ACCEPTACTIONS,
           _readOnly: false,
           [CORE_ANNOTATIONS.REQUIRED]: false,
         },
       )
-      const rejectActionsField = new TypeField(
+      const rejectActionsField = new Field(
         actionElemID, ACTION_FIELDS.REJECTACTIONS, new ListType(actionType), {
           name: ACTION_FIELDS.REJECTACTIONS,
           _readOnly: false,
@@ -613,21 +613,21 @@ export class Types {
     new ObjectType({
       elemID: nurtureTimeRangeElemID,
       fields: {
-        [NURTURETIMERANGE_FIELDS.ENABLED]: new TypeField(
+        [NURTURETIMERANGE_FIELDS.ENABLED]: new Field(
           nurtureTimeRangeElemID, NURTURETIMERANGE_FIELDS.ENABLED, BuiltinTypes.BOOLEAN, {
             name: NURTURETIMERANGE_FIELDS.ENABLED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [NURTURETIMERANGE_FIELDS.STARTHOUR]: new TypeField(
+        [NURTURETIMERANGE_FIELDS.STARTHOUR]: new Field(
           nurtureTimeRangeElemID, NURTURETIMERANGE_FIELDS.STARTHOUR, BuiltinTypes.NUMBER, {
             name: NURTURETIMERANGE_FIELDS.STARTHOUR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [NURTURETIMERANGE_FIELDS.STOPHOUR]: new TypeField(
+        [NURTURETIMERANGE_FIELDS.STOPHOUR]: new Field(
           nurtureTimeRangeElemID, NURTURETIMERANGE_FIELDS.STOPHOUR, BuiltinTypes.NUMBER, {
             name: NURTURETIMERANGE_FIELDS.STOPHOUR,
             _readOnly: false,
@@ -642,28 +642,28 @@ export class Types {
     new ObjectType({
       elemID: contactListIdsElemID,
       fields: {
-        [CONTACTLISTIDS_FIELDS.ENROLLED]: new TypeField(
+        [CONTACTLISTIDS_FIELDS.ENROLLED]: new Field(
           contactListIdsElemID, CONTACTLISTIDS_FIELDS.ENROLLED, BuiltinTypes.NUMBER, {
             name: CONTACTLISTIDS_FIELDS.ENROLLED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACTLISTIDS_FIELDS.ACTIVE]: new TypeField(
+        [CONTACTLISTIDS_FIELDS.ACTIVE]: new Field(
           contactListIdsElemID, CONTACTLISTIDS_FIELDS.ACTIVE, BuiltinTypes.NUMBER, {
             name: CONTACTLISTIDS_FIELDS.ACTIVE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACTLISTIDS_FIELDS.SUCCEEDED]: new TypeField(
+        [CONTACTLISTIDS_FIELDS.SUCCEEDED]: new Field(
           contactListIdsElemID, CONTACTLISTIDS_FIELDS.SUCCEEDED, BuiltinTypes.NUMBER, {
             name: CONTACTLISTIDS_FIELDS.SUCCEEDED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACTLISTIDS_FIELDS.COMPLETED]: new TypeField(
+        [CONTACTLISTIDS_FIELDS.COMPLETED]: new Field(
           contactListIdsElemID, CONTACTLISTIDS_FIELDS.COMPLETED, BuiltinTypes.NUMBER, {
             name: CONTACTLISTIDS_FIELDS.COMPLETED,
             _readOnly: false,
@@ -678,7 +678,7 @@ export class Types {
     new ObjectType({
       elemID: rssToEmailTimingElemID,
       fields: {
-        [RSSTOEMAILTIMING_FIELDS.REPEATS]: new TypeField(
+        [RSSTOEMAILTIMING_FIELDS.REPEATS]: new Field(
           rssToEmailTimingElemID, RSSTOEMAILTIMING_FIELDS.REPEATS, BuiltinTypes.STRING, {
             name: RSSTOEMAILTIMING_FIELDS.REPEATS,
             _readOnly: false,
@@ -686,21 +686,21 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['instant', 'daily', 'weekly', 'monthly'],
           },
         ),
-        [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY]: new TypeField(
+        [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY]: new Field(
           rssToEmailTimingElemID, RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY, BuiltinTypes.NUMBER, {
             name: RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY]: new TypeField(
+        [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY]: new Field(
           rssToEmailTimingElemID, RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY, BuiltinTypes.NUMBER, {
             name: RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [RSSTOEMAILTIMING_FIELDS.TIME]: new TypeField(
+        [RSSTOEMAILTIMING_FIELDS.TIME]: new Field(
           rssToEmailTimingElemID, RSSTOEMAILTIMING_FIELDS.TIME, BuiltinTypes.STRING, {
             name: RSSTOEMAILTIMING_FIELDS.TIME,
             _readOnly: false,
@@ -719,112 +719,112 @@ export class Types {
     [OBJECTS_NAMES.FORM]: new ObjectType({
       elemID: formElemID,
       fields: {
-        [FORM_FIELDS.GUID]: new TypeField(
+        [FORM_FIELDS.GUID]: new Field(
           formElemID, FORM_FIELDS.GUID, BuiltinTypes.STRING, {
             name: FORM_FIELDS.GUID,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.NAME]: new TypeField(
+        [FORM_FIELDS.NAME]: new Field(
           formElemID, FORM_FIELDS.NAME, BuiltinTypes.STRING, {
             name: FORM_FIELDS.NAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
-        [FORM_FIELDS.CSSCLASS]: new TypeField(
+        [FORM_FIELDS.CSSCLASS]: new Field(
           formElemID, FORM_FIELDS.CSSCLASS, BuiltinTypes.STRING, {
             name: FORM_FIELDS.CSSCLASS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.REDIRECT]: new TypeField(
+        [FORM_FIELDS.REDIRECT]: new Field(
           formElemID, FORM_FIELDS.REDIRECT, BuiltinTypes.STRING, {
             name: FORM_FIELDS.REDIRECT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.SUBMITTEXT]: new TypeField(
+        [FORM_FIELDS.SUBMITTEXT]: new Field(
           formElemID, FORM_FIELDS.SUBMITTEXT, BuiltinTypes.STRING, {
             name: FORM_FIELDS.SUBMITTEXT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.NOTIFYRECIPIENTS]: new TypeField(
+        [FORM_FIELDS.NOTIFYRECIPIENTS]: new Field(
           formElemID, FORM_FIELDS.NOTIFYRECIPIENTS, BuiltinTypes.STRING, {
             name: FORM_FIELDS.NOTIFYRECIPIENTS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.IGNORECURRENTVALUES]: new TypeField(
+        [FORM_FIELDS.IGNORECURRENTVALUES]: new Field(
           formElemID, FORM_FIELDS.IGNORECURRENTVALUES, BuiltinTypes.BOOLEAN, {
             name: FORM_FIELDS.IGNORECURRENTVALUES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.DELETABLE]: new TypeField(
+        [FORM_FIELDS.DELETABLE]: new Field(
           formElemID, FORM_FIELDS.DELETABLE, BuiltinTypes.BOOLEAN, {
             name: FORM_FIELDS.DELETABLE,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.INLINEMESSAGE]: new TypeField(
+        [FORM_FIELDS.INLINEMESSAGE]: new Field(
           formElemID, FORM_FIELDS.INLINEMESSAGE, BuiltinTypes.STRING, {
             name: FORM_FIELDS.INLINEMESSAGE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.FORMFIELDGROUPS]: new TypeField(
+        [FORM_FIELDS.FORMFIELDGROUPS]: new Field(
           formElemID, FORM_FIELDS.FORMFIELDGROUPS, new ListType(Types.propertyGroupType), {
             name: FORM_FIELDS.FORMFIELDGROUPS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.CAPTCHAENABLED]: new TypeField(
+        [FORM_FIELDS.CAPTCHAENABLED]: new Field(
           formElemID, FORM_FIELDS.CAPTCHAENABLED, BuiltinTypes.BOOLEAN, {
             name: FORM_FIELDS.CAPTCHAENABLED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.CREATEDAT]: new TypeField( // TODO: format milli -> readable date
+        [FORM_FIELDS.CREATEDAT]: new Field( // TODO: format milli -> readable date
           formElemID, FORM_FIELDS.CREATEDAT, BuiltinTypes.NUMBER, {
             name: FORM_FIELDS.CREATEDAT,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.CLONEABLE]: new TypeField(
+        [FORM_FIELDS.CLONEABLE]: new Field(
           formElemID, FORM_FIELDS.CLONEABLE, BuiltinTypes.BOOLEAN, {
             name: FORM_FIELDS.CLONEABLE,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.STYLE]: new TypeField(
+        [FORM_FIELDS.STYLE]: new Field(
           formElemID, FORM_FIELDS.STYLE, BuiltinTypes.STRING, {
             name: FORM_FIELDS.STYLE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [FORM_FIELDS.EDITABLE]: new TypeField(
+        [FORM_FIELDS.EDITABLE]: new Field(
           formElemID, FORM_FIELDS.EDITABLE, BuiltinTypes.BOOLEAN, {
             name: FORM_FIELDS.EDITABLE,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.THEMENAME]: new TypeField(
+        [FORM_FIELDS.THEMENAME]: new Field(
           formElemID, FORM_FIELDS.THEMENAME, BuiltinTypes.STRING, {
             name: FORM_FIELDS.THEMENAME,
             _readOnly: false,
@@ -837,21 +837,21 @@ export class Types {
     [OBJECTS_NAMES.WORKFLOWS]: new ObjectType({
       elemID: workflowsElemID,
       fields: {
-        [WORKFLOWS_FIELDS.ID]: new TypeField(
+        [WORKFLOWS_FIELDS.ID]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.ID, BuiltinTypes.NUMBER, {
             name: WORKFLOWS_FIELDS.ID,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.NAME]: new TypeField(
+        [WORKFLOWS_FIELDS.NAME]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.NAME, BuiltinTypes.STRING, {
             name: WORKFLOWS_FIELDS.NAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
-        [WORKFLOWS_FIELDS.SEGMENTCRITERIA]: new TypeField(
+        [WORKFLOWS_FIELDS.SEGMENTCRITERIA]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.SEGMENTCRITERIA,
           new ListType(new ListType(Types.criteriaType)), {
             name: WORKFLOWS_FIELDS.SEGMENTCRITERIA,
@@ -859,7 +859,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [WORKFLOWS_FIELDS.GOALCRITERIA]: new TypeField(
+        [WORKFLOWS_FIELDS.GOALCRITERIA]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.GOALCRITERIA,
           new ListType(new ListType(Types.criteriaType)), {
             name: WORKFLOWS_FIELDS.GOALCRITERIA,
@@ -867,7 +867,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [WORKFLOWS_FIELDS.TYPE]: new TypeField(
+        [WORKFLOWS_FIELDS.TYPE]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.TYPE, BuiltinTypes.STRING, {
             name: WORKFLOWS_FIELDS.TYPE,
             _readOnly: false,
@@ -875,77 +875,77 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['PROPERTY_ANCHOR', 'STATIC_ANCHOR', 'DRIP_DELAY'],
           },
         ),
-        [WORKFLOWS_FIELDS.ENABLED]: new TypeField(
+        [WORKFLOWS_FIELDS.ENABLED]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.ENABLED, BuiltinTypes.BOOLEAN, {
             name: WORKFLOWS_FIELDS.ENABLED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.INSERTEDAT]: new TypeField(
+        [WORKFLOWS_FIELDS.INSERTEDAT]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.INSERTEDAT, BuiltinTypes.NUMBER, {
             name: WORKFLOWS_FIELDS.INSERTEDAT,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.UPDATEDAT]: new TypeField(
+        [WORKFLOWS_FIELDS.UPDATEDAT]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.UPDATEDAT, BuiltinTypes.NUMBER, {
             name: WORKFLOWS_FIELDS.UPDATEDAT,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.CONTACTLISTIDS]: new TypeField(
+        [WORKFLOWS_FIELDS.CONTACTLISTIDS]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.CONTACTLISTIDS, Types.contactListIdsType, {
             name: WORKFLOWS_FIELDS.CONTACTLISTIDS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.INTERNAL]: new TypeField(
+        [WORKFLOWS_FIELDS.INTERNAL]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.INTERNAL, BuiltinTypes.BOOLEAN, {
             name: WORKFLOWS_FIELDS.INTERNAL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS]: new TypeField(
+        [WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS, BuiltinTypes.BOOLEAN, {
             name: WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [WORKFLOWS_FIELDS.NURTURETIMERANGE]: new TypeField(
+        [WORKFLOWS_FIELDS.NURTURETIMERANGE]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.NURTURETIMERANGE, Types.nurtureTimeRangeType, {
             name: WORKFLOWS_FIELDS.NURTURETIMERANGE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [WORKFLOWS_FIELDS.ACTIONS]: new TypeField(
+        [WORKFLOWS_FIELDS.ACTIONS]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.ACTIONS, new ListType(Types.actionType), {
             name: WORKFLOWS_FIELDS.ACTIONS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.LISTENING]: new TypeField(
+        [WORKFLOWS_FIELDS.LISTENING]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.LISTENING, BuiltinTypes.BOOLEAN, {
             name: WORKFLOWS_FIELDS.LISTENING,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.EVENTANCHOR]: new TypeField(
+        [WORKFLOWS_FIELDS.EVENTANCHOR]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.EVENTANCHOR, Types.eventAnchorType, {
             name: WORKFLOWS_FIELDS.EVENTANCHOR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES]: new TypeField(
+        [WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES,
           BuiltinTypes.BOOLEAN, {
             name: WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES,
@@ -953,21 +953,21 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.ONLYENROLLMANUALLY]: new TypeField(
+        [WORKFLOWS_FIELDS.ONLYENROLLMANUALLY]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.ONLYENROLLMANUALLY, BuiltinTypes.BOOLEAN, {
             name: WORKFLOWS_FIELDS.ONLYENROLLMANUALLY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE]: new TypeField(
+        [WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE, BuiltinTypes.BOOLEAN, {
             name: WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [WORKFLOWS_FIELDS.SUPRESSIONLISTIDS]: new TypeField(
+        [WORKFLOWS_FIELDS.SUPRESSIONLISTIDS]: new Field(
           workflowsElemID, WORKFLOWS_FIELDS.SUPRESSIONLISTIDS, new ListType(BuiltinTypes.NUMBER), {
             name: WORKFLOWS_FIELDS.SUPRESSIONLISTIDS,
             _readOnly: false,
@@ -980,28 +980,28 @@ export class Types {
     [OBJECTS_NAMES.MARKETINGEMAIL]: new ObjectType({
       elemID: marketingEmailElemID,
       fields: {
-        [MARKETING_EMAIL_FIELDS.AB]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.AB]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.AB, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.AB,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABHOURSWAIT]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABHOURSWAIT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABHOURSWAIT, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.ABHOURSWAIT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABVARIATION]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABVARIATION]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABVARIATION, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.ABVARIATION,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT,
             _readOnly: false,
@@ -1009,7 +1009,7 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT,
             _readOnly: false,
@@ -1017,7 +1017,7 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABSTATUS]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABSTATUS]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSTATUS, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.ABSTATUS,
             _readOnly: false,
@@ -1025,7 +1025,7 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC,
             _readOnly: false,
@@ -1033,28 +1033,28 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['CLICKS_BY_OPENS', 'CLICKS_BY_DELIVERED', 'OPENS_BY_DELIVERED'],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABTESTID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABTESTID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABTESTID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.ABTESTID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ABSOLUTEURL]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ABSOLUTEURL]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ABSOLUTEURL, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.ABSOLUTEURL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
           new ListType(BuiltinTypes.NUMBER), {
             name: MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
@@ -1062,56 +1062,56 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ARCHIVED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ARCHIVED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ARCHIVED, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.ARCHIVED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.AUTHOR]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.AUTHOR]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHOR, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.AUTHOR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.AUTHORAT]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.AUTHORAT]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORAT, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.AUTHORAT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHOREMAIL, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.AUTHOREMAIL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.AUTHORNAME]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.AUTHORNAME]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORNAME, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.AUTHORNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new TypeField( // TODO: Replace with user's email
+        [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new Field( // TODO: Replace with user's email
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORUSERID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.AUTHORUSERID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE,
             _readOnly: false,
@@ -1119,7 +1119,7 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['instant', 'daily', 'weekly', 'monthly'],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS]: new Field(
           // TODO: Format this the right way
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS,
@@ -1127,42 +1127,42 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.CAMPAIGN]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.CAMPAIGN]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CAMPAIGN, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.CAMPAIGN,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.CAMPAIGNNAME]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.CAMPAIGNNAME]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CAMPAIGNNAME, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.CAMPAIGNNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.CLONEDFROM]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.CLONEDFROM]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CLONEDFROM, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.CLONEDFROM,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.CREATEPAGE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.CREATEPAGE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATEPAGE, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.CREATEPAGE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.CREATED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.CREATED]: new Field(
           // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATED, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.CREATED,
@@ -1170,35 +1170,35 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.DOMAIN]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.DOMAIN]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.DOMAIN, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.DOMAIN,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.EMAILBODY]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.EMAILBODY]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.EMAILBODY, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.EMAILBODY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.EMAILNOTE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.EMAILNOTE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.EMAILNOTE, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.EMAILNOTE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.EMAILTYPE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.EMAILTYPE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.EMAILTYPE, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.EMAILTYPE,
             _readOnly: false,
@@ -1209,7 +1209,7 @@ export class Types {
             ],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY,
             _readOnly: false,
@@ -1217,56 +1217,56 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: ['NPS', 'CES', 'CUSTOM'],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.FLEXAREAS]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.FLEXAREAS]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.FLEXAREAS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.FLEXAREAS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.FOLDERID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.FOLDERID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.FOLDERID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.FOLDERID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.FREEZEDATE]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.FREEZEDATE]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.FREEZEDATE, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.FREEZEDATE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.FROMNAME]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.FROMNAME]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.FROMNAME, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.FROMNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.HTMLTITLE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.HTMLTITLE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.HTMLTITLE, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.HTMLTITLE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.ID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED,
           BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED,
@@ -1274,21 +1274,21 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ISPUBLISHED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ISPUBLISHED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISPUBLISHED, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.ISPUBLISHED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED,
           BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED,
@@ -1296,21 +1296,21 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.LEADFLOWID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.LEADFLOWID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.LEADFLOWID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.LEADFLOWID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.LIVEDOMAIN]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.LIVEDOMAIN]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.LIVEDOMAIN, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.LIVEDOMAIN,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED]: new Field(
           // TODO: Convert this to reference
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED,
           new ListType(BuiltinTypes.NUMBER), {
@@ -1319,7 +1319,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED]: new Field(
           // TODO: Convert this to reference
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED,
           new ListType(BuiltinTypes.NUMBER), {
@@ -1328,56 +1328,56 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETING_EMAIL_FIELDS.MAXRSSENTRIES]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.MAXRSSENTRIES]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.MAXRSSENTRIES, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.MAXRSSENTRIES,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.METADESCRIPTION]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.METADESCRIPTION]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.METADESCRIPTION, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.METADESCRIPTION,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.NAME]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.NAME]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.NAME, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.NAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE]: new TypeField( // TODO: Decide if state or not
+        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE]: new Field( // TODO: Decide if state or not
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PAGEREDIRECTED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.PAGEREDIRECTED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PAGEREDIRECTED, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.PAGEREDIRECTED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PREVIEWKEY]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.PREVIEWKEY]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PREVIEWKEY, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.PREVIEWKEY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS,
             _readOnly: false,
@@ -1386,7 +1386,7 @@ export class Types {
               'PRE_PROCESSING', 'ERROR', 'CANCELED_FORCIBLY', 'CANCELED_ABUSE'],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHDATE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.PUBLISHDATE]: new Field(
           // TODO: Human readable + decide if state
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHDATE, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHDATE,
@@ -1394,42 +1394,42 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHEDAT]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDAT]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDAT, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDAT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDBYID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHEDURL]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDURL]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDURL, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDURL,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.REPLYTO]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.REPLYTO]: new Field(
           // TODO: Decide if to enforce link to fromName?
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.REPLYTO, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.REPLYTO,
@@ -1437,14 +1437,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE,
           BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE,
@@ -1452,7 +1452,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH,
           BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH,
@@ -1460,14 +1460,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT,
           BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT,
@@ -1475,14 +1475,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE,
           BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE,
@@ -1490,7 +1490,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED,
           BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED,
@@ -1498,14 +1498,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSEMAILURL]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSEMAILURL]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSEMAILURL, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILURL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING,
           Types.rssToEmailTimingType, {
             name: MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING,
@@ -1513,14 +1513,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.SLUG]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.SLUG]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.SLUG, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.SLUG,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS]: new Field(
         // TODO: Understand this and convert to a list of smart fields
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS,
@@ -1528,14 +1528,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.STYLESETTINGS]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.STYLESETTINGS]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.STYLESETTINGS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.STYLESETTINGS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.SUBCATEGORY]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.SUBCATEGORY]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBCATEGORY, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.SUBCATEGORY,
             _readOnly: false,
@@ -1548,14 +1548,14 @@ export class Types {
             ],
           }
         ),
-        [MARKETING_EMAIL_FIELDS.SUBJECT]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.SUBJECT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBJECT, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.SUBJECT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.SUBSCRIPTION]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTION]: new Field(
           // TODO: Check what email subscription type is
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBSCRIPTION, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.SUBSCRIPTION,
@@ -1563,63 +1563,63 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.TEMPLATEPATH]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.TEMPLATEPATH]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.TEMPLATEPATH, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.TEMPLATEPATH,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.TRANSACTIONAL]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.TRANSACTIONAL]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.TRANSACTIONAL, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.TRANSACTIONAL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.UPDATED]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.UPDATED]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATED, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.UPDATED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: new TypeField( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: new Field( // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATEDBYID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.UPDATEDBYID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.URL]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.URL]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.URL, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.URL,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT,
           BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT,
@@ -1627,7 +1627,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.VIDSEXCLUDED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.VIDSEXCLUDED]: new Field(
           // TODO: No contact instances (maybe convert to email)
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.VIDSEXCLUDED,
           new ListType(BuiltinTypes.NUMBER), {
@@ -1636,7 +1636,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETING_EMAIL_FIELDS.VIDSINCLUDED]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.VIDSINCLUDED]: new Field(
           // TODO: No contact instances (maybe convert to email)
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.VIDSINCLUDED,
           new ListType(BuiltinTypes.NUMBER), {
@@ -1645,14 +1645,14 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [MARKETING_EMAIL_FIELDS.WIDGETS]: new TypeField(
+        [MARKETING_EMAIL_FIELDS.WIDGETS]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.WIDGETS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.WIDGETS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.WORKFLOWNAMES]: new TypeField( // TODO: Convert to reference
+        [MARKETING_EMAIL_FIELDS.WORKFLOWNAMES]: new Field( // TODO: Convert to reference
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.WORKFLOWNAMES,
           new ListType(BuiltinTypes.STRING), {
             name: MARKETING_EMAIL_FIELDS.WORKFLOWNAMES,
@@ -1666,35 +1666,35 @@ export class Types {
     [OBJECTS_NAMES.CONTACT_PROPERTY]: new ObjectType({
       elemID: contactPropertyElemID,
       fields: {
-        [CONTACT_PROPERTY_FIELDS.NAME]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.NAME]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.NAME, BuiltinTypes.STRING, {
             name: CONTACT_PROPERTY_FIELDS.NAME,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.LABEL]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.LABEL]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.LABEL, BuiltinTypes.STRING, {
             name: CONTACT_PROPERTY_FIELDS.LABEL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.DESCRIPTION]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.DESCRIPTION]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DESCRIPTION, BuiltinTypes.STRING, {
             name: CONTACT_PROPERTY_FIELDS.DESCRIPTION,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.GROUPNAME]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.GROUPNAME]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.GROUPNAME, BuiltinTypes.STRING, {
             name: CONTACT_PROPERTY_FIELDS.GROUPNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.TYPE]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.TYPE]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.TYPE, BuiltinTypes.STRING, {
             name: CONTACT_PROPERTY_FIELDS.TYPE,
             _readOnly: false,
@@ -1702,7 +1702,7 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.FIELDTYPE, BuiltinTypes.STRING, {
             name: CONTACT_PROPERTY_FIELDS.FIELDTYPE,
             _readOnly: false,
@@ -1710,28 +1710,28 @@ export class Types {
             [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.OPTIONS]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.OPTIONS]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.OPTIONS, new ListType(Types.optionsType), {
             name: CONTACT_PROPERTY_FIELDS.OPTIONS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.DELETED]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.DELETED]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DELETED, BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.DELETED,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.FORMFIELD]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.FORMFIELD]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.FORMFIELD, BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.FORMFIELD,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.DISPLAYORDER]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.DISPLAYORDER]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.DISPLAYORDER, BuiltinTypes.NUMBER, {
             name: CONTACT_PROPERTY_FIELDS.DISPLAYORDER,
             _readOnly: false,
@@ -1739,7 +1739,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: -1,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.READONLYVALUE]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.READONLYVALUE]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.READONLYVALUE, BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.READONLYVALUE,
             _readOnly: false,
@@ -1747,7 +1747,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.READONLYDEFINITION]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.READONLYDEFINITION]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.READONLYDEFINITION, BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.READONLYDEFINITION,
             _readOnly: false,
@@ -1755,7 +1755,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.HIDDEN]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.HIDDEN]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.HIDDEN, BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.HIDDEN,
             _readOnly: false,
@@ -1763,7 +1763,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
           BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
@@ -1772,14 +1772,14 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.CALCULATED]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.CALCULATED]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CALCULATED, BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.CALCULATED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.CREATEDAT]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.CREATEDAT]: new Field(
           // TODO: Move to state only
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CREATEDAT, BuiltinTypes.NUMBER, {
             name: CONTACT_PROPERTY_FIELDS.CREATEDAT,
@@ -1787,7 +1787,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS]: new TypeField(
+        [CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS]: new Field(
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS, BuiltinTypes.BOOLEAN, {
             name: CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS,
             _readOnly: false,

@@ -16,13 +16,13 @@
 import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections } from '@salto-io/lowerdash'
-import { Values } from '@salto-io/adapter-api'
-import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST } from './types'
+import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { ConfigChangeSuggestion, INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST, configType, SalesforceConfig } from './types'
 import * as constants from './constants'
 
 const { makeArray } = collections.array
 
-const createSkippedListConfigChange = (type: string, instance?: string):
+export const createSkippedListConfigChange = (type: string, instance?: string):
 ConfigChangeSuggestion => {
   if (_.isUndefined(instance)) {
     return {
@@ -39,9 +39,6 @@ ConfigChangeSuggestion => {
 export const createListMetadataObjectsConfigChange = (res: ListMetadataQuery):
 ConfigChangeSuggestion => createSkippedListConfigChange(res.type, res.folder)
 
-export const createReadMetadataConfigChange = (type: string, instance: string):
-ConfigChangeSuggestion => createSkippedListConfigChange(type, instance)
-
 export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChangeSuggestion[] =>
   makeArray(result.messages)
     .map((msg: Values) => constants.RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg.problem ?? ''))
@@ -50,3 +47,33 @@ export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChange
       regexRes?.groups?.type as string,
       regexRes?.groups?.instance as string
     ))
+
+export const getConfigFromConfigChanges = (
+  configChanges: ConfigChangeSuggestion[],
+  currentConfig: SalesforceConfig
+): InstanceElement | undefined => {
+  const configChangesByType = _.groupBy(configChanges, 'type')
+  const currentMetadataTypesSkippedList = makeArray(currentConfig.metadataTypesSkippedList)
+  const currentInstancesRegexSkippedList = makeArray(currentConfig.instancesRegexSkippedList)
+  const metadataTypesSkippedList = makeArray(configChangesByType.metadataTypesSkippedList)
+    .map(e => e.value)
+    .filter(e => !currentMetadataTypesSkippedList.includes(e))
+  const instancesRegexSkippedList = makeArray(configChangesByType.instancesRegexSkippedList)
+    .map(e => e.value)
+    .filter(e => !currentInstancesRegexSkippedList.includes(e))
+  if ([metadataTypesSkippedList, instancesRegexSkippedList].every(_.isEmpty)) {
+    return undefined
+  }
+  return new InstanceElement(
+    ElemID.CONFIG_NAME,
+    configType,
+    {
+      metadataTypesSkippedList: metadataTypesSkippedList
+        .concat(currentMetadataTypesSkippedList),
+      instancesRegexSkippedList: instancesRegexSkippedList
+        .concat(currentInstancesRegexSkippedList),
+      maxConcurrentRetrieveRequests: currentConfig.maxConcurrentRetrieveRequests,
+      maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
+    }
+  )
+}

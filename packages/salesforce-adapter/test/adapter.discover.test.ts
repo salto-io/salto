@@ -34,7 +34,7 @@ describe('SalesforceAdapter fetch', () => {
   let connection: Connection
   let adapter: SalesforceAdapter
   const defaultMetadataTypesSkippedList = ['Test1', 'Ignored1']
-  const defaultInstancesRegexSkippedList = ['Test2.instance1', 'SkippedList$']
+  const defaultInstancesRegexSkippedList = ['Test2.instance1', 'SkippedList$', '^Report.skip$']
   const defaultMaxConcurrentRetrieveRequests = 4
   const defaultMaxItemsInRetrieveRequest = 3000
 
@@ -681,12 +681,18 @@ describe('SalesforceAdapter fetch', () => {
       )
     })
 
-    describe('should not fetch skippedlist metadata types and instance', () => {
-      let result: Element[] = []
+    describe('should not fetch skippedlist metadata types, instance and folders', () => {
+      let result: FetchResult
+      let elements: Element[] = []
       beforeEach(async () => {
         connection.describeGlobal = jest.fn().mockImplementation(async () => ({ sobjects: [] }))
         connection.metadata.describe = jest.fn().mockImplementation(async () => ({
-          metadataObjects: [{ xmlName: 'Test1' }, { xmlName: 'Test2' }, { xmlName: 'Test3' }],
+          metadataObjects: [
+            { xmlName: 'Test1' },
+            { xmlName: 'Test2' },
+            { xmlName: 'Test3' },
+            { xmlName: 'Report' },
+          ],
         }))
         connection.metadata.describeValueType = jest.fn().mockImplementation(
           async (typeName: string) => {
@@ -697,7 +703,15 @@ describe('SalesforceAdapter fetch', () => {
           }
         )
         connection.metadata.list = jest.fn().mockImplementation(
-          async () => [{ fullName: 'instance1' }]
+          async (typeName: ListMetadataQuery[]) => {
+            if (typeName[0].type === 'ReportFolder') {
+              return [{ fullName: 'skip' }]
+            }
+            if (_.isEqual(typeName[0], { type: 'Report', folder: 'skip' })) {
+              throw new Error('fake error')
+            }
+            return [{ fullName: 'instance1' }]
+          }
         )
         connection.metadata.read = jest.fn().mockImplementation(
           async (typeName: string, fullNames: string | string[]) => {
@@ -708,18 +722,24 @@ describe('SalesforceAdapter fetch', () => {
           }
         )
 
-        result = (await adapter.fetch()).elements
+        result = await adapter.fetch()
+        elements = result.elements
+      })
+
+      it('should not consist config changes', () => {
+        expect(result.config).toBeUndefined()
       })
 
       it('should skip skippedlist types', () => {
-        expect(findElements(result, 'Test1')).toHaveLength(0)
-        expect(findElements(result, 'Test2')).toHaveLength(1)
-        expect(findElements(result, 'Test3')).toHaveLength(1)
+        expect(findElements(elements, 'Test1')).toHaveLength(0)
+        expect(findElements(elements, 'Test2')).toHaveLength(1)
+        expect(findElements(elements, 'Test3')).toHaveLength(1)
       })
 
       it('should skip skippedlist instances', () => {
-        expect(findElements(result, 'Test2', 'instance1')).toHaveLength(0)
-        expect(findElements(result, 'Test3', 'instance1')).toHaveLength(1)
+        expect(findElements(elements, 'Test2', 'instance1')).toHaveLength(0)
+        expect(findElements(elements, 'Test3', 'instance1')).toHaveLength(1)
+        expect(findElements(elements, 'Report', 'instance1')).toHaveLength(0)
       })
     })
 

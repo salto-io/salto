@@ -429,6 +429,7 @@ const fetchSObjects = async (client: SalesforceClient):
   const getCustomObjectNames = async (): Promise<Set<string>> => {
     const { result: customObjects } = await client.listMetadataObjects(
       { type: CUSTOM_OBJECT },
+      // All errors are considered to be unhandled errors. If an error occur, throws an exception
       () => true
     )
     return new Set(customObjects.map(o => o.fullName))

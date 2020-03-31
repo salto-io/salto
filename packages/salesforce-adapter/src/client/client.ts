@@ -67,9 +67,7 @@ const isAlreadyDeletedError = (error: SfError): boolean => (
 
 export type ErrorFilter = (error: Error) => boolean
 
-const isSFDCUnknownException = (error: Error): boolean => (
-  !['sf:UNKNOWN_EXCEPTION'].includes(error.name)
-)
+const isSFDCUnknownException = (error: Error): boolean => error.name !== 'sf:UNKNOWN_EXCEPTION'
 
 const validateCRUDResult = (isDelete: boolean): decorators.InstanceMethodDecorator =>
   decorators.wrapMethodWith(

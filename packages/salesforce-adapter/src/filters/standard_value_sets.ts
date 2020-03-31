@@ -27,7 +27,7 @@ import {
 } from '../transformers/transformer'
 import { extractFullNamesFromValueList } from './utils'
 import { ConfigChangeSuggestion, FetchElements } from '../types'
-import { createReadMetadataConfigChange } from '../config_change'
+import { createSkippedListConfigChange } from '../config_change'
 
 const { makeArray } = collections.array
 
@@ -181,7 +181,7 @@ const createSVSInstances = async (
   return {
     elements: createStandardValueSetInstances(valueSets, svsMetadataType),
     configChanges: makeArray(errors)
-      .map(e => createReadMetadataConfigChange(STANDARD_VALUE_SET, e)),
+      .map(e => createSkippedListConfigChange(STANDARD_VALUE_SET, e)),
   }
 }
 

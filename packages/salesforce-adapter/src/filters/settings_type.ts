@@ -27,7 +27,7 @@ import {
 import SalesforceClient from '../client/client'
 import { id } from './utils'
 import { FetchElements, ConfigChangeSuggestion } from '../types'
-import { createReadMetadataConfigChange } from '../config_change'
+import { createSkippedListConfigChange } from '../config_change'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -76,7 +76,7 @@ const createSettingsInstance = async (
     elements: metadataInfos
       .filter(m => m.fullName !== undefined)
       .map(m => createInstanceElement(m, settingsType)),
-    configChanges: makeArray(errors).map(e => createReadMetadataConfigChange(typeName, e)),
+    configChanges: makeArray(errors).map(e => createSkippedListConfigChange(typeName, e)),
   }
 }
 
@@ -106,6 +106,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     // Fetch list of all settings types
     const { result: settingsList } = await client.listMetadataObjects(
       { type: SETTINGS_METADATA_TYPE },
+      // All errors are considered to be unhandled errors. If an error occur, throws an exception
       () => true
     )
 

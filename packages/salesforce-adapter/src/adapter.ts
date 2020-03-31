@@ -58,12 +58,10 @@ import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
-import { ConfigChangeSuggestion, FetchElements, SalesforceConfig, configType } from './types'
-import { createListMetadataObjectsConfigChange, createReadMetadataConfigChange,
-  createRetrieveConfigChange } from './config_change'
-import {
-  FilterCreator, Filter, filtersRunner,
-} from './filter'
+import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
+import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
+  createRetrieveConfigChange, getConfigFromConfigChanges } from './config_change'
+import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 
 const { makeArray } = collections.array
@@ -337,8 +335,9 @@ export default class SalesforceAdapter {
 
     return {
       elements,
-      config: this.getConfigFromConfigChanges(
-        Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges]))
+      config: getConfigFromConfigChanges(
+        Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])),
+        this.config,
       ),
     }
   }
@@ -664,34 +663,6 @@ InstanceElement[] => {
     return []
   }
 
-  private getConfigFromConfigChanges(configChanges: ConfigChangeSuggestion[]):
-  InstanceElement | undefined {
-    const configChangesByType = _.groupBy(configChanges, 'type')
-    const currentMetadataTypesSkippedList = makeArray(this.config.metadataTypesSkippedList)
-    const currentInstancesRegexSkippedList = makeArray(this.config.instancesRegexSkippedList)
-    const metadataTypesSkippedList = makeArray(configChangesByType.metadataTypesSkippedList)
-      .map(e => e.value)
-      .filter(e => !currentMetadataTypesSkippedList.includes(e))
-    const instancesRegexSkippedList = makeArray(configChangesByType.instancesRegexSkippedList)
-      .map(e => e.value)
-      .filter(e => !currentInstancesRegexSkippedList.includes(e))
-    if ([metadataTypesSkippedList, instancesRegexSkippedList].every(_.isEmpty)) {
-      return undefined
-    }
-    return new InstanceElement(
-      ElemID.CONFIG_NAME,
-      configType,
-      {
-        metadataTypesSkippedList: metadataTypesSkippedList
-          .concat(currentMetadataTypesSkippedList),
-        instancesRegexSkippedList: instancesRegexSkippedList
-          .concat(currentInstancesRegexSkippedList),
-        maxConcurrentRetrieveRequests: this.config.maxConcurrentRetrieveRequests,
-        maxItemsInRetrieveRequest: this.config.maxItemsInRetrieveRequest,
-      }
-    )
-  }
-
   private async deleteRemovedMetadataObjects(oldInstance: InstanceElement,
     newInstance: InstanceElement, fieldName: string, withObjectPrefix: boolean): Promise<void> {
     const getDeletedObjectsNames = (oldObjects: Values[], newObjects: Values[]): string[] => {
@@ -866,8 +837,8 @@ InstanceElement[] => {
         })
     )
     const listTypesConfigChanges = _.flatten(retrieveTypeAndFiles.map(r => r.configChanges))
-    const retrieveTypeToFiles: Record<string, FileProperties[]> = _(retrieveTypeAndFiles
-      .map(r => r.retrieveTypeAndFiles)).fromPairs().value()
+    const retrieveTypeToFiles: Record<string, FileProperties[]> = _
+      .fromPairs(retrieveTypeAndFiles.map(r => r.retrieveTypeAndFiles))
 
     const retrieveMembers: RetrieveMember[] = _(retrieveTypeToFiles)
       .entries()
@@ -1031,7 +1002,7 @@ InstanceElement[] => {
       .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexSkippedList))
     const readMetadataResult = await this.client.readMetadata(type, instancesFullNames)
     const readMetadataConfigChanges = readMetadataResult.errors
-      .map(e => createReadMetadataConfigChange(type, e))
+      .map(e => createSkippedListConfigChange(type, e))
 
     return {
       elements: readMetadataResult.result.map(instanceInfo =>

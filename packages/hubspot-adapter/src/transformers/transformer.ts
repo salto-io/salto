@@ -222,7 +222,7 @@ export class Types {
         path: [HUBSPOT, 'types', 'subtypes', contactPropertyOverridesElemID.name],
       })
 
-    static createFormFieldType = (
+    private static createFormFieldType = (
       elemID: ElemID,
       isFatherProperty: boolean
     ): ObjectType => {
@@ -503,7 +503,7 @@ export class Types {
     })
 
     // Create action type in steps cause of recursive fields
-    static createActionType = (): ObjectType => {
+    private static createActionType = (): ObjectType => {
       const actionType = new ObjectType({
         elemID: actionElemID,
         fields: {

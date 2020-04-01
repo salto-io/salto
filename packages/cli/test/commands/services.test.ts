@@ -89,16 +89,33 @@ describe('services command', () => {
 
   describe('when workspace fails to load', () => {
     let result: number
-    beforeEach(async () => {
+
+    it('should fail add', async () => {
       result = await command('errdir', 'add', cliOutput, mockGetCredentialsFromUser, 'service')
         .execute()
+      expect(result).toBe(CliExitCode.AppError)
     })
-
-    it('should fail', async () => {
+    it('should fail list', async () => {
+      result = await command('errdir', 'list', cliOutput, mockGetCredentialsFromUser, 'service')
+        .execute()
+      expect(result).toBe(CliExitCode.AppError)
+    })
+    it('should fail login', async () => {
+      result = await command('errdir', 'login', cliOutput, mockGetCredentialsFromUser, 'service')
+        .execute()
       expect(result).toBe(CliExitCode.AppError)
     })
   })
-
+  describe('Invalid service command', () => {
+    it('invalid command', async () => {
+      try {
+        await command('', 'errorCommand', cliOutput, mockGetCredentialsFromUser, 'service')
+          .execute()
+      } catch (error) {
+        expect(error.message).toMatch('Unknown service management command')
+      }
+    })
+  })
   describe('list command', () => {
     describe('when the workspace loads successfully', () => {
       describe('when called with no service name', () => {

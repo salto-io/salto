@@ -361,6 +361,24 @@ export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => 
   return undefined
 }
 
+const flatStr = (str: string): string => `${Buffer.from(str).toString()}`
+
+export const flatValues = (values: Value): Value => {
+  if (_.isString(values)) {
+    return flatStr(values)
+  }
+  if (_.isArray(values)) {
+    return values.map(flatValues)
+  }
+  if (_.isPlainObject(values)) {
+    return _.reduce(_.keys(values), (acc, k) => {
+      acc[flatStr(k)] = flatValues(values[k])
+      return acc
+    }, {} as Record<string, Value>)
+  }
+  return values
+}
+
 // This method solves a memory leak which takes place when we use slices
 // from a large string in order to populate the strings in the elements.
 // v8 will attempt to optimize the slicing operation by internally representing
@@ -370,22 +388,6 @@ export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => 
 // regular string. We need to performe this operation for *every* string the elements
 // including object keys.
 export const flattenElementStr = (element: Element): Element => {
-  const flatStr = (str: string): string => `${Buffer.from(str).toString()}`
-
-  const flatValues = (values: Value): Value => {
-    if (_.isString(values)) return flatStr(values)
-    if (_.isArray(values)) {
-      return values.map(flatValues)
-    }
-    if (_.isPlainObject(values)) {
-      return _.reduce(_.keys(values), (acc, k) => {
-        acc[flatStr(k)] = flatValues(values[k])
-        return acc
-      }, {} as Record<string, Value>)
-    }
-    return values
-  }
-
   const flattenField = (field: Field): Field => new Field(
     field.parentID,
     flatStr(field.name),
@@ -395,7 +397,7 @@ export const flattenElementStr = (element: Element): Element => {
 
   const flattenObjectType = (obj: ObjectType): ObjectType => new ObjectType({
     elemID: obj.elemID,
-    annotationTypes: _.mapKeys(obj.annotationTypes, (_v, k) => flatStr(k)),
+    annotationTypes: _(obj.annotationTypes).mapKeys((_v, k) => flatStr(k)).value(),
     annotations: flatValues(obj.annotations),
     fields: _(obj.fields).mapKeys((_v, k) => flatStr(k)).mapValues(flattenField).value(),
     isSettings: obj.isSettings,
@@ -414,8 +416,8 @@ export const flattenElementStr = (element: Element): Element => {
     flatStr(inst.elemID.name),
     inst.type,
     flatValues(inst.value),
-      inst.path?.map(flatStr),
-      flatValues(inst.annotations)
+    inst.path?.map(flatStr),
+    flatValues(inst.annotations)
   )
 
   if (isField(element)) return flattenField(element)

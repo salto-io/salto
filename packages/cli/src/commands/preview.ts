@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { preview } from '@salto-io/core'
+import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput,
@@ -32,11 +33,16 @@ export const command = (
   spinnerCreator: SpinnerCreator,
   inputServices: string[],
   force = false,
+  inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     const { workspace, errored } = await loadWorkspace(workspaceDir,
-      { stdout, stderr }, spinnerCreator,
-      { force, printStateRecency: true, recommendStateRecency: true })
+      { stdout, stderr },
+      { force,
+        printStateRecency: true,
+        recommendStateRecency: true,
+        spinnerCreator,
+        sessionEnv: inputEnvironment })
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError
@@ -86,7 +92,7 @@ const previewBuilder = createCommandBuilder({
       },
     },
   },
-  filters: [servicesFilter],
+  filters: [servicesFilter, environmentFilter],
 
   async build(input: PreviewParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
     return command(
@@ -96,6 +102,7 @@ const previewBuilder = createCommandBuilder({
       spinnerCreator,
       input.args.services,
       input.args.force,
+      input.args.env,
     )
   },
 })

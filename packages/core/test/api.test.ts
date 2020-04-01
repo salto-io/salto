@@ -147,7 +147,7 @@ describe('api.ts', () => {
           credentials: mockConfigInstance.clone(),
         },
       })
-      await api.fetch(ws, SERVICES)
+      await api.fetch(ws, undefined, SERVICES)
     })
 
     it('should call fetch changes', () => {

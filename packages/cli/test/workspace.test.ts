@@ -112,7 +112,7 @@ describe('workspace', () => {
       }
     })
     it('marks spinner as success in case there are no errors', async () => {
-      await loadWorkspace('', cliOutput, () => spinner, { force: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true })
 
       expect(cliOutput.stdout.content).toBe('')
       expect(cliOutput.stderr.content).toBe('')
@@ -123,7 +123,7 @@ describe('workspace', () => {
       mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
         { message: 'Error BLA', severity: 'Warning' },
       ]))
-      await loadWorkspace('', cliOutput, () => spinner, { force: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true })
 
       expect(cliOutput.stdout.content).toContain('Error BLA')
       expect(spinner.succeed).toHaveBeenCalled()
@@ -133,7 +133,7 @@ describe('workspace', () => {
       mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
         { message: 'Error BLA', severity: 'Error' },
       ]))
-      await loadWorkspace('', cliOutput, () => spinner, { force: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true })
 
       expect(cliOutput.stderr.content).toContain('Error BLA')
       expect(spinner.fail).toHaveBeenCalled()
@@ -144,7 +144,7 @@ describe('workspace', () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: new Date(now - durationAfterLastModificationMs), status: 'Valid' }
       )
-      await loadWorkspace('', cliOutput, () => spinner, { force: true, printStateRecency: true })
+      await loadWorkspace('', cliOutput, { force: true, printStateRecency: true, spinnerCreator: () => spinner })
       expect(cliOutput.stdout.content).toContain(
         moment.duration(durationAfterLastModificationMs).humanize()
       )
@@ -154,12 +154,12 @@ describe('workspace', () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: null, status: 'Nonexistent' }
       )
-      await loadWorkspace('', cliOutput, () => spinner, { force: true, printStateRecency: true })
+      await loadWorkspace('', cliOutput, { force: true, printStateRecency: true, spinnerCreator: () => spinner })
       expect(cliOutput.stdout.content).toContain('unknown')
     })
 
     it('does not always print the state recency', async () => {
-      await loadWorkspace('', cliOutput, () => spinner, { force: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, force: true })
       expect(cliOutput.stdout.content).toBe('')
     })
 
@@ -167,7 +167,7 @@ describe('workspace', () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: new Date(now), status: 'Old' }
       )
-      await loadWorkspace('', cliOutput, () => spinner, { recommendStateRecency: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
       expect(mockPrompt).toHaveBeenCalledTimes(1)
     })
 
@@ -175,7 +175,7 @@ describe('workspace', () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: new Date(now), status: 'Nonexistent' }
       )
-      await loadWorkspace('', cliOutput, () => spinner, { recommendStateRecency: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
       expect(mockPrompt).toHaveBeenCalledTimes(1)
     })
 
@@ -183,7 +183,7 @@ describe('workspace', () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
         { date: new Date(now), status: 'Valid' }
       )
-      await loadWorkspace('', cliOutput, () => spinner, { recommendStateRecency: true })
+      await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
       expect(mockPrompt).not.toHaveBeenCalled()
     })
   })

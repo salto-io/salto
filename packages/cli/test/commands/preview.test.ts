@@ -14,12 +14,9 @@
 * limitations under the License.
 */
 import { command } from '../../src/commands/preview'
-import {
-  preview, MockWriteStream,
-  mockSpinnerCreator, mockLoadConfig,
-  transformToWorkspaceError, getMockTelemetry,
-  MockTelemetry,
-} from '../mocks'
+import { preview, MockWriteStream, MockTelemetry, mockLoadConfig,
+  mockLoadWorkspaceEnvironment, withoutEnvironmentParam, withEnvironmentParam,
+  getMockTelemetry, mockSpinnerCreator, transformToWorkspaceError } from '../mocks'
 import { SpinnerCreator, Spinner, CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
@@ -82,7 +79,7 @@ describe('preview command', () => {
 
   describe('when the workspace loads successfully', () => {
     beforeEach(async () => {
-      await command('', mockCliTelemetry, cliOutput, spinnerCreator, services).execute()
+      await command('', mockCliTelemetry, cliOutput, spinnerCreator, services, undefined, '').execute()
     })
 
     it('should load the workspace', async () => {
@@ -117,7 +114,7 @@ describe('preview command', () => {
   describe('when the workspace fails to load', () => {
     let result: number
     beforeEach(async () => {
-      result = await command('errdir', mockCliTelemetry, cliOutput, spinnerCreator, services).execute()
+      result = await command('errdir', mockCliTelemetry, cliOutput, spinnerCreator, services, undefined, '').execute()
     })
 
     it('should fail', () => {
@@ -128,6 +125,41 @@ describe('preview command', () => {
 
     it('should not start the preview spinner', () => {
       expect(spinners[1]).toBeUndefined()
+    })
+  })
+  describe('Env flag for command', () => {
+    beforeEach(() => {
+      mockLoadWorkspace.mockImplementation(mockLoadWorkspaceEnvironment)
+      mockLoadWorkspace.mockClear()
+    })
+
+    it('should use current env when env is not provided', async () => {
+      await command(
+        '',
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services
+      ).execute()
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+        withoutEnvironmentParam
+      )
+    })
+    it('should use provided env', async () => {
+      await command(
+        '',
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services,
+        undefined,
+        withEnvironmentParam
+      ).execute()
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+        withEnvironmentParam
+      )
     })
   })
 })

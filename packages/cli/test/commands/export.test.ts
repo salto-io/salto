@@ -16,11 +16,11 @@
 import { Workspace, exportToCsv } from '@salto-io/core'
 import { DataModificationResult } from '@salto-io/adapter-api'
 import Prompts from '../../src/prompts'
-import * as mocks from '../mocks'
 import { command } from '../../src/commands/export'
 import { CliExitCode, CliTelemetry } from '../../src/types'
 import * as workspace from '../../src/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
+import * as mocks from '../mocks'
 
 
 jest.mock('@salto-io/core', () => ({
@@ -49,7 +49,7 @@ describe('export command', () => {
 
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
   mockLoadWorkspace.mockResolvedValue({
-    workspace: mocks.mockLoadWorkspace(workspaceDir),
+    workspace: mockLoadWorkspace(workspaceDir),
     errored: false,
   })
 
@@ -57,6 +57,7 @@ describe('export command', () => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     mockTelemetry = mocks.getMockTelemetry()
     mockCliTelemetry = getCliTelemetry(mockTelemetry, 'export')
+    mockLoadWorkspace.mockClear()
   })
 
   it('should run export', async () => {
@@ -96,5 +97,34 @@ describe('export command', () => {
     expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
     expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
     expect(mockTelemetry.getEventsMap()[eventsNames.success]).toBeUndefined()
+  })
+  it('should use current env when env is not provided', async () => {
+    mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+    await command(
+      workspaceDir,
+      'mockName',
+      'mockPath',
+      getCliTelemetry(mockTelemetry, 'delete'),
+      cliOutput,
+    ).execute()
+    expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+    expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+      mocks.withoutEnvironmentParam
+    )
+  })
+  it('should use provided env', async () => {
+    mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+    await command(
+      workspaceDir,
+      'mockName',
+      'mockPath',
+      getCliTelemetry(mockTelemetry, 'delete'),
+      cliOutput,
+      mocks.withEnvironmentParam,
+    ).execute()
+    expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+    expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+      mocks.withEnvironmentParam
+    )
   })
 })

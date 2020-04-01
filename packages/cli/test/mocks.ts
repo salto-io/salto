@@ -22,13 +22,14 @@ import {
 import _ from 'lodash'
 import {
   DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError,
-  DeployResult, Config, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors,
+  DeployResult, Config, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, SourceFragment,
 } from '@salto-io/core'
 import { EVENT_TYPES } from '@salto-io/core/dist/src/telemetry'
+import * as workspace from '../src/workspace'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
 import { YargsCommandBuilder } from '../src/command_builder'
-import { Spinner, SpinnerCreator } from '../src/types'
+import { Spinner, SpinnerCreator, CliOutput } from '../src/types'
 
 export const mockFunction = <T extends (...args: never[]) => unknown>():
 jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
@@ -226,6 +227,15 @@ export const elements = (): Element[] => {
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
+export const mockErrors = (errors: SaltoError[]): Errors => ({
+  all: () => errors,
+  hasErrors: () => errors.length !== 0,
+  merge: [],
+  parse: [],
+  validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
+  strings: () => errors.map(err => err.message),
+})
+
 export const mockLoadConfig = (workspaceDir: string): Config =>
   ({
     uid: '123',
@@ -255,14 +265,56 @@ export const mockLoadConfig = (workspaceDir: string): Config =>
     currentEnv: 'active',
   })
 
-export const mockErrors = (errors: SaltoError[]): Errors => ({
-  all: () => errors,
-  hasErrors: () => errors.length !== 0,
-  merge: [],
-  parse: [],
-  validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
-  strings: () => errors.map(err => err.message),
+export const transformToWorkspaceError = (): Readonly<WorkspaceError<SaltoError>> => ({
+  sourceFragments: [],
+  message: 'Error',
+  severity: 'Error',
 })
+
+export type MockWorkspaceType = {
+  config?: Config
+  currentEnv?: string
+  transformToWorkspaceError?: () => Readonly<
+    Readonly<SaltoError & { sourceFragments: SourceFragment[]} >>
+}
+export type mockLoadWorkspaceReturnType = {
+  workspace: MockWorkspaceType
+  errored: boolean
+}
+
+export const withoutEnvironmentParam = 'active'
+export const withEnvironmentParam = 'inactive'
+
+export const mockLoadWorkspaceEnvironment = (
+  baseDir: string,
+  _cliOutput: CliOutput,
+  { sessionEnv = withoutEnvironmentParam }: Partial<workspace.LoadWorkspaceOptions>
+): mockLoadWorkspaceReturnType => {
+  if (baseDir === 'errorDir') {
+    return {
+      workspace: ({}),
+      errored: true,
+    }
+  }
+  if (sessionEnv === withEnvironmentParam) {
+    return {
+      workspace: {
+        currentEnv: withEnvironmentParam,
+        config: mockLoadConfig(''),
+        transformToWorkspaceError,
+      },
+      errored: false,
+    }
+  }
+  return {
+    workspace: {
+      currentEnv: withoutEnvironmentParam,
+      config: mockLoadConfig(''),
+      transformToWorkspaceError,
+    },
+    errored: false,
+  }
+}
 
 export const mockLoadWorkspace = (workspaceDir: string): Workspace =>
   ({
@@ -483,12 +535,6 @@ export const describe = async (_searchWords: string[]):
     element: elements()[2],
     isGuess: false,
   })
-
-export const transformToWorkspaceError = (): Readonly<WorkspaceError<SaltoError>> => ({
-  sourceFragments: [],
-  message: 'Error',
-  severity: 'Error',
-})
 
 export const createMockEnvNameGetter = (
   newEnvName = 'default'

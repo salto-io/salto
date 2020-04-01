@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { EOL } from 'os'
 import {
   addAdapter,
-  loadConfig,
   getLoginStatuses,
   LoginStatus,
   updateLoginConfig,
@@ -26,6 +25,7 @@ import {
 } from '@salto-io/core'
 
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
 import { loadWorkspace } from '../workspace'
@@ -36,6 +36,7 @@ import {
   formatLoginUpdated, formatLoginOverride, formatServiceAdded,
   formatServiceAlreadyAdded, formatCredentialsHeader, formatLoginToServiceFailed,
 } from '../formatter'
+import { EnvironmentArgs } from './env'
 
 const getLoginInputFlow = async (
   workspace: Workspace,
@@ -55,9 +56,13 @@ const addService = async (
   { stdout, stderr }: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
+  inputEnvironment?: string,
 ): Promise<CliExitCode> => {
-  const { workspace, errored } = await loadWorkspace(workspaceDir,
-    { stdout, stderr })
+  const { workspace, errored } = await loadWorkspace(
+    workspaceDir,
+    { stdout, stderr },
+    { sessionEnv: inputEnvironment }
+  )
   if (errored) {
     return CliExitCode.AppError
   }
@@ -80,11 +85,19 @@ const addService = async (
 
 const listServices = async (
   workspaceDir: string,
-  { stdout }: CliOutput,
+  { stdout, stderr }: CliOutput,
   serviceName: string,
+  inputEnvironment?: string,
 ): Promise<CliExitCode> => {
-  const workspaceConfig = await loadConfig(workspaceDir)
-  const { services } = currentEnvConfig(workspaceConfig)
+  const { workspace, errored } = await loadWorkspace(
+    workspaceDir,
+    { stdout, stderr },
+    { sessionEnv: inputEnvironment },
+  )
+  if (errored) {
+    return CliExitCode.AppError
+  }
+  const { services } = currentEnvConfig(workspace.config)
   if (_.isEmpty(serviceName)) {
     stdout.write(formatConfiguredServices(services))
   } else if (services.includes(serviceName)) {
@@ -100,9 +113,13 @@ const loginService = async (
   { stdout, stderr }: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName: string,
+  inputEnvironment?: string,
 ): Promise<CliExitCode> => {
-  const { workspace, errored } = await loadWorkspace(workspaceDir,
-    { stdout, stderr })
+  const { workspace, errored } = await loadWorkspace(
+    workspaceDir,
+    { stdout, stderr },
+    { sessionEnv: inputEnvironment },
+  )
   if (errored) {
     return CliExitCode.AppError
   }
@@ -127,22 +144,35 @@ export const command = (
   { stdout, stderr }: CliOutput,
   getLoginInput: (configType: ObjectType) => Promise<InstanceElement>,
   serviceName = '',
+  inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     switch (commandName) {
       case 'add':
-        return addService(workspaceDir, { stdout, stderr }, getLoginInput, serviceName)
+        return addService(
+          workspaceDir,
+          { stdout, stderr },
+          getLoginInput,
+          serviceName,
+          inputEnvironment
+        )
       case 'list':
-        return listServices(workspaceDir, { stdout, stderr }, serviceName)
+        return listServices(workspaceDir, { stdout, stderr }, serviceName, inputEnvironment)
       case 'login':
-        return loginService(workspaceDir, { stdout, stderr }, getLoginInput, serviceName)
+        return loginService(
+          workspaceDir,
+          { stdout, stderr },
+          getLoginInput,
+          serviceName,
+          inputEnvironment
+        )
       default:
         throw new Error('Unknown service management command')
     }
   },
 })
 
-type ServiceArgs = {} & ServiceCmdArgs
+type ServiceArgs = {} & ServiceCmdArgs & EnvironmentArgs
 
 type ServiceParsedCliInput = ParsedCliInput<ServiceArgs>
 
@@ -152,9 +182,16 @@ const servicesBuilder = createCommandBuilder({
     description: 'Manage your workspace services',
   },
 
-  filters: [serviceCmdFilter],
+  filters: [serviceCmdFilter, environmentFilter],
   async build(input: ServiceParsedCliInput, output: CliOutput) {
-    return command('.', input.args.command, output, getCredentialsFromUser, input.args.name)
+    return command(
+      '.',
+      input.args.command,
+      output,
+      getCredentialsFromUser,
+      input.args.name,
+      input.args.env,
+    )
   },
 })
 

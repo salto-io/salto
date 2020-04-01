@@ -18,6 +18,7 @@ import yargs from 'yargs'
 import { loadConfig, currentEnvConfig } from '@salto-io/core'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
+import { EnvironmentArgs } from '../commands/env'
 
 export interface ServiceCmdArgs {
   command: string
@@ -50,7 +51,7 @@ export const serviceCmdFilter: ServiceCmdFilter = {
         }>): true => {
         if (args.command && nameRequiredCommands.includes(args.command)) {
           if (_.isEmpty(args.name)) {
-            throw new Error(`Missing required argument: name\n\nExample usage: @salto-io/core services ${args.command} salesforce`)
+            throw new Error(`Missing required argument: name\n\nExample usage: 'salto services ${args.command} salesforce'`)
           }
         }
         return true
@@ -64,7 +65,7 @@ export const serviceCmdFilter: ServiceCmdFilter = {
   },
 }
 
-export interface ServicesArgs { services: string[] }
+export type ServicesArgs = { services: string[] } & EnvironmentArgs
 
 export type ServicesParsedCliInput = ParsedCliInput<ServicesArgs>
 
@@ -89,9 +90,12 @@ export const servicesFilter: ServicesFilter = {
   ): Promise<ParsedCliInput<ServicesArgs>> {
     const args = input.args as yargs.Arguments<ServicesArgs>
     const workspaceConfig = (await loadConfig('.'))
+    workspaceConfig.currentEnv = args.env ?? workspaceConfig.currentEnv
     const workspaceServices = currentEnvConfig(workspaceConfig).services
     if (workspaceServices.length === 0) {
-      throw new Error('No services are configured for this workspace. Use \'salto services add\'.')
+      throw new Error(
+        `No services are configured for env=${workspaceConfig.currentEnv}. Use 'salto services add'.`
+      )
     }
     // This assumes the default value for input services is all configured
     // so use the default (workspace services) if nothing was inputted

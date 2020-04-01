@@ -29,6 +29,7 @@ import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
+import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput,
@@ -45,6 +46,7 @@ import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../wo
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
+import { EnvironmentArgs } from './env'
 
 const log = logger(module)
 const { series } = promises.array
@@ -69,14 +71,14 @@ export type FetchCommandArgs = {
   fetch: fetchFunc
   getApprovedChanges: approveChangesFunc
   shouldUpdateConfig: shouldUpdateConfigFunc
-  inputServices: string[]
+  inputServices?: string[]
 }
 
 export const fetchCommand = async (
   {
     workspace, force, interactive, strict,
-    inputServices, cliTelemetry, output, fetch,
     getApprovedChanges, shouldUpdateConfig,
+    inputServices, cliTelemetry, output, fetch,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
@@ -119,8 +121,8 @@ export const fetchCommand = async (
 
   const fetchResult = await fetch(
     workspace,
-    inputServices,
     fetchProgress,
+    inputServices,
   )
   if (fetchResult.success === false) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
@@ -196,31 +198,33 @@ export const command = (
   telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
-  inputServices: string[],
   strict: boolean,
+  inputServices?: string[],
+  inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}, strict=${strict}]`)
+      interactive}, strict=${strict}], environment=${inputEnvironment}, services=${inputServices}`)
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output,
-      spinnerCreator, { force, printStateRecency: true })
+      { force, printStateRecency: true, spinnerCreator, sessionEnv: inputEnvironment })
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError
     }
+
     return fetchCommand({
       workspace,
       force,
       interactive,
-      inputServices,
       cliTelemetry,
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
       strict,
       shouldUpdateConfig: cliShouldUpdateConfig,
+      inputServices,
     })
   },
 })
@@ -229,7 +233,7 @@ type FetchArgs = {
   force: boolean
   interactive: boolean
   strict: boolean
-} & ServicesArgs
+} & ServicesArgs & EnvironmentArgs
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
 const fetchBuilder = createCommandBuilder({
@@ -262,7 +266,7 @@ const fetchBuilder = createCommandBuilder({
     },
   },
 
-  filters: [servicesFilter],
+  filters: [servicesFilter, environmentFilter],
 
   async build(input: FetchParsedCliInput, output: CliOutput, spinnerCreator: SpinnerCreator) {
     return command(
@@ -272,8 +276,9 @@ const fetchBuilder = createCommandBuilder({
       input.telemetry,
       output,
       spinnerCreator,
+      input.args.strict,
       input.args.services,
-      input.args.strict
+      input.args.env,
     )
   },
 })

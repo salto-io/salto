@@ -16,6 +16,7 @@
 import path from 'path'
 import wu from 'wu'
 import { exportToCsv } from '@salto-io/core'
+import { environmentFilter } from '../filters/env'
 import Prompts from '../prompts'
 import { createCommandBuilder } from '../command_builder'
 import {
@@ -30,10 +31,15 @@ export const command = (
   typeName: string,
   outputPath: string,
   cliTelemetry: CliTelemetry,
-  { stdout, stderr }: CliOutput
+  { stdout, stderr }: CliOutput,
+  inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    const { workspace, errored } = await loadWorkspace(workingDir, { stdout, stderr })
+    const { workspace, errored } = await loadWorkspace(
+      workingDir,
+      { stdout, stderr },
+      { sessionEnv: inputEnvironment }
+    )
     if (errored) {
       cliTelemetry.failure()
       return CliExitCode.AppError
@@ -61,6 +67,7 @@ export const command = (
 type ExportArgs = {
   'type-name': string
   'output-path': string
+  env?: string
 }
 type ExportParsedCliInput = ParsedCliInput<ExportArgs>
 
@@ -84,6 +91,7 @@ const exportBuilder = createCommandBuilder({
       },
     },
   },
+  filters: [environmentFilter],
 
   async build(input: ExportParsedCliInput, output: CliOutput) {
     return command(
@@ -92,6 +100,7 @@ const exportBuilder = createCommandBuilder({
       input.args['output-path'],
       getCliTelemetry(input.telemetry, 'export'),
       output,
+      input.args.env,
     )
   },
 })

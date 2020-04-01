@@ -18,17 +18,13 @@ import {
   Workspace, Plan, PlanItem, currentEnvConfig,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
-import {
-  deploy, preview, mockSpinnerCreator,
-  MockWriteStream, getMockTelemetry,
-  MockTelemetry,
-} from '../mocks'
+import * as mocks from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 
-const mockDeploy = deploy
+const mockDeploy = mocks.deploy
 const mockServices = (ws: Workspace): string[] => currentEnvConfig(ws.config).services as string[]
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -54,33 +50,23 @@ const eventsNames = {
 }
 
 describe('deploy command', () => {
-  let cliOutput: { stdout: MockWriteStream; stderr: MockWriteStream }
+  let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   let command: DeployCommand
-  let mockTelemetry: MockTelemetry
+  let mockTelemetry: mocks.MockTelemetry
   let mockCliTelemetry: CliTelemetry
   const spinners: Spinner[] = []
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
+  const environment = 'inactive'
 
   const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
-  mockLoadWorkspace.mockImplementation((baseDir: string) => {
-    if (baseDir === 'errorDir') {
-      return {
-        workspace: {},
-        errored: true,
-      }
-    }
-    return {
-      workspace: {},
-      errored: false,
-    }
-  })
+  mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
 
   beforeEach(() => {
-    cliOutput = { stdout: new MockWriteStream(), stderr: new MockWriteStream() }
-    mockTelemetry = getMockTelemetry()
+    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+    mockTelemetry = mocks.getMockTelemetry()
     mockCliTelemetry = getCliTelemetry(mockTelemetry, 'deploy')
-    spinnerCreator = mockSpinnerCreator(spinners)
+    spinnerCreator = mocks.mockSpinnerCreator(spinners)
   })
 
   describe('valid deploy', () => {
@@ -88,32 +74,32 @@ describe('deploy command', () => {
       command = new DeployCommand(
         '',
         true,
-        services,
         mockCliTelemetry,
         cliOutput,
         spinnerCreator,
+        services,
       )
     })
 
     describe('report progress upon updates', () => {
       describe('items updated as started', () => {
         beforeEach(() => {
-          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'started'))
+          wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'started'))
         })
         it('should print action upon started step', async () => {
           expect(cliOutput.stdout.content.search('salesforce.lead')).toBeGreaterThan(0)
           expect(cliOutput.stdout.content.search('Changing')).toBeGreaterThan(0)
         })
         it('should print completion upon finish', async () => {
-          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'finished'))
+          wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'finished'))
           expect(cliOutput.stdout.content.search('Change completed')).toBeGreaterThan(0)
         })
         it('should print failure upon error', async () => {
-          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'error', 'error reason'))
+          wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'error', 'error reason'))
           expect(cliOutput.stderr.content.search('Failed')).toBeGreaterThan(0)
         })
         it('it should cancel upon cancelling', async () => {
-          wu((preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'cancelled', 'parent-node-name'))
+          wu((mocks.preview()).itemsByEvalOrder()).forEach(item => command.updateAction(item, 'cancelled', 'parent-node-name'))
           expect(cliOutput.stderr.content.search('Cancelled')).toBeGreaterThan(0)
         })
       })
@@ -126,13 +112,16 @@ describe('deploy command', () => {
         content = cliOutput.stdout.content
       })
       it('should load workspace', () => {
-        expect(mockLoadWorkspace).toHaveBeenCalled()
+        expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
       })
       it('should print completeness', () => {
         expect(content).toContain('Deployment succeeded')
       })
       it('should update workspace', () => {
         expect(workspace.updateWorkspace as jest.Mock).toHaveBeenCalledTimes(1)
+      })
+      it('should use current env when env is not provided', () => {
+        expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual('active')
       })
     })
   })
@@ -143,10 +132,10 @@ describe('deploy command', () => {
       command = new DeployCommand(
         'errorDir',
         true,
-        services,
         mockCliTelemetry,
         cliOutput,
         spinnerCreator,
+        services,
       )
     })
     it('should fail gracefully', async () => {
@@ -154,6 +143,25 @@ describe('deploy command', () => {
       expect(result).toBe(CliExitCode.AppError)
       expect(mockTelemetry.getEvents()).toHaveLength(1)
       expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
+    })
+  })
+  describe('Using environment variable', () => {
+    beforeAll(async () => {
+      mockLoadWorkspace.mockClear()
+      command = new DeployCommand(
+        '',
+        true,
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services,
+        environment,
+      )
+      await command.execute()
+    })
+    it('should use provided env', () => {
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(environment)
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
     })
   })
 })

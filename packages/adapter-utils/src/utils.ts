@@ -360,3 +360,67 @@ export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => 
 
   return undefined
 }
+
+// This method solves a memory leak which takes place when we use slices
+// from a large string in order to populate the strings in the elements.
+// v8 will attempt to optimize the slicing operation by internally representing
+// the slices string as a pointer to the large string with a start and finish indexes
+// for the slice. As a result - the original string will not be evacuated from memory.
+// to solve this we need to force v8 to change the sliced string representation to a
+// regular string. We need to performe this operation for *every* string the elements
+// including object keys.
+export const flattenElementStr = (element: Element): Element => {
+  const flatStr = (str: string): string => `${Buffer.from(str).toString()}`
+
+  const flatValues = (values: Value): Value => {
+    if (_.isString(values)) return flatStr(values)
+    if (_.isArray(values)) {
+      return values.map(flatValues)
+    }
+    if (_.isPlainObject(values)) {
+      return _.reduce(_.keys(values), (acc, k) => {
+        acc[flatStr(k)] = flatValues(values[k])
+        return acc
+      }, {} as Record<string, Value>)
+    }
+    return values
+  }
+
+  const flattenField = (field: Field): Field => new Field(
+    field.parentID,
+    flatStr(field.name),
+    field.type,
+    flatValues(field.annotations),
+  )
+
+  const flattenObjectType = (obj: ObjectType): ObjectType => new ObjectType({
+    elemID: obj.elemID,
+    annotationTypes: _.mapKeys(obj.annotationTypes, (_v, k) => flatStr(k)),
+    annotations: flatValues(obj.annotations),
+    fields: _(obj.fields).mapKeys((_v, k) => flatStr(k)).mapValues(flattenField).value(),
+    isSettings: obj.isSettings,
+    path: obj.path?.map(flatStr),
+  })
+
+  const flattenPrimitiveType = (prim: PrimitiveType): PrimitiveType => new PrimitiveType({
+    elemID: prim.elemID,
+    primitive: prim.primitive,
+    annotationTypes: _.mapKeys(prim.annotationTypes, (_v, k) => flatStr(k)),
+    annotations: flatValues(prim.annotations),
+    path: prim.path?.map(flatStr),
+  })
+
+  const flattenInstance = (inst: InstanceElement): InstanceElement => new InstanceElement(
+    flatStr(inst.elemID.name),
+    inst.type,
+    flatValues(inst.value),
+      inst.path?.map(flatStr),
+      flatValues(inst.annotations)
+  )
+
+  if (isField(element)) return flattenField(element)
+  if (isObjectType(element)) return flattenObjectType(element)
+  if (isPrimitiveType(element)) return flattenPrimitiveType(element)
+  if (isInstanceElement(element)) return flattenInstance(element)
+  return element
+}

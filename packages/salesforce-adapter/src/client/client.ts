@@ -23,6 +23,7 @@ import {
   BatchResultInfo, Record as SfRecord, RecordResult, BulkLoadOperation, RetrieveRequest,
   RetrieveResult, ListMetadataQuery, UpsertResult,
 } from 'jsforce'
+import { flatValues } from '@salto-io/adapter-utils'
 import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
@@ -232,7 +233,7 @@ const sendChunked = async <TIn, TOut>({
     .filter(chunk => !_.isEmpty(chunk))
     .map(sendSingleChunk))
   return {
-    result: _.flatten(result.map(e => e.result)),
+    result: _.flatten(result.map(e => e.result).map(flatValues)),
     errors: _.flatten(result.map(e => e.errors)),
   }
 }
@@ -312,7 +313,7 @@ export default class SalesforceClient {
   @SalesforceClient.requiresLogin
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = this.conn.metadata.describe()
-    return (await describeResult).metadataObjects
+    return flatValues((await describeResult).metadataObjects)
   }
 
   /**
@@ -324,7 +325,7 @@ export default class SalesforceClient {
   public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = await this.conn.metadata.describeValueType(fullName)
-    return describeResult.valueTypeFields
+    return flatValues(describeResult.valueTypeFields)
   }
 
   @SalesforceClient.logDecorator
@@ -372,7 +373,7 @@ export default class SalesforceClient {
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async listSObjects(): Promise<DescribeGlobalSObjectResult[]> {
-    return (await this.conn.describeGlobal()).sobjects
+    return flatValues((await this.conn.describeGlobal()).sobjects)
   }
 
   @SalesforceClient.logDecorator
@@ -451,7 +452,7 @@ export default class SalesforceClient {
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async retrieve(retrieveRequest: RetrieveRequest): Promise<RetrieveResult> {
-    return this.conn.metadata.retrieve(retrieveRequest).complete()
+    return flatValues(await this.conn.metadata.retrieve(retrieveRequest).complete())
   }
 
   /**
@@ -463,7 +464,8 @@ export default class SalesforceClient {
   @validateDeployResult
   @SalesforceClient.requiresLogin
   public async deploy(zip: Buffer): Promise<DeployResult> {
-    return this.conn.metadata.deploy(zip, { rollbackOnError: true }).complete(true)
+    return flatValues(await this.conn.metadata.deploy(zip, { rollbackOnError: true })
+      .complete(true))
   }
 
   /**
@@ -483,6 +485,6 @@ export default class SalesforceClient {
     // otherwise the retrieve() will fail
     // So the following line is a part of SFDC Bulk API, not promise API.
     await batch.then()
-    return batch.retrieve() as Promise<BatchResultInfo[]>
+    return flatValues((await batch.retrieve()) as BatchResultInfo[])
   }
 }

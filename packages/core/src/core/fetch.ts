@@ -22,7 +22,7 @@ import {
   ADAPTER, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import {
-  resolvePath,
+  resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
@@ -214,7 +214,18 @@ const fetchAndProcessMergeErrors = async (
     configs: InstanceElement[]
   }> => {
   try {
-    const fetchResults = await Promise.all(Object.values(adapters).map(adapter => adapter.fetch()))
+    const fetchResults = await Promise.all(
+      Object.values(adapters)
+        .map(async adapter => {
+          const fetchResult = await adapter.fetch()
+          // We need to flatten the elements string to avoid a memory leak. See docs
+          // of the flattenElementStr method for more details.
+          return {
+            elements: fetchResult.elements.map(flattenElementStr),
+            config: fetchResult.config ? flattenElementStr(fetchResult.config) : undefined,
+          }
+        })
+    )
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
     const configs = fetchResults
       .map(res => res.config)

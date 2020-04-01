@@ -19,6 +19,7 @@ import {
   Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { flattenElementStr } from '@salto-io/adapter-utils'
 import {
   SourceRange as InternalSourceRange, SourceMap as SourceMapImpl,
   ParsedHclBlock, HclParseError,
@@ -243,5 +244,9 @@ export const parse = (
       severity: 'Error',
       message: err.detail,
     } }) as ParseError)
-  return { elements: _.concat(elements, [...listElements.values()]), errors, sourceMap }
+  return {
+    elements: _.concat(elements, [...listElements.values()]).map(flattenElementStr),
+    errors,
+    sourceMap,
+  }
 }

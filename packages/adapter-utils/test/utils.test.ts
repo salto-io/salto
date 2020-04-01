@@ -25,19 +25,21 @@ import {
 import {
   transformValues, resolvePath, TransformPrimitiveFunc,
   TransformReferenceFunc, restoreReferences, resolveReferences,
-  bpCase, findElement, findElements, findObjectType, findInstances,
+  bpCase, findElement, findElements, findObjectType, findInstances, flattenElementStr,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
+  const mockStrType = new PrimitiveType({
+    elemID: new ElemID('mockAdapter', 'str'),
+    primitive: PrimitiveTypes.STRING,
+    annotations: { testAnno: 'TEST ANNO TYPE' },
+    path: ['here', 'we', 'go'],
+  })
   const mockElem = new ElemID('mockAdapter', 'test')
   const mockType = new ObjectType({
     elemID: mockElem,
     annotationTypes: {
-      testAnno: new PrimitiveType({
-        elemID: new ElemID('mockAdapter', 'str'),
-        primitive: PrimitiveTypes.STRING,
-        annotations: { testAnno: 'TEST ANNO TYPE' },
-      }),
+      testAnno: mockStrType,
     },
     annotations: {
       testAnno: 'TEST ANNO',
@@ -73,6 +75,7 @@ describe('Test utils.ts', () => {
         },
       })), {}),
     },
+    path: ['this', 'is', 'happening'],
   })
 
   const regValue = 'regValue'
@@ -131,11 +134,23 @@ describe('Test utils.ts', () => {
         },
       ],
     },
-    [],
+    ['yes', 'this', 'is', 'path'],
     {
       [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
     },
   )
+
+  const mockPrim = new PrimitiveType({
+    elemID: new ElemID('mockAdapter', 'prim'),
+    primitive: PrimitiveTypes.STRING,
+    annotationTypes: {
+      str: mockStrType,
+    },
+    annotations: {
+      str: 'STR',
+    },
+  })
+  const mockList = new ListType(mockPrim)
 
   describe('transformValues func', () => {
     let resp: Values
@@ -776,6 +791,33 @@ describe('Test utils.ts', () => {
       it('should find all instances of a given type', () => {
         expect([...findInstances(elements, ot.elemID)]).toEqual(instances)
       })
+    })
+  })
+
+  describe('flattenElementStr function', () => {
+    it('should not modifiy an object type', () => {
+      const flatObj = flattenElementStr(mockType)
+      expect(flatObj).toEqual(mockType)
+    })
+
+    it('should not modify a primitive type', () => {
+      const flatPrim = flattenElementStr(mockPrim)
+      expect(flatPrim).toEqual(mockPrim)
+    })
+
+    it('should not modify an instance type', () => {
+      const flatInst = flattenElementStr(mockInstance)
+      expect(flatInst).toEqual(mockInstance)
+    })
+
+    it('should not modify a field', () => {
+      const flatField = flattenElementStr(mockType.fields.str)
+      expect(flatField).toEqual(mockType.fields.str)
+    })
+
+    it('should not modify a list type', () => {
+      const flatList = flattenElementStr(mockList)
+      expect(flatList).toEqual(mockList)
     })
   })
 })

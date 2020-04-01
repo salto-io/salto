@@ -18,6 +18,7 @@ import path from 'path'
 import { Element, ElemID, ElementMap } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { flattenElementStr } from '@salto-io/adapter-utils'
 import { exists, readTextFile, replaceContents, mkdirp, stat, Stats } from '../../file'
 import { serialize, deserialize } from '../../serializer/elements'
 import State from '../state'
@@ -33,7 +34,7 @@ export const localState = (filePath: string): State => {
 
   const loadFromFile = async (): Promise<ElementMap> => {
     const text = await exists(filePath) ? await readTextFile(filePath) : undefined
-    const elements = text === undefined ? [] : deserialize(text)
+    const elements = text === undefined ? [] : deserialize(text).map(flattenElementStr)
     log.debug(`loaded state [#elements=${elements.length}]`)
     return _.keyBy(elements, e => e.elemID.getFullName()) || {}
   }

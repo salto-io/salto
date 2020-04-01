@@ -188,6 +188,10 @@ export const getPlan = async (
   // build graph
   const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph)
   // build plan
-  return addPlanFunctions(groupedGraph, filterResult.changeErrors, beforeElementsMap,
-    filterResult.validAfterElementsMap)
+  return addPlanFunctions(
+    groupedGraph,
+    filterResult.changeErrors,
+    _.pickBy(beforeElementsMap, (_v, k) => groupedGraph.has(k)),
+    _.pickBy(filterResult.validAfterElementsMap, (_v, k) => groupedGraph.has(k))
+  )
 }, 'get plan with %o -> %o elements', beforeElements.length, afterElements.length)

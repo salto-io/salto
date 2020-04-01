@@ -18,77 +18,105 @@ export interface HubspotMetadata {
 }
 
 export interface ContactProperty extends HubspotMetadata {
-  name: string
   // String; The internal name of the property.
   // The name should be used when referencing the property through the API
-  label: string
+  name: string
   // String; A human readable label for the property.
   // The label is used to display the property in the HubSpot UI.
-  description: string
+  label: string
   // String; A description of the property. May be an empty string.
-  groupName: string
+  description: string
   // String; The property group that the property belongs to.
-  type: string
+  groupName: string
   // String, one of string, number, date, datetime, or enumeration
   // The data type of the property. See creating a property for more details.
-  fieldType: string
+  type: string
   // String, one of textarea, text, date, file, number, select, radio, checkbox, or booleancheckbox
   // Controls how the property appears in a form when the property is used as a form field.
+  fieldType: string
   options: Options[]
 
-  deleted: boolean
   // Boolean; This will effectively be false for all properties,
   // as deleted properties will not appear in the API
-  formField: boolean
+  deleted: boolean
   // Boolean; controls whether or not the property will show up as an option to be used in forms.
-  displayOrder: number
+  formField: boolean
   // Integer; Properties are displayed based this value,
   // properties with negative values appear in the order they're created
   // after properties with positive values.
-  readOnlyValue: boolean
+  displayOrder: number
   // Boolean; A value of true means that the value cannot be set manually,
   // and that only the HubSpot system can update the property.
   // Custom properties should always have this set to false,
   // or the value can't be updated through the API.
-  readOnlyDefinition: boolean
+  readOnlyValue: boolean
   // Boolean; A value of true means that the property settings can't be modified.
   // Custom properties should always have this as false,
   // or the property can't be updated or deleted.
-  hidden: boolean
+  readOnlyDefinition: boolean
   // Boolean; Hidden fields do not appear in the HubSpot UI
-  mutableDefinitionNotDeletable: boolean
+  hidden: boolean
   // Boolean; true indicates that the property settings can be modified,
   // but the property cannot be deleted
   // Custom properties should use false
-  calculated: boolean
-  // Boolean; For system properties,
+  mutableDefinitionNotDeletable: boolean
+   // Boolean; For system properties,
   // true indicates that the property is calculated by a HubSpot process
   // Has no effect for custom properties
-  externalOptions: boolean
+  calculated: boolean
   // Boolean; For system properties,
   // true indicates that the options are stored
   // Has no effect on custom properties
+  externalOptions: boolean
   createdAt: number
 }
 
 export interface Form extends HubspotMetadata {
+  // String, read-only; The internal ID of the form
   guid: string
+  // String; The name of the form
+  name: string
+  // String; The default css classes added to the form when embedded.
+  // Can be overridden when embedding the form using the 'cssClass' option.
   cssClass: string
+  // String; The URL that the visitor will be redirected to after filling out the form.
   redirect: string
+  // String; The text used for the submit button.
   submitText: string
+  // String; A comma-separated list of user IDs that should receive submission notifications.
+  // Email addresses will be returned for individuals who aren't users.
   notifyRecipients: string
+  // Boolean; If true, the form will pre-populate fields with known values for know contacts.
   ignoreCurrentValues: boolean
+  // Boolean; If false, the form is a system form
+  // (such as a blog comment or subscription form) and cannot be deleted.
+  // This will default to true and should also be set to true for forms created through the API.
   deletable: boolean
+  // String; A thank you message to display on the page after the form is submitted.
   inlineMessage: string
+  // A list of field groups. Each group represents a group of fields
+  // (displayed as a row when the form is embedded)
   formFieldGroups: PropertyGroup[]
+  // Integer, read-only; A Unix timestamp (in milliseconds) for when the form was created.
   createdAt: number
+  // Integer, read-only; A Unix timestamp (in milliseconds) for when the form was last modified.
+  updatedAt: number
+  // Boolean; Will be set to true for forms with captcha enabled.
+  // If you're submitting form data through the API, this should be set to false,
+  // and any captcha or other spam protection
+  // should be implemented in your form before sending the data to HubSpot
   captchaEnabled: boolean
+  // Boolean; Whether or not the form can be cloned.
+  // Forms created through the API should leave this as true (the default).
   cloneable: boolean
+  // Boolean; Whether or not the form can be edited.
+  // Forms created through the API should leave this as true (the default).
   editable: boolean
   themeName: string
 }
 
 interface PropertyGroup {
+  // A list of fields in the group
   fields: FormProperty[]
   default: boolean
   isSmartGroup: boolean
@@ -111,52 +139,52 @@ interface Options {
 
 interface RssToEmailTiming {
   repeats: string
-  repeats_on_monthly: number
   // Integer, what day of the month should the monthly email be sent [1-31]
-  repeats_on_weekly: number
+  repeats_on_monthly: number
   // Integer, what day of the week should the weekly email be sent [1=monday - 7=sunday]
+  repeats_on_weekly: number
   time: string // time the email should be sent at (9:00 am)
 }
 
 export interface FormProperty {
-  name: string
   // String; The internal name of the property.
   // The name should be used when referencing the property through the API
-  label: string
+  name: string
   // String; A human readable label for the property.
   // The label is used to display the property in the HubSpot UI.
+  label: string
   description: string
-  groupName: string
   // The property group that the property belongs to.
-  type: string
+  groupName: string
   // String, one of string, number, date, datetime, or enumeration
   // This needs to match the 'type' field of the corresponding contact property.
-  fieldType: string
+  type: string
   // String, one of textarea, text, date, file, number, select, radio, checkbox or boolean checkbox
   // Controls how the property appears in a form when the property is used as a form field.
-  required: boolean
+  fieldType: string
   // Required fields must be filled out to submit the form.
-  hidden: boolean
+  required: boolean
   // Hidden fields do not appear in the HubSpot UI
-  isSmartField: boolean
+  hidden: boolean
   // Whether or not the field is a smart field.
   // Smart fields are hidden if the visitor is a known contact that already has a value for
   // the field.
-  defaultValue: string
+  isSmartField: boolean
   // The default value of the field
-  selectedOptions: string[]
+  defaultValue: string
   // For enumerated fields, this will be a list of Strings.
   // Representing the options that will be selected by default
-  options: Options[]
+  selectedOptions: string[]
   // For enumerated fields, this will be a list of Strings representing the options for the field
   // Will be empty for non-enumerated fields.
-  placeholder: string
+  options: Options[]
   // String; The placeholder text for the field, which will display
-  displayOrder: number
+  placeholder: string
   // Integer; The order to display the fields in.
   // If the values are negative, the fields appear in the order they appear in the 'fields' list
-  dependentFieldFilters: DependentFieldFilter[]
+  displayOrder: number
   // A list of filters that will be used to display dependent fields.
+  dependentFieldFilters: DependentFieldFilter[]
 }
 
 interface DependentFieldFilter {
@@ -248,200 +276,200 @@ interface ContactListIds {
 }
 
 export interface MarketingEmail extends HubspotMetadata {
-  ab: boolean
   // Whether or not the page is part of an AB test.
-  abHoursToWait: number
+  ab: boolean
   // on AB emails, if test results are inconclusive after 4 hours, variation A will be sent.
-  abVariation: boolean
+  abHoursToWait: number
   // Whether or not the page is the variation (as opposed to the master)
   // if the page is part of an AB test
-  abSampleSizeDefault: string
+  abVariation: boolean
   // [MASTER, VARIANT] if there are less than 1000 recipients, only one variation will be sent.
-  abSamplingDefault: string
+  abSampleSizeDefault: string
   // [MASTER, VARIANT] if AB test results are inconclusive in the test group,
   // choose a variation to send (resp. A or B) to the remaining contacts.
-  abStatus: string
+  abSamplingDefault: string
   // [MASTER, VARIANT] determines if the current email is variation A or variation B.
-  abSuccessMetric: string
+  abStatus: string
   // [ CLICKS_BY_OPENS, CLICKS_BY_DELIVERED, OPENS_BY_DELIVERED ]
   // metric that will be used to determine the winning variation.
-  abTestId: string
+  abSuccessMetric: string
   // String; id shared between variation A and B
-  abTestPercentage: number
+  abTestId: string
   // the size of the test group (40% will receive variation A, the other 60% variation B).
-  absoluteUrl: string
+  abTestPercentage: number
   // The URL of the web version of the email.
-  allEmailCampaignIds: number[]
+  absoluteUrl: string
   // A list of email IDs that are associated with the email.
-  analyticsPageId: string
+  allEmailCampaignIds: number[]
   // the id used to access the analytics page of the email(in most cases, the same as the email ID)
-  archived: boolean
+  analyticsPageId: string
   // determines whether the email is archived or not.
+  archived: boolean
+  // the email of the user who made the last update to the email.
   author: string
   // the email of the user who made the last update to the email.
   authorEmail: string
-  // the email of the user who made the last update to the email.
-  authorName: string
   // the name of the user who made the last update to the email.
-  blogEmailType: string
+  authorName: string
   // [instant, daily, weekly, monthly] the cadence for how often blog emails should be sent.
-  campaign: string
+  blogEmailType: string
   // the ID of an email's marketing campaign.
-  campaignName: string
+  campaign: string
   // the name of the email's marketing campaign.
-  canSpamSettingsId: number
+  campaignName: string
   // ID used to retrieve the company address, shown in the footer.
-  clonedFrom: number
+  canSpamSettingsId: number
   // if the email was cloned, ID of the email it was cloned from.
-  createPage: boolean
+  clonedFrom: number
   // enables a web version of the email when set to true.
-  created: number
+  createPage: boolean
   // the timestamp of the email's creation, in milliseconds.
-  currentlyPublished: boolean
+  created: number
   // determines the publish status of the email.
-  domain: string
+  currentlyPublished: boolean
   // the domain of the web version of the email. Defaults to the primary domain.
-  emailBody: string
+  domain: string
   // the main content of the email within the 'main email body' module.
-  emailNote: string
+  emailBody: string
   // optional email notes, included in the details page of the email.
-  emailType: string
+  emailNote: string
   // BATCH_EMAIL, AB_EMAIL, AUTOMATED_EMAIL, BLOG_EMAIL, BLOG_EMAIL_CHILD, FOLLOWUP_EMAIL,
   // LOCALTIME_EMAIL, OPTIN_EMAIL, OPTIN_FOLLOWUP_EMAIL, RESUBSCRIBE_EMAIL,
   // RSS_EMAIL, RSS_EMAIL_CHILD, SINGLE_SEND_API, SMTP_TOKEN, LEADFLOW_EMAIL,
   // FEEDBACK_CES_EMAIL, FEEDBACK_NPS_EMAIL, FEEDBACK_CUSTOM_EMAIL, TICKET_EMAIL ]
-  feedbackEmailCategory: string
+  emailType: string
   // [ NPS, CES, CUSTOM ] If the email is a feedback email, determines type of feedback email.
-  feedbackSurveyId: number
+  feedbackEmailCategory: string
   // the id of the feedback survey that is linked to the email.
-  folderId: number
+  feedbackSurveyId: number
   // if the email is in a folder, id of that folder.
-  flexAreas: {}
+  folderId: number
   // Describes the layout of the drag and drop email template.
-  freezeDate: number
+  flexAreas: {}
   // The publish date or updated date if the email is not published.
-  fromName: string
+  freezeDate: number
   // the sender name recipients will see (linked to the replyTo address).
-  htmlTitle: string
+  fromName: string
   // the page title of the web version of the email.
-  id: number
+  htmlTitle: string
   // the id of the email.
-  isGraymailSuppressionEnabled: boolean
+  id: number
   // if true, the email will not send to unengaged contacts.
-  isLocalTimezoneSend: boolean
+  isGraymailSuppressionEnabled: boolean
   // if true, the email will adjust its send time relative to the recipients timezone.
-  isPublished: boolean
+  isLocalTimezoneSend: boolean
   // if true, the email is in a published state.
-  isRecipientFatigueSuppressionEnabled: boolean
+  isPublished: boolean
   // Boolean; if true, enables a send frequency cap (a feature available to enterprise accounts).
-  leadFlowId: number
+  isRecipientFatigueSuppressionEnabled: boolean
   // Integer; the id of the parent leadflow if the email is a leadflow email.
-  liveDomain: string
+  leadFlowId: number
   // String; domain actually used in the web version (read only)
-  mailingListsExcluded: []
+  liveDomain: string
   // A list of all contact lists to exclude from the email send.
-  mailingListsIncluded: []
+  mailingListsExcluded: []
   // A list of all contact lists included in the email send.
-  maxRssEntries: number
+  mailingListsIncluded: []
   // in blog and recurring emails, the max number of entries to include.
-  metaDescription: string
+  maxRssEntries: number
   // String; meta description of the web version of the email,
   // to drive search engine traffic to your page
-  name: string
+  metaDescription: string
   // String; the name of the email, as displayed on the email dashboard.
-  pageExpiryDate: number
+  name: string
   // Integer; the expiration date of the web version of an email, in milliseconds.
-  pageExpiryRedirectId: number
+  pageExpiryDate: number
   // String; the url of the page the user will be redirected to
   // after the web version of the email expires.
-  pageRedirected: boolean
+  pageExpiryRedirectId: number
   // Boolean; indicates if the email's web version has already been set to redirect
-  previewKey: string
+  pageRedirected: boolean
   // String; the preview key used to generate the preview url before the email is published
-  processingStatus: string
+  previewKey: string
   // String; [ UNDEFINED, PUBLISHED, PUBLISHED_OR_SCHEDULED, SCHEDULED, PROCESSING,
   // PRE_PROCESSING, ERROR, CANCELED_FORCIBLY, CANCELED_ABUSE ]
   // the email's processing status.
-  publishDate: number
+  processingStatus: string
   // Integer; the timestamp in milliseconds that the email has been published at,
   // or scheduled to send at.
-  publishedAt: number
+  publishDate: number
   // Integer; if the email has been published, the time when the publish button has been pressed.
-  publishedById: number
+  publishedAt: number
   // Integer; if the email has been published,
   // email of the user that pressed the publish button (read only).
-  publishedByName: string
+  publishedById: number
   // String; if the email has been published,
   // name of the user that pressed the publish button (read only).
-  publishImmediately: boolean
+  publishedByName: string
   // Boolean; true if the email is not scheduled but will send at publish time.
-  publishedUrl: string
+  publishImmediately: boolean
   // String; absoluteUrl, only if the email is currentlyPublished (read-only),
-  replyTo: string
+  publishedUrl: string
   // String; The email address the recipient will see and reply to (linked to fromName).
-  resolvedDomain: string
+  replyTo: string
   // String; the domain used in the web version:
   // either the primary one or the one set in the domain field (read only)
-  rssEmailAuthorLineTemplate: string
+  resolvedDomain: string
   // String; text shown before the "author_line" tag in blog & RSS email's items.
-  rssEmailBlogImageMaxWidth: number
+  rssEmailAuthorLineTemplate: string
   // Integer; the max width for blog post images in RSS emails.
-  rssEmailByText: string
+  rssEmailBlogImageMaxWidth: number
   // String; if rssEmailAuthorLineTemplate is not set,
   // word before the author name in blog & RSS email's items.
-  rssEmailClickThroughText: string
+  rssEmailByText: string
   // String; text shown on the link to see the full post in blog & RSS email's items.
-  rssEmailCommentText: string
+  rssEmailClickThroughText: string
   // String; text shown on the link to comment the post in blog & RSS email's items.
-  rssEmailEntryTemplate: string
+  rssEmailCommentText: string
   // String; optional, custom template for every RSS entry.
-  rssEmailEntryTemplateEnabled: boolean
+  rssEmailEntryTemplate: string
   // Boolean; determines if the Entry Template is used for an RSS email.
-  rssEmailUrl: string
+  rssEmailEntryTemplateEnabled: boolean
   // String; URL used for social sharing.
-  rssToEmailTiming: RssToEmailTiming
+  rssEmailUrl: string
   // A dictionary that determines what time the RSS email should be sent out.
-  slug: string
+  rssToEmailTiming: RssToEmailTiming
   // String; path of the web version URL.
-  smartEmailFields: {}
+  slug: string
   // String; lists the smart objects in email fields (from address, subject..)
-  styleSettings: string
+  smartEmailFields: {}
   // String; Custom email style settings (background color, primary font);
-  subcategory: string
+  styleSettings: string
   // [ ab_master, ab_variant, automated, automated_for_deal, automated_for_form,
   // automated_for_form_legacy, automated_for_form_buffer, automated_for_form_draft,
   // rss_to_email, rss_to_email_child, blog_email, blog_email_child, optin_email,
   // optin_followup_email, batch, resubscribe_email, single_send_api, smtp_token,
   // localtime, automated_for_ticket, automated_for_leadflow, automated_for_feedback_ces,
   // automated_for_feedback_nps, automated_for_feedback_custom ]
-  subject: string
+  subcategory: string
   // String; the subject of the email.
-  subscription: number
+  subject: string
   // Integer; the id of the email's subscription type.
-  subscriptionBlogId: number
+  subscription: number
   // Integer; for blog emails, id of the linked blog.
-  subscription_name: string
+  subscriptionBlogId: number
   // String; the name of the email's subscription type.
-  templatePath: string
+  subscription_name: string
   // String; the path of the email's body template within the design manager.
-  transactional: boolean
+  templatePath: string
   // Boolean; determines whether the email is a transactional email or not.
-  unpublishedAt: number
+  transactional: boolean
   // Integer; the timestamp in milliseconds of when the email was unpublished.
-  updated: number
+  unpublishedAt: number
   // Integer; timestamp of the last update in milliseconds.
-  updatedById: number
+  updated: number
   // Integer; the ID of the last user who updated the email.
-  url: string
+  updatedById: number
   // String; the web version URL (read-only).
-  useRssHeadlineAsSubject: boolean
+  url: string
   // Boolean; Setting for RSS emails, uses the latest RSS entry as the email subject.
-  vidsExcluded: []
+  useRssHeadlineAsSubject: boolean
   // A list of contact IDs to exclude from being sent the email.
-  vidsIncluded: []
+  vidsExcluded: []
   // A list of contacts IDs to include in the email send.
-  widgets: {}
+  vidsIncluded: []
   // The content of layout sections of the email (widgets).
-  workflowNames: []
+  widgets: {}
   // a list of all linked workflows to this email.
+  workflowNames: []
 }

@@ -17,7 +17,7 @@ import readdirp from 'readdirp'
 import path from 'path'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
-import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents, emptyDir, isSubFolder } from '../../file'
+import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents, isEmptyDir, isSubDirectory } from '../../file'
 import { DirectoryStore, File } from '../dir_store'
 
 const { withLimitedConcurrency } = promises.array
@@ -74,7 +74,7 @@ const buildLocalDirectoryStore = (
   }
 
   const removeDirIfEmpty = async (dirPath: string): Promise<void> => {
-    if (await emptyDir(dirPath) && isSubFolder(dirPath, baseDir)) {
+    if (await isEmptyDir(dirPath) && isSubDirectory(dirPath, baseDir)) {
       await rm(dirPath)
       await removeDirIfEmpty(path.dirname(dirPath))
     }

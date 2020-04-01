@@ -32,8 +32,8 @@ describe('localDirectoryStore', () => {
   const mockReplaceContents = file.replaceContents as jest.Mock
   const mockMkdir = file.mkdirp as jest.Mock
   const mockRm = file.rm as jest.Mock
-  const mockEmptyDir = file.emptyDir as jest.Mock
-  const mockIsSubFolder = file.isSubFolder as jest.Mock
+  const mockEmptyDir = file.isEmptyDir as jest.Mock
+  const mockIsSubFolder = file.isSubDirectory as jest.Mock
 
   describe('list', () => {
     it('returns empty list if dir not exists', async () => {

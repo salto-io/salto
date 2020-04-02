@@ -42,7 +42,7 @@ export const WORKSPACE_CONFIG = 'config'
 export const PREFERENCE_CONFIG = 'preference'
 const ADAPTERS_CONFIGS = 'adapters'
 const ENV_CONFIG = 'env'
-const CREDENTIALS_CONFIG = 'credentials'
+export const CREDENTIALS_CONFIG = 'credentials'
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
   sourceFragments: SourceFragment[]
@@ -228,7 +228,7 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
       errors,
       hasErrors: async () => (await errors()).hasErrors(),
       servicesCredentials: async () => _.fromPairs(await Promise.all(services()
-        .map(async service => [service, await config.get(`${currentEnv}/${CREDENTIALS_CONFIG}/${service}`)]))),
+        .map(async service => [service, await config.get(`${currentEnv()}/${CREDENTIALS_CONFIG}/${service}`)]))),
       servicesConfig: async () => _.fromPairs(await Promise.all(services()
         .map(async service => [service, await config.get(`${ADAPTERS_CONFIGS}/${service}`)]))),
       isEmpty: async (blueprintsOnly = false): Promise<boolean> => {
@@ -274,13 +274,12 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
         if (currentServices.includes(service)) {
           throw new ServiceDuplicationError(service)
         }
-        // TODO: verify this works!
         currentEnvConf().services = [...services(), service]
         await config.set(WORKSPACE_CONFIG, workspaceConfig)
       },
       updateServiceCredentials:
       async (service: string, credentials: Readonly<InstanceElement>): Promise<void> =>
-        config.set(`${currentEnv}/${CREDENTIALS_CONFIG}/${service}`, credentials),
+        config.set(`${currentEnv()}/${CREDENTIALS_CONFIG}/${service}`, credentials),
       updateServiceConfig:
       async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> =>
         config.set(service, newConfig),
@@ -297,8 +296,7 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
           throw new UnknownEnvError(env)
         }
         preferences.value.currentEnv = env
-        // TODO: think!
-        if (persist === false) {
+        if (_.isUndefined(persist) || persist === true) {
           await config.set(PREFERENCE_CONFIG, preferences)
         }
         blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),

@@ -23,7 +23,8 @@ import {
 import {
   findElement,
 } from '@salto-io/adapter-utils'
-import { ConfigSource } from 'src/workspace/config_source'
+import { ConfigSource } from '../../src/workspace/config_source'
+import { adapterCreators } from '../../src/core/adapters'
 import { blueprintsSource } from '../../src/workspace/blueprints/blueprints_source'
 import State from '../../src/workspace/state'
 import mockState from '../common/state'
@@ -34,6 +35,7 @@ import {
   PREFERENCE_CONFIG,
   loadWorkspace,
   COMMON_ENV_PREFIX,
+  CREDENTIALS_CONFIG,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 
@@ -63,7 +65,8 @@ const mockConfigSource = (conf?: Values): ConfigSource => ({
       ? new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType, {
         uid: '',
         name: 'test',
-        envs: [{ name: 'default', services }],
+        envs: [{ name: 'default', services },
+          { name: 'inactive', services: [...services, 'hubspot'] }],
         ...conf,
       })
       : new InstanceElement(PREFERENCE_CONFIG, preferencesWorkspaceConfigType, {
@@ -517,6 +520,117 @@ describe('workspace', () => {
         flushable as unknown as State)
       await workspace.flush()
       expect(mockFlush).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe('setCurrentEnv', () => {
+    let confSource: ConfigSource
+    let workspace: Workspace
+
+    beforeEach(async () => {
+      confSource = mockConfigSource()
+      workspace = await createWorkspace(undefined, undefined, confSource)
+    })
+
+    it('should change workspace state', async () => {
+      await workspace.setCurrentEnv('inactive')
+      expect(workspace.services()).toEqual([...services, 'hubspot'])
+    })
+
+    it('should persist', async () => {
+      await workspace.setCurrentEnv('inactive')
+      expect(confSource.set).toHaveBeenCalledTimes(1)
+    })
+
+    it('shouldnt persist', () => {
+      workspace.setCurrentEnv('inactive', false)
+      expect(confSource.set).toHaveBeenCalledTimes(0)
+    })
+  })
+
+  describe('addEnvironment', () => {
+    let confSource: ConfigSource
+    let workspace: Workspace
+
+    beforeEach(async () => {
+      confSource = mockConfigSource()
+      workspace = await createWorkspace(undefined, undefined, confSource)
+      await workspace.addEnvironment('new')
+    })
+
+    it('should change workspace state', async () => {
+      expect(workspace.envs().includes('new')).toBeTruthy()
+    })
+
+    it('should persist', () => {
+      expect(confSource.set).toHaveBeenCalledTimes(1)
+      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
+      const envs = instance.value.envs.map((e: {name: string}) => e.name)
+      expect(envs.includes('new')).toBeTruthy()
+    })
+  })
+
+  describe('addService', () => {
+    let confSource: ConfigSource
+    let workspace: Workspace
+
+    beforeEach(async () => {
+      confSource = mockConfigSource()
+      workspace = await createWorkspace(undefined, undefined, confSource)
+      await workspace.addService('new')
+    })
+
+    it('should change workspace state', async () => {
+      expect(workspace.services().includes('new')).toBeTruthy()
+    })
+
+    it('should persist', () => {
+      expect(confSource.set).toHaveBeenCalledTimes(1)
+      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
+      expect((instance.value.envs as {name: string}[]).find(e => e.name === 'default'))
+        .toBeDefined()
+    })
+  })
+
+  describe('updateServiceCredentials', () => {
+    let confSource: ConfigSource
+    let workspace: Workspace
+    const newCreds = new InstanceElement(services[0], adapterCreators[services[0]].credentialsType,
+      { user: 'username', password: 'pass' })
+
+    beforeEach(async () => {
+      confSource = mockConfigSource()
+      workspace = await createWorkspace(undefined, undefined, confSource)
+      await workspace.updateServiceCredentials(services[0], newCreds)
+    })
+
+    it('should persist', () => {
+      expect(confSource.set).toHaveBeenCalledTimes(1)
+      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
+      expect(instance).toEqual(newCreds)
+      const path = (confSource.set as jest.Mock).mock.calls[0][0] as string
+      expect(path).toEqual(`default/${CREDENTIALS_CONFIG}/${services[0]}`)
+    })
+  })
+
+  describe('updateServiceConfig', () => {
+    let confSource: ConfigSource
+    let workspace: Workspace
+    const newConf = new InstanceElement(services[0],
+      adapterCreators[services[0]].configType as ObjectType, { conf1: 'val1' })
+
+    beforeEach(async () => {
+      confSource = mockConfigSource()
+      workspace = await createWorkspace(undefined, undefined, confSource)
+      await workspace.updateServiceConfig(services[0], newConf)
+    })
+
+    it('should persist', () => {
+      expect(confSource.set).toHaveBeenCalledTimes(1)
+      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
+      expect(instance).toEqual(newConf)
+      const path = (confSource.set as jest.Mock).mock.calls[0][0] as string
+      expect(path).toEqual(services[0])
     })
   })
 })

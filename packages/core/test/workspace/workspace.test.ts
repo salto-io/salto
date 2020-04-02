@@ -542,8 +542,8 @@ describe('workspace', () => {
       expect(confSource.set).toHaveBeenCalledTimes(1)
     })
 
-    it('shouldnt persist', () => {
-      workspace.setCurrentEnv('inactive', false)
+    it('shouldnt persist', async () => {
+      await workspace.setCurrentEnv('inactive', false)
       expect(confSource.set).toHaveBeenCalledTimes(0)
     })
   })

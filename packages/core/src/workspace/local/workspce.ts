@@ -17,6 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { InstanceElement } from '@salto-io/adapter-api'
 import uuidv5 from 'uuid/v5'
+import { collections } from '@salto-io/lowerdash/'
 import { getAdaptersCredentialsTypes } from '../../core/adapters'
 import { exists } from '../../file'
 import { Workspace, loadWorkspace, preferencesWorkspaceConfigType, COMMON_ENV_PREFIX, EnviornmentsSources, WORKSPACE_CONFIG, initWorkspace } from '../workspace'
@@ -26,6 +27,8 @@ import { getSaltoHome } from '../../app_config'
 import { BlueprintsSource, BP_EXTENSION, blueprintsSource } from '../blueprints/blueprints_source'
 import { parseResultCache } from '../cache'
 import { localState } from './state'
+
+const { makeArray } = collections.array
 
 export const CONFIG_DIR_NAME = 'salto.config'
 export const STATES_DIR_NAME = 'states'
@@ -123,7 +126,7 @@ Promise<Workspace> => {
   const workspaceConfig = configSource(localDirectoryStore(getConfigDir(baseDir)))
   const conf = await workspaceConfig.get(WORKSPACE_CONFIG) as InstanceElement
   const localStorage = path.join(getSaltoHome(), `${conf.value.name}-${conf.value.uid}`)
-  const envs = conf.value.envs.map((env: {name: string}) => env.name)
+  const envs = makeArray(conf.value.envs).map((env: {name: string}) => env.name)
   return loadWorkspace(workspaceConfigSource(getConfigDir(baseDir), localStorage),
     elementsSources(baseDir, localStorage, envs))
 }

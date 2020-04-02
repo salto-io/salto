@@ -90,8 +90,8 @@ export const servicesFilter: ServicesFilter = {
   ): Promise<ParsedCliInput<ServicesArgs>> {
     const args = input.args as yargs.Arguments<ServicesArgs>
     const workspace = await loadLocalWorkspace('.')
-    if (_.isUndefined(args.env)) {
-      workspace.setCurrentEnv(args.env)
+    if (!_.isUndefined(args.env)) {
+      await workspace.setCurrentEnv(args.env)
     }
     if (workspace.services().length === 0) {
       throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto services add'.`)

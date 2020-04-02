@@ -163,7 +163,7 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     const currentEnvConf = (): EnvConfig =>
       makeArray(workspaceConfig.value.envs).find(e => e.name === currentEnv())
     const envs = (): ReadonlyArray<string> => makeArray(workspaceConfig.value.envs).map(e => e.name)
-    const services = (): ReadonlyArray<string> => currentEnvConf().services
+    const services = (): ReadonlyArray<string> => currentEnvConf().services || []
     const state = (): State => elementsSources[currentEnv()].state as State
     let blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),
       currentEnv(), COMMON_ENV_PREFIX)

@@ -99,7 +99,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
 
   const workspace = await loadLocalWorkspace(workingDir)
   if (!_.isUndefined(sessionEnv)) {
-    workspace.setCurrentEnv(sessionEnv, false)
+    await workspace.setCurrentEnv(sessionEnv, false)
   }
 
   const { status, errors } = await validateWorkspace(workspace)

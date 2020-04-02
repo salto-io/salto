@@ -185,7 +185,6 @@ const buildBlueprintsSource = (
       return bp ? bp.buffer : ''
     }
 
-    log.debug('going to calculate new blueprints data')
     const changesToUpdate = getChangesToUpdate(changes, (await state).elementsIndex)
     const bps = _(await Promise.all(changesToUpdate
       .map(change => change.id)
@@ -223,8 +222,10 @@ const buildBlueprintsSource = (
       DUMP_CONCURRENCY
     )).filter(b => b !== undefined) as Blueprint[]
 
-    log.debug('going to set the new blueprints')
-    return setBlueprints(...updatedBlueprints)
+    if (updatedBlueprints.length > 0) {
+      log.debug('going to update %d blueprints', updatedBlueprints.length)
+      await setBlueprints(...updatedBlueprints)
+    }
   }
 
   return {

@@ -30,26 +30,26 @@ import { localState } from './state'
 export const CONFIG_DIR_NAME = 'salto.config'
 export const STATES_DIR_NAME = 'states'
 
-class NotAnEmptyWorkspaceError extends Error {
+export class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {
     super(`not an empty workspace. ${exsitingPathes.join('')} already exists.`)
   }
 }
 
-class ExistingWorkspaceError extends Error {
+export class ExistingWorkspaceError extends Error {
   constructor() {
     super('existing salto workspace')
   }
 }
 
-class NotAWorkspaceError extends Error {
+export class NotAWorkspaceError extends Error {
   constructor() {
     super('not a salto workspace (or any of the parent directories)')
   }
 }
 
 const getConfigDir = (baseDir: string): string => (
-  path.join(baseDir, CONFIG_DIR_NAME)
+  path.join(path.resolve(baseDir), CONFIG_DIR_NAME)
 )
 
 const loadBlueprintSource = (
@@ -93,8 +93,8 @@ const workspaceConfigSource = (baseConfigDir: string, localConfigDir: string): C
   const repoConfigSource = configSource(localDirectoryStore(baseConfigDir))
   const localConfigSource = configSource(localDirectoryStore(localConfigDir))
   return {
-    get: (configName: string): Promise<InstanceElement | undefined> =>
-      localConfigSource.get(configName) || repoConfigSource.get(configName),
+    get: async (configName: string): Promise<InstanceElement | undefined> =>
+      await repoConfigSource.get(configName) || localConfigSource.get(configName),
     set: (configName: string, config: Readonly<InstanceElement>): Promise<void> => {
       const locals = Object.values(getAdaptersCredentialsTypes())
         .concat(preferencesWorkspaceConfigType)
@@ -116,7 +116,7 @@ const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined>
 
 export const loadLocalWorkspace = async (lookupDir: string):
 Promise<Workspace> => {
-  const baseDir = await locateWorkspaceRoot(lookupDir)
+  const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
@@ -130,7 +130,7 @@ Promise<Workspace> => {
 
 export const initLocalWorkspace = async (baseDir: string, name?: string, envName = 'default'):
 Promise<Workspace> => {
-  const workspaceName = name || path.basename(baseDir)
+  const workspaceName = name || path.basename(path.resolve(baseDir))
   const uid = uuidv5(workspaceName, '1b671a64-40d5-491e-99b0-da01ff1f3341')
   const localStorage = path.join(getSaltoHome(), `${workspaceName}-${uid}`)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {
@@ -142,5 +142,5 @@ Promise<Workspace> => {
 
   return initWorkspace(workspaceName, uid, envName,
     workspaceConfigSource(getConfigDir(baseDir), localStorage),
-    elementsSources(baseDir, localStorage, [envName]))
+    elementsSources(path.resolve(baseDir), localStorage, [envName]))
 }

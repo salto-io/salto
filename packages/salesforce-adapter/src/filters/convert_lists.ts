@@ -16,61 +16,68 @@
 import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
-  isListType, ListType,
+  isListType, ListType, isElement,
 } from '@salto-io/adapter-api'
+import { resolvePath } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
 
 type OrderFunc = (value: Value) => number
 export type UnorderedList = {
-  fieldId: ElemID
+  elemId: ElemID
   orderBy: string | string[] | OrderFunc
 }
 
-const allListsToSort: ReadonlyArray<UnorderedList> = [
+const fieldsToSort: ReadonlyArray<UnorderedList> = [
   {
-    fieldId: new ElemID(SALESFORCE, 'CleanDataService', 'field', 'cleanRules'),
+    elemId: new ElemID(SALESFORCE, 'CleanDataService', 'field', 'cleanRules'),
     orderBy: 'developerName',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'CleanRule', 'field', 'fieldMappings'),
+    elemId: new ElemID(SALESFORCE, 'CleanRule', 'field', 'fieldMappings'),
     orderBy: 'developerName',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'FieldMapping', 'field', 'fieldMappingRows'),
+    elemId: new ElemID(SALESFORCE, 'FieldMapping', 'field', 'fieldMappingRows'),
     orderBy: 'fieldName',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'FieldMappingRow', 'field', 'fieldMappingFields'),
+    elemId: new ElemID(SALESFORCE, 'FieldMappingRow', 'field', 'fieldMappingFields'),
     orderBy: 'dataServiceField',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'DuplicateRule', 'field', 'duplicateRuleMatchRules'),
+    elemId: new ElemID(SALESFORCE, 'DuplicateRule', 'field', 'duplicateRuleMatchRules'),
     orderBy: 'matchingRule',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'DuplicateRuleMatchRule', 'field', 'objectMapping'),
+    elemId: new ElemID(SALESFORCE, 'DuplicateRuleMatchRule', 'field', 'objectMapping'),
     orderBy: ['inputObject', 'outputObject'],
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'ObjectMapping', 'field', 'mappingFields'),
+    elemId: new ElemID(SALESFORCE, 'ObjectMapping', 'field', 'mappingFields'),
     orderBy: ['inputField', 'outputField'],
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'BusinessProcess', 'field', 'values'),
+    elemId: new ElemID(SALESFORCE, 'BusinessProcess', 'field', 'values'),
     orderBy: 'fullName',
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'PlatformActionList', 'field', 'platformActionListItems'),
+    elemId: new ElemID(SALESFORCE, 'PlatformActionList', 'field', 'platformActionListItems'),
     orderBy: val => Number(val.sortOrder),
   },
   {
-    fieldId: new ElemID(SALESFORCE, 'QuickActionList', 'field', 'quickActionListItems'),
+    elemId: new ElemID(SALESFORCE, 'QuickActionList', 'field', 'quickActionListItems'),
     orderBy: 'quickActionName',
   },
 ]
 
+const annotationsToSort: ReadonlyArray<UnorderedList> = [
+  {
+    elemId: new ElemID(SALESFORCE, 'MacroInstruction', 'field', 'Target', 'valueSet'),
+    orderBy: 'fullName',
+  },
+]
 
 // This method iterate on types and corresponding values and run innerChange
 // on every "node".
@@ -114,7 +121,7 @@ const castListRecursively = (
   unorderedLists: ReadonlyArray<UnorderedList> = [],
 ): void => {
   const listOrders = _.fromPairs(
-    unorderedLists.map(sortDef => [sortDef.fieldId.getFullName(), sortDef.orderBy]),
+    unorderedLists.map(sortDef => [sortDef.elemId.getFullName(), sortDef.orderBy]),
   )
   // Cast all lists to list
   const castLists = (field: Field, value: Value): Value => {
@@ -143,6 +150,19 @@ const markHardcodedLists = (
   }
 )
 
+const sortAnnotations = (type: ObjectType,
+  unorderedLists: ReadonlyArray<UnorderedList> = []): void => {
+  unorderedLists.forEach(({ elemId, orderBy }) => {
+    const parentId = elemId.createParentID()
+    const parent = resolvePath(type, parentId)
+    const parentValues = isElement(parent) ? parent.annotations : parent
+    const annotationValue = _.get(parentValues, elemId.name)
+    if (annotationValue === undefined) return
+    const sortedAnnotation = _.orderBy(annotationValue, orderBy)
+    _.set(parentValues, elemId.name, sortedAnnotation)
+  })
+}
+
 export const convertList = (type: ObjectType, values: Values): void => {
   markListRecursively(type, values)
   castListRecursively(type, values)
@@ -157,7 +177,8 @@ export const convertList = (type: ObjectType, values: Values): void => {
  * This step is needed because the API never returns lists of length 1
  */
 export const makeFilter = (
-  unorderedLists: ReadonlyArray<UnorderedList>,
+  unorderedListFields: ReadonlyArray<UnorderedList>,
+  unorderedListAnnotations: ReadonlyArray<UnorderedList>,
   hardcodedLists: ReadonlyArray<string>
 ): FilterCreator => () => ({
   /**
@@ -172,13 +193,14 @@ export const makeFilter = (
     const objectTypes = elements.filter(isObjectType)
 
     const knownListIds = new Set(
-      [...hardcodedLists, ...unorderedLists.map(sortDef => sortDef.fieldId.getFullName())]
+      [...hardcodedLists, ...unorderedListFields.map(sortDef => sortDef.elemId.getFullName())]
     )
 
     objectTypes.forEach(t => markHardcodedLists(t, knownListIds))
     instances.forEach(inst => markListRecursively(inst.type, inst.value))
-    instances.forEach(inst => castListRecursively(inst.type, inst.value, unorderedLists))
+    instances.forEach(inst => castListRecursively(inst.type, inst.value, unorderedListFields))
+    objectTypes.forEach(t => sortAnnotations(t, unorderedListAnnotations))
   },
 })
 
-export default makeFilter(allListsToSort, hardcodedListsData)
+export default makeFilter(fieldsToSort, annotationsToSort, hardcodedListsData)

@@ -27,7 +27,6 @@ describe('convert lists filter', () => {
   const { client } = mockClient()
 
   const mockObjNoInstancesId = new ElemID(constants.SALESFORCE, 'noInstances')
-
   const mockTypeNoInstances = new ObjectType({
     elemID: mockObjNoInstancesId,
     fields: {
@@ -73,6 +72,33 @@ describe('convert lists filter', () => {
     },
   })
 
+  const mockObjToSortId = new ElemID(constants.SALESFORCE, 'objToSort')
+  const mockTypeToSort = new ObjectType({
+    elemID: mockObjToSortId,
+    fields: {
+      sortByMe: new Field(mockObjToSortId, 'sortByMe', BuiltinTypes.STRING),
+      other: new Field(mockObjToSortId, 'other', BuiltinTypes.STRING),
+    },
+  })
+
+  const nestedMockObjToSortId = new ElemID(constants.SALESFORCE, 'nestedObjToSort')
+  const nestedMockTypeToSort = new ObjectType({
+    elemID: nestedMockObjToSortId,
+    fields: {
+      nestedAnnoToSort: new Field(nestedMockObjToSortId, 'nestedAnnoToSort', mockTypeToSort),
+    },
+  })
+
+  const mockObjWithAnnotationsId = new ElemID(constants.SALESFORCE, 'objWithAnnotations')
+  const mockFieldTypeWithAnnotations = new ObjectType({
+    elemID: mockObjWithAnnotationsId,
+    annotationTypes: {
+      annotationToSort: mockTypeToSort,
+      otherAnnotation: mockTypeToSort,
+      nestedAnnoToSort: nestedMockTypeToSort,
+    },
+  })
+
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
@@ -84,6 +110,26 @@ describe('convert lists filter', () => {
       singleHardcoded: new Field(mockObjId, 'singleHardcoded', BuiltinTypes.STRING),
       singleObjHardcoded: new Field(mockObjId, 'singleObjHardcoded', mockFieldTypeB),
       emptyHardcoded: new Field(mockObjId, 'emptyHardcoded', BuiltinTypes.STRING),
+      fieldWithAnnotations: new Field(mockObjId, 'fieldWithAnnotations',
+        mockFieldTypeWithAnnotations, {
+          annotationToSort: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+          otherAnnotation: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+          nestedAnnoToSort: {
+            nested: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+          },
+        }),
+    },
+    annotationTypes: {
+      objAnnotationToSort: mockTypeToSort,
+      otherObjAnnotation: mockTypeToSort,
+      nestedObjAnnoToSort: nestedMockTypeToSort,
+    },
+    annotations: {
+      objAnnotationToSort: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+      otherObjAnnotation: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+      nestedObjAnnoToSort: {
+        nested: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
+      },
     },
   })
 
@@ -104,7 +150,7 @@ describe('convert lists filter', () => {
       singleHardcoded: 'val',
       singleObjHardcoded: { key: 'b', value: '1', list: ['val1', 'val2'] },
       emptyHardcoded: '',
-    },
+    }
   )
 
   const mockInstanceNonLst = new InstanceElement(
@@ -116,9 +162,9 @@ describe('convert lists filter', () => {
     },
   )
 
-  const unorderedLists: ReadonlyArray<UnorderedList> = [
+  const unorderedListFields: ReadonlyArray<UnorderedList> = [
     {
-      fieldId: mockType.fields.unordered.elemID,
+      elemId: mockType.fields.unordered.elemID,
       orderBy: mockFieldType.fields.key.name,
     },
   ]
@@ -130,9 +176,33 @@ describe('convert lists filter', () => {
     mockTypeNoInstances.fields.single.elemID.getFullName(),
   ]
 
+  const unorderedListAnnotations: ReadonlyArray<UnorderedList> = [
+    {
+      elemId: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
+        'field', 'fieldWithAnnotations', 'annotationToSort'),
+      orderBy: 'sortByMe',
+    },
+    {
+      elemId: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
+        'attr', 'objAnnotationToSort'),
+      orderBy: 'sortByMe',
+    },
+    {
+      elemId: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
+        'field', 'fieldWithAnnotations', 'nestedAnnoToSort', 'nested'),
+      orderBy: 'sortByMe',
+    },
+    {
+      elemId: new ElemID(constants.SALESFORCE, mockType.elemID.typeName,
+        'attr', 'nestedObjAnnoToSort', 'nested'),
+      orderBy: 'sortByMe',
+    },
+  ]
+
   let testElements: Element[]
 
-  const filter = makeFilter(unorderedLists, hardcodedLists)({ client }) as FilterWith<'onFetch'>
+  const filter = makeFilter(unorderedListFields, unorderedListAnnotations,
+    hardcodedLists)({ client }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()
@@ -227,6 +297,49 @@ describe('convert lists filter', () => {
 
     it('should convert hardcoded fields to lists even when there are no instances', () => {
       expect(isListType(typeNoInstances.fields.single.type)).toBeTruthy()
+    })
+
+    it('should sort unordered annotations of fields', () => {
+      expect(type.fields.fieldWithAnnotations.annotations.annotationToSort).toHaveLength(2)
+      expect(type.fields.fieldWithAnnotations.annotations.annotationToSort).toEqual([
+        { sortByMe: 'A', other: 'B' }, { sortByMe: 'B', other: 'A' },
+      ])
+    })
+
+    it('should not reorder regular annotations of fields', () => {
+      expect(type.fields.fieldWithAnnotations.annotations.otherAnnotation).toHaveLength(2)
+      expect(type.fields.fieldWithAnnotations.annotations.otherAnnotation).toEqual(
+        mockType.fields.fieldWithAnnotations.annotations.otherAnnotation
+      )
+    })
+
+    it('should sort nested unordered annotations of fields', () => {
+      expect(type.fields.fieldWithAnnotations.annotations.nestedAnnoToSort
+        .nested).toHaveLength(2)
+      expect(type.fields.fieldWithAnnotations.annotations.nestedAnnoToSort.nested).toEqual([
+        { sortByMe: 'A', other: 'B' }, { sortByMe: 'B', other: 'A' },
+      ])
+    })
+
+    it('should sort unordered annotations of types', () => {
+      expect(type.annotations.objAnnotationToSort).toHaveLength(2)
+      expect(type.annotations.objAnnotationToSort).toEqual([
+        { sortByMe: 'A', other: 'B' }, { sortByMe: 'B', other: 'A' },
+      ])
+    })
+
+    it('should not reorder regular annotations of types', () => {
+      expect(type.annotations.otherObjAnnotation).toHaveLength(2)
+      expect(type.annotations.otherObjAnnotation).toEqual(
+        mockType.annotations.otherObjAnnotation
+      )
+    })
+
+    it('should sort nested unordered annotations of types', () => {
+      expect(type.annotations.nestedObjAnnoToSort.nested).toHaveLength(2)
+      expect(type.annotations.nestedObjAnnoToSort.nested).toEqual([
+        { sortByMe: 'A', other: 'B' }, { sortByMe: 'B', other: 'A' },
+      ])
     })
   })
 })

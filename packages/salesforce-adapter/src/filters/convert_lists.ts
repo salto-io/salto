@@ -155,11 +155,11 @@ const sortAnnotations = (type: ObjectType,
   unorderedLists.forEach(({ elemId, orderBy }) => {
     const parentId = elemId.createParentID()
     const parent = resolvePath(type, parentId)
-    const parentAnnotations = isElement(parent) ? parent.annotations : parent
-    const annotationValue = _.get(parentAnnotations, elemId.name)
+    const parentValues = isElement(parent) ? parent.annotations : parent
+    const annotationValue = _.get(parentValues, elemId.name)
     if (annotationValue === undefined) return
-    const sortedAnnotation = orderBy ? _.orderBy(annotationValue, orderBy) : annotationValue
-    _.set(parentAnnotations, elemId.name, sortedAnnotation)
+    const sortedAnnotation = _.orderBy(annotationValue, orderBy)
+    _.set(parentValues, elemId.name, sortedAnnotation)
   })
 }
 

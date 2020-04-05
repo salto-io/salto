@@ -40,7 +40,6 @@
     "@salto-io/hubspot-adapter": "0.1.11",
     "@salto-io/logging": "0.1.11",
     "@salto-io/lowerdash": "0.1.11",
-    "@salto-io/netsuite-adapter": "0.1.11",
     "@salto-io/salesforce-adapter": "0.1.11",
     "async": "^3.1.0",
     "axios": "^0.19.2",

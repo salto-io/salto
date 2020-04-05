@@ -27,6 +27,7 @@ import { flatValues } from '@salto-io/adapter-utils'
 import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
+import { withLimitedConcurrency } from '@salto-io/lowerdash/dist/src/promises/array'
 import { CompleteSaveResult, SfError } from './types'
 import Connection from './jsforce'
 
@@ -54,6 +55,8 @@ const MAX_ITEMS_IN_READ_METADATA_REQUEST = 10
 // Salesforce limitation of maximum number of ListMetadataQuery per listMetadata call
 //  https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_listmetadata.htm?search_text=listmetadata
 const MAX_ITEMS_IN_LIST_METADATA_REQUEST = 3
+
+const MAX_NUM_OF_SF_CONCURRENT_REQUESTS = 50
 
 const DEFAULT_RETRY_OPTS: RequestRetryOptions = {
   maxAttempts: 5, // try 5 times
@@ -229,9 +232,10 @@ const sendChunked = async <TIn, TOut>({
       return { result: [], errors: chunkInput }
     }
   }
-  const result = await Promise.all(_.chunk(makeArray(input), chunkSize)
+  const result = await withLimitedConcurrency((_.chunk(makeArray(input), chunkSize)
     .filter(chunk => !_.isEmpty(chunk))
-    .map(async c => flatValues(await (sendSingleChunk(c)))))
+    .map(c => async () => flatValues(await (sendSingleChunk(c))))),
+  MAX_NUM_OF_SF_CONCURRENT_REQUESTS)
   return {
     result: _.flatten(result.map(e => e.result)),
     errors: _.flatten(result.map(e => e.errors)),

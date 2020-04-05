@@ -32,6 +32,7 @@
     "@salto-io/logging": "0.1.11",
     "@salto-io/lowerdash": "0.1.11",
     "lodash": "^4.17.11",
+    "@oracle/suitecloud-sdk": "https://github.com/salto-io/netsuite-suitecloud-sdk.git",
     "wu": "^2.1.0"
   },
   "devDependencies": {

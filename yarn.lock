@@ -1199,6 +1199,10 @@
   dependencies:
     "@types/node" ">= 8"
 
+"@oracle/suitecloud-sdk@https://github.com/salto-io/netsuite-suitecloud-sdk.git":
+  version "1.0.1"
+  resolved "https://github.com/salto-io/netsuite-suitecloud-sdk.git#71341c4b2860b333b5ea3804c45d43bb33615bf5"
+
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-0.14.0.tgz#9fb3a3cf3132328151f353de4632e01e52102bea"

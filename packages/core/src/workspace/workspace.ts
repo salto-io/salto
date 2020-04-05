@@ -40,7 +40,7 @@ const MAX_ERROR_NUMBER = 30
 const SALTO = 'salto'
 export const WORKSPACE_CONFIG = 'config'
 export const PREFERENCE_CONFIG = 'preference'
-const ADAPTERS_CONFIGS = 'adapters'
+export const ADAPTERS_CONFIGS = 'adapters'
 const ENV_CONFIG = 'env'
 export const CREDENTIALS_CONFIG = 'credentials'
 
@@ -71,6 +71,12 @@ class UnknownEnvError extends Error {
   }
 }
 
+export class NoWorkspaceConfig extends Error {
+  constructor() {
+    super('cannot find workspace config')
+  }
+}
+
 const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 const envConfigElemID = new ElemID(SALTO, ENV_CONFIG)
 export const envConfigType = new ObjectType({
@@ -87,6 +93,7 @@ export const workspaceConfigType = new ObjectType({
   fields: {
     uid: new Field(workspaceConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
     name: new Field(workspaceConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    // Once we have map type we can have here map env name -> env config
     envs: new Field(workspaceConfigElemID, 'envs', new ListType(envConfigType)),
     staleStateThresholdMinutes: new Field(workspaceConfigElemID, 'staleStateThresholdMinutes', BuiltinTypes.NUMBER),
   },
@@ -147,6 +154,12 @@ export type Workspace = {
   getStateRecency(): Promise<StateRecency>
 }
 
+const newPreferencesConfig = (currentEnv: string): InstanceElement =>
+  new InstanceElement(PREFERENCE_CONFIG, preferencesWorkspaceConfigType, { currentEnv })
+
+const newWorkspaceConfig = (uid: string, name: string, env: string): InstanceElement =>
+  new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType, { uid, name, envs: [{ name: env }] })
+
 // common source has no state
 export type EnviornmentSource = { blueprints: BlueprintsSource; state?: State }
 export type EnviornmentsSources = Record<string, EnviornmentSource>
@@ -157,13 +170,16 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
       services: string[]
     }
 
-    const workspaceConfig = await config.get(WORKSPACE_CONFIG) as InstanceElement
-    const preferences = await config.get(PREFERENCE_CONFIG) as InstanceElement
-    const currentEnv = (): string => preferences.value.currentEnv
+    const workspaceConfig = await config.get(WORKSPACE_CONFIG)
+    if (_.isUndefined(workspaceConfig)) {
+      throw new NoWorkspaceConfig()
+    }
+    let preferences = await config.get(PREFERENCE_CONFIG)
+    const envs = (): ReadonlyArray<string> => makeArray(workspaceConfig.value.envs).map(e => e.name)
+    const currentEnv = (): string => preferences?.value.currentEnv || envs()[0]
     const currentEnvConf = (): EnvConfig =>
       makeArray(workspaceConfig.value.envs).find(e => e.name === currentEnv())
-    const envs = (): ReadonlyArray<string> => makeArray(workspaceConfig.value.envs).map(e => e.name)
-    const services = (): ReadonlyArray<string> => currentEnvConf().services || []
+    const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
     const state = (): State => elementsSources[currentEnv()].state as State
     let blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),
       currentEnv(), COMMON_ENV_PREFIX)
@@ -282,7 +298,7 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
         config.set(`${currentEnv()}/${CREDENTIALS_CONFIG}/${service}`, credentials),
       updateServiceConfig:
       async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> =>
-        config.set(service, newConfig),
+        config.set(`${ADAPTERS_CONFIGS}/${service}`, newConfig),
       addEnvironment: async (env: string): Promise<void> => {
         const currentEnvs = workspaceConfig.value.envs || []
         if (currentEnvs.map((e: EnvConfig) => e.name).includes(env)) {
@@ -295,7 +311,11 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
         if (!envs().includes(env)) {
           throw new UnknownEnvError(env)
         }
-        preferences.value.currentEnv = env
+        if (_.isUndefined(preferences)) {
+          preferences = newPreferencesConfig(env)
+        } else {
+          preferences.value.currentEnv = env
+        }
         if (_.isUndefined(persist) || persist === true) {
           await config.set(PREFERENCE_CONFIG, preferences)
         }
@@ -327,10 +347,7 @@ export const initWorkspace = async (
   config: ConfigSource,
   envs: EnviornmentsSources,
 ): Promise<Workspace> => {
-  // TODO: validate we have single env + common?
-  await config.set(WORKSPACE_CONFIG, new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType,
-    { uid, name, envs: [{ name: defaultEnvName }] }))
-  await config.set(PREFERENCE_CONFIG, new InstanceElement(PREFERENCE_CONFIG,
-    preferencesWorkspaceConfigType, { currentEnv: defaultEnvName }))
+  await config.set(WORKSPACE_CONFIG, newWorkspaceConfig(uid, name, defaultEnvName))
+  await config.set(PREFERENCE_CONFIG, newPreferencesConfig(defaultEnvName))
   return loadWorkspace(config, envs)
 }

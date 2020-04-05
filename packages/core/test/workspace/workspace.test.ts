@@ -36,6 +36,8 @@ import {
   loadWorkspace,
   COMMON_ENV_PREFIX,
   CREDENTIALS_CONFIG,
+  NoWorkspaceConfig,
+  ADAPTERS_CONFIGS,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 
@@ -59,16 +61,18 @@ const newBP = {
 }
 const services = ['salesforce']
 
+const wsConfInstance = (conf?: Values): InstanceElement =>
+  new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType, {
+    uid: '',
+    name: 'test',
+    envs: [{ name: 'default', services },
+      { name: 'inactive', services: [...services, 'hubspot'] }],
+    ...conf,
+  })
 const mockConfigSource = (conf?: Values): ConfigSource => ({
   get: jest.fn().mockImplementation(name => (
     (name === WORKSPACE_CONFIG)
-      ? new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType, {
-        uid: '',
-        name: 'test',
-        envs: [{ name: 'default', services },
-          { name: 'inactive', services: [...services, 'hubspot'] }],
-        ...conf,
-      })
+      ? wsConfInstance(conf)
       : new InstanceElement(PREFERENCE_CONFIG, preferencesWorkspaceConfigType, {
         currentEnv: 'default',
       })
@@ -93,6 +97,22 @@ const getElemMap = (elements: ReadonlyArray<Element>): Record<string, Element> =
 
 jest.mock('../../src/workspace/dir_store')
 describe('workspace', () => {
+  describe('loadWorkspace', () => {
+    it('should fail if no workspace config', async () => {
+      const noWorkspaceConfig = { get: jest.fn().mockResolvedValue(undefined), set: jest.fn() }
+      await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects
+        .toThrow(NoWorkspaceConfig)
+    })
+    it('should work if preferences is missing', async () => {
+      const noPreferences = {
+        get: jest.fn().mockImplementation(name => (
+          (name === WORKSPACE_CONFIG) ? wsConfInstance() : undefined
+        )),
+        set: jest.fn(),
+      }
+      expect(await createWorkspace(undefined, undefined, noPreferences)).toBeDefined()
+    })
+  })
   describe('loaded elements', () => {
     let workspace: Workspace
     let elemMap: Record<string, Element>
@@ -630,7 +650,7 @@ describe('workspace', () => {
       const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
       expect(instance).toEqual(newConf)
       const path = (confSource.set as jest.Mock).mock.calls[0][0] as string
-      expect(path).toEqual(services[0])
+      expect(path).toEqual(`${ADAPTERS_CONFIGS}/${services[0]}`)
     })
   })
 })

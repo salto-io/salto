@@ -16,12 +16,10 @@
 import { creator as salesforceAdapterCreator } from '@salto-io/salesforce-adapter'
 import { AdapterCreator } from '@salto-io/adapter-api'
 import { creator as hubspotAdapterCreator } from '@salto-io/hubspot-adapter'
-import { creator as netsuiteAdapterCreator } from '@salto-io/netsuite-adapter'
 
 const adapterCreators: Record<string, AdapterCreator> = {
   salesforce: salesforceAdapterCreator,
   hubspot: hubspotAdapterCreator,
-  netsuite: netsuiteAdapterCreator,
 }
 
 export default adapterCreators

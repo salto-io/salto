@@ -28,7 +28,8 @@ import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import { INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST,
-  MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+  MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  MAX_CONCURRENT_METADATA_REQUESTS } from '../src/types'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection
@@ -37,6 +38,7 @@ describe('SalesforceAdapter fetch', () => {
   const defaultInstancesRegexSkippedList = ['Test2.instance1', 'SkippedList$', '^Report.skip$']
   const defaultMaxConcurrentRetrieveRequests = 4
   const defaultMaxItemsInRetrieveRequest = 3000
+  const defaultMaxConcurrentMetadataRequests = 5
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)
@@ -47,10 +49,11 @@ describe('SalesforceAdapter fetch', () => {
         getElemIdFunc: mockGetElemIdFunc,
         metadataAdditionalTypes: [],
         config: {
-          metadataTypesSkippedList: defaultMetadataTypesSkippedList,
-          instancesRegexSkippedList: defaultInstancesRegexSkippedList,
-          maxConcurrentRetrieveRequests: defaultMaxConcurrentRetrieveRequests,
-          maxItemsInRetrieveRequest: defaultMaxItemsInRetrieveRequest,
+          [METADATA_TYPES_SKIPPED_LIST]: defaultMetadataTypesSkippedList,
+          [INSTANCES_REGEX_SKIPPED_LIST]: defaultInstancesRegexSkippedList,
+          [MAX_CONCURRENT_RETRIEVE_REQUESTS]: defaultMaxConcurrentRetrieveRequests,
+          [MAX_ITEMS_IN_RETRIEVE_REQUEST]: defaultMaxItemsInRetrieveRequest,
+          [MAX_CONCURRENT_METADATA_REQUESTS]: defaultMaxConcurrentMetadataRequests,
         },
       },
     }))
@@ -866,6 +869,7 @@ describe('SalesforceAdapter fetch', () => {
               .concat(defaultMetadataTypesSkippedList),
             [MAX_CONCURRENT_RETRIEVE_REQUESTS]: defaultMaxConcurrentRetrieveRequests,
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: defaultMaxItemsInRetrieveRequest,
+            [MAX_CONCURRENT_METADATA_REQUESTS]: defaultMaxConcurrentMetadataRequests,
           }
         )
       })

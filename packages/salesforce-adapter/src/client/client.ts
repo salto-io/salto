@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { EOL } from 'os'
 import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry'
-import { collections, decorators } from '@salto-io/lowerdash'
+import { collections, decorators, promises } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, QueryResult, DeployResult,
@@ -29,8 +29,10 @@ import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { CompleteSaveResult, SfError } from './types'
 import Connection from './jsforce'
+import { DEFAULT_MAX_CONCURRENT_METADATA_REQUESTS } from '../constants'
 
 const { makeArray } = collections.array
+const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
 
@@ -129,6 +131,7 @@ export type SalesforceClientOpts = {
   credentials: Credentials
   connection?: Connection
   retryOptions?: RequestRetryOptions
+  maxConcurrentMetadataRequests?: number
 }
 
 export const realConnection = (
@@ -189,6 +192,7 @@ type SendChunkedArgs<TIn, TOut> = {
   chunkSize?: number
   isSuppressedError?: ErrorFilter
   isUnhandledError?: ErrorFilter
+  maxConcurrentMetadataRequests?: number
 }
 export type SendChunkedResult<TIn, TOut> = {
   result: TOut[]
@@ -201,18 +205,19 @@ const sendChunked = async <TIn, TOut>({
   chunkSize = MAX_ITEMS_IN_WRITE_REQUEST,
   isSuppressedError = () => false,
   isUnhandledError = () => true,
+  maxConcurrentMetadataRequests = DEFAULT_MAX_CONCURRENT_METADATA_REQUESTS,
 }: SendChunkedArgs<TIn, TOut>): Promise<SendChunkedResult<TIn, TOut>> => {
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
     try {
-      return { result: makeArray(await sendChunk(chunkInput)), errors: [] }
+      return { result: makeArray(await sendChunk(chunkInput)).map(flatValues), errors: [] }
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
         log.error('chunked %s failed on chunk, trying each element separately', operationName)
         const sendChunkResult = await Promise.all(chunkInput.map(item => sendSingleChunk([item])))
         return {
-          result: _.flatten(sendChunkResult.map(e => e.result)),
+          result: _.flatten(sendChunkResult.map(e => e.result)).map(flatValues),
           errors: _.flatten(sendChunkResult.map(e => e.errors)),
         }
       }
@@ -229,11 +234,11 @@ const sendChunked = async <TIn, TOut>({
       return { result: [], errors: chunkInput }
     }
   }
-  const result = await Promise.all(_.chunk(makeArray(input), chunkSize)
+  const result = await withLimitedConcurrency(_.chunk(makeArray(input), chunkSize)
     .filter(chunk => !_.isEmpty(chunk))
-    .map(sendSingleChunk))
+    .map(chunk => () => sendSingleChunk(chunk)), maxConcurrentMetadataRequests)
   return {
-    result: _.flatten(result.map(e => e.result).map(flatValues)),
+    result: _.flatten(result.map(e => e.result)),
     errors: _.flatten(result.map(e => e.errors)),
   }
 }
@@ -242,13 +247,16 @@ export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
+  private readonly maxConcurrentMetadataRequests: number
 
   constructor(
-    { credentials, connection, retryOptions }: SalesforceClientOpts
+    { credentials, connection, retryOptions, maxConcurrentMetadataRequests }: SalesforceClientOpts
   ) {
     this.credentials = credentials
     this.conn = connection
       || realConnection(credentials.isSandbox, retryOptions || DEFAULT_RETRY_OPTS)
+    this.maxConcurrentMetadataRequests = maxConcurrentMetadataRequests
+      ?? DEFAULT_MAX_CONCURRENT_METADATA_REQUESTS
   }
 
   private async ensureLoggedIn(): Promise<void> {
@@ -341,6 +349,7 @@ export default class SalesforceClient {
       sendChunk: chunk => this.conn.metadata.list(chunk),
       chunkSize: MAX_ITEMS_IN_LIST_METADATA_REQUEST,
       isUnhandledError,
+      maxConcurrentMetadataRequests: this.maxConcurrentMetadataRequests,
     })
   }
 
@@ -364,6 +373,7 @@ export default class SalesforceClient {
         this.credentials.isSandbox && type === 'QuickAction' && error.message === 'targetObject is invalid'
       ),
       isUnhandledError,
+      maxConcurrentMetadataRequests: this.maxConcurrentMetadataRequests,
     })
   }
 

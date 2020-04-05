@@ -59,6 +59,9 @@ export const series = async <T>(
 export const withLimitedConcurrency = async <T>(
   promises: Iterable<() => Promise<T>>, maxConcurrency: number
 ): Promise<T[]> => {
+  if (maxConcurrency === 0) {
+    return Promise.all([...promises].map(p => p()))
+  }
   const i = toIndexedIterable(promises)[Symbol.iterator]()
   const results: T[] = []
   await Promise.all(arrayOf(maxConcurrency, () => seriesImpl(i, results)))

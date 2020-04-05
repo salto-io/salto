@@ -41,6 +41,7 @@ SalesforceConfig => {
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
     maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
+    maxConcurrentMetadataRequests: config?.value?.maxConcurrentMetadataRequests,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))
@@ -48,15 +49,24 @@ SalesforceConfig => {
   return adapterConfig
 }
 
-const clientFromCredentials = (credentials: InstanceElement): SalesforceClient =>
-  new SalesforceClient({ credentials: credentialsFromConfig(credentials) })
+const clientFromCredentialsAndConfig = (
+  credentials: InstanceElement,
+  config: SalesforceConfig
+): SalesforceClient =>
+  new SalesforceClient({
+    credentials: credentialsFromConfig(credentials),
+    maxConcurrentMetadataRequests: config.maxConcurrentMetadataRequests,
+  })
 
 export const creator: AdapterCreator = {
-  create: opts => new SalesforceAdapter({
-    client: clientFromCredentials(opts.credentials),
-    config: adapterConfigFromConfig(opts.config),
-    getElemIdFunc: opts.getElemIdFunc,
-  }),
+  create: opts => {
+    const config = adapterConfigFromConfig(opts.config)
+    return new SalesforceAdapter({
+      client: clientFromCredentialsAndConfig(opts.credentials, config),
+      config,
+      getElemIdFunc: opts.getElemIdFunc,
+    })
+  },
   validateConfig: config => validateCredentials(credentialsFromConfig(config)),
   credentialsType,
   configType,

@@ -21,12 +21,14 @@ export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
+export const MAX_CONCURRENT_METADATA_REQUESTS = 'maxConcurrentMetadataRequests'
 
 export type SalesforceConfig = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
   [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
+  [MAX_CONCURRENT_METADATA_REQUESTS]?: number
 }
 
 export type ConfigChangeSuggestion = {
@@ -95,6 +97,18 @@ export const configType = new ObjectType({
           [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
           [RESTRICTION_ANNOTATIONS.MIN]: 1000,
           [RESTRICTION_ANNOTATIONS.MAX]: 10000,
+        },
+      },
+    ),
+    [MAX_CONCURRENT_METADATA_REQUESTS]: new Field(
+      configID,
+      MAX_CONCURRENT_METADATA_REQUESTS,
+      BuiltinTypes.NUMBER,
+      {
+        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_CONCURRENT_METADATA_REQUESTS,
+        [CORE_ANNOTATIONS.RESTRICTION]: {
+          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
+          [RESTRICTION_ANNOTATIONS.MIN]: 0,
         },
       },
     ),

@@ -2369,9 +2369,9 @@ Copyright (c) Felix Bohm
 Copyright (c) Felix Bohm
 ** domhandler; version 2.4.2 -- https://github.com/fb55/DomHandler#readme
 Copyright (c) Felix Bohm
-** domutils; version 1.5.1 -- https://github.com/FB55/domutils
-Copyright (c) Felix Bohm
 ** domutils; version 1.7.0 -- https://github.com/FB55/domutils#readme
+Copyright (c) Felix Bohm
+** domutils; version 1.5.1 -- https://github.com/FB55/domutils
 Copyright (c) Felix Bohm
 ** entities; version 1.1.2 -- https://github.com/fb55/entities#readme
 Copyright (c) Felix Bohm
@@ -2924,10 +2924,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ** tough-cookie; version 2.5.0 -- https://github.com/salesforce/tough-cookie
 Copyright (c) 2015, Salesforce.com, Inc.
 Copyright (c) 2018, Salesforce.com, Inc.
-** tough-cookie; version 3.0.1 -- https://github.com/salesforce/tough-cookie
+** tough-cookie; version 2.4.3 -- https://github.com/salesforce/tough-cookie
 Copyright (c) 2015, Salesforce.com, Inc.
 Copyright (c) 2018, Salesforce.com, Inc.
-** tough-cookie; version 2.4.3 -- https://github.com/salesforce/tough-cookie
+** tough-cookie; version 3.0.1 -- https://github.com/salesforce/tough-cookie
 Copyright (c) 2015, Salesforce.com, Inc.
 Copyright (c) 2018, Salesforce.com, Inc.
 
@@ -4102,9 +4102,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 Copyright (c) Isaac Z. Schlueter
 ** inherits; version 2.0.4 -- https://github.com/isaacs/inherits#readme
 Copyright (c) Isaac Z. Schlueter
-** inherits; version 2.0.1 -- 
-Copyright (c) Isaac Z. Schlueter
 ** inherits; version 2.0.3 -- https://github.com/isaacs/inherits#readme
+Copyright (c) Isaac Z. Schlueter
+** inherits; version 2.0.1 -- 
 Copyright (c) Isaac Z. Schlueter
 ** init-package-json; version 1.10.3 -- https://github.com/npm/init-package-json#readme
 Copyright (c) Isaac Z. Schlueter
@@ -5302,9 +5302,9 @@ THE SOFTWARE.
 Copyright Joyent, Inc. and other Node contributors.
 ** readable-stream; version 1.0.34 -- 
 Copyright Joyent, Inc. and other Node contributors.
-** util; version 0.10.3 -- https://github.com/defunctzombie/node-util
-Copyright Joyent, Inc. and other Node contributors.
 ** util; version 0.11.1 -- https://github.com/defunctzombie/node-util
+Copyright Joyent, Inc. and other Node contributors.
+** util; version 0.10.3 -- https://github.com/defunctzombie/node-util
 Copyright Joyent, Inc. and other Node contributors.
 
 Copyright Joyent, Inc. and other Node contributors. All rights reserved.
@@ -5759,23 +5759,23 @@ Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
 ** is-plain-object; version 2.0.4 -- https://github.com/jonschlinkert/is-plain-object
 Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
-** isobject; version 4.0.0 -- https://github.com/jonschlinkert/isobject
-Copyright (c) 2014-2017, Jon Schlinkert.
-Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
 ** isobject; version 3.0.1 -- https://github.com/jonschlinkert/isobject
 Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
+** isobject; version 4.0.0 -- https://github.com/jonschlinkert/isobject
+Copyright (c) 2014-2017, Jon Schlinkert.
+Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
 ** kind-of; version 4.0.0 -- https://github.com/jonschlinkert/kind-of
 Copyright (c) 2014-2017, Jon Schlinkert
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
 ** kind-of; version 6.0.2 -- https://github.com/jonschlinkert/kind-of
 Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
-** kind-of; version 5.1.0 -- https://github.com/jonschlinkert/kind-of
-Copyright (c) 2014-2017, Jon Schlinkert.
-Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
 ** kind-of; version 3.2.2 -- https://github.com/jonschlinkert/kind-of
 Copyright (c) 2014-2017, Jon Schlinkert
+Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
+** kind-of; version 5.1.0 -- https://github.com/jonschlinkert/kind-of
+Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
 ** normalize-path; version 2.1.1 -- https://github.com/jonschlinkert/normalize-path
 Copyright (c) 2014-2017, Jon Schlinkert.
@@ -8483,10 +8483,10 @@ Copyright (c) 2017 Luke Childs
 ** clone-response; version 1.0.2 -- https://github.com/lukechilds/clone-response
 (c) Luke Childs
 Copyright (c) 2017 Luke Childs
-** keyv; version 3.1.0 -- https://github.com/lukechilds/keyv
+** keyv; version 3.0.0 -- https://github.com/lukechilds/keyv
 (c) Luke Childs
 Copyright (c) 2017 Luke Childs
-** keyv; version 3.0.0 -- https://github.com/lukechilds/keyv
+** keyv; version 3.1.0 -- https://github.com/lukechilds/keyv
 (c) Luke Childs
 Copyright (c) 2017 Luke Childs
 
@@ -9045,9 +9045,9 @@ THE SOFTWARE.
 
 ------
 
-** readable-stream; version 3.4.0 -- https://github.com/nodejs/readable-stream#readme
-Copyright Joyent, Inc. and other Node contributors.
 ** readable-stream; version 2.3.6 -- https://github.com/nodejs/readable-stream#readme
+Copyright Joyent, Inc. and other Node contributors.
+** readable-stream; version 3.4.0 -- https://github.com/nodejs/readable-stream#readme
 Copyright Joyent, Inc. and other Node contributors.
 ** string_decoder; version 1.3.0 -- https://github.com/nodejs/string_decoder
 Copyright Joyent, Inc. and other Node contributors.
@@ -10701,10 +10701,10 @@ Copyright (c) Kevin Martensson <kevinmartensson@gmail.com>
 ** decompress-targz; version 4.1.1 -- https://github.com/kevva/decompress-targz#readme
 (c) Kevin Martensson (https://github.com/kevva)
 Copyright (c) Kevin Martensson <kevinmartensson@gmail.com>
-** dir-glob; version 3.0.1 -- https://github.com/kevva/dir-glob#readme
-Copyright (c) Kevin Martensson <kevinmartensson@gmail.com>
 ** dir-glob; version 2.2.2 -- https://github.com/kevva/dir-glob#readme
 (c) Kevin Martensson (https://github.com/kevva)
+Copyright (c) Kevin Martensson <kevinmartensson@gmail.com>
+** dir-glob; version 3.0.1 -- https://github.com/kevva/dir-glob#readme
 Copyright (c) Kevin Martensson <kevinmartensson@gmail.com>
 ** download; version 7.1.0 -- https://github.com/kevva/download#readme
 (c) Kevin Martensson (https://github.com/kevva)
@@ -12422,7 +12422,7 @@ Copyright (c) 2016, Jon Schlinkert (http://github.com/jonschlinkert).
 
 The MIT License (MIT)
 
-Copyright (c) 2014-2016, Jon Schlinkert
+Copyright (c) 2014-2016, Jon Schlinkert.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -13264,15 +13264,15 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
+** uuid; version 3.4.0 -- https://github.com/uuidjs/uuid#readme
+Copyright 2011, Sebastian Tschan https://blueimp.net
+Copyright (c) 2010-2016 Robert Kieffer and other contributors
+Copyright (c) Paul Johnston 1999 - 2009 Other contributors Greg Holt, Andrew Kepert, Ydnar, Lostinet
 ** uuid; version 3.3.2 -- https://github.com/kelektiv/node-uuid#readme
 Copyright 2011, Sebastian Tschan https://blueimp.net
 Copyright (c) 2010-2016 Robert Kieffer and other contributors
 Copyright (c) Paul Johnston 1999 - 2009 Other contributors Greg Holt, Andrew Kepert, Ydnar, Lostinet
 ** uuid; version 3.3.3 -- https://github.com/kelektiv/node-uuid#readme
-Copyright 2011, Sebastian Tschan https://blueimp.net
-Copyright (c) 2010-2016 Robert Kieffer and other contributors
-Copyright (c) Paul Johnston 1999 - 2009 Other contributors Greg Holt, Andrew Kepert, Ydnar, Lostinet
-** uuid; version 3.4.0 -- https://github.com/uuidjs/uuid#readme
 Copyright 2011, Sebastian Tschan https://blueimp.net
 Copyright (c) 2010-2016 Robert Kieffer and other contributors
 Copyright (c) Paul Johnston 1999 - 2009 Other contributors Greg Holt, Andrew Kepert, Ydnar, Lostinet
@@ -14201,9 +14201,9 @@ SOFTWARE.
 
 ------
 
-** commander; version 2.8.1 -- https://github.com/tj/commander.js
-Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
 ** commander; version 2.20.3 -- https://github.com/tj/commander.js#readme
+Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
+** commander; version 2.8.1 -- https://github.com/tj/commander.js
 Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
 
 (The MIT License)
@@ -14798,17 +14798,17 @@ Copyright Fedor Indutny, 2017.
 Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
 ** http-proxy-agent; version 4.0.1 -- https://github.com/TooTallNate/node-http-proxy-agent#readme
 Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
-** https-proxy-agent; version 4.0.0 -- https://github.com/TooTallNate/node-https-proxy-agent#readme
-Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
 ** https-proxy-agent; version 2.2.4 -- https://github.com/TooTallNate/node-https-proxy-agent#readme
+Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
+** https-proxy-agent; version 4.0.0 -- https://github.com/TooTallNate/node-https-proxy-agent#readme
 Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
 ** imurmurhash; version 0.1.4 -- https://github.com/jensyt/imurmurhash-js
 Copyright (c) 2013 Gary Court, Jens Taylor
 ** ip; version 1.1.5 -- https://github.com/indutny/node-ip
 Copyright Fedor Indutny, 2012.
-** isarray; version 0.0.1 -- https://github.com/juliangruber/isarray
-Copyright (c) 2013 Julian Gruber <julian@juliangruber.com>
 ** isarray; version 1.0.0 -- https://github.com/juliangruber/isarray
+Copyright (c) 2013 Julian Gruber <julian@juliangruber.com>
+** isarray; version 0.0.1 -- https://github.com/juliangruber/isarray
 Copyright (c) 2013 Julian Gruber <julian@juliangruber.com>
 ** jest; version 24.9.0 -- https://jestjs.io/
 Copyright (c) Facebook, Inc. and its affiliates.
@@ -15467,17 +15467,17 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** callsites; version 2.0.0 -- https://github.com/sindresorhus/callsites#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** camelcase; version 4.1.0 -- https://github.com/sindresorhus/camelcase#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** camelcase; version 2.1.1 -- https://github.com/sindresorhus/camelcase
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** camelcase-keys; version 2.1.0 -- https://github.com/sindresorhus/camelcase-keys
-(c) Sindre Sorhus (http://sindresorhus.com)
+** camelcase; version 4.1.0 -- https://github.com/sindresorhus/camelcase#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** camelcase-keys; version 4.2.0 -- https://github.com/sindresorhus/camelcase-keys#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** camelcase-keys; version 2.1.0 -- https://github.com/sindresorhus/camelcase-keys
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** chalk; version 1.1.3 -- https://github.com/chalk/chalk#readme
 (c) Sindre Sorhus (http://sindresorhus.com)
@@ -15503,10 +15503,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** detect-newline; version 2.1.0 -- https://github.com/sindresorhus/detect-newline#readme
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** dot-prop; version 4.2.0 -- https://github.com/sindresorhus/dot-prop#readme
+** dot-prop; version 3.0.0 -- https://github.com/sindresorhus/dot-prop#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** dot-prop; version 3.0.0 -- https://github.com/sindresorhus/dot-prop#readme
+** dot-prop; version 4.2.0 -- https://github.com/sindresorhus/dot-prop#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** escape-string-regexp; version 1.0.5 -- https://github.com/sindresorhus/escape-string-regexp
@@ -15515,13 +15515,13 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** figures; version 2.0.0 -- https://github.com/sindresorhus/figures#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** file-type; version 3.9.0 -- https://github.com/sindresorhus/file-type#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** file-type; version 4.4.0 -- https://github.com/sindresorhus/file-type#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** file-type; version 5.2.0 -- https://github.com/sindresorhus/file-type#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** file-type; version 3.9.0 -- https://github.com/sindresorhus/file-type#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** filename-reserved-regex; version 2.0.0 -- https://github.com/sindresorhus/filename-reserved-regex#readme
@@ -15560,11 +15560,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** is-finite; version 1.0.2 -- https://github.com/sindresorhus/is-finite#readme
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** is-fullwidth-code-point; version 1.0.0 -- https://github.com/sindresorhus/is-fullwidth-code-point
-(c) Sindre Sorhus (http://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** is-fullwidth-code-point; version 2.0.0 -- https://github.com/sindresorhus/is-fullwidth-code-point#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** is-fullwidth-code-point; version 1.0.0 -- https://github.com/sindresorhus/is-fullwidth-code-point
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** is-obj; version 1.0.1 -- https://github.com/sindresorhus/is-obj#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -15602,11 +15602,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** lowercase-keys; version 1.0.1 -- https://github.com/sindresorhus/lowercase-keys#readme
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** map-obj; version 1.0.1 -- https://github.com/sindresorhus/map-obj
-(c) Sindre Sorhus (http://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** map-obj; version 2.0.0 -- https://github.com/sindresorhus/map-obj#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** map-obj; version 1.0.1 -- https://github.com/sindresorhus/map-obj
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** meow; version 3.7.0 -- https://github.com/sindresorhus/meow#readme
 (c) Sindre Sorhus (http://sindresorhus.com)
@@ -15675,11 +15675,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** path-key; version 2.0.1 -- https://github.com/sindresorhus/path-key#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** path-type; version 2.0.0 -- https://github.com/sindresorhus/path-type#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** path-type; version 1.1.0 -- https://github.com/sindresorhus/path-type
 (c) Sindre Sorhus (http://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** path-type; version 2.0.0 -- https://github.com/sindresorhus/path-type#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** pify; version 2.3.0 -- https://github.com/sindresorhus/pify
 (c) Sindre Sorhus (http://sindresorhus.com)
@@ -15687,11 +15687,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** pkg-dir; version 2.0.0 -- https://github.com/sindresorhus/pkg-dir#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** read-pkg; version 1.1.0 -- https://github.com/sindresorhus/read-pkg
-(c) Sindre Sorhus (http://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg; version 2.0.0 -- https://github.com/sindresorhus/read-pkg#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** read-pkg; version 1.1.0 -- https://github.com/sindresorhus/read-pkg
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg-up; version 2.0.0 -- https://github.com/sindresorhus/read-pkg-up#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -15729,11 +15729,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-ansi; version 3.0.1 -- https://github.com/chalk/strip-ansi
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** strip-bom; version 2.0.0 -- https://github.com/sindresorhus/strip-bom
-(c) Sindre Sorhus (http://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-bom; version 3.0.0 -- https://github.com/sindresorhus/strip-bom#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** strip-bom; version 2.0.0 -- https://github.com/sindresorhus/strip-bom
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-eof; version 1.0.0 -- https://github.com/sindresorhus/strip-eof
 (c) Sindre Sorhus (http://sindresorhus.com)
@@ -17200,12 +17200,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ** tmp; version 0.1.0 -- http://github.com/raszi/node-tmp
 Copyright (c) 2014 KARASZI Istvan
 Copyright (c) 2011-2017 KARASZI Istvan <github@spam.raszi.hu>
-** tmp; version 0.0.29 -- http://github.com/raszi/node-tmp
-Copyright (c) 2014 KARASZI Istvan
-Copyright (c) 2011-2015 KARASZI Istvan <github@spam.raszi.hu>
 ** tmp; version 0.0.33 -- http://github.com/raszi/node-tmp
 Copyright (c) 2014 KARASZI Istvan
 Copyright (c) 2011-2017 KARASZI Istvan <github@spam.raszi.hu>
+** tmp; version 0.0.29 -- http://github.com/raszi/node-tmp
+Copyright (c) 2014 KARASZI Istvan
+Copyright (c) 2011-2015 KARASZI Istvan <github@spam.raszi.hu>
 
 The MIT License (MIT)
 
@@ -17657,10 +17657,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ** buffer; version 4.9.1 -- https://github.com/feross/buffer
 Copyright (c) Feross Aboukhadijeh, and other contributors.
 Copyright (c) Feross Aboukhadijeh (http://feross.org), and other contributors.
-** buffer; version 5.4.3 -- https://github.com/feross/buffer
+** buffer; version 4.9.2 -- https://github.com/feross/buffer
 Copyright (c) Feross Aboukhadijeh, and other contributors.
 Copyright (c) Feross Aboukhadijeh (http://feross.org), and other contributors.
-** buffer; version 4.9.2 -- https://github.com/feross/buffer
+** buffer; version 5.4.3 -- https://github.com/feross/buffer
 Copyright (c) Feross Aboukhadijeh, and other contributors.
 Copyright (c) Feross Aboukhadijeh (http://feross.org), and other contributors.
 
@@ -17849,9 +17849,9 @@ SOFTWARE.
 ** is-typedarray; version 1.0.0 -- https://github.com/hughsk/is-typedarray
 ** json-stable-stringify-without-jsonify; version 1.0.1 -- https://github.com/samn/json-stable-stringify
 ** level-option-wrap; version 1.1.0 -- https://github.com/substack/level-option-wrap
+** minimist; version 0.0.8 -- https://github.com/substack/minimist
 ** minimist; version 0.0.10 -- https://github.com/substack/minimist
 ** minimist; version 1.2.5 -- https://github.com/substack/minimist
-** minimist; version 0.0.8 -- https://github.com/substack/minimist
 ** path-browserify; version 0.0.1 -- https://github.com/substack/path-browserify
 Copyright Joyent, Inc. and other Node contributors.
 ** resolve; version 1.1.7 -- https://github.com/substack/node-resolve#readme
@@ -17956,15 +17956,15 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ansi-escapes; version 4.3.0 -- https://github.com/sindresorhus/ansi-escapes#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** ansi-regex; version 5.0.0 -- https://github.com/chalk/ansi-regex#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ansi-regex; version 4.1.0 -- https://github.com/chalk/ansi-regex#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** ansi-regex; version 5.0.0 -- https://github.com/chalk/ansi-regex#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ansi-regex; version 3.0.0 -- https://github.com/chalk/ansi-regex#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** ansi-styles; version 4.2.0 -- https://github.com/chalk/ansi-styles#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ansi-styles; version 3.2.1 -- https://github.com/chalk/ansi-styles#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** ansi-styles; version 4.2.0 -- https://github.com/chalk/ansi-styles#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** array-union; version 2.1.0 -- https://github.com/sindresorhus/array-union#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -17981,9 +17981,9 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** camelcase; version 5.0.0 -- https://github.com/sindresorhus/camelcase#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** chalk; version 3.0.0 -- https://github.com/chalk/chalk#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** chalk; version 2.4.2 -- https://github.com/chalk/chalk#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** chalk; version 3.0.0 -- https://github.com/chalk/chalk#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** cli-cursor; version 3.1.0 -- https://github.com/sindresorhus/cli-cursor#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
@@ -17998,9 +17998,9 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** figures; version 3.1.0 -- https://github.com/sindresorhus/figures#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** file-type; version 8.1.0 -- https://github.com/sindresorhus/file-type#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** file-type; version 6.2.0 -- https://github.com/sindresorhus/file-type#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** file-type; version 8.1.0 -- https://github.com/sindresorhus/file-type#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** filenamify; version 2.1.0 -- https://github.com/sindresorhus/filenamify#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -18031,15 +18031,15 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** got; version 8.3.2 -- https://github.com/sindresorhus/got#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** has-flag; version 3.0.0 -- https://github.com/sindresorhus/has-flag#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** has-flag; version 4.0.0 -- https://github.com/sindresorhus/has-flag#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** import-fresh; version 2.0.0 -- https://github.com/sindresorhus/import-fresh#readme
+** has-flag; version 3.0.0 -- https://github.com/sindresorhus/has-flag#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** import-fresh; version 3.2.1 -- https://github.com/sindresorhus/import-fresh#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** import-fresh; version 2.0.0 -- https://github.com/sindresorhus/import-fresh#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** import-local; version 2.0.0 -- https://github.com/sindresorhus/import-local#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -18070,10 +18070,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** locate-path; version 3.0.0 -- https://github.com/sindresorhus/locate-path#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** log-symbols; version 3.0.0 -- https://github.com/sindresorhus/log-symbols#readme
+** log-symbols; version 2.2.0 -- https://github.com/sindresorhus/log-symbols#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** log-symbols; version 2.2.0 -- https://github.com/sindresorhus/log-symbols#readme
+** log-symbols; version 3.0.0 -- https://github.com/sindresorhus/log-symbols#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** lowercase-keys; version 2.0.0 -- https://github.com/sindresorhus/lowercase-keys#readme
@@ -18109,12 +18109,12 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** multimatch; version 3.0.0 -- https://github.com/sindresorhus/multimatch#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** normalize-url; version 2.0.1 -- https://github.com/sindresorhus/normalize-url#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** normalize-url; version 4.5.0 -- https://github.com/sindresorhus/normalize-url#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** normalize-url; version 3.3.0 -- https://github.com/sindresorhus/normalize-url#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** normalize-url; version 2.0.1 -- https://github.com/sindresorhus/normalize-url#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** onetime; version 5.1.0 -- https://github.com/sindresorhus/onetime#readme
@@ -18127,10 +18127,10 @@ Copyright 2006, Jeremy White <jwhite@codeweavers.com>
 Copyright 2009-2010, Fathi Boudra <fabo@freedesktop.org>
 Copyright 2009-2010, Rex Dieter <rdieter@fedoraproject.org>
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** ora; version 4.0.3 -- https://github.com/sindresorhus/ora#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ora; version 3.4.0 -- https://github.com/sindresorhus/ora#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** ora; version 4.0.3 -- https://github.com/sindresorhus/ora#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** os-locale; version 3.1.0 -- https://github.com/sindresorhus/os-locale#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -18150,10 +18150,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** p-is-promise; version 2.1.0 -- https://github.com/sindresorhus/p-is-promise#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** p-limit; version 2.2.1 -- https://github.com/sindresorhus/p-limit#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** p-limit; version 1.3.0 -- https://github.com/sindresorhus/p-limit#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** p-limit; version 2.2.1 -- https://github.com/sindresorhus/p-limit#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** p-locate; version 3.0.0 -- https://github.com/sindresorhus/p-locate#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -18178,16 +18178,16 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** parse-json; version 4.0.0 -- https://github.com/sindresorhus/parse-json#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** path-type; version 4.0.0 -- https://github.com/sindresorhus/path-type#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** path-type; version 3.0.0 -- https://github.com/sindresorhus/path-type#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** pify; version 3.0.0 -- https://github.com/sindresorhus/pify#readme
+** path-type; version 4.0.0 -- https://github.com/sindresorhus/path-type#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** pify; version 4.0.1 -- https://github.com/sindresorhus/pify#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** pify; version 3.0.0 -- https://github.com/sindresorhus/pify#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** pkg-dir; version 3.0.0 -- https://github.com/sindresorhus/pkg-dir#readme
@@ -18205,10 +18205,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg; version 3.0.0 -- https://github.com/sindresorhus/read-pkg#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** read-pkg-up; version 4.0.0 -- https://github.com/sindresorhus/read-pkg-up#readme
+** read-pkg-up; version 3.0.0 -- https://github.com/sindresorhus/read-pkg-up#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** read-pkg-up; version 3.0.0 -- https://github.com/sindresorhus/read-pkg-up#readme
+** read-pkg-up; version 4.0.0 -- https://github.com/sindresorhus/read-pkg-up#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** resolve-from; version 4.0.0 -- https://github.com/sindresorhus/resolve-from#readme

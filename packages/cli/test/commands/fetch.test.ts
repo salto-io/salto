@@ -19,7 +19,7 @@ import { ElemID, ObjectType, Element, InstanceElement } from '@salto-io/adapter-
 import {
   Workspace, fetch, FetchChange,
   DetailedChange, FetchProgressEvents,
-  StepEmitter,
+  StepEmitter, fetchFunc,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
@@ -484,6 +484,46 @@ describe('fetch command', () => {
               expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
             })
           })
+        })
+      })
+      describe('with merge errors', () => {
+        const mockFetchWithChanges = mocks.mockFunction<fetchFunc>().mockResolvedValue(
+          {
+            changes: [],
+            mergeErrors: [
+              {
+                elements: mocks.elements().slice(0, 2),
+                error: {
+                  elemID: mocks.elements()[0].elemID,
+                  error: 'test',
+                  message: 'test merge error',
+                  severity: 'Warning',
+                },
+              },
+            ],
+            success: true,
+          }
+        )
+        beforeEach(async () => {
+          mockTelemetry = mocks.getMockTelemetry()
+          const workspace = mockWorkspace()
+          result = await fetchCommand({
+            workspace,
+            force: true,
+            interactive: false,
+            cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
+            output: cliOutput,
+            fetch: mockFetchWithChanges,
+            getApprovedChanges: mockEmptyApprove,
+            shouldUpdateConfig: mockUpdateConfig,
+          })
+        })
+        it('should succeed', () => {
+          expect(result).toBe(CliExitCode.Success)
+        })
+        it('should print merge errors', () => {
+          expect(cliOutput.stderr.content).toContain(mocks.elements()[0].elemID.getFullName())
+          expect(cliOutput.stderr.content).toContain('test merge error')
         })
       })
     })

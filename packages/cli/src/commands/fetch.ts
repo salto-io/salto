@@ -125,7 +125,7 @@ export const fetchCommand = async (
     inputServices,
   )
   if (fetchResult.success === false) {
-    output.stderr.write(formatFatalFetchError(fetchResult))
+    output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
     cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
   }
@@ -136,7 +136,7 @@ export const fetchCommand = async (
   if (!_.isEmpty(fetchResult.mergeErrors)) {
     log.debug(`fetch had ${fetchResult.mergeErrors} merge errors`)
     cliTelemetry.mergeErrors(fetchResult.mergeErrors.length, workspaceTags)
-    output.stderr.write(formatMergeErrors(fetchResult))
+    output.stderr.write(formatMergeErrors(fetchResult.mergeErrors))
   }
 
   if (!_.isUndefined(fetchResult.configChanges)) {

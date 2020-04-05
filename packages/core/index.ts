@@ -25,7 +25,7 @@ export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
-  Workspace, WorkspaceError, SourceFragment, // TODO:ORI - remove workspace error from here
+  Workspace, WorkspaceError, SourceFragment,
 } from './src/workspace/workspace'
 export { Errors } from './src/workspace/errors'
 export { Blueprint } from './src/workspace/blueprints/blueprints_source'

@@ -39,7 +39,12 @@ import {
   CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, BUSINESS_HOURS_ENTRY, MISSING_SUBTYPE_NAMES,
+  HOLIDAYS, ORGANIZATION_SETTINGS_DETAIL, MISSING_TYPE_NAME, CASE_CLASSIFICATION_SETTINGS,
+  ACCOUNT_INSIGHT_SETTINGS, ACCOUNT_INTELLIGENCE_SETTINGS, AUTOMATED_CONTACTS_SETTINGS,
+  CHATTER_ANSWERS_SETTINGS, CHATTER_EMAIL_M_D_SETTINGS, HIGH_VELOCITY_SALES_SETTINGS,
+  IO_T_SETTINGS, MAP_AND_LOCATION_SETTINGS, OBJECT_LINKING_SETTINGS,
+  PREDICTION_BUILDER_SETTINGS, SOCIAL_CUSTOMER_SERVICE_SETTINGS,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -118,6 +123,50 @@ const addPicklistAnnotations = (
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
 const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
+const AccountInsightsSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.ACCOUNT_INSIGHT_SETTINGS
+)
+const AccountIntelligenceSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.ACCOUNT_INTELLIGENCE_SETTINGS
+)
+const AutomatedContactsSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.AUTOMATED_CONTACTS_SETTINGS
+)
+const ChatterAnswersSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.CHATTER_ANSWERS_SETTINGS
+)
+const ChatterEmailMDSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.CHATTER_EMAIL_MDSETTINGS
+)
+const HighVelocitySalesSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.HIGH_VELOCITY_SALES_SETTINGS
+)
+const IoTSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.IOT_SETTINGS
+)
+const MapAndLocationSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.MAP_AND_LOCATION_SETTINGS
+)
+const ObjectLinkingSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.OBJECT_LINKING_SETTINGS
+)
+const PredictionBuilderSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.PREDICTION_BUILDER_SETTINGS
+)
+const SocialCustomerServiceSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.SOCIAL_CUSTOMER_SERVICE_SETTINGS
+)
+
+
+const BusinessHoursEntryID = new ElemID(SALESFORCE, MISSING_SUBTYPE_NAMES.BUSINESS_HOURS_ENTRY)
+const HolidaysId = new ElemID(SALESFORCE, MISSING_SUBTYPE_NAMES.HOLIDAYS)
+const CaseClassificationSettingsId = new ElemID(
+  SALESFORCE, MISSING_TYPE_NAME.CASE_CLASSIFICATION_SETTINGS
+)
+const OrganizationSettingsDetailId = new ElemID(
+  SALESFORCE, MISSING_SUBTYPE_NAMES.ORGANIZATION_SETTINGS_DETAIL
+)
+
 
 type RestrictedNumberName = 'TextLength' | 'TextAreaLength' | 'EncryptedTextLength'
    | 'Precision' | 'Scale' | 'LocationScale' | 'LongTextAreaVisibleLines'
@@ -640,6 +689,438 @@ export class Types {
     Types.getFormulaDataType(FIELD_TYPE_NAMES.TIME),
   )
 
+  public static missingTypes: Record<MISSING_TYPE_NAME, ObjectType> = {
+    CaseClassificationSettings: new ObjectType({
+      elemID: CaseClassificationSettingsId,
+      fields: {
+        [CASE_CLASSIFICATION_SETTINGS.CASE_CLASSIFICATION_RECOMMENDATIONS]: new TypeField(
+          CaseClassificationSettingsId,
+          CASE_CLASSIFICATION_SETTINGS.CASE_CLASSIFICATION_RECOMMENDATIONS,
+          BuiltinTypes.STRING
+        ),
+      },
+    }),
+    AccountInsightsSettings: new ObjectType({
+      elemID: AccountInsightsSettingsId,
+      fields: {
+        [ACCOUNT_INSIGHT_SETTINGS.ENABLE_ACCOUNT_INSIGHTS]: new TypeField(
+          AccountInsightsSettingsId,
+          ACCOUNT_INSIGHT_SETTINGS.ENABLE_ACCOUNT_INSIGHTS,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    AccountIntelligenceSettings: new ObjectType({
+      elemID: AccountIntelligenceSettingsId,
+      fields: {
+        [ACCOUNT_INTELLIGENCE_SETTINGS.ENABLE_ACCOUNT_LOGOS]: new TypeField(
+          AccountIntelligenceSettingsId,
+          ACCOUNT_INTELLIGENCE_SETTINGS.ENABLE_ACCOUNT_LOGOS,
+          BuiltinTypes.BOOLEAN
+        ),
+        [ACCOUNT_INTELLIGENCE_SETTINGS.ENABLE_AUTOMATED_ACCOUNT_FIELDS]: new TypeField(
+          AccountIntelligenceSettingsId,
+          ACCOUNT_INTELLIGENCE_SETTINGS.ENABLE_AUTOMATED_ACCOUNT_FIELDS,
+          BuiltinTypes.BOOLEAN
+        ),
+        [ACCOUNT_INTELLIGENCE_SETTINGS.ENABLE_NEWS_STORIES]: new TypeField(
+          AccountIntelligenceSettingsId,
+          ACCOUNT_INTELLIGENCE_SETTINGS.ENABLE_NEWS_STORIES,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    AutomatedContactsSettings: new ObjectType({
+      elemID: AutomatedContactsSettingsId,
+      fields: {
+        [AUTOMATED_CONTACTS_SETTINGS.ENABLE_ADD_CONTACT_AUTOMATICALLY]: new TypeField(
+          AutomatedContactsSettingsId,
+          AUTOMATED_CONTACTS_SETTINGS.ENABLE_ADD_CONTACT_AUTOMATICALLY,
+          BuiltinTypes.BOOLEAN
+        ),
+        [AUTOMATED_CONTACTS_SETTINGS.ENABLE_ADD_CONTACT_ROLE_AUTOMATICALLY]: new TypeField(
+          AutomatedContactsSettingsId,
+          AUTOMATED_CONTACTS_SETTINGS.ENABLE_ADD_CONTACT_ROLE_AUTOMATICALLY,
+          BuiltinTypes.BOOLEAN
+        ),
+        [AUTOMATED_CONTACTS_SETTINGS.ENABLE_ADD_CONTACT_ROLE_WITH_SUGGESTION]: new TypeField(
+          AutomatedContactsSettingsId,
+          AUTOMATED_CONTACTS_SETTINGS.ENABLE_ADD_CONTACT_ROLE_WITH_SUGGESTION,
+          BuiltinTypes.BOOLEAN
+        ),
+        [AUTOMATED_CONTACTS_SETTINGS.ENABLE_ADD_CONTACT_WITH_SUGGESTION]: new TypeField(
+          AutomatedContactsSettingsId,
+          AUTOMATED_CONTACTS_SETTINGS.ENABLE_ADD_CONTACT_WITH_SUGGESTION,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    ChatterAnswersSettings: new ObjectType({
+      elemID: ChatterAnswersSettingsId,
+      fields: {
+        [CHATTER_ANSWERS_SETTINGS.EMAIL_FOLLOWERS_ON_BEST_ANSWER]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.EMAIL_FOLLOWERS_ON_BEST_ANSWER,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.EMAIL_FOLLOWERS_ON_REPLY]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.EMAIL_FOLLOWERS_ON_REPLY,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.EMAIL_OWNER_ON_PRIVATE_REPLY]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.EMAIL_OWNER_ON_PRIVATE_REPLY,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.EMAIL_OWNER_ON_REPLY]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.EMAIL_OWNER_ON_REPLY,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.ENABLE_ANSWER_VIA_EMAIL]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.ENABLE_ANSWER_VIA_EMAIL,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.ENABLE_ANSWER_VIA_EMAIL]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.ENABLE_ANSWER_VIA_EMAIL,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.ENABLE_CHATTER_ANSWERS]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.ENABLE_CHATTER_ANSWERS,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.ENABLE_FACEBOOK_S_S_O]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.ENABLE_FACEBOOK_S_S_O,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.ENABLE_INLINE_PUBLISHER]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.ENABLE_INLINE_PUBLISHER,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.ENABLE_REPUTATION]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.ENABLE_REPUTATION,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.ENABLE_RICH_TEXT_EDITOR]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.ENABLE_RICH_TEXT_EDITOR,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_ANSWERS_SETTINGS.FACEBOOK_AUTH_PROVIDER]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.FACEBOOK_AUTH_PROVIDER,
+          BuiltinTypes.STRING
+        ),
+        [CHATTER_ANSWERS_SETTINGS.SHOW_IN_PORTALS]: new TypeField(
+          ChatterAnswersSettingsId,
+          CHATTER_ANSWERS_SETTINGS.SHOW_IN_PORTALS,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    ChatterEmailMDSettings: new ObjectType({
+      elemID: ChatterEmailMDSettingsId,
+      fields: {
+        [CHATTER_EMAIL_M_D_SETTINGS.ENABLE_CHATTER_DIGEST_EMAILS_API_ONLY]: new TypeField(
+          ChatterEmailMDSettingsId,
+          CHATTER_EMAIL_M_D_SETTINGS.ENABLE_CHATTER_DIGEST_EMAILS_API_ONLY,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_EMAIL_M_D_SETTINGS.ENABLE_CHATTER_EMAIL_ATTACHMENT]: new TypeField(
+          ChatterEmailMDSettingsId,
+          CHATTER_EMAIL_M_D_SETTINGS.ENABLE_CHATTER_EMAIL_ATTACHMENT,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_EMAIL_M_D_SETTINGS.ENABLE_COLLABORATION_EMAIL]: new TypeField(
+          ChatterEmailMDSettingsId,
+          CHATTER_EMAIL_M_D_SETTINGS.ENABLE_COLLABORATION_EMAIL,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_EMAIL_M_D_SETTINGS.ENABLE_DISPLAY_APP_DOWNLOAD_BADGES]: new TypeField(
+          ChatterEmailMDSettingsId,
+          CHATTER_EMAIL_M_D_SETTINGS.ENABLE_DISPLAY_APP_DOWNLOAD_BADGES,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_EMAIL_M_D_SETTINGS.ENABLE_EMAIL_REPLY_TO_CHATTER]: new TypeField(
+          ChatterEmailMDSettingsId,
+          CHATTER_EMAIL_M_D_SETTINGS.ENABLE_EMAIL_REPLY_TO_CHATTER,
+          BuiltinTypes.BOOLEAN
+        ),
+        [CHATTER_EMAIL_M_D_SETTINGS.ENABLE_EMAIL_TO_CHATTER]: new TypeField(
+          ChatterEmailMDSettingsId,
+          CHATTER_EMAIL_M_D_SETTINGS.ENABLE_EMAIL_TO_CHATTER,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    HighVelocitySalesSettings: new ObjectType({
+      elemID: HighVelocitySalesSettingsId,
+      fields: {
+        [HIGH_VELOCITY_SALES_SETTINGS.ENABLE_A_C_AUTO_SEND_EMAIL]: new TypeField(
+          HighVelocitySalesSettingsId,
+          HIGH_VELOCITY_SALES_SETTINGS.ENABLE_A_C_AUTO_SEND_EMAIL,
+          BuiltinTypes.BOOLEAN
+        ),
+        [HIGH_VELOCITY_SALES_SETTINGS.ENABLE_DISPOSITION_CATEGORY]: new TypeField(
+          HighVelocitySalesSettingsId,
+          HIGH_VELOCITY_SALES_SETTINGS.ENABLE_DISPOSITION_CATEGORY,
+          BuiltinTypes.BOOLEAN
+        ),
+        [HIGH_VELOCITY_SALES_SETTINGS.ENABLE_ENGAGEMENT_WAVE_ANALYTICS_PREF]: new TypeField(
+          HighVelocitySalesSettingsId,
+          HIGH_VELOCITY_SALES_SETTINGS.ENABLE_ENGAGEMENT_WAVE_ANALYTICS_PREF,
+          BuiltinTypes.BOOLEAN
+        ),
+        [HIGH_VELOCITY_SALES_SETTINGS.ENABLE_HIGH_VELOCITY_SALES]: new TypeField(
+          HighVelocitySalesSettingsId,
+          HIGH_VELOCITY_SALES_SETTINGS.ENABLE_HIGH_VELOCITY_SALES,
+          BuiltinTypes.BOOLEAN
+        ),
+        [HIGH_VELOCITY_SALES_SETTINGS.ENABLE_HIGH_VELOCITY_SALES_SETUP]: new TypeField(
+          HighVelocitySalesSettingsId,
+          HIGH_VELOCITY_SALES_SETTINGS.ENABLE_HIGH_VELOCITY_SALES_SETUP,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    IoTSettings: new ObjectType({
+      elemID: IoTSettingsId,
+      fields: {
+        [IO_T_SETTINGS.ENABLE_IO_T]: new TypeField(
+          IoTSettingsId,
+          IO_T_SETTINGS.ENABLE_IO_T,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    MapAndLocationSettings: new ObjectType({
+      elemID: MapAndLocationSettingsId,
+      fields: {
+        [MAP_AND_LOCATION_SETTINGS.ENABLE_ADDRESS_AUTO_COMPLETE]: new TypeField(
+          MapAndLocationSettingsId,
+          MAP_AND_LOCATION_SETTINGS.ENABLE_ADDRESS_AUTO_COMPLETE,
+          BuiltinTypes.BOOLEAN
+        ),
+        [MAP_AND_LOCATION_SETTINGS.ENABLE_MAPS_AND_LOCATION]: new TypeField(
+          MapAndLocationSettingsId,
+          MAP_AND_LOCATION_SETTINGS.ENABLE_MAPS_AND_LOCATION,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    ObjectLinkingSettings: new ObjectType({
+      elemID: ObjectLinkingSettingsId,
+      fields: {
+        [OBJECT_LINKING_SETTINGS.ENABLE_OBJECT_LINKING]: new TypeField(
+          ObjectLinkingSettingsId,
+          OBJECT_LINKING_SETTINGS.ENABLE_OBJECT_LINKING,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    PredictionBuilderSettings: new ObjectType({
+      elemID: PredictionBuilderSettingsId,
+      fields: {
+        [PREDICTION_BUILDER_SETTINGS.ENABLE_PREDICTION_BUILDER]: new TypeField(
+          PredictionBuilderSettingsId,
+          PREDICTION_BUILDER_SETTINGS.ENABLE_PREDICTION_BUILDER,
+          BuiltinTypes.BOOLEAN
+        ),
+        [PREDICTION_BUILDER_SETTINGS.IS_PREDICTION_BUILDER_STARTED]: new TypeField(
+          PredictionBuilderSettingsId,
+          PREDICTION_BUILDER_SETTINGS.IS_PREDICTION_BUILDER_STARTED,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+    SocialCustomerServiceSettings: new ObjectType({
+      elemID: SocialCustomerServiceSettingsId,
+      fields: {
+        [SOCIAL_CUSTOMER_SERVICE_SETTINGS.CASE_SUBJECT_OPTION]: new TypeField(
+          SocialCustomerServiceSettingsId,
+          SOCIAL_CUSTOMER_SERVICE_SETTINGS.CASE_SUBJECT_OPTION,
+          BuiltinTypes.STRING
+        ),
+        [SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_APPROVALS]: new TypeField(
+          SocialCustomerServiceSettingsId,
+          SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_APPROVALS,
+          BuiltinTypes.BOOLEAN
+        ),
+        [SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_CASE_ASSIGNMENT_RULES]: new TypeField(
+          SocialCustomerServiceSettingsId,
+          SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_CASE_ASSIGNMENT_RULES,
+          BuiltinTypes.BOOLEAN
+        ),
+        [SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_CUSTOMER_SERVICE]: new TypeField(
+          SocialCustomerServiceSettingsId,
+          SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_CUSTOMER_SERVICE,
+          BuiltinTypes.BOOLEAN
+        ),
+        [SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_PERSONA_HISTORY_TRACKING]: new TypeField(
+          SocialCustomerServiceSettingsId,
+          SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_PERSONA_HISTORY_TRACKING,
+          BuiltinTypes.BOOLEAN
+        ),
+        [SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_POST_HISTORY_TRACKING]: new TypeField(
+          SocialCustomerServiceSettingsId,
+          SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_POST_HISTORY_TRACKING,
+          BuiltinTypes.BOOLEAN
+        ),
+        [SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_RECEIVE_PARENT_POST]: new TypeField(
+          SocialCustomerServiceSettingsId,
+          SOCIAL_CUSTOMER_SERVICE_SETTINGS.ENABLE_SOCIAL_RECEIVE_PARENT_POST,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+  }
+
+  public static missingSubTypes: Record<MISSING_SUBTYPE_NAMES, ObjectType> = {
+    BusinessHoursEntry: new ObjectType({
+      elemID: BusinessHoursEntryID,
+      fields: {
+        [BUSINESS_HOURS_ENTRY.TIME_ZONE_ID]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.TIME_ZONE_ID, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.NAME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.NAME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.ACTIVE]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.ACTIVE, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.DEFAULT]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.DEFAULT, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.MONDAY_START_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.MONDAY_START_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.MONDAY_END_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.MONDAY_END_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.TUESDAY_START_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.TUESDAY_START_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.TUESDAY_END_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.TUESDAY_END_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.WEDNESDAY_START_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.WEDNESDAY_START_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.WEDNESDAY_START_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.WEDNESDAY_START_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.WEDNESDAY_END_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.WEDNESDAY_END_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.THURSDAY_START_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.THURSDAY_START_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.THURSDAY_END_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.THURSDAY_END_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.FRIDAY_START_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.FRIDAY_START_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.FRIDAY_END_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.FRIDAY_END_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.SATURDAY_START_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.SATURDAY_START_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.SATURDAY_END_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.SATURDAY_END_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.SUNDAY_START_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.SUNDAY_START_TIME, BuiltinTypes.STRING
+        ),
+        [BUSINESS_HOURS_ENTRY.SUNDAY_END_TIME]: new TypeField(
+          BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.SUNDAY_END_TIME, BuiltinTypes.STRING
+        ),
+      },
+    }),
+    Holidays: new ObjectType({
+      elemID: HolidaysId,
+      fields: {
+        [HOLIDAYS.NAME]: new TypeField(
+          HolidaysId, HOLIDAYS.NAME, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.DESCRIPTION]: new TypeField(
+          HolidaysId, HOLIDAYS.DESCRIPTION, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.IS_RECURRING]: new TypeField(
+          HolidaysId, HOLIDAYS.IS_RECURRING, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.ACTIVITY_DATE]: new TypeField(
+          HolidaysId, HOLIDAYS.ACTIVITY_DATE, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.RECURRENCE_START_DATE]: new TypeField(
+          HolidaysId, HOLIDAYS.RECURRENCE_START_DATE, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.RECURRENCE_END_DATE]: new TypeField(
+          HolidaysId, HOLIDAYS.RECURRENCE_END_DATE, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.START_TIME]: new TypeField(
+          HolidaysId, HOLIDAYS.START_TIME, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.END_TIME]: new TypeField(
+          HolidaysId, HOLIDAYS.END_TIME, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.RECURRENCE_TYPE]: new TypeField(
+          HolidaysId, HOLIDAYS.RECURRENCE_TYPE, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.RECURRENCE_INTERVAL]: new TypeField(
+          HolidaysId, HOLIDAYS.RECURRENCE_INTERVAL, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.RECURRENCE_DAY_OF_THE_WEEK]: new TypeField(
+          HolidaysId, HOLIDAYS.RECURRENCE_DAY_OF_THE_WEEK, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.RECURRENCE_DAY_OF_THE_MONTH]: new TypeField(
+          HolidaysId, HOLIDAYS.RECURRENCE_DAY_OF_THE_MONTH, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.RECURRENCE_INSTANCE]: new TypeField(
+          HolidaysId, HOLIDAYS.RECURRENCE_INSTANCE, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.RECURRENCE_MONTH_OF_THE_YEAR]: new TypeField(
+          HolidaysId, HOLIDAYS.RECURRENCE_MONTH_OF_THE_YEAR, BuiltinTypes.STRING
+        ),
+        [HOLIDAYS.BUSINESS_HOURS]: new TypeField(
+          HolidaysId, HOLIDAYS.BUSINESS_HOURS, BuiltinTypes.STRING
+        ),
+      },
+    }),
+    OrganizationSettingsDetail: new ObjectType({
+      elemID: OrganizationSettingsDetailId,
+      fields: {
+        [ORGANIZATION_SETTINGS_DETAIL.SETTING_NAME]: new TypeField(
+          OrganizationSettingsDetailId,
+          ORGANIZATION_SETTINGS_DETAIL.SETTING_NAME,
+          BuiltinTypes.STRING,
+          {
+            [CORE_ANNOTATIONS.VALUES]: [
+              'AnalyticsSharingEnable', 'ApexApprovalLockUnlock', 'ChatterEnabled', 'CompileOnDeploy',
+              'ConsentManagementEnabled', 'EnhancedEmailEnabled', 'EventLogWaveIntegEnabled', 'LoginForensicsEnabled',
+              'NetworksEnabled', 'NotesReservedPref01', 'OfflineDraftsEnabled', 'PathAssistantsEnabled',
+              'S1DesktopEnabled', 'S1EncryptedStoragePref2', 'S1OfflinePref', 'ScratchOrgManagementPref',
+              'SendThroughGmailPref', 'SocialProfilesEnable', 'Translation',
+            ],
+          }
+        ),
+        [ORGANIZATION_SETTINGS_DETAIL.SETTING_VALUE]: new TypeField(
+          OrganizationSettingsDetailId,
+          ORGANIZATION_SETTINGS_DETAIL.SETTING_VALUE,
+          BuiltinTypes.BOOLEAN
+        ),
+      },
+    }),
+  }
+
   // Type mapping for compound fields
   public static compoundDataTypes: Record<COMPOUND_FIELD_TYPE_NAMES, ObjectType> = {
     Address: new ObjectType({
@@ -765,6 +1246,23 @@ export class Types {
       fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
       return fieldType
     })
+  }
+
+  static getAllMissingTypes(): TypeElement[] {
+    return _.concat(
+      (Object.values(Types.missingTypes) as TypeElement[])
+        .map(type => {
+          const missingType = type.clone()
+          missingType.path = [SALESFORCE, TYPES_PATH, type.elemID.name]
+          return missingType
+        }),
+      (Object.values(Types.missingSubTypes) as TypeElement[])
+        .map(type => {
+          const missingSubType = type.clone()
+          missingSubType.path = [SALESFORCE, SUBTYPES_PATH, type.elemID.name]
+          return missingSubType
+        }),
+    )
   }
 
   static getAnnotationTypes(): TypeElement[] {

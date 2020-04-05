@@ -61,6 +61,27 @@ export enum COMPOUND_FIELD_TYPE_NAMES {
   LOCATION = 'Location',
 }
 
+export enum MISSING_TYPE_NAME {
+  CASE_CLASSIFICATION_SETTINGS = 'CaseClassificationSettings',
+  ACCOUNT_INSIGHT_SETTINGS = 'AccountInsightsSettings',
+  ACCOUNT_INTELLIGENCE_SETTINGS = 'AccountIntelligenceSettings',
+  AUTOMATED_CONTACTS_SETTINGS = 'AutomatedContactsSettings',
+  CHATTER_ANSWERS_SETTINGS = 'ChatterAnswersSettings',
+  CHATTER_EMAIL_MDSETTINGS = 'ChatterEmailMDSettings',
+  HIGH_VELOCITY_SALES_SETTINGS = 'HighVelocitySalesSettings',
+  IOT_SETTINGS = 'IoTSettings',
+  MAP_AND_LOCATION_SETTINGS = 'MapAndLocationSettings',
+  OBJECT_LINKING_SETTINGS = 'ObjectLinkingSettings',
+  PREDICTION_BUILDER_SETTINGS = 'PredictionBuilderSettings',
+  SOCIAL_CUSTOMER_SERVICE_SETTINGS = 'SocialCustomerServiceSettings',
+}
+
+export enum MISSING_SUBTYPE_NAMES {
+  BUSINESS_HOURS_ENTRY = 'BusinessHoursEntry',
+  HOLIDAYS = 'Holidays',
+  ORGANIZATION_SETTINGS_DETAIL = 'OrganizationSettingsDetail',
+}
+
 export const FIELD_SOAP_TYPE_NAMES:
 Record<string, FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES> = {
   address: COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
@@ -215,6 +236,133 @@ export const GEOLOCATION_FIELDS = {
 export const TOPICS_FOR_OBJECTS_FIELDS = {
   ENABLE_TOPICS: 'enableTopics',
   ENTITY_API_NAME: 'entityApiName',
+}
+
+export const CASE_CLASSIFICATION_SETTINGS = {
+  CASE_CLASSIFICATION_RECOMMENDATIONS: 'caseClassificationRecommendations',
+  RE_RUN_ATTRIBUTE_BASED_RULES: 'reRunAttributeBasedRules',
+  RUN_ASSIGNMENT_RULES: 'runAssignmentRules',
+}
+
+export const ACCOUNT_INSIGHT_SETTINGS = {
+  ENABLE_ACCOUNT_INSIGHTS: 'enableAccountInsights',
+}
+
+export const ACCOUNT_INTELLIGENCE_SETTINGS = {
+  ENABLE_ACCOUNT_LOGOS: 'enableAccountLogos',
+  ENABLE_AUTOMATED_ACCOUNT_FIELDS: 'enableAutomatedAccountFields',
+  ENABLE_NEWS_STORIES: 'enableNewsStories',
+}
+
+export const AUTOMATED_CONTACTS_SETTINGS = {
+  ENABLE_ADD_CONTACT_AUTOMATICALLY: 'enableAddContactAutomatically',
+  ENABLE_ADD_CONTACT_ROLE_AUTOMATICALLY: 'enableAddContactRoleAutomatically',
+  ENABLE_ADD_CONTACT_ROLE_WITH_SUGGESTION: 'enableAddContactRoleWithSuggestion',
+  ENABLE_ADD_CONTACT_WITH_SUGGESTION: 'enableAddContactWithSuggestion',
+}
+
+export const CHATTER_ANSWERS_SETTINGS = {
+  EMAIL_FOLLOWERS_ON_BEST_ANSWER: 'emailFollowersOnBestAnswer',
+  EMAIL_FOLLOWERS_ON_REPLY: 'emailFollowersOnReply',
+  EMAIL_OWNER_ON_PRIVATE_REPLY: 'emailOwnerOnPrivateReply',
+  EMAIL_OWNER_ON_REPLY: 'emailOwnerOnReply',
+  ENABLE_ANSWER_VIA_EMAIL: 'enableAnswerViaEmail',
+  ENABLE_CHATTER_ANSWERS: 'enableChatterAnswers',
+  ENABLE_FACEBOOK_S_S_O: 'enableFacebookSSO',
+  ENABLE_INLINE_PUBLISHER: 'enableInlinePublisher',
+  ENABLE_REPUTATION: 'enableReputation',
+  ENABLE_RICH_TEXT_EDITOR: 'enableRichTextEditor',
+  FACEBOOK_AUTH_PROVIDER: 'facebookAuthProvider',
+  SHOW_IN_PORTALS: 'showInPortals',
+}
+
+export const CHATTER_EMAIL_M_D_SETTINGS = {
+  ENABLE_CHATTER_DIGEST_EMAILS_API_ONLY: 'enableChatterDigestEmailsApiOnly',
+  ENABLE_CHATTER_EMAIL_ATTACHMENT: 'enableChatterEmailAttachment',
+  ENABLE_COLLABORATION_EMAIL: 'enableCollaborationEmail',
+  ENABLE_DISPLAY_APP_DOWNLOAD_BADGES: 'enableDisplayAppDownloadBadges',
+  ENABLE_EMAIL_REPLY_TO_CHATTER: 'enableEmailReplyToChatter',
+  ENABLE_EMAIL_TO_CHATTER: 'enableEmailToChatter',
+}
+
+export const IO_T_SETTINGS = {
+  ENABLE_IO_T: 'enableIoT',
+}
+
+export const OBJECT_LINKING_SETTINGS = {
+  ENABLE_OBJECT_LINKING: 'enableObjectLinking',
+}
+
+export const MAP_AND_LOCATION_SETTINGS = {
+  ENABLE_ADDRESS_AUTO_COMPLETE: 'enableAddressAutoComplete',
+  ENABLE_MAPS_AND_LOCATION: 'enableMapsAndLocation',
+}
+
+export const HIGH_VELOCITY_SALES_SETTINGS = {
+  ENABLE_A_C_AUTO_SEND_EMAIL: 'enableACAutoSendEmail',
+  ENABLE_DISPOSITION_CATEGORY: 'enableDispositionCategory',
+  ENABLE_ENGAGEMENT_WAVE_ANALYTICS_PREF: 'enableEngagementWaveAnalyticsPref',
+  ENABLE_HIGH_VELOCITY_SALES: 'enableHighVelocitySales',
+  ENABLE_HIGH_VELOCITY_SALES_SETUP: 'enableHighVelocitySalesSetup',
+}
+
+export const PREDICTION_BUILDER_SETTINGS = {
+  ENABLE_PREDICTION_BUILDER: 'enablePredictionBuilder',
+  IS_PREDICTION_BUILDER_STARTED: 'isPredictionBuilderStarted',
+}
+
+export const SOCIAL_CUSTOMER_SERVICE_SETTINGS = {
+  CASE_SUBJECT_OPTION: 'caseSubjectOption',
+  ENABLE_SOCIAL_APPROVALS: 'enableSocialApprovals',
+  ENABLE_SOCIAL_CASE_ASSIGNMENT_RULES: 'enableSocialCaseAssignmentRules',
+  ENABLE_SOCIAL_CUSTOMER_SERVICE: 'enableSocialCustomerService',
+  ENABLE_SOCIAL_PERSONA_HISTORY_TRACKING: 'enableSocialPersonaHistoryTracking',
+  ENABLE_SOCIAL_POST_HISTORY_TRACKING: 'enableSocialPostHistoryTracking',
+  ENABLE_SOCIAL_RECEIVE_PARENT_POST: 'enableSocialReceiveParentPost',
+}
+
+export const BUSINESS_HOURS_ENTRY = {
+  TIME_ZONE_ID: 'timeZoneId',
+  NAME: 'name',
+  ACTIVE: 'active',
+  DEFAULT: 'default',
+  MONDAY_START_TIME: 'mondayStartTime',
+  MONDAY_END_TIME: 'mondayEndTime',
+  TUESDAY_START_TIME: 'TuesdayStartTime',
+  TUESDAY_END_TIME: 'TuesdayEndTime',
+  WEDNESDAY_START_TIME: 'wednesdayStartTime',
+  WEDNESDAY_END_TIME: 'wednesdayEndTime',
+  THURSDAY_START_TIME: 'thursdayStartTime',
+  THURSDAY_END_TIME: 'thursdayEndTime',
+  FRIDAY_START_TIME: 'fridayStartTime',
+  FRIDAY_END_TIME: 'fridayEndTime',
+  SATURDAY_START_TIME: 'saturdayStartTime',
+  SATURDAY_END_TIME: 'saturdayEndTime',
+  SUNDAY_START_TIME: 'sundayStartTime',
+  SUNDAY_END_TIME: 'sundayEndTime',
+}
+
+export const HOLIDAYS = {
+  NAME: 'name',
+  DESCRIPTION: 'description',
+  IS_RECURRING: 'isRecurring',
+  ACTIVITY_DATE: 'activityDate',
+  RECURRENCE_START_DATE: 'recurrenceStartDate',
+  RECURRENCE_END_DATE: 'recurrenceEndDate',
+  START_TIME: 'startTime',
+  END_TIME: 'endTime',
+  RECURRENCE_TYPE: 'recurrenceType',
+  RECURRENCE_INTERVAL: 'recurrenceType',
+  RECURRENCE_DAY_OF_THE_WEEK: 'recurrenceDayOfWeek',
+  RECURRENCE_DAY_OF_THE_MONTH: 'recurrenceDayOfMonth',
+  RECURRENCE_INSTANCE: 'recurrenceInstance',
+  RECURRENCE_MONTH_OF_THE_YEAR: 'recurrenceMonthOfYear',
+  BUSINESS_HOURS: 'businessHours',
+}
+
+export const ORGANIZATION_SETTINGS_DETAIL = {
+  SETTING_NAME: 'settingName',
+  SETTING_VALUE: 'settingValue',
 }
 
 // BPs path

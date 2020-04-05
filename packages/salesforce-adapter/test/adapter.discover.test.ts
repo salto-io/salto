@@ -186,7 +186,9 @@ describe('SalesforceAdapter fetch', () => {
       expect(result).toHaveLength(_.concat(
         Object.keys(Types.primitiveDataTypes),
         Object.keys(Types.compoundDataTypes),
-        Object.keys(Types.formulaDataTypes)
+        Object.keys(Types.formulaDataTypes),
+        Object.keys(Types.missingTypes),
+        Object.keys(Types.missingSubTypes),
       ).length
         + 2 /* LookupFilter & filter items */
         + 1 /* rollup summary operation */

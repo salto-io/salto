@@ -231,9 +231,9 @@ const sendChunked = async <TIn, TOut>({
   }
   const result = await Promise.all(_.chunk(makeArray(input), chunkSize)
     .filter(chunk => !_.isEmpty(chunk))
-    .map(sendSingleChunk))
+    .map(async c => flatValues(await (sendSingleChunk(c)))))
   return {
-    result: _.flatten(result.map(e => e.result).map(flatValues)),
+    result: _.flatten(result.map(e => e.result)),
     errors: _.flatten(result.map(e => e.errors)),
   }
 }

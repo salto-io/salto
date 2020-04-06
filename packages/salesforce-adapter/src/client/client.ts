@@ -205,14 +205,14 @@ const sendChunked = async <TIn, TOut>({
   const sendSingleChunk = async (chunkInput: TIn[]):
   Promise<SendChunkedResult<TIn, TOut>> => {
     try {
-      return { result: makeArray(await sendChunk(chunkInput)), errors: [] }
+      return { result: makeArray(await sendChunk(chunkInput)).map(flatValues), errors: [] }
     } catch (error) {
       if (chunkInput.length > 1) {
         // Try each input individually to single out the one that caused the error
         log.error('chunked %s failed on chunk, trying each element separately', operationName)
         const sendChunkResult = await Promise.all(chunkInput.map(item => sendSingleChunk([item])))
         return {
-          result: _.flatten(sendChunkResult.map(e => e.result)),
+          result: _.flatten(sendChunkResult.map(e => e.result).map(flatValues)),
           errors: _.flatten(sendChunkResult.map(e => e.errors)),
         }
       }
@@ -233,7 +233,7 @@ const sendChunked = async <TIn, TOut>({
     .filter(chunk => !_.isEmpty(chunk))
     .map(sendSingleChunk))
   return {
-    result: _.flatten(result.map(e => e.result).map(flatValues)),
+    result: _.flatten(result.map(e => e.result)),
     errors: _.flatten(result.map(e => e.errors)),
   }
 }

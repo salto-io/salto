@@ -14,13 +14,13 @@
 - Auto-completion support.
 - Syntax highlighting for `.bp` files.
 - Syntax, Merge, and validation error highlighting. 
-- Adds commands for running `salto preview` and `salto deploy`
 - Browse document symbols
 - Browse workspace symbols
 - Peek definition
 - Goto definition
 - Find references
 - Show types definition values on hover
+- Copy salto reference
 
 ## Installation
 Salto is still not registered in the marketplace. To install:
@@ -41,15 +41,6 @@ Salto is still not registered in the marketplace. To install:
 
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/syntax.png" alt="Syntax" width="720"/>
 
-## Plan and Apply command execution
-
-You can invoke the command via:
-- The commands menu (Press `Ctrl+Shift+P` or `⇧⌘P` to open the menu)
-- The status bar
-- Mac's touch bar
-
-<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/apply.gif" alt="Commands" width="720"/>
-
 ## Error highlighting
 
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/errors.gif" alt="errors" width="720"/>
@@ -63,3 +54,7 @@ You can invoke the command via:
 
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/indexing.gif" alt="indexing" width="720"/>
 
+### Copy Salto reference 
+ - Right click on the attribute, value, type or instance you would like to reference and select Copy Salto Reference from the menu.
+
+<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/copy_ref.gif" alt="indexing" width="594"/>

@@ -231,7 +231,7 @@ const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
         annotations: {
           [CORE_ANNOTATIONS.VALUES]: ['DisplayText', 'InputField', 'LargeTextArea', 'PasswordField',
             'RadioButtons', 'DropdownBox', 'MultiSelectCheckboxes', 'MultiSelectPicklist',
-            'ComponentInstance'],
+            'ComponentInstance', 'ComponentChoice', 'ComponentInput'],
         },
       },
     ],

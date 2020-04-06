@@ -18,13 +18,16 @@ import {
   Value, ElemID, TemplateExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
-import { UnresolvedReference } from '../core/expressions'
 import {
   evaluateFunction,
   Functions,
 } from './functions'
 
 type ExpEvaluator = (expression: HclExpression) => Value
+
+export class IllegalReference {
+  constructor(public ref: string, public message: string) {}
+}
 
 const evaluate = (
   expression: HclExpression,
@@ -65,7 +68,7 @@ const evaluate = (
           ElemID.fromFullName(ref)
         )
       } catch (e) {
-        return new UnresolvedReference(ref)
+        return new IllegalReference(ref, e.message)
       }
     },
     func: exp => {

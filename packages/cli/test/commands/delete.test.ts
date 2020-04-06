@@ -20,7 +20,7 @@ import Prompts from '../../src/prompts'
 import { CliExitCode, CliTelemetry } from '../../src/types'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 import * as mocks from '../mocks'
-import { loadWorkspace } from '../../src/workspace'
+import { loadWorkspace } from '../../src/workspace/workspace'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -30,7 +30,7 @@ jest.mock('@salto-io/core', () => ({
     errors: new Set<string>(),
   })),
 }))
-jest.mock('../../src/workspace')
+jest.mock('../../src/workspace/workspace')
 
 const commandName = 'delete'
 const eventsNames = {

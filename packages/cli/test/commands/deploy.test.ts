@@ -20,7 +20,7 @@ import {
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import * as mocks from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
-import * as workspace from '../../src/workspace'
+import * as workspace from '../../src/workspace/workspace'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 
@@ -42,7 +42,7 @@ jest.mock('@salto-io/core', () => ({
 
     mockDeploy(ws, shouldDeploy, reportProgress, services, force)),
 }))
-jest.mock('../../src/workspace')
+jest.mock('../../src/workspace/workspace')
 
 const commandName = 'deploy'
 const eventsNames = {

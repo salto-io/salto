@@ -25,7 +25,7 @@ import {
   DeployResult, Config, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, SourceFragment,
 } from '@salto-io/core'
 import { EVENT_TYPES } from '@salto-io/core/dist/src/telemetry'
-import * as workspace from '../src/workspace'
+import * as workspace from '../src/workspace/workspace'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
 import { YargsCommandBuilder } from '../src/command_builder'

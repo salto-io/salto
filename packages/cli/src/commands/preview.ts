@@ -21,7 +21,7 @@ import {
   SpinnerCreator, CliExitCode, CliTelemetry,
 } from '../types'
 import { formatExecutionPlan } from '../formatter'
-import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'

@@ -42,7 +42,7 @@ import {
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
   shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
-import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'

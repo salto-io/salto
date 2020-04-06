@@ -30,7 +30,7 @@ import {
   formatItemError, deployPhaseEpilogue,
 } from '../formatter'
 import { shouldDeploy } from '../callbacks'
-import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
 

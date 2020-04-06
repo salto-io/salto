@@ -30,7 +30,7 @@ type Resolver<T> = (
 ) => Value
 
 export class UnresolvedReference {
-  constructor(public ref: string) {}
+  constructor(public target: ElemID) {}
 }
 
 export class CircularReference {
@@ -79,13 +79,13 @@ resolveReferenceExpression = (
     && contextElements[parent.getFullName()][0]
 
   if (!rootElement) {
-    return new UnresolvedReference(traversal)
+    return new UnresolvedReference(fullElemID)
   }
 
   const value = resolvePath(rootElement, fullElemID)
 
   if (value === undefined) {
-    return new UnresolvedReference(traversal)
+    return new UnresolvedReference(fullElemID)
   }
 
   return resolveMaybeExpression(value, contextElements, visited) || value

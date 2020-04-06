@@ -23,7 +23,7 @@ import {
   ParsedCliInput, CliCommand,
   CliOutput, CliExitCode, CliTelemetry,
 } from '../types'
-import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace'
+import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { getCliTelemetry } from '../telemetry'
 
 export const command = (

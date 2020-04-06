@@ -19,14 +19,15 @@ import { Workspace, loadConfig, FetchChange, Tags } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
-  formatFinishedLoading, formatWorkspaceAbort } from './formatter'
-import { CliOutput, SpinnerCreator } from './types'
+  formatFinishedLoading, formatWorkspaceAbort } from '../formatter'
+import { CliOutput, SpinnerCreator } from '../types'
 import {
   shouldContinueInCaseOfWarnings,
   shouldAbortWorkspaceInCaseOfValidationError,
   shouldCancelInCaseOfNoRecentState,
-} from './callbacks'
-import Prompts from './prompts'
+} from '../callbacks'
+import Prompts from '../prompts'
+import { groupRelatedErrors } from './errors'
 
 const log = logger(module)
 
@@ -41,7 +42,7 @@ export type LoadWorkspaceResult = {
 type WorkspaceStatus = 'Error' | 'Warning' | 'Valid'
 type WorkspaceStatusErrors = {
   status: WorkspaceStatus
-  errors: SaltoError[]
+  errors: ReadonlyArray<SaltoError>
 }
 
 export type LoadWorkspaceOptions = {
@@ -58,9 +59,9 @@ export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusE
     return { status: 'Valid', errors: [] }
   }
   if (wu.some(isError, errors.all())) {
-    return { status: 'Error', errors: [...wu.filter(isError, errors.all())] }
+    return { status: 'Error', errors: groupRelatedErrors([...wu.filter(isError, errors.all())]) }
   }
-  return { status: 'Warning', errors: [...errors.all()] }
+  return { status: 'Warning', errors: groupRelatedErrors([...errors.all()]) }
 }
 
 export const formatWorkspaceErrors = async (

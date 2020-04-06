@@ -699,6 +699,7 @@ export class Types {
           BuiltinTypes.STRING
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, CaseClassificationSettingsId.name],
     }),
     AccountInsightsSettings: new ObjectType({
       elemID: AccountInsightsSettingsId,
@@ -709,6 +710,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, AccountInsightsSettingsId.name],
     }),
     AccountIntelligenceSettings: new ObjectType({
       elemID: AccountIntelligenceSettingsId,
@@ -729,6 +731,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, AccountIntelligenceSettingsId.name],
     }),
     AutomatedContactsSettings: new ObjectType({
       elemID: AutomatedContactsSettingsId,
@@ -754,6 +757,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, AutomatedContactsSettingsId.name],
     }),
     ChatterAnswersSettings: new ObjectType({
       elemID: ChatterAnswersSettingsId,
@@ -824,6 +828,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, ChatterAnswersSettingsId.name],
     }),
     ChatterEmailMDSettings: new ObjectType({
       elemID: ChatterEmailMDSettingsId,
@@ -859,6 +864,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, ChatterEmailMDSettingsId.name],
     }),
     HighVelocitySalesSettings: new ObjectType({
       elemID: HighVelocitySalesSettingsId,
@@ -889,6 +895,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, HighVelocitySalesSettingsId.name],
     }),
     IoTSettings: new ObjectType({
       elemID: IoTSettingsId,
@@ -899,6 +906,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, IoTSettingsId.name],
     }),
     MapAndLocationSettings: new ObjectType({
       elemID: MapAndLocationSettingsId,
@@ -914,6 +922,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, MapAndLocationSettingsId.name],
     }),
     ObjectLinkingSettings: new ObjectType({
       elemID: ObjectLinkingSettingsId,
@@ -924,6 +933,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, ObjectLinkingSettingsId.name],
     }),
     PredictionBuilderSettings: new ObjectType({
       elemID: PredictionBuilderSettingsId,
@@ -939,6 +949,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, PredictionBuilderSettingsId.name],
     }),
     SocialCustomerServiceSettings: new ObjectType({
       elemID: SocialCustomerServiceSettingsId,
@@ -979,6 +990,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, TYPES_PATH, SocialCustomerServiceSettingsId.name],
     }),
   }
 
@@ -1044,6 +1056,7 @@ export class Types {
           BusinessHoursEntryID, BUSINESS_HOURS_ENTRY.SUNDAY_END_TIME, BuiltinTypes.STRING
         ),
       },
+      path: [SALESFORCE, SUBTYPES_PATH, BusinessHoursEntryID.name],
     }),
     Holidays: new ObjectType({
       elemID: HolidaysId,
@@ -1094,6 +1107,7 @@ export class Types {
           HolidaysId, HOLIDAYS.BUSINESS_HOURS, BuiltinTypes.STRING
         ),
       },
+      path: [SALESFORCE, SUBTYPES_PATH, HolidaysId.name],
     }),
     OrganizationSettingsDetail: new ObjectType({
       elemID: OrganizationSettingsDetailId,
@@ -1118,6 +1132,7 @@ export class Types {
           BuiltinTypes.BOOLEAN
         ),
       },
+      path: [SALESFORCE, SUBTYPES_PATH, OrganizationSettingsDetailId.name],
     }),
   }
 
@@ -1238,9 +1253,9 @@ export class Types {
 
   static getAllFieldTypes(): TypeElement[] {
     return _.concat(
-      Object.values(Types.primitiveDataTypes) as TypeElement[],
+      Object.values(Types.primitiveDataTypes),
       Object.values(Types.compoundDataTypes) as TypeElement[],
-      Object.values(Types.formulaDataTypes) as TypeElement[],
+      Object.values(Types.formulaDataTypes),
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
@@ -1250,18 +1265,8 @@ export class Types {
 
   static getAllMissingTypes(): TypeElement[] {
     return _.concat(
-      (Object.values(Types.missingTypes) as TypeElement[])
-        .map(type => {
-          const missingType = type.clone()
-          missingType.path = [SALESFORCE, TYPES_PATH, type.elemID.name]
-          return missingType
-        }),
-      (Object.values(Types.missingSubTypes) as TypeElement[])
-        .map(type => {
-          const missingSubType = type.clone()
-          missingSubType.path = [SALESFORCE, SUBTYPES_PATH, type.elemID.name]
-          return missingSubType
-        }),
+      Object.values(Types.missingTypes),
+      Object.values(Types.missingSubTypes),
     )
   }
 

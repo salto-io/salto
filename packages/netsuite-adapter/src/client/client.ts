@@ -15,6 +15,9 @@
 */
 import { NodeCli } from '@oracle/suitecloud-sdk'
 import { decorators } from '@salto-io/lowerdash'
+import xmlConverter, { Element as XmlElement } from 'xml-js'
+import path from 'path'
+import { readDir, readFile } from './file'
 
 const {
   AuthenticationService, CLIConfigurationService, CommandActionExecutor, CommandInstanceFactory,
@@ -32,6 +35,11 @@ export type NetsuiteClientOpts = {
 const rootCLIPath = `${__dirname}/../../../../../node_modules/@oracle/suitecloud-sdk/packages/node-cli/src`
 // todo
 const baseExecutionPath = '/tmp'
+
+export const convertToSingleXmlElement = (xmlContent: string): XmlElement => {
+  const topLevelXmlElements = xmlConverter.xml2js(xmlContent)
+  return topLevelXmlElements.elements[0]
+}
 
 export default class NetsuiteClient {
   private projectName?: string
@@ -115,11 +123,16 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.requiresLogin
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async listCustomizationObjects(): Promise<any[]> {
-    // todo import objects & read the folder content
+  async listCustomObjects(): Promise<XmlElement[]> {
+    // todo import objects using SDF & read the folder content
     // eslint-disable-next-line no-console
-    console.log(this)
-    return []
+    console.log(this) // temp: must use 'this' in class method
+
+    const fetchDirPath = `${__dirname}/../../../src/client/fetch_results_examples`
+    const dirContent = await readDir(fetchDirPath)
+    return Promise.all(dirContent.map(async filename => {
+      const xmlContent = await readFile(path.resolve(fetchDirPath, filename))
+      return convertToSingleXmlElement(xmlContent)
+    }))
   }
 }

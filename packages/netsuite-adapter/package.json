@@ -31,6 +31,7 @@
     "@salto-io/adapter-utils": "0.1.11",
     "@salto-io/logging": "0.1.11",
     "@salto-io/lowerdash": "0.1.11",
+    "xml-js": "^1.6.11",
     "lodash": "^4.17.11",
     "@oracle/suitecloud-sdk": "https://github.com/salto-io/netsuite-suitecloud-sdk.git",
     "wu": "^2.1.0"
@@ -54,6 +55,7 @@
     "jest-junit": "^6.4.0",
     "ts-cleaner": "^1.0.3",
     "tsc-watch": "^2.2.1",
-    "typescript": "^3.8.3"
+    "typescript": "^3.8.3",
+    "vm2": "^3.9.1"
   }
 }

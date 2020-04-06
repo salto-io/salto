@@ -14,10 +14,39 @@
 * limitations under the License.
 */
 
+import createClient from './client/client'
+import NetsuiteAdapter from '../src/adapter'
+import { Types } from '../src/types'
+import { ENTITY_CUSTOM_FIELD } from '../src/constants'
+import { createInstanceElement } from '../src/transformer'
+import { convertToSingleXmlElement } from '../src/client/client'
 
 describe('Adapter', () => {
-  it('dummy test so build will not fail', () => {
-    // eslint-disable-next-line no-console
-    console.log('123')
+  const client = createClient()
+  const netsuiteAdapter = new NetsuiteAdapter({ client })
+
+  describe('fetch', () => {
+    it('should fetch all types and instances', async () => {
+      const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
+        + '  <label>elementName</label>'
+        + '</entitycustomfield>'
+      const rootXmlElement = convertToSingleXmlElement(xmlContent)
+      client.listCustomObjects = jest.fn().mockReturnValue([rootXmlElement])
+      const { elements } = await netsuiteAdapter.fetch()
+      expect(elements).toHaveLength(Types.getAllTypes().length + 1)
+      const customFieldType = Types.customTypes[ENTITY_CUSTOM_FIELD.toLowerCase()]
+      expect(elements).toContainEqual(customFieldType)
+      expect(elements).toContainEqual(createInstanceElement(rootXmlElement, customFieldType))
+    })
+
+    it('should ignore instances of unknown type', async () => {
+      const xmlContent = '<unknowntype>\n'
+        + '  <label>elementName</label>'
+        + '</unknowntype>'
+      const rootXmlElement = convertToSingleXmlElement(xmlContent)
+      client.listCustomObjects = jest.fn().mockReturnValue([rootXmlElement])
+      const { elements } = await netsuiteAdapter.fetch()
+      expect(elements).toHaveLength(Types.getAllTypes().length)
+    })
   })
 })

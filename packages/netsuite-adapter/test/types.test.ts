@@ -13,17 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const NETSUITE = 'netsuite'
-export const RECORDS_PATH = 'Records'
-export const TYPES_PATH = 'Types'
-export const SUBTYPES_PATH = 'Subtypes'
+import { Types } from '../src/types'
+import { IS_NAME } from '../src/constants'
 
-// Type names
-export const ENTITY_CUSTOM_FIELD = 'EntityCustomField'
-
-// Fields
-export const SCRIPT_ID = 'scriptId'
-
-// Field Annotations
-export const IS_ATTRIBUTE = 'isAttribute'
-export const IS_NAME = 'isName'
+describe('Types', () => {
+  it('should have single name field for all custom types', () => {
+    Object.values(Types.customTypes)
+      .forEach(typeDef =>
+        expect(Object.values(typeDef.fields)
+          .filter(field => field.annotations[IS_NAME])).toHaveLength(1))
+  })
+})

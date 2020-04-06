@@ -13,17 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const NETSUITE = 'netsuite'
-export const RECORDS_PATH = 'Records'
-export const TYPES_PATH = 'Types'
-export const SUBTYPES_PATH = 'Subtypes'
+import NetsuiteClient from '../../src/client/client'
 
-// Type names
-export const ENTITY_CUSTOM_FIELD = 'EntityCustomField'
+const mockClient = (): NetsuiteClient =>
+  new NetsuiteClient({
+    credentials: {
+    },
+  })
 
-// Fields
-export const SCRIPT_ID = 'scriptId'
-
-// Field Annotations
-export const IS_ATTRIBUTE = 'isAttribute'
-export const IS_NAME = 'isName'
+export default mockClient

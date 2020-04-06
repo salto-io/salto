@@ -13,17 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const NETSUITE = 'netsuite'
-export const RECORDS_PATH = 'Records'
-export const TYPES_PATH = 'Types'
-export const SUBTYPES_PATH = 'Subtypes'
+import { promisify } from 'util'
+import fs from 'fs'
 
-// Type names
-export const ENTITY_CUSTOM_FIELD = 'EntityCustomField'
+const readFileP = promisify(fs.readFile)
+const readDirP = promisify(fs.readdir)
 
-// Fields
-export const SCRIPT_ID = 'scriptId'
+export const readFile = async (path: string): Promise<string> =>
+  readFileP(path, { encoding: 'utf8' })
 
-// Field Annotations
-export const IS_ATTRIBUTE = 'isAttribute'
-export const IS_NAME = 'isName'
+export const readDir = async (path: string): Promise<string[]> =>
+  readDirP(path)

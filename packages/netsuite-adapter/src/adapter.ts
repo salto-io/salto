@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, FetchResult } from '@salto-io/adapter-api'
+import { Element, FetchResult, isInstanceElement } from '@salto-io/adapter-api'
 import NetsuiteClient from './client/client'
+import { createInstanceElement } from './transformer'
+import { Types } from './types'
 
 
 export interface NetsuiteAdapterParams {
@@ -32,10 +34,13 @@ export default class NetsuiteAdapter {
    * Fetch configuration elements: objects, types and instances for the given Netsuite account.
    * Account credentials were given in the constructor.
    */
-  public async fetch(): Promise<FetchResult> { // todo: implement
-    // eslint-disable-next-line no-console
-    console.log(this.client)
-    return { elements: [] }
+  public async fetch(): Promise<FetchResult> {
+    const customObjectXmls = await this.client.listCustomObjects()
+    const instances = customObjectXmls.map(customObjectXml => {
+      const type = Types.customTypes[customObjectXml.name as string]
+      return type ? createInstanceElement(customObjectXml, type) : undefined
+    }).filter(isInstanceElement)
+    return { elements: [...Types.getAllTypes(), ...instances] }
   }
 
   public async add(element: Element): Promise<Element> { // todo: implement

@@ -473,3 +473,23 @@ export interface MarketingEmail extends HubspotMetadata {
   // a list of all linked workflows to this email.
   workflowNames: []
 }
+
+export interface Owner {
+    portalId: number
+    ownerId: number
+    type: string
+    firstName: string
+    lastName: string
+    email: string
+    createdAt: number
+    updatedAt: number
+    remoteList: RemoteList[]
+}
+
+interface RemoteList {
+  portalId: number
+  ownerId: number
+  remoteId: string
+  remoteType: string
+  active: boolean
+}

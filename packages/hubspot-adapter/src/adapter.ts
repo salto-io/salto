@@ -157,7 +157,7 @@ export default class HubspotAdapter {
 
   private async runFiltersOnFetch(elements: Element[]): Promise<void> {
     // Fetch filters order is important so they should run one after the other
-    return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
+    return this.filtersCreators.map(filterCreator => filterCreator({ client: this.client })).reduce(
       (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
       Promise.resolve(),
     )

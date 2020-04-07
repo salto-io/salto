@@ -28,7 +28,7 @@ import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
   NURTURETIMERANGE_FIELDS, ANCHOR_SETTING_FIELDS, FORM_PROPERTY_INNER_FIELDS,
   EVENTANCHOR_FIELDS, ACTION_FIELDS, FORM_PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS,
-  CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS,
+  CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS, userIdentifierElemID,
   DEPENDENT_FIELD_FILTER_FIELDS, FIELD_FILTER_FIELDS, WORKFLOWS_FIELDS, optionsElemID,
   MARKETING_EMAIL_FIELDS, RICHTEXT_FIELDS, formElemID, workflowsElemID, CRITERIA_FIELDS,
   propertyGroupElemID, propertyElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS, rssToEmailTimingElemID,
@@ -80,7 +80,13 @@ export class Types {
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.BOOLEANCHECKBOX),
       primitive: PrimitiveTypes.NUMBER,
     }),
+    [FIELD_TYPES.USERIDENTIFIER]: new PrimitiveType({
+      elemID: userIdentifierElemID,
+      primitive: PrimitiveTypes.STRING,
+    }),
   }
+
+  public static userIdentifierType = Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER]
 
   private static optionsType: ObjectType =
     new ObjectType({
@@ -760,7 +766,8 @@ export class Types {
           },
         ),
         [FORM_FIELDS.NOTIFYRECIPIENTS]: new Field(
-          formElemID, FORM_FIELDS.NOTIFYRECIPIENTS, BuiltinTypes.STRING, {
+          formElemID, FORM_FIELDS.NOTIFYRECIPIENTS,
+          new ListType(Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER]), {
             name: FORM_FIELDS.NOTIFYRECIPIENTS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1114,8 +1121,9 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new Field( // TODO: Replace with user's email
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORUSERID, BuiltinTypes.NUMBER, {
+        [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new Field(
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORUSERID,
+          Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER], {
             name: MARKETING_EMAIL_FIELDS.AUTHORUSERID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1423,7 +1431,8 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: new Field( // TODO: Move to state only
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDBYID, BuiltinTypes.NUMBER, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDBYID,
+          Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER], {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1630,7 +1639,8 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: new Field( // TODO: Move to state only
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATEDBYID, BuiltinTypes.NUMBER, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATEDBYID,
+          Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER], {
             name: MARKETING_EMAIL_FIELDS.UPDATEDBYID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,

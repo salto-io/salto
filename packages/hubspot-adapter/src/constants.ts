@@ -60,6 +60,7 @@ export const FIELD_TYPES = {
   RADIO: 'radio',
   CHECKBOX: 'checkbox',
   BOOLEANCHECKBOX: 'booleancheckbox',
+  USERIDENTIFIER: 'userIdentifier',
 }
 
 export const FORM_FIELDS = {
@@ -381,3 +382,4 @@ export const contactPropertyOverridesElemID = new ElemID(
   HUBSPOT,
   OBJECTS_NAMES.CONTACTPROPERTYOVERRIDES
 )
+export const userIdentifierElemID = new ElemID(HUBSPOT, FIELD_TYPES.USERIDENTIFIER)

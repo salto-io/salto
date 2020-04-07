@@ -15,22 +15,16 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { InstanceElement } from '@salto-io/adapter-api'
 import uuidv5 from 'uuid/v5'
-import { collections } from '@salto-io/lowerdash/'
-import { getAdaptersCredentialsTypes } from '../../core/adapters'
 import { exists } from '../../file'
-import { Workspace, loadWorkspace, preferencesWorkspaceConfigType, COMMON_ENV_PREFIX, EnviornmentsSources, WORKSPACE_CONFIG, initWorkspace } from '../workspace'
-import { configSource, ConfigSource } from '../config_source'
+import { Workspace, loadWorkspace, COMMON_ENV_PREFIX, EnviornmentsSources, initWorkspace } from '../workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../../app_config'
 import { BlueprintsSource, BP_EXTENSION, blueprintsSource } from '../blueprints/blueprints_source'
 import { parseResultCache } from '../cache'
 import { localState } from './state'
+import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspace_config'
 
-const { makeArray } = collections.array
-
-export const CONFIG_DIR_NAME = 'salto.config'
 export const STATES_DIR_NAME = 'states'
 
 export class NotAnEmptyWorkspaceError extends Error {
@@ -51,10 +45,6 @@ export class NotAWorkspaceError extends Error {
   }
 }
 
-const getConfigDir = (baseDir: string): string => (
-  path.join(path.resolve(baseDir), CONFIG_DIR_NAME)
-)
-
 const loadBlueprintSource = (
   sourceBaseDir: string,
   localStorage: string,
@@ -69,7 +59,7 @@ const loadBlueprintSource = (
   return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
 }
 
-const elementsSources = (baseDir: string, localStorage: string, envs: string[]):
+const elementsSources = (baseDir: string, localStorage: string, envs: ReadonlyArray<string>):
 EnviornmentsSources => ({
   ..._.fromPairs(envs.map(env =>
     [
@@ -80,7 +70,6 @@ EnviornmentsSources => ({
           path.resolve(localStorage, env)
         ),
         state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.bpc`)),
-
       },
     ])),
   [COMMON_ENV_PREFIX]: {
@@ -91,23 +80,6 @@ EnviornmentsSources => ({
     ),
   },
 })
-
-const workspaceConfigSource = (baseConfigDir: string, localConfigDir: string): ConfigSource => {
-  const repoConfigSource = configSource(localDirectoryStore(baseConfigDir))
-  const localConfigSource = configSource(localDirectoryStore(localConfigDir))
-  return {
-    get: async (configName: string): Promise<InstanceElement | undefined> =>
-      await repoConfigSource.get(configName) || localConfigSource.get(configName),
-    set: (configName: string, config: Readonly<InstanceElement>): Promise<void> => {
-      const locals = Object.values(getAdaptersCredentialsTypes())
-        .concat(preferencesWorkspaceConfigType)
-      if (locals.includes(config.type)) {
-        return localConfigSource.set(configName, config)
-      }
-      return repoConfigSource.set(configName, config)
-    },
-  }
-}
 
 const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined> => {
   if (await exists(path.join(lookupDir, CONFIG_DIR_NAME))) {
@@ -123,12 +95,9 @@ Promise<Workspace> => {
   if (_.isUndefined(baseDir)) {
     throw new NotAWorkspaceError()
   }
-  const workspaceConfig = configSource(localDirectoryStore(getConfigDir(baseDir)))
-  const conf = await workspaceConfig.get(WORKSPACE_CONFIG) as InstanceElement
-  const localStorage = path.join(getSaltoHome(), `${conf.value.name}-${conf.value.uid}`)
-  const envs = makeArray(conf.value.envs).map((env: {name: string}) => env.name)
-  return loadWorkspace(workspaceConfigSource(getConfigDir(baseDir), localStorage),
-    elementsSources(baseDir, localStorage, envs))
+  const workspaceConfig = await workspaceConfigSource(baseDir)
+  const elemSources = elementsSources(baseDir, workspaceConfig.localStorage, workspaceConfig.envs)
+  return loadWorkspace(workspaceConfig, elemSources)
 }
 
 export const initLocalWorkspace = async (baseDir: string, name?: string, envName = 'default'):
@@ -143,7 +112,7 @@ Promise<Workspace> => {
     throw new NotAnEmptyWorkspaceError([localStorage])
   }
 
-  return initWorkspace(workspaceName, uid, envName,
-    workspaceConfigSource(getConfigDir(baseDir), localStorage),
-    elementsSources(path.resolve(baseDir), localStorage, [envName]))
+  const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
+  const elemSources = elementsSources(path.resolve(baseDir), localStorage, [envName])
+  return initWorkspace(workspaceName, uid, envName, workspaceConfig, elemSources)
 }

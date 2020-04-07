@@ -31,19 +31,23 @@ import mockState from '../common/state'
 import { createMockBlueprintSource } from '../common/blueprint_source'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import {
-  Workspace, initWorkspace, WORKSPACE_CONFIG, workspaceConfigType, preferencesWorkspaceConfigType,
-  PREFERENCE_CONFIG,
+  Workspace,
+  initWorkspace,
   loadWorkspace,
   COMMON_ENV_PREFIX,
-  CREDENTIALS_CONFIG,
+  CREDENTIALS_CONFIG_PATH,
   NoWorkspaceConfig,
-  ADAPTERS_CONFIGS,
+  ADAPTERS_CONFIGS_PATH,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 
 import * as dump from '../../src/parser/dump'
 
 import { mockDirStore, mockParseCache } from '../common/blueprint_store'
+import {
+  WORKSPACE_CONFIG_NAME, workspaceConfigType, PREFERENCE_CONFIG_NAME,
+  preferencesWorkspaceConfigType,
+} from '../../src/workspace/workspace_config_types'
 
 const changedBP = {
   filename: 'file.bp',
@@ -62,7 +66,7 @@ const newBP = {
 const services = ['salesforce']
 
 const wsConfInstance = (conf?: Values): InstanceElement =>
-  new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType, {
+  new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType, {
     uid: '',
     name: 'test',
     envs: [{ name: 'default', services },
@@ -71,9 +75,9 @@ const wsConfInstance = (conf?: Values): InstanceElement =>
   })
 const mockConfigSource = (conf?: Values): ConfigSource => ({
   get: jest.fn().mockImplementation(name => (
-    (name === WORKSPACE_CONFIG)
+    (name === WORKSPACE_CONFIG_NAME)
       ? wsConfInstance(conf)
-      : new InstanceElement(PREFERENCE_CONFIG, preferencesWorkspaceConfigType, {
+      : new InstanceElement(PREFERENCE_CONFIG_NAME, preferencesWorkspaceConfigType, {
         currentEnv: 'default',
       })
   )),
@@ -106,7 +110,7 @@ describe('workspace', () => {
     it('should work if preferences is missing', async () => {
       const noPreferences = {
         get: jest.fn().mockImplementation(name => (
-          (name === WORKSPACE_CONFIG) ? wsConfInstance() : undefined
+          (name === WORKSPACE_CONFIG_NAME) ? wsConfInstance() : undefined
         )),
         set: jest.fn(),
       }
@@ -480,11 +484,11 @@ describe('workspace', () => {
       const workspace = await initWorkspace('ws-name', 'uid', 'default', confSource, {})
       expect(confSource.set).toHaveBeenCalled()
       expect((confSource.set as jest.Mock).mock.calls[0][1]).toEqual(
-        new InstanceElement(WORKSPACE_CONFIG, workspaceConfigType,
+        new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType,
           { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }] })
       )
       expect((confSource.set as jest.Mock).mock.calls[1][1]).toEqual(
-        new InstanceElement(PREFERENCE_CONFIG, preferencesWorkspaceConfigType,
+        new InstanceElement(PREFERENCE_CONFIG_NAME, preferencesWorkspaceConfigType,
           { currentEnv: 'default' })
       )
       expect(workspace.name).toEqual('ws-name')
@@ -629,7 +633,7 @@ describe('workspace', () => {
       const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
       expect(instance).toEqual(newCreds)
       const path = (confSource.set as jest.Mock).mock.calls[0][0] as string
-      expect(path).toEqual(`default/${CREDENTIALS_CONFIG}/${services[0]}`)
+      expect(path).toEqual(`default/${CREDENTIALS_CONFIG_PATH}/${services[0]}`)
     })
   })
 
@@ -650,7 +654,7 @@ describe('workspace', () => {
       const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
       expect(instance).toEqual(newConf)
       const path = (confSource.set as jest.Mock).mock.calls[0][0] as string
-      expect(path).toEqual(`${ADAPTERS_CONFIGS}/${services[0]}`)
+      expect(path).toEqual(`${ADAPTERS_CONFIGS_PATH}/${services[0]}`)
     })
   })
 })

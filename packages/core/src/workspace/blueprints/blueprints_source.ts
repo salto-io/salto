@@ -179,7 +179,7 @@ const buildBlueprintsSource = (
     state = buildBlueprintsState(blueprints, (await state).parsedBlueprints)
   }
 
-  const update = async (changes: DetailedChange[]): Promise<void> => {
+  const updateBlueprints = async (changes: DetailedChange[]): Promise<void> => {
     const getBlueprintData = async (filename: string): Promise<string> => {
       const bp = await blueprintsStore.get(filename)
       return bp ? bp.buffer : ''
@@ -282,7 +282,7 @@ const buildBlueprintsSource = (
       state
     ),
 
-    updateBlueprints: update,
+    updateBlueprints,
     setBlueprints,
     getSourceMap,
     getElementBlueprints,

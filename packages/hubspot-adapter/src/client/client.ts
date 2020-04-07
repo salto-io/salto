@@ -122,6 +122,12 @@ export default class HubspotClient {
     }
   }
 
+  getOwnerById(id: string | number): RequestPromise {
+    const resp = this.conn.owners.getById(id)
+    validateResponse(resp)
+    return resp
+  }
+
   getAllContacts(): RequestPromise {
     return this.conn.contacts.get()
   }

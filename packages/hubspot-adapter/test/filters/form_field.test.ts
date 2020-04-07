@@ -15,12 +15,14 @@
 */
 import _ from 'lodash'
 import { InstanceElement, Values } from '@salto-io/adapter-api'
+import { OnFetchFilter } from 'src/filter'
+import mockClient from '../client'
 import filterCreator from '../../src/filters/form_field'
 import { Types } from '../../src/transformers/transformer'
 import { valuePropInstance, datePropInstance, g1PropInstance } from '../common/mock_elements'
 
 describe('form_field filter', () => {
-  const filter = filterCreator()
+  let filter: OnFetchFilter
   const formValues = {
     portalId: 6774238,
     guid: 'guid',
@@ -132,6 +134,8 @@ describe('form_field filter', () => {
   )
 
   beforeEach(() => {
+    const { client } = mockClient()
+    filter = filterCreator({ client })
     filter.onFetch([formInstance, valuePropInstance, datePropInstance, g1PropInstance])
   })
 

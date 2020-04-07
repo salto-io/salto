@@ -17,6 +17,11 @@ import {
   RequestPromise,
 } from 'requestretry'
 
+export interface Owner {
+  get(opts?: {}): RequestPromise
+  getById(ownerId: number | string, opts?: {}): RequestPromise
+}
+
 export interface Form extends HubspotObjectAPI {
   update(guid: string, data: {}): RequestPromise
 }
@@ -52,4 +57,5 @@ export default interface Connection {
   workflows: Workflow
   marketingEmail: MarketingEmail
   contacts: Contact
+  owners: Owner
 }

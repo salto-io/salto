@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import moment from 'moment'
 import inquirer from 'inquirer'
-import { Workspace, FetchChange, DetailedChange, loadConfig } from '@salto-io/core'
+import { Workspace, FetchChange, DetailedChange } from '@salto-io/core'
 import { Spinner } from '../../src/types'
 import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG } from '../../src/workspace/workspace'
 import { MockWriteStream, dummyChanges, detailedChange, mockErrors, mockFunction } from '../mocks'

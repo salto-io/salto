@@ -19,7 +19,7 @@ import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'
 import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv } from '../formatter'
-import { loadWorkspace } from '../workspace'
+import { loadWorkspace } from '../workspace/workspace'
 
 const outputLine = ({ stdout }: CliOutput, text: string): void => stdout.write(`${text}\n`)
 

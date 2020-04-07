@@ -21,6 +21,9 @@ export const SUBTYPES_PATH = 'Subtypes'
 // Type names
 export const ENTITY_CUSTOM_FIELD = 'EntityCustomField'
 
+// Type Annotations
+export const SCRIPT_ID_PREFIX = 'scriptIdPrefix'
+
 // Fields
 export const SCRIPT_ID = 'scriptId'
 

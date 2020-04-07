@@ -17,7 +17,7 @@ import { NodeCli } from '@oracle/suitecloud-sdk'
 import { decorators } from '@salto-io/lowerdash'
 import xmlConverter, { Element as XmlElement } from 'xml-js'
 import path from 'path'
-import { readDir, readFile } from './file'
+import { readDir, readFile, writeFile } from './file'
 
 const {
   AuthenticationService, CLIConfigurationService, CommandActionExecutor, CommandInstanceFactory,
@@ -40,6 +40,9 @@ export const convertToSingleXmlElement = (xmlContent: string): XmlElement => {
   const topLevelXmlElements = xmlConverter.xml2js(xmlContent)
   return topLevelXmlElements.elements[0]
 }
+
+export const convertToXmlString = (xmlElement: XmlElement): string =>
+  xmlConverter.js2xml(xmlElement, { spaces: 2, fullTagEmptyElement: true })
 
 export default class NetsuiteClient {
   private projectName?: string
@@ -134,5 +137,13 @@ export default class NetsuiteClient {
       const xmlContent = await readFile(path.resolve(fetchDirPath, filename))
       return convertToSingleXmlElement(xmlContent)
     }))
+  }
+
+  @NetsuiteClient.requiresLogin
+  async deploy(filename: string, xmlElement: XmlElement): Promise<void> {
+    // todo write to the correct file name
+    return writeFile(path.resolve(baseExecutionPath, this.projectName as string, `${filename}.xml`),
+      convertToXmlString(xmlElement))
+    // todo run deploy command
   }
 }

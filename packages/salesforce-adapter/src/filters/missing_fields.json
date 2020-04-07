@@ -1,0 +1,2534 @@
+[
+  {
+  "id": "FilterItem",
+  "fields": [
+    {
+      "name": "operation",
+      "type": "STRING",
+      "annotations": {
+        "_values": [
+          "equals", "notEqual", "lessThan", "greaterThan", "lessOrEqual", "greaterOrEqual",
+          "contains", "notContain", "startsWith", "includes", "excludes", "within"
+        ],
+        "_restrictions": {
+          "enforceValue": "true"
+        }
+      }
+    }
+  ]
+  },
+{
+    "id": "LeadConvertSettings",
+  "fields": [
+    {
+      "name": "objectMapping",
+      "type": "ObjectMapping",
+      "isList": "true"
+    },
+    {
+      "name": "mappingFields",
+      "type": "MappingFields",
+      "isList": "true"
+    },
+    {
+      "name": "inputField",
+      "type": "STRING"
+    },
+    {
+      "name": "outputField",
+      "type": "STRING"
+    },
+    {
+      "name": "outputObject",
+      "type": "STRING"
+    }
+  ]
+},
+{
+  "id": "RuleEntry",
+  "fields": [
+    {
+      "name": "assignedToType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["User", "Queue"]
+      }
+    }
+  ]
+},
+{
+  "id": "ProfileTabVisibility",
+  "fields": [
+    {
+      "name": "visibility",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["DefaultOff", "DefaultOn", "Hidden"]
+      }
+    }
+  ]
+},
+{
+  "id": "LayoutSection",
+  "fields": [
+    {
+      "name": "style",
+      "type": "STRING",
+      "annotations": {
+        "_values": [
+          "TwoColumnsTopToBottom", "TwoColumnsLeftToRight", "OneColumn", "CustomLinks"
+        ]
+      }
+    }
+  ]
+},
+{
+  "id": "LayoutItem",
+  "fields": [
+    {
+      "name": "behavior",
+      "type": "STRING",
+      "annotations": {
+        "_values": [
+          "Edit", "Required", "Readonly"
+        ]
+      }
+    }
+  ]
+},
+{
+  "id": "Profile",
+  "fields": [
+    {
+      "name": "userPermissions",
+      "type": "ProfileUserPermission",
+      "isList": "true"
+    }
+  ]
+},
+{
+  "id": "Workflow",
+  "fields": [
+    {
+      "name": "alerts",
+      "type": "WorkflowAlert"
+    },
+    {
+      "name": "fieldUpdates",
+      "type": "WorkflowFieldUpdate"
+    },
+    {
+      "name": "flowActions",
+      "type": "WorkflowFlowAction"
+    },
+    {
+      "name": "knowledgePublishes",
+      "type": "WorkflowKnowledgePublish"
+    },
+    {
+      "name": "outboundMessages",
+      "type": "WorkflowOutboundMessage"
+    },
+    {
+      "name": "tasks",
+      "type": "WorkflowTask"
+    }
+  ]
+},
+{
+  "id": "FlowCondition",
+  "fields": [
+    {
+      "name": "operator",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["EqualTo", "NotEqualTo", "GreaterThan", "LessThan",
+          "GreaterThanOrEqualTo", "LessThanOrEqualTo", "StartsWith", "EndsWith", "Contains",
+          "IsNull", "WasSet", "WasSelected", "WasVisited"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowAssignmentItem",
+  "fields": [
+    {
+      "name": "operator",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Add", "AddAtStart", "AddItem", "Assign", "AssignCount",
+          "RemoveAfterFirst", "RemoveAll", "RemoveBeforeFirst", "RemoveFirst", "RemovePosition",
+          "RemoveUncommon", "Subtract"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowRecordFilter",
+  "fields": [
+    {
+      "name": "operator",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["EqualTo", "NotEqualTo", "GreaterThan", "LessThan",
+          "GreaterThanOrEqualTo", "LessThanOrEqualTo", "StartsWith", "EndsWith", "Contains",
+          "IsNull"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowDynamicChoiceSet",
+  "fields": [
+    {
+      "name": "dataType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Currency", "Date", "Number", "String", "Boolean", "Picklist",
+          "Multipicklist"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowScreenField",
+  "fields": [
+    {
+      "name": "dataType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Boolean", "Currency", "Date", "DateTime", "Number",
+          "String"]
+      }
+    },
+    {
+      "name": "fieldType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["DisplayText", "InputField", "LargeTextArea", "PasswordField",
+          "RadioButtons", "DropdownBox", "MultiSelectCheckboxes", "MultiSelectPicklist",
+          "ComponentInstance", "ComponentChoice", "ComponentInput"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowVariable",
+  "fields": [
+    {
+      "name": "dataType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Apex", "Boolean", "Currency", "Date", "DateTime", "Number",
+          "Multipicklist", "Picklist", "String", "SObject"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowChoice",
+  "fields": [
+    {
+      "name": "dataType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Boolean", "Currency", "Date", "Number", "String"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowConstant",
+  "fields": [
+    {
+      "name": "dataType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Boolean", "Currency", "Date", "Number", "String"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowFormula",
+  "fields": [
+    {
+      "name": "dataType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Boolean", "Currency", "Date", "DateTime", "Number",
+          "String"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowRecordLookup",
+  "fields": [
+    {
+      "name": "sortOrder",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Asc", "Desc"]
+      }
+    }
+  ]
+},
+{
+  "id": "FlowLoop",
+  "fields": [
+    {
+      "name": "iterationOrder",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Asc", "Desc"]
+      }
+    }
+  ]
+},
+{
+  "id": "CustomObject",
+  "fields": [
+    {
+      "name": "customSettingsType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["List", "Hierarchy"]
+      }
+    },
+    {
+      "name": "deploymentStatus",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["InDevelopment", "Deployed"]
+      }
+    },
+    {
+      "name": "externalSharingModel",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Private", "Read", "ReadWrite", "ReadWriteTransfer",
+          "FullAccess", "ControlledByParent", "ControlledByCampaign", "ControlledByLeadOrContact"
+        ]
+      }
+    },
+    {
+      "name": "gender",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Masculine", "Feminine", "Neuter", "AnimateMasculine"]
+      }
+    },
+    {
+      "name": "sharingModel",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Private", "Read", "ReadWrite", "ReadWriteTransfer",
+          "FullAccess", "ControlledByParent", "ControlledByCampaign", "ControlledByLeadOrContact"
+        ]
+      }
+    },
+    {
+      "name": "startsWith",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Consonant", "Vowel", "Special"]
+      }
+    },
+    {
+      "name": "visibility",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Public", "Protected", "PackageProtected"]
+      }
+    }
+  ]
+},
+{
+  "id": "CUSTOM_FIELD",
+  "fields": [
+    {
+      "name": "type",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["AutoNumber", "Text",
+          "Number", "Percent", "Checkbox",
+          "Date", "Time", "DateTime",
+          "Currency", "Picklist", "MultiselectPicklist",
+          "Email", "Phone", "LongTextArea",
+          "Html", "TextArea", "EncryptedText",
+          "Url", "Lookup", "MasterDetail",
+          "Summary"]
+      }
+    }
+  ]
+},
+{
+  "id": "ListView",
+  "fields": [
+    {
+      "name": "filterScope",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Everything", "Mine", "MineAndMyGroups", "Queue", "Delegated",
+          "MyTerritory", "MyTeamTerritory", "Team"]
+      }
+    }
+  ]
+},
+{
+  "id": "ListViewFilter",
+  "fields": [
+    {
+      "name": "operation",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["equals", "notEqual", "lessThan", "greaterThan",
+          "lessOrEqual", "greaterOrEqual", "contains", "notContain", "startsWith", "includes",
+          "excludes", "within"]
+      }
+    }
+  ]
+},
+{
+  "id": "WebLink",
+  "fields": [
+    {
+      "name": "displayType",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["link", "button", "massActionButton"]
+      }
+    }
+  ]
+},
+{
+  "id": "StandardValue",
+  "fields": [
+    {
+      "name": "forecastCategory",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Omitted", "Pipeline", "BestCase", "Forecast", "Closed"]
+      }
+    }
+  ]
+},
+{
+  "id": "CustomObjectTranslation",
+  "fields": [
+    {
+      "name": "gender",
+      "type": "STRING",
+      "annotations": {
+        "_values": [
+          "Masculine", "Feminine", "Neuter", "AnimateMasculine", "ClassI", "ClassIII", "ClassV",
+          "ClassVII", "ClassIX", "ClassXI", "ClassXIV", "ClassXV", "ClassXVI", "ClassXVII",
+          "ClassXVIII"
+        ]
+      }
+    },
+    {
+      "name": "startsWith",
+      "type": "STRING",
+      "annotations": {
+        "_values": ["Consonant", "Vowel", "Special"]
+      }
+    }
+  ]
+},
+
+  
+  {
+    "id": "AccountSettings",
+    "fields": [
+      {
+        "name": "enableAccountHistoryTracking",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAccountInsightsInMobile",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContactHistoryTracking",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRelateContactToMultipleAccounts",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "ActionsSettings",
+    "fields": [
+      {
+        "name": "enableDefaultQuickActionsOn",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableMdpEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableThirdPartyActions",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "AnalyticsSettings",
+    "fields": [
+      {
+        "name": "alwaysGenPreviews",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "analyticsAdoptionMetadata",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canAccessAnalyticsViaAPI",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canAnnotateDashboards",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canEnableLiveMetrics",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canEnableSavedView",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canExploreDataConversationally",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canShareAppsWithCommunities",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canSubscribeDashboardWidgets",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canViewThumbnailAssets",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAnalyticsEncryption",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAnalyticsSharingEnable",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAutoCompleteCombo",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableC360GlobalProfileData",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDashboardComponentSnapshot",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDashboardFlexiTable",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDashboardToPDFEnable",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDataBlending",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEmailReportsToPortalUsers",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFirebirdEditor",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFloatingReportHeaders",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInsights",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLightningReportBuilder",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLotusNotesImages",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableMassEnableReportBuilder",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNewChartsEngine",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNullDimension",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePowerInsights",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableQueryLiveConnectors",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRemoveFooterForRepDisplay",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRemoveFooterFromRepExp",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableReportFieldToFieldPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableReportNotificationsEnable",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableReportUniqueRowCountPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableS1AnalyticsEclairEnable",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSFXJoinedReportsEnable",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSmartDataDiscovery",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUseOldChartsLookAndFeel",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableWaveRecordNavigation",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableWaveTrendedDatasetCleanup",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "inheritSharingForNonOpptyObjects",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "inheritSharingForOpptyObject",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "replaceBlankMeasuresWithNulls",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "turnOnTimeZones",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "ApexSettings",
+    "fields": [
+      {
+        "name": "enableAggregateCodeCoverageOnly",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableApexAccessRightsPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableApexApprovalLockUnlock",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableApexCtrlImplicitWithSharingPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableApexPropertyGetterPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAuraApexCtrlAuthUserAccessCheckPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAuraApexCtrlGuestUserAccessCheckPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCompileOnDeploy",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDisableParallelApexTesting",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDoNotEmailDebugLog",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableGaplessTestAutoNum",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableMngdCtrlActionAccessPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNonCertifiedApexMdCrud",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSecureNoArgConstructorPref",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "AppExperienceSettings",
+    "fields": [
+      {
+        "name": "doesHideAllAppsInAppLauncher",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "CampaignSettings",
+    "fields": [
+      {
+        "name": "enableAutoCampInfluenceDisabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableB2bmaCampaignInfluence2",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCampaignHistoryTrackEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCampaignInfluence2",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCampaignMemberTWCF",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSuppressNoValueCI2",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "CaseSettings",
+    "fields": [
+      {
+        "name": "caseAutoProcUser",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "caseFeedReadUnreadLtng",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "caseMergeinLightning",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "defaultCaseFeedLayoutOn",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEmailContactOnCasePost",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEscalateQfiToCaseInternal",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEscalateQfiToCaseNetworks",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableExtNetworksCaseFeedEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNewEmailDefaultTemplate",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "escalateCaseBefore",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "genericMessageEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "keepCaseMergeRecords",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "predictiveSupportEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "visibleInCssCheckbox",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "newEmailDefaultTemplateClass",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "id": "ChatterSettings",
+    "fields": [
+      {
+        "name": "allowChatterGroupArchiving",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "allowRecordsInChatterGroup",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "allowSharingInChatterGroup",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableApprovalRequest",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCaseFeedRelativeTimestamps",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableChatter",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableChatterEmoticons",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFeedEdit",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFeedPinning",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFeedsDraftPosts",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFeedsRichText",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInviteCsnUsers",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOutOfOfficeEnabledPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRichLinkPreviewsInFeed",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableTodayRecsInFeed",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "unlistedGroupsEnabled",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "CommunitiesSettings",
+    "fields": [
+      {
+        "name": "canModerateAllFeedPosts",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canModerateInternalFeedPosts",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "embeddedVisualforcePages",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCommunityWorkspaces",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCspContactVisibilityPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCspNotesOnAccConPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEnablePRM",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableExternalAccHierPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableGuestRecordReassignOrgPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInviteChatterGuestEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNetPortalUserReportOpts",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNetworksEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOotbProfExtUserOpsEnable",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePowerCustomerCaseStatus",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePRMAccRelPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRelaxPartnerAccountFieldPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUnsupportedBrowserModalPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUsernameUniqForOrgPref",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "ConnectedAppSettings",
+    "fields": [
+      {
+        "name": "enableAdminApprovedAppsOnly",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAdminApprovedAppsOnlyForExternalUser",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSkipUserProvisioningWizardWelcomePage",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "ContentSettings",
+    "fields": [
+      {
+        "name": "enableChatterFileLink",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCMSC2CConnections",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContent",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContentAutoAssign",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContentDistForPortalUsers",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContentDistPwOptionsBit1",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContentDistPwOptionsBit2",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContentDistribution",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContentSupportMultiLanguage",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContentWorkspaceAccess",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDeleteFileInContentPacks",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFileShareSetByRecord",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFilesUsrShareNetRestricted",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableJPGPreviews",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLibraryManagedFiles",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableShowChatterFilesInContent",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSiteGuestUserToUploadFiles",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUploadFilesOnAttachments",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "skipContentAssetTriggers",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "skipContentAssetTriggersOnDeploy",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "CurrencySettings",
+    "fields": [
+      {
+        "name": "enableCurrencyEffectiveDates",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCurrencySymbolWithMultiCurrency",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isMultiCurrencyActivationAllowed",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isParenCurrencyConvDisabled",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "DataDotComSettings",
+    "fields": [
+      {
+        "name": "enableAccountExportButtonOff",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAccountImportButtonOff",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAllowDupeContactFromLead",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAllowDupeLeadFromContact",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCleanUpgradeRequested",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContactExportButtonOff",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContactImportButtonOff",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "DeploymentSettings",
+    "fields": [
+      {
+        "name": "doesSkipAsyncApexValidation",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "DevHubSettings",
+    "fields": [
+      {
+        "name": "enablePackaging2",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableScratchOrgManagementPref",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "EACSettings",
+    "fields": [
+      {
+        "name": "enableActivityCapture",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableActivityMetrics",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableActivitySyncEngine",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEACForEveryonePref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInboxActivitySharing",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInsightsInTimeline",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInsightsInTimelineEacStd",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "provisionProductivityFeatures",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "EmailAdministrationSettings",
+    "fields": [
+      {
+        "name": "enableComplianceBcc",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEmailConsentManagement",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEmailSenderIdCompliance",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEmailSpfCompliance",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEmailToSalesforce",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEmailWorkflowApproval",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEnhancedEmailEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHandleBouncedEmails",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHtmlEmail",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableListEmailLogActivities",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableResendBouncedEmails",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRestrictTlsToDomains",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSendThroughGmailPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSendViaExchangePref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSendViaGmailPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSetMatchingEmailsOnBounce",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUseOrgFootersForExtTrans",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "sendEmailsEvenWhenAutomationUpdatesSameRecord",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "sendMassEmailNotification",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "sendTextOnlySystemEmails",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "EmailIntegrationSettings",
+    "fields": [
+      {
+        "name": "doesEmailLogAsEmailMessageInOutlook",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesGmailStayConnectedToSalesforce",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableContactAndEventSync",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEmailTrackingInMobile",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEngageForOutlook",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableGmailIntegration",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOutlookIntegration",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableProductivityFeatures",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSupplementalContactInfoInMobile",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isLayoutCustomizationAllowed",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "shouldUseTrustedDomainsList",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "EmailTemplateSettings",
+    "fields": [
+      {
+        "name": "enableTemplateEnhancedFolderPref",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "EnhancedNotesSettings",
+    "fields": [
+      {
+        "name": "enableEnhancedNotes",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableTasksOnEnhancedNotes",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "EncryptionKeySettings",
+    "fields": [
+      {
+        "name": "enableCacheOnlyKeys",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "canOptOutOfDerivationWithBYOK",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableReplayDetection",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "EventSettings",
+    "fields": [
+      {
+        "name": "enableDeleteMonitoringData",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDynamicStreamingChannel",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEventLogWaveIntegration",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLoginForensics",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableStreamingApi",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableTerminateOldestSession",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableTransactionSecurityPolicies",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableApexLimitEvents",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "ExperienceBundleSettings",
+    "fields": [
+      {
+        "name": "enableExperienceBundleMetadata",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "FieldServiceSettings",
+    "fields": [
+      {
+        "name": "enableWorkOrders",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "FlowSettings",
+    "fields": [
+      {
+        "name": "doesFormulaEnforceDataAccess",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesFormulaGenerateHtmlOutput",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFlowBREncodedFixEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFlowDeployAsActiveEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFlowFieldFilterEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFlowFormulasFixEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFlowInterviewSharingEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFlowNullPreviousValueFix",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFlowPauseEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFlowUseApexExceptionEmail",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInvocableFlowFixEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLightningRuntimeEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isAccessToInvokedApexRequired",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isApexPluginAccessModifierRespected",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isEnhancedFlowListViewVisible",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isManageFlowRequiredForAutomationCharts",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "IndustriesSettings",
+    "fields": [
+      {
+        "name": "allowMultipleProducersToWorkOnSamePolicy",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAccessToMasterListOfCoverageTypes",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableBlockResourceAvailabilityOrgPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEventManagementOrgPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFSCInsuranceReport",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableManyToManyRelationships",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableMortgageRlaTotalsOrgPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableMultiResourceOrgPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOverbookingOrgPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableReferralScoring",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "InvocableActionSettings",
+    "fields": [
+      {
+        "name": "isPartialSaveAllowed",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "LanguageSettings",
+    "fields": [
+      {
+        "name": "enableCanadaIcuFormat",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableICULocaleDateFormat",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLocalNamesForStdObjects",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableTranslationWorkbench",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "useLanguageFallback",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "LeadConfigSettings",
+    "fields": [
+      {
+        "name": "doesEnableLeadConvertDefaultSubjectBlankTaskCreation",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesHideOpportunityInConvertLeadWindow",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesPreserveLeadStatus",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesSelectNoOpportunityOnConvertLead",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesTrackHistory",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableConversionsOnMobile",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOrgWideMergeAndDelete",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "shouldLeadConvertRequireValidation",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "LiveAgentSettings",
+    "fields": [
+      {
+        "name": "enableQuickTextEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "priority",
+        "type": "NUMBER"
+      }
+    ]
+  },
+  {
+    "id": "LightningExperienceSettings",
+    "fields": [
+      {
+        "name": "enableAccessCheckCrucPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableApiUserLtngOutAccessPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAuraCDNPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAuraDepAccessChksCRUCPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFeedbackInMobile",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableGoogleSheetsForSfdcEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableIE11DeprecationMsgHidden",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableIE11LEXCrucPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInAppTooltips",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLEXOnIpadEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLexEndUsersNoSwitching",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNavPersonalizationOptOut",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRemoveThemeBrandBanner",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableS1BannerPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableS1BrowserEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSkypeChatEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableS1DesktopEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableS1UiLoggingEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSparkAllUsers",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSparkConversationEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableTryLightningOptOut",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUseS1AlohaDesktop",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUsersAreLightningOnly",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableWebExEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableWebexAllUsers",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isLEXExtensionComponentCustomizationOff",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isLEXExtensionDarkModeOff",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isLEXExtensionLinkGrabberOff",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isLEXExtensionOff",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "MobileSettings",
+    "fields": [
+      {
+        "name": "enableImportContactFromDevice",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLightningOnMobile",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNewSalesforceMobileAppForTablet",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOfflineDraftsEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePopulateNameManuallyInToday",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableS1EncryptedStoragePref2",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableS1OfflinePref",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "MyDomainSettings",
+    "fields": [
+      {
+        "name": "canOnlyLoginWithMyDomainUrl",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesApiLoginRequireOrgDomain",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNativeBrowserForAuthOnAndroid",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNativeBrowserForAuthOnIos",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "useStabilizedMyDomainHostnames",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "useStabilizedSandboxMyDomainHostnames",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "NameSettings",
+    "fields": [
+      {
+        "name": "enableFormalName",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "NotificationsSettings",
+    "fields": [
+      {
+        "name": "enableMobileAppPushNotifications",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNotifications",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "OmniChannelSettings",
+    "fields": [
+      {
+        "name": "enableOmniAutoLoginPrompt",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOmniSecondaryRoutingPriority",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "OpportunitySettings",
+    "fields": [
+      {
+        "name": "customizableProductSchedulesEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesAutoAddSplitOwnerAsOpportunityTeamMember",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOpportunityFieldHistoryTracking",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOpportunityInsightsInMobile",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "OrderManagementSettings",
+    "fields": [
+      {
+        "name": "enableB2CIntegration",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableB2CSelfService",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOrderManagement",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "OrderSettings",
+    "fields": [
+      {
+        "name": "enableEnhancedCommerceOrders",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "OrgSettings",
+    "fields": [
+      {
+        "name": "enableCustomerSuccessPortal",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableExtendedMailMerge",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableManageSelfServiceUsers",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "saveMailMergeDocsAsSalesforceDocs",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "PartyDataModelSettings",
+    "fields": [
+      {
+        "name": "enableAutoSelectIndividualOnMerge",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableConsentManagementEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableIndividualAutoCreate",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "PardotSettings",
+    "fields": [
+      {
+        "name": "enableB2bmaAppEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEngagementHistoryDashboards",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePardotAppV1Enabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePardotEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableProspectActivityDataset",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "PardotEinsteinSettings",
+    "fields": [
+      {
+        "name": "enableCampaignInsight",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEngagementScore",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "PathAssistantSettings",
+    "fields": [
+      {
+        "name": "canOverrideAutoPathCollapseWithUserPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "pathAssistantForOpportunityEnabled",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "PicklistSettings",
+    "fields": [
+      {
+        "name": "isPicklistApiNameEditDisabled",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "PlatformEncryptionSettings",
+    "fields": [
+      {
+        "name": "canEncryptManagedPackageFields",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isUseHighAssuranceKeysRequired",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isMEKForEncryptionRequired",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDeterministEncryption",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEncryptFieldHistory",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEventBusEncryption",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "PrivacySettings",
+    "fields": [
+      {
+        "name": "enableConsentAuditTrail",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableConsentEventStream",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDefaultMetadataValues",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "ProductSettings",
+    "fields": [
+      {
+        "name": "enableMySettings",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "QuoteSettings",
+    "fields": [
+      {
+        "name": "enableQuotesWithoutOppEnabled",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "RecordPageSettings",
+    "fields": [
+      {
+        "name": "enableActivityRelatedList",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableFullRecordView",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "SchemaSettings",
+    "fields": [
+      {
+        "name": "enableAdvancedCMTSecurity",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAdvancedCSSecurity",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableListCustomSettingCreation",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSOSLOnCustomSettings",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "SearchSettings",
+    "fields": [
+      {
+        "name": "enableAdvancedSearchInAlohaSidebar",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEinsteinSearchPersonalization",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePersonalTagging",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePublicTagging",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSalesforceGeneratedSynonyms",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSearchTermHistory",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSetupSearch",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSuggestArticlesLinksOnly",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUseDefaultSearchEntity",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "SecuritySettings",
+    "fields": [
+      {
+        "name": "canUsersGrantLoginAccess",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAdminLoginAsAnyUser",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAuditFieldsInactiveOwner",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAuraSecureEvalPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRequireHttpsConnection",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isTLSv12Required",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isTLSv12RequiredCommunities",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "SharingSettings",
+    "fields": [
+      {
+        "name": "enableAccountRoleOptimization",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableAssetSharing",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCommunityUserVisibility",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableExternalSharingModel",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableManagerGroups",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableManualUserRecordSharing",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePartnerSuperUserAccess",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePortalUserCaseSharing",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePortalUserVisibility",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRemoveTMGroupMembership",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableRestrictAccessLookupRecords",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSecureGuestAccess",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableStandardReportVisibility",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableTerritoryForecastManager",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "SiteSettings",
+    "fields": [
+      {
+        "name": "enableProxyLoginICHeader",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSitesRecordReassignOrgPref",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableTopicsInSites",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "SocialProfileSettings",
+    "fields": [
+      {
+        "name": "isFacebookSocialProfilesDisabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isLinkedInSocialProfilesDisabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isTwitterSocialProfilesDisabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isYouTubeSocialProfilesDisabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSocialProfiles",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "SurveySettings",
+    "fields": [
+      {
+        "name": "enableSurveys",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSurveyOwnerCanManageResponse",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "TrailheadSettings",
+    "fields": [
+      {
+        "name": "enableMyTrailheadPref",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "TrialOrgSettings",
+    "fields": [
+      {
+        "name": "enableSampleDataDeleted",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "UserEngagementSettings",
+    "fields": [
+      {
+        "name": "canGovCloudUseAdoptionApps",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "doesScheduledSwitcherRunDaily",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCustomHelpGlobalSection",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHelpMenuShowFeedback",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHelpMenuShowHelp",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHelpMenuShowNewUser",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHelpMenuShowSearch",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHelpMenuShowSfdcContent",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHelpMenuShowShortcut",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHelpMenuShowSupport",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHelpMenuShowTrailhead",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableIBILOptOutDashboards",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableIBILOptOutEvents",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableIBILOptOutReports",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableIBILOptOutTasks",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableLexToClassicFeedbackEnable",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOrchestrationInSandbox",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableOrgUserAssistEnabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableScheduledSwitcher",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableSfdcProductFeedbackSurvey",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableShowSalesforceUserAssist",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isCrucNotificationDisabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isLEXWelcomeMatDisabled",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isMeetTheAssistantDisabledInClassic",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "isMeetTheAssistantDisabledInLightning",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "optimizerAppEnabled",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "UserInterfaceSettings",
+    "fields": [
+      {
+        "name": "enableAsyncRelatedLists",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableClickjackUserPageHeaderless",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCollapsibleSections",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCollapsibleSidebar",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCustomObjectTruncate",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableCustomSidebarOnAllPages",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableDeleteFieldHistory",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableExternalObjectAsyncRelatedLists",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableHoverDetails",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableInlineEdit",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enablePersonalCanvas",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableQuickCreate",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "UserManagementSettings",
+    "fields": [
+      {
+        "name": "enableContactlessExternalIdentityUsers",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEnhancedPermsetMgmt",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableEnhancedProfileMgmt",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableNewProfileUI",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableUserSelfDeactivate",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableScrambleUserData",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "VoiceSettings",
+    "fields": [
+      {
+        "name": "enableCallDisposition",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableVoiceCallList",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableVoiceCallRecording",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableVoiceCoaching",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableVoiceConferencing",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableVoiceLocalPresence",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableVoiceMail",
+        "type": "BOOLEAN"
+      },
+      {
+        "name": "enableVoiceMailDrop",
+        "type": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "id": "BusinessHoursSettings",
+    "fields": [
+      {
+        "name": "businessHours",
+        "type": "BusinessHoursEntry",
+        "isList": "true"
+      },
+      {
+        "name": "holidays",
+        "type": "Holidays",
+        "isList": "true"
+      }
+    ]
+  },
+  {
+    "id": "OrgPreferenceSettings",
+    "fields": [
+      {
+        "name": "preferences",
+        "type": "OrganizationSettingsDetail",
+        "isList": "true"
+      }
+    ]
+  }
+]

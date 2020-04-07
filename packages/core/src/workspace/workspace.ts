@@ -87,8 +87,10 @@ export type Workspace = {
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
   services: () => ReadonlyArray<string>
-  servicesCredentials: () => Promise<Readonly<Record<string, InstanceElement>>>
-  servicesConfig: () => Promise<Readonly<Record<string, InstanceElement>>>
+  servicesCredentials: (names?: ReadonlyArray<string>) =>
+    Promise<Readonly<Record<string, InstanceElement>>>
+  servicesConfig: (names?: ReadonlyArray<string>) =>
+    Promise<Readonly<Record<string, InstanceElement>>>
 
   isEmpty(blueprintsOnly?: boolean): Promise<boolean>
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
@@ -190,6 +192,9 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
       validation: validateElements(resolvedElements),
     })
   }
+
+  const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
+    (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -200,10 +205,14 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     services,
     errors,
     hasErrors: async () => (await errors()).hasErrors(),
-    servicesCredentials: async () => _.fromPairs(await Promise.all(services()
-      .map(async service => [service, await config.get(`${currentEnv()}/${CREDENTIALS_CONFIG_PATH}/${service}`)]))),
-    servicesConfig: async () => _.fromPairs(await Promise.all(services()
-      .map(async service => [service, await config.get(`${ADAPTERS_CONFIGS_PATH}/${service}`)]))),
+    servicesCredentials: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
+      pickServices(names).map(async service =>
+        [service, await config.get(`${currentEnv()}/${CREDENTIALS_CONFIG_PATH}/${service}`)])
+    )),
+    servicesConfig: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
+      pickServices(names).map(async service =>
+        [service, await config.get(`${ADAPTERS_CONFIGS_PATH}/${service}`)])
+    )),
     isEmpty: async (blueprintsOnly = false): Promise<boolean> => {
       const isBlueprintsSourceEmpty = _.isEmpty(await blueprintsSource.getAll())
       const isConfig = (elem: Element): boolean =>

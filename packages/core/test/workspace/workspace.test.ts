@@ -657,4 +657,34 @@ describe('workspace', () => {
       expect(path).toEqual(`${ADAPTERS_CONFIGS_PATH}/${services[0]}`)
     })
   })
+
+  describe('servicesCredentials', () => {
+    let confSource: ConfigSource
+    let workspace: Workspace
+
+    beforeEach(async () => {
+      confSource = {
+        get: jest.fn().mockImplementation((name: string) => (
+          (name === WORKSPACE_CONFIG_NAME)
+            ? wsConfInstance()
+            : new InstanceElement(services[0], adapterCreators[services[0]].credentialsType,
+              { usename: 'default', password: 'default', currentEnv: 'default' }))),
+        set: jest.fn(),
+      }
+      workspace = await createWorkspace(undefined, undefined, confSource)
+      expect(confSource.get).toHaveBeenCalledTimes(2)
+    })
+
+    it('should get creds', async () => {
+      await workspace.servicesCredentials()
+      // +1 get on top of "beforeEach"
+      expect(confSource.get).toHaveBeenCalledTimes(3)
+    })
+
+    it('should get creds partials', async () => {
+      // +1 get on top of "beforeEach"
+      await workspace.servicesCredentials(services)
+      expect(confSource.get).toHaveBeenCalledTimes(3)
+    })
+  })
 })

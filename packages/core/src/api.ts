@@ -92,7 +92,9 @@ export const deploy = async (
   const actionPlan = await preview(workspace, services)
   if (force || await shouldDeploy(actionPlan)) {
     const adapters = await getAdapters(
-      services, await workspace.servicesCredentials(), await workspace.servicesConfig(),
+      services,
+      await workspace.servicesCredentials(services),
+      await workspace.servicesConfig(services),
     )
 
     const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
@@ -153,8 +155,8 @@ export const fetch: fetchFunc = async (
 
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
-    await workspace.servicesCredentials(),
-    await workspace.servicesConfig(),
+    await workspace.servicesCredentials(services),
+    await workspace.servicesConfig(services),
     createElemIdGetter(filteredStateElements)
   )
   const currentConfigs = Object.values(adaptersCreatorConfigs)
@@ -224,7 +226,7 @@ export const getLoginStatuses = async (
     async (config, adapter) =>
       ({
         configType: config,
-        isLoggedIn: !!(await workspace.servicesCredentials())[adapter],
+        isLoggedIn: !!(await workspace.servicesCredentials(adapterNames))[adapter],
       }))
 
   return promises.object.resolveValues(logins)

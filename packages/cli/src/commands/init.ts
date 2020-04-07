@@ -32,11 +32,12 @@ export const command = (
     cliTelemetry.start()
     try {
       const defaultEnvName = await getEnvNameCallback()
-      const workspace = await initLocalWorkspace('.', workspaceName, defaultEnvName)
+      const baseDir = '.'
+      const workspace = await initLocalWorkspace(baseDir, workspaceName, defaultEnvName)
       const workspaceTags = await getWorkspaceTelemetryTags(workspace)
       cliTelemetry.success(workspaceTags)
       stdout.write(
-        Prompts.initCompleted(workspace.name, path.resolve('.'))
+        Prompts.initCompleted(workspace.name, path.resolve(baseDir))
       )
     } catch (e) {
       stderr.write(Prompts.initFailed(e.message))

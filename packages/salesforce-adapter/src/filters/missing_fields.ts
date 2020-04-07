@@ -45,6 +45,7 @@ type RawFieldData = {
   type: string
   annotations?: AnnotationData
   isList?: boolean
+  boolean?: string[]
 }
 
 type RawMissingFieldData = {
@@ -78,15 +79,26 @@ const generateType = (typeName: string): PrimitiveType | ElemID => {
   return new ElemID(SALESFORCE, typeName)
 }
 
-const generateField = (fieldData: RawFieldData): FieldData => ({
-  name: fieldData.name,
-  type: generateType(fieldData.type),
-  annotations: fieldData.annotations,
-  isList: fieldData.isList,
-})
+const generateField = (fieldData: RawFieldData): FieldData[] => {
+  if (fieldData.boolean) {
+    return fieldData.boolean.map(fieldName => ({
+      name: fieldName,
+      type: generateType('BOOLEAN'),
+    }))
+  }
+  return [{
+    name: fieldData.name,
+    type: generateType(fieldData.type),
+    annotations: fieldData.annotations,
+    isList: fieldData.isList,
 
-const generateFields = (fieldsData: RawFieldData[]): FieldData[] =>
-  fieldsData.map(fieldData => generateField(fieldData))
+  }]
+}
+
+const generateFields = (rawFieldsData: RawFieldData[]): FieldData[] => (
+  [] as FieldData[]).concat(
+  ...rawFieldsData.map(rawFieldData => generateField(rawFieldData))
+)
 
 const generateId = (idName: string): ElemID => new ElemID(SALESFORCE, idName)
 

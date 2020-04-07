@@ -16,7 +16,7 @@
 import path from 'path'
 import { DirectoryStore } from 'src/workspace/dir_store'
 import * as mockFiles from '../../../src/file'
-import { initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError, loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH } from '../../../src/workspace/local/workspce'
+import { initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError, loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH } from '../../../src/workspace/local/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import * as mockWs from '../../../src/workspace/workspace'
 import * as mockDirStore from '../../../src/workspace/local/dir_store'
@@ -68,7 +68,7 @@ describe('local workspace', () => {
       await initLocalWorkspace('.', wsName, envName)
       expect(mockInit.mock.calls[0][0]).toBe(wsName)
       expect(mockInit.mock.calls[0][2]).toBe(envName)
-      const envSources: mockWs.EnviornmentsSources = mockInit.mock.calls[0][5]
+      const envSources: mockWs.EnvironmentsSources = mockInit.mock.calls[0][5]
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(envSources.commonSourceName).toBe(COMMON_ENV_PREFIX)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
@@ -116,9 +116,9 @@ describe('local workspace', () => {
       await loadLocalWorkspace('.')
 
       expect(mockLoad).toHaveBeenCalledTimes(1)
-      const envSources: mockWs.EnviornmentsSources = mockLoad.mock.calls[0][2]
+      const envSources: mockWs.EnvironmentsSources = mockLoad.mock.calls[0][2]
       expect(Object.keys(envSources.sources)).toHaveLength(3)
-      expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
+      expect(mockCreateDirStore).toHaveBeenCalledTimes(12)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
         .map(toWorkspaceRelative)
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))

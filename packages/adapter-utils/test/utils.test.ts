@@ -25,7 +25,8 @@ import {
 import {
   transformValues, resolvePath, TransformPrimitiveFunc,
   TransformReferenceFunc, restoreReferences, resolveReferences,
-  naclCase, findElement, findElements, findObjectType, findInstances, flattenElementStr,
+  naclCase, findElement, findElements, findObjectType,
+  findInstances, flattenElementStr, valuesDeepSome,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -818,6 +819,45 @@ describe('Test utils.ts', () => {
     it('should not modify a list type', () => {
       const flatList = flattenElementStr(mockList)
       expect(flatList).toEqual(mockList)
+    })
+  })
+  describe('valuesDeepSome', () => {
+    const predicate = (v: Value): boolean => v === 42
+    it('should find if primitive', () => {
+      expect(valuesDeepSome(42, predicate)).toEqual(true)
+    })
+    it('miss for invalid primitive', () => {
+      expect(valuesDeepSome(41, predicate)).toEqual(false)
+    })
+    it('should find for arrays', () => {
+      expect(valuesDeepSome([1, 2, 42, 5], predicate)).toEqual(true)
+    })
+    it('miss for invalid array', () => {
+      expect(valuesDeepSome([1, 2, 41, 5], predicate)).toEqual(false)
+    })
+    it('should find for objects', () => {
+      expect(valuesDeepSome({ a: 321, b: 321, c: 42, d: 44 }, predicate)).toEqual(true)
+    })
+    it('miss for invalid objects', () => {
+      expect(valuesDeepSome({ a: 321, b: 321, c: 41, d: 44 }, predicate)).toEqual(false)
+    })
+    it('should find for entire object predicate', () => {
+      expect(valuesDeepSome(
+        { a: 321, b: 321, c: { aha: 41 }, d: 44 },
+        v => v.aha === 41,
+      )).toEqual(true)
+    })
+    it('should find for nested crazyness', () => {
+      expect(valuesDeepSome(
+        { a: 321, b: [3, 2, 1], c: [{ aha: 42 }], d: 44 },
+        predicate,
+      )).toEqual(true)
+    })
+    it('miss for nested crazyness', () => {
+      expect(valuesDeepSome(
+        { a: 321, b: [3, 2, 1], c: [{ aha: 41 }], d: 44 },
+        predicate,
+      )).toEqual(false)
     })
   })
 })

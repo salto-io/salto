@@ -18,8 +18,10 @@ import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType,
   ObjectType, InstanceElement, isType, isElement, isExpression,
   ReferenceExpression, TemplateExpression, Expression,
-  isInstanceElement, isReferenceExpression, StaticFile,
+  isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
+
+import { StaticFileNaclValue } from '../workspace/static_files/common'
 
 // There are two issues with naive json stringification:
 //
@@ -77,7 +79,7 @@ export const deserialize = (data: string): Element[] => {
 
   const revivers: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: (v: {[key: string]: any}) => Element|Expression|StaticFile
+    [key: string]: (v: {[key: string]: any}) => Element|Expression|StaticFileNaclValue
   } = {
     [InstanceElement.serializedTypeName]: v => new InstanceElement(
       reviveElemID(v.elemID).name,
@@ -109,11 +111,7 @@ export const deserialize = (data: string): Element[] => {
     ),
     [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
     [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
-    [StaticFile.serializedTypeName]: v => new StaticFile(
-      v.naclFilePath,
-      v.relativeFileName,
-      v.hash
-    ),
+    [StaticFileNaclValue.serializedTypeName]: v => new StaticFileNaclValue(v.filepath),
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

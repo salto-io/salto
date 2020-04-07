@@ -16,9 +16,8 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field, BuiltinTypes, InstanceElement, ListType,
-  isListType,
-  Values,
+  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field,
+  BuiltinTypes, InstanceElement, ListType, isListType, Values,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -29,6 +28,7 @@ import { naclFilesSource } from '../../src/workspace/nacl_files/nacl_files_sourc
 import State from '../../src/workspace/state'
 import mockState from '../common/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
+import { mockStaticFileSource } from './static_files/merger.test'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import {
   Workspace,
@@ -38,6 +38,8 @@ import {
   ADAPTERS_CONFIGS_PATH,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
+
+import { StaticFilesSource } from '../../src/workspace/static_files/source'
 
 import * as dump from '../../src/parser/dump'
 
@@ -85,14 +87,20 @@ const mockCredentialsSource = (): ConfigSource => ({
   get: jest.fn(),
   set: jest.fn(),
 })
-const createWorkspace = async (dirStore?: DirectoryStore, state?: State,
-  configSource?: ConfigSource, credentials?: ConfigSource): Promise<Workspace> =>
+const createWorkspace = async (
+  dirStore?: DirectoryStore, state?: State,
+  configSource?: ConfigSource, credentials?: ConfigSource,
+  staticFilesSource?: StaticFilesSource,
+): Promise<Workspace> =>
   loadWorkspace(configSource || mockConfigSource(), credentials || mockCredentialsSource(),
     {
       commonSourceName: '',
       sources: {
         '': {
-          naclFiles: naclFilesSource(dirStore || mockDirStore(), mockParseCache()),
+          naclFiles: naclFilesSource(
+            dirStore || mockDirStore(), mockParseCache(),
+            staticFilesSource || mockStaticFileSource(),
+          ),
         },
         default: {
           naclFiles: createMockNaclFileSource([]),

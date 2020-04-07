@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import {
-  ReferenceExpression, TemplateExpression,
-  ElemID, StaticFile,
+  ReferenceExpression, TemplateExpression, ElemID,
 } from '@salto-io/adapter-api'
 import {
   Functions,
@@ -27,7 +26,7 @@ import {
   TestFuncImpl,
   registerTestFunction,
 } from './functions.test'
-
+import { StaticFileNaclValue } from '../../src/workspace/static_files/common'
 
 const funcName = 'funcush'
 let functions: Functions
@@ -125,7 +124,7 @@ describe('HCL Expression', () => {
         type: 'func',
         value: {
           funcName: 'file',
-          parameters: [devaluate('aaasome/path.ext')],
+          parameters: [devaluate('some/path.ext')],
         },
         expressions: [],
         source: {
@@ -134,7 +133,7 @@ describe('HCL Expression', () => {
           end: { line: 0, col: 0, byte: 0 },
         },
       }
-      expect(evaluate(exp)).toEqual(new StaticFile('dummy', 'aaasome/path.ext'))
+      expect(evaluate(exp)).toEqual(new StaticFileNaclValue('some/path.ext'))
     })
     it('nested', () => {
       const ref = {

@@ -28,7 +28,7 @@ export {
 } from './src/workspace/workspace'
 export {
   loadLocalWorkspace, initLocalWorkspace,
-} from './src/workspace/local/workspce'
+} from './src/workspace/local/workspace'
 export { Errors } from './src/workspace/errors'
 export { NaclFile, FILE_EXTENSION } from './src/workspace/nacl_files/nacl_files_source'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'

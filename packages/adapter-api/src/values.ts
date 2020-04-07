@@ -13,11 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  types,
-  files,
-} from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { types } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 
 export type PrimitiveValue = string | boolean | number
@@ -30,39 +27,14 @@ export interface Values {
 }
 
 export class StaticFile {
-  private fileContent?: Buffer
-  public hash?: string
   constructor(
-    public readonly naclFilePath: string,
-    public readonly relativeFileName: string,
-    contentOrHash?: Buffer|string
-  ) {
-    if (contentOrHash) {
-      if (contentOrHash instanceof Buffer) {
-        this.content = contentOrHash
-      } else {
-        this.hash = contentOrHash as string
-      }
-    }
-  }
-
-  static get serializedTypeName(): string { return 'StaticFile' }
-
-  get content(): Buffer | undefined {
-    return this.fileContent
-  }
-
-  set content(content: Buffer | undefined) {
-    if (content && content !== this.content) {
-      this.fileContent = content
-      this.hash = files.getMD5FromBuffer(content)
-    }
-  }
+    public readonly filepath: string,
+    public readonly content: Buffer,
+  ) { }
 
   public isEqual(other: StaticFile): boolean {
-    return this.hash === other.hash
-      && this.hash !== undefined
-      && other.hash !== undefined
+    return this.filepath === other.filepath
+      && this.content.equals(other.content)
   }
 }
 

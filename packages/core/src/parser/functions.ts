@@ -15,11 +15,11 @@
 */
 
 import {
-  StaticFile,
   Value,
   SaltoError,
   SaltoErrorSeverity,
 } from '@salto-io/adapter-api'
+import { StaticFileNaclValue } from '../workspace/static_files/common'
 import { HclExpression } from './internal/types'
 import { FunctionExpression } from './internal/functions'
 
@@ -46,17 +46,16 @@ export class MissingFunctionError implements SaltoError {
 
 export const getSystemFunctions = (): Functions => ({
   file: {
-    toValue: (funcExp: HclExpression): StaticFile => {
-      const [relativeFileName] = funcExp.value.parameters
-      const naclFilePath = funcExp.source.filename
+    toValue: (funcExp: HclExpression): StaticFileNaclValue => {
+      const [filepath] = funcExp.value.parameters
 
-      return new StaticFile(naclFilePath, relativeFileName)
+      return new StaticFileNaclValue(filepath)
     },
     fromValue: (val: Value): FunctionExpression => new FunctionExpression(
       'file',
-      [val.relativeFileName],
+      [val.filepath],
     ),
-    isSerializedAsFunction: (val: Value) => val instanceof StaticFile,
+    isSerializedAsFunction: (val: Value) => val instanceof StaticFileNaclValue,
   },
 })
 

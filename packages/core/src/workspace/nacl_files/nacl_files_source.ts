@@ -32,6 +32,8 @@ import { ParseResultCache } from '../cache'
 import { DetailedChange } from '../../core/plan'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
+import { StaticFilesSource } from '../static_files/source'
+import { updateStaticFilesValuesForElements } from '../static_files/merger'
 
 const { withLimitedConcurrency } = promises.array
 
@@ -87,6 +89,7 @@ type NaclFilesState = {
 const buildNaclFilesSource = (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
+  staticFileSource: StaticFilesSource,
   initState?: Promise<NaclFilesState>
 ): NaclFilesSource => {
   const parseNaclFile = async (naclFile: NaclFile): Promise<ParseResult> => {
@@ -132,7 +135,10 @@ const buildNaclFilesSource = (
       }))
 
     const mergeResult = mergeElements(
-      _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
+      await updateStaticFilesValuesForElements(
+        staticFileSource,
+        _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
+      )
     )
 
     log.info('workspace has %d elements and %d parsed NaCl files',
@@ -284,7 +290,8 @@ const buildNaclFilesSource = (
     clone: () => buildNaclFilesSource(
       naclFilesStore.clone(),
       cache.clone(),
-      state
+      staticFileSource.clone(),
+      state,
     ),
 
     updateNaclFiles,
@@ -297,4 +304,5 @@ const buildNaclFilesSource = (
 export const naclFilesSource = (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
-): NaclFilesSource => buildNaclFilesSource(naclFilesStore, cache)
+  staticFileSource: StaticFilesSource,
+): NaclFilesSource => buildNaclFilesSource(naclFilesStore, cache, staticFileSource)

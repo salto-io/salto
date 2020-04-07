@@ -118,13 +118,15 @@ export type Workspace = {
 }
 
 // common source has no state
-export type EnviornmentSource = { naclFiles: NaclFilesSource; state?: State }
-export type EnviornmentsSources = {
+
+export type EnvironmentSource = { naclFiles: NaclFilesSource; state?: State }
+export type EnvironmentsSources = {
   commonSourceName: string
-  sources: Record<string, EnviornmentSource>
+  sources: Record<string, EnvironmentSource>
 }
+
 export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSource,
-  elementsSources: EnviornmentsSources):
+  elementsSources: EnvironmentsSources):
   Promise<Workspace> => {
   const workspaceConfig = (await config.get(WORKSPACE_CONFIG_NAME))?.value as WorkspaceConfig
   if (_.isUndefined(workspaceConfig)) {
@@ -305,7 +307,7 @@ export const initWorkspace = async (
   defaultEnvName: string,
   config: ConfigSource,
   credentials: ConfigSource,
-  envs: EnviornmentsSources,
+  envs: EnvironmentsSources,
 ): Promise<Workspace> => {
   await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(
     { uid, name, envs: [{ name: defaultEnvName }] }

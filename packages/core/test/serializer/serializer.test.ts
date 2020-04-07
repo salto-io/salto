@@ -17,11 +17,11 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
-  StaticFile,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
 } from '../parser/functions.test'
+import { StaticFileNaclValue } from '../../src/workspace/static_files/common'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 import { resolve } from '../../src/core/expressions'
@@ -100,8 +100,7 @@ describe('State serialization', () => {
       withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
       withobject: new TestFuncImpl('maggot', [{ aa: '312' }]),
       mixed: new TestFuncImpl('brain', [1, [1, { aa: '312' }], false, 'aaa']),
-      file: new StaticFile('none', 'some/path.ext'),
-      filewithhash: new StaticFile('none', 'some/path.ext', 'hash'),
+      file: new StaticFileNaclValue('some/path.ext'),
       nested: {
         WAT: new TestFuncImpl('nestalicous', ['a']),
       },
@@ -177,14 +176,7 @@ describe('State serialization', () => {
       })
     })
     it('file', () => {
-      expect(funcElement.value).toHaveProperty('file', { relativeFileName: 'some/path.ext', naclFilePath: 'none' })
-    })
-    it('file with hash', () => {
-      expect(funcElement.value).toHaveProperty('filewithhash', {
-        relativeFileName: 'some/path.ext',
-        naclFilePath: 'none',
-        hash: 'hash',
-      })
+      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext' })
     })
     it('nested parameter', () => {
       expect(funcElement.value).toHaveProperty('nested', {

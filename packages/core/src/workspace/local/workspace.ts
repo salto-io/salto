@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import uuidv5 from 'uuid/v5'
 import { exists } from '../../file'
-import { Workspace, loadWorkspace, EnviornmentsSources, initWorkspace } from '../workspace'
+import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace } from '../workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../../app_config'
 import { NaclFilesSource, FILE_EXTENSION, naclFilesSource } from '../nacl_files/nacl_files_source'
@@ -25,6 +25,8 @@ import { parseResultCache } from '../cache'
 import { localState } from './state'
 import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspace_config'
 import { configSource, ConfigSource } from '../config_source'
+import { buildLocalStaticFilesCache } from './static_files_cache'
+import { buildStaticFilesSource } from '../static_files/source'
 
 export const COMMON_ENV_PREFIX = ''
 export const ENVS_PREFIX = 'envs'
@@ -54,17 +56,30 @@ const loadNaclFileSource = (
   localStorage: string,
   excludeDirs: string[] = []
 ): NaclFilesSource => {
+  const dirPathToIgnore = (dirPath: string): boolean =>
+    !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirPath)
   const naclFilesStore = localDirectoryStore(
     sourceBaseDir,
     `*${FILE_EXTENSION}`,
-    (dirParh: string) => !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirParh),
+    dirPathToIgnore,
   )
+  const naclStaticFilesStore = localDirectoryStore(
+    sourceBaseDir,
+    undefined,
+    dirPathToIgnore,
+  )
+
   const cacheStore = localDirectoryStore(path.join(localStorage, 'cache'))
-  return naclFilesSource(naclFilesStore, parseResultCache(cacheStore))
+  const staticFilesSource = buildStaticFilesSource(
+    naclStaticFilesStore,
+    buildLocalStaticFilesCache(localStorage),
+  )
+
+  return naclFilesSource(naclFilesStore, parseResultCache(cacheStore), staticFilesSource)
 }
 
 const elementsSources = (baseDir: string, localStorage: string, envs: ReadonlyArray<string>):
-EnviornmentsSources => ({
+EnvironmentsSources => ({
   commonSourceName: COMMON_ENV_PREFIX,
   sources: {
     ..._.fromPairs(envs.map(env =>
@@ -126,5 +141,9 @@ Promise<Workspace> => {
   const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
   const credentials = credentialsSource(localStorage)
   const elemSources = elementsSources(path.resolve(baseDir), localStorage, [envName])
-  return initWorkspace(workspaceName, uid, envName, workspaceConfig, credentials, elemSources)
+
+  return initWorkspace(
+    workspaceName, uid, envName, workspaceConfig,
+    credentials, elemSources,
+  )
 }

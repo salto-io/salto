@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  Field, BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile, ListType,
+  Field, BuiltinTypes, INSTANCE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser/parse'
@@ -29,6 +29,7 @@ import {
   registerTestFunction,
   TestFuncImpl,
 } from './functions.test'
+import { StaticFileNaclValue } from '../../src/workspace/static_files/common'
 
 const funcName = 'ZOMG'
 let functions: Functions
@@ -116,7 +117,7 @@ describe('Salto Dump', () => {
     model,
     {
       func2: new TestFuncImpl(funcName, ['aaa']),
-      func1: new StaticFile('none', 'some/path.ext'),
+      func1: new StaticFileNaclValue('some/path.ext'),
       nested: {
         before: 'something',
         func3: new TestFuncImpl(funcName, ['well', [1, 2, [false, 'soo']]]),
@@ -237,7 +238,7 @@ describe('Salto Dump', () => {
 
   describe('dump function', () => {
     it('static file', () => {
-      const body = dumpValues({ asset: new StaticFile('naclfile', 'some/path.ext') })
+      const body = dumpValues({ asset: new StaticFileNaclValue('some/path.ext') })
 
       expect(body).toMatch(/^asset\s+=\s+file\("some\/path.ext"\)$/m)
     })

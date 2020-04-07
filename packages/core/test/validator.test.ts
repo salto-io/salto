@@ -23,6 +23,10 @@ import {
   validateElements, InvalidValueValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
 } from '../src/core/validator'
+import {
+  InvalidStaticFile, StaticFileMetaData,
+} from '../src/workspace/static_files/common'
+
 import { IllegalReference } from '../src/parser/expressions'
 
 describe('Elements validation', () => {
@@ -571,6 +575,62 @@ describe('Elements validation', () => {
       it('should validate a correct type', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(0)
+      })
+
+      it('should ignore static files thar are valid', () => {
+        const instWithFile = new InstanceElement(
+          'withFile',
+          new ObjectType({
+            elemID: new ElemID('salesforce', 'test'),
+            annotationTypes: {
+              ServiceId: BuiltinTypes.SERVICE_ID,
+            },
+            fields: {
+              someFile: new Field(
+                new ElemID('salesforce', 'test'),
+                'someFile',
+                new PrimitiveType({
+                  elemID: new ElemID('salesforce', 'string'),
+                  primitive: PrimitiveTypes.STRING,
+                }),
+              ),
+            },
+          }),
+          {
+            someFile: new StaticFileMetaData('bla', 'bbb'),
+          },
+        )
+
+        const errors = validateElements([instWithFile])
+        expect(errors).toHaveLength(0)
+      })
+
+      it('should fail for invalid static files', () => {
+        const instWithFile = new InstanceElement(
+          'withFile',
+          new ObjectType({
+            elemID: new ElemID('salesforce', 'test'),
+            annotationTypes: {
+              ServiceId: BuiltinTypes.SERVICE_ID,
+            },
+            fields: {
+              someFile: new Field(
+                new ElemID('salesforce', 'test'),
+                'someFile',
+                new PrimitiveType({
+                  elemID: new ElemID('salesforce', 'string'),
+                  primitive: PrimitiveTypes.STRING,
+                }),
+              ),
+            },
+          }),
+          {
+            someFile: new InvalidStaticFile('aa'),
+          },
+        )
+
+        const errors = validateElements([instWithFile])
+        expect(errors).toHaveLength(1)
       })
 
       it('should allow unspecified values', () => {

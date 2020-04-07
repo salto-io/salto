@@ -15,7 +15,6 @@
 */
 
 import {
-  StaticFile,
   Value,
 } from '@salto-io/adapter-api'
 import {
@@ -29,6 +28,8 @@ import {
   FunctionExpression,
 } from '../../src/parser/internal/functions'
 import { HclExpression, SourcePos } from '../../src/parser/internal/types'
+
+import { StaticFileNaclValue } from '../../src/workspace/static_files/common'
 
 export class TestFuncImpl {
   constructor(
@@ -115,16 +116,16 @@ describe('Functions', () => {
 
       const fileFunc = evaluateFunction(hclFunc)
 
-      expect(fileFunc instanceof StaticFile).toEqual(true)
-      expect(fileFunc).toHaveProperty('relativeFileName', 'some/path.ext')
+      expect(fileFunc instanceof StaticFileNaclValue).toEqual(true)
+      expect(fileFunc).toHaveProperty('filepath', 'some/path.ext')
     })
     it('should initiate file function with explicit parameters', () => {
       const hclFunc = getHclFunc('file', ['some/path.ext'])
 
       const fileFunc = evaluateFunction(hclFunc, functions)
 
-      expect(fileFunc instanceof StaticFile).toEqual(true)
-      expect(fileFunc).toHaveProperty('relativeFileName', 'some/path.ext')
+      expect(fileFunc instanceof StaticFileNaclValue).toEqual(true)
+      expect(fileFunc).toHaveProperty('filepath', 'some/path.ext')
     })
     it('should fail if missing function with default parameters', () => {
       const hclFunc = getHclFunc('ZOMG', ['arg', 'us'])

@@ -426,3 +426,18 @@ export const flattenElementStr = (element: Element): Element => {
   if (isInstanceElement(element)) return flattenInstance(element)
   return element
 }
+
+// This method is similar to lodash and Array's `some` method, except that it runs deep on
+// a Values object
+export const valuesDeepSome = (value: Value, predicate: (val: Value) => boolean): boolean => {
+  if (predicate(value)) {
+    return true
+  }
+  if (_.isArray(value)) {
+    return value.some(x => valuesDeepSome(x, predicate))
+  }
+  if (_.isObject(value)) {
+    return _.values(value).some(x => valuesDeepSome(x, predicate))
+  }
+  return false
+}

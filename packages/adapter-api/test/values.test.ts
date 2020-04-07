@@ -21,51 +21,27 @@ import {
 
 describe('Values', () => {
   describe('StaticFile', () => {
-    it('should have static serialize name', () =>
-      expect(StaticFile.serializedTypeName).toEqual('StaticFile'))
-
-    it('should be able to add buffer and set hash', () => {
-      const ZOMGBuffer = Buffer.from('ZOMG')
-      const fileFunc = new StaticFile('somefile.nacl', 'some/path.ext', ZOMGBuffer)
-      expect(fileFunc.content).toEqual(ZOMGBuffer)
-      expect(fileFunc.hash).toEqual('4dc55a74daa147a028360ee5687389d7')
-    })
-    it('should not set hash if passed empty content', () => {
-      const fileFunc = new StaticFile('somefile.nacl', 'some/path.ext')
-      expect(fileFunc.content).toBeUndefined()
-      expect(fileFunc.hash).toBeUndefined()
-    })
     describe('equality (direct)', () => {
-      it('equals by hash', () => {
-        const fileFunc1 = new StaticFile('somefile.nacl', 'some/path.ext', 'ZOMG')
-        const fileFunc2 = new StaticFile('somefile.nacl', 'some/path.ext', 'ZOMG')
+      it('equals', () => {
+        const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
+        const fileFunc2 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
         expect(fileFunc1.isEqual(fileFunc2)).toEqual(true)
       })
-      it('unequals by hash', () => {
-        const fileFunc1 = new StaticFile('somefile.nacl', 'some/path.ext', 'ZOMG1')
-        const fileFunc2 = new StaticFile('somefile.nacl', 'some/path.ext', 'ZOMG2')
-        expect(fileFunc1.isEqual(fileFunc2)).toEqual(false)
-      })
-      it('unequals if both hashes are undefined', () => {
-        const fileFunc1 = new StaticFile('somefile.nacl', 'some/path.ext')
-        const fileFunc2 = new StaticFile('somefile.nacl', 'some/path.ext')
+      it('unequals', () => {
+        const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
+        const fileFunc2 = new StaticFile('some/path.ext', Buffer.from('ZOMG1'))
         expect(fileFunc1.isEqual(fileFunc2)).toEqual(false)
       })
     })
     describe('equality (via isEqualValues)', () => {
       it('equals by hash', () => {
-        const fileFunc1 = new StaticFile('somefile.nacl', 'some/path.ext', 'ZOMG')
-        const fileFunc2 = new StaticFile('somefile.nacl', 'some/path.ext', 'ZOMG')
+        const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
+        const fileFunc2 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(true)
       })
-      it('unequals by hash', () => {
-        const fileFunc1 = new StaticFile('somefile.nacl', 'some/path.ext', 'ZOMG1')
-        const fileFunc2 = new StaticFile('somefile.nacl', 'some/path.ext', 'ZOMG2')
-        expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
-      })
-      it('unequals if both hashes are undefined', () => {
-        const fileFunc1 = new StaticFile('somefile.nacl', 'some/path.ext')
-        const fileFunc2 = new StaticFile('somefile.nacl', 'some/path.ext')
+      it('unequals', () => {
+        const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
+        const fileFunc2 = new StaticFile('some/path.ext', Buffer.from('ZOMG1'))
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
       })
     })

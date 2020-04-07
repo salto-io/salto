@@ -20,6 +20,7 @@ import {
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, RESTRICTION_ANNOTATIONS, isListType,
 } from '@salto-io/adapter-api'
+import { InvalidStaticFile, StaticFileMetaData } from '../workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from '../parser/expressions'
 
@@ -160,6 +161,16 @@ export class CircularReferenceValidationError extends ValidationError {
   }
 }
 
+export class MissingStaticFileError extends ValidationError {
+  constructor({ elemID, value }: { elemID: ElemID; value: InvalidStaticFile }) {
+    super({
+      elemID,
+      error: `Missing static file: ${value.filepath}`,
+      severity: 'Error',
+    })
+  }
+}
+
 const validateAnnotationsValue = (
   elemID: ElemID, value: Value, annotations: Values, type: TypeElement
 ): ValidationError[] | undefined => {
@@ -281,6 +292,14 @@ const validateValue = (elemID: ElemID, value: Value,
   }
   if (value instanceof CircularReference) {
     return [new CircularReferenceValidationError({ elemID, ref: value.ref })]
+  }
+
+  if (value instanceof StaticFileMetaData) {
+    return []
+  }
+
+  if (value instanceof InvalidStaticFile) {
+    return [new MissingStaticFileError({ elemID, value })]
   }
 
   // NOTE: this area should be deleted as soon as

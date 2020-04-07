@@ -18,7 +18,8 @@ import {
   RESTRICTION_ANNOTATIONS, ListType, TypeElement,
 } from '@salto-io/adapter-api'
 import {
-  ENTITY_CUSTOM_FIELD, IS_ATTRIBUTE, IS_NAME, NETSUITE, SCRIPT_ID, SUBTYPES_PATH, TYPES_PATH,
+  ENTITY_CUSTOM_FIELD, IS_ATTRIBUTE, IS_NAME, NETSUITE, SCRIPT_ID, SCRIPT_ID_PREFIX, SUBTYPES_PATH,
+  TYPES_PATH,
 } from './constants'
 
 const entityCustomFieldElemID = new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)
@@ -210,11 +211,14 @@ export class Types {
   public static customTypes: Record<string, ObjectType> = {
     [ENTITY_CUSTOM_FIELD.toLowerCase()]: new ObjectType({
       elemID: entityCustomFieldElemID,
+      annotations: {
+        [SCRIPT_ID_PREFIX]: 'custentity_',
+      },
       fields: {
         fieldType: new Field(entityCustomFieldElemID, 'fieldType',
           Types.fieldTypeSubType, { [CORE_ANNOTATIONS.REQUIRED]: true }),
         [SCRIPT_ID]: new Field(entityCustomFieldElemID, SCRIPT_ID, BuiltinTypes.SERVICE_ID,
-          { [IS_ATTRIBUTE]: true, [CORE_ANNOTATIONS.REQUIRED]: true }),
+          { [IS_ATTRIBUTE]: true }),
         label: new Field(entityCustomFieldElemID, 'label', BuiltinTypes.STRING,
           { [IS_NAME]: true, [CORE_ANNOTATIONS.REQUIRED]: true }),
         selectRecordType: new Field(entityCustomFieldElemID, 'selectRecordType',

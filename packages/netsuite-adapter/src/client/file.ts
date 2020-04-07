@@ -18,9 +18,13 @@ import fs from 'fs'
 
 const readFileP = promisify(fs.readFile)
 const readDirP = promisify(fs.readdir)
+const writeFileP = promisify(fs.writeFile)
 
 export const readFile = async (path: string): Promise<string> =>
   readFileP(path, { encoding: 'utf8' })
 
 export const readDir = async (path: string): Promise<string[]> =>
   readDirP(path)
+
+export const writeFile = async (path: string, content: string): Promise<void> =>
+  writeFileP(path, content)

@@ -15,32 +15,34 @@
 */
 import {
   ElemID, Field, InstanceElement, isListType, isObjectType, isPrimitiveType, ObjectType,
-  PrimitiveType, PrimitiveTypes, PrimitiveValue, Value, Values,
+  PrimitiveType, PrimitiveTypes, PrimitiveValue, TypeElement, Value, Values,
 } from '@salto-io/adapter-api'
 import { bpCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Attributes, Element as XmlElement } from 'xml-js'
 import _ from 'lodash'
-import { IS_NAME, NETSUITE, RECORDS_PATH } from './constants'
+import { IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH } from './constants'
 
 const log = logger(module)
-
-const transformPrimitive = (val?: PrimitiveValue, type?: PrimitiveType): Value => {
-  if (_.isUndefined(type) || _.isUndefined(val)) {
-    return undefined
-  }
-  switch (type.primitive) {
-    case PrimitiveTypes.NUMBER:
-      return Number(val)
-    case PrimitiveTypes.BOOLEAN:
-      return val === 'T'
-    default:
-      return val
-  }
-}
+const XML_TRUE_VALUE = 'T'
+const XML_FALSE_VALUE = 'F'
 
 const transformXmlElements = (elements: XmlElement[], type: ObjectType, attributes?: Attributes):
   Values | undefined => {
+  const transformPrimitive = (val?: PrimitiveValue, primitiveType?: PrimitiveType): Value => {
+    if (_.isUndefined(primitiveType) || _.isUndefined(val)) {
+      return undefined
+    }
+    switch (primitiveType.primitive) {
+      case PrimitiveTypes.NUMBER:
+        return Number(val)
+      case PrimitiveTypes.BOOLEAN:
+        return val === XML_TRUE_VALUE
+      default:
+        return val
+    }
+  }
+
   const transformXmlElement = (element: XmlElement, field: Field): Values | undefined => {
     if (field === undefined) {
       log.warn('Unknown field with name=%. Skipping its transformation', element.name)
@@ -118,3 +120,84 @@ export const createInstanceElement = (rootXmlElement: XmlElement, type: ObjectTy
     transformXmlElements(rootXmlElement.elements as XmlElement[], type, rootXmlElement.attributes),
     [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
 }
+
+const isXmlElement = (element: XmlElement | undefined): element is XmlElement =>
+  element !== undefined
+
+const isAttribute = (field: Field): boolean => field.annotations[IS_ATTRIBUTE]
+
+const transformValues = (values: Values, type: ObjectType): XmlElement[] =>
+  Object.entries(values)
+    .map(([key, val]) => {
+      const field = type.fields[key]
+      if (_.isUndefined(field) || isAttribute(field)) {
+        return undefined
+      }
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
+      return transformValue(val, field.type, field.name.toLowerCase())
+    })
+    .filter(isXmlElement)
+
+const transformValue = (value: Value, type: TypeElement, elementName: string):
+  XmlElement | undefined => {
+  const transformPrimitive = (primitiveValue: PrimitiveValue, primitiveType: PrimitiveType):
+    string => {
+    if (primitiveType.primitive === PrimitiveTypes.BOOLEAN) {
+      return primitiveValue ? XML_TRUE_VALUE : XML_FALSE_VALUE
+    }
+    return String(primitiveValue)
+  }
+
+  const transformAttributes = (values: Values, objType: ObjectType): Attributes =>
+    _(Object.values(objType.fields)
+      .filter(isAttribute)
+      .map(f => f.name)
+      .map(name => [name.toLowerCase(), values[name]]))
+      .fromPairs()
+      .omitBy(_.isUndefined)
+      .value()
+
+  if (isObjectType(type)) {
+    if (!_.isPlainObject(value)) {
+      return undefined
+    }
+    return {
+      type: 'element',
+      name: elementName,
+      elements: transformValues(value, type),
+      attributes: transformAttributes(value, type),
+    }
+  }
+
+  if (isListType(type)) {
+    if (!_.isArray(value)) {
+      return undefined
+    }
+    return {
+      type: 'element',
+      name: elementName,
+      elements: value.map(listValue =>
+        transformValue(listValue, type.innerType, type.innerType.elemID.name.toLowerCase()))
+        .filter(isXmlElement),
+    }
+  }
+
+  if (isPrimitiveType(type)) {
+    return {
+      type: 'element',
+      name: elementName,
+      elements: [{
+        type: 'text',
+        text: transformPrimitive(value, type),
+      }],
+    }
+  }
+  return undefined
+}
+
+export const createXmlElement = (instance: InstanceElement): XmlElement =>
+  ({
+    elements: [
+      transformValue(instance.value, instance.type, instance.type.elemID.name.toLowerCase()),
+    ] as XmlElement[],
+  })

@@ -13,14 +13,46 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, FetchResult, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes, Element, FetchResult, Field, InstanceElement, isInstanceElement, ObjectType,
+} from '@salto-io/adapter-api'
+import { bpCase } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import NetsuiteClient from './client/client'
-import { createInstanceElement } from './transformer'
+import { createInstanceElement, createXmlElement } from './transformer'
 import { Types } from './types'
+import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from './constants'
 
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
+}
+
+const validateServiceIds = (before: InstanceElement, after: InstanceElement): void => {
+  const serviceIdsFields = Object.values(after.type.fields)
+    .filter(field => field.type === BuiltinTypes.SERVICE_ID)
+  serviceIdsFields.forEach(field => {
+    if (before.value[field.name] !== after.value[field.name]) {
+      throw Error(
+        `Failed to update element as ${field.name} values prev=${before.value[field.name]} and new=${after.value[field.name]} are different`
+      )
+    }
+  })
+}
+
+const isCustomType = (type: ObjectType): boolean =>
+  !_.isUndefined(Types.customTypes[type.elemID.name.toLowerCase()])
+
+const nameField = (type: ObjectType): Field =>
+  Object.values(type.fields).find(field => field.annotations[IS_NAME]) as Field
+
+const addDefaults = (instance: InstanceElement): void => {
+  if (_.isUndefined(instance.value[SCRIPT_ID])) {
+    const { type } = instance
+    const scriptIdPrefix = type.annotations[SCRIPT_ID_PREFIX]
+    const name = bpCase(instance.value[nameField(type).name]).toLowerCase()
+    instance.value[SCRIPT_ID] = `${scriptIdPrefix}${name}`
+  }
 }
 
 export default class NetsuiteAdapter {
@@ -43,10 +75,13 @@ export default class NetsuiteAdapter {
     return { elements: [...Types.getAllTypes(), ...instances] }
   }
 
-  public async add(element: Element): Promise<Element> { // todo: implement
-    // eslint-disable-next-line no-console
-    console.log(this.client)
-    return Promise.resolve(element)
+  public async add(instance: InstanceElement): Promise<InstanceElement> {
+    if (isCustomType(instance.type)) {
+      addDefaults(instance)
+      await this.addOrUpdateCustomTypeInstance(instance)
+      return instance
+    }
+    throw Error('Salto currently supports adding instances of customTypes only')
   }
 
   public async remove(_element: Element): Promise<void> { // todo: implement
@@ -54,9 +89,17 @@ export default class NetsuiteAdapter {
     console.log(this.client)
   }
 
-  public async update(_before: Element, after: Element): Promise<Element> { // todo: implement
-    // eslint-disable-next-line no-console
-    console.log(this.client)
-    return Promise.resolve(after)
+  public async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
+    if (isCustomType(after.type)) {
+      validateServiceIds(before, after)
+      await this.addOrUpdateCustomTypeInstance(after)
+      return after
+    }
+    throw Error('Salto currently supports updating instances of customTypes only')
+  }
+
+  private async addOrUpdateCustomTypeInstance(instance: InstanceElement): Promise<void> {
+    const xmlElement = createXmlElement(instance)
+    return this.client.deploy(instance.value[SCRIPT_ID], xmlElement)
   }
 }

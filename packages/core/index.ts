@@ -18,7 +18,6 @@ import * as ErrorTypes from './src/errors'
 
 export { file, ErrorTypes }
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
-export { dumpCsv, readCsvFromStream } from './src/core/csv'
 export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
@@ -35,7 +34,6 @@ export {
 export { StateRecency } from './src/workspace/workspace'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dumpElements, dumpElemID } from './src/parser/dump'
-export { readAllCsvContents } from './test/common/helpers'
 export { SALTO_HOME_VAR, AppConfig, configFromDisk } from './src/app_config'
 export {
   telemetrySender, Telemetry, TelemetryEvent,

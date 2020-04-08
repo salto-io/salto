@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import {
-  isObjectType, TypeElement, InstanceElement, Value,
+  isObjectType, TypeElement, InstanceElement,
 } from '@salto-io/adapter-api'
-import { readCsvFromStream } from '../../src/core/csv'
 
 /**
  * Compare two types and expect them to be the same.
@@ -67,18 +66,6 @@ export const expectInstancesToMatch = (
   expect(expected.value).toEqual(actual.value)
   expect(expected.type.elemID).toEqual(actual.type.elemID)
   expect(expected.annotations).toEqual(actual.annotations)
-}
-
-export const readAllCsvContents = async (
-  csvPath: string
-): Promise<Value[]> => {
-  const csvIterator = readCsvFromStream(csvPath)
-  const results: Value[] = []
-  // eslint-disable-next-line no-restricted-syntax
-  for await (const record of csvIterator) {
-    results.push(record)
-  }
-  return results
 }
 
 export const expectToContainAllItems = <T>(arr: T[], items: T[]): void => {

@@ -175,6 +175,7 @@ describe('salesforce client', () => {
       expect(dodoScope.isDone()).toBeTruthy()
     })
   })
+
   describe('with suppressed errors', () => {
     it('should not fail if all errors are suppressed', async () => {
       const dodoScope = nock('http://dodo22/servies/Soap/m/47.0')

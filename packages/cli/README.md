@@ -42,7 +42,6 @@ The data is being used to improve the product's performance, as well as detect b
 Some of the things that telemetry helps us analyze are:
 
   * Slow `fetch` and `deploy`
-  * Issues with exporting/importing/deleting from/to CSV files
   * Number of changes on `fetch` and `deploy` in correlation to failures
 
 #### Which data is being sent?

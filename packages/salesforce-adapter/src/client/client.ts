@@ -19,12 +19,10 @@ import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry
 import { collections, decorators } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
-  MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, QueryResult, DeployResult,
-  BatchResultInfo, Record as SfRecord, RecordResult, BulkLoadOperation, RetrieveRequest,
-  RetrieveResult, ListMetadataQuery, UpsertResult,
+  MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, DeployResult,
+  RetrieveRequest, RetrieveResult, ListMetadataQuery, UpsertResult,
 } from 'jsforce'
 import { flatValues } from '@salto-io/adapter-utils'
-import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { CompleteSaveResult, SfError } from './types'
@@ -286,26 +284,6 @@ export default class SalesforceClient {
     }
   )
 
-  @SalesforceClient.logDecorator
-  @SalesforceClient.requiresLogin
-  public async runQuery(queryString: string): Promise<QueryResult<Value>> {
-    return this.conn.query(queryString)
-  }
-
-  @SalesforceClient.logDecorator
-  @SalesforceClient.requiresLogin
-  public async queryMore(locator: string): Promise<QueryResult<Value>> {
-    return this.conn.queryMore(locator)
-  }
-
-  @SalesforceClient.logDecorator
-  @SalesforceClient.requiresLogin
-  public async destroy(
-    type: string, ids: string | string[]
-  ): Promise<(RecordResult | RecordResult[])> {
-    return this.conn.destroy(type, ids)
-  }
-
   /**
    * Extract metadata object names
    */
@@ -466,25 +444,5 @@ export default class SalesforceClient {
   public async deploy(zip: Buffer): Promise<DeployResult> {
     return flatValues(await this.conn.metadata.deploy(zip, { rollbackOnError: true })
       .complete(true))
-  }
-
-  /**
-   * Loads a stream of CSV data to the bulk API
-   * @param type The type of the objects to update
-   * @param operation The type of operation to perform, such as upsert, delete, etc.
-   * @param records The records from the CSV contents
-   * @returns The BatchResultInfo which contains success/errors for each entry
-   */
-  @SalesforceClient.logDecorator
-  @SalesforceClient.requiresLogin
-  public async updateBulk(type: string, operation: BulkLoadOperation, records: SfRecord[]):
-    Promise<BatchResultInfo[]> {
-    // Initiate the batch job
-    const batch = this.conn.bulk.load(type, operation, { extIdField: 'Id', concurrencyMode: 'Parallel' }, records)
-    // We need to wait for the job to execute (this what the next line does),
-    // otherwise the retrieve() will fail
-    // So the following line is a part of SFDC Bulk API, not promise API.
-    await batch.then()
-    return flatValues((await batch.retrieve()) as BatchResultInfo[])
   }
 }

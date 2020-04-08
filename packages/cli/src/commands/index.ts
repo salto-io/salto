@@ -17,9 +17,6 @@ import { YargsCommandBuilder } from '../command_builder'
 import fetchBuilder from './fetch'
 import previewBuilder from './preview'
 import deployBuilder from './deploy'
-import exportBuilder from './export'
-import importBuilder from './import'
-import deleteBuilder from './delete'
 import initBuilder from './init'
 import servicesBuilder from './services'
 import envsBuilder from './env'
@@ -33,7 +30,4 @@ export default [
   deployBuilder,
   servicesBuilder,
   envsBuilder,
-  exportBuilder,
-  importBuilder,
-  deleteBuilder,
 ] as YargsCommandBuilder[]

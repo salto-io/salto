@@ -21,12 +21,6 @@ import { Change } from './change'
 import { ChangeValidator } from './change_validators'
 import { DependencyChanger } from './dependency_changer'
 
-export interface DataModificationResult {
-  successfulRows: number
-  failedRows: number
-  errors: Set<string>
-}
-
 export interface FetchResult {
   elements: Element[]
   config?: InstanceElement
@@ -37,15 +31,6 @@ export interface Adapter {
   add(element: Element): Promise<Element>
   remove(element: Element): Promise<void>
   update(before: Element, after: Element, changes: Iterable<Change>): Promise<Element>
-  getInstancesOfType?(type: ObjectType): AsyncIterable<InstanceElement[]>
-  importInstancesOfType?(
-    type: ObjectType,
-    records: AsyncIterable<InstanceElement>
-  ): Promise<DataModificationResult>
-  deleteInstancesOfType?(
-    type: ObjectType,
-    records: AsyncIterable<ElemID>
-  ): Promise<DataModificationResult>
 }
 
 export type AdapterCreatorOpts = {

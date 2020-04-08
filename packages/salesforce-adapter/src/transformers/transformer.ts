@@ -785,25 +785,6 @@ export class Types {
   }
 }
 
-/**
- * Deploy transform function on all keys in a values map recursively
- *
- * @param obj Input object to transform
- * @param func Transform function to deploy to all keys
- */
-export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
-  if (_.isArray(obj)) {
-    return obj.map(val => mapKeysRecursive(val, func))
-  }
-  if (_.isObject(obj)) {
-    return _(obj)
-      .mapKeys((_val, key) => func(key))
-      .mapValues(val => mapKeysRecursive(val, func))
-      .value()
-  }
-  return obj
-}
-
 export const toCustomField = (
   field: TypeField, fullname = false
 ): CustomField => {

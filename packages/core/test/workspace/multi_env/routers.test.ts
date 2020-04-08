@@ -170,7 +170,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      'strict'
+      'isolated'
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -189,7 +189,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      'strict'
+      'isolated'
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -208,7 +208,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      'strict'
+      'isolated'
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
@@ -227,7 +227,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      'strict'
+      'isolated'
     )
     expect(routedChanges.primarySource).toHaveLength(2)
     expect(routedChanges.commonSource).toHaveLength(1)
@@ -268,7 +268,7 @@ describe('compact routing', () => {
       envSource,
       commonSource,
       { sec: secEnv },
-      'strict'
+      'isolated'
     )
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(1)

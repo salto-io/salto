@@ -24,6 +24,7 @@ const mockState = (): State => ({
   override: jest.fn().mockImplementation(() => Promise.resolve()),
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
   getUpdateDate: jest.fn().mockImplementation(() => Promise.resolve()),
+  existingServices: jest.fn().mockImplementation(() => Promise.resolve()),
 })
 
 export default mockState

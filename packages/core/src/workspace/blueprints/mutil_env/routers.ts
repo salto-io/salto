@@ -237,11 +237,11 @@ export const routeChanges = async (
   secondarySources: Record<string, BlueprintsSource>,
   mode?: RoutingMode
 ): Promise<RoutedChanges> => {
-  const isStrict = mode === 'strict'
-  const changes = isStrict
+  const isIsolated = mode === 'isolated'
+  const changes = isIsolated
     ? await toMergeableChanges(rawChanges, primarySource, commonSource)
     : rawChanges
-  const routedChanges = await Promise.all(changes.map(c => (isStrict
+  const routedChanges = await Promise.all(changes.map(c => (isIsolated
     ? routeNewEnv(c, primarySource, commonSource, secondarySources)
     : routeFetch(c, primarySource, commonSource, secondarySources))))
   const secondaryEnvsChanges = _.mergeWith(

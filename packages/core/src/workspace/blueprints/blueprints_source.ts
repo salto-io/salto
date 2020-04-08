@@ -37,7 +37,7 @@ const { withLimitedConcurrency } = promises.array
 
 const log = logger(module)
 
-export type RoutingMode = 'strict' | 'default'
+export type RoutingMode = 'isolated' | 'default'
 
 export const BP_EXTENSION = '.bp'
 const PARSE_CONCURRENCY = 20

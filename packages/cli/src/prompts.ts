@@ -154,4 +154,23 @@ public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended 
   public static readonly NO_CURRENT_ENV = 'No active environment is currently set'
   public static readonly SET_ENV = 'Active environment is set to'
   public static readonly CREATED_ENV = 'Created environment'
+  public static readonly STRICT_MODE_FOR_NEW_ENV_RECOMMENDATION = 'It seems that you are attempting to fetch a new environment for the first time without specifying the --isolated flag.'
+    + 'This may result in unwanted changes to the existing environments.\n'
+    + 'It is recommended to run this fetch as an isolated fetch.'
+
+  public static readonly STRICT_FOR_NEW_SERVICES_WHEN_NOT_IN_STRICT_MODE_RECOMMENDATION = (
+    servicesNames: string,
+  ): string => `It seems that you are attempting to fetch ${servicesNames} for the first time in the current environment.`
+    + 'This may result in unwanted changes to the service in the existing environments.\n'
+    + `It is recommended to run this fetch as an isolated fetch only for ${servicesNames}`
+
+  public static readonly STRICT_FOR_NEW_SERVICES_WHEN_IN_STRICT_MODE_RECOMMENDATION = (
+    newServicesNames: string,
+    oldServicesNames: string
+  ): string => `It seems that you are attempting to fetch ${newServicesNames} for the first time in the current environment in isolated mode.`
+    + `Please note that you are also applying this flag to the already existing ${oldServicesNames} services.`
+    + 'This may result in unwanted changes to the service in the existing environments.\n'
+    + `It is recommended to run this fetch as an isolated fetch only for ${newServicesNames}`
+
+  public static readonly APPROVE_STRICT_RECOMMENDATION = 'Apply this recommendation to the current fetch operation?'
 }

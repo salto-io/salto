@@ -24,6 +24,7 @@ import {
   FetchProgressEvents,
   StepEmitter,
   Telemetry,
+  currentEnvConfig,
 } from '@salto-io/core'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -39,9 +40,11 @@ import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
   formatDetailedChanges,
+  formatApproveIsolatedModePrompt,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
-  shouldUpdateConfig as cliShouldUpdateConfig } from '../callbacks'
+  shouldUpdateConfig as cliShouldUpdateConfig,
+  cliApproveIsolatedMode } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
@@ -61,24 +64,69 @@ type shouldUpdateConfigFunc = (
   formattedChanges: string
 ) => Promise<boolean>
 
+type approveIsolatedModeFunc = (
+  newServices: string[],
+  oldService: string[],
+  isolatedInput: boolean
+) => Promise<boolean>
+
 export type FetchCommandArgs = {
   workspace: Workspace
   force: boolean
   interactive: boolean
-  strict?: boolean
+  isolatedInput: boolean
   cliTelemetry: CliTelemetry
   output: CliOutput
   fetch: fetchFunc
   getApprovedChanges: approveChangesFunc
   shouldUpdateConfig: shouldUpdateConfigFunc
+  approveIsolatedMode: approveIsolatedModeFunc
   inputServices?: string[]
 }
 
+const shouldRecommendIsolatedMode = (
+  newServices: string[],
+  oldServices: string[],
+  envNames: string[],
+  isolatedOveride?: boolean
+): boolean => {
+  if (_.isEmpty(newServices)) return false
+  if (envNames.length <= 1) return false
+  if (!_.isEmpty(oldServices) && isolatedOveride) return true
+  if (_.isEmpty(oldServices) && !isolatedOveride) return true
+  return false
+}
+
+const getIsolatedServices = async (
+  services: string[],
+  existingServices: string[],
+  envNames: string[],
+  isolatedInput: boolean,
+  force: boolean,
+  approveIsolatedMode: approveIsolatedModeFunc,
+  outputLine: (text: string) => void
+): Promise<{services: string[]; isolated: boolean}> => {
+  const newServices = _.without(services, ...existingServices)
+  const oldServices = _.without(services, ...newServices)
+  // We have a first fetch of a service in a multi-env setup.
+  // The recommended practice here is to initiate the new service
+  // by making an isolated fetch for the new services only.
+  if (!force && shouldRecommendIsolatedMode(newServices, oldServices, envNames, isolatedInput)) {
+    outputLine(formatApproveIsolatedModePrompt(newServices, oldServices, isolatedInput))
+    if (await approveIsolatedMode(newServices, oldServices, isolatedInput)) {
+      return { services: newServices, isolated: true }
+    }
+  }
+
+  return { services, isolated: isolatedInput }
+}
+
+
 export const fetchCommand = async (
   {
-    workspace, force, interactive, strict,
+    workspace, force, interactive, isolatedInput = false,
     getApprovedChanges, shouldUpdateConfig,
-    inputServices, cliTelemetry, output, fetch,
+    inputServices, cliTelemetry, output, fetch, approveIsolatedMode,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
@@ -119,10 +167,20 @@ export const fetchCommand = async (
       Prompts.FETCH_UPDATE_WORKSPACE_FAIL
     )(progress))
 
+  const { services, isolated } = await getIsolatedServices(
+    inputServices || currentEnvConfig(workspace.config).services,
+    await workspace.state.existingServices(),
+    _.keys(workspace.config.envs),
+    isolatedInput,
+    force,
+    approveIsolatedMode,
+    outputLine
+  )
+
   const fetchResult = await fetch(
     workspace,
     fetchProgress,
-    inputServices,
+    services,
   )
   if (fetchResult.success === false) {
     output.stderr.write(formatFatalFetchError(fetchResult.mergeErrors))
@@ -174,7 +232,7 @@ export const fetchCommand = async (
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
   const updatingWsEmitter = new StepEmitter()
   fetchProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
-  const updatingWsSucceeded = await updateWorkspace(workspace, output, changesToApply, strict)
+  const updatingWsSucceeded = await updateWorkspace(workspace, output, changesToApply, isolated)
   if (updatingWsSucceeded) {
     updatingWsEmitter.emit('completed')
     outputLine(formatFetchFinish())
@@ -198,13 +256,13 @@ export const command = (
   telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
-  strict: boolean,
+  isolatedInput: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}, strict=${strict}], environment=${inputEnvironment}, services=${inputServices}`)
+      interactive}, isolated=${isolatedInput}], environment=${inputEnvironment}, services=${inputServices}`)
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output,
@@ -222,8 +280,9 @@ export const command = (
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
-      strict,
+      isolatedInput: _.isUndefined(isolatedInput) ? false : isolatedInput,
       shouldUpdateConfig: cliShouldUpdateConfig,
+      approveIsolatedMode: cliApproveIsolatedMode,
       inputServices,
     })
   },
@@ -232,7 +291,7 @@ export const command = (
 type FetchArgs = {
   force: boolean
   interactive: boolean
-  strict: boolean
+  isolated: boolean
 } & ServicesArgs & EnvironmentArgs
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
@@ -255,7 +314,7 @@ const fetchBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
-      strict: {
+      isolated: {
         alias: ['t'],
         describe: 'Restrict fetch from modifying common configuration '
           + '(might result in changes in other env folders)',
@@ -276,7 +335,7 @@ const fetchBuilder = createCommandBuilder({
       input.telemetry,
       output,
       spinnerCreator,
-      input.args.strict,
+      input.args.isolated,
       input.args.services,
       input.args.env,
     )

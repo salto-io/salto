@@ -31,6 +31,9 @@ jest.mock('../../../src/file', () => ({
     if (filename === 'full') {
       return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]')
     }
+    if (filename === 'mutiple_adapters') {
+      return Promise.resolve('[{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"hubspot","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]')
+    }
     return Promise.resolve('[]')
   }),
   mkdirp: jest.fn().mockImplementation(),
@@ -179,6 +182,19 @@ describe('local state', () => {
       expect(overrideDate).toEqual(modificationDate)
       await state.remove([mockElement.elemID])
       expect(overrideDate).toEqual(modificationDate)
+    })
+  })
+
+  describe('exsitingAdapters', () => {
+    it('should return empty list on empty state', async () => {
+      const state = localState('empty')
+      const adapters = await state.existingServices()
+      expect(adapters).toHaveLength(0)
+    })
+    it('should return all adapters in a full state', async () => {
+      const state = localState('mutiple_adapters')
+      const adapters = await state.existingServices()
+      expect(adapters).toEqual(['salesforce', 'hubspot'])
     })
   })
 })

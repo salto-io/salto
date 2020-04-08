@@ -49,6 +49,10 @@ const planItemName = (step: PlanItem): string => fullName(step.parent())
 
 const formatError = (err: { message: string }): string => header(err.message)
 
+const formatWordsSeries = (words: string[]): string => (words.length > 1
+  ? `${words.slice(0, -1).join(', ')} and ${_.last(words)}`
+  : words[0])
+
 /**
   * Format workspace errors
   */
@@ -561,3 +565,21 @@ export const formatFinishedLoading = (envName?: string): string => (
     ? [Prompts.FINISHED_LOADING_FOR_ENV, envName].join(' ')
     : Prompts.FINISHED_LOADING
 )
+
+export const formatApproveIsolatedModePrompt = (
+  newServices: string[],
+  oldServices: string[],
+  isolatedInput: boolean
+): string => {
+  if (_.isEmpty(oldServices)) {
+    return Prompts.STRICT_MODE_FOR_NEW_ENV_RECOMMENDATION
+  }
+  return isolatedInput
+    ? Prompts.STRICT_FOR_NEW_SERVICES_WHEN_NOT_IN_STRICT_MODE_RECOMMENDATION(
+      formatWordsSeries(newServices),
+    )
+    : Prompts.STRICT_FOR_NEW_SERVICES_WHEN_IN_STRICT_MODE_RECOMMENDATION(
+      formatWordsSeries(newServices),
+      formatWordsSeries(oldServices)
+    )
+}

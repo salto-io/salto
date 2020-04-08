@@ -172,3 +172,7 @@ export const getEnvName = async (currentName = 'default'): Promise<string> => {
   }]
   return (await inquirer.prompt(questions))[currentName]
 }
+
+export const cliApproveIsolatedMode = async (): Promise<boolean> => (
+  getUserBooleanInput(Prompts.APPROVE_STRICT_RECOMMENDATION)
+)

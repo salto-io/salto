@@ -1,3 +1,4 @@
+
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -13,6 +14,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
+import { BuiltinTypes, PrimitiveType } from '@salto-io/adapter-api'
+
 export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
@@ -61,26 +65,6 @@ export enum COMPOUND_FIELD_TYPE_NAMES {
   LOCATION = 'Location',
 }
 
-export enum MISSING_TYPE_NAME {
-  CASE_CLASSIFICATION_SETTINGS = 'CaseClassificationSettings',
-  ACCOUNT_INSIGHT_SETTINGS = 'AccountInsightsSettings',
-  ACCOUNT_INTELLIGENCE_SETTINGS = 'AccountIntelligenceSettings',
-  AUTOMATED_CONTACTS_SETTINGS = 'AutomatedContactsSettings',
-  CHATTER_ANSWERS_SETTINGS = 'ChatterAnswersSettings',
-  CHATTER_EMAIL_MDSETTINGS = 'ChatterEmailMDSettings',
-  HIGH_VELOCITY_SALES_SETTINGS = 'HighVelocitySalesSettings',
-  IOT_SETTINGS = 'IoTSettings',
-  MAP_AND_LOCATION_SETTINGS = 'MapAndLocationSettings',
-  OBJECT_LINKING_SETTINGS = 'ObjectLinkingSettings',
-  PREDICTION_BUILDER_SETTINGS = 'PredictionBuilderSettings',
-  SOCIAL_CUSTOMER_SERVICE_SETTINGS = 'SocialCustomerServiceSettings',
-}
-
-export enum MISSING_SUBTYPE_NAMES {
-  BUSINESS_HOURS_ENTRY = 'BusinessHoursEntry',
-  HOLIDAYS = 'Holidays',
-  ORGANIZATION_SETTINGS_DETAIL = 'OrganizationSettingsDetail',
-}
 
 export const FIELD_SOAP_TYPE_NAMES:
 Record<string, FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES> = {
@@ -244,125 +228,147 @@ export const CASE_CLASSIFICATION_SETTINGS = {
   RUN_ASSIGNMENT_RULES: 'runAssignmentRules',
 }
 
-export const ACCOUNT_INSIGHT_SETTINGS = {
-  ENABLE_ACCOUNT_INSIGHTS: 'enableAccountInsights',
+
+export class MissingTypes {
+  public static ACCOUNT_INSIGHT_SETTINGS = {
+    enableAccountInsights: BuiltinTypes.BOOLEAN,
+  }
+
+  public static ACCOUNT_INTELLIGENCE_SETTINGS = {
+    enableAccountLogos: BuiltinTypes.BOOLEAN,
+    enableAutomatedAccountFields: BuiltinTypes.BOOLEAN,
+    enableNewsStories: BuiltinTypes.BOOLEAN,
+  }
+
+  public static AUTOMATED_CONTACTS_SETTINGS = {
+    enableAddContactAutomatically: BuiltinTypes.BOOLEAN,
+    enableAddContactRoleAutomatically: BuiltinTypes.BOOLEAN,
+    enableAddContactRoleWithSuggestion: BuiltinTypes.BOOLEAN,
+    enableAddContactWithSuggestion: BuiltinTypes.BOOLEAN,
+  }
+
+  public static IOT_SETTINGS = {
+    enableIoT: BuiltinTypes.BOOLEAN,
+  }
+
+  public static CHATTER_ANSWERS_SETTINGS = {
+    emailFollowersOnBestAnswer: BuiltinTypes.BOOLEAN,
+    emailFollowersOnReply: BuiltinTypes.BOOLEAN,
+    emailOwnerOnPrivateReply: BuiltinTypes.BOOLEAN,
+    emailOwnerOnReply: BuiltinTypes.BOOLEAN,
+    enableAnswerViaEmail: BuiltinTypes.BOOLEAN,
+    enableChatterAnswers: BuiltinTypes.BOOLEAN,
+    enableFacebookSSO: BuiltinTypes.BOOLEAN,
+    enableInlinePublisher: BuiltinTypes.BOOLEAN,
+    enableReputation: BuiltinTypes.BOOLEAN,
+    enableRichTextEditor: BuiltinTypes.BOOLEAN,
+    facebookAuthProvider: BuiltinTypes.STRING,
+    showInPortals: BuiltinTypes.BOOLEAN,
+  }
+
+  public static CHATTER_EMAIL_MDSETTINGS = {
+    enableChatterDigestEmailsApiOnly: BuiltinTypes.BOOLEAN,
+    enableChatterEmailAttachment: BuiltinTypes.BOOLEAN,
+    enableCollaborationEmail: BuiltinTypes.BOOLEAN,
+    enableDisplayAppDownloadBadges: BuiltinTypes.BOOLEAN,
+    enableEmailReplyToChatter: BuiltinTypes.BOOLEAN,
+    enableEmailToChatter: BuiltinTypes.BOOLEAN,
+  }
+
+  public static MAP_AND_LOCATION_SETTINGS = {
+    enableAddressAutoComplete: BuiltinTypes.BOOLEAN,
+    enableMapsAndLocation: BuiltinTypes.BOOLEAN,
+  }
+
+  public static OBJECT_LINKING_SETTINGS = {
+    enableObjectLinking: BuiltinTypes.BOOLEAN,
+  }
+
+  public static PREDICTION_BUILDER_SETTINGS = {
+    enablePredictionBuilder: BuiltinTypes.BOOLEAN,
+    isPredictionBuilderStarted: BuiltinTypes.BOOLEAN,
+  }
+
+  public static SOCIAL_CUSTOMER_SERVICE_SETTINGS = {
+    // caseSubjectOption: BuiltinTypes.CASESUBJECTOPTION (ENUMERATION OF TYPE STRING),
+    enableSocialApprovals: BuiltinTypes.BOOLEAN,
+    enableSocialCaseAssignmentRules: BuiltinTypes.BOOLEAN,
+    enableSocialCustomerService: BuiltinTypes.BOOLEAN,
+    enableSocialPersonaHistoryTracking: BuiltinTypes.BOOLEAN,
+    enableSocialPostHistoryTracking: BuiltinTypes.BOOLEAN,
+    enableSocialReceiveParentPost: BuiltinTypes.BOOLEAN,
+  }
+
+  public static CASE_CLASSIFICATION_SETTINGS = {
+    caseClassificationRecommendations: BuiltinTypes.BOOLEAN,
+    reRunAttributeBasedRules: BuiltinTypes.BOOLEAN,
+    runAssignmentRules: BuiltinTypes.BOOLEAN,
+  }
+
+  public static getAllMissingTypes = (): Record<string, Record<string, PrimitiveType>> => ({
+    AccountInsightsSettings: MissingTypes.ACCOUNT_INSIGHT_SETTINGS,
+    AccountIntelligenceSetings: MissingTypes.ACCOUNT_INTELLIGENCE_SETTINGS,
+    AutomatedContacSettings: MissingTypes.AUTOMATED_CONTACTS_SETTINGS,
+    ChatterAnswerSettings: MissingTypes.CHATTER_ANSWERS_SETTINGS,
+    caseClassificationSettings: MissingTypes.CASE_CLASSIFICATION_SETTINGS,
+    ChatterEmailMdSettings: MissingTypes.CHATTER_EMAIL_MDSETTINGS,
+    IotSettings: MissingTypes.IOT_SETTINGS,
+    MapAndLocationSettings: MissingTypes.MAP_AND_LOCATION_SETTINGS,
+    ObjectLinkingSettings: MissingTypes.OBJECT_LINKING_SETTINGS,
+    PredictionBuiderSettings: MissingTypes.PREDICTION_BUILDER_SETTINGS,
+    SocialCustomerServiceSettings: MissingTypes.SOCIAL_CUSTOMER_SERVICE_SETTINGS,
+  })
 }
 
-export const ACCOUNT_INTELLIGENCE_SETTINGS = {
-  ENABLE_ACCOUNT_LOGOS: 'enableAccountLogos',
-  ENABLE_AUTOMATED_ACCOUNT_FIELDS: 'enableAutomatedAccountFields',
-  ENABLE_NEWS_STORIES: 'enableNewsStories',
-}
+export class MissingSubTypes {
+  public static BUSINESS_HOURS_ENTRY = {
+    TimeZoneId: BuiltinTypes.STRING,
+    name: BuiltinTypes.STRING,
+    default: BuiltinTypes.STRING,
+    mondayStartTime: BuiltinTypes.STRING,
+    mondayEndTime: BuiltinTypes.STRING,
+    TuesdayStartTime: BuiltinTypes.STRING,
+    TuesdayEndTime: BuiltinTypes.STRING,
+    wednesdayStartTime: BuiltinTypes.STRING,
+    wednesdayEndTime: BuiltinTypes.STRING,
+    thursdayStartTime: BuiltinTypes.STRING,
+    thursdayEndTime: BuiltinTypes.STRING,
+    fridayStartTime: BuiltinTypes.STRING,
+    fridayEndTime: BuiltinTypes.STRING,
+    saturdayStartTime: BuiltinTypes.STRING,
+    saturdayEndTime: BuiltinTypes.STRING,
+    sundayStartTime: BuiltinTypes.STRING,
+    sundayEndTime: BuiltinTypes.STRING,
+  }
 
-export const AUTOMATED_CONTACTS_SETTINGS = {
-  ENABLE_ADD_CONTACT_AUTOMATICALLY: 'enableAddContactAutomatically',
-  ENABLE_ADD_CONTACT_ROLE_AUTOMATICALLY: 'enableAddContactRoleAutomatically',
-  ENABLE_ADD_CONTACT_ROLE_WITH_SUGGESTION: 'enableAddContactRoleWithSuggestion',
-  ENABLE_ADD_CONTACT_WITH_SUGGESTION: 'enableAddContactWithSuggestion',
-}
+  public static HOLIDAYS = {
+    name: BuiltinTypes.STRING,
+    DESCRIPTION: BuiltinTypes.STRING,
+    description: BuiltinTypes.STRING,
+    activityDate: BuiltinTypes.STRING,
+    recurrenceStartDate: BuiltinTypes.STRING,
+    recurrenceEndDate: BuiltinTypes.STRING,
+    startTime: BuiltinTypes.STRING,
+    endTime: BuiltinTypes.STRING,
+    recurrenceType: BuiltinTypes.STRING,
+    reccurenceInterval: BuiltinTypes.STRING,
+    recurrenceDayOfWeek: BuiltinTypes.STRING,
+    recurrenceDayOfMonth: BuiltinTypes.STRING,
+    recurrenceInstance: BuiltinTypes.STRING,
+    recurrenceMonthOfYear: BuiltinTypes.STRING,
+    businessHours: BuiltinTypes.STRING,
+  }
 
-export const CHATTER_ANSWERS_SETTINGS = {
-  EMAIL_FOLLOWERS_ON_BEST_ANSWER: 'emailFollowersOnBestAnswer',
-  EMAIL_FOLLOWERS_ON_REPLY: 'emailFollowersOnReply',
-  EMAIL_OWNER_ON_PRIVATE_REPLY: 'emailOwnerOnPrivateReply',
-  EMAIL_OWNER_ON_REPLY: 'emailOwnerOnReply',
-  ENABLE_ANSWER_VIA_EMAIL: 'enableAnswerViaEmail',
-  ENABLE_CHATTER_ANSWERS: 'enableChatterAnswers',
-  ENABLE_FACEBOOK_S_S_O: 'enableFacebookSSO',
-  ENABLE_INLINE_PUBLISHER: 'enableInlinePublisher',
-  ENABLE_REPUTATION: 'enableReputation',
-  ENABLE_RICH_TEXT_EDITOR: 'enableRichTextEditor',
-  FACEBOOK_AUTH_PROVIDER: 'facebookAuthProvider',
-  SHOW_IN_PORTALS: 'showInPortals',
-}
+  public static ORGANIZATION_SETTINGS_DETAIL = {
+    settingName: BuiltinTypes.STRING,
+    settingValue: BuiltinTypes.STRING,
+  }
 
-export const CHATTER_EMAIL_M_D_SETTINGS = {
-  ENABLE_CHATTER_DIGEST_EMAILS_API_ONLY: 'enableChatterDigestEmailsApiOnly',
-  ENABLE_CHATTER_EMAIL_ATTACHMENT: 'enableChatterEmailAttachment',
-  ENABLE_COLLABORATION_EMAIL: 'enableCollaborationEmail',
-  ENABLE_DISPLAY_APP_DOWNLOAD_BADGES: 'enableDisplayAppDownloadBadges',
-  ENABLE_EMAIL_REPLY_TO_CHATTER: 'enableEmailReplyToChatter',
-  ENABLE_EMAIL_TO_CHATTER: 'enableEmailToChatter',
-}
-
-export const IO_T_SETTINGS = {
-  ENABLE_IO_T: 'enableIoT',
-}
-
-export const OBJECT_LINKING_SETTINGS = {
-  ENABLE_OBJECT_LINKING: 'enableObjectLinking',
-}
-
-export const MAP_AND_LOCATION_SETTINGS = {
-  ENABLE_ADDRESS_AUTO_COMPLETE: 'enableAddressAutoComplete',
-  ENABLE_MAPS_AND_LOCATION: 'enableMapsAndLocation',
-}
-
-export const HIGH_VELOCITY_SALES_SETTINGS = {
-  ENABLE_A_C_AUTO_SEND_EMAIL: 'enableACAutoSendEmail',
-  ENABLE_DISPOSITION_CATEGORY: 'enableDispositionCategory',
-  ENABLE_ENGAGEMENT_WAVE_ANALYTICS_PREF: 'enableEngagementWaveAnalyticsPref',
-  ENABLE_HIGH_VELOCITY_SALES: 'enableHighVelocitySales',
-  ENABLE_HIGH_VELOCITY_SALES_SETUP: 'enableHighVelocitySalesSetup',
-}
-
-export const PREDICTION_BUILDER_SETTINGS = {
-  ENABLE_PREDICTION_BUILDER: 'enablePredictionBuilder',
-  IS_PREDICTION_BUILDER_STARTED: 'isPredictionBuilderStarted',
-}
-
-export const SOCIAL_CUSTOMER_SERVICE_SETTINGS = {
-  CASE_SUBJECT_OPTION: 'caseSubjectOption',
-  ENABLE_SOCIAL_APPROVALS: 'enableSocialApprovals',
-  ENABLE_SOCIAL_CASE_ASSIGNMENT_RULES: 'enableSocialCaseAssignmentRules',
-  ENABLE_SOCIAL_CUSTOMER_SERVICE: 'enableSocialCustomerService',
-  ENABLE_SOCIAL_PERSONA_HISTORY_TRACKING: 'enableSocialPersonaHistoryTracking',
-  ENABLE_SOCIAL_POST_HISTORY_TRACKING: 'enableSocialPostHistoryTracking',
-  ENABLE_SOCIAL_RECEIVE_PARENT_POST: 'enableSocialReceiveParentPost',
-}
-
-export const BUSINESS_HOURS_ENTRY = {
-  TIME_ZONE_ID: 'timeZoneId',
-  NAME: 'name',
-  ACTIVE: 'active',
-  DEFAULT: 'default',
-  MONDAY_START_TIME: 'mondayStartTime',
-  MONDAY_END_TIME: 'mondayEndTime',
-  TUESDAY_START_TIME: 'TuesdayStartTime',
-  TUESDAY_END_TIME: 'TuesdayEndTime',
-  WEDNESDAY_START_TIME: 'wednesdayStartTime',
-  WEDNESDAY_END_TIME: 'wednesdayEndTime',
-  THURSDAY_START_TIME: 'thursdayStartTime',
-  THURSDAY_END_TIME: 'thursdayEndTime',
-  FRIDAY_START_TIME: 'fridayStartTime',
-  FRIDAY_END_TIME: 'fridayEndTime',
-  SATURDAY_START_TIME: 'saturdayStartTime',
-  SATURDAY_END_TIME: 'saturdayEndTime',
-  SUNDAY_START_TIME: 'sundayStartTime',
-  SUNDAY_END_TIME: 'sundayEndTime',
-}
-
-export const HOLIDAYS = {
-  NAME: 'name',
-  DESCRIPTION: 'description',
-  IS_RECURRING: 'isRecurring',
-  ACTIVITY_DATE: 'activityDate',
-  RECURRENCE_START_DATE: 'recurrenceStartDate',
-  RECURRENCE_END_DATE: 'recurrenceEndDate',
-  START_TIME: 'startTime',
-  END_TIME: 'endTime',
-  RECURRENCE_TYPE: 'recurrenceType',
-  RECURRENCE_INTERVAL: 'recurrenceType',
-  RECURRENCE_DAY_OF_THE_WEEK: 'recurrenceDayOfWeek',
-  RECURRENCE_DAY_OF_THE_MONTH: 'recurrenceDayOfMonth',
-  RECURRENCE_INSTANCE: 'recurrenceInstance',
-  RECURRENCE_MONTH_OF_THE_YEAR: 'recurrenceMonthOfYear',
-  BUSINESS_HOURS: 'businessHours',
-}
-
-export const ORGANIZATION_SETTINGS_DETAIL = {
-  SETTING_NAME: 'settingName',
-  SETTING_VALUE: 'settingValue',
+  public static getAllMissingSubTypes = (): Record<string, Record<string, PrimitiveType>> => ({
+    BusinessHoursEntry: MissingSubTypes.BUSINESS_HOURS_ENTRY,
+    Holidays: MissingSubTypes.HOLIDAYS,
+    OrganizationSettingsDetail: MissingSubTypes.ORGANIZATION_SETTINGS_DETAIL,
+  })
 }
 
 // BPs path

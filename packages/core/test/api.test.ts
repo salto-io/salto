@@ -16,7 +16,6 @@
 import {
   Adapter,
   BuiltinTypes,
-  DataModificationResult,
   Element,
   ElemID,
   Field,
@@ -33,7 +32,6 @@ import * as api from '../src/api'
 import * as plan from '../src/core/plan'
 import * as fetch from '../src/core/fetch'
 import * as deploy from '../src/core/deploy'
-import * as records from '../src/core/records'
 import * as adapters from '../src/core/adapters/adapters'
 import adapterCreators from '../src/core/adapters/creators'
 
@@ -94,7 +92,6 @@ jest.mock('../src/core/adapters/adapters')
 jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
 jest.mock('../src/core/deploy')
-jest.mock('../src/core/records')
 jest.mock('../src/core/adapters/creators')
 jest.spyOn(Workspace, 'init').mockImplementation(
   (
@@ -249,73 +246,6 @@ describe('api.ts', () => {
       })
       it('should return success', () => {
         expect(result.success).toBeTruthy()
-      })
-    })
-  })
-
-  describe('data migration', () => {
-    const ws = mockWorkspace()
-    const testType = new ObjectType({ elemID: new ElemID(SERVICES[0], 'test') })
-    const mockStateGet = jest.fn().mockImplementation(() => Promise.resolve(testType))
-    ws.state.get = mockStateGet
-
-    const mockResult = {
-      successfulRows: 2,
-      failedRows: 1,
-      errors: new Set<string>(['ERR']),
-    }
-
-    const verify = (result: DataModificationResult): void => {
-      expect(mockStateGet).toHaveBeenCalledTimes(1)
-      expect(result.successfulRows).toBe(2)
-      expect(result.failedRows).toBe(1)
-      expect(wu(result.errors).toArray()).toHaveLength(1)
-    }
-
-    beforeEach(() => {
-      mockStateGet.mockClear()
-    })
-
-    describe('export', () => {
-      const mockGetInstancesOfType = records.getInstancesOfType as jest.Mock
-      mockGetInstancesOfType.mockReturnValue(mockResult)
-
-      it('should complete successfully', async () => {
-        const result = await api.exportToCsv(
-          testType.elemID.getFullName(),
-          'test',
-          ws,
-        )
-        expect(mockGetInstancesOfType).toHaveBeenCalledTimes(1)
-        verify(result)
-      })
-    })
-
-    describe('import', () => {
-      const mockedImport = records.importInstancesOfType as jest.Mock
-      mockedImport.mockReturnValue(mockResult)
-      it('should complete import successfully', async () => {
-        const result = await api.importFromCsvFile(
-          testType.elemID.getFullName(),
-          'test',
-          ws,
-        )
-        expect(mockedImport).toHaveBeenCalledTimes(1)
-        verify(result)
-      })
-    })
-
-    describe('delete', () => {
-      const mockedDelete = records.deleteInstancesOfType as jest.Mock
-      mockedDelete.mockReturnValue(mockResult)
-      it('should complete delete successfully', async () => {
-        const result = await api.deleteFromCsvFile(
-          testType.elemID.getFullName(),
-          'test',
-          ws,
-        )
-        expect(mockedDelete).toHaveBeenCalledTimes(1)
-        verify(result)
       })
     })
   })

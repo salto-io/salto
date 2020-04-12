@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, Record as SfRecord, PicklistEntry,
+  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, PicklistEntry,
 } from 'jsforce'
 import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
@@ -785,25 +785,6 @@ export class Types {
   }
 }
 
-/**
- * Deploy transform function on all keys in a values map recursively
- *
- * @param obj Input object to transform
- * @param func Transform function to deploy to all keys
- */
-export const mapKeysRecursive = (obj: Values, func: (key: string) => string): Values => {
-  if (_.isArray(obj)) {
-    return obj.map(val => mapKeysRecursive(val, func))
-  }
-  if (_.isObject(obj)) {
-    return _(obj)
-      .mapKeys((_val, key) => func(key))
-      .mapValues(val => mapKeysRecursive(val, func))
-      .value()
-  }
-  return obj
-}
-
 export const toCustomField = (
   field: TypeField, fullname = false
 ): CustomField => {
@@ -1242,101 +1223,6 @@ export const createMetadataTypeElements = async (
   })
 
   return _.flatten([element, ...embeddedTypes])
-}
-
-// Convert the InstanceElements to records
-export const instanceElementstoRecords = (instances: InstanceElement[]):
-SfRecord[] => instances.map(res => res.value)
-
-// Convert the ElemIDs to records
-export const elemIDstoRecords = (ElemIDs: ElemID[]):
-SfRecord[] => ElemIDs.map(elem => ({ Id: elem.name }))
-
-// The purpose of the following method is to modify the list of field names, so that compound
-// fields names do not appear, and only their nested fields appear in the list of fields.
-// The reason for this is to later show during export, fields that can be sent back to SFDC
-// during import
-export const getCompoundChildFields = (objectType: ObjectType): TypeField[] => {
-  // Internal functions
-  const isFieldType = (fieldType: TypeElement) => (field: TypeField): boolean => (
-    field.type.elemID.isEqual(fieldType.elemID)
-  )
-  const handleAddressFields = (object: ObjectType): void => {
-    // Find the address fields
-    const addressFields = _.pickBy(object.fields, isFieldType(Types.compoundDataTypes.Address))
-
-    // For each address field, get its prefix, then find its corresponding child fields by
-    // this prefix.
-    Object.keys(addressFields).forEach(key => {
-      const addressPrefix = key.replace(/Address/, '')
-      Object.values(Types.compoundDataTypes.Address.fields).forEach(childField => {
-        const clonedField = childField.clone()
-        // Add the child fields to the object type
-        const childFieldName = addressPrefix + clonedField.name
-        clonedField.name = childFieldName
-        clonedField.annotations = {
-          [API_NAME]: [apiName(object), childFieldName].join(API_NAME_SEPERATOR),
-        }
-        object.fields[childFieldName] = clonedField
-      })
-      // Remove the compound field from the element
-      object.fields = _.omit(object.fields, key)
-    })
-  }
-
-  const handleNameField = (object: ObjectType): void => {
-    const compoundNameFieldName = 'Name'
-    const compoundNameFieldFullName = 'Full Name'
-    // Find the name field
-    const nameFields = _.pickBy(object.fields,
-      (value, key) => key === compoundNameFieldName
-        && value.annotations.label === compoundNameFieldFullName)
-
-    if (_.size(nameFields) === 0) {
-      return
-    }
-    // Add the child fields to the object type
-    Object.values(Types.compoundDataTypes.Name.fields).forEach(childField => {
-      const clonedField = childField.clone()
-      clonedField.annotations = {
-        [API_NAME]: [apiName(object), childField.name].join(API_NAME_SEPERATOR),
-      }
-      object.fields[childField.name] = clonedField
-    })
-    // Remove the compound field from the element
-    object.fields = _.omit(object.fields, compoundNameFieldName)
-  }
-
-  const handleGeolocationFields = (object: ObjectType): void => {
-    // Find the  geolocation fields
-    const locationFields = _.pickBy(object.fields, isFieldType(Types.compoundDataTypes.Location))
-
-    // For each geolocation field, get its name, then find its corresponding child fields by
-    // this name.
-    Object.keys(locationFields).forEach(key => {
-      const keyBaseName = isCustom(key) ? key.slice(0, -SALESFORCE_CUSTOM_SUFFIX.length) : key
-      Object.values(Types.compoundDataTypes.Location.fields).forEach(childField => {
-        const clonedField = childField.clone()
-        // Add the child fields to the object type
-        const childFieldName = `${keyBaseName}__${clonedField.name}`
-        clonedField.name = childFieldName
-        clonedField.annotations = {
-          [API_NAME]: `${[apiName(object), childFieldName].join(API_NAME_SEPERATOR)}${isCustom(key) ? '__s' : ''}`,
-        }
-        object.fields[childFieldName] = clonedField
-      })
-      // Remove the compound field from the element
-      object.fields = _.omit(object.fields, key)
-    })
-  }
-  const clonedObject = objectType.clone()
-  // 1) Handle the address fields
-  handleAddressFields(clonedObject)
-  // 2) Handle the name field
-  handleNameField(clonedObject)
-  // 3) Handle geolocation fields
-  handleGeolocationFields(clonedObject)
-  return Object.values(clonedObject.fields)
 }
 
 export const getLookUpName = (refValue: Value): Value => {

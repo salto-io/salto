@@ -14,17 +14,16 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, ElemID, InstanceElement, isModificationDiff,
+  TypeElement, ObjectType, InstanceElement, isModificationDiff,
   isRemovalDiff, isAdditionDiff, Field, Element, isObjectType, isInstanceElement,
-  Value, Change, getChangeElement, isField, isElement, ElemIdGetter,
-  DataModificationResult, Values, FetchResult,
+  Change, getChangeElement, isField, isElement, ElemIdGetter, Values, FetchResult,
 } from '@salto-io/adapter-api'
 import {
   resolveReferences, restoreReferences,
 } from '@salto-io/adapter-utils'
 import {
-  SaveResult, MetadataInfo, QueryResult, FileProperties, BatchResultInfo, BulkLoadOperation,
-  Record as SfRecord, ListMetadataQuery, UpsertResult, RetrieveResult, RetrieveRequest,
+  SaveResult, MetadataInfo, FileProperties, ListMetadataQuery,
+  UpsertResult, RetrieveResult, RetrieveRequest,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -34,7 +33,6 @@ import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
   metadataType, createMetadataTypeElements,
-  instanceElementstoRecords, elemIDstoRecords, getCompoundChildFields,
   defaultApiName, getLookUpName,
 } from './transformers/transformer'
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
@@ -68,7 +66,6 @@ const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
-const RECORDS_CHUNK_SIZE = 10000
 export const DEFAULT_FILTERS = [
   missingFieldsFilter,
   settingsFilter,
@@ -340,146 +337,6 @@ export default class SalesforceAdapter {
         this.config,
       ),
     }
-  }
-
-  /**
-   * Retrieve all the instances of a given type.
-   * The function returns an iterator because each API call retrieves the next 2000 instances
-   * @param type the object type of which to retrieve instances
-   */
-  public async *getInstancesOfType(type: ObjectType): AsyncIterable<InstanceElement[]> {
-    const toInstanceElements = (queryResult: QueryResult<Value>):
-InstanceElement[] => {
-      // Omit the "attributes" field from the objects
-      const results = queryResult.records.map(obj => _.pickBy(obj, (_value, key) =>
-        key !== 'attributes'))
-
-      // Convert the result to Instance Elements
-      return results.map(res => new InstanceElement(res.Id, type, res))
-    }
-
-    let results = await this.getFirstBatchOfInstances(type)
-
-    while (true) {
-      yield toInstanceElements(results)
-      if (results.nextRecordsUrl !== undefined) {
-        // eslint-disable-next-line no-await-in-loop
-        results = await this.client.queryMore(results.nextRecordsUrl)
-      } else break
-    }
-  }
-
-  /**
-   * Imports instances of type from the data stream
-   * @param type the object type of which to import instances
-   * @param instancesIterator the iterator that provides the instances to import
-   * @returns a promise that represents action completion
-   */
-  public async importInstancesOfType(
-    type: ObjectType,
-    instancesIterator: AsyncIterable<InstanceElement>
-  ): Promise<DataModificationResult> {
-    return this.iterateBulkOperation(
-      type,
-      instancesIterator,
-      'upsert',
-      instanceElementstoRecords
-    )
-  }
-
-  /**
-   * Deletes instances of type from the data stream
-   * @param type the object type of which to delete instances
-   * @param elemIdIterator the iterator that provides the instances to delete
-   * @returns a promise that represents action completion
-   */
-  public async deleteInstancesOfType(
-    type: ObjectType,
-    elemIdIterator: AsyncIterable<ElemID>
-  ): Promise<DataModificationResult> {
-    return this.iterateBulkOperation(
-      type,
-      elemIdIterator,
-      'delete',
-      elemIDstoRecords
-    )
-  }
-
-  private async iterateBulkOperation(
-    type: ObjectType,
-    iterator: AsyncIterable<Value>,
-    bulkOperation: BulkLoadOperation,
-    transformFuction: (values: Value[]) => SfRecord[]
-  ): Promise<DataModificationResult> {
-    const returnResult = {
-      successfulRows: 0,
-      failedRows: 0,
-      errors: new Set<string>(),
-    }
-    const updateReturnResult = (
-      retResult: DataModificationResult,
-      bulkResult: BatchResultInfo[],
-      batchNumber: number
-    ): void => {
-      retResult.successfulRows += bulkResult.filter(result => result.success).length
-      retResult.failedRows = bulkResult.length - retResult.successfulRows
-      // Log the errors for each row
-      bulkResult.forEach((result, index) => {
-        if (!result.success) {
-          // Emit the error to the log
-          const rowNumber = RECORDS_CHUNK_SIZE * batchNumber + index + 1
-          if (result.errors && result.errors.length > 0) {
-            log.error('Failed to perform %o on row %o with the following errors:\n%o',
-              bulkOperation,
-              rowNumber,
-              result.errors?.join('\n'))
-          } else {
-            log.error('Failed to perform %o on row %o',
-              bulkOperation,
-              rowNumber)
-          }
-
-          // Add the error string to the set if it doesn't appear there already
-          // eslint-disable-next-line no-unused-expressions
-          result.errors?.forEach(error => {
-            if (!returnResult.errors.has(error)) {
-              returnResult.errors.add(error)
-            }
-          })
-        }
-      })
-    }
-    let batch: Value[] = []
-    let batchNumber = 0
-
-    // eslint-disable-next-line no-restricted-syntax
-    for await (const element of iterator) {
-      // Aggregate the instance elements for the proper bulk size
-      const length = batch.push(element)
-      if (length === RECORDS_CHUNK_SIZE) {
-        // Convert the instances in the transformer to SfRecord[] and send to bulk API
-        const result = await this.client.updateBulk(
-          apiName(type),
-          bulkOperation,
-          transformFuction(batch)
-        )
-        batch = []
-        // Update the return result
-        updateReturnResult(returnResult, result, batchNumber)
-        batchNumber += 1
-      }
-    }
-    // Send the remaining instances
-    if (batch.length > 0) {
-      const result = await this.client.updateBulk(
-        apiName(type),
-        bulkOperation,
-        transformFuction(batch)
-      )
-      // Update the return result
-      updateReturnResult(returnResult, result, batchNumber)
-    }
-    return returnResult
   }
 
   /**
@@ -1009,13 +866,5 @@ InstanceElement[] => {
         ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo })),
       configChanges: [...readMetadataConfigChanges, ...listObjectsConfigChanges],
     }
-  }
-
-  private async getFirstBatchOfInstances(type: ObjectType): Promise<QueryResult<Value>> {
-    // build the initial query and populate the fields names list in the query
-    const queryString = `SELECT ${
-      getCompoundChildFields(type).map(f => apiName(f))
-    } FROM ${apiName(type)}`
-    return this.client.runQuery(queryString)
   }
 }

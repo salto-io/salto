@@ -16,9 +16,7 @@
 import wu from 'wu'
 import {
   ActionName,
-  DataModificationResult,
   Element,
-  ElemID,
   InstanceElement,
   ObjectType,
 } from '@salto-io/adapter-api'
@@ -27,7 +25,6 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
-import { deleteInstancesOfType, getInstancesOfType, importInstancesOfType } from './core/records'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
   getAdapterDependencyChangers, createDefaultAdapterConfig, initAdapters,
@@ -205,59 +202,6 @@ export const describeElement = async (
   searchWords: string[],
 ): Promise<SearchResult> =>
   findElement(searchWords, await workspace.elements)
-
-const getTypeFromState = async (ws: Workspace, typeId: string): Promise<Element> => {
-  const type = await ws.state.get(ElemID.fromFullName(typeId))
-  if (!type) {
-    throw new Error(`Couldn't find the type you are looking for: ${typeId}. Have you run salto fetch yet?`)
-  }
-  return type as Element
-}
-
-const getTypeForDataMigration = async (workspace: Workspace, typeId: string): Promise<Element> => {
-  const type = await getTypeFromState(workspace, typeId)
-  const typeAdapter = type.elemID.adapter
-  if (!currentEnvConfig(workspace.config).services?.includes(typeAdapter)) {
-    throw new Error(`The type is from a service (${typeAdapter}) that is not set up for this workspace`)
-  }
-  return type
-}
-
-export const exportToCsv = async (
-  typeId: string,
-  outPath: string,
-  workspace: Workspace,
-): Promise<DataModificationResult> => {
-  const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(
-    [type.elemID.adapter], workspace.adapterCredentials, workspace.adapterConfig,
-  )
-  return getInstancesOfType(type as ObjectType, adapters, outPath)
-}
-
-export const importFromCsvFile = async (
-  typeId: string,
-  inputPath: string,
-  workspace: Workspace,
-): Promise<DataModificationResult> => {
-  const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(
-    [type.elemID.adapter], workspace.adapterCredentials, workspace.adapterConfig,
-  )
-  return importInstancesOfType(type as ObjectType, inputPath, adapters)
-}
-
-export const deleteFromCsvFile = async (
-  typeId: string,
-  inputPath: string,
-  workspace: Workspace,
-): Promise<DataModificationResult> => {
-  const type = await getTypeForDataMigration(workspace, typeId)
-  const adapters = await getAdapters(
-    [type.elemID.adapter], workspace.adapterCredentials, workspace.adapterConfig,
-  )
-  return deleteInstancesOfType(type as ObjectType, inputPath, adapters)
-}
 
 export const init = async (defaultEnvName: string, workspaceName?: string): Promise<Workspace> => (
   Workspace.init('.', defaultEnvName, workspaceName)

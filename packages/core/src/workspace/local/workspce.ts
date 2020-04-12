@@ -24,8 +24,10 @@ import { BlueprintsSource, BP_EXTENSION, blueprintsSource } from '../blueprints/
 import { parseResultCache } from '../cache'
 import { localState } from './state'
 import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspace_config'
+import { configSource, ConfigSource } from '../config_source'
 
 export const STATES_DIR_NAME = 'states'
+const CREDENTIALS_CONFIG_PATH = 'credentials'
 
 export class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {
@@ -89,6 +91,9 @@ const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined>
   return parentDir ? locateWorkspaceRoot(parentDir) : undefined
 }
 
+const credentialsSource = (localStorage: string): ConfigSource =>
+  configSource(localDirectoryStore(path.join(localStorage, CREDENTIALS_CONFIG_PATH)))
+
 export const loadLocalWorkspace = async (lookupDir: string):
 Promise<Workspace> => {
   const baseDir = await locateWorkspaceRoot(path.resolve(lookupDir))
@@ -96,8 +101,9 @@ Promise<Workspace> => {
     throw new NotAWorkspaceError()
   }
   const workspaceConfig = await workspaceConfigSource(baseDir)
+  const credentials = credentialsSource(workspaceConfig.localStorage)
   const elemSources = elementsSources(baseDir, workspaceConfig.localStorage, workspaceConfig.envs)
-  return loadWorkspace(workspaceConfig, elemSources)
+  return loadWorkspace(workspaceConfig, credentials, elemSources)
 }
 
 export const initLocalWorkspace = async (baseDir: string, name?: string, envName = 'default'):
@@ -113,6 +119,7 @@ Promise<Workspace> => {
   }
 
   const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
+  const credentials = credentialsSource(localStorage)
   const elemSources = elementsSources(path.resolve(baseDir), localStorage, [envName])
-  return initWorkspace(workspaceName, uid, envName, workspaceConfig, elemSources)
+  return initWorkspace(workspaceName, uid, envName, workspaceConfig, credentials, elemSources)
 }

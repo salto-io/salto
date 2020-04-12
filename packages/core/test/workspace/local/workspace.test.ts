@@ -101,9 +101,9 @@ describe('local workspace', () => {
       await loadLocalWorkspace('.')
 
       expect(mockLoad).toHaveBeenCalledTimes(1)
-      const envSources: mockWs.EnviornmentsSources = mockLoad.mock.calls[0][1]
+      const envSources: mockWs.EnviornmentsSources = mockLoad.mock.calls[0][2]
       expect(Object.keys(envSources)).toHaveLength(3)
-      expect(mockCreateDirStore).toHaveBeenCalledTimes(8)
+      expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
     })
   })
 })

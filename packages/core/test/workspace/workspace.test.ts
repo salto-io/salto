@@ -35,7 +35,6 @@ import {
   initWorkspace,
   loadWorkspace,
   COMMON_ENV_PREFIX,
-  CREDENTIALS_CONFIG_PATH,
   NoWorkspaceConfig,
   ADAPTERS_CONFIGS_PATH,
 } from '../../src/workspace/workspace'
@@ -45,8 +44,8 @@ import * as dump from '../../src/parser/dump'
 
 import { mockDirStore, mockParseCache } from '../common/blueprint_store'
 import {
-  WORKSPACE_CONFIG_NAME, workspaceConfigType, PREFERENCES_CONFIG_NAME,
-  preferencesWorkspaceConfigType,
+  WORKSPACE_CONFIG_NAME, workspaceConfigType, USER_CONFIG_NAME,
+  workspaceUserConfigType,
 } from '../../src/workspace/workspace_config_types'
 
 const changedBP = {
@@ -77,15 +76,19 @@ const mockConfigSource = (conf?: Values): ConfigSource => ({
   get: jest.fn().mockImplementation(name => (
     (name === WORKSPACE_CONFIG_NAME)
       ? wsConfInstance(conf)
-      : new InstanceElement(PREFERENCES_CONFIG_NAME, preferencesWorkspaceConfigType, {
+      : new InstanceElement(USER_CONFIG_NAME, workspaceUserConfigType, {
         currentEnv: 'default',
       })
   )),
   set: jest.fn(),
 })
+const mockCredentialsSource = (): ConfigSource => ({
+  get: jest.fn(),
+  set: jest.fn(),
+})
 const createWorkspace = async (dirStore?: DirectoryStore, state?: State,
-  configSource?: ConfigSource): Promise<Workspace> =>
-  loadWorkspace(configSource || mockConfigSource(),
+  configSource?: ConfigSource, credentials?: ConfigSource): Promise<Workspace> =>
+  loadWorkspace(configSource || mockConfigSource(), credentials || mockCredentialsSource(),
     {
       [COMMON_ENV_PREFIX]: {
         blueprints: blueprintsSource(dirStore || mockDirStore(), mockParseCache()),
@@ -107,14 +110,14 @@ describe('workspace', () => {
       await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects
         .toThrow(NoWorkspaceConfig)
     })
-    it('should work if preferences is missing', async () => {
-      const noPreferences = {
+    it('should work if user config is missing', async () => {
+      const noUserConfig = {
         get: jest.fn().mockImplementation(name => (
           (name === WORKSPACE_CONFIG_NAME) ? wsConfInstance() : undefined
         )),
         set: jest.fn(),
       }
-      expect(await createWorkspace(undefined, undefined, noPreferences)).toBeDefined()
+      expect(await createWorkspace(undefined, undefined, noUserConfig)).toBeDefined()
     })
   })
   describe('loaded elements', () => {
@@ -481,14 +484,15 @@ describe('workspace', () => {
       delete process.env.SALTO_HOME
     })
     it('should init workspace configuration', async () => {
-      const workspace = await initWorkspace('ws-name', 'uid', 'default', confSource, {})
+      const workspace = await initWorkspace('ws-name', 'uid', 'default', confSource,
+        mockCredentialsSource(), {})
       expect(confSource.set).toHaveBeenCalled()
       expect((confSource.set as jest.Mock).mock.calls[0][1]).toEqual(
         new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType,
           { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }] })
       )
       expect((confSource.set as jest.Mock).mock.calls[1][1]).toEqual(
-        new InstanceElement(PREFERENCES_CONFIG_NAME, preferencesWorkspaceConfigType,
+        new InstanceElement(USER_CONFIG_NAME, workspaceUserConfigType,
           { currentEnv: 'default' })
       )
       expect(workspace.name).toEqual('ws-name')
@@ -617,23 +621,23 @@ describe('workspace', () => {
   })
 
   describe('updateServiceCredentials', () => {
-    let confSource: ConfigSource
+    let credsSource: ConfigSource
     let workspace: Workspace
     const newCreds = new InstanceElement(services[0], adapterCreators[services[0]].credentialsType,
       { user: 'username', password: 'pass' })
 
     beforeEach(async () => {
-      confSource = mockConfigSource()
-      workspace = await createWorkspace(undefined, undefined, confSource)
+      credsSource = mockCredentialsSource()
+      workspace = await createWorkspace(undefined, undefined, undefined, credsSource)
       await workspace.updateServiceCredentials(services[0], newCreds)
     })
 
     it('should persist', () => {
-      expect(confSource.set).toHaveBeenCalledTimes(1)
-      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
+      expect(credsSource.set).toHaveBeenCalledTimes(1)
+      const instance = (credsSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
       expect(instance).toEqual(newCreds)
-      const path = (confSource.set as jest.Mock).mock.calls[0][0] as string
-      expect(path).toEqual(`default/${CREDENTIALS_CONFIG_PATH}/${services[0]}`)
+      const path = (credsSource.set as jest.Mock).mock.calls[0][0] as string
+      expect(path).toEqual(`default/${services[0]}`)
     })
   })
 
@@ -659,32 +663,28 @@ describe('workspace', () => {
   })
 
   describe('servicesCredentials', () => {
-    let confSource: ConfigSource
+    let credsSource: ConfigSource
     let workspace: Workspace
 
     beforeEach(async () => {
-      confSource = {
-        get: jest.fn().mockImplementation((name: string) => (
-          (name === WORKSPACE_CONFIG_NAME)
-            ? wsConfInstance()
-            : new InstanceElement(services[0], adapterCreators[services[0]].credentialsType,
-              { usename: 'default', password: 'default', currentEnv: 'default' }))),
+      credsSource = {
+        get: jest.fn().mockResolvedValue(
+          new InstanceElement(services[0], adapterCreators[services[0]].credentialsType,
+            { usename: 'default', password: 'default', currentEnv: 'default' })
+        ),
         set: jest.fn(),
       }
-      workspace = await createWorkspace(undefined, undefined, confSource)
-      expect(confSource.get).toHaveBeenCalledTimes(2)
+      workspace = await createWorkspace(undefined, undefined, undefined, credsSource)
     })
 
     it('should get creds', async () => {
       await workspace.servicesCredentials()
-      // +1 get on top of "beforeEach"
-      expect(confSource.get).toHaveBeenCalledTimes(3)
+      expect(credsSource.get).toHaveBeenCalledTimes(1)
     })
 
     it('should get creds partials', async () => {
-      // +1 get on top of "beforeEach"
       await workspace.servicesCredentials(services)
-      expect(confSource.get).toHaveBeenCalledTimes(3)
+      expect(credsSource.get).toHaveBeenCalledTimes(1)
     })
   })
 })

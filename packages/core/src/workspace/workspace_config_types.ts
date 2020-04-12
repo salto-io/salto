@@ -17,12 +17,11 @@ import {
   ElemID, CORE_ANNOTATIONS, ObjectType, Field, BuiltinTypes, ListType, InstanceElement,
 } from '@salto-io/adapter-api'
 
-const CONFIG_NAMESPACE = 'salto'
-export const WORKSPACE_CONFIG_NAME = 'config'
-export const PREFERENCES_CONFIG_NAME = 'preferences'
+export const WORKSPACE_CONFIG_NAME = 'workspace'
+export const USER_CONFIG_NAME = 'workspaceUser'
 
 const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
-const envConfigElemID = new ElemID(CONFIG_NAMESPACE, 'env')
+const envConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME, 'env')
 export const envConfigType = new ObjectType({
   elemID: envConfigElemID,
   fields: {
@@ -31,7 +30,7 @@ export const envConfigType = new ObjectType({
   },
 })
 
-const workspaceConfigElemID = new ElemID(CONFIG_NAMESPACE)
+const workspaceConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME)
 export const workspaceConfigType = new ObjectType({
   elemID: workspaceConfigElemID,
   fields: {
@@ -44,16 +43,17 @@ export const workspaceConfigType = new ObjectType({
   isSettings: true,
 })
 
-export const preferencesWorkspaceConfigType = new ObjectType({
-  elemID: workspaceConfigElemID,
+const userConfigElemID = new ElemID(USER_CONFIG_NAME)
+export const workspaceUserConfigType = new ObjectType({
+  elemID: userConfigElemID,
   fields: {
-    currentEnv: new Field(workspaceConfigElemID, 'currentEnv', BuiltinTypes.STRING, requireAnno),
+    currentEnv: new Field(userConfigElemID, 'currentEnv', BuiltinTypes.STRING, requireAnno),
   },
   isSettings: true,
 })
 
 export const workspaceConfigTypes = [workspaceConfigType, envConfigType,
-  preferencesWorkspaceConfigType]
+  workspaceUserConfigType]
 
 export type EnvConfig = {
     name: string
@@ -67,12 +67,12 @@ export type WorkspaceConfig = {
     staleStateThresholdMinutes?: number
   }
 
-export type PreferenceConfig = {
+export type WorkspaceUserConfig = {
   currentEnv: string
 }
 
-export const preferencesConfigInstance = (pref: PreferenceConfig): InstanceElement =>
-  new InstanceElement(PREFERENCES_CONFIG_NAME, preferencesWorkspaceConfigType, pref)
+export const workspaceUserConfigInstance = (pref: WorkspaceUserConfig): InstanceElement =>
+  new InstanceElement(USER_CONFIG_NAME, workspaceUserConfigType, pref)
 
 export const workspaceConfigInstance = (wsConfig: WorkspaceConfig): InstanceElement =>
   new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType, wsConfig)

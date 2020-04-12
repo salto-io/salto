@@ -64,8 +64,8 @@ describe('cli e2e', () => {
   })
 
   const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
-  const configFile = `${__dirname}/../../e2e_test/BP/salto.config/config.bp`
-  const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/local/preference.bp`
+  const configFile = `${__dirname}/../../e2e_test/BP/salto.config/workspace.bp`
+  const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/local/workspaceUser.bp`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 
@@ -109,8 +109,8 @@ describe('cli e2e', () => {
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)
-    await copyFile(configFile, `${fetchOutputDir}/salto.config/config.bp`)
-    await copyFile(localWorkspaceConfigFile, `${localWorkspaceDir}/preference.bp`)
+    await copyFile(configFile, `${fetchOutputDir}/salto.config/workspace.bp`)
+    await copyFile(localWorkspaceConfigFile, `${localWorkspaceDir}/workspaceUser.bp`)
     await rm(fullPath(tmpBPRelativePath))
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)

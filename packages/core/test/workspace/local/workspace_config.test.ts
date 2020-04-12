@@ -17,8 +17,8 @@ import path from 'path'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { getSaltoHome } from '../../../src/app_config'
 import {
-  WORKSPACE_CONFIG_NAME, PREFERENCES_CONFIG_NAME, workspaceConfigType,
-  preferencesWorkspaceConfigType,
+  WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigType,
+  workspaceUserConfigType,
 } from '../../../src/workspace/workspace_config_types'
 import {
   workspaceConfigSource, WorkspaceConfigSource,
@@ -54,7 +54,7 @@ describe('workspace local config', () => {
     clone: jest.fn(),
   } as unknown as DirectoryStore)
   const repoDirStore = mockDirStoreInstance(WORKSPACE_CONFIG_NAME, `
-  salto {
+  workspace {
     uid = "98bb902f-a144-42da-9672-f36e312e8e09"
     name = "test"
     envs = [
@@ -67,8 +67,8 @@ describe('workspace local config', () => {
     ]
   }
   `)
-  const prefDirStore = mockDirStoreInstance(PREFERENCES_CONFIG_NAME, `
-  preferences {
+  const prefDirStore = mockDirStoreInstance(USER_CONFIG_NAME, `
+  workspaceUser {
     currentEnv = "default"
   }
   `)
@@ -94,7 +94,7 @@ describe('workspace local config', () => {
 
   it('get from both dir stores', async () => {
     expect(configSource.get(WORKSPACE_CONFIG_NAME)).toBeDefined()
-    expect(configSource.get(PREFERENCES_CONFIG_NAME)).toBeDefined()
+    expect(configSource.get(USER_CONFIG_NAME)).toBeDefined()
   })
 
   it('set in repo dir store', async () => {
@@ -105,8 +105,8 @@ describe('workspace local config', () => {
   })
 
   it('set in pref dir store', async () => {
-    await configSource.set(PREFERENCES_CONFIG_NAME,
-      new InstanceElement(PREFERENCES_CONFIG_NAME, preferencesWorkspaceConfigType, {}))
+    await configSource.set(USER_CONFIG_NAME,
+      new InstanceElement(USER_CONFIG_NAME, workspaceUserConfigType, {}))
     expect((repoDirStore.set as jest.Mock).mock.calls).toHaveLength(0)
     expect((prefDirStore.set as jest.Mock).mock.calls).toHaveLength(1)
   })

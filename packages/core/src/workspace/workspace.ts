@@ -28,7 +28,7 @@ import State from './state'
 import { BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
-import { WORKSPACE_CONFIG_NAME, PREFERENCES_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig, PreferenceConfig, EnvConfig, workspaceConfigInstance, preferencesConfigInstance } from './workspace_config_types'
+import { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig, WorkspaceUserConfig, EnvConfig, workspaceConfigInstance, workspaceUserConfigInstance } from './workspace_config_types'
 
 const log = logger(module)
 
@@ -36,7 +36,6 @@ const { makeArray } = collections.array
 
 export const COMMON_ENV_PREFIX = ''
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
-export const CREDENTIALS_CONFIG_PATH = 'credentials'
 export const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
@@ -122,7 +121,8 @@ export type Workspace = {
 // common source has no state
 export type EnviornmentSource = { blueprints: BlueprintsSource; state?: State }
 export type EnviornmentsSources = Record<string, EnviornmentSource>
-export const loadWorkspace = async (config: ConfigSource, elementsSources: EnviornmentsSources):
+export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSource,
+  elementsSources: EnviornmentsSources):
   Promise<Workspace> => {
   const workspaceConfig = (await config.get(WORKSPACE_CONFIG_NAME))?.value as WorkspaceConfig
   if (_.isUndefined(workspaceConfig)) {
@@ -132,9 +132,9 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     throw new Error('Workspace with no environments is illegal')
   }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
-  const preferences = (await config.get(PREFERENCES_CONFIG_NAME))?.value as PreferenceConfig
+  const userConfig = (await config.get(USER_CONFIG_NAME))?.value as WorkspaceUserConfig
     || { currentEnv: envs()[0] }
-  const currentEnv = (): string => preferences.currentEnv
+  const currentEnv = (): string => userConfig.currentEnv
   const currentEnvConf = (): EnvConfig =>
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
@@ -194,8 +194,7 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
 
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
-  const credsPath = (service: string): string =>
-    path.join(currentEnv(), CREDENTIALS_CONFIG_PATH, service)
+  const credsPath = (service: string): string => path.join(currentEnv(), service)
   const confPath = (service: string): string => path.join(ADAPTERS_CONFIGS_PATH, service)
   return {
     uid: workspaceConfig.uid,
@@ -208,7 +207,7 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     errors,
     hasErrors: async () => (await errors()).hasErrors(),
     servicesCredentials: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
-      pickServices(names).map(async service => [service, await config.get(credsPath(service))])
+      pickServices(names).map(async service => [service, await credentials.get(credsPath(service))])
     )),
     servicesConfig: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
       pickServices(names).map(async service => [service, await config.get(confPath(service))])
@@ -241,7 +240,7 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(elementsSources, source =>
         ({ blueprints: source.blueprints.clone(), state: source.state }))
-      return loadWorkspace(config, sources)
+      return loadWorkspace(config, credentials, sources)
     },
 
     addService: async (service: string): Promise<void> => {
@@ -253,8 +252,8 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
       await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
     },
     updateServiceCredentials:
-      async (service: string, credentials: Readonly<InstanceElement>): Promise<void> =>
-        config.set(credsPath(service), credentials),
+      async (service: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
+        credentials.set(credsPath(service), servicesCredentials),
     updateServiceConfig:
       async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> =>
         config.set(confPath(service), newConfig),
@@ -269,9 +268,9 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
       if (!envs().includes(env)) {
         throw new UnknownEnvError(env)
       }
-      preferences.currentEnv = env
+      userConfig.currentEnv = env
       if (_.isUndefined(persist) || persist === true) {
-        await config.set(PREFERENCES_CONFIG_NAME, preferencesConfigInstance(preferences))
+        await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
       }
       blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),
         currentEnv(), COMMON_ENV_PREFIX)
@@ -300,13 +299,14 @@ export const initWorkspace = async (
   uid: string,
   defaultEnvName: string,
   config: ConfigSource,
+  credentials: ConfigSource,
   envs: EnviornmentsSources,
 ): Promise<Workspace> => {
   await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(
     { uid, name, envs: [{ name: defaultEnvName }] }
   ))
-  await config.set(PREFERENCES_CONFIG_NAME, preferencesConfigInstance(
+  await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(
     { currentEnv: defaultEnvName }
   ))
-  return loadWorkspace(config, envs)
+  return loadWorkspace(config, credentials, envs)
 }

@@ -18,11 +18,10 @@ import _ from 'lodash'
 import path from 'path'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { getAdaptersCredentialsTypes } from '../../core/adapters'
 import { configSource, ConfigSource } from '../config_source'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../../app_config'
-import { WORKSPACE_CONFIG_NAME, preferencesWorkspaceConfigType } from '../workspace_config_types'
+import { WORKSPACE_CONFIG_NAME, workspaceUserConfigType } from '../workspace_config_types'
 
 const { makeArray } = collections.array
 
@@ -46,15 +45,14 @@ Promise<WorkspaceConfigSource> => {
   const computedLocalStorage = localStorage
     || path.join(getSaltoHome(), `${conf?.value.name}-${conf?.value.uid}`)
   const localConfigSource = configSource(localDirectoryStore(computedLocalStorage))
-  const locals = Object.values(getAdaptersCredentialsTypes())
-    .concat(preferencesWorkspaceConfigType)
+  const locals = new Set([workspaceUserConfigType].map(t => t.elemID.getFullName()))
   return {
     localStorage: computedLocalStorage,
     envs: makeArray(conf?.value.envs).map((env: {name: string}) => env.name),
     get: async (configName: string): Promise<InstanceElement | undefined> =>
       await repoConfigSource.get(configName) || localConfigSource.get(configName),
     set: (configName: string, config: Readonly<InstanceElement>): Promise<void> => {
-      if (locals.includes(config.type)) {
+      if (locals.has(config.type.elemID.getFullName())) {
         return localConfigSource.set(configName, config)
       }
       return repoConfigSource.set(configName, config)

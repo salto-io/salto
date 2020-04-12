@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import yargs from 'yargs'
-import { loadConfig, currentEnvConfig } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/core'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 import { EnvironmentArgs } from '../commands/env'
@@ -89,21 +89,20 @@ export const servicesFilter: ServicesFilter = {
     input: ParsedCliInput<ServicesArgs>
   ): Promise<ParsedCliInput<ServicesArgs>> {
     const args = input.args as yargs.Arguments<ServicesArgs>
-    const workspaceConfig = (await loadConfig('.'))
-    workspaceConfig.currentEnv = args.env ?? workspaceConfig.currentEnv
-    const workspaceServices = currentEnvConfig(workspaceConfig).services
-    if (workspaceServices.length === 0) {
-      throw new Error(
-        `No services are configured for env=${workspaceConfig.currentEnv}. Use 'salto services add'.`
-      )
+    const workspace = await loadLocalWorkspace('.')
+    if (!_.isUndefined(args.env)) {
+      await workspace.setCurrentEnv(args.env)
+    }
+    if (workspace.services().length === 0) {
+      throw new Error(`No services are configured for env=${workspace.currentEnv()}. Use 'salto services add'.`)
     }
     // This assumes the default value for input services is all configured
     // so use the default (workspace services) if nothing was inputted
     if (!args.services) {
-      return _.set(input, 'args.services', workspaceServices)
+      return _.set(input, 'args.services', workspace.services())
     }
 
-    const diffServices = _.difference(args.services, workspaceServices || [])
+    const diffServices = _.difference(args.services, workspace.services() || [])
     if (diffServices.length > 0) {
       throw new Error(`Not all services (${diffServices}) are set up for this workspace`)
     }

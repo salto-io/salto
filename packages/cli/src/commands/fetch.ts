@@ -152,7 +152,7 @@ export const fetchCommand = async (
           adapterName, formatDetailedChanges([change.detailedChanges()], true)
         )
         if (shouldWriteToConfig) {
-          await workspace.adapterConfig.set(adapterName, newConfig)
+          await workspace.updateServiceConfig(adapterName, newConfig)
         }
         return !shouldWriteToConfig
       })

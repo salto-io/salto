@@ -21,7 +21,6 @@ import {
   LoginStatus,
   updateLoginConfig,
   Workspace,
-  currentEnvConfig,
 } from '@salto-io/core'
 
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
@@ -66,7 +65,7 @@ const addService = async (
   if (errored) {
     return CliExitCode.AppError
   }
-  if (currentEnvConfig(workspace.config).services.includes(serviceName)) {
+  if (workspace.services().includes(serviceName)) {
     stderr.write(formatServiceAlreadyAdded(serviceName))
     return CliExitCode.UserInputError
   }
@@ -85,25 +84,24 @@ const addService = async (
 
 const listServices = async (
   workspaceDir: string,
-  { stdout, stderr }: CliOutput,
+  cliOutput: CliOutput,
   serviceName: string,
   inputEnvironment?: string,
 ): Promise<CliExitCode> => {
   const { workspace, errored } = await loadWorkspace(
     workspaceDir,
-    { stdout, stderr },
+    cliOutput,
     { sessionEnv: inputEnvironment },
   )
   if (errored) {
     return CliExitCode.AppError
   }
-  const { services } = currentEnvConfig(workspace.config)
   if (_.isEmpty(serviceName)) {
-    stdout.write(formatConfiguredServices(services))
-  } else if (services.includes(serviceName)) {
-    stdout.write(formatServiceConfigured(serviceName))
+    cliOutput.stdout.write(formatConfiguredServices(workspace.services()))
+  } else if (workspace.services().includes(serviceName)) {
+    cliOutput.stdout.write(formatServiceConfigured(serviceName))
   } else {
-    stdout.write(formatServiceNotConfigured(serviceName))
+    cliOutput.stdout.write(formatServiceNotConfigured(serviceName))
   }
   return CliExitCode.Success
 }
@@ -123,7 +121,7 @@ const loginService = async (
   if (errored) {
     return CliExitCode.AppError
   }
-  if (!currentEnvConfig(workspace.config).services.includes(serviceName)) {
+  if (!workspace.services().includes(serviceName)) {
     stderr.write(formatServiceNotConfigured(serviceName))
     return CliExitCode.AppError
   }

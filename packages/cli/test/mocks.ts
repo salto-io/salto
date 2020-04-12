@@ -21,8 +21,8 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
-  DetailedChange, Plan, PlanItem, SearchResult, Workspace, WorkspaceError,
-  DeployResult, Config, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, SourceFragment,
+  DetailedChange, Plan, PlanItem, SearchResult, Workspace,
+  DeployResult, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors,
 } from '@salto-io/core'
 import { EVENT_TYPES } from '@salto-io/core/dist/src/telemetry'
 import * as workspace from '../src/workspace/workspace'
@@ -236,51 +236,25 @@ export const mockErrors = (errors: SaltoError[]): Errors => ({
   strings: () => errors.map(err => err.message),
 })
 
-export const mockLoadConfig = (workspaceDir: string): Config =>
+export const mockLoadWorkspace = (name: string): Workspace =>
   ({
     uid: '123',
-    baseDir: workspaceDir,
-    name: 'mock-ws',
-    localStorage: '',
-    staleStateThresholdMinutes: 7,
-    envs: {
-      active: {
-        baseDir: 'active',
-        config: {
-          stateLocation: '',
-          credentialsLocation: '',
-          services: ['salesforce', 'hubspot'],
-        },
-      },
-      inactive: {
-        baseDir: 'inactive',
-        config: {
-          stateLocation: '',
-          credentialsLocation: '',
-          services: ['salesforce', 'hubspot'],
-
-        },
-      },
-    },
-    currentEnv: 'active',
-  })
-
-export const transformToWorkspaceError = (): Readonly<WorkspaceError<SaltoError>> => ({
-  sourceFragments: [],
-  message: 'Error',
-  severity: 'Error',
-})
-
-export type MockWorkspaceType = {
-  config?: Config
-  currentEnv?: string
-  transformToWorkspaceError?: () => Readonly<
-    Readonly<SaltoError & { sourceFragments: SourceFragment[]} >>
-}
-export type mockLoadWorkspaceReturnType = {
-  workspace: MockWorkspaceType
-  errored: boolean
-}
+    name,
+    currentEnv: () => 'active',
+    envs: () => ['active', 'inactive'],
+    services: () => ['salesforce', 'hubspot'],
+    elements: jest.fn().mockResolvedValue([] as ReadonlyArray<Element>),
+    hasErrors: () => jest.fn().mockResolvedValue(false),
+    errors: () => jest.fn().mockResolvedValue(mockErrors([])),
+    isEmpty: jest.fn().mockResolvedValue(false),
+    addEnvironment: jest.fn(),
+    setCurrentEnv: jest.fn().mockReturnValue('active'),
+    transformToWorkspaceError: () => ({
+      sourceFragments: [],
+      message: 'Error',
+      severity: 'Error',
+    }),
+  } as unknown as Workspace)
 
 export const withoutEnvironmentParam = 'active'
 export const withEnvironmentParam = 'inactive'
@@ -289,41 +263,30 @@ export const mockLoadWorkspaceEnvironment = (
   baseDir: string,
   _cliOutput: CliOutput,
   { sessionEnv = withoutEnvironmentParam }: Partial<workspace.LoadWorkspaceOptions>
-): mockLoadWorkspaceReturnType => {
+): workspace.LoadWorkspaceResult => {
   if (baseDir === 'errorDir') {
     return {
-      workspace: ({}),
+      workspace: ({}) as unknown as Workspace,
       errored: true,
     }
   }
   if (sessionEnv === withEnvironmentParam) {
     return {
       workspace: {
-        currentEnv: withEnvironmentParam,
-        config: mockLoadConfig(''),
-        transformToWorkspaceError,
+        ...mockLoadWorkspace(baseDir),
+        currentEnv: () => withEnvironmentParam,
       },
       errored: false,
     }
   }
   return {
     workspace: {
-      currentEnv: withoutEnvironmentParam,
-      config: mockLoadConfig(''),
-      transformToWorkspaceError,
+      ...mockLoadWorkspace(baseDir),
+      currentEnv: () => withoutEnvironmentParam,
     },
     errored: false,
   }
 }
-
-export const mockLoadWorkspace = (workspaceDir: string): Workspace =>
-  ({
-    config: mockLoadConfig(workspaceDir),
-    elements: jest.fn().mockResolvedValue([] as ReadonlyArray<Element>),
-    hasErrors: () => jest.fn().mockResolvedValue(false),
-    errors: () => jest.fn().mockResolvedValue(mockErrors([])),
-    isEmpty: jest.fn().mockResolvedValue(false),
-  } as unknown as Workspace)
 
 export const mockConfigType = (adapterName: string): ObjectType => {
   const configID = new ElemID(adapterName)

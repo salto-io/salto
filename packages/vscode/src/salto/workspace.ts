@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Workspace, Blueprint, DetailedChange, WorkspaceError, SourceMap, SourceRange, Config, Errors } from '@salto-io/core'
+import { Workspace, Blueprint, DetailedChange, WorkspaceError, SourceMap, SourceRange, Errors } from '@salto-io/core'
 import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
 import wu from 'wu'
 
@@ -30,7 +30,7 @@ export class EditorWorkspace {
   private pendingDeletes: Set<string> = new Set<string>()
   private lastValidCopy? : Promise<Workspace | undefined>
 
-  constructor(workspace: Workspace, isCopy = false) {
+  constructor(public baseDir: string, workspace: Workspace, isCopy = false) {
     this.workspace = workspace
     this.isCopy = isCopy
     this.lastValidCopy = workspace.hasErrors().then(hasErrors => {
@@ -42,11 +42,7 @@ export class EditorWorkspace {
   }
 
   get elements(): Promise<readonly Element[]> {
-    return this.workspace.elements
-  }
-
-  get config(): Config {
-    return this.workspace.config
+    return this.workspace.elements()
   }
 
   errors(): Promise<Errors> {
@@ -54,11 +50,11 @@ export class EditorWorkspace {
   }
 
   private workspaceFilename(filename: string): string {
-    return path.relative(this.workspace.config.baseDir, filename)
+    return path.relative(this.baseDir, filename)
   }
 
   private editorFilename(filename: string): string {
-    return path.resolve(this.workspace.config.baseDir, filename)
+    return path.resolve(this.baseDir, filename)
   }
 
   private editorBlueprint(blueprint: Blueprint): Blueprint {
@@ -196,7 +192,7 @@ export class EditorWorkspace {
 
   async getValidCopy(): Promise<EditorWorkspace | undefined> {
     const lastValidCopy = await this.lastValidCopy
-    return lastValidCopy ? new EditorWorkspace(lastValidCopy, true) : undefined
+    return lastValidCopy ? new EditorWorkspace(this.baseDir, lastValidCopy, true) : undefined
   }
 
   hasErrors(): Promise<boolean> {

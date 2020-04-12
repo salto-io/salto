@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Config } from '@salto-io/core'
+import { Workspace } from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'
@@ -21,29 +21,15 @@ import { CliTelemetry } from '../../src/types'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
-  init: jest.fn().mockImplementation(
-    (_defaultEnvName: string, workspaceName: string): { config: Config } => {
+  initLocalWorkspace: jest.fn().mockImplementation(
+    (_baseDir: string, workspaceName: string): Workspace => {
       if (workspaceName === 'error') throw new Error('failed')
       return {
-        config: {
-          name: workspaceName,
-          localStorage: '',
-          baseDir: '',
-          staleStateThresholdMinutes: 1,
-          uid: '',
-          envs: {
-            default: {
-              baseDir: '',
-              config: {
-                stateLocation: '',
-                credentialsLocation: 'credentials',
-                services: ['salesforce'],
-              },
-            },
-          },
-          currentEnv: 'default',
-        },
-      }
+        name: workspaceName,
+        uid: '',
+        currentEnv: () => 'default',
+        envs: () => ['default'],
+      } as unknown as Workspace
     }
   ),
 }))
@@ -55,7 +41,7 @@ const eventsNames = {
   failure: buildEventName(commandName, 'failure'),
 }
 
-describe('describe command', () => {
+describe('init command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   let mockTelemetry: mocks.MockTelemetry
   let mockCliTelemetry: CliTelemetry

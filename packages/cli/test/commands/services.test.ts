@@ -52,8 +52,6 @@ jest.mock('@salto-io/core', () => ({
     })
     return loginStatuses
   }),
-  loadConfig: jest.fn().mockImplementation((workspaceDir: string) =>
-    mocks.mockLoadConfig(workspaceDir)),
 }))
 jest.mock('../../src/workspace/workspace')
 describe('services command', () => {
@@ -68,17 +66,17 @@ describe('services command', () => {
   mockLoadWorkspace.mockImplementation(baseDir => {
     if (baseDir === 'errdir') {
       return { workspace: {
+        services: () => ['salesforce', 'hubspot'],
         hasErrors: () => true,
-        errors: {
+        errors: () => ({
           strings: () => ['Error', 'Error'],
-        },
-        config: mocks.mockLoadConfig(baseDir),
+        }),
       },
       errored: true }
     }
     return { workspace: {
+      services: () => ['salesforce', 'hubspot'],
       hasErrors: () => false,
-      config: mocks.mockLoadConfig(baseDir),
     },
     errored: false }
   })
@@ -164,7 +162,7 @@ describe('services command', () => {
         it('should use current env when env is not provided', async () => {
           await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
             mocks.withoutEnvironmentParam
           )
         })
@@ -178,7 +176,7 @@ describe('services command', () => {
             mocks.withEnvironmentParam,
           ).execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
             mocks.withEnvironmentParam
           )
         })
@@ -245,7 +243,7 @@ describe('services command', () => {
           it('should use current env when env is not provided', async () => {
             await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
             expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-            expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+            expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
               mocks.withoutEnvironmentParam
             )
           })
@@ -259,7 +257,7 @@ describe('services command', () => {
               mocks.withEnvironmentParam
             ).execute()
             expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-            expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+            expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
               mocks.withEnvironmentParam
             )
           })
@@ -327,7 +325,7 @@ describe('services command', () => {
         it('should use current env when env is not provided', async () => {
           await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
             mocks.withoutEnvironmentParam
           )
         })
@@ -341,7 +339,7 @@ describe('services command', () => {
             mocks.withEnvironmentParam
           ).execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv).toEqual(
+          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
             mocks.withEnvironmentParam
           )
         })

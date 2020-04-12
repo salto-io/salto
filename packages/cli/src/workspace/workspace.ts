@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
+import _ from 'lodash'
 import wu from 'wu'
-import { Workspace, loadConfig, FetchChange, Tags } from '@salto-io/core'
+import { Workspace, FetchChange, Tags, loadLocalWorkspace } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
@@ -95,14 +96,18 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
     : { succeed: () => undefined, fail: () => undefined }
-  const workspace = new Workspace(await loadConfig(workingDir))
-  workspace.config.currentEnv = sessionEnv ?? workspace.config.currentEnv
+
+  const workspace = await loadLocalWorkspace(workingDir)
+  if (!_.isUndefined(sessionEnv)) {
+    await workspace.setCurrentEnv(sessionEnv, false)
+  }
+
   const { status, errors } = await validateWorkspace(workspace)
   // Stop the spinner
   if (status === 'Error') {
     spinner.fail(formatWorkspaceLoadFailed(errors.length))
   } else {
-    spinner.succeed(formatFinishedLoading(workspace.config.currentEnv))
+    spinner.succeed(formatFinishedLoading(workspace.currentEnv()))
   }
   // Print state's recency
   const stateRecency = await workspace.getStateRecency()
@@ -166,5 +171,5 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
 }
 
 export const getWorkspaceTelemetryTags = async (ws: Workspace): Promise<Tags> => (
-  { workspaceID: ws.config.uid }
+  { workspaceID: ws.uid }
 )

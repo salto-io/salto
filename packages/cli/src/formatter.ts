@@ -505,7 +505,7 @@ export const formatServiceNotConfigured = (serviceName: string): string => [
   emptyLine(),
 ].join('\n')
 
-export const formatConfiguredServices = (serviceNames: string[]): string => {
+export const formatConfiguredServices = (serviceNames: ReadonlyArray<string>): string => {
   if (serviceNames.length === 0) {
     return [
       Prompts.NO_CONFIGURED_SERVICES,
@@ -536,7 +536,7 @@ export const formatLoginToServiceFailed = (serviceName: string, errorMessage: st
   emptyLine(),
 ].join('\n')
 
-export const formatEnvListItem = (envNames: string[], currentEnv?: string): string => (
+export const formatEnvListItem = (envNames: ReadonlyArray<string>, currentEnv?: string): string => (
   envNames
     .map(name => `${name === currentEnv ? '*' : ' '} ${name}`)
     .join('\n')

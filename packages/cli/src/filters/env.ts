@@ -15,7 +15,7 @@
 */
 import yargs from 'yargs'
 
-import { loadConfig } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/core'
 import { ParsedCliInput } from '../types'
 import { ParserFilter, ParsedCliInputFilter } from '../filter'
 import { EnvironmentArgs, EnvironmentParsedCliInput } from '../commands/env'
@@ -41,9 +41,9 @@ export const environmentFilter: EnvironmentFilter = {
     input: ParsedCliInput<EnvironmentArgs>
   ): Promise<ParsedCliInput<EnvironmentArgs>> {
     const args = input.args as yargs.Arguments<EnvironmentArgs>
-    const workspaceConfig = (await loadConfig('.'))
+    const workspace = await loadLocalWorkspace('.')
 
-    if (args.env && !(args.env in workspaceConfig.envs)) {
+    if (args.env && !(workspace.envs().includes(args.env))) {
       throw new Error(`Environment ${args.env} isn't configured. Use salto env create.`)
     }
     return input

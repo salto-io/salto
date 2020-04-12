@@ -795,7 +795,7 @@ export const toCustomField = (
     field.annotations[CORE_ANNOTATIONS.REQUIRED],
     field.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE],
     field.annotations[DEFAULT_VALUE_FORMULA],
-    field.annotations[FIELD_ANNOTATIONS.VALUE_SET],
+    makeArray(field.annotations[FIELD_ANNOTATIONS.VALUE_SET]),
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD],
     fieldDependency?.[FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS],
     field.annotations[FIELD_ANNOTATIONS.RESTRICTED],

@@ -25,8 +25,7 @@ import {
   PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
-import { Config } from '../src/workspace/config'
-import { Workspace } from '../src/workspace/workspace'
+import * as workspace from '../src/workspace/workspace'
 import * as api from '../src/api'
 
 import * as plan from '../src/core/plan'
@@ -57,62 +56,43 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
   token: 'test',
   sandbox: false,
 })
-const mockWorkspace = (elements: Element[] = [], config?: Partial<Config>): Workspace => ({
-  elements,
-  config: config || {
-    currentEnv: 'default',
-    envs: {
-      default: {
-        config: {
-          stateLocation: '.',
-          services: SERVICES,
-        },
-        baseDir: 'default',
-      },
-    },
-  },
-  state: mockState(),
+
+const mockWorkspace = (elements: Element[] = [], name?: string): workspace.Workspace => ({
+  elements: () => Promise.resolve(elements),
+  name,
+  envs: () => ['default'],
+  currentEnv: 'default',
+  services: () => SERVICES,
+  state: () => mockState(),
   updateBlueprints: jest.fn(),
   flush: jest.fn(),
-  adapterCredentials: {
-    get: () => jest.fn().mockImplementation(() => Promise.resolve(mockConfigInstance)),
-    set: () => jest.fn().mockImplementation(() => Promise.resolve()),
-  },
-  adapterConfig: {
-    get: () => jest.fn().mockImplementation(() => Promise.resolve()),
-    set: () => jest.fn().mockImplementation(() => Promise.resolve()),
-  },
-} as unknown as Workspace)
+  servicesCredentials: jest.fn().mockResolvedValue({ [SERVICES[0]]: mockConfigInstance }),
+  servicesConfig: jest.fn().mockResolvedValue({}),
+  getWorkspaceErrors: jest.fn().mockResolvedValue([]),
+  addService: jest.fn(),
+  updateServiceCredentials: jest.fn(),
+  updateServiceConfig: jest.fn(),
+} as unknown as workspace.Workspace)
 
-jest.mock('../src/workspace/config', () => ({
-  ...jest.requireActual('../src/workspace/config'),
-  addServiceToConfig: jest.fn().mockImplementation(),
-}))
 jest.mock('../src/core/adapters/adapters')
 jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
 jest.mock('../src/core/deploy')
 jest.mock('../src/core/adapters/creators')
-jest.spyOn(Workspace, 'init').mockImplementation(
+
+jest.spyOn(workspace, 'initWorkspace').mockImplementation(
   (
     _baseDir: string,
     _defaultEnvName: string,
     workspaceName?: string
   ):
-    Promise<Workspace> => Promise.resolve(mockWorkspace([], { name: workspaceName }))
+    Promise<workspace.Workspace> => Promise.resolve(mockWorkspace([], workspaceName))
 )
 
 describe('api.ts', () => {
   const initAdapters = adapters.initAdapters as jest.Mock
   initAdapters.mockReturnValue({
     [SERVICES[0]]: {} as unknown as Adapter,
-  })
-
-  describe('init', () => {
-    it('should call init', async () => {
-      const ws = api.init('default', 'ws1')
-      expect((await ws).config.name).toEqual('ws1')
-    })
   })
 
   describe('fetch', () => {
@@ -132,7 +112,8 @@ describe('api.ts', () => {
     const stateElements = [{ elemID: new ElemID(SERVICES[0], 'test') }]
     const ws = mockWorkspace()
     const mockFlush = ws.flush as jest.Mock
-    ws.state.list = jest.fn().mockImplementation(() => Promise.resolve(stateElements))
+    const mockedState = { ...mockState(), list: jest.fn().mockResolvedValue(stateElements) }
+    ws.state = jest.fn().mockReturnValue(mockedState)
 
     beforeAll(async () => {
       const mockGetAdaptersCreatorConfigs = adapters.getAdaptersCreatorConfigs as jest.Mock
@@ -149,8 +130,8 @@ describe('api.ts', () => {
       expect(mockedFetchChanges).toHaveBeenCalled()
     })
     it('should override state', () => {
-      expect(ws.state.remove).toHaveBeenCalledWith(stateElements)
-      expect(ws.state.set).toHaveBeenCalledWith(fetchedElements)
+      expect(mockedState.remove).toHaveBeenCalledWith(stateElements)
+      expect(mockedState.set).toHaveBeenCalledWith(fetchedElements)
     })
 
     it('should call flush', () => {
@@ -289,9 +270,9 @@ describe('api.ts', () => {
         getAdaptersCredentialsTypes.mockReturnValue({
           [serviceName]: new ObjectType({ elemID: new ElemID(serviceName) }),
         })
-        const workspace = mockWorkspace()
-        await api.addAdapter(workspace, serviceName)
-        expect((workspace.adapterConfig.set as jest.Mock).call).toHaveLength(1)
+        const wsp = mockWorkspace()
+        await api.addAdapter(wsp, serviceName)
+        expect((wsp.addService as jest.Mock).call).toHaveLength(1)
       })
     })
 
@@ -299,7 +280,7 @@ describe('api.ts', () => {
       const newConf = mockConfigInstance.clone()
       newConf.value.password = 'bla'
       await api.updateLoginConfig(ws, newConf)
-      expect((ws.adapterCredentials.set as jest.Mock).call).toHaveLength(1)
+      expect((ws.updateServiceConfig as jest.Mock).call).toHaveLength(1)
     })
   })
 })

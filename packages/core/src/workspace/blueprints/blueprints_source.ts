@@ -52,7 +52,7 @@ export type Blueprint = {
 }
 
 export type BlueprintsSource = ElementsSource & {
-  update: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
+  updateBlueprints: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
   getElementBlueprints: (id: ElemID) => Promise<string[]>
@@ -179,13 +179,12 @@ const buildBlueprintsSource = (
     state = buildBlueprintsState(blueprints, (await state).parsedBlueprints)
   }
 
-  const update = async (changes: DetailedChange[]): Promise<void> => {
+  const updateBlueprints = async (changes: DetailedChange[]): Promise<void> => {
     const getBlueprintData = async (filename: string): Promise<string> => {
       const bp = await blueprintsStore.get(filename)
       return bp ? bp.buffer : ''
     }
 
-    log.debug('going to calculate new blueprints data')
     const changesToUpdate = getChangesToUpdate(changes, (await state).elementsIndex)
     const bps = _(await Promise.all(changesToUpdate
       .map(change => change.id)
@@ -223,8 +222,10 @@ const buildBlueprintsSource = (
       DUMP_CONCURRENCY
     )).filter(b => b !== undefined) as Blueprint[]
 
-    log.debug('going to set the new blueprints')
-    return setBlueprints(...updatedBlueprints)
+    if (updatedBlueprints.length > 0) {
+      log.debug('going to update %d blueprints', updatedBlueprints.length)
+      await setBlueprints(...updatedBlueprints)
+    }
   }
 
   return {
@@ -281,7 +282,7 @@ const buildBlueprintsSource = (
       state
     ),
 
-    update,
+    updateBlueprints,
     setBlueprints,
     getSourceMap,
     getElementBlueprints,

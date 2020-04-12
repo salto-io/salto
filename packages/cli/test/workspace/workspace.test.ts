@@ -16,12 +16,15 @@
 import _ from 'lodash'
 import moment from 'moment'
 import inquirer from 'inquirer'
-import { Workspace, FetchChange, DetailedChange, loadConfig } from '@salto-io/core'
+import { Workspace, FetchChange, DetailedChange } from '@salto-io/core'
 import { Spinner } from '../../src/types'
 import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG } from '../../src/workspace/workspace'
 import { MockWriteStream, dummyChanges, detailedChange, mockErrors, mockFunction } from '../mocks'
 
 const mockWsFunctions = {
+  services: mockFunction<Workspace['services']>().mockReturnValue(['salesforce']),
+  envs: mockFunction<Workspace['envs']>().mockReturnValue(['default']),
+  currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue('default'),
   errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
   updateBlueprints: mockFunction<Workspace['updateBlueprints']>(),
   isEmpty: mockFunction<Workspace['isEmpty']>(),
@@ -35,26 +38,7 @@ const mockWsFunctions = {
 const mockWs = mockWsFunctions as unknown as Workspace
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
-  Workspace: jest.fn().mockImplementation(config => ({ ...mockWs, config })),
-  loadConfig: jest.fn<ReturnType<typeof loadConfig>, Parameters<typeof loadConfig>>()
-    .mockImplementation(workspaceDir => Promise.resolve({
-      uid: '',
-      baseDir: workspaceDir,
-      name: '',
-      envs: {
-        default: {
-          baseDir: 'default',
-          config: {
-            services: ['salesforce'],
-            credentialsLocation: '',
-            stateLocation: '',
-          },
-        },
-      },
-      currentEnv: 'default',
-      localStorage: '',
-      staleStateThresholdMinutes: 100,
-    })),
+  loadLocalWorkspace: jest.fn().mockImplementation(() => mockWs),
 }))
 jest.mock('inquirer', () => ({
   prompt: jest.fn().mockResolvedValue({ userInput: false }),

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID } from '@salto-io/adapter-api'
+import path from 'path'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getPositionContext } from '../../src/salto/context'
 import { mockWorkspace } from './workspace'
@@ -23,9 +24,8 @@ describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
   const bpFilename = 'context.bp'
   beforeAll(async () => {
-    workspace = new EditorWorkspace(await mockWorkspace(
-      `${__dirname}/../../../test/salto/test-bps/${bpFilename}`
-    ))
+    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps`)
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, bpFilename)))
   })
 
   describe('type', () => {

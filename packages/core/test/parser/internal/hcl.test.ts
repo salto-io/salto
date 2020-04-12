@@ -173,6 +173,29 @@ describe('HCL parse', () => {
     expect(body.blocks[0].attrs.that.expressions[0].expressions.length).toEqual(3)
   })
 
+  it('parses all numbers notation', () => {
+    const blockDef = `type label {
+      simple = 1
+      sci = 1e10
+      negative = -2
+      negativeSci = -1e10
+      float = 1.5
+      negativeFloat = -1.5
+      floatSci = 1.5e10
+
+    }`
+
+    const { body } = parse(Buffer.from(blockDef), 'none')
+    expect(body.blocks.length).toEqual(1)
+    expect(body.blocks[0].attrs.simple.expressions[0].value).toEqual(1)
+    expect(body.blocks[0].attrs.sci.expressions[0].value).toEqual(1e10)
+    expect(body.blocks[0].attrs.negative.expressions[0].value).toEqual(-2)
+    expect(body.blocks[0].attrs.negativeSci.expressions[0].value).toEqual(-1e10)
+    expect(body.blocks[0].attrs.float.expressions[0].value).toEqual(1.5)
+    expect(body.blocks[0].attrs.negativeFloat.expressions[0].value).toEqual(-1.5)
+    expect(body.blocks[0].attrs.floatSci.expressions[0].value).toEqual(1.5e10)
+  })
+
   it('can run concurrently', async () => {
     const blockDef = 'type label {}'
     const blocksToParse = _.times(3, () => blockDef)

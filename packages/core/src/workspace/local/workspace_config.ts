@@ -32,8 +32,12 @@ export const getConfigDir = (baseDir: string): string => (
   path.join(path.resolve(baseDir), CONFIG_DIR_NAME)
 )
 
+export type WorkspaceConfigSource = ConfigSource & {
+  envs: ReadonlyArray<string>
+  localStorage: string
+}
 export const workspaceConfigSource = async (baseDir: string, localStorage?: string):
-Promise<ConfigSource & {envs: ReadonlyArray<string>; localStorage: string}> => {
+Promise<WorkspaceConfigSource> => {
   const repoConfigSource = configSource(localDirectoryStore(getConfigDir(baseDir)))
   const conf = await repoConfigSource.get(WORKSPACE_CONFIG_NAME)
   if (_.isUndefined(conf) && _.isUndefined(localStorage)) {

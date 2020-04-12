@@ -19,7 +19,7 @@ import {
 
 const CONFIG_NAMESPACE = 'salto'
 export const WORKSPACE_CONFIG_NAME = 'config'
-export const PREFERENCE_CONFIG_NAME = 'preference'
+export const PREFERENCES_CONFIG_NAME = 'preferences'
 
 const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 const envConfigElemID = new ElemID(CONFIG_NAMESPACE, 'env')
@@ -72,7 +72,7 @@ export type PreferenceConfig = {
 }
 
 export const preferencesConfigInstance = (pref: PreferenceConfig): InstanceElement =>
-  new InstanceElement(PREFERENCE_CONFIG_NAME, preferencesWorkspaceConfigType, pref)
+  new InstanceElement(PREFERENCES_CONFIG_NAME, preferencesWorkspaceConfigType, pref)
 
 export const workspaceConfigInstance = (wsConfig: WorkspaceConfig): InstanceElement =>
   new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType, wsConfig)

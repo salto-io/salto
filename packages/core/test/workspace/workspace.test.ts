@@ -45,7 +45,7 @@ import * as dump from '../../src/parser/dump'
 
 import { mockDirStore, mockParseCache } from '../common/blueprint_store'
 import {
-  WORKSPACE_CONFIG_NAME, workspaceConfigType, PREFERENCE_CONFIG_NAME,
+  WORKSPACE_CONFIG_NAME, workspaceConfigType, PREFERENCES_CONFIG_NAME,
   preferencesWorkspaceConfigType,
 } from '../../src/workspace/workspace_config_types'
 
@@ -77,7 +77,7 @@ const mockConfigSource = (conf?: Values): ConfigSource => ({
   get: jest.fn().mockImplementation(name => (
     (name === WORKSPACE_CONFIG_NAME)
       ? wsConfInstance(conf)
-      : new InstanceElement(PREFERENCE_CONFIG_NAME, preferencesWorkspaceConfigType, {
+      : new InstanceElement(PREFERENCES_CONFIG_NAME, preferencesWorkspaceConfigType, {
         currentEnv: 'default',
       })
   )),
@@ -488,7 +488,7 @@ describe('workspace', () => {
           { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }] })
       )
       expect((confSource.set as jest.Mock).mock.calls[1][1]).toEqual(
-        new InstanceElement(PREFERENCE_CONFIG_NAME, preferencesWorkspaceConfigType,
+        new InstanceElement(PREFERENCES_CONFIG_NAME, preferencesWorkspaceConfigType,
           { currentEnv: 'default' })
       )
       expect(workspace.name).toEqual('ws-name')

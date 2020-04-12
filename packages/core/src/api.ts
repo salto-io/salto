@@ -222,11 +222,12 @@ export const getLoginStatuses = async (
   workspace: Workspace,
   adapterNames = workspace.services(),
 ): Promise<Record<string, LoginStatus>> => {
+  const creds = await workspace.servicesCredentials(adapterNames)
   const logins = _.mapValues(getAdaptersCredentialsTypes(adapterNames),
     async (config, adapter) =>
       ({
         configType: config,
-        isLoggedIn: !!(await workspace.servicesCredentials(adapterNames))[adapter],
+        isLoggedIn: !!creds[adapter],
       }))
 
   return promises.object.resolveValues(logins)

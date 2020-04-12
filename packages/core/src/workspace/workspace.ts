@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import path from 'path'
 import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, isObjectType, isInstanceElement,
 } from '@salto-io/adapter-api'
@@ -27,14 +28,13 @@ import State from './state'
 import { BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
 import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
 import { Errors } from './errors'
-import { WORKSPACE_CONFIG_NAME, PREFERENCE_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig, PreferenceConfig, EnvConfig, workspaceConfigInstance, preferencesConfigInstance } from './workspace_config_types'
+import { WORKSPACE_CONFIG_NAME, PREFERENCES_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig, PreferenceConfig, EnvConfig, workspaceConfigInstance, preferencesConfigInstance } from './workspace_config_types'
 
 const log = logger(module)
 
 const { makeArray } = collections.array
 
 export const COMMON_ENV_PREFIX = ''
-const MAX_ERROR_NUMBER = 30
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
 export const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
@@ -99,7 +99,6 @@ export type Workspace = {
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
-  getWorkspaceErrors(): Promise<ReadonlyArray<WorkspaceError<SaltoError>>>
   updateBlueprints: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
   listBlueprints: () => Promise<string[]>
   getBlueprint: (filename: string) => Promise<Blueprint | undefined>
@@ -130,10 +129,10 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     throw new NoWorkspaceConfig()
   }
   if (_.isEmpty(workspaceConfig.envs)) {
-    throw new Error('Workspace with no envs is illegal')
+    throw new Error('Workspace with no environments is illegal')
   }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
-  const preferences = (await config.get(PREFERENCE_CONFIG_NAME))?.value as PreferenceConfig
+  const preferences = (await config.get(PREFERENCES_CONFIG_NAME))?.value as PreferenceConfig
     || { currentEnv: envs()[0] }
   const currentEnv = (): string => preferences.currentEnv
   const currentEnvConf = (): EnvConfig =>
@@ -195,6 +194,9 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
 
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
+  const credsPath = (service: string): string =>
+    path.join(currentEnv(), CREDENTIALS_CONFIG_PATH, service)
+  const confPath = (service: string): string => path.join(ADAPTERS_CONFIGS_PATH, service)
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -206,12 +208,10 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     errors,
     hasErrors: async () => (await errors()).hasErrors(),
     servicesCredentials: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
-      pickServices(names).map(async service =>
-        [service, await config.get(`${currentEnv()}/${CREDENTIALS_CONFIG_PATH}/${service}`)])
+      pickServices(names).map(async service => [service, await config.get(credsPath(service))])
     )),
     servicesConfig: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
-      pickServices(names).map(async service =>
-        [service, await config.get(`${ADAPTERS_CONFIGS_PATH}/${service}`)])
+      pickServices(names).map(async service => [service, await config.get(confPath(service))])
     )),
     isEmpty: async (blueprintsOnly = false): Promise<boolean> => {
       const isBlueprintsSourceEmpty = _.isEmpty(await blueprintsSource.getAll())
@@ -234,15 +234,6 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     transformToWorkspaceError,
     transformError,
     getSourceFragment,
-    getWorkspaceErrors: async (): Promise<ReadonlyArray<WorkspaceError<SaltoError>>> => {
-      const resolvedErrors = await errors()
-      return Promise.all(
-        _.flatten(_.partition(
-          [...resolvedErrors.parse, ...resolvedErrors.merge, ...resolvedErrors.validation],
-          val => val.severity === 'Error'
-        )).slice(0, MAX_ERROR_NUMBER).map(transformError)
-      )
-    },
     flush: async (): Promise<void> => {
       await state().flush()
       await blueprintsSource.flush()
@@ -263,10 +254,10 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
     },
     updateServiceCredentials:
       async (service: string, credentials: Readonly<InstanceElement>): Promise<void> =>
-        config.set(`${currentEnv()}/${CREDENTIALS_CONFIG_PATH}/${service}`, credentials),
+        config.set(credsPath(service), credentials),
     updateServiceConfig:
       async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> =>
-        config.set(`${ADAPTERS_CONFIGS_PATH}/${service}`, newConfig),
+        config.set(confPath(service), newConfig),
     addEnvironment: async (env: string): Promise<void> => {
       if (workspaceConfig.envs.map(e => e.name).includes(env)) {
         throw new EnvDuplicationError(env)
@@ -280,7 +271,7 @@ export const loadWorkspace = async (config: ConfigSource, elementsSources: Envio
       }
       preferences.currentEnv = env
       if (_.isUndefined(persist) || persist === true) {
-        await config.set(PREFERENCE_CONFIG_NAME, preferencesConfigInstance(preferences))
+        await config.set(PREFERENCES_CONFIG_NAME, preferencesConfigInstance(preferences))
       }
       blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),
         currentEnv(), COMMON_ENV_PREFIX)
@@ -314,7 +305,7 @@ export const initWorkspace = async (
   await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(
     { uid, name, envs: [{ name: defaultEnvName }] }
   ))
-  await config.set(PREFERENCE_CONFIG_NAME, preferencesConfigInstance(
+  await config.set(PREFERENCES_CONFIG_NAME, preferencesConfigInstance(
     { currentEnv: defaultEnvName }
   ))
   return loadWorkspace(config, envs)

@@ -62,8 +62,6 @@ jobs:
       - restore_cache:
           keys:
             - v2-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
-            - v2-yarn-deps-{{ arch }}-
-            - v2-yarn-deps-
 
       - run: yarn --frozen-lockfile
 

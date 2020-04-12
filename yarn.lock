@@ -1200,8 +1200,8 @@
     "@types/node" ">= 8"
 
 "@oracle/suitecloud-sdk@https://github.com/salto-io/netsuite-suitecloud-sdk.git":
-  version "1.0.1"
-  resolved "https://github.com/salto-io/netsuite-suitecloud-sdk.git#71341c4b2860b333b5ea3804c45d43bb33615bf5"
+  version "1.0.2"
+  resolved "https://github.com/salto-io/netsuite-suitecloud-sdk.git#06df678e0ffbfb8de8a7dc7430aaecd2d92e9229"
 
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"

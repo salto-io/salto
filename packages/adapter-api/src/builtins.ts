@@ -16,25 +16,27 @@
 import { ElemID } from './element_id'
 import { TypeMap, ObjectType, Field, PrimitiveType, PrimitiveTypes } from './elements'
 
+export const BUILTIN_ADAPTER = ''
+
 export const BuiltinTypes: Record<string, PrimitiveType> = {
   STRING: new PrimitiveType({
-    elemID: new ElemID('', 'string'),
+    elemID: new ElemID(BUILTIN_ADAPTER, 'string'),
     primitive: PrimitiveTypes.STRING,
   }),
   NUMBER: new PrimitiveType({
-    elemID: new ElemID('', 'number'),
+    elemID: new ElemID(BUILTIN_ADAPTER, 'number'),
     primitive: PrimitiveTypes.NUMBER,
   }),
   BOOLEAN: new PrimitiveType({
-    elemID: new ElemID('', 'boolean'),
+    elemID: new ElemID(BUILTIN_ADAPTER, 'boolean'),
     primitive: PrimitiveTypes.BOOLEAN,
   }),
   SERVICE_ID: new PrimitiveType({
-    elemID: new ElemID('', 'serviceid'),
+    elemID: new ElemID(BUILTIN_ADAPTER, 'serviceid'),
     primitive: PrimitiveTypes.STRING,
   }),
   JSON: new PrimitiveType({
-    elemID: new ElemID('', 'json'),
+    elemID: new ElemID(BUILTIN_ADAPTER, 'json'),
     primitive: PrimitiveTypes.STRING,
   }),
 }

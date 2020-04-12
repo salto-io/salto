@@ -34,6 +34,9 @@ jest.mock('../../../src/file', () => ({
     if (filename === 'mutiple_adapters') {
       return Promise.resolve('[{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"hubspot","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]')
     }
+    if (filename === 'only_builtins') {
+      return Promise.resolve('[{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]')
+    }
     return Promise.resolve('[]')
   }),
   mkdirp: jest.fn().mockImplementation(),
@@ -195,6 +198,11 @@ describe('local state', () => {
       const state = localState('mutiple_adapters')
       const adapters = await state.existingServices()
       expect(adapters).toEqual(['salesforce', 'hubspot'])
+    })
+    it('should ignore buildin adapter', async () => {
+      const state = localState('only_builtins')
+      const adapters = await state.existingServices()
+      expect(adapters).toEqual(['salesforce'])
     })
   })
 })

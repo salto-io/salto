@@ -16,7 +16,7 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
-import { Element, ElemID, ElementMap } from '@salto-io/adapter-api'
+import { Element, ElemID, ElementMap, BUILTIN_ADAPTER } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
@@ -99,6 +99,7 @@ export const localState = (filePath: string): State => {
     existingServices: async (): Promise<string[]> => _((await stateData()).elements)
       .map(e => e.elemID.adapter)
       .uniq()
+      .filter(adapter => adapter !== BUILTIN_ADAPTER)
       .value(),
   }
 }

@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { EOL } from 'os'
 import { ObjectType, ElemID, isObjectType } from '@salto-io/adapter-api'
 import State from '../../../src/workspace/state'
 import { localState } from '../../../src/workspace/local/state'
 import { getAllElements } from '../../common/elements'
 import { expectTypesToMatch } from '../../common/helpers'
 import { serialize } from '../../../src/serializer/elements'
-import { replaceContents, exists, stat } from '../../../src/file'
+import { replaceContents, exists, readTextFile } from '../../../src/file'
 
 jest.mock('../../../src/file', () => ({
   replaceContents: jest.fn().mockImplementation(() => Promise.resolve()),
@@ -34,12 +35,12 @@ jest.mock('../../../src/file', () => ({
   }),
   mkdirp: jest.fn().mockImplementation(),
   exists: jest.fn().mockImplementation(((filename: string) => Promise.resolve(filename !== 'empty'))),
-  stat: jest.fn(),
 }))
 
 describe('local state', () => {
   const mockElement = getAllElements().find(isObjectType) as ObjectType
   const replaceContentMock = replaceContents as jest.Mock
+  const readTextFileMock = readTextFile as unknown as jest.Mock
 
   describe('empty state', () => {
     let state: State
@@ -49,6 +50,16 @@ describe('local state', () => {
     it('should return an empty array if there is no saved state', async () => {
       const result = await state.getAll()
       expect(result.length).toBe(0)
+    })
+
+    it('should override state successfully, retrieve it and get the same result', async () => {
+      const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
+      state.set([newElem])
+      await state.override([mockElement])
+      const retrievedState = await state.getAll()
+      expect(retrievedState.length).toBe(1)
+      const retrievedStateObjectType = retrievedState[0] as ObjectType
+      expectTypesToMatch(retrievedStateObjectType, mockElement)
     })
 
     it('should set state successfully, retrieve it and get the same result', async () => {
@@ -123,9 +134,14 @@ describe('local state', () => {
 
   describe('getUpdateDate', () => {
     const mockExists = exists as jest.Mock
-    const mockStat = stat as unknown as jest.Mock
     it('should return null when the state does not exist', async () => {
       mockExists.mockResolvedValueOnce(false)
+      const state = localState('filename')
+      const date = await state.getUpdateDate()
+      expect(date).toBe(null)
+    })
+    it('should return null when the updated date is not set', async () => {
+      mockExists.mockResolvedValueOnce(true)
       const state = localState('filename')
       const date = await state.getUpdateDate()
       expect(date).toBe(null)
@@ -133,37 +149,36 @@ describe('local state', () => {
     it('should return the modification date of the state', async () => {
       mockExists.mockResolvedValueOnce(true)
       const modificationDate = new Date(2010, 10, 10)
-      mockStat.mockImplementationOnce(() => Promise.resolve({
-        mtime: modificationDate,
-        mtimeMs: modificationDate.getTime(),
-      }))
+      readTextFileMock.mockResolvedValueOnce(`[]${EOL}${modificationDate.toISOString()}`)
       const state = localState('filename')
       const date = await state.getUpdateDate()
-      expect(date).toBe(modificationDate)
+      expect(date).toEqual(modificationDate)
     })
-    it('should update modification date on set/remove', async () => {
+    it('should update modification date on override', async () => {
       mockExists.mockResolvedValueOnce(true)
       const modificationDate = new Date(2010, 10, 10)
-      mockStat.mockImplementationOnce(() => Promise.resolve({
-        mtime: modificationDate,
-        mtimeMs: modificationDate.getTime(),
-      }))
-      let now = new Date(2013, 6, 4).getTime()
-      jest.spyOn(Date, 'now').mockImplementation(() => now)
+      readTextFileMock.mockResolvedValueOnce(`[]${EOL}${modificationDate.toISOString()}`)
+      const now = new Date(2013, 6, 4).getTime()
+      jest.spyOn(Date, 'now').mockImplementationOnce(() => now)
       const state = localState('filename')
 
-      const beforeSetDate = await state.getUpdateDate()
-      expect(beforeSetDate?.getTime()).not.toBe(now)
-      await state.set([mockElement])
-      const setDate = await state.getUpdateDate()
-      expect(setDate?.getTime()).toBe(now)
+      const beforeOverrideDate = await state.getUpdateDate()
+      expect(beforeOverrideDate?.getTime()).not.toBe(now)
+      await state.override([mockElement])
+      const overrideDate = await state.getUpdateDate()
+      expect(overrideDate?.getTime()).toBe(now)
+    })
+    it('should not update modification date on set/remove', async () => {
+      mockExists.mockResolvedValueOnce(true)
+      const modificationDate = new Date(2010, 10, 10)
+      readTextFileMock.mockResolvedValueOnce(`[]${EOL}${modificationDate.toISOString()}`)
+      const state = localState('filename')
 
-      now = new Date(2015, 8, 7).getTime()
-      const beforeRemoveDate = await state.getUpdateDate()
-      expect(beforeRemoveDate?.getTime()).not.toBe(now)
-      await state.remove(mockElement.elemID)
-      const removeDate = await state.getUpdateDate()
-      expect(removeDate?.getTime()).toBe(now)
+      await state.set([mockElement])
+      const overrideDate = await state.getUpdateDate()
+      expect(overrideDate).toEqual(modificationDate)
+      await state.remove([mockElement.elemID])
+      expect(overrideDate).toEqual(modificationDate)
     })
   })
 })

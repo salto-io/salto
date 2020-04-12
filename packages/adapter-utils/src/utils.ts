@@ -385,7 +385,7 @@ export const flatValues = (values: Value): Value => {
 // the slices string as a pointer to the large string with a start and finish indexes
 // for the slice. As a result - the original string will not be evacuated from memory.
 // to solve this we need to force v8 to change the sliced string representation to a
-// regular string. We need to performe this operation for *every* string the elements
+// regular string. We need to perform this operation for *every* string the elements
 // including object keys.
 export const flattenElementStr = (element: Element): Element => {
   const flattenField = (field: Field): Field => new Field(

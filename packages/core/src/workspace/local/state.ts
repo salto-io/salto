@@ -13,72 +13,88 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
 import { Element, ElemID, ElementMap } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
-import { exists, readTextFile, replaceContents, mkdirp, stat, Stats } from '../../file'
-import { serialize, deserialize } from '../../serializer/elements'
+import { exists, readTextFile, replaceContents, mkdirp } from '../../file'
+import * as elementSerializer from '../../serializer/elements'
 import State from '../state'
 
 const { makeArray } = collections.array
 
 const log = logger(module)
 
+type StateData = {
+  elements: ElementMap
+  // The date of the last fetch
+  updateDate: Date | null
+}
+
 export const localState = (filePath: string): State => {
-  let innerElements: Promise<ElementMap> | undefined
-  let lastUpdated: Date | null
+  let innerStateData: Promise<StateData>
   let dirty = false
 
-  const loadFromFile = async (): Promise<ElementMap> => {
+  const loadFromFile = async (): Promise<StateData> => {
     const text = await exists(filePath) ? await readTextFile(filePath) : undefined
-    const elements = text === undefined ? [] : deserialize(text).map(flattenElementStr)
+    if (text === undefined) {
+      return { elements: {}, updateDate: null }
+    }
+    const [elementsData, updateDateData] = text.split(EOL)
+    const deserializedElements = elementSerializer.deserialize(elementsData).map(flattenElementStr)
+    const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
+    const updateDate = updateDateData ? new Date(updateDateData) : null
     log.debug(`loaded state [#elements=${elements.length}]`)
-    return _.keyBy(elements, e => e.elemID.getFullName()) || {}
+    return { elements, updateDate }
   }
 
-  const elements = (): Promise<ElementMap> => {
-    if (innerElements === undefined) {
-      innerElements = loadFromFile()
+  const stateData = (): Promise<StateData> => {
+    if (innerStateData === undefined) {
+      innerStateData = loadFromFile()
     }
-    return innerElements as Promise<ElementMap>
+    return innerStateData
   }
 
   return {
-    getAll: async (): Promise<Element[]> => Object.values(await elements()),
+    getAll: async (): Promise<Element[]> => Object.values((await stateData()).elements),
     list: async (): Promise<ElemID[]> =>
-      Object.keys(await elements()).map(n => ElemID.fromFullName(n)),
-    get: async (id: ElemID): Promise<Element> => ((await elements())[id.getFullName()]),
+      Object.keys((await stateData()).elements).map(n => ElemID.fromFullName(n)),
+    get: async (id: ElemID): Promise<Element> => ((await stateData()).elements[id.getFullName()]),
     set: async (element: Element | Element []): Promise<void> => {
-      lastUpdated = new Date(Date.now())
       makeArray(element).forEach(async e => {
-        (await elements())[e.elemID.getFullName()] = e
+        (await stateData()).elements[e.elemID.getFullName()] = e
       })
       dirty = true
     },
     remove: async (id: ElemID | ElemID[]): Promise<void> => {
-      lastUpdated = new Date(Date.now())
       makeArray(id).forEach(async i => {
-        delete (await elements())[i.getFullName()]
+        delete (await stateData()).elements[i.getFullName()]
       })
+      dirty = true
+    },
+    override: async (element: Element | Element[]): Promise<void> => {
+      const newElements = _.keyBy(makeArray(element), e => e.elemID.getFullName())
+      const data = await stateData()
+      data.elements = newElements
+      data.updateDate = new Date(Date.now())
       dirty = true
     },
     flush: async (): Promise<void> => {
       if (!dirty) {
         return
       }
-      const stateElements = await elements()
+      const { elements: elementsMap, updateDate } = (await stateData())
+      const elements = Object.values(elementsMap)
+      const elementsString = elementSerializer.serialize(Object.values(elements))
+      const dateString = updateDate === null ? '' : `${EOL}${updateDate.toISOString()}`
+      const stateText = `${elementsString}${dateString}`
       await mkdirp(path.dirname(filePath))
-      await replaceContents(filePath, serialize(Object.values(stateElements)))
-      log.debug(`finish flushing state [#elements=${Object.values(stateElements).length}]`)
+      await replaceContents(filePath, stateText)
+      log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
     },
-    getUpdateDate: async (): Promise<Date | null> => {
-      if (lastUpdated === undefined) {
-        lastUpdated = await exists(filePath) ? (await stat(filePath) as Stats).mtime : null
-      }
-      return lastUpdated
-    },
+    getUpdateDate: async (): Promise<Date | null> => (await stateData()).updateDate,
   }
 }

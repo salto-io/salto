@@ -143,11 +143,6 @@ export const fetch: fetchFunc = async (
   progressEmitter?,
   services?,
 ) => {
-  const overrideState = async (elements: Element[]): Promise<void> => {
-    await workspace.state().remove(await workspace.state().list())
-    await workspace.state().set(elements)
-    log.debug(`finish to override state with ${elements.length} elements`)
-  }
   log.debug('fetch starting..')
   const fetchServices = services ?? workspace.services()
   const filteredStateElements = filterElementsByServices(await workspace.state().getAll(),
@@ -176,7 +171,8 @@ export const fetch: fetchFunc = async (
       progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    await overrideState(elements)
+    await workspace.state().override(elements)
+    log.debug(`finish to override state with ${elements.length} elements`)
     return {
       changes,
       mergeErrors,

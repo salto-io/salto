@@ -252,6 +252,9 @@ export default class SalesforceAdapter {
     ],
     metadataTypesToUseUpsertUponUpdate = [
       'Flow', // update fails for Active flows
+      'EscalationRules',
+      'AutoResponseRules',
+      'SharingRules',
     ],
     nestedMetadataTypes = {
       ...absoluteIDMetadataTypes,

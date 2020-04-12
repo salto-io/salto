@@ -22,7 +22,7 @@ export const rules: Record<string, moo.Rules> = {
     wildcard: WILDCARD,
     mlStart: { match: /<<EOF[ \t]*\n/, lineBreaks: true, push: 'multilineString' },
     dq: { match: '"', push: 'string' },
-    number: /[-+]?\d+\.?\d*/,
+    number: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
     boolean: /true|false/,
     word: /[a-zA-Z_][\w.]*/s,
     lparen: '(',

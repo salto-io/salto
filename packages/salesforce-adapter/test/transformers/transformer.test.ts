@@ -25,17 +25,13 @@ import {
 } from '@salto-io/adapter-utils'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject,
-  getValueTypeFieldElement, getCompoundChildFields, createMetadataTypeElements, getLookUpName,
+  getValueTypeFieldElement, createMetadataTypeElements, getLookUpName,
   METADATA_TYPES_TO_RENAME,
 } from '../../src/transformers/transformer'
 import {
   FIELD_ANNOTATIONS,
   FIELD_TYPE_NAMES,
   LABEL,
-  ADDRESS_FIELDS,
-  SALESFORCE,
-  GEOLOCATION_FIELDS,
-  NAME_FIELDS,
   API_NAME,
   COMPOUND_FIELD_TYPE_NAMES,
   FIELD_DEPENDENCY_FIELDS,
@@ -841,122 +837,6 @@ describe('transformer', () => {
           .toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeUndefined()
       })
-    })
-  })
-
-  describe('getCompoundChildFields', () => {
-    const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
-    const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
-    const elemID = new ElemID('salesforce', 'Test')
-    const testName = 'Test'
-
-    it('should return sub fields of a compound address field', async () => {
-      const fieldName = 'TestAddress'
-      const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
-      const testedObjectType = new ObjectType({
-        elemID,
-        fields: {
-          [fieldName]: new TypeField(
-            addressElemID, fieldName, Types.compoundDataTypes.Address
-          ),
-        },
-      })
-      const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Address.fields).length)
-      const fieldNamesSet = new Set<string>(fields.map(f => f.name))
-      Object.values(ADDRESS_FIELDS).forEach(field => {
-        expect(fieldNamesSet).toContain(`${testName}${field}`)
-      })
-    })
-
-    it('should return sub fields of a compound custom geolocation field', async () => {
-      const fieldName = 'Test__c'
-      const annotations: Values = {
-        [API_NAME]: fieldName,
-      }
-      const testedObjectType = new ObjectType({
-        elemID,
-        fields: {
-          [fieldName]: new TypeField(
-            geoLocationElemID, fieldName, Types.compoundDataTypes.Location, annotations
-          ),
-        },
-      })
-      const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Location.fields).length)
-      const fieldNamesSet = new Set<string>(fields.map(f => f.name))
-      Object.values(GEOLOCATION_FIELDS).forEach(field => {
-        const expectedFieldName = `${testName}__${field}`
-        expect(fieldNamesSet).toContain(expectedFieldName)
-        const apiName = fields.find(
-          f => f.name === expectedFieldName
-        )?.annotations[API_NAME] as string
-        expect(apiName.endsWith('__s')).toBeTruthy()
-      })
-    })
-
-    it('should return sub fields of a compound non-custom geolocation field', async () => {
-      const fieldName = 'Test'
-      const annotations: Values = {
-        [API_NAME]: fieldName,
-      }
-      const testedObjectType = new ObjectType({
-        elemID,
-        fields: {
-          [fieldName]: new TypeField(
-            geoLocationElemID, fieldName, Types.compoundDataTypes.Location, annotations
-          ),
-        },
-      })
-      const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Location.fields).length)
-      const fieldNamesSet = new Set<string>(fields.map(f => f.name))
-      Object.values(GEOLOCATION_FIELDS).forEach(field => {
-        const expectedFieldName = `${testName}__${field}`
-        expect(fieldNamesSet).toContain(expectedFieldName)
-        const apiName = fields.find(
-          f => f.name === expectedFieldName
-        )?.annotations[API_NAME] as string
-        expect(apiName.endsWith('__s')).toBeFalsy()
-      })
-    })
-
-    it('should return sub fields of a compound name field', async () => {
-      const fieldName = 'Name'
-      const annotations: Values = {
-        [LABEL]: 'Full Name',
-      }
-      const testedObjectType = new ObjectType({
-        elemID,
-        fields: {
-          [fieldName]: new TypeField(
-            nameElemID, fieldName, Types.compoundDataTypes.Name, annotations
-          ),
-        },
-      })
-      const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(Object.values(Types.compoundDataTypes.Name.fields).length)
-      const fieldNamesSet = new Set<string>(fields.map(f => f.name))
-      Object.values(NAME_FIELDS).forEach(field => {
-        expect(fieldNamesSet).toContain(field)
-      })
-    })
-
-    it('should not return sub fields of a compound name field if it is not a real name field', async () => {
-      const fieldName = 'name'
-      const annotations: Values = {
-        [LABEL]: 'Name',
-      }
-      const testedObjectType = new ObjectType({
-        elemID,
-        fields: {
-          [fieldName]: new TypeField(
-            nameElemID, fieldName, Types.compoundDataTypes.Name, annotations
-          ),
-        },
-      })
-      const fields = getCompoundChildFields(testedObjectType)
-      expect(fields).toHaveLength(1)
     })
   })
 

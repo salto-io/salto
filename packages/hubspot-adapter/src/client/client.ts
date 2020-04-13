@@ -20,7 +20,7 @@ import {
   RequestPromise,
 } from 'requestretry'
 import {
-  Form, HubspotMetadata, MarketingEmail, Workflows, ContactProperty,
+  Form, HubspotMetadata, MarketingEmail, Workflows, ContactProperty, Owner,
 } from './types'
 import Connection, { HubspotObjectAPI, Workflow } from './madku'
 
@@ -122,9 +122,15 @@ export default class HubspotClient {
     }
   }
 
-  getOwnerById(id: string | number): RequestPromise {
+  async getOwners(): Promise<Owner[]> {
+    const resp = this.conn.owners.get()
+    await validateResponse(resp)
+    return resp
+  }
+
+  async getOwnerById(id: string | number): Promise<RequestPromise> {
     const resp = this.conn.owners.getById(id)
-    validateResponse(resp)
+    await validateResponse(resp)
     return resp
   }
 

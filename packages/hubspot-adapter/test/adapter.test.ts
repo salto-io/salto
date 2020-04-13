@@ -33,6 +33,7 @@ import { Types } from '../src/transformers/transformer'
 import {
   OBJECTS_NAMES,
 } from '../src/constants'
+import instanceTransformFilter from '../src/filters/instance_transform'
 
 
 describe('Hubspot Adapter Operations', () => {
@@ -63,6 +64,7 @@ describe('Hubspot Adapter Operations', () => {
   beforeEach(() => {
     ({ client, adapter } = mockAdapter({
       adapterParams: {
+        filtersCreators: [instanceTransformFilter],
       },
     }))
   })

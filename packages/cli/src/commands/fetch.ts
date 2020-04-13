@@ -66,15 +66,15 @@ type shouldUpdateConfigFunc = (
 
 type approveIsolatedModeFunc = (
   newServices: string[],
-  oldService: string[],
-  isolatedInput: boolean
+  oldServices: string[],
+  inputIsolated: boolean
 ) => Promise<boolean>
 
 export type FetchCommandArgs = {
   workspace: Workspace
   force: boolean
   interactive: boolean
-  isolatedInput: boolean
+  inputIsolated: boolean
   cliTelemetry: CliTelemetry
   output: CliOutput
   fetch: fetchFunc
@@ -97,34 +97,34 @@ const shouldRecommendIsolatedMode = (
   return false
 }
 
-const getIsolatedServices = async (
-  services: string[],
-  existingServices: string[],
+const getRelevantServicesAndIsolatedMode = async (
+  inputServices: string[],
+  workspaceServices: string[],
   envNames: string[],
-  isolatedInput: boolean,
+  inputIsolated: boolean,
   force: boolean,
   approveIsolatedMode: approveIsolatedModeFunc,
   outputLine: (text: string) => void
 ): Promise<{services: string[]; isolated: boolean}> => {
-  const newServices = _.without(services, ...existingServices)
-  const oldServices = _.without(services, ...newServices)
+  const newServices = _.without(inputServices, ...workspaceServices)
+  const oldServices = _.without(inputServices, ...newServices)
   // We have a first fetch of a service in a multi-env setup.
   // The recommended practice here is to initiate the new service
   // by making an isolated fetch for the new services only.
-  if (!force && shouldRecommendIsolatedMode(newServices, oldServices, envNames, isolatedInput)) {
-    outputLine(formatApproveIsolatedModePrompt(newServices, oldServices, isolatedInput))
-    if (await approveIsolatedMode(newServices, oldServices, isolatedInput)) {
+  if (!force && shouldRecommendIsolatedMode(newServices, oldServices, envNames, inputIsolated)) {
+    outputLine(formatApproveIsolatedModePrompt(newServices, oldServices, inputIsolated))
+    if (await approveIsolatedMode(newServices, oldServices, inputIsolated)) {
       return { services: newServices, isolated: true }
     }
   }
 
-  return { services, isolated: isolatedInput }
+  return { services: inputServices, isolated: inputIsolated }
 }
 
 
 export const fetchCommand = async (
   {
-    workspace, force, interactive, isolatedInput = false,
+    workspace, force, interactive, inputIsolated = false,
     getApprovedChanges, shouldUpdateConfig,
     inputServices, cliTelemetry, output, fetch, approveIsolatedMode,
   }: FetchCommandArgs): Promise<CliExitCode> => {
@@ -167,11 +167,11 @@ export const fetchCommand = async (
       Prompts.FETCH_UPDATE_WORKSPACE_FAIL
     )(progress))
 
-  const { services, isolated } = await getIsolatedServices(
+  const { services, isolated } = await getRelevantServicesAndIsolatedMode(
     inputServices || currentEnvConfig(workspace.config).services,
     await workspace.state.existingServices(),
     _.keys(workspace.config.envs),
-    isolatedInput,
+    inputIsolated,
     force,
     approveIsolatedMode,
     outputLine
@@ -256,13 +256,13 @@ export const command = (
   telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
-  isolatedInput: boolean,
+  inputIsolated: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}, isolated=${isolatedInput}], environment=${inputEnvironment}, services=${inputServices}`)
+      interactive}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
 
     const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output,
@@ -280,10 +280,10 @@ export const command = (
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
-      isolatedInput: _.isUndefined(isolatedInput) ? false : isolatedInput,
       shouldUpdateConfig: cliShouldUpdateConfig,
       approveIsolatedMode: cliApproveIsolatedMode,
       inputServices,
+      inputIsolated,
     })
   },
 })

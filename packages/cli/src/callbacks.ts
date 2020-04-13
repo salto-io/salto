@@ -174,5 +174,5 @@ export const getEnvName = async (currentName = 'default'): Promise<string> => {
 }
 
 export const cliApproveIsolatedMode = async (): Promise<boolean> => (
-  getUserBooleanInput(Prompts.APPROVE_STRICT_RECOMMENDATION)
+  getUserBooleanInput(Prompts.APPROVE_ISOLATED_RECOMMENDATION)
 )

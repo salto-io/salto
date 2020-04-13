@@ -572,13 +572,13 @@ export const formatApproveIsolatedModePrompt = (
   isolatedInput: boolean
 ): string => {
   if (_.isEmpty(oldServices)) {
-    return Prompts.STRICT_MODE_FOR_NEW_ENV_RECOMMENDATION
+    return Prompts.ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION
   }
   return isolatedInput
-    ? Prompts.STRICT_FOR_NEW_SERVICES_WHEN_NOT_IN_STRICT_MODE_RECOMMENDATION(
+    ? Prompts.NEW_SERVICES_ISOLATED_RECOMMENDATION(
       formatWordsSeries(newServices),
     )
-    : Prompts.STRICT_FOR_NEW_SERVICES_WHEN_IN_STRICT_MODE_RECOMMENDATION(
+    : Prompts.ONLY_NEW_SERVICES_ISOLATED_RECOMMENDATION(
       formatWordsSeries(newServices),
       formatWordsSeries(oldServices)
     )

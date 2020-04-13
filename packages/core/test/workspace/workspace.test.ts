@@ -412,7 +412,7 @@ describe('workspace', () => {
       expect(lead).toBeDefined()
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('foo')
     })
-    it('should update existing parsed blueprints content', () => {
+    it('should update existing parsed Nacl files content', () => {
       const setNaclFile = dirStore.set as jest.Mock
       expect(setNaclFile.mock.calls[0][0].buffer).toMatch(/base_field\s+{\s+_default = "foo"/s)
     })

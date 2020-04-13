@@ -27,8 +27,8 @@ describe('Test go to definitions', () => {
   ): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
 
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps/`)
-    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.bp')))
+    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls/`)
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.nacl')))
   })
 
   it('should give all fields usages of a type', async () => {

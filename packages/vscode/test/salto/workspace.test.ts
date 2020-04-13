@@ -86,7 +86,7 @@ describe('workspace', () => {
     expect(lastValid).not.toEqual(workspace)
   })
 
-  it('should not allow to update blueprints before all pending operations are done', async () => {
+  it('should not allow to update Nacl files before all pending operations are done', async () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
     workspace.setNaclFiles({ filename: 'new', buffer: 'new content' })
     await expect(workspace.updateNaclFiles([])).rejects.toThrow()

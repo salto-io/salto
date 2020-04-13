@@ -15,8 +15,10 @@
 */
 import { NodeCli } from '@oracle/suitecloud-sdk'
 import { decorators } from '@salto-io/lowerdash'
+import { Values } from '@salto-io/adapter-api'
 import xmlConverter, { Element as XmlElement } from 'xml-js'
 import path from 'path'
+import os from 'os'
 import { readDir, readFile, writeFile } from './file'
 
 const {
@@ -25,16 +27,29 @@ const {
 } = NodeCli
 
 export type Credentials = {
+  accountId: string
+  tokenId: string
+  tokenSecret: string
 }
 
 export type NetsuiteClientOpts = {
   credentials: Credentials
 }
 
-// todo
-const rootCLIPath = `${__dirname}/../../../../../node_modules/@oracle/suitecloud-sdk/packages/node-cli/src`
-// todo
-const baseExecutionPath = '/tmp'
+const COMMANDS = {
+  CREATE_PROJECT: 'project:create',
+  SETUP_ACCOUNT: 'account:setup',
+  IMPORT_OBJECTS: 'object:import',
+  DEPLOY_PROJECT: 'project:deploy',
+  ADD_PROJECT_DEPENDENCIES: 'project:adddependencies',
+}
+
+const OBJECTS_DIR = 'Objects'
+const SRC_DIR = 'src'
+
+const rootCLIPath = path.normalize(path.join(__dirname, ...Array(5).fill('..'), 'node_modules',
+  '@oracle', 'suitecloud-sdk', 'packages', 'node-cli', 'src'))
+const baseExecutionPath = os.tmpdir()
 
 export const convertToSingleXmlElement = (xmlContent: string): XmlElement => {
   const topLevelXmlElements = xmlConverter.xml2js(xmlContent)
@@ -46,11 +61,15 @@ export const convertToXmlString = (xmlElement: XmlElement): string =>
 
 export default class NetsuiteClient {
   private projectName?: string
-  private isLoggedIn = false
+  private projectCommandActionExecutor?: NodeCli.CommandActionExecutor
+  private isAccountSetUp = false
+  private readonly credentials: Credentials
+  private readonly authId: string
 
-  constructor({ credentials }: NetsuiteClientOpts) { // todo
-    // eslint-disable-next-line no-console
-    console.log(credentials)
+  constructor({ credentials }: NetsuiteClientOpts) {
+    this.credentials = credentials
+    // todo modify to tokenId.substring(0, 10) once doing retry on existing authId
+    this.authId = String(Date.now()).substring(8)
   }
 
   static validateCredentials(_credentials: Credentials): Promise<void> { // todo
@@ -71,35 +90,19 @@ export default class NetsuiteClient {
     })
   }
 
-  private async ensureHasProject(): Promise<void> {
-    if (!this.projectName) {
-      this.projectName = await NetsuiteClient.createProject()
-    }
-  }
-
-  private static requiresProject = decorators.wrapMethodWith(
-    async function withProject(
-      this: NetsuiteClient,
-      originalMethod: decorators.OriginalCall
-    ): Promise<unknown> {
-      await this.ensureHasProject()
-      return originalMethod.call()
-    }
-  )
-
-  private async ensureLoggedIn(): Promise<void> {
-    if (!this.isLoggedIn) {
+  private async ensureAccountIsSetUp(): Promise<void> {
+    if (!this.isAccountSetUp) {
       await this.setupAccount()
-      this.isLoggedIn = true
+      this.isAccountSetUp = true
     }
   }
 
-  private static requiresLogin = decorators.wrapMethodWith(
-    async function withLogin(
+  private static requiresSetupAccount = decorators.wrapMethodWith(
+    async function withSetupAccount(
       this: NetsuiteClient,
       originalMethod: decorators.OriginalCall
     ): Promise<unknown> {
-      await this.ensureLoggedIn()
+      await this.ensureAccountIsSetUp()
       return originalMethod.call()
     }
   )
@@ -107,7 +110,7 @@ export default class NetsuiteClient {
   private static async createProject(): Promise<string> {
     const projectName = `TempProject${String(Date.now()).substring(8)}`
     await NetsuiteClient.initCommandActionExecutor(baseExecutionPath).executeAction({
-      commandName: 'project:create',
+      commandName: COMMANDS.CREATE_PROJECT,
       runInInteractiveMode: false,
       arguments: {
         projectname: projectName,
@@ -118,32 +121,71 @@ export default class NetsuiteClient {
     return projectName
   }
 
-  @NetsuiteClient.requiresProject
-  private async setupAccount(): Promise<void> {
-    // todo implement after https://github.com/oracle/netsuite-suitecloud-sdk/issues/81
-    // eslint-disable-next-line no-console
-    console.log(this)
+  private async executeProjectAction(commandName: string, commandArguments: Values): Promise<void> {
+    if (!this.projectName) {
+      this.projectName = await NetsuiteClient.createProject()
+    }
+
+    if (!this.projectCommandActionExecutor) {
+      this.projectCommandActionExecutor = NetsuiteClient
+        .initCommandActionExecutor(`${this.getProjectPath()}`)
+    }
+
+    await this.projectCommandActionExecutor.executeAction({
+      commandName,
+      runInInteractiveMode: false,
+      arguments: commandArguments,
+    })
   }
 
-  @NetsuiteClient.requiresLogin
-  async listCustomObjects(): Promise<XmlElement[]> {
-    // todo import objects using SDF & read the folder content
-    // eslint-disable-next-line no-console
-    console.log(this) // temp: must use 'this' in class method
+  private async setupAccount(): Promise<void> {
+    // Todo: use the correct implementation and not Salto's temporary solution after:
+    //  https://github.com/oracle/netsuite-suitecloud-sdk/issues/81 is resolved
+    await this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
+      authid: this.authId,
+      accountid: this.credentials.accountId,
+      tokenid: this.credentials.tokenId,
+      tokensecret: this.credentials.tokenSecret,
+    })
+  }
 
-    const fetchDirPath = `${__dirname}/../../../src/client/fetch_results_examples`
-    const dirContent = await readDir(fetchDirPath)
+  @NetsuiteClient.requiresSetupAccount
+  async listCustomObjects(): Promise<XmlElement[]> {
+    await this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
+      destinationfolder: `${path.sep}${OBJECTS_DIR}`,
+      type: 'ALL',
+      scriptid: 'ALL',
+      excludefiles: true,
+    })
+
+    const objectsDirPath = this.getObjectsDirPath()
+    const dirContent = await readDir(objectsDirPath)
     return Promise.all(dirContent.map(async filename => {
-      const xmlContent = await readFile(path.resolve(fetchDirPath, filename))
+      const xmlContent = await readFile(path.resolve(objectsDirPath, filename))
       return convertToSingleXmlElement(xmlContent)
     }))
   }
 
-  @NetsuiteClient.requiresLogin
-  async deploy(filename: string, xmlElement: XmlElement): Promise<void> {
-    // todo write to the correct file name
-    return writeFile(path.resolve(baseExecutionPath, this.projectName as string, `${filename}.xml`),
-      convertToXmlString(xmlElement))
-    // todo run deploy command
+  private getObjectsDirPath(): string {
+    return path.resolve(this.getProjectPath(), SRC_DIR, OBJECTS_DIR)
+  }
+
+  private getProjectPath(): string {
+    return path.resolve(baseExecutionPath, this.projectName as string)
+  }
+
+  @NetsuiteClient.requiresSetupAccount
+  async deployCustomObject(filename: string, xmlElement: XmlElement): Promise<void> {
+    await this.deploy(path.resolve(this.getObjectsDirPath(), `${filename}.xml`), xmlElement)
+  }
+
+  private async deploy(filePath: string, xmlElement: XmlElement): Promise<void> {
+    await writeFile(filePath, convertToXmlString(xmlElement))
+    await this.addProjectDependencies()
+    await this.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {})
+  }
+
+  private async addProjectDependencies(): Promise<void> {
+    return this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {})
   }
 }

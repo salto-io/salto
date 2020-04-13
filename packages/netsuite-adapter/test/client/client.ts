@@ -18,6 +18,9 @@ import NetsuiteClient from '../../src/client/client'
 const mockClient = (): NetsuiteClient =>
   new NetsuiteClient({
     credentials: {
+      accountId: 'dummyAccountId',
+      tokenId: 'dummyTokenId',
+      tokenSecret: 'dummyTokenSecret',
     },
   })
 

@@ -130,8 +130,7 @@ describe('api.ts', () => {
       expect(mockedFetchChanges).toHaveBeenCalled()
     })
     it('should override state', () => {
-      expect(mockedState.remove).toHaveBeenCalledWith(stateElements)
-      expect(mockedState.set).toHaveBeenCalledWith(fetchedElements)
+      expect(mockedState.override).toHaveBeenCalledWith(fetchedElements)
     })
 
     it('should call flush', () => {

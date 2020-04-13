@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { Element, isInstanceElement, isObjectType, Values, ObjectType, TypeElement, isListType } from '@salto-io/adapter-api'
-import HubspotClient from 'src/client/client'
+import { Owner } from 'src/client/types'
 import { Types } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 
@@ -25,20 +25,24 @@ const isUserIdentifierType = (type: TypeElement): boolean =>
 const convertUserIdentifiers = (
   objectType: ObjectType,
   values: Values,
-  client: HubspotClient
+  ownersMap: Map<number, string>
 ): void => {
   _.values(objectType.fields)
     .forEach(field => {
       const fieldType = field.type
       const currentValue = values[field.name]
+      if (_.isUndefined(currentValue)) {
+        return
+      }
       if (isUserIdentifierType(fieldType)) {
         if (!Number.isNaN(Number(currentValue))) {
-          values[field.name] = client.getOwnerById(currentValue)
+          values[field.name] = ownersMap.get(Number(currentValue))
+            ? ownersMap.get(Number(currentValue)) : currentValue
           return
         }
       }
       if (isObjectType(fieldType)) {
-        convertUserIdentifiers(fieldType, currentValue, client)
+        convertUserIdentifiers(fieldType, currentValue, ownersMap)
         return
       }
       if (isListType(fieldType)) {
@@ -46,33 +50,42 @@ const convertUserIdentifiers = (
         if (isUserIdentifierType(objectInnerType)) {
           let valuesArray: string[]
           if (_.isArray(currentValue)) {
-            // TODO: Add check all are string/number?
             valuesArray = currentValue
           } else if (_.isString(currentValue)) {
             valuesArray = currentValue.split(',').map(vals => vals.trim())
           } else {
             valuesArray = []
           }
-          values[field.name] = valuesArray.map(client.getOwnerById)
+          values[field.name] = valuesArray.map(val => {
+            if (Number.isNaN(Number(val)) || val === '') {
+              return val
+            }
+            return ownersMap.get(Number(val)) || val
+          })
           return
         }
         if (isObjectType(objectInnerType)) {
           const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
           valuesArray.forEach(val => {
-            convertUserIdentifiers(objectInnerType, val, client)
+            convertUserIdentifiers(objectInnerType, val, ownersMap)
           })
         }
       }
     })
 }
 
+const createOwnersMap = (ownersRes: Owner[]): Map<number, string> =>
+  new Map(ownersRes.map((ownerRes): [number, string] => [ownerRes.activeUserId, ownerRes.email]))
+
 const filterCreator: FilterCreator = ({ client }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
+    const owners = await client.getOwners()
+    const ownersMap = createOwnersMap(owners)
     elements
       .filter(isInstanceElement)
       .filter(instance => isObjectType(instance.type))
       .forEach(instance => {
-        convertUserIdentifiers(instance.type, instance.value, client)
+        convertUserIdentifiers(instance.type, instance.value, ownersMap)
       })
   },
 })

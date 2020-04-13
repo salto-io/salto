@@ -90,7 +90,7 @@ describe('useridentifier filter test', () => {
       },
     }
   )
-  const getOwnerById = (id: number | string): RequestPromise => {
+  const getOwnerById = async (id: number | string): Promise<RequestPromise> => {
     switch (id) {
       case '12':
         return 'a@b.com' as unknown as RequestPromise
@@ -102,6 +102,20 @@ describe('useridentifier filter test', () => {
         return '' as unknown as RequestPromise
     }
   }
+
+  const getOwners = async (): Promise<RequestPromise> => [
+    {
+      activeUserId: 12,
+      email: 'a@b.com',
+    },
+    {
+      activeUserId: 34,
+      email: 'c@d.com',
+    },
+    {
+      activeUserId: 56,
+      email: 'e@f.com',
+    }] as unknown as RequestPromise
   let objectInstance: InstanceElement
   let instanceValues: Values
   beforeEach(() => {
@@ -138,6 +152,7 @@ describe('useridentifier filter test', () => {
     )
     const { client } = mockClient()
     client.getOwnerById = jest.fn().mockImplementation(getOwnerById)
+    client.getOwners = jest.fn().mockImplementation(getOwners)
     filter = filterCreator({ client })
     filter.onFetch([objectInstance])
   })
@@ -189,4 +204,9 @@ describe('useridentifier filter test', () => {
   it('should convert to user identifier list when value is string inside a list of object fields', () => {
     expect(objectInstance.value.listOfObjField[0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com'])
   })
+
+  // TODO:
+  // 1. Actual number
+  // 2. Number that does not exist in the map
+  // 3. Non-number (email)
 })

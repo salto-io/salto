@@ -477,16 +477,22 @@ export interface MarketingEmail extends HubspotMetadata {
 export interface Owner {
     portalId: number
     ownerId: number
+    activeUserId: number
     type: string
     firstName: string
     lastName: string
     email: string
     createdAt: number
     updatedAt: number
+    hasContactsAccess: boolean
+    userIdIncludingInactive: number
+    activeSalesforceId: number
     remoteList: RemoteList[]
+    isActive: boolean
 }
 
 interface RemoteList {
+  id: number
   portalId: number
   ownerId: number
   remoteId: string

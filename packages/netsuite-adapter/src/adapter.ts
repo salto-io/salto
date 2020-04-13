@@ -100,6 +100,6 @@ export default class NetsuiteAdapter {
 
   private async addOrUpdateCustomTypeInstance(instance: InstanceElement): Promise<void> {
     const xmlElement = createXmlElement(instance)
-    return this.client.deploy(instance.value[SCRIPT_ID], xmlElement)
+    return this.client.deployCustomObject(instance.value[SCRIPT_ID], xmlElement)
   }
 }

@@ -61,12 +61,12 @@ describe('Adapter', () => {
 
     beforeEach(() => {
       instance = origInstance.clone()
-      client.deploy = jest.fn().mockImplementation(() => Promise.resolve())
+      client.deployCustomObject = jest.fn().mockImplementation(() => Promise.resolve())
     })
     describe('add', () => {
       it('should add instance', async () => {
         const post = await netsuiteAdapter.add(instance)
-        expect(client.deploy)
+        expect(client.deployCustomObject)
           .toHaveBeenCalledWith('custentity_my_script_id', createXmlElement(instance))
         expect(post).toEqual(instance)
       })
@@ -75,7 +75,7 @@ describe('Adapter', () => {
         delete instance.value[SCRIPT_ID]
         const post = await netsuiteAdapter.add(instance)
         expect(post.value[SCRIPT_ID]).toEqual('custentity_elementname')
-        expect(client.deploy)
+        expect(client.deployCustomObject)
           .toHaveBeenCalledWith('custentity_elementname', createXmlElement(instance))
       })
 
@@ -89,7 +89,7 @@ describe('Adapter', () => {
     describe('update', () => {
       it('should update instance', async () => {
         const post = await netsuiteAdapter.update(instance, instance.clone())
-        expect(client.deploy)
+        expect(client.deployCustomObject)
           .toHaveBeenCalledWith('custentity_my_script_id', createXmlElement(instance))
         expect(post).toEqual(instance)
       })
@@ -98,7 +98,7 @@ describe('Adapter', () => {
         const after = instance.clone()
         after.value[SCRIPT_ID] = 'modified'
         await expect(netsuiteAdapter.update(instance, after)).rejects.toThrow()
-        expect(client.deploy).not.toHaveBeenCalled()
+        expect(client.deployCustomObject).not.toHaveBeenCalled()
       })
 
       it('should throw error when trying to update a non custom type instance', async () => {

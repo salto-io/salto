@@ -141,7 +141,7 @@ describe('services command', () => {
         })
 
         it('should print configured services', async () => {
-          expect(cliOutput.stdout.content).toContain('hubspot is configured in this workspace')
+          expect(cliOutput.stdout.content).toContain('hubspot is configured in this environment')
         })
       })
 
@@ -151,7 +151,7 @@ describe('services command', () => {
         })
 
         it('should print configured services', async () => {
-          expect(cliOutput.stdout.content).toContain('notConfigured is not configured in this workspace')
+          expect(cliOutput.stdout.content).toContain('notConfigured is not configured in this environment')
         })
       })
       describe('Environment flag', () => {
@@ -192,7 +192,7 @@ describe('services command', () => {
         })
 
         it('should print already added', async () => {
-          expect(cliOutput.stderr.content).toContain('salesforce was already added to this workspace')
+          expect(cliOutput.stderr.content).toContain('salesforce was already added to this environment')
         })
       })
 
@@ -202,7 +202,7 @@ describe('services command', () => {
         })
 
         it('should print added', async () => {
-          expect(cliOutput.stdout.content).toContain('added to the workspace')
+          expect(cliOutput.stdout.content).toContain('added to the environment')
         })
 
         it('should print please enter credentials', async () => {
@@ -296,7 +296,7 @@ describe('services command', () => {
         })
 
         it('should print not configured', () => {
-          expect(cliOutput.stderr.content).toContain('notConfigured is not configured in this workspace')
+          expect(cliOutput.stderr.content).toContain('notConfigured is not configured in this environment')
         })
       })
 

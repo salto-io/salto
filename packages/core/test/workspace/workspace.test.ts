@@ -533,10 +533,10 @@ describe('workspace', () => {
     })
     it('should return nonexistent when the state does not exist', async () => {
       const ws = await createWorkspace()
-      ws.state().getUpdateDate = jest.fn().mockImplementation(() => Promise.resolve(null))
+      ws.state().getUpdateDate = jest.fn().mockImplementation(() => Promise.resolve(undefined))
       const recency = await ws.getStateRecency()
       expect(recency.status).toBe('Nonexistent')
-      expect(recency.date).toBe(null)
+      expect(recency.date).toBe(undefined)
     })
   })
 

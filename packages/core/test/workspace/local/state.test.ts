@@ -134,17 +134,17 @@ describe('local state', () => {
 
   describe('getUpdateDate', () => {
     const mockExists = exists as jest.Mock
-    it('should return null when the state does not exist', async () => {
+    it('should return undefined when the state does not exist', async () => {
       mockExists.mockResolvedValueOnce(false)
       const state = localState('filename')
       const date = await state.getUpdateDate()
-      expect(date).toBe(null)
+      expect(date).toBe(undefined)
     })
-    it('should return null when the updated date is not set', async () => {
+    it('should return undefined when the updated date is not set', async () => {
       mockExists.mockResolvedValueOnce(true)
       const state = localState('filename')
       const date = await state.getUpdateDate()
-      expect(date).toBe(null)
+      expect(date).toBe(undefined)
     })
     it('should return the modification date of the state', async () => {
       mockExists.mockResolvedValueOnce(true)

@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
 import { exists, readTextFile, replaceContents, mkdirp } from '../../file'
-import * as elementSerializer from '../../serializer/elements'
+import { serialize, deserialize } from '../../serializer/elements'
 import State from '../state'
 
 const { makeArray } = collections.array
@@ -31,7 +31,7 @@ const log = logger(module)
 type StateData = {
   elements: ElementMap
   // The date of the last fetch
-  updateDate: Date | null
+  updateDate: Date | undefined
 }
 
 export const localState = (filePath: string): State => {
@@ -41,12 +41,12 @@ export const localState = (filePath: string): State => {
   const loadFromFile = async (): Promise<StateData> => {
     const text = await exists(filePath) ? await readTextFile(filePath) : undefined
     if (text === undefined) {
-      return { elements: {}, updateDate: null }
+      return { elements: {}, updateDate: undefined }
     }
     const [elementsData, updateDateData] = text.split(EOL)
-    const deserializedElements = elementSerializer.deserialize(elementsData).map(flattenElementStr)
+    const deserializedElements = deserialize(elementsData).map(flattenElementStr)
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
-    const updateDate = updateDateData ? new Date(updateDateData) : null
+    const updateDate = updateDateData ? new Date(updateDateData) : undefined
     log.debug(`loaded state [#elements=${elements.length}]`)
     return { elements, updateDate }
   }
@@ -88,13 +88,13 @@ export const localState = (filePath: string): State => {
       }
       const { elements: elementsMap, updateDate } = (await stateData())
       const elements = Object.values(elementsMap)
-      const elementsString = elementSerializer.serialize(Object.values(elements))
-      const dateString = updateDate === null ? '' : `${EOL}${updateDate.toISOString()}`
+      const elementsString = serialize(Object.values(elements))
+      const dateString = updateDate === undefined ? '' : `${EOL}${updateDate.toISOString()}`
       const stateText = `${elementsString}${dateString}`
       await mkdirp(path.dirname(filePath))
       await replaceContents(filePath, stateText)
       log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
     },
-    getUpdateDate: async (): Promise<Date | null> => (await stateData()).updateDate,
+    getUpdateDate: async (): Promise<Date | undefined> => (await stateData()).updateDate,
   }
 }

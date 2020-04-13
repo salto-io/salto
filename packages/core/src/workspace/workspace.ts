@@ -74,7 +74,7 @@ export class NoWorkspaceConfig extends Error {
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
 export type StateRecency = {
   status: RecencyStatus
-  date: Date | null
+  date: Date | undefined
 }
 
 export type Workspace = {
@@ -281,7 +281,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
         || DEFAULT_STALE_STATE_THRESHOLD_MINUTES) * 60 * 1000
       const date = await state().getUpdateDate()
       const status = (() => {
-        if (date === null) {
+        if (date === undefined) {
           return 'Nonexistent'
         }
         if (Date.now() - date.getTime() >= staleStateThresholdMs) {

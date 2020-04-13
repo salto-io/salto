@@ -136,7 +136,7 @@ describe('workspace', () => {
 
     it('prints that the state does not exist', async () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: null, status: 'Nonexistent' }
+        { date: undefined, status: 'Nonexistent' }
       )
       await loadWorkspace('', cliOutput, { force: true, printStateRecency: true, spinnerCreator: () => spinner })
       expect(cliOutput.stdout.content).toContain('unknown')

@@ -48,7 +48,7 @@ type RawFieldData = {
   boolean?: string[]
 }
 
-type RawMissingFieldData = {
+export type RawMissingFieldData = {
   id: string
   fields: RawFieldData[]
 }
@@ -102,7 +102,7 @@ const generateFields = (rawFieldsData: RawFieldData[]): FieldData[] => (
 
 const generateId = (idName: string): ElemID => new ElemID(SALESFORCE, idName)
 
-const generateAllMissingFields = (
+export const generateAllMissingFields = (
   rawMissingFieldsData: RawMissingFieldData[]
 ): MissingFieldData[] =>
   rawMissingFieldsData.map(rawMissingFieldData => ({

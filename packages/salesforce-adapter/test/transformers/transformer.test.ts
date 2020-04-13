@@ -45,12 +45,14 @@ import {
   CUSTOM_OBJECT,
   VALUE_SET_FIELDS,
   SUBTYPES_PATH,
-  INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
+  INSTANCE_FULL_NAME_FIELD, DESCRIPTION, TYPES_PATH,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import mockClient from '../client'
 import { createValueSetEntry } from '../utils'
+import { MissingTypes, MissingSubTypes } from '../constants'
+
 
 const { makeArray } = collections.array
 
@@ -1268,6 +1270,22 @@ describe('transformer', () => {
         const elemId: ElemID = Types.getElemId(key, false, undefined)
         expect(elemId.name).toEqual(METADATA_TYPES_TO_RENAME.get(key))
       })
+    })
+  })
+  describe('Adding missing types and missing subtypes', () => {
+    it('Should overlap completely - missing types', () => {
+      const testMissingTypes = _.toArray(
+        _.mapValues(MissingTypes.getAllMissingTypes(), (name, typeRecords) =>
+          Types.generateType(typeRecords, name, TYPES_PATH))
+      )
+      expect(Types.getAllMissingTypes()).toEqual(testMissingTypes)
+    })
+    it('Should overlap completely - missing subtypes', () => {
+      const testMissingSubTypes = _.toArray(
+        _.mapValues(MissingSubTypes.getAllMissingSubTypes(), (name, typeRecords) =>
+          Types.generateType(typeRecords, name, SUBTYPES_PATH))
+      )
+      expect(Types.getAllMissingSubTypes()).toEqual(testMissingSubTypes)
     })
   })
 })

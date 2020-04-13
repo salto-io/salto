@@ -766,47 +766,31 @@ export class Types {
     })
   }
 
-  private static generateFields = (
+  private static fieldMap = (
     types: Record<string, PrimitiveType>, parentId: ElemID
-  ): Record<string, TypeField> => {
-    const fields: Record<string, TypeField> = {}
-    const names = Object.keys(types)
-    const fieldTypes = Object.values(types)
-    for (let i = 0; i < names.length; i += 1) {
-      fields[names[i]] = new TypeField(parentId, names[i], fieldTypes[i])
-    }
-    return fields
-  }
+  ): Record<string, TypeField> => _.mapValues(
+    types, (type, name) => new TypeField(parentId, name, type)
+  )
 
-  private static generateType = (
-    typeName: string, type: Record<string, PrimitiveType>, typePath: string
+  static generateType = (
+    typeName: string, fieldTypes: Record<string, PrimitiveType>, typePath: string
   ): TypeElement => {
     const typeId = new ElemID(SALESFORCE, typeName)
     return new ObjectType({
       elemID: typeId,
       path: [SALESFORCE, typePath, typeName],
-      fields: Types.generateFields(type, typeId),
+      fields: Types.fieldMap(fieldTypes, typeId),
     })
   }
 
   static getAllMissingTypes(): TypeElement[] {
-    const allMissingTypes: TypeElement[] = []
-    const names = Object.keys(MissingTypes.getAllMissingTypes())
-    const typeRecords = Object.values(MissingTypes.getAllMissingTypes())
-    for (let i = 0; i < names.length; i += 1) {
-      allMissingTypes.push(Types.generateType(names[i], typeRecords[i], TYPES_PATH))
-    }
-    return allMissingTypes
+    return _.toArray(_.mapValues(MissingTypes.getAllMissingTypes(), (name, typeRecords) =>
+      Types.generateType(typeRecords, name, TYPES_PATH)))
   }
 
   static getAllMissingSubTypes(): TypeElement[] {
-    const allMissingTypes: TypeElement[] = []
-    const names = Object.keys(MissingSubTypes.getAllMissingSubTypes())
-    const typeRecords = Object.values(MissingSubTypes.getAllMissingSubTypes())
-    for (let i = 0; i < names.length; i += 1) {
-      allMissingTypes.push(Types.generateType(names[i], typeRecords[i], SUBTYPES_PATH))
-    }
-    return allMissingTypes
+    return _.toArray(_.mapValues(MissingSubTypes.getAllMissingSubTypes(), (name, typeRecords) =>
+      Types.generateType(typeRecords, name, SUBTYPES_PATH)))
   }
 
   static getAnnotationTypes(): TypeElement[] {

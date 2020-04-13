@@ -34,7 +34,7 @@ describe('configs', () => {
     field2: 'test3',
   })
 
-  const dumpedConfig = { filename: `${adapter}.bp`, buffer: dumpElements([config]) }
+  const dumpedConfig = { filename: `${adapter}.nacl`, buffer: dumpElements([config]) }
   const mockSet = jest.fn()
   const mockGet = jest.fn()
   const mockFlush = jest.fn()

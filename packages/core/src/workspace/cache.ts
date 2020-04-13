@@ -21,7 +21,7 @@ import { DirectoryStore } from './dir_store'
 
 const log = logger(module)
 
-const CACHE_EXTENSION = '.bpc'
+const CACHE_EXTENSION = '.json'
 
 type AsyncCache<K, V> = {
   get(key: K): Promise<V | undefined>
@@ -38,7 +38,7 @@ export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> &
 
 export const parseResultCache = (dirStore: DirectoryStore): ParseResultCache => {
   const resolveCacheFileName = (key: ParseResultKey): string =>
-    _.replace(key.filename, /.bp$/, CACHE_EXTENSION)
+    _.replace(key.filename, /.nacl$/, CACHE_EXTENSION)
 
   return {
     put: async (key: ParseResultKey, value: ParseResult): Promise<void> =>

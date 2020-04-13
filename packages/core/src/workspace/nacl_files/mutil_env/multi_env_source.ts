@@ -23,7 +23,7 @@ import wu from 'wu'
 import { mergeElements, MergeError } from '../../../core/merger'
 import { DetailedChange } from '../../../core/plan'
 import { routeChanges } from './routers'
-import { BlueprintsSource, Blueprint, RoutingMode } from '../blueprints_source'
+import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
 import { Errors } from '../../errors'
 
 export class UnknownEnviornmentError extends Error {
@@ -47,20 +47,20 @@ type MultiEnvState = {
 }
 
 const buildMultiEnvSource = (
-  sources: Record<string, BlueprintsSource>,
+  sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
   initState?: Promise<MultiEnvState>
-): BlueprintsSource => {
+): NaclFilesSource => {
   let state: Promise<MultiEnvState>
 
-  const primarySource = (): BlueprintsSource => sources[primarySourceName]
-  const commonSource = (): BlueprintsSource => sources[commonSourceName]
-  const secondarySources = (): Record<string, BlueprintsSource> => (
+  const primarySource = (): NaclFilesSource => sources[primarySourceName]
+  const commonSource = (): NaclFilesSource => sources[commonSourceName]
+  const secondarySources = (): Record<string, NaclFilesSource> => (
     _.omit(sources, [primarySourceName, commonSourceName])
   )
 
-  const getActiveSources = (): Record<string, BlueprintsSource> => ({
+  const getActiveSources = (): Record<string, NaclFilesSource> => ({
     [primarySourceName]: sources[primarySourceName],
     [commonSourceName]: sources[commonSourceName],
   })
@@ -78,7 +78,7 @@ const buildMultiEnvSource = (
 
   state = initState || buildMutiEnvState()
 
-  const getSourcePrefixForBlueprint = (fullName: string): string | undefined => {
+  const getSourcePrefixForNaclFile = (fullName: string): string | undefined => {
     const isContained = (relPath: string, basePath: string): boolean => {
       const baseDirParts = basePath.split(path.sep)
       const relPathParts = relPath.split(path.sep)
@@ -89,16 +89,16 @@ const buildMultiEnvSource = (
       .find(srcPrefix => isContained(fullName, srcPrefix))
   }
 
-  const getSourceFromPrefix = (prefix?: string): BlueprintsSource =>
+  const getSourceFromPrefix = (prefix?: string): NaclFilesSource =>
     (prefix && sources[prefix] ? sources[prefix] : commonSource())
 
   const getRelativePath = (fullName: string, prefix?: string): string =>
     (prefix && sources[prefix] ? fullName.slice(prefix.length + 1) : fullName)
 
-  const getSourceForBlueprint = (
+  const getSourceForNaclFile = (
     fullName: string
-  ): {source: BlueprintsSource; relPath: string} => {
-    const prefix = getSourcePrefixForBlueprint(fullName)
+  ): {source: NaclFilesSource; relPath: string} => {
+    const prefix = getSourcePrefixForNaclFile(fullName)
     return { relPath: getRelativePath(fullName, prefix), source: getSourceFromPrefix(prefix) }
   }
 
@@ -106,13 +106,13 @@ const buildMultiEnvSource = (
     path.join(basePath, relPath)
   )
 
-  const getBlueprint = async (filename: string): Promise<Blueprint | undefined> => {
-    const { source, relPath } = getSourceForBlueprint(filename)
-    const bp = await source.getBlueprint(relPath)
-    return bp ? { ...bp, filename } : undefined
+  const getNaclFile = async (filename: string): Promise<NaclFile | undefined> => {
+    const { source, relPath } = getSourceForNaclFile(filename)
+    const naclFile = await source.getNaclFile(relPath)
+    return naclFile ? { ...naclFile, filename } : undefined
   }
 
-  const updateBlueprints = async (
+  const updateNaclFiles = async (
     changes: DetailedChange[],
     mode: RoutingMode = 'default'
   ): Promise<void> => {
@@ -125,10 +125,10 @@ const buildMultiEnvSource = (
     )
     const secondaryChanges = routedChanges.secondarySources || {}
     await Promise.all([
-      primarySource().updateBlueprints(routedChanges.primarySource || []),
-      commonSource().updateBlueprints(routedChanges.commonSource || []),
+      primarySource().updateNaclFiles(routedChanges.primarySource || []),
+      commonSource().updateNaclFiles(routedChanges.commonSource || []),
       ..._.keys(secondaryChanges)
-        .map(srcName => secondarySources()[srcName].updateBlueprints(secondaryChanges[srcName])),
+        .map(srcName => secondarySources()[srcName].updateNaclFiles(secondaryChanges[srcName])),
     ])
     state = buildMutiEnvState()
   }
@@ -142,35 +142,35 @@ const buildMultiEnvSource = (
   }
 
   return {
-    getBlueprint,
-    updateBlueprints,
+    getNaclFile,
+    updateNaclFiles,
     flush,
     list: async (): Promise<ElemID[]> => _.values((await state).elements).map(e => e.elemID),
     get: async (id: ElemID): Promise<Element | Value> => (
       (await state).elements[id.getFullName()]
     ),
     getAll: async (): Promise<Element[]> => _.values((await state).elements),
-    listBlueprints: async (): Promise<string[]> => (
+    listNaclFiles: async (): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => (
-          await source.listBlueprints()).map(p => buidFullPath(prefix, p)))))
+          await source.listNaclFiles()).map(p => buidFullPath(prefix, p)))))
     ),
-    setBlueprints: async (...blueprints: Blueprint[]): Promise<void> => {
-      await Promise.all(Object.entries(_.groupBy(blueprints,
-        bp => getSourcePrefixForBlueprint(bp.filename)))
-        .map(([prefix, sourceBlueprints]) => getSourceFromPrefix(prefix)
-          .setBlueprints(...sourceBlueprints.map(bp =>
-            ({ ...bp, filename: getRelativePath(bp.filename, prefix) })))))
+    setNaclFiles: async (...naclFiles: NaclFile[]): Promise<void> => {
+      await Promise.all(Object.entries(_.groupBy(naclFiles,
+        naclFile => getSourcePrefixForNaclFile(naclFile.filename)))
+        .map(([prefix, sourceNaclFiles]) => getSourceFromPrefix(prefix)
+          .setNaclFiles(...sourceNaclFiles.map(naclFile =>
+            ({ ...naclFile, filename: getRelativePath(naclFile.filename, prefix) })))))
       state = buildMutiEnvState()
     },
-    removeBlueprints: async (...names: string[]): Promise<void> => {
-      await Promise.all(Object.entries(_.groupBy(names, getSourcePrefixForBlueprint))
+    removeNaclFiles: async (...names: string[]): Promise<void> => {
+      await Promise.all(Object.entries(_.groupBy(names, getSourcePrefixForNaclFile))
         .map(([prefix, sourceNames]) => getSourceFromPrefix(prefix)
-          .removeBlueprints(...sourceNames.map(fullName => getRelativePath(fullName, prefix)))))
+          .removeNaclFiles(...sourceNames.map(fullName => getRelativePath(fullName, prefix)))))
       state = buildMutiEnvState()
     },
     getSourceMap: async (filename: string): Promise<SourceMap> => {
-      const { source, relPath } = getSourceForBlueprint(filename)
+      const { source, relPath } = getSourceForNaclFile(filename)
       const sourceMap = await source.getSourceMap(relPath)
       return sourceMap
         ? new Map(wu(sourceMap.entries()).map(([name, ranges]) => [
@@ -217,13 +217,13 @@ const buildMultiEnvSource = (
       }))
     },
     getElements: async (filename: string): Promise<Element[]> => {
-      const { source, relPath } = getSourceForBlueprint(filename)
+      const { source, relPath } = getSourceForNaclFile(filename)
       return source.getElements(relPath) ?? []
     },
-    getElementBlueprints: async (id: ElemID): Promise<string[]> => (
+    getElementNaclFiles: async (id: ElemID): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => (
-          await source.getElementBlueprints(id)).map(p => buidFullPath(prefix, p)))))
+          await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))))
     ),
     clone: () => buildMultiEnvSource(
       _.mapValues(sources, source => source.clone()),
@@ -235,7 +235,7 @@ const buildMultiEnvSource = (
 }
 
 export const multiEnvSource = (
-  sources: Record<string, BlueprintsSource>,
+  sources: Record<string, NaclFilesSource>,
   primarySourceName: string,
   commonSourceName: string,
-): BlueprintsSource => buildMultiEnvSource(sources, primarySourceName, commonSourceName)
+): NaclFilesSource => buildMultiEnvSource(sources, primarySourceName, commonSourceName)

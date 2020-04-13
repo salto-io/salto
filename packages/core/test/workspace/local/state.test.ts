@@ -115,7 +115,7 @@ describe('local state', () => {
     expect(elements).toHaveLength(2)
   })
 
-  it('should throw an error if the state bp is not valid', async () => {
+  it('should throw an error if the state nacl file is not valid', async () => {
     const state = localState('error')
     await expect(state.getAll()).rejects.toThrow()
   })

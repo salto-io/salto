@@ -151,7 +151,7 @@ describe('fetch command', () => {
         hasErrors: () => false,
         elements: () => (elements || []),
         services: () => services,
-        updateBlueprints: jest.fn(),
+        updateNaclFiles: jest.fn(),
         flush: jest.fn(),
         state: () => ({
           existingServices: jest.fn().mockResolvedValue(existingServices),

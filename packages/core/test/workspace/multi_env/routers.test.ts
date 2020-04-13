@@ -16,9 +16,9 @@
 import { ElemID, Field, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { RemovalDiff, ModificationDiff } from '@salto-io/dag'
-import { createMockBlueprintSource } from '../../common/blueprint_source'
+import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { DetailedChange } from '../../../src/core/plan'
-import { routeChanges } from '../../../src/workspace/blueprints/mutil_env/routers'
+import { routeChanges } from '../../../src/workspace/nacl_files/mutil_env/routers'
 
 const objectElemID = new ElemID('salto', 'object')
 const commonField = new Field(objectElemID, 'commonField', BuiltinTypes.STRING)
@@ -50,9 +50,9 @@ const newObj = new ObjectType({
   },
 })
 
-const commonSource = createMockBlueprintSource([commonObj, commonField])
-const envSource = createMockBlueprintSource([envObj, envField])
-const secEnv = createMockBlueprintSource([envObj, envField])
+const commonSource = createMockNaclFileSource([commonObj, commonField])
+const envSource = createMockNaclFileSource([envObj, envField])
+const secEnv = createMockNaclFileSource([envObj, envField])
 
 describe('normal fetch routing', () => {
   it('should route add changes to common', async () => {

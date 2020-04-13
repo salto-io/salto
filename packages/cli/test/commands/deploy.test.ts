@@ -33,10 +33,10 @@ jest.mock('@salto-io/core', () => ({
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
     force = false,
   ) =>
-  // Deploy with blueprints will fail, doing this trick as we cannot reference vars, we get error:
+  // Deploy with Nacl files will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
-  // Notice that blueprints are ignored in mockDeploy.
+  // Notice that Nacl files are ignored in mockDeploy.
 
     mockDeploy(ws, shouldDeploy, reportProgress, [], force)),
 }))

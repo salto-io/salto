@@ -21,7 +21,7 @@ E2E tests need [valid SFDC credentials](../salesforce-adapter/README.md#E2E-test
 
 ### Configuration
 
-When running the first `salto init` command, a configuration file will be created in `$SALTO_HOME/.salto/salto.config/config.bp`.
+When running the first `salto init` command, a configuration file will be created in `$SALTO_HOME/.salto/salto.config/config.nacl`.
 The file includes a unique installation ID (uuidv4) and telemetry settings, and it generally structured as follows:
 
 ```
@@ -70,7 +70,7 @@ Any user can opt-out of sending usage data.
 There are generally two ways of doing so:
 
   1. Setup the `SALTO_TELEMETRY_DISABLE` environment variables value to be `1`
-  2. In the CLI configuration file (`$SALTO_HOME/salto.config/config.bp` by default), set the value of `telemetry` to be `false`.
+  2. In the CLI configuration file (`$SALTO_HOME/salto.config/config.nacl` by default), set the value of `telemetry` to be `false`.
 
 By default, binary releases are generating the configuration file to be populated
 with telemetry enabled, however the environment variable `SALTO_TELEMETRY_DISABLE=1` will always

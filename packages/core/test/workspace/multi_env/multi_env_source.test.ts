@@ -16,8 +16,8 @@
 import path from 'path'
 import { ElemID, Field, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createMockBlueprintSource } from '../../common/blueprint_source'
-import { multiEnvSource } from '../../../src/workspace/blueprints/mutil_env/multi_env_source'
+import { createMockNaclFileSource } from '../../common/nacl_file_source'
+import { multiEnvSource } from '../../../src/workspace/nacl_files/mutil_env/multi_env_source'
 import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/core/validator'
 import { MergeError } from '../../../src/core/merger/internal/common'
@@ -54,14 +54,14 @@ const commonObject = new ObjectType({
     field: new Field(commonElemID, 'field', BuiltinTypes.STRING),
   },
 })
-const commonBlueprints = {
-  'common.bp': [commonObject],
-  'partial.bp': [commonObject],
+const commonNaclFiles = {
+  'common.nacl': [commonObject],
+  'partial.nacl': [commonObject],
 }
 const commonSourceRange = {
   start: { col: 0, line: 0, byte: 0 },
   end: { col: 0, line: 0, byte: 0 },
-  filename: 'common.bp',
+  filename: 'common.nacl',
 }
 const commonErrors = new Errors({
   validation: [] as ValidationError[],
@@ -85,7 +85,7 @@ const envObject = new ObjectType({
 const envSourceRange = {
   start: { col: 0, line: 0, byte: 0 },
   end: { col: 0, line: 0, byte: 0 },
-  filename: 'env.bp',
+  filename: 'env.nacl',
 }
 const envErrors = new Errors({
   validation: [] as ValidationError[],
@@ -98,9 +98,9 @@ const envErrors = new Errors({
     message: 'env error',
   }],
 })
-const envBlueprints = {
-  'env.bp': [envObject],
-  'partial.bp': [envObject],
+const envNaclFiles = {
+  'env.nacl': [envObject],
+  'partial.nacl': [envObject],
 }
 const inactiveElemID = new ElemID('salto', 'inactive')
 const inactiveObject = new ObjectType({
@@ -109,14 +109,14 @@ const inactiveObject = new ObjectType({
     field: new Field(inactiveElemID, 'field', BuiltinTypes.STRING),
   },
 })
-const inactiveBlueprints = {
-  'inenv.bp': [inactiveObject],
-  'partial.bp': [inactiveObject],
+const inactiveNaclFiles = {
+  'inenv.nacl': [inactiveObject],
+  'partial.nacl': [inactiveObject],
 }
 const inactiveSourceRange = {
   start: { col: 0, line: 0, byte: 0 },
   end: { col: 0, line: 0, byte: 0 },
-  filename: 'inenv.bp',
+  filename: 'inenv.nacl',
 }
 const inactiveErrors = new Errors({
   validation: [] as ValidationError[],
@@ -129,21 +129,21 @@ const inactiveErrors = new Errors({
     message: 'inactive error',
   }],
 })
-const commonSource = createMockBlueprintSource(
+const commonSource = createMockNaclFileSource(
   [commonObject, commonFragment],
-  commonBlueprints,
+  commonNaclFiles,
   commonErrors,
   [commonSourceRange]
 )
-const envSource = createMockBlueprintSource(
+const envSource = createMockNaclFileSource(
   [envObject, envFragment],
-  envBlueprints,
+  envNaclFiles,
   envErrors,
   [envSourceRange]
 )
-const inactiveSource = createMockBlueprintSource(
+const inactiveSource = createMockNaclFileSource(
   [inactiveObject, inactiveFragment],
-  inactiveBlueprints,
+  inactiveNaclFiles,
   inactiveErrors,
   [inactiveSourceRange]
 )
@@ -159,21 +159,21 @@ const sources = {
 const source = multiEnvSource(sources, activePrefix, commonPrefix)
 
 describe('multi env source', () => {
-  describe('getBlueprint', () => {
-    it('should return a blueprint from an env', async () => {
-      const relPath = 'env.bp'
+  describe('getNaclFile', () => {
+    it('should return a Nacl file from an env', async () => {
+      const relPath = 'env.nacl'
       const fullPath = path.join(activePrefix, relPath)
-      const bp = await source.getBlueprint(fullPath)
-      expect(bp).toBeDefined()
-      expect(bp?.filename).toEqual(fullPath)
-      expect(await source.getBlueprint(relPath)).not.toBeDefined()
+      const naclFile = await source.getNaclFile(fullPath)
+      expect(naclFile).toBeDefined()
+      expect(naclFile?.filename).toEqual(fullPath)
+      expect(await source.getNaclFile(relPath)).not.toBeDefined()
     })
-    it('should return a blueprint from the common env', async () => {
-      const relPath = 'common.bp'
+    it('should return a Nacl file from the common env', async () => {
+      const relPath = 'common.nacl'
       const fullPath = path.join(commonPrefix, relPath)
-      const bp = await source.getBlueprint(fullPath)
-      expect(bp).toBeDefined()
-      expect(bp?.filename).toEqual(fullPath)
+      const naclFile = await source.getNaclFile(fullPath)
+      expect(naclFile).toBeDefined()
+      expect(naclFile?.filename).toEqual(fullPath)
     })
   })
   describe('update', () => {
@@ -244,54 +244,54 @@ describe('multi env source', () => {
       })
     })
   })
-  describe('listBlueprints', () => {
-    it('shoud list all blueprints', async () => {
-      const bps = await source.listBlueprints()
-      expect(bps).toHaveLength(4)
-      expectToContainAllItems(bps, [
-        ..._.keys(commonBlueprints),
-        ..._.keys(envBlueprints).map(p => path.join(activePrefix, p)),
+  describe('listNaclFiles', () => {
+    it('shoud list all Nacl files', async () => {
+      const naclFiles = await source.listNaclFiles()
+      expect(naclFiles).toHaveLength(4)
+      expectToContainAllItems(naclFiles, [
+        ..._.keys(commonNaclFiles),
+        ..._.keys(envNaclFiles).map(p => path.join(activePrefix, p)),
       ])
     })
   })
-  describe('setBlueprints', () => {
-    it('should forward the setBlueprint command to the active source', async () => {
-      const bp = {
-        filename: path.join(activePrefix, 'env.bp'),
+  describe('setNaclFiles', () => {
+    it('should forward the setNaclFile command to the active source', async () => {
+      const naclFile = {
+        filename: path.join(activePrefix, 'env.nacl'),
         buffer: '',
       }
-      await source.setBlueprints(bp)
-      expect(envSource.setBlueprints).toHaveBeenCalled()
+      await source.setNaclFiles(naclFile)
+      expect(envSource.setNaclFiles).toHaveBeenCalled()
     })
 
-    it('should forward the setBlueprint command to the common source', async () => {
-      const bp = {
-        filename: path.join(commonPrefix, 'common.bp'),
+    it('should forward the setNaclFile command to the common source', async () => {
+      const naclFile = {
+        filename: path.join(commonPrefix, 'common.nacl'),
         buffer: '',
       }
-      await source.setBlueprints(bp)
-      expect(commonSource.setBlueprints).toHaveBeenCalled()
+      await source.setNaclFiles(naclFile)
+      expect(commonSource.setNaclFiles).toHaveBeenCalled()
     })
   })
-  describe('removeBlueprints', () => {
-    it('should forward the removeBlueprints command to the active source', async () => {
-      await source.removeBlueprints(path.join(activePrefix, 'env.bp'))
-      expect(envSource.removeBlueprints).toHaveBeenCalled()
+  describe('removeNaclFiles', () => {
+    it('should forward the removeNaclFiles command to the active source', async () => {
+      await source.removeNaclFiles(path.join(activePrefix, 'env.nacl'))
+      expect(envSource.removeNaclFiles).toHaveBeenCalled()
     })
 
-    it('should forward the removeBlueprints command to the common source', async () => {
-      await source.removeBlueprints(path.join(commonPrefix, 'common.bp'))
-      expect(envSource.removeBlueprints).toHaveBeenCalled()
+    it('should forward the removeNaclFiles command to the common source', async () => {
+      await source.removeNaclFiles(path.join(commonPrefix, 'common.nacl'))
+      expect(envSource.removeNaclFiles).toHaveBeenCalled()
     })
   })
   describe('getSourceMap', () => {
     it('should forward the getSourceMap command to the active source', async () => {
-      await source.getSourceMap(path.join(activePrefix, 'env.bp'))
+      await source.getSourceMap(path.join(activePrefix, 'env.nacl'))
       expect(envSource.getSourceMap).toHaveBeenCalled()
     })
 
     it('should forward the getSourceMap command to the common source', async () => {
-      await source.getSourceMap(path.join(commonPrefix, 'common.bp'))
+      await source.getSourceMap(path.join(commonPrefix, 'common.nacl'))
       expect(commonSource.getSourceMap).toHaveBeenCalled()
     })
   })
@@ -302,8 +302,8 @@ describe('multi env source', () => {
       expect(filenames).toHaveLength(2)
 
       expectToContainAllItems(filenames, [
-        path.join(activePrefix, 'env.bp'),
-        path.join(commonPrefix, 'common.bp'),
+        path.join(activePrefix, 'env.nacl'),
+        path.join(commonPrefix, 'common.nacl'),
       ])
     })
   })
@@ -313,19 +313,19 @@ describe('multi env source', () => {
       const filenames = errors.parse.map(e => e.subject.filename)
       expect(filenames).toHaveLength(2)
       expectToContainAllItems(filenames, [
-        path.join(activePrefix, 'env.bp'),
-        path.join(commonPrefix, 'common.bp'),
+        path.join(activePrefix, 'env.nacl'),
+        path.join(commonPrefix, 'common.nacl'),
       ])
     })
   })
   describe('getElements', () => {
     it('should forward the getElements command to the active source', async () => {
-      await source.getSourceMap(path.join(activePrefix, 'env.bp'))
+      await source.getSourceMap(path.join(activePrefix, 'env.nacl'))
       expect(envSource.getSourceMap).toHaveBeenCalled()
     })
 
     it('should forward the getElements command to the common source', async () => {
-      await source.getElements(path.join(commonPrefix, 'common.bp'))
+      await source.getElements(path.join(commonPrefix, 'common.nacl'))
       expect(commonSource.getElements).toHaveBeenCalled()
     })
   })

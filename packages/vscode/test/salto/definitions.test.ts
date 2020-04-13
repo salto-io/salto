@@ -22,16 +22,16 @@ import { mockWorkspace } from './workspace'
 // TODO: enable this
 describe('Test go to definitions', () => {
   let workspace: EditorWorkspace
-  const bpFileName = 'all.bp'
+  const naclFileName = 'all.nacl'
 
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps`)
-    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.bp')))
+    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls`)
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.nacl')))
   })
 
   it('should give a single definition for a type that is defined once', async () => {
     const pos = { line: 40, col: 8 }
-    const ctx = await getPositionContext(workspace, bpFileName, pos)
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
     const token = 'vs.num'
 
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
@@ -41,7 +41,7 @@ describe('Test go to definitions', () => {
 
   it('should give all definitions for a type that is extended', async () => {
     const pos = { line: 86, col: 6 }
-    const ctx = await getPositionContext(workspace, bpFileName, pos)
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
     const token = 'vs.loan'
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(2)
@@ -50,7 +50,7 @@ describe('Test go to definitions', () => {
   // TODO: enable this back
   it('should give the field definition for an instance attr', async () => {
     const pos = { line: 89, col: 8 }
-    const ctx = await getPositionContext(workspace, bpFileName, pos)
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
     const token = 'loaner'
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(1)
@@ -59,7 +59,7 @@ describe('Test go to definitions', () => {
 
   it('should empty list for undefined type', async () => {
     const pos = { line: 74, col: 6 }
-    const ctx = await getPositionContext(workspace, bpFileName, pos)
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
     const token = 'vs.nope'
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(0)

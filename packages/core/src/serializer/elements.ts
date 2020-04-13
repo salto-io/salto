@@ -110,7 +110,7 @@ export const deserialize = (data: string): Element[] => {
     [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
     [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
     [StaticFile.serializedTypeName]: v => new StaticFile(
-      v.bpPath,
+      v.naclFilePath,
       v.relativeFileName,
       v.hash
     ),

@@ -219,7 +219,7 @@ export const TOPICS_FOR_OBJECTS_FIELDS = {
   ENTITY_API_NAME: 'entityApiName',
 }
 
-// BPs path
+// NACL files path
 export const RECORDS_PATH = 'Records'
 export const SETTINGS_PATH = 'Settings'
 export const OBJECTS_PATH = 'Objects'

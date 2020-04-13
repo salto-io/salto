@@ -18,9 +18,9 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag'
-import { createMockBlueprintSource } from '../../common/blueprint_source'
+import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { DetailedChange } from '../../../src/core/plan'
-import { projectChange } from '../../../src/workspace/blueprints/mutil_env/projections'
+import { projectChange } from '../../../src/workspace/nacl_files/mutil_env/projections'
 
 describe('projections', () => {
   const nestedElemID = new ElemID('salto', 'nested')
@@ -169,7 +169,7 @@ describe('projections', () => {
   )
 
   const partialElements = [partialPrimitiveType, partialObjectType, partialInstance, partialField]
-  const source = createMockBlueprintSource(partialElements)
+  const source = createMockNaclFileSource(partialElements)
 
   describe('project instances', () => {
     const newInstance = new InstanceElement(

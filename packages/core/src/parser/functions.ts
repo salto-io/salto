@@ -48,9 +48,9 @@ export const getSystemFunctions = (): Functions => ({
   file: {
     toValue: (funcExp: HclExpression): StaticFile => {
       const [relativeFileName] = funcExp.value.parameters
-      const bpPath = funcExp.source.filename
+      const naclFilePath = funcExp.source.filename
 
-      return new StaticFile(bpPath, relativeFileName)
+      return new StaticFile(naclFilePath, relativeFileName)
     },
     fromValue: (val: Value): FunctionExpression => new FunctionExpression(
       'file',

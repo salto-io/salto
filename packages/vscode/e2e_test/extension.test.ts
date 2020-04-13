@@ -27,7 +27,7 @@ const { copyFile, rm, mkdirp } = file
 // TODO: enable this back - tests fails
 // eslint-disable-next-line jest/no-disabled-tests
 describe.skip('extension e2e', () => {
-  const wsBPs = `${__dirname}/../../e2e_test/test-workspace`
+  const wsNaclFiles = `${__dirname}/../../e2e_test/test-workspace`
   let workspace: EditorWorkspace
   let wsPath: string; let
     homePath: string
@@ -38,11 +38,12 @@ describe.skip('extension e2e', () => {
 
     wsPath = tmp.dirSync().name
     await mkdirp(wsPath)
-    const bps = await readdirp.promise(wsBPs, {
-      fileFilter: '*.bp',
+    const naclFiles = await readdirp.promise(wsNaclFiles, {
+      fileFilter: '*.nacl',
       directoryFilter: e => e.basename[0] !== '.',
     })
-    bps.forEach(bp => { copyFile(bp.fullPath, `${wsPath}/${bp.basename}`) })
+    naclFiles
+      .forEach(naclFile => { copyFile(naclFile.fullPath, `${wsPath}/${naclFile.basename}`) })
 
     workspace = new EditorWorkspace(wsPath, await initLocalWorkspace(wsPath, 'default'))
   })
@@ -54,7 +55,7 @@ describe.skip('extension e2e', () => {
 
   it('should suggest type and instances completions', async () => {
     const pos = { line: 10, col: 0 }
-    const filename = 'extra.bp'
+    const filename = 'extra.nacl'
     const ctx = await getPositionContext(workspace, filename, pos)
     const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, '', pos)
     expect(suggestions.map(s => s.label).sort()).toEqual(
@@ -65,12 +66,12 @@ describe.skip('extension e2e', () => {
 
   it('should diagnostics on errors', async () => {
     const diag = await getDiagnostics(workspace)
-    const err = diag['error.bp'][0]
+    const err = diag['error.nacl'][0]
     expect(err.msg).toContain(
       'Error merging @salto-io/core.complex.instance.inst1: duplicate key str'
     )
     expect(err.severity).toBe('Error')
-    const warn = diag['error.bp'][2]
+    const warn = diag['error.nacl'][2]
     expect(warn.msg).toContain('Invalid value type for @salto-io/core.number')
     expect(warn.severity).toBe('Warning')
   })
@@ -79,18 +80,18 @@ describe.skip('extension e2e', () => {
   it('should give a single definition for a type that is defined in multiple files',
     async () => {
       const pos = { line: 6, col: 9 }
-      const filename = 'extra.bp'
+      const filename = 'extra.nacl'
       const ctx = await getPositionContext(workspace, filename, pos)
       const defs = await provideWorkspaceDefinition(workspace, ctx, '@salto-io/core_complex')
       expect(defs.length).toBe(2)
       expect(defs[0].fullname).toBe('@salto-io/core.complex')
-      expect(defs[0].filename).toBe('complex_type.bp')
+      expect(defs[0].filename).toBe('complex_type.nacl')
       expect(defs[0].range.start.line).toBe(1)
       expect(defs[0].range.start.col).toBe(1)
       expect(defs[0].range.end.line).toBe(9)
       expect(defs[0].range.end.col).toBe(2)
       expect(defs[1].fullname).toBe('@salto-io/core.complex')
-      expect(defs[1].filename).toBe('context.bp')
+      expect(defs[1].filename).toBe('context.nacl')
       expect(defs[1].range.start.line).toBe(18)
       expect(defs[1].range.start.col).toBe(1)
       expect(defs[1].range.end.line).toBe(20)

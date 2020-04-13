@@ -26,13 +26,13 @@ import {
 } from '../../parser/dump'
 
 // Declared again to prevent cyclic dependency
-const BP_EXTENSION = '.bp'
+const FILE_EXTENSION = '.nacl'
 
 export type DetailedChangeWithSource = DetailedChange & { location: SourceRange }
 
 const createFileNameFromPath = (pathParts?: string[]): string =>
   (pathParts
-    ? `${path.join(...pathParts)}${BP_EXTENSION}`
+    ? `${path.join(...pathParts)}${FILE_EXTENSION}`
     : '')
 
 export const getChangeLocations = (
@@ -79,9 +79,9 @@ export const getChangeLocations = (
       }
     }
     // Fallback to using the path from the element itself
-    const bpPath = change.path || getChangeElement(change).path
+    const naclFilePath = change.path || getChangeElement(change).path
     return [{
-      filename: createFileNameFromPath(bpPath),
+      filename: createFileNameFromPath(naclFilePath),
       start: { col: 1, line: 1, byte: 0 },
       end: { col: 1, line: 1, byte: 0 },
     }]
@@ -159,7 +159,7 @@ export const groupAnnotationTypeChanges = (fileChanges: DetailedChangeWithSource
   return [...otherChanges, ...transformedAnnotationTypeChanges]
 }
 
-export const updateBlueprintData = (
+export const updateNaclFileData = (
   currentData: string,
   changes: DetailedChangeWithSource[]
 ): string => {

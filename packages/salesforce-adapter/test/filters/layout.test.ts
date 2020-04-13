@@ -17,7 +17,7 @@ import {
   ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
-  bpCase,
+  naclCase,
 } from '@salto-io/adapter-utils'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
@@ -43,7 +43,7 @@ describe('Test layout filter', () => {
 
       const shortName = 'Test Layout'
       const fullName = `${apiName}-${shortName}`
-      const instName = bpCase(opts.fixedName ? shortName : fullName)
+      const instName = naclCase(opts.fixedName ? shortName : fullName)
       const testLayout = new InstanceElement(
         instName,
         new ObjectType({
@@ -57,7 +57,7 @@ describe('Test layout filter', () => {
       await filter.onFetch(elements)
 
       const instance = elements[1] as InstanceElement
-      expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', bpCase(shortName)))
+      expect(instance.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(shortName)))
       expect(instance.path).toEqual([...testSobjPath.slice(0, -1), 'Layout', instance.elemID.name])
 
       expect(instance.annotations[INSTANCE_ANNOTATIONS.PARENT]).toContainEqual(

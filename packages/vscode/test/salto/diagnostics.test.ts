@@ -31,12 +31,12 @@ describe('diagnostics', () => {
         sourceRange: {
           start: { col: 1, line: 1, byte: 1 },
           end: { col: 2, line: 1, byte: 2 },
-          filename: '/parse_error.bp',
+          filename: '/parse_error.nacl',
         },
       }],
     }))
     const workspace = new EditorWorkspace('bla', baseWs)
-    const diag = (await getDiagnostics(workspace))['/parse_error.bp'][0]
+    const diag = (await getDiagnostics(workspace))['/parse_error.nacl'][0]
     expect(diag).toBeDefined()
     expect(diag.msg).toContain('Blabla')
     expect(diag.severity).toBe('Error')

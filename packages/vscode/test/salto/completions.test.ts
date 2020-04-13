@@ -36,8 +36,8 @@ describe('Test auto complete', () => {
     filename: string,
     pos: Pos
   ): Promise<string> => {
-    const bp = await workspace.getBlueprint(filename)
-    const fullLine = (bp) ? bp.buffer.toString().split('\n')[pos.line - 1] : ''
+    const naclFile = await workspace.getNaclFile(filename)
+    const fullLine = (naclFile) ? naclFile.buffer.toString().split('\n')[pos.line - 1] : ''
     return _.trimStart(fullLine.slice(0, pos.col))
   }
 
@@ -73,17 +73,17 @@ describe('Test auto complete', () => {
   ]
 
   let workspace: EditorWorkspace
-  const bpFileName = 'all.bp'
+  const naclFileName = 'all.nacl'
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps/`)
-    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.bp')))
+    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls/`)
+    workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.nacl')))
   })
 
   describe('empty line', () => {
     it('should suggest type and instances as first word', async () => {
       const pos = { line: 74, col: 0 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...kw, ...types]
       const exclude = [...instances]
@@ -94,8 +94,8 @@ describe('Test auto complete', () => {
   describe('type def line', () => {
     it('should suggest type as 1st token', async () => {
       const pos = { line: 1, col: 0 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...kw, ...types]
       const exclude = [...instances]
@@ -104,8 +104,8 @@ describe('Test auto complete', () => {
 
     it('should suggest types as 2nd token', async () => {
       const pos = { line: 1, col: 6 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types]
       const exclude = [...kw, ...instances]
@@ -114,8 +114,8 @@ describe('Test auto complete', () => {
 
     it('should suggest "is" as 3rd token', async () => {
       const pos = { line: 1, col: 13 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['is']
       const exclude = [...kw, ...types, ...instances]
@@ -124,8 +124,8 @@ describe('Test auto complete', () => {
 
     it('should suggest primitive type as 4th token', async () => {
       const pos = { line: 1, col: 16 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['string', 'boolean', 'number']
       const exclude = [...kw, ...types, ...instances]
@@ -136,8 +136,8 @@ describe('Test auto complete', () => {
   describe('field def inside type', () => {
     it('should suggest all fields for 1st token', async () => {
       const pos = { line: 33, col: 5 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types]
       const exclude = [...kw, ...instances]
@@ -146,8 +146,8 @@ describe('Test auto complete', () => {
 
     it('should suggest updates', async () => {
       const pos = { line: 33, col: 4 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['update first_name', 'update last_name', 'update age']
       const exclude = ['update car_owner', ...kw, ...instances]
@@ -156,8 +156,8 @@ describe('Test auto complete', () => {
 
     it('should suggest nothing for field name ', async () => {
       const pos = { line: 33, col: 12 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       expect(suggestions.length).toBe(0)
     })
@@ -166,8 +166,8 @@ describe('Test auto complete', () => {
   describe('annotation values definitions in field', () => {
     it('should give field annotation as 1st token', async () => {
       const pos = { line: 34, col: 8 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['label', '_required']
       const exclude = [...types, ...kw, ...instances]
@@ -176,8 +176,8 @@ describe('Test auto complete', () => {
 
     it('should give eq as 2nd token', async () => {
       const pos = { line: 34, col: 15 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['=']
       const exclude = ['label', '_required', ...types, ...kw, ...instances]
@@ -186,8 +186,8 @@ describe('Test auto complete', () => {
 
     it('should give "" as 3rd token for string', async () => {
       const pos = { line: 34, col: 16 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
@@ -196,8 +196,8 @@ describe('Test auto complete', () => {
 
     it('should give true/false as 3rd token for boolean', async () => {
       const pos = { line: 35, col: 20 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['true', 'false']
       const exclude = [...types, ...kw, ...instances]
@@ -206,8 +206,8 @@ describe('Test auto complete', () => {
 
     it('should give only adapter ref as 3rd token for number', async () => {
       const pos = { line: 92, col: 14 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...adapterRef]
       const exclude = [...types, ...kw, ...instances]
@@ -218,8 +218,8 @@ describe('Test auto complete', () => {
   describe('instance definition', () => {
     it('should types as 1st token', async () => {
       const pos = { line: 87, col: 0 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types, ...kw]
       const exclude = [...instances]
@@ -228,8 +228,8 @@ describe('Test auto complete', () => {
 
     it('should instance names as 2nd token', async () => {
       const pos = { line: 87, col: 8 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...instances]
       const exclude = [...types, ...kw]
@@ -240,8 +240,8 @@ describe('Test auto complete', () => {
   describe('instance values', () => {
     it('should give fields in 1st token', async () => {
       const pos = { line: 88, col: 4 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['loaner', 'reason', 'propety', 'weekends_only', 'risk']
       const exclude = ['car_owner', 'model', 'year', ...types, ...kw, ...instances]
@@ -250,8 +250,8 @@ describe('Test auto complete', () => {
 
     it('should give fields in 1st token - nested', async () => {
       const pos = { line: 95, col: 8 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['car_owner', 'model', 'year']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -260,8 +260,8 @@ describe('Test auto complete', () => {
 
     it('should give eq as 2nd token', async () => {
       const pos = { line: 88, col: 11 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['=']
       const exclude = [...types, ...kw, ...instances]
@@ -270,8 +270,8 @@ describe('Test auto complete', () => {
 
     it('should give value as 3rd token', async () => {
       const pos = { line: 89, col: 13 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['{}']
       const exclude = [...types, ...kw, ...instances]
@@ -280,8 +280,8 @@ describe('Test auto complete', () => {
 
     it('should give value as 3rd token - nested', async () => {
       const pos = { line: 95, col: 20 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['{}']
       const exclude = [...types, ...kw, ...instances]
@@ -290,8 +290,8 @@ describe('Test auto complete', () => {
 
     it('should give value as 3rd token - nested more then once', async () => {
       const pos = { line: 96, col: 25 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
@@ -300,8 +300,8 @@ describe('Test auto complete', () => {
 
     it('should return restriction values', async () => {
       const pos = { line: 104, col: 11 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['"ticket"', '"accident"', '"to much fun"', '"car"', '"plane"']
       const exclude = [...types, ...kw, ...instances]
@@ -310,8 +310,8 @@ describe('Test auto complete', () => {
 
     it('should return list brackets', async () => {
       const pos = { line: 137, col: 16 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['[]']
       const exclude = [...types, ...kw, ...instances]
@@ -320,8 +320,8 @@ describe('Test auto complete', () => {
 
     it('should return list inside value', async () => {
       const pos = { line: 137, col: 24 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['""']
       const exclude = [...types, ...kw, ...instances]
@@ -331,8 +331,8 @@ describe('Test auto complete', () => {
 
   it('should return list brackets for new element in list of list', async () => {
     const pos = { line: 138, col: 37 }
-    const line = await getLine(workspace, bpFileName, pos)
-    const ctx = await getPositionContext(workspace, bpFileName, pos)
+    const line = await getLine(workspace, naclFileName, pos)
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
     const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
     const include = ['[]']
     const exclude = [...types, ...kw, ...instances]
@@ -342,8 +342,8 @@ describe('Test auto complete', () => {
   describe('references', () => {
     it('should suggest all adapters on empty first token', async () => {
       const pos = { line: 143, col: 16 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...adapterRef]
       const exclude = [...kw, ...types, ...instances]
@@ -352,8 +352,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all types on first token with adapter', async () => {
       const pos = { line: 143, col: 19 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types].map(n => n.replace('vs.', ''))
       const exclude = [...kw, ...adapterRef]
@@ -362,8 +362,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all instance fields', async () => {
       const pos = { line: 143, col: 45 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['loaner', 'reason', 'propety', 'weekends_only']
       const exclude = ['car_owner', 'model', 'year', ...types, ...kw, ...instances]
@@ -372,8 +372,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all instance fields with 1 level nesting', async () => {
       const pos = { line: 146, col: 53 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['car_owner', 'model', 'year']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -382,8 +382,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all instance fields with 2 level nesting', async () => {
       const pos = { line: 146, col: 63 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['first_name', 'last_name', 'age']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -392,8 +392,8 @@ describe('Test auto complete', () => {
 
     it('should suggest fields when base is an object type', async () => {
       const pos = { line: 149, col: 30 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['loaner', 'reason', 'propety', 'weekends_only']
       const exclude = [...types, ...instances]
@@ -403,8 +403,8 @@ describe('Test auto complete', () => {
 
     it('should suggest annotations when base is an object type with 1 level nesting', async () => {
       const pos = { line: 149, col: 37 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -413,8 +413,8 @@ describe('Test auto complete', () => {
 
     it('should suggest nothing on empty first token in string without template', async () => {
       const pos = { line: 152, col: 17 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include: string[] = []
       const exclude = [...kw, ...types, ...instances, ...adapterRef]
@@ -423,8 +423,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all adapters on empty first token in template', async () => {
       const pos = { line: 152, col: 19 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...adapterRef]
       const exclude = [...kw, ...types, ...instances]
@@ -433,8 +433,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all types on first token with adapter in template', async () => {
       const pos = { line: 152, col: 22 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types].map(n => n.replace('vs.', ''))
       const exclude = [...kw, ...adapterRef]
@@ -443,8 +443,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all fields inside string template', async () => {
       const pos = { line: 152, col: 33 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['loaner', 'reason', 'propety', 'weekends_only', 'risk']
       const exclude = [...types, ...instances]
@@ -453,8 +453,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all field\'s annotations inside string template', async () => {
       const pos = { line: 152, col: 41 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -463,8 +463,8 @@ describe('Test auto complete', () => {
 
     it('should suggest nothing on empty first token in string with prefix without template', async () => {
       const pos = { line: 155, col: 21 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include: string[] = []
       const exclude = [...kw, ...types, ...instances, ...adapterRef]
@@ -473,8 +473,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all adapters on empty first token in template with prefix', async () => {
       const pos = { line: 155, col: 23 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...adapterRef]
       const exclude = [...kw, ...types, ...instances]
@@ -483,8 +483,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all types on first token with adapter in template with prefix', async () => {
       const pos = { line: 155, col: 26 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types].map(n => n.replace('vs.', ''))
       const exclude = [...kw, ...adapterRef]
@@ -493,8 +493,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all fields inside string template with prefix', async () => {
       const pos = { line: 155, col: 37 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['loaner', 'reason', 'propety', 'weekends_only', 'risk']
       const exclude = [...types, ...instances]
@@ -504,8 +504,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all field\'s annotations inside string template with prefix', async () => {
       const pos = { line: 155, col: 45 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -514,8 +514,8 @@ describe('Test auto complete', () => {
 
     it('should suggest nothing on empty first token in string with empty prefix without template', async () => {
       const pos = { line: 158, col: 21 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include: string[] = []
       const exclude = [...kw, ...types, ...instances, ...adapterRef]
@@ -524,8 +524,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all adapters on empty first token in template with empty prefix', async () => {
       const pos = { line: 158, col: 23 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...adapterRef]
       const exclude = [...kw, ...types, ...instances]
@@ -534,8 +534,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all types on first token with adapter in template with empty prefix', async () => {
       const pos = { line: 158, col: 26 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types].map(n => n.replace('vs.', ''))
       const exclude = [...kw, ...adapterRef]
@@ -544,8 +544,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all fields inside string template with empty prefix', async () => {
       const pos = { line: 158, col: 37 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['loaner', 'reason', 'propety', 'weekends_only', 'risk']
       const exclude = [...types, ...instances]
@@ -554,8 +554,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all field\'s annotations inside string template with empty prefix', async () => {
       const pos = { line: 158, col: 45 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -567,8 +567,8 @@ describe('Test auto complete', () => {
 
     it('should suggest nothing on empty first token in string with complex prefix without template', async () => {
       const pos = { line: 161, col: 21 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include: string[] = []
       const exclude = [...kw, ...types, ...instances, ...adapterRef]
@@ -577,8 +577,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all adapters on empty first token in template with complex prefix', async () => {
       const pos = { line: 161, col: 23 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...adapterRef]
       const exclude = [...kw, ...types, ...instances]
@@ -587,8 +587,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all types on first token with adapter in template with complex prefix', async () => {
       const pos = { line: 161, col: 26 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [...types].map(n => n.replace('vs.', ''))
       const exclude = [...kw, ...adapterRef]
@@ -597,8 +597,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all fields inside string template with complex prefix', async () => {
       const pos = { line: 161, col: 37 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['loaner', 'reason', 'propety', 'weekends_only', 'risk']
       const exclude = [...types, ...instances]
@@ -607,8 +607,8 @@ describe('Test auto complete', () => {
 
     it('should suggest all field\'s annotations inside string template with complex prefix', async () => {
       const pos = { line: 161, col: 45 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['label']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -617,8 +617,8 @@ describe('Test auto complete', () => {
 
     it('should suggest a complex annotation fields', async () => {
       const pos = { line: 164, col: 41 }
-      const line = await getLine(workspace, bpFileName, pos)
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = ['first_name', 'last_name']
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -627,8 +627,8 @@ describe('Test auto complete', () => {
 
     it('should return nothing on non-existing base element', async () => {
       const pos = { line: 143, col: 31 }
-      const line = (await getLine(workspace, bpFileName, pos)).replace('vs_weekend_car', 'nothing')
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = (await getLine(workspace, naclFileName, pos)).replace('vs_weekend_car', 'nothing')
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include: string[] = []
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]
@@ -637,8 +637,8 @@ describe('Test auto complete', () => {
 
     it('should return instance annotations', async () => {
       const pos = { line: 196, col: 40 }
-      const line = (await getLine(workspace, bpFileName, pos)).replace('vs_weekend_car', 'nothing')
-      const ctx = await getPositionContext(workspace, bpFileName, pos)
+      const line = (await getLine(workspace, naclFileName, pos)).replace('vs_weekend_car', 'nothing')
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       const include = [INSTANCE_ANNOTATIONS.PARENT]
       const exclude = ['loaner', 'reason', 'propety', 'weekends_only', ...types, ...instances]

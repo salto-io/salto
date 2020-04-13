@@ -42,7 +42,7 @@ describe('localDirectoryStore', () => {
       expect(result).toEqual([])
     })
     it('skip hidden directories', async () => {
-      const fileFilter = '*.bp'
+      const fileFilter = '*.nacl'
       const dir = 'hidden'
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValue([{ fullPath: 'test1' }, { fullPath: 'test2' }])
@@ -57,46 +57,46 @@ describe('localDirectoryStore', () => {
   describe('get', () => {
     it('does not return the file if it does not exist', async () => {
       const dir = 'not-exists'
-      const bpName = 'blabla/notexist.bp'
+      const naclFileName = 'blabla/notexist.nacl'
       mockFileExists.mockResolvedValue(false)
-      const bp = await localDirectoryStore(dir).get(bpName)
-      expect(bp).toBeUndefined()
-      expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, bpName))
+      const naclFile = await localDirectoryStore(dir).get(naclFileName)
+      expect(naclFile).toBeUndefined()
+      expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, naclFileName))
       expect(mockReadFile).not.toHaveBeenCalled()
     })
 
     it('returns the file if it exist', async () => {
       const dir = 'exists'
-      const bpName = 'blabla/exist.bp'
+      const naclFileName = 'blabla/exist.nacl'
       const content = 'content'
       mockFileExists.mockResolvedValue(true)
       mockReadFile.mockResolvedValue(content)
       mockState.mockResolvedValue({ mtimeMs: 7 })
-      const bp = await localDirectoryStore(dir).get(bpName)
-      expect(bp?.buffer).toBe(content)
-      expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, bpName))
-      expect(mockReadFile.mock.calls[0][0]).toMatch(path.join(dir, bpName))
+      const naclFile = await localDirectoryStore(dir).get(naclFileName)
+      expect(naclFile?.buffer).toBe(content)
+      expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, naclFileName))
+      expect(mockReadFile.mock.calls[0][0]).toMatch(path.join(dir, naclFileName))
     })
   })
 
   describe('set', () => {
     const filename = 'inner/file'
     const buffer = 'bla'
-    const bpStore = localDirectoryStore('')
+    const naclFileStore = localDirectoryStore('')
 
     it('writes a content with the right filename', async () => {
       mockFileExists.mockResolvedValue(false)
       mockReplaceContents.mockResolvedValue(true)
       mockMkdir.mockResolvedValue(true)
-      await bpStore.set({ filename, buffer })
+      await naclFileStore.set({ filename, buffer })
       expect(mockMkdir).not.toHaveBeenCalled()
       expect(mockReplaceContents).not.toHaveBeenCalled()
-      await bpStore.flush()
+      await naclFileStore.flush()
       expect(mockMkdir.mock.calls[0][0]).toMatch('inner')
       expect(mockReplaceContents.mock.calls[0][0]).toMatch(filename)
       expect(mockReplaceContents.mock.calls[0][1]).toEqual(buffer)
       mockReplaceContents.mockClear()
-      await bpStore.flush()
+      await naclFileStore.flush()
       expect(mockReplaceContents).not.toHaveBeenCalled()
     })
   })
@@ -115,31 +115,31 @@ describe('localDirectoryStore', () => {
     })
   })
 
-  describe('rm blueprint', () => {
+  describe('rm Nacl file', () => {
     const baseDir = '/base'
     const multipleFilesDir = 'multi'
     const oneFileDir = 'single'
-    const bpDir = path.join(baseDir, multipleFilesDir, oneFileDir)
-    const bpName = 'rm_this.bp'
-    const bpPath = path.join(bpDir, bpName)
-    const bpStore = localDirectoryStore(baseDir)
+    const naclFileDir = path.join(baseDir, multipleFilesDir, oneFileDir)
+    const naclFileName = 'rm_this.nacl'
+    const naclFilePath = path.join(naclFileDir, naclFileName)
+    const naclFileStore = localDirectoryStore(baseDir)
 
-    it('delete the blueprint', async () => {
+    it('delete the Nacl file', async () => {
       mockEmptyDir.mockResolvedValueOnce(false)
-      await bpStore.delete(bpPath)
-      await bpStore.flush()
+      await naclFileStore.delete(naclFilePath)
+      await naclFileStore.flush()
       expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith(bpPath)
+      expect(mockRm).toHaveBeenCalledWith(naclFilePath)
     })
 
     it('delete an empty directory', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
       mockIsSubFolder.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
-      await bpStore.delete(bpPath)
-      await bpStore.flush()
+      await naclFileStore.delete(naclFilePath)
+      await naclFileStore.flush()
       expect(mockRm).toHaveBeenCalledTimes(2)
-      expect(mockRm).toHaveBeenNthCalledWith(1, bpPath)
-      expect(mockRm).toHaveBeenNthCalledWith(2, bpDir)
+      expect(mockRm).toHaveBeenNthCalledWith(1, naclFilePath)
+      expect(mockRm).toHaveBeenNthCalledWith(2, naclFileDir)
     })
   })
 })

@@ -33,7 +33,7 @@ export class StaticFile {
   private fileContent?: Buffer
   public hash?: string
   constructor(
-    public readonly bpPath: string,
+    public readonly naclFilePath: string,
     public readonly relativeFileName: string,
     contentOrHash?: Buffer|string
   ) {

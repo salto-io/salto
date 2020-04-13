@@ -237,7 +237,7 @@ describe('Salto Dump', () => {
 
   describe('dump function', () => {
     it('static file', () => {
-      const body = dumpValues({ asset: new StaticFile('bpfile', 'some/path.ext') })
+      const body = dumpValues({ asset: new StaticFile('naclfile', 'some/path.ext') })
 
       expect(body).toMatch(/^asset\s+=\s+file\("some\/path.ext"\)$/m)
     })

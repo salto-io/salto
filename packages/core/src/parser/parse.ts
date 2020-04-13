@@ -77,19 +77,19 @@ export type ParseResult = {
 }
 
 /**
- * Parse a blueprint
+ * Parse a Nacl file
  *
- * @param blueprint A buffer the contains the blueprint to parse
- * @param filename The name of the file from which the blueprint was read
- * @returns elements: Type elements found in the blueprint
+ * @param naclFile A buffer the contains the Nacl file to parse
+ * @param filename The name of the file from which the Nacl file was read
+ * @returns elements: Type elements found in the Nacl file
  *          errors: Errors encountered during parsing
  */
 export const parse = (
-  blueprint: Buffer,
+  naclFile: Buffer,
   filename: string,
   functions?: Functions,
 ): ParseResult => {
-  const { body, errors: parseErrors } = hclParse(blueprint, filename)
+  const { body, errors: parseErrors } = hclParse(naclFile, filename)
   const sourceMap = new SourceMapImpl()
   const listElements: Map<string, ListType> = new Map<string, ListType>()
 

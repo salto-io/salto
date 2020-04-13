@@ -36,9 +36,9 @@ import {
 
 const log = logger(module)
 
-export const bpCase = (name?: string): string => (
+export const naclCase = (name?: string): string => (
   // unescape changes HTML escaped parts (&gt; for example), then the regex
-  // replaces url escaped chars as well as any special character to keep names blueprint friendly
+  // replaces url escaped chars as well as any special character to keep names Nacl files friendly
   // Match multiple consecutive chars to compact names and avoid repeated _
   name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
 )

@@ -24,14 +24,13 @@ export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
-  Workspace, WorkspaceError, SourceFragment,
+  Workspace, WorkspaceError, SourceFragment, StateRecency,
 } from './src/workspace/workspace'
 export {
   loadLocalWorkspace, initLocalWorkspace,
 } from './src/workspace/local/workspce'
 export { Errors } from './src/workspace/errors'
-export { Blueprint } from './src/workspace/blueprints/blueprints_source'
-export { StateRecency } from './src/workspace/workspace'
+export { NaclFile, FILE_EXTENSION } from './src/workspace/nacl_files/nacl_files_source'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dumpElements, dumpElemID } from './src/parser/dump'
 export { SALTO_HOME_VAR, AppConfig, configFromDisk } from './src/app_config'

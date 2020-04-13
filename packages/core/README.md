@@ -45,9 +45,9 @@ Options:
   -h, --help       output usage information
 
 Commands:
-  apply [options]  Applies the blueprints in the current working directory onto the related services.
+  apply [options]  Applies the Nacl files in the current working directory onto the related services.
   plan [options]   Shows the planned actions which will occur in the case of the next *apply* operation.
-  discover         Generates blueprints and state files which represent the difference between the current state of the related services, and the configuration and state currently captured by salto.
+  discover         Generates Nacl files and state files which represent the difference between the current state of the related services, and the configuration and state currently captured by salto.
   describe         Shows all available types and attributes for the adapters of the related services.
 
 ### TODO high-level architecture description

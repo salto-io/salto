@@ -23,7 +23,7 @@
         "Other"
     ],
     "activationEvents": [
-        "workspaceContains:**/*.bp"
+        "workspaceContains:**/*.nacl"
     ],
     "main": "./dist/src/extension.js",
     "contributes": {
@@ -38,7 +38,7 @@
                 {
                     "command": "salto.copyReference",
                     "group": "9_cutcopypaste",
-                    "when": "resourceExtname == .bp"
+                    "when": "resourceExtname == .nacl"
                 }
             ]
         },
@@ -51,17 +51,17 @@
                     "default": "/usr/local/bin/salto",
                     "description": "Path to the salto executable"
                 },
-                "salto.additionalBlueprintDirs": {
+                "salto.additionalNaclFileDirs": {
                     "type": "array",
                     "default": [],
                     "scope": "resource",
-                    "description": "Paths to additional BP dirs that should be included"
+                    "description": "Paths to additional NACL dirs that should be included"
                 },
-                "salto.additionalBlueprints": {
+                "salto.additionalNaclFiles": {
                     "type": "array",
                     "default": [],
                     "scope": "resource",
-                    "description": "Paths to additional BP that should be included"
+                    "description": "Paths to additional NACL that should be included"
                 },
                 "salto.discover_output_dir": {
                     "type": "string",
@@ -79,7 +79,7 @@
                     "salto"
                 ],
                 "extensions": [
-                    ".bp"
+                    ".nacl"
                 ],
                 "configuration": "./language-configuration.json"
             }
@@ -93,8 +93,8 @@
         ],
         "iconThemes": [
             {
-                "id": "salto_bp",
-                "label": "Salto BP",
+                "id": "salto_nacl",
+                "label": "Salto NACL",
                 "path": "./icons/salto-icon-theme.json"
             }
         ]

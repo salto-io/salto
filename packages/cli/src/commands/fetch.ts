@@ -24,7 +24,6 @@ import {
   FetchProgressEvents,
   StepEmitter,
   Telemetry,
-  currentEnvConfig,
 } from '@salto-io/core'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -168,9 +167,9 @@ export const fetchCommand = async (
     )(progress))
 
   const { services, isolated } = await getRelevantServicesAndIsolatedMode(
-    inputServices || currentEnvConfig(workspace.config).services,
-    await workspace.state.existingServices(),
-    _.keys(workspace.config.envs),
+    inputServices || [...workspace.services()],
+    await workspace.state().existingServices(),
+    _.keys(workspace.envs()),
     inputIsolated,
     force,
     approveIsolatedMode,

@@ -25,7 +25,7 @@ import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
   formatConfigFieldInput, formatShouldAbortWithValidationError, formatShouldUpdateConfig,
-  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState,
+  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
@@ -173,6 +173,6 @@ export const getEnvName = async (currentName = 'default'): Promise<string> => {
   return (await inquirer.prompt(questions))[currentName]
 }
 
-export const cliApproveIsolatedMode = async (): Promise<boolean> => (
-  getUserBooleanInput(Prompts.APPROVE_ISOLATED_RECOMMENDATION)
+export const cliApproveIsolatedMode = async (newServices: string[]): Promise<boolean> => (
+  getUserBooleanInput(Prompts.APPROVE_ISOLATED_RECOMMENDATION(formatWordsSeries(newServices)))
 )

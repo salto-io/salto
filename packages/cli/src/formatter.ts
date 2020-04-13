@@ -49,7 +49,7 @@ const planItemName = (step: PlanItem): string => fullName(step.parent())
 
 const formatError = (err: { message: string }): string => header(err.message)
 
-const formatWordsSeries = (words: string[]): string => (words.length > 1
+export const formatWordsSeries = (words: string[]): string => (words.length > 1
   ? `${words.slice(0, -1).join(', ')} and ${_.last(words)}`
   : words[0])
 

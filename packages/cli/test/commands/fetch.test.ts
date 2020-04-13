@@ -142,7 +142,7 @@ describe('fetch command', () => {
       const mockApproveIsolatedModeTrue = jest.fn().mockResolvedValue(true)
 
       const mockWorkspace = (
-        elements?: Element[], 
+        elements?: Element[],
         name?: string,
         existingServices: string[] = [],
         envs: string[] = []
@@ -153,12 +153,13 @@ describe('fetch command', () => {
         services: () => services,
         updateBlueprints: jest.fn(),
         flush: jest.fn(),
-        state: {
+        state: () => ({
           existingServices: jest.fn().mockResolvedValue(existingServices),
-        },
+        }),
         isEmpty: () => (elements || []).length === 0,
         updateServiceConfig: jest.fn(),
         servicesCredentials: jest.fn().mockResolvedValue({}),
+        envs: () => envs,
       } as unknown as Workspace)
 
       describe('with emitters called', () => {
@@ -189,7 +190,7 @@ describe('fetch command', () => {
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
             inputServices: services,
-            isolatedInput: false,
+            inputIsolated: false,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           })
         })
@@ -219,7 +220,7 @@ describe('fetch command', () => {
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
-            isolatedInput: false,
+            inputIsolated: false,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           })
         })
@@ -261,7 +262,7 @@ describe('fetch command', () => {
             fetch: mockFetchWithChanges,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockShouldUpdateConfig,
-            isolatedInput: false,
+            inputIsolated: false,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           }
         })
@@ -307,7 +308,7 @@ describe('fetch command', () => {
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
               shouldUpdateConfig: mockUpdateConfig,
-              isolatedInput: false,
+              inputIsolated: false,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
             expect(result).toBe(CliExitCode.Success)
@@ -333,7 +334,7 @@ describe('fetch command', () => {
               output: cliOutput,
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
-              isolatedInput: true,
+              inputIsolated: true,
               shouldUpdateConfig: mockUpdateConfig,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
@@ -360,7 +361,7 @@ describe('fetch command', () => {
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
               shouldUpdateConfig: mockUpdateConfig,
-              isolatedInput: false,
+              inputIsolated: false,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
           })
@@ -387,7 +388,7 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockEmptyApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                isolatedInput: false,
+                inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
             })
@@ -417,7 +418,7 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                isolatedInput: false,
+                inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
               const calls = findWsUpdateCalls(workspaceName)
@@ -446,7 +447,7 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                isolatedInput: false,
+                inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
               const calls = findWsUpdateCalls(workspaceName)
@@ -472,7 +473,7 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                isolatedInput: false,
+                inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
               const calls = findWsUpdateCalls(workspaceName)
@@ -496,7 +497,7 @@ describe('fetch command', () => {
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
-                isolatedInput: false,
+                inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
               expect(cliOutput.stderr.content).toContain('Error')
@@ -538,7 +539,7 @@ describe('fetch command', () => {
             fetch: mockFetchWithChanges,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
-            isolatedInput: false,
+            inputIsolated: false,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           })
         })
@@ -567,7 +568,7 @@ describe('fetch command', () => {
           isolated: boolean,
         ): Promise<void> => {
           await fetchCommand({
-            workspace: mockWorkspace(undefined, [], existingServices, envs),
+            workspace: mockWorkspace([], undefined, existingServices, envs),
             force: false,
             interactive: false,
             output: cliOutput,
@@ -576,7 +577,7 @@ describe('fetch command', () => {
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
             inputServices,
-            isolatedInput: isolated,
+            inputIsolated: isolated,
             approveIsolatedMode: mockApproveIsolatedMode,
           })
         }

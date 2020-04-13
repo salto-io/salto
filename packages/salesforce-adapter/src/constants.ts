@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
@@ -60,6 +61,7 @@ export enum COMPOUND_FIELD_TYPE_NAMES {
   FIELD_NAME = 'Name',
   LOCATION = 'Location',
 }
+
 
 export const FIELD_SOAP_TYPE_NAMES:
 Record<string, FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES> = {

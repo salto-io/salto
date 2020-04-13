@@ -41,12 +41,13 @@ import {
   CUSTOM_OBJECT,
   VALUE_SET_FIELDS,
   SUBTYPES_PATH,
-  INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
+  INSTANCE_FULL_NAME_FIELD, DESCRIPTION, TYPES_PATH,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import mockClient from '../client'
 import { createValueSetEntry } from '../utils'
+
 
 const { makeArray } = collections.array
 
@@ -1148,6 +1149,31 @@ describe('transformer', () => {
         const elemId: ElemID = Types.getElemId(key, false, undefined)
         expect(elemId.name).toEqual(METADATA_TYPES_TO_RENAME.get(key))
       })
+    })
+  })
+  describe('Parsing missing salesforce types', () => {
+    it('should generate types successfully', () => {
+      const testTypes = {
+        testType1: {
+          booleanField: BuiltinTypes.BOOLEAN,
+          stringField: BuiltinTypes.STRING,
+        },
+        testType2: {
+          numberField: BuiltinTypes.NUMBER,
+          jsonField: BuiltinTypes.JSON,
+          serviceId: BuiltinTypes.SERVICE_ID,
+        },
+      }
+      const types = Types.generateMissingTypes(testTypes, TYPES_PATH)
+      expect((types[0] as ObjectType).elemID.typeName).toEqual('testType1')
+      expect((types[0] as ObjectType).fields.booleanField.type).toEqual(BuiltinTypes.BOOLEAN)
+      expect((types[0] as ObjectType).fields.stringField.type).toEqual(BuiltinTypes.STRING)
+      expect((types[0] as ObjectType).path).toContain(TYPES_PATH)
+      expect((types[1] as ObjectType).elemID.typeName).toEqual('testType2')
+      expect((types[1] as ObjectType).fields.numberField.type).toEqual(BuiltinTypes.NUMBER)
+      expect((types[1] as ObjectType).fields.jsonField.type).toEqual(BuiltinTypes.JSON)
+      expect((types[1] as ObjectType).fields.serviceId.type).toEqual(BuiltinTypes.SERVICE_ID)
+      expect((types[1] as ObjectType).path).toContain(TYPES_PATH)
     })
   })
 })

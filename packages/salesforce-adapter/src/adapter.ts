@@ -67,8 +67,9 @@ const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
-  missingFieldsFilter,
+  // should run before missingFieldsFilter
   settingsFilter,
+  missingFieldsFilter,
   // should run before customObjectsFilter
   workflowFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
@@ -314,13 +315,14 @@ export default class SalesforceAdapter {
   public async fetch(): Promise<FetchResult> {
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
+    const missingTypes = Types.getAllMissingTypes()
     const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames, annotationTypes)
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
     const elements = _.flatten(
-      await Promise.all([annotationTypes, fieldTypes,
+      await Promise.all([annotationTypes, fieldTypes, missingTypes,
         metadataTypes]) as Element[][]
     )
     const {

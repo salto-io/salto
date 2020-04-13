@@ -1,3 +1,6 @@
+/* eslint-disable header/header */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable max-len */
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -15,449 +18,104 @@
 */
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, TypeElement, isType, BuiltinTypes, ElemID, Element,
-  CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS, TypeMap,
+  isObjectType, Field, Values, TypeElement, isType, ElemID, Element,
+  TypeMap,
+  BuiltinTypes,
+  PrimitiveType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { SALESFORCE } from '../constants'
 import { FilterCreator } from '../filter'
-import {
-  CUSTOM_FIELD, CUSTOM_OBJECT, FIELD_TYPE_NAME_VALUES, SALESFORCE, WORKFLOW_METADATA_TYPE,
-  LEAD_CONVERT_SETTINGS_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
-} from '../constants'
 import { id } from './utils'
-import {
-  WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_FLOW_ACTIONS_FIELD,
-  WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD, WORKFLOW_OUTBOUND_MESSAGES_FIELD, WORKFLOW_TASKS_FIELD,
-} from './workflow'
+import missingFieldsData from './missing_fields.json'
 
 const log = logger(module)
 
-interface MissingField {
+type AnnotationRestrictionData = {
+  _enforceValue?: boolean
+}
+
+type AnnotationData = {
+  _values?: string[]
+  _restrictions?: AnnotationRestrictionData
+}
+
+type RawFieldData = {
+  name: string
+  type: string
+  annotations?: AnnotationData
+  isList?: boolean
+  boolean?: string[]
+}
+
+export type RawMissingFieldData = {
+  id: string
+  fields: RawFieldData[]
+}
+
+type FieldData = {
+  name: string
+  type: ElemID | PrimitiveType
+  annotations?: AnnotationData
+  isList?: boolean
+}
+
+type MissingFieldData = {
+  id: ElemID | PrimitiveType
+  fields: FieldData[]
+}
+
+type MissingField = {
   name: string
   type: TypeElement | ElemID
   annotations?: Values
   isList?: boolean
 }
 
-const allMissingFields: {id: ElemID; fields: MissingField[]}[] = [
-  {
-    id: new ElemID(SALESFORCE, 'FilterItem'),
-    fields: [
-      {
-        name: 'operation',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: [
-            'equals', 'notEqual', 'lessThan', 'greaterThan', 'lessOrEqual', 'greaterOrEqual',
-            'contains', 'notContain', 'startsWith', 'includes', 'excludes', 'within',
-          ],
-          [CORE_ANNOTATIONS.RESTRICTION]: {
-            [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
-          },
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, LEAD_CONVERT_SETTINGS_METADATA_TYPE),
-    fields: [
-      {
-        name: 'objectMapping',
-        type: new ElemID(SALESFORCE, 'ObjectMapping'),
-        isList: true,
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'RuleEntry'),
-    fields: [
-      {
-        name: 'assignedToType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['User', 'Queue'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'ProfileTabVisibility'),
-    fields: [
-      {
-        name: 'visibility',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['DefaultOff', 'DefaultOn', 'Hidden'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'LayoutSection'),
-    fields: [
-      {
-        name: 'style',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: [
-            'TwoColumnsTopToBottom', 'TwoColumnsLeftToRight', 'OneColumn', 'CustomLinks',
-          ],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'LayoutItem'),
-    fields: [
-      {
-        name: 'behavior',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: [
-            'Edit', 'Required', 'Readonly',
-          ],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'Profile'),
-    fields: [
-      {
-        name: 'userPermissions',
-        type: new ElemID(SALESFORCE, 'ProfileUserPermission'),
-        isList: true,
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE),
-    fields: [
-      {
-        name: WORKFLOW_ALERTS_FIELD,
-        type: new ElemID(SALESFORCE, 'WorkflowAlert'),
-      },
-      {
-        name: WORKFLOW_FIELD_UPDATES_FIELD,
-        type: new ElemID(SALESFORCE, 'WorkflowFieldUpdate'),
-      },
-      {
-        name: WORKFLOW_FLOW_ACTIONS_FIELD,
-        type: new ElemID(SALESFORCE, 'WorkflowFlowAction'),
-      },
-      {
-        name: WORKFLOW_KNOWLEDGE_PUBLISHES_FIELD,
-        type: new ElemID(SALESFORCE, 'WorkflowKnowledgePublish'),
-      },
-      {
-        name: WORKFLOW_OUTBOUND_MESSAGES_FIELD,
-        type: new ElemID(SALESFORCE, 'WorkflowOutboundMessage'),
-      },
-      {
-        name: WORKFLOW_TASKS_FIELD,
-        type: new ElemID(SALESFORCE, 'WorkflowTask'),
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowCondition'),
-    fields: [
-      {
-        name: 'operator',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['EqualTo', 'NotEqualTo', 'GreaterThan', 'LessThan',
-            'GreaterThanOrEqualTo', 'LessThanOrEqualTo', 'StartsWith', 'EndsWith', 'Contains',
-            'IsNull', 'WasSet', 'WasSelected', 'WasVisited'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowAssignmentItem'),
-    fields: [
-      {
-        name: 'operator',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Add', 'AddAtStart', 'AddItem', 'Assign', 'AssignCount',
-            'RemoveAfterFirst', 'RemoveAll', 'RemoveBeforeFirst', 'RemoveFirst', 'RemovePosition',
-            'RemoveUncommon', 'Subtract'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowRecordFilter'),
-    fields: [
-      {
-        name: 'operator',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['EqualTo', 'NotEqualTo', 'GreaterThan', 'LessThan',
-            'GreaterThanOrEqualTo', 'LessThanOrEqualTo', 'StartsWith', 'EndsWith', 'Contains',
-            'IsNull'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowDynamicChoiceSet'),
-    fields: [
-      {
-        name: 'dataType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Currency', 'Date', 'Number', 'String', 'Boolean', 'Picklist',
-            'Multipicklist'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowScreenField'),
-    fields: [
-      {
-        name: 'dataType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Boolean', 'Currency', 'Date', 'DateTime', 'Number',
-            'String'],
-        },
-      },
-      {
-        name: 'fieldType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['DisplayText', 'InputField', 'LargeTextArea', 'PasswordField',
-            'RadioButtons', 'DropdownBox', 'MultiSelectCheckboxes', 'MultiSelectPicklist',
-            'ComponentInstance', 'ComponentChoice', 'ComponentInput'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowVariable'),
-    fields: [
-      {
-        name: 'dataType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Apex', 'Boolean', 'Currency', 'Date', 'DateTime', 'Number',
-            'Multipicklist', 'Picklist', 'String', 'SObject'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowChoice'),
-    fields: [
-      {
-        name: 'dataType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Boolean', 'Currency', 'Date', 'Number', 'String'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowConstant'),
-    fields: [
-      {
-        name: 'dataType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Boolean', 'Currency', 'Date', 'Number', 'String'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowFormula'),
-    fields: [
-      {
-        name: 'dataType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Boolean', 'Currency', 'Date', 'DateTime', 'Number',
-            'String'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowRecordLookup'),
-    fields: [
-      {
-        name: 'sortOrder',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Asc', 'Desc'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'FlowLoop'),
-    fields: [
-      {
-        name: 'iterationOrder',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Asc', 'Desc'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, CUSTOM_OBJECT),
-    fields: [
-      {
-        name: 'customSettingsType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['List', 'Hierarchy'],
-        },
-      },
-      {
-        name: 'deploymentStatus',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['InDevelopment', 'Deployed'],
-        },
-      },
-      {
-        name: 'externalSharingModel',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Private', 'Read', 'ReadWrite', 'ReadWriteTransfer',
-            'FullAccess', 'ControlledByParent', 'ControlledByCampaign', 'ControlledByLeadOrContact',
-          ],
-        },
-      },
-      {
-        name: 'gender',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Masculine', 'Feminine', 'Neuter', 'AnimateMasculine'],
-        },
-      },
-      {
-        name: 'sharingModel',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Private', 'Read', 'ReadWrite', 'ReadWriteTransfer',
-            'FullAccess', 'ControlledByParent', 'ControlledByCampaign', 'ControlledByLeadOrContact',
-          ],
-        },
-      },
-      {
-        name: 'startsWith',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Consonant', 'Vowel', 'Special'],
-        },
-      },
-      {
-        name: 'visibility',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Public', 'Protected', 'PackageProtected'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, CUSTOM_FIELD),
-    fields: [
-      {
-        name: 'type',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: FIELD_TYPE_NAME_VALUES,
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'ListView'),
-    fields: [
-      {
-        name: 'filterScope',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Everything', 'Mine', 'MineAndMyGroups', 'Queue', 'Delegated',
-            'MyTerritory', 'MyTeamTerritory', 'Team'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'ListViewFilter'),
-    fields: [
-      {
-        name: 'operation',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['equals', 'notEqual', 'lessThan', 'greaterThan',
-            'lessOrEqual', 'greaterOrEqual', 'contains', 'notContain', 'startsWith', 'includes',
-            'excludes', 'within'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'WebLink'),
-    fields: [
-      {
-        name: 'displayType',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['link', 'button', 'massActionButton'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, 'StandardValue'),
-    fields: [
-      {
-        name: 'forecastCategory',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Omitted', 'Pipeline', 'BestCase', 'Forecast', 'Closed'],
-        },
-      },
-    ],
-  },
-  {
-    id: new ElemID(SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE),
-    fields: [
-      {
-        name: 'gender',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: [
-            'Masculine', 'Feminine', 'Neuter', 'AnimateMasculine', 'ClassI', 'ClassIII', 'ClassV',
-            'ClassVII', 'ClassIX', 'ClassXI', 'ClassXIV', 'ClassXV', 'ClassXVI', 'ClassXVII',
-            'ClassXVIII',
-          ],
-        },
-      },
-      {
-        name: 'startsWith',
-        type: BuiltinTypes.STRING,
-        annotations: {
-          [CORE_ANNOTATIONS.VALUES]: ['Consonant', 'Vowel', 'Special'],
-        },
-      },
-    ],
-  },
-]
+const generateType = (typeName: string): PrimitiveType | ElemID => {
+  if (Object.keys(BuiltinTypes).includes(typeName)) {
+    return BuiltinTypes[typeName]
+  }
+  return new ElemID(SALESFORCE, typeName)
+}
+
+const generateField = (fieldData: RawFieldData): FieldData[] => {
+  if (fieldData.boolean) {
+    return fieldData.boolean.map(fieldName => ({
+      name: fieldName,
+      type: generateType('BOOLEAN'),
+    }))
+  }
+  return [{
+    name: fieldData.name,
+    type: generateType(fieldData.type),
+    annotations: fieldData.annotations,
+    isList: fieldData.isList,
+
+  }]
+}
+
+const generateFields = (rawFieldsData: RawFieldData[]): FieldData[] => (
+  [] as FieldData[]).concat(
+  ...rawFieldsData.map(rawFieldData => generateField(rawFieldData))
+)
+
+const generateId = (idName: string): ElemID => new ElemID(SALESFORCE, idName)
+
+export const generateAllMissingFields = (
+  rawMissingFieldsData: RawMissingFieldData[]
+): MissingFieldData[] =>
+  rawMissingFieldsData.map(rawMissingFieldData => ({
+    id: generateId(rawMissingFieldData.id),
+    fields: generateFields(rawMissingFieldData.fields),
+  }))
+
+export const missingFields = generateAllMissingFields(
+  missingFieldsData as unknown as RawMissingFieldData[]
+)
 
 export const makeFilter = (
-  missingFields: Record<string, MissingField[]>
+  allMissingFields: Record<string, MissingField[]>
 ): FilterCreator => () => ({
   onFetch: async function onFetch(elements) {
     // We need a mapping of all the types so we can replace type names with the correct types
@@ -478,7 +136,7 @@ export const makeFilter = (
 
     // Add missing fields to types
     elements.filter(isObjectType).forEach(elem => {
-      const fieldsToAdd = missingFields[id(elem)]
+      const fieldsToAdd = allMissingFields[id(elem)]
       if (fieldsToAdd !== undefined) {
         _.assign(elem.fields, _(fieldsToAdd)
           .map(addMissingField(elem))
@@ -492,8 +150,8 @@ export const makeFilter = (
 })
 
 export default makeFilter(
-  _(allMissingFields)
-    .map(missingField => [missingField.id.getFullName(), missingField.fields])
+  _(missingFields)
+    .map(missingField => [(missingField.id as ElemID).getFullName(), missingField.fields])
     .fromPairs()
     .value(),
 )

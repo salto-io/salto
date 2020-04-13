@@ -42,6 +42,7 @@ import {
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
 } from '../constants'
 import SalesforceClient from '../client/client'
+import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
 
 const { makeArray } = collections.array
 
@@ -118,7 +119,6 @@ const addPicklistAnnotations = (
 const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
 const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
-
 type RestrictedNumberName = 'TextLength' | 'TextAreaLength' | 'EncryptedTextLength'
    | 'Precision' | 'Scale' | 'LocationScale' | 'LongTextAreaVisibleLines'
    | 'MultiPicklistVisibleLines' | 'RichTextAreaVisibleLines' | 'RelationshipOrder'
@@ -757,14 +757,45 @@ export class Types {
 
   static getAllFieldTypes(): TypeElement[] {
     return _.concat(
-      Object.values(Types.primitiveDataTypes) as TypeElement[],
+      Object.values(Types.primitiveDataTypes),
       Object.values(Types.compoundDataTypes) as TypeElement[],
-      Object.values(Types.formulaDataTypes) as TypeElement[],
+      Object.values(Types.formulaDataTypes),
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
       return fieldType
     })
+  }
+
+  private static fieldMap = (
+    types: Record<string, PrimitiveType>, parentId: ElemID
+  ): Record<string, TypeField> => _.mapValues(
+    types, (type, name) => new TypeField(parentId, name, type)
+  )
+
+  static generateType = (
+    typeName: string, fieldTypes: Record<string, PrimitiveType>, typePath: string
+  ): TypeElement => {
+    const typeId = new ElemID(SALESFORCE, typeName)
+    return new ObjectType({
+      elemID: typeId,
+      path: [SALESFORCE, typePath, typeName],
+      fields: Types.fieldMap(fieldTypes, typeId),
+    })
+  }
+
+  static generateMissingTypes = (
+    missingTypes: Record<string, Record<string, PrimitiveType>>, path: string
+  ): TypeElement[] => _.toArray(
+    _.mapValues(missingTypes, (typeRecords, name) =>
+      Types.generateType(name, typeRecords, path))
+  )
+
+  static getAllMissingTypes(): TypeElement[] {
+    return ([] as TypeElement[]).concat(
+      Types.generateMissingTypes(allMissingTypes, TYPES_PATH),
+      Types.generateMissingTypes(allMissingSubTypes, SUBTYPES_PATH)
+    )
   }
 
   static getAnnotationTypes(): TypeElement[] {

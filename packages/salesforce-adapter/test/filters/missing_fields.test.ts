@@ -20,8 +20,6 @@ import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { makeFilter, generateAllMissingFields, RawMissingFieldData } from '../../src/filters/missing_fields'
-import realMissingFields from '../../src/filters/missing_fields.json'
-import testMissingFields from './missing_fields.test.json'
 
 describe('missing fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
@@ -91,11 +89,6 @@ describe('missing fields filter', () => {
       expect(testType.fields).not.toHaveProperty('missing')
     })
   })
-  // describe('the correct missing fields are used', () => {
-  //   it('should succeed comparing the missing fields', () => {
-  //     expect(correctMissingFields).toEqual(missingFields)
-  //   })
-  // })
   describe('Json parsing functions', () => {
     it('Should parse JSON builtin types', () => {
       const rawMissingFields = [{ id: 'foo',
@@ -167,15 +160,6 @@ describe('missing fields filter', () => {
       expect((data[0].id as ElemID).typeName).toEqual('test')
       expect(data[0].fields[0].name).toEqual('bar0')
       expect((data[0].fields[0].type as ElemID).typeName).toEqual('TestType')
-    })
-    it('should be the parse the json the same way', () => {
-      const testData = generateAllMissingFields(
-        testMissingFields as unknown as RawMissingFieldData[]
-      )
-      const realData = generateAllMissingFields(
-        realMissingFields as unknown as RawMissingFieldData[]
-      )
-      expect(testData).toEqual(realData)
     })
   })
 })

@@ -316,7 +316,6 @@ export default class SalesforceAdapter {
     log.debug('going to fetch salesforce account configuration..')
     const fieldTypes = Types.getAllFieldTypes()
     const missingTypes = Types.getAllMissingTypes()
-    const missingSubTypes = Types.getAllMissingSubTypes()
     const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
     const metadataTypes = this.fetchMetadataTypes(metadataTypeNames, annotationTypes)
@@ -324,7 +323,7 @@ export default class SalesforceAdapter {
 
     const elements = _.flatten(
       await Promise.all([annotationTypes, fieldTypes, missingTypes,
-        missingSubTypes, metadataTypes]) as Element[][]
+        metadataTypes]) as Element[][]
     )
     const {
       elements: metadataInstancesElements,

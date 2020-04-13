@@ -39,9 +39,10 @@ import {
   CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, MissingTypes, MissingSubTypes,
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
 } from '../constants'
 import SalesforceClient from '../client/client'
+import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
 
 const { makeArray } = collections.array
 
@@ -783,14 +784,18 @@ export class Types {
     })
   }
 
-  static getAllMissingTypes(): TypeElement[] {
-    return _.toArray(_.mapValues(MissingTypes.getAllMissingTypes(), (name, typeRecords) =>
-      Types.generateType(typeRecords, name, TYPES_PATH)))
-  }
+  static generateMissingTypes = (
+    missingTypes: Record<string, Record<string, PrimitiveType>>, path: string
+  ): TypeElement[] => _.toArray(
+    _.mapValues(missingTypes, (typeRecords, name) =>
+      Types.generateType(name, typeRecords, path))
+  )
 
-  static getAllMissingSubTypes(): TypeElement[] {
-    return _.toArray(_.mapValues(MissingSubTypes.getAllMissingSubTypes(), (name, typeRecords) =>
-      Types.generateType(typeRecords, name, SUBTYPES_PATH)))
+  static getAllMissingTypes(): TypeElement[] {
+    return ([] as TypeElement[]).concat(
+      Types.generateMissingTypes(allMissingTypes, TYPES_PATH),
+      Types.generateMissingTypes(allMissingSubTypes, SUBTYPES_PATH)
+    )
   }
 
   static getAnnotationTypes(): TypeElement[] {

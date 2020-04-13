@@ -188,7 +188,6 @@ describe('SalesforceAdapter fetch', () => {
         Object.keys(Types.compoundDataTypes),
         Object.keys(Types.formulaDataTypes),
         Object.keys(Types.getAllMissingTypes()),
-        Object.keys(Types.getAllMissingSubTypes()),
       ).length
         + 2 /* LookupFilter & filter items */
         + 1 /* rollup summary operation */

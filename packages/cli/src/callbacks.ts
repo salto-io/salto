@@ -162,11 +162,11 @@ export const getConfigWithHeader = async (output: WriteStream, credentialsType: 
   return getCredentialsFromUser(credentialsType)
 }
 
-export const getEnvName = async (currentName = 'default'): Promise<string> => {
+export const getEnvName = async (currentName = 'env1'): Promise<string> => {
   const questions = [{
     type: 'input',
     mask: '*',
-    message: `Enter a new name for the ${currentName} environment`,
+    message: 'Enter a name for the first environment in the workspace',
     name: currentName,
     default: currentName,
   }]

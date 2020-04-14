@@ -158,6 +158,7 @@ Do you want to update your config file accordingly?`
   public static readonly CREATED_ENV = (envName: string): string =>
     `Created environment - ${envName}.
 ${Prompts.SERVICE_ADD_HELP}`
+
   public static readonly ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION = 'The current fetch command is running for the first time for this environment.'
     + ' It is recommended to perform first fetch of an environment in isolated mode.'
 

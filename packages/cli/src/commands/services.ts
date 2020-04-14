@@ -177,7 +177,7 @@ type ServiceParsedCliInput = ParsedCliInput<ServiceArgs>
 const servicesBuilder = createCommandBuilder({
   options: {
     command: 'services <command> [name]',
-    description: 'Manage your workspace services',
+    description: 'Manage your environment services',
   },
 
   filters: [serviceCmdFilter, environmentFilter],

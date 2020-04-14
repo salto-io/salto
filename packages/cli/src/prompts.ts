@@ -73,10 +73,12 @@ Be sure to go over the preview output when invoking the deploy command.`
     return `Could not initiate workspace: ${msg}\n`
   }
 
+  private static readonly SERVICE_ADD_HELP = 'Use `salto services add <service-name>` to add services to the environment'
+
   public static initCompleted(name: string, baseDir: string): string {
     return `Initiated empty workspace ${name} at ${baseDir}
     
-Use \`salto services add <service-name>\` to add services to the workspace
+${Prompts.SERVICE_ADD_HELP}
 `
   }
 
@@ -127,7 +129,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
 ${formattedChanges}
 Do you want to update your config file accordingly?`
 
-public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended to fetch more frequently so Salto\'s deployment plan can take into account the latest state - do you want to cancel?'
+  public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended to fetch more frequently so Salto\'s deployment plan can take into account the latest state - do you want to cancel?'
   public static readonly SHOULD_CANCEL_WITH_NONEXISTENT_STATE = 'It is highly recommended to run salto fetch before deploying, to ensure the deploy plan takes into account the current state - do you want to cancel?'
 
   public static readonly NONEXISTENT_STATE = 'Currently, the state of the target service(s) is unknown to Salto.'
@@ -139,21 +141,24 @@ public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended 
 
   public static readonly CANCELED = 'Canceling...'
   public static readonly CREDENTIALS_HEADER = (serviceName: string): string => `Please enter your ${serviceName} credentials:`
-  public static readonly SERVICE_HOW_ADD = (serviceName: string): string => `Use \`salto services add ${serviceName}\` to add the service to the workspace`
-  public static readonly SERVICE_ADDED = (serviceName: string): string => `${serviceName} was added to the workspace`
+  public static readonly SERVICE_HOW_ADD = (serviceName: string): string => `Use \`salto services add ${serviceName}\` to add the service to the environment`
+  public static readonly SERVICE_ADDED = (serviceName: string): string => `${serviceName} was added to the environment`
   public static readonly SERVICES_LOGIN_UPDATED = 'Login information successfully updated!'
   public static readonly SERVICES_LOGIN_OVERRIDE = '** This will override the current login information **'
   public static readonly SERVICE_LOGIN_FAILED = (serviceName: string, errorMessage: string): string => `Could not login to ${serviceName}: ${errorMessage}`
   public static readonly SERVICE_LOGIN_FAILED_TRY_AGAIN = (serviceName: string): string => `To try again run: \`salto services login ${serviceName}\``
-  public static readonly SERVICE_CONFIGURED = (serviceName: string): string => `${serviceName} is configured in this workspace`
-  public static readonly SERVICE_NOT_CONFIGURED = (serviceName: string): string => `${serviceName} is not configured in this workspace`
+  public static readonly SERVICE_CONFIGURED = (serviceName: string): string => `${serviceName} is configured in this environment`
+  public static readonly SERVICE_NOT_CONFIGURED = (serviceName: string): string => `${serviceName} is not configured in this environment`
   public static readonly CONFIGURED_SERVICES_TITLE = 'The configured services are:'
-  public static readonly NO_CONFIGURED_SERVICES = 'There are not configured services in this workspace'
-  public static readonly SERVICE_ALREADY_ADDED = (serviceName: string): string => `${serviceName} was already added to this workspace`
+  public static readonly NO_CONFIGURED_SERVICES = 'There are not configured services in this environment'
+  public static readonly SERVICE_ALREADY_ADDED = (serviceName: string): string => `${serviceName} was already added to this environment`
   public static readonly WORKING_ON_ENV = 'The active environment is'
   public static readonly NO_CURRENT_ENV = 'No active environment is currently set'
   public static readonly SET_ENV = 'Active environment is set to'
-  public static readonly CREATED_ENV = 'Created environment'
+  public static readonly CREATED_ENV = (envName: string): string =>
+    `Created environment - ${envName}.
+${Prompts.SERVICE_ADD_HELP}`
+
   public static readonly ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION = 'The current fetch command is running for the first time for this environment.'
     + ' It is recommended to perform first fetch of an environment in isolated mode.'
 

@@ -16,7 +16,7 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
-import { Element, ElemID, ElementMap } from '@salto-io/adapter-api'
+import { Element, ElemID, ElementMap, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
@@ -96,5 +96,10 @@ export const localState = (filePath: string): State => {
       log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
     },
     getUpdateDate: async (): Promise<Date | undefined> => (await stateData()).updateDate,
+    existingServices: async (): Promise<string[]> => _((await stateData()).elements)
+      .map(e => e.elemID.adapter)
+      .uniq()
+      .filter(adapter => adapter !== GLOBAL_ADAPTER)
+      .value(),
   }
 }

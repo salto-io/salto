@@ -154,4 +154,24 @@ public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended 
   public static readonly NO_CURRENT_ENV = 'No active environment is currently set'
   public static readonly SET_ENV = 'Active environment is set to'
   public static readonly CREATED_ENV = 'Created environment'
+  public static readonly ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION = 'The current fetch command is running for the first time for this environment.'
+    + ' It is recommended to perform first fetch of an environment in isolated mode.'
+
+  public static readonly NEW_SERVICES_ISOLATED_RECOMMENDATION = (
+    servicesNames: string,
+  ): string => `The current fetch command is running for the first time for ${servicesNames}.`
+     + ' It is recommended to perform first fetch of a service in isolated mode, without fetching other services.'
+
+
+  public static readonly ONLY_NEW_SERVICES_ISOLATED_RECOMMENDATION = (
+    newServicesNames: string,
+    oldServicesNames: string
+  ): string => `The current fetch command is running for the first time for ${newServicesNames} in isolated mode.`
+    + ` This will also fetch ${oldServicesNames} in strict mode and may result in unwanted changes to `
+    + ' other environments.\n'
+    + `It is recommended to run this fetch as an isolated fetch only for ${newServicesNames}`
+
+  public static readonly APPROVE_ISOLATED_RECOMMENDATION = (
+    newServicesNames: string
+  ): string => `Would you like to switch to isolated mode and fetch ${newServicesNames}? (Answer No to continue without switching)`
 }

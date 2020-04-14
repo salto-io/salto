@@ -21,4 +21,5 @@ export default interface State extends ElementsSource {
   remove(id: ElemID | ElemID[]): Promise<void>
   override(element: Element | Element[]): Promise<void>
   getUpdateDate(): Promise<Date | undefined>
+  existingServices(): Promise<string[]>
 }

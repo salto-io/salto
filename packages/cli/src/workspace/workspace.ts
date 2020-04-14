@@ -137,7 +137,7 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
 }
 
 export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
-  changes: readonly FetchChange[], strict = false): Promise<boolean> => {
+  changes: readonly FetchChange[], isolated = false): Promise<boolean> => {
   if (changes.length > 0) {
     if (!await ws.isEmpty(true)) {
       log.info('going to update workspace with %d changes', changes.length)
@@ -151,7 +151,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
 
     await ws.updateBlueprints(
       changes.map(c => c.change),
-      strict ? 'strict' : undefined
+      isolated ? 'isolated' : undefined
     )
     const { status, errors } = await validateWorkspace(ws)
     const formattedErrors = await formatWorkspaceErrors(ws, errors)

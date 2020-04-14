@@ -83,7 +83,8 @@ const createMergeableChange = async (
   const base = await commonSource.get(mergeableID) || await primarySource.get(mergeableID)
   const baseAfter = _.cloneDeep(base)
   changes.forEach(change => {
-    _.set(baseAfter, getMergeableParentID(change.id).path, getChangeElement(change))
+    const changeValue = change.action === 'remove' ? undefined : change.data.after
+    _.set(baseAfter, getMergeableParentID(change.id).path, changeValue)
   })
   return {
     action: 'modify',

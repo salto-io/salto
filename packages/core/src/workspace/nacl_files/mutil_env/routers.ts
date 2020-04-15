@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ElemID } from '@salto-io/adapter-api'
+import { getChangeElement, ElemID, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises } from '@salto-io/lowerdash'
@@ -70,6 +70,21 @@ const getMergeableParentID = (id: ElemID): {mergeableID: ElemID; path: string[]}
     path: id.getFullNameParts().slice(firstListNamePart),
   }
 }
+
+const addChangeToBase = (base: Value, change: DetailedChange): Value => {
+  const changePath = getMergeableParentID(change.id).path
+  if (change.action === 'remove') {
+    const basePath = changePath.slice(0, -1)
+    const key = changePath[changePath.length - 1]
+    return _.set(
+      base,
+      basePath,
+      _.omit(_.get(base, basePath), key)
+    )
+  }
+  return _.set(base, changePath, change.data.after)
+}
+
 const createMergeableChange = async (
   changes: DetailedChange[],
   primarySource: NaclFilesSource,
@@ -81,11 +96,10 @@ const createMergeableChange = async (
   // the mergeable change by manualy applying the change to the current
   // existing element.
   const base = await commonSource.get(mergeableID) || await primarySource.get(mergeableID)
-  const baseAfter = _.cloneDeep(base)
-  changes.forEach(change => {
-    const changeValue = change.action === 'remove' ? undefined : change.data.after
-    _.set(baseAfter, getMergeableParentID(change.id).path, changeValue)
-  })
+  const baseAfter = changes.reduce(
+    (tempBase, change) => addChangeToBase(tempBase, change),
+    _.cloneDeep(base)
+  )
   return {
     action: 'modify',
     id: mergeableID,

@@ -20,7 +20,7 @@ import {
   ParsedCliInput, CliCommand, CliOutput,
   SpinnerCreator, CliExitCode, CliTelemetry,
 } from '../types'
-import { formatExecutionPlan } from '../formatter'
+import { formatExecutionPlan, header } from '../formatter'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
@@ -57,6 +57,7 @@ export const command = (
       const planWorkspaceErrors = await Promise.all(
         workspacePlan.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
       )
+      stdout.write(header(Prompts.PLAN_STEPS_HEADER_PREVIEW))
       const formattedPlanOutput = formatExecutionPlan(
         workspacePlan,
         planWorkspaceErrors

@@ -1,6 +1,3 @@
-/* eslint-disable header/header */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable max-len */
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -22,6 +19,7 @@ import {
   TypeMap,
   BuiltinTypes,
   PrimitiveType,
+  ListType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { SALESFORCE } from '../constants'
@@ -131,7 +129,9 @@ export const makeFilter = (
         log.warn('Failed to find type %s, omitting field %s', (f.type as ElemID).getFullName(), f.name)
         return undefined
       }
-      return new Field(elem.elemID, f.name, type, f.annotations)
+
+      const updatedType = f.isList ? new ListType(type) : type
+      return new Field(elem.elemID, f.name, updatedType, f.annotations)
     }
 
     // Add missing fields to types

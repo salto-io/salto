@@ -39,8 +39,9 @@ describe('missing fields filter', () => {
     [mockObjId.getFullName()]: [
       {
         name: 'lst',
-        type: new ListType(BuiltinTypes.STRING),
+        type: BuiltinTypes.STRING,
         annotations: { dummy: true },
+        isList: true,
       },
       {
         name: 'complex',

@@ -31,16 +31,6 @@
     "id": "LeadConvertSettings",
     "fields": [
       {
-        "name": "objectMapping",
-        "type": "ObjectMapping",
-        "isList": true
-      },
-      {
-        "name": "mappingFields",
-        "type": "MappingFields",
-        "isList": true
-      },
-      {
         "name": "inputField",
         "type": "STRING"
       },

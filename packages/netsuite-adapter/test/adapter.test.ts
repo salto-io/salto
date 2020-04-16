@@ -32,7 +32,7 @@ describe('Adapter', () => {
         + '  <label>elementName</label>'
         + '</entitycustomfield>'
       const rootXmlElement = convertToSingleXmlElement(xmlContent)
-      client.listCustomObjects = jest.fn().mockReturnValue([rootXmlElement])
+      client.listCustomObjects = jest.fn().mockImplementation(async () => [rootXmlElement])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(Types.getAllTypes().length + 1)
       const customFieldType = Types.customTypes[ENTITY_CUSTOM_FIELD.toLowerCase()]
@@ -40,12 +40,22 @@ describe('Adapter', () => {
       expect(elements).toContainEqual(createInstanceElement(rootXmlElement, customFieldType))
     })
 
+    it('should handle exceptions during listCustomObjects', async () => {
+      const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
+        + '  <label>elementName</label>'
+        + '</entitycustomfield>'
+      convertToSingleXmlElement(xmlContent)
+      client.listCustomObjects = jest.fn().mockImplementation(async () => Promise.reject())
+      const { elements } = await netsuiteAdapter.fetch()
+      expect(elements).toHaveLength(Types.getAllTypes().length)
+    })
+
     it('should ignore instances of unknown type', async () => {
       const xmlContent = '<unknowntype>\n'
         + '  <label>elementName</label>'
         + '</unknowntype>'
       const rootXmlElement = convertToSingleXmlElement(xmlContent)
-      client.listCustomObjects = jest.fn().mockReturnValue([rootXmlElement])
+      client.listCustomObjects = jest.fn().mockImplementation(async () => [rootXmlElement])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(Types.getAllTypes().length)
     })

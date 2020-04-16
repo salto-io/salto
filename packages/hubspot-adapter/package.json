@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/hubspot-adapter",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "license": "Apache-2.0",
   "description": "Salto Hubspot adapter",
   "repository": {
@@ -32,10 +32,10 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.11",
-    "@salto-io/adapter-utils": "0.1.11",
-    "@salto-io/logging": "0.1.11",
-    "@salto-io/lowerdash": "0.1.11",
+    "@salto-io/adapter-api": "0.1.12",
+    "@salto-io/adapter-utils": "0.1.12",
+    "@salto-io/logging": "0.1.12",
+    "@salto-io/lowerdash": "0.1.12",
     "@types/request-promise": "^4.1.45",
     "buffer": "^5.2.1",
     "events": "^3.0.0",

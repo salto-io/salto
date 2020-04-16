@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/netsuite-adapter",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "license": "Apache-2.0",
   "description": "Salto Netsuite adapter",
   "repository": {
@@ -27,14 +27,14 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.11",
-    "@salto-io/adapter-utils": "0.1.11",
-    "@salto-io/logging": "0.1.11",
-    "@salto-io/lowerdash": "0.1.11",
-    "xml-js": "^1.6.11",
-    "lodash": "^4.17.11",
     "@oracle/suitecloud-sdk": "https://github.com/salto-io/netsuite-suitecloud-sdk.git",
-    "wu": "^2.1.0"
+    "@salto-io/adapter-api": "0.1.12",
+    "@salto-io/adapter-utils": "0.1.12",
+    "@salto-io/logging": "0.1.12",
+    "@salto-io/lowerdash": "0.1.12",
+    "lodash": "^4.17.11",
+    "wu": "^2.1.0",
+    "xml-js": "^1.6.11"
   },
   "devDependencies": {
     "@types/jest": "^24.0.0",

@@ -43,6 +43,7 @@ E2E tests are run on CircleCI builds, and you should also run them locally befor
 
 #### TL;DR Quick method
 
+Install [hub](https://github.com/github/hub) and configure it (for example by running `hub ci-status`).
 Make sure you're on `master`, no local changes, CI status is passing, and run:
 
 ```bash

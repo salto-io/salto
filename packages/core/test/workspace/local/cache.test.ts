@@ -77,7 +77,7 @@ describe('localParseResultCache', () => {
       await cache.flush()
       expect(mkdirp).toHaveBeenCalledWith(path.resolve(mockBaseDirPath, 'blabla'))
       expect(replaceContents).toHaveBeenLastCalledWith(
-        path.resolve(mockBaseDirPath, 'blabla/blurprint.json'), mockSerializedCacheFile
+        path.resolve(mockBaseDirPath, 'blabla/blurprint.jsonl'), mockSerializedCacheFile
       )
     })
   })
@@ -86,7 +86,7 @@ describe('localParseResultCache', () => {
       mockFileExists.mockResolvedValueOnce(true)
       const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint3.nacl', lastModified: 0 })
       expect(parseResultFromCache).toBeDefined()
-      const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/blurprint3.json')
+      const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/blurprint3.jsonl')
       expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(expectedCacheFileName)
       expect(readTextFile).toHaveBeenCalledWith(expectedCacheFileName)
       // hack to make compiler happy :(
@@ -100,7 +100,7 @@ describe('localParseResultCache', () => {
     })
 
     it('does not return the file if it does not exist', async () => {
-      const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/notexist.json')
+      const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/notexist.jsonl')
       const parseResultFromCache = await cache.get({ filename: 'blabla/notexist.nacl', lastModified: 0 })
       expect(exists).toHaveBeenLastCalledWith(expectedCacheFileName)
       expect(readTextFile).not.toHaveBeenCalled()
@@ -110,7 +110,7 @@ describe('localParseResultCache', () => {
     it('does not return the file if it nacl file timestamp is later', async () => {
       mockFileExists.mockResolvedValueOnce(true)
       const parseResultFromCache = await cache.get({ filename: 'blabla/blurprint2.nacl', lastModified: 4000 })
-      const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/blurprint2.json')
+      const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/blurprint2.jsonl')
       expect(stat.notFoundAsUndefined).toHaveBeenLastCalledWith(expectedCacheFileName)
       expect(readTextFile).not.toHaveBeenCalled()
       expect(parseResultFromCache).toBeUndefined()
@@ -118,7 +118,7 @@ describe('localParseResultCache', () => {
     it('gracefully handles an invalid cache file content', async () => {
       mockReadFile.mockResolvedValueOnce('[]]')
       const parseResultFromCache = await cache.get({ filename: 'blabla/malformed.nacl', lastModified: 0 })
-      const mockMalformedCacheLoc = path.resolve(mockBaseDirPath, 'blabla/malformed.json')
+      const mockMalformedCacheLoc = path.resolve(mockBaseDirPath, 'blabla/malformed.jsonl')
       expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(mockMalformedCacheLoc)
       expect(readTextFile).toHaveBeenCalledWith(mockMalformedCacheLoc)
       expect(parseResultFromCache).toBeUndefined()

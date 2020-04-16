@@ -118,7 +118,7 @@ const buildNaclFilesSource = (
 
   const buildNaclFilesState = async (newNaclFiles: NaclFile[], current: ParsedNaclFileMap):
     Promise<NaclFilesState> => {
-    log.debug(`going to parse ${newNaclFiles.length} Nacl files`)
+    log.debug(`going to parse ${newNaclFiles.length} NaCl files`)
     const ParsedNaclFiles = await parseNaclFiles(newNaclFiles)
     const newParsed = _.keyBy(ParsedNaclFiles, parsed => parsed.filename)
     const allParsed = _.omitBy({ ...current, ...newParsed },
@@ -135,7 +135,7 @@ const buildNaclFilesSource = (
       _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
     )
 
-    log.info('workspace has %d elements and %d parsed Nacl files',
+    log.info('workspace has %d elements and %d parsed NaCl files',
       _.size(elementsIndex), _.size(allParsed))
     return {
       ParsedNaclFiles: allParsed,
@@ -160,7 +160,7 @@ const buildNaclFilesSource = (
       log.warn('expected to find source map for filename %s, going to re-parse', filename)
       const buffer = (await naclFilesStore.get(filename))?.buffer
       if (_.isUndefined(buffer)) {
-        log.error('failed to find %s in Nacl file store', filename)
+        log.error('failed to find %s in NaCl file store', filename)
         return new Map<string, SourceRange[]>()
       }
       return (await parseNaclFile({ filename, buffer })).sourceMap
@@ -212,7 +212,7 @@ const buildNaclFilesSource = (
               updatedFileChanges)
             return { filename, buffer }
           } catch (e) {
-            log.error('failed to update Nacl file %s with %o changes due to: %o',
+            log.error('failed to update NaCl file %s with %o changes due to: %o',
               filename, fileChanges, e)
             return undefined
           }
@@ -222,7 +222,7 @@ const buildNaclFilesSource = (
     )).filter(b => b !== undefined) as NaclFile[]
 
     if (updatedNaclFiles.length > 0) {
-      log.debug('going to update %d Nacl files', updatedNaclFiles.length)
+      log.debug('going to update %d NaCl files', updatedNaclFiles.length)
       await setNaclFiles(...updatedNaclFiles)
     }
   }

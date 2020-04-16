@@ -145,7 +145,7 @@ export class EditorWorkspace {
       this.runningSetOperation = this.workspace.updateNaclFiles(changes)
       return this.runningSetOperation
     }
-    throw new Error('Can not update Nacl files during a running set operation')
+    throw new Error('Can not update NaCl files during a running set operation')
   }
 
   async getNaclFile(filename: string): Promise<NaclFile | undefined> {

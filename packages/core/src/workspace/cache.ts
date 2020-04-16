@@ -21,7 +21,7 @@ import { DirectoryStore } from './dir_store'
 
 const log = logger(module)
 
-const CACHE_EXTENSION = '.json'
+const CACHE_EXTENSION = '.jsonl'
 
 type AsyncCache<K, V> = {
   get(key: K): Promise<V | undefined>

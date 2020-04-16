@@ -71,7 +71,7 @@ EnviornmentsSources => ({
           path.resolve(baseDir, env),
           path.resolve(localStorage, env)
         ),
-        state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.json`)),
+        state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.jsonl`)),
       },
     ])),
   [COMMON_ENV_PREFIX]: {

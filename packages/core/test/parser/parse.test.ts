@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import {
-  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID,
-  isObjectType, InstanceElement, BuiltinTypes, isListType, isType, ListType,
+  ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, Variable,
+  isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable, isType, ListType,
 } from '@salto-io/adapter-api'
 import {
   registerTestFunction,
@@ -146,6 +146,11 @@ describe('Salto parser', () => {
           nestalicous                           = funcush("yeah")
         }
       }
+
+      vars {
+        name = 7
+        name2 = "some string"
+      }
        `
     beforeAll(() => {
       ({ elements, sourceMap } = parse(Buffer.from(body), 'none', functions))
@@ -153,7 +158,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(14)
+        expect(elements.length).toBe(16)
       })
     })
 
@@ -190,10 +195,10 @@ describe('Salto parser', () => {
     describe('list type', () => {
       let listType: ListType
       beforeEach(() => {
-        expect(isListType(elements[13])).toBeTruthy()
-        listType = elements[13] as ListType
+        expect(isListType(elements[elements.length - 1])).toBeTruthy()
+        listType = elements[elements.length - 1] as ListType
       })
-      it('should have the corect inner type', () => {
+      it('should have the correct inner type', () => {
         expect(listType.innerType.elemID).toEqual(new ElemID('salesforce', 'string'))
       })
     })
@@ -486,7 +491,7 @@ describe('Salto parser', () => {
           expect(instanceWithFunctions.value.contentWithList.parameters[0])
             .toEqual(['yes', 'dad', true])
         })
-        it('several paraams', () => {
+        it('several params', () => {
           expect(instanceWithFunctions.value.contentWithSeveralParams)
             .toHaveProperty('funcName', 'funcush')
           expect(instanceWithFunctions.value.contentWithSeveralParams).toHaveProperty('parameters')
@@ -532,6 +537,23 @@ describe('Salto parser', () => {
           expect(func.parameters)
             .toEqual(['yeah'])
         })
+      })
+    })
+
+    describe('variables', () => {
+      let variable1: Variable
+      let variable2: Variable
+
+      beforeAll(() => {
+        expect(isVariable(elements[13])).toBeTruthy()
+        variable1 = elements[13] as Variable
+        expect(isVariable(elements[14])).toBeTruthy()
+        variable2 = elements[14] as Variable
+      })
+
+      it('should have the correct value', () => {
+        expect(variable1.value).toBe(7)
+        expect(variable2.value).toBe('some string')
       })
     })
   })

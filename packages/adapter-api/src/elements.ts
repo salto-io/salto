@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID } from './element_id'
-import { Values, isEqualValues } from './values'
+import { Values, isEqualValues, Value } from './values'
 
 /**
  * An abstract class that represent the base element.
@@ -325,6 +325,24 @@ export class InstanceElement extends Element {
   }
 }
 
+export class Variable extends Element {
+  constructor(elemID: ElemID,
+    public value: Value,
+    path?: ReadonlyArray<string>) {
+    super({ elemID, path })
+  }
+
+  static get serializedTypeName(): string { return 'Variable' }
+
+  isEqual(other: Variable): boolean {
+    return super.isEqual(other) && isEqualValues(this.value, other.value)
+  }
+
+  clone(): Variable {
+    return new Variable(this.elemID, _.cloneDeep(this.value), this.path)
+  }
+}
+
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isElement(value: any): value is Element {
   return value && value.elemID && value.elemID instanceof ElemID
@@ -350,6 +368,11 @@ export function isPrimitiveType(
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isListType(element: any): element is ListType {
   return element instanceof ListType
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+export function isVariable(element: any): element is Variable {
+  return element instanceof Variable
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -385,6 +408,8 @@ export function isEqualElements(first?: any, second?: any): boolean {
   } if (isField(first) && isField(second)) {
     return first.isEqual(second)
   } if (isInstanceElement(first) && isInstanceElement(second)) {
+    return first.isEqual(second)
+  } if (isVariable(first) && isVariable(second)) {
     return first.isEqual(second)
   }
   return false

@@ -15,17 +15,22 @@
 */
 import _ from 'lodash'
 
-export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation'
-export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation'] as ReadonlyArray<string>
+export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
+export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', 'var'] as ReadonlyArray<string>
 export const isElemIDType = (v: string): v is ElemIDType => ElemIDTypes.includes(v)
 
 export class ElemID {
   static readonly NAMESPACE_SEPARATOR = '.'
   static readonly CONFIG_NAME = '_config'
+  static readonly VARIABLES_NAMESPACE = 'var'
+  private static readonly TOP_LEVEL_ID_TYPES = ['type', 'var']
 
   static fromFullName(fullName: string): ElemID {
     const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
     if (idType === undefined) {
+      if (adapter !== ElemID.VARIABLES_NAMESPACE) {
+        return new ElemID(adapter, typeName)
+      }
       return new ElemID(adapter, typeName)
     }
     if (!isElemIDType(idType)) {
@@ -54,8 +59,28 @@ export class ElemID {
   ) {
     this.adapter = adapter
     this.typeName = _.isEmpty(typeName) ? ElemID.CONFIG_NAME : typeName as string
-    this.idType = idType || 'type'
+    this.idType = idType || (adapter === ElemID.VARIABLES_NAMESPACE ? 'var' : 'type')
     this.nameParts = name
+    this.validateVariable()
+  }
+
+  private validateVariable(): void {
+    if (this.adapter === ElemID.VARIABLES_NAMESPACE && this.idType !== 'var'
+        && this.typeName !== ElemID.CONFIG_NAME) {
+      throw new Error(`Cannot create ID ${this.getFullName()
+      } - type must be 'var', not '${this.idType}'`)
+    }
+    if (this.idType === 'var') {
+      if (this.adapter !== ElemID.VARIABLES_NAMESPACE) {
+        throw new Error(`Cannot create ID for variable ${this.getFullName()
+        } -  it must be in the ${ElemID.VARIABLES_NAMESPACE
+        } namespace, not in ${this.adapter}`)
+      }
+      if (!_.isEmpty(this.nameParts)) {
+        throw new Error(`Cannot create ID ${this.getFullName()
+        }.${this.nameParts.join(ElemID.NAMESPACE_SEPARATOR)} - object variables are not supported`)
+      }
+    }
   }
 
   get name(): string {
@@ -78,7 +103,7 @@ export class ElemID {
   }
 
   private fullNameParts(): string[] {
-    const parts = this.idType === 'type'
+    const parts = ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
       ? [this.adapter, this.typeName]
       : [this.adapter, this.typeName, this.idType, ...this.nameParts]
     return parts.filter(part => !_.isEmpty(part)) as string[]
@@ -104,7 +129,7 @@ export class ElemID {
   }
 
   isTopLevel(): boolean {
-    return this.idType === 'type'
+    return ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)
       || (this.idType === 'instance' && this.nameParts.length === 1)
   }
 
@@ -113,11 +138,14 @@ export class ElemID {
   }
 
   createNestedID(...nameParts: string[]): ElemID {
-    if (this.idType === 'type') {
+    if (ElemID.TOP_LEVEL_ID_TYPES.includes(this.idType)) {
+      const newIdName = [...this.fullNameParts(), ...nameParts].join(ElemID.NAMESPACE_SEPARATOR)
+      if (this.idType === 'var') {
+        throw new Error(`Cannot create nested ID ${newIdName} - object variables are not supported`)
+      }
       // IDs nested under type IDs should have a different type
       const [nestedIDType, ...nestedNameParts] = nameParts
       if (!isElemIDType(nestedIDType)) {
-        const newIdName = [...this.fullNameParts(), ...nameParts].join(ElemID.NAMESPACE_SEPARATOR)
         throw new Error(`Cannot create nested ID ${newIdName} - Invalid ID type ${nestedIDType}`)
       }
       return new ElemID(this.adapter, this.typeName, nestedIDType, ...nestedNameParts)

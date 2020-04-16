@@ -130,7 +130,7 @@ export const parseBuffer = (
   } catch (err) {
     // The next two lines recover the state of the parser before the bad token was
     // entered - so we can understand what token was needed, and so we can recover
-    // the parsing using the wildcard token. We use _.get to overide a type issue
+    // the parsing using the wildcard token. We use _.get to override a type issue
     // with nearley (the table is not defined, but documented)
     const parseTable = _.get(hclParser, 'table')
     const lastColumn = parseTable[parseTable.length - 2]

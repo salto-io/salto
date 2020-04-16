@@ -45,6 +45,7 @@ export const getAllElements = (): AllElementsTypes => {
           description: 'A location of an office',
         },
       ),
+      rooms: new Field(officeElemID, 'room', new ListType(BuiltinTypes.STRING)),
     },
     // eslint-disable-next-line @typescript-eslint/camelcase,max-len
     annotationTypes: { label: BuiltinTypes.STRING, old: BuiltinTypes.STRING, case_sensitive: BuiltinTypes.BOOLEAN },

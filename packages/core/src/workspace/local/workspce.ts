@@ -20,7 +20,7 @@ import { exists } from '../../file'
 import { Workspace, loadWorkspace, COMMON_ENV_PREFIX, EnviornmentsSources, initWorkspace } from '../workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../../app_config'
-import { BlueprintsSource, BP_EXTENSION, blueprintsSource } from '../blueprints/blueprints_source'
+import { NaclFilesSource, FILE_EXTENSION, naclFilesSource } from '../nacl_files/nacl_files_source'
 import { parseResultCache } from '../cache'
 import { localState } from './state'
 import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspace_config'
@@ -47,18 +47,18 @@ export class NotAWorkspaceError extends Error {
   }
 }
 
-const loadBlueprintSource = (
+const loadNaclFileSource = (
   sourceBaseDir: string,
   localStorage: string,
   excludeDirs: string[] = []
-): BlueprintsSource => {
-  const blueprintsStore = localDirectoryStore(
+): NaclFilesSource => {
+  const naclFilesStore = localDirectoryStore(
     sourceBaseDir,
-    `*${BP_EXTENSION}`,
+    `*${FILE_EXTENSION}`,
     (dirParh: string) => !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirParh),
   )
   const cacheStore = localDirectoryStore(path.join(localStorage, 'cache'))
-  return blueprintsSource(blueprintsStore, parseResultCache(cacheStore))
+  return naclFilesSource(naclFilesStore, parseResultCache(cacheStore))
 }
 
 const elementsSources = (baseDir: string, localStorage: string, envs: ReadonlyArray<string>):
@@ -67,15 +67,15 @@ EnviornmentsSources => ({
     [
       env,
       {
-        blueprints: loadBlueprintSource(
+        naclFiles: loadNaclFileSource(
           path.resolve(baseDir, env),
           path.resolve(localStorage, env)
         ),
-        state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.bpc`)),
+        state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.jsonl`)),
       },
     ])),
   [COMMON_ENV_PREFIX]: {
-    blueprints: loadBlueprintSource(
+    naclFiles: loadNaclFileSource(
       baseDir,
       localStorage,
       envs.map(env => path.join(baseDir, env))

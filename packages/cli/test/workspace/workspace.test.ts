@@ -26,7 +26,7 @@ const mockWsFunctions = {
   envs: mockFunction<Workspace['envs']>().mockReturnValue(['default']),
   currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue('default'),
   errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
-  updateBlueprints: mockFunction<Workspace['updateBlueprints']>(),
+  updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
   isEmpty: mockFunction<Workspace['isEmpty']>(),
   flush: mockFunction<Workspace['flush']>(),
   transformError: mockFunction<Workspace['transformError']>().mockImplementation(
@@ -183,7 +183,7 @@ describe('workspace', () => {
         dummyChanges.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBeTruthy()
-      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(dummyChanges, undefined)
+      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, undefined)
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
     })
 
@@ -194,7 +194,7 @@ describe('workspace', () => {
         changes.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBeTruthy()
-      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(changes, undefined)
+      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(changes, undefined)
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
     })
 
@@ -206,7 +206,7 @@ describe('workspace', () => {
         dummyChanges.map((change: DetailedChange): FetchChange =>
           ({ change, serviceChange: change })))
       expect(result).toBe(false)
-      expect(mockWs.updateBlueprints).toHaveBeenCalledWith(dummyChanges, undefined)
+      expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, undefined)
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
     })
   })

@@ -26,7 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
-  bpCase, TransformPrimitiveFunc,
+  naclCase, TransformPrimitiveFunc,
 } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField } from '../client/types'
 import {
@@ -751,8 +751,8 @@ export class Types {
   public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
     const updatedName = METADATA_TYPES_TO_RENAME.get(name) ?? name
     return (customObject && this.getElemIdFunc && serviceIds)
-      ? this.getElemIdFunc(SALESFORCE, serviceIds, bpCase(updatedName))
-      : new ElemID(SALESFORCE, bpCase(updatedName))
+      ? this.getElemIdFunc(SALESFORCE, serviceIds, naclCase(updatedName))
+      : new ElemID(SALESFORCE, naclCase(updatedName))
   }
 
   static getAllFieldTypes(): TypeElement[] {
@@ -899,7 +899,7 @@ export const toCustomObject = (
 
 export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
   knownTypes: Map<string, TypeElement>): TypeField => {
-  const bpFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
+  const naclFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
     ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
   // mark required as false until SALTO-45 will be resolved
@@ -924,7 +924,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
       annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
     }
   }
-  return new TypeField(parentID, field.name, bpFieldType, annotations)
+  return new TypeField(parentID, field.name, naclFieldType, annotations)
 }
 
 type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
@@ -983,7 +983,7 @@ const getDefaultValue = (field: Field): PrimitiveValue | undefined => {
 }
 
 // The following method is used during the fetchy process and is used in building the objects
-// and their fields described in the blueprint
+// and their fields described in the Nacl file
 export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
   parentServiceIds: ServiceIds): TypeField => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPERATOR)
@@ -997,7 +997,7 @@ export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
     Types.get(typeName, true, false, serviceIds)
   )
 
-  let bpFieldType = getFieldType(FIELD_SOAP_TYPE_NAMES[field.type])
+  let naclFieldType = getFieldType(FIELD_SOAP_TYPE_NAMES[field.type])
   const annotations: Values = {
     [API_NAME]: fieldApiName,
     [LABEL]: field.label,
@@ -1022,24 +1022,24 @@ export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
   // Salesforce field type
   if (field.autoNumber) { // autonumber (needs to be first because its type in the field
     // returned from the API is string)
-    bpFieldType = getFieldType(FIELD_TYPE_NAMES.AUTONUMBER)
+    naclFieldType = getFieldType(FIELD_TYPE_NAMES.AUTONUMBER)
   } else if (field.type === 'string' && !field.compoundFieldName) { // string
-    bpFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
+    naclFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
   } else if ((field.type === 'double' && !field.compoundFieldName)) {
-    bpFieldType = getFieldType(FIELD_TYPE_NAMES.NUMBER)
+    naclFieldType = getFieldType(FIELD_TYPE_NAMES.NUMBER)
     annotations[FIELD_ANNOTATIONS.PRECISION] = field.precision
     annotations[FIELD_ANNOTATIONS.SCALE] = field.scale
   } else if (field.type === 'int') {
-    bpFieldType = getFieldType(FIELD_TYPE_NAMES.NUMBER)
+    naclFieldType = getFieldType(FIELD_TYPE_NAMES.NUMBER)
     annotations[FIELD_ANNOTATIONS.PRECISION] = field.digits
   } else if (field.type === 'textarea' && field.length > 255) { // long text area & rich text area
     if (field.extraTypeInfo === 'plaintextarea') {
-      bpFieldType = getFieldType(FIELD_TYPE_NAMES.LONGTEXTAREA)
+      naclFieldType = getFieldType(FIELD_TYPE_NAMES.LONGTEXTAREA)
     } else if (field.extraTypeInfo === 'richtextarea') {
-      bpFieldType = getFieldType(FIELD_TYPE_NAMES.RICHTEXTAREA)
+      naclFieldType = getFieldType(FIELD_TYPE_NAMES.RICHTEXTAREA)
     }
   } else if (field.type === 'encryptedstring') { // encrypted string
-    bpFieldType = getFieldType(FIELD_TYPE_NAMES.ENCRYPTEDTEXT)
+    naclFieldType = getFieldType(FIELD_TYPE_NAMES.ENCRYPTEDTEXT)
   }
   // Picklists
   if (field.picklistValues && field.picklistValues.length > 0) {
@@ -1057,16 +1057,16 @@ export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
   } else if (field.calculated) {
     if (!_.isEmpty(field.calculatedFormula)) {
       // Formulas
-      bpFieldType = getFieldType(formulaTypeName(bpFieldType.elemID.name as FIELD_TYPE_NAMES))
+      naclFieldType = getFieldType(formulaTypeName(naclFieldType.elemID.name as FIELD_TYPE_NAMES))
       annotations[FORMULA] = field.calculatedFormula
     } else {
       // Rollup Summary
-      bpFieldType = getFieldType(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
+      naclFieldType = getFieldType(FIELD_TYPE_NAMES.ROLLUP_SUMMARY)
     }
     // Lookup & MasterDetail
   } else if (field.type === 'reference') {
     if (field.cascadeDelete) {
-      bpFieldType = getFieldType(FIELD_TYPE_NAMES.MASTER_DETAIL)
+      naclFieldType = getFieldType(FIELD_TYPE_NAMES.MASTER_DETAIL)
       // master detail fields are always not required in SF although returned as nillable=false
       annotations[CORE_ANNOTATIONS.REQUIRED] = false
       annotations[FIELD_ANNOTATIONS.WRITE_REQUIRES_MASTER_READ] = Boolean(
@@ -1074,7 +1074,7 @@ export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
       )
       annotations[FIELD_ANNOTATIONS.REPARENTABLE_MASTER_DETAIL] = Boolean(field.updateable)
     } else {
-      bpFieldType = getFieldType(FIELD_TYPE_NAMES.LOOKUP)
+      naclFieldType = getFieldType(FIELD_TYPE_NAMES.LOOKUP)
       annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION] = !(_.get(field, 'restrictedDelete'))
     }
     if (!_.isEmpty(field.referenceTo)) {
@@ -1090,22 +1090,22 @@ export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
     }
     // Name Field
   } else if (field.nameField) {
-    bpFieldType = Types.compoundDataTypes.Name
+    naclFieldType = Types.compoundDataTypes.Name
   }
-  if (!_.isEmpty(bpFieldType.annotationTypes)) {
+  if (!_.isEmpty(naclFieldType.annotationTypes)) {
     // Get the rest of the annotations if their name matches exactly the API response
     // and they are not already assigned
     _.assign(
       annotations,
       _.pick(
         _.omit(field, Object.keys(annotations)),
-        Object.keys(bpFieldType.annotationTypes),
+        Object.keys(naclFieldType.annotationTypes),
       )
     )
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
-  return new TypeField(parentElemID, fieldName, bpFieldType, annotations)
+  return new TypeField(parentElemID, fieldName, naclFieldType, annotations)
 }
 
 export const fromMetadataInfo = (info: MetadataInfo): Values => info
@@ -1153,14 +1153,14 @@ export const createInstanceElementFromValues = (values: Values, type: ObjectType
 
   const typeName = type.elemID.name
   const name = (): string => (
-    Types.getElemId(bpCase(fullName), true, instanceServiceIds()).name
+    Types.getElemId(naclCase(fullName), true, instanceServiceIds()).name
   )
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : name(),
     type,
     values,
     [...getPackagePath(), RECORDS_PATH,
-      type.isSettings ? SETTINGS_PATH : typeName, bpCase(fullName)],
+      type.isSettings ? SETTINGS_PATH : typeName, naclCase(fullName)],
   )
 }
 

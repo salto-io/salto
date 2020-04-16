@@ -12,7 +12,7 @@
 ## Features at a glance
 
 - Auto-completion support.
-- Syntax highlighting for `.bp` files.
+- Syntax highlighting for `.nacl` files.
 - Syntax, Merge, and validation error highlighting. 
 - Browse document symbols
 - Browse workspace symbols

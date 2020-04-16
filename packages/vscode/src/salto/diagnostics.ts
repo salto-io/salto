@@ -34,7 +34,7 @@ export const getDiagnostics = async (
   workspace: EditorWorkspace,
 ): Promise<WorkspaceSaltoDiagnostics> => {
   const emptyDiagFiles: WorkspaceSaltoDiagnostics = _.fromPairs(
-    (await workspace.listBlueprints())
+    (await workspace.listNaclFiles())
       .map(filename => [filename, []])
   )
   const workspaceErrors = await Promise.all(

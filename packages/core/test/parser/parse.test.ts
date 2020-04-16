@@ -456,8 +456,8 @@ describe('Salto parser', () => {
       describe('file', () => {
         it('should have filepath', () =>
           expect(instanceWithFunctions.value.contentWithFile).toHaveProperty('relativeFileName', 'some/path.ext'))
-        it('should have bpPath', () =>
-          expect(instanceWithFunctions.value.contentWithFile).toHaveProperty('bpPath', 'none'))
+        it('should have naclFilePath', () =>
+          expect(instanceWithFunctions.value.contentWithFile).toHaveProperty('naclFilePath', 'none'))
       })
 
       describe('parameters', () => {

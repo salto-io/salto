@@ -40,23 +40,23 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     const workspace = new EditorWorkspace(rootPath, await loadLocalWorkspace(rootPath))
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
       createCompletionsProvider(workspace),
       ' ', '.'
     )
 
     const definitionProvider = vscode.languages.registerDefinitionProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
       createDefinitionsProvider(workspace)
     )
 
     const referenceProvider = vscode.languages.registerReferenceProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
       createReferenceProvider(workspace)
     )
 
     const symbolsProvider = vscode.languages.registerDocumentSymbolProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
       createDocumentSymbolsProvider(workspace)
     )
 
@@ -65,7 +65,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     )
 
     const foldProvider = vscode.languages.registerFoldingRangeProvider(
-      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.bp' } },
+      { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
       createFoldingProvider(workspace)
     )
 
@@ -85,7 +85,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
       vscode.workspace.onDidOpenTextDocument(onFileOpen),
       vscode.commands.registerCommand('salto.copyReference', createCopyReferenceCommand(workspace))
     )
-    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.bp')
+    const fileWatcher = vscode.workspace.createFileSystemWatcher('**/*.nacl')
     fileWatcher.onDidCreate((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidChange((uri: vscode.Uri) => onFileChange(workspace, uri.fsPath))
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.fsPath))

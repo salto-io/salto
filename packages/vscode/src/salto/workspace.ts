@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Workspace, Blueprint, DetailedChange, WorkspaceError, SourceMap, SourceRange, Errors } from '@salto-io/core'
+import { Workspace, NaclFile, DetailedChange, WorkspaceError, SourceMap,
+  SourceRange, Errors } from '@salto-io/core'
 import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
 import wu from 'wu'
 
@@ -26,7 +27,7 @@ export class EditorWorkspace {
   // attempting to modify a copy of a workspace will result in an error
   private isCopy: boolean
   private runningSetOperation?: Promise<void>
-  private pendingSets: {[key: string]: Blueprint} = {}
+  private pendingSets: {[key: string]: NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
   private lastValidCopy? : Promise<Workspace | undefined>
 
@@ -57,17 +58,17 @@ export class EditorWorkspace {
     return path.resolve(this.baseDir, filename)
   }
 
-  private editorBlueprint(blueprint: Blueprint): Blueprint {
+  private editorNaclFile(naclFile: NaclFile): NaclFile {
     return {
-      ...blueprint,
-      filename: this.editorFilename(blueprint.filename),
+      ...naclFile,
+      filename: this.editorFilename(naclFile.filename),
     }
   }
 
-  private workspaceBlueprint(blueprint: Blueprint): Blueprint {
+  private workspaceNaclFile(naclFile: NaclFile): NaclFile {
     return {
-      ...blueprint,
-      filename: this.workspaceFilename(blueprint.filename),
+      ...naclFile,
+      filename: this.workspaceFilename(naclFile.filename),
     }
   }
 
@@ -91,8 +92,8 @@ export class EditorWorkspace {
     return !(_.isEmpty(this.pendingSets) && _.isEmpty(this.pendingDeletes))
   }
 
-  private addPendingBlueprints(blueprints: Blueprint[]): void {
-    _.assignWith(this.pendingSets, _.keyBy(blueprints, 'filename'))
+  private addPendingNaclFiles(naclFiles: NaclFile[]): void {
+    _.assignWith(this.pendingSets, _.keyBy(naclFiles, 'filename'))
   }
 
   private addPendingDeletes(names: string[]): void {
@@ -106,16 +107,16 @@ export class EditorWorkspace {
     // No async ops here so the switch is atomic. Thanks JS!
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
-      const opBlueprints = this.pendingSets
+      const opNaclFiles = this.pendingSets
       this.pendingDeletes = new Set<string>()
       this.pendingSets = {}
       // We start by running all deleted
       if (!_.isEmpty(opDeletes) && this.workspace) {
-        await this.workspace.removeBlueprints(...opDeletes)
+        await this.workspace.removeNaclFiles(...opDeletes)
       }
       // Now add the waiting changes
-      if (!_.isEmpty(opBlueprints) && this.workspace) {
-        await this.workspace.setBlueprints(..._.values(opBlueprints))
+      if (!_.isEmpty(opNaclFiles) && this.workspace) {
+        await this.workspace.setNaclFiles(..._.values(opNaclFiles))
       }
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
@@ -139,21 +140,21 @@ export class EditorWorkspace {
     return this.runningSetOperation
   }
 
-  async updateBlueprints(changes: DetailedChange[]): Promise<void> {
+  async updateNaclFiles(changes: DetailedChange[]): Promise<void> {
     if (this.runningSetOperation === undefined) {
-      this.runningSetOperation = this.workspace.updateBlueprints(changes)
+      this.runningSetOperation = this.workspace.updateNaclFiles(changes)
       return this.runningSetOperation
     }
-    throw new Error('Can not update blueprints during a running set operation')
+    throw new Error('Can not update NaCl files during a running set operation')
   }
 
-  async getBlueprint(filename: string): Promise<Blueprint | undefined> {
-    const bp = await this.workspace.getBlueprint(this.workspaceFilename(filename))
-    return bp && this.editorBlueprint(bp)
+  async getNaclFile(filename: string): Promise<NaclFile | undefined> {
+    const naclFile = await this.workspace.getNaclFile(this.workspaceFilename(filename))
+    return naclFile && this.editorNaclFile(naclFile)
   }
 
-  async listBlueprints(): Promise<string[]> {
-    return (await this.workspace.listBlueprints()).map(filename => this.editorFilename(filename))
+  async listNaclFiles(): Promise<string[]> {
+    return (await this.workspace.listNaclFiles()).map(filename => this.editorFilename(filename))
   }
 
   async getElements(filename: string): Promise<Element[]> {
@@ -180,12 +181,12 @@ export class EditorWorkspace {
     }
   }
 
-  setBlueprints(...blueprints: Blueprint[]): Promise<void> {
-    this.addPendingBlueprints(blueprints.map(bp => this.workspaceBlueprint(bp)))
+  setNaclFiles(...naclFiles: NaclFile[]): Promise<void> {
+    this.addPendingNaclFiles(naclFiles.map(file => this.workspaceNaclFile(file)))
     return this.triggerAggregatedSetOperation()
   }
 
-  removeBlueprints(...names: string[]): Promise<void> {
+  removeNaclFiles(...names: string[]): Promise<void> {
     this.addPendingDeletes(names.map(name => this.workspaceFilename(name)))
     return this.triggerAggregatedSetOperation()
   }

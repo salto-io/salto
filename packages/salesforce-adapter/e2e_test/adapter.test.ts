@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   findElement,
-  findObjectType, bpCase,
+  findObjectType, naclCase,
 } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto-io/lowerdash'
@@ -2196,9 +2196,9 @@ describe('Salesforce adapter E2E with real account', () => {
               .toEqual(new ReferenceExpression(
                 new ElemID(
                   constants.SALESFORCE,
-                  bpCase(GLOBAL_VALUE_SET),
+                  naclCase(GLOBAL_VALUE_SET),
                   'instance',
-                  bpCase(gvsName),
+                  naclCase(gvsName),
                 )
               ))
           })

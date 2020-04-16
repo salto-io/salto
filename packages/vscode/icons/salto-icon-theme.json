@@ -1,10 +1,10 @@
 {
   "iconDefinitions": {
-    "_salto_bp": {
+    "_salto_nacl": {
       "iconPath": "./images/file_type_salto_blue.png"
     }
   },
   "fileExtensions": {
-    "bp": "_salto_bp"
+    "nacl": "_salto_nacl"
   }
 }

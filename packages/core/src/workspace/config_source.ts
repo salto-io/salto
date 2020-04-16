@@ -18,7 +18,7 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { parse } from '../parser/parse'
 import { dumpElements } from '../parser/dump'
-import { BP_EXTENSION } from './blueprints/blueprints_source'
+import { FILE_EXTENSION } from './nacl_files/nacl_files_source'
 import { DirectoryStore } from './dir_store'
 
 const log = logger(module)
@@ -38,15 +38,15 @@ export const configSource = (
   dirStore: DirectoryStore,
 ): ConfigSource => {
   const filename = (name: string): string =>
-    (name.endsWith(BP_EXTENSION) ? name : name.concat(BP_EXTENSION))
+    (name.endsWith(FILE_EXTENSION) ? name : name.concat(FILE_EXTENSION))
 
   return {
     get: async (name: string): Promise<InstanceElement | undefined> => {
-      const bp = await dirStore.get(filename(name))
-      if (_.isUndefined(bp)) {
+      const naclFile = await dirStore.get(filename(name))
+      if (_.isUndefined(naclFile)) {
         return undefined
       }
-      const parseResult = parse(Buffer.from(bp.buffer), bp.filename)
+      const parseResult = parse(Buffer.from(naclFile.buffer), naclFile.filename)
       if (!_.isEmpty(parseResult.errors)) {
         log.error('failed to parse %s due to %o', name, parseResult.errors)
         throw new ConfigParseError(name)
@@ -55,7 +55,7 @@ export const configSource = (
         log.warn('%s has more than a single element in the config file; returning the first element',
           name)
       }
-      return bp
+      return naclFile
         ? parseResult.elements.pop() as InstanceElement
         : undefined
     },

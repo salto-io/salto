@@ -20,7 +20,7 @@ import {
   TypeMap, Values, isPrimitiveType, Value, ListType,
 } from '@salto-io/adapter-api'
 import {
-  TransformPrimitiveFunc, bpCase, transformValues,
+  TransformPrimitiveFunc, naclCase, transformValues,
 } from '@salto-io/adapter-utils'
 import { isFormInstance } from '../filters/form_field'
 import {
@@ -1834,7 +1834,7 @@ export class Types {
 
 export const createInstanceName = (
   name: string
-): string => bpCase(name.trim())
+): string => naclCase(name.trim())
 
 export const transformPrimitive: TransformPrimitiveFunc = (val, _pathID, field) => {
   // remove values that are just an empty string or null

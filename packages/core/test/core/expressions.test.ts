@@ -110,7 +110,7 @@ describe('Test Salto Expressions', () => {
       several: new TestFuncImpl('several', [false, 123]),
       list: new TestFuncImpl('list', [['aaa', true, 123]]),
       mixed: new TestFuncImpl('mixed', ['aaa', [1, 2, 'aa']]),
-      file: new StaticFile('some.bp', 'some/path.ext'),
+      file: new StaticFile('some.nacl', 'some/path.ext'),
     })
 
     const elements = [

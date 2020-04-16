@@ -53,7 +53,7 @@ export const runSalesforceLogin = async (workspaceDir: string): Promise<void> =>
     .execute()
 }
 
-export const editBlueprint = async (filename: string, replacements: ReplacementPair[]):
+export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):
   Promise<void> => {
   let fileAsString = await file.readTextFile(filename)
   replacements.forEach(pair => {

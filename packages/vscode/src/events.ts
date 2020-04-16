@@ -15,7 +15,7 @@
 */
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { file } from '@salto-io/core'
+import { file, FILE_EXTENSION } from '@salto-io/core'
 import { EditorWorkspace } from './salto/workspace'
 import { getDiagnostics } from './salto/diagnostics'
 import { toVSDiagnostics } from './adapters'
@@ -39,9 +39,9 @@ export const onTextChangeEvent = (
   event: vscode.TextDocumentChangeEvent,
   workspace: EditorWorkspace
 ): void => {
-  if (path.extname(event.document.fileName) === '.bp') {
-    const bp = { filename: event.document.fileName, buffer: event.document.getText() }
-    workspace.setBlueprints(bp)
+  if (path.extname(event.document.fileName) === FILE_EXTENSION) {
+    const naclFile = { filename: event.document.fileName, buffer: event.document.getText() }
+    workspace.setNaclFiles(naclFile)
   }
 }
 
@@ -53,7 +53,7 @@ export const onFileDelete = (
   workspace: EditorWorkspace,
   filename: string
 ): Promise<void> => {
-  workspace.removeBlueprints(filename)
+  workspace.removeNaclFiles(filename)
   return workspace.awaitAllUpdates()
 }
 
@@ -62,6 +62,6 @@ export const onFileChange = async (
   filename: string
 ): Promise<void> => {
   const buffer = await file.readTextFile(filename)
-  workspace.setBlueprints({ filename, buffer })
+  workspace.setNaclFiles({ filename, buffer })
   return workspace.awaitAllUpdates()
 }

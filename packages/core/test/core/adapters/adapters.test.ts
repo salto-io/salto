@@ -27,9 +27,9 @@ describe('adapters.ts', () => {
     ElemID.CONFIG_NAME,
     credentialsType,
     {
-      username: 'bpuser',
-      password: 'bppass',
-      token: 'bptoken',
+      username: 'nacluser',
+      password: 'naclpass',
+      token: 'nacltoken',
       sandbox: false,
     }
   )

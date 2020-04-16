@@ -23,7 +23,7 @@ import {
 } from './projections'
 import { DetailedChange } from '../../../core/plan'
 import { wrapAdditions, DetailedAddition } from '../addition_wrapper'
-import { BlueprintsSource, BP_EXTENSION, RoutingMode } from '../blueprints_source'
+import { NaclFilesSource, FILE_EXTENSION, RoutingMode } from '../nacl_files_source'
 
 export interface RoutedChanges {
     primarySource?: DetailedChange[]
@@ -72,8 +72,8 @@ const getMergeableParentID = (id: ElemID): {mergeableID: ElemID; path: string[]}
 }
 const createMergeableChange = async (
   changes: DetailedChange[],
-  primarySource: BlueprintsSource,
-  commonSource: BlueprintsSource
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource
 ): Promise<DetailedChange> => {
   const refChange = changes[0]
   const { mergeableID } = getMergeableParentID(refChange.id)
@@ -98,9 +98,9 @@ const createMergeableChange = async (
 
 export const routeFetch = async (
   change: DetailedChange,
-  primarySource: BlueprintsSource,
-  commonSource: BlueprintsSource,
-  secondarySources: Record<string, BlueprintsSource>
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource,
+  secondarySources: Record<string, NaclFilesSource>
 ): Promise<RoutedChanges> => {
   // If the add change projects to a secondary source we can't
   // add it to common since it is already marked as env specific.
@@ -124,20 +124,20 @@ export const routeFetch = async (
 
 const getChangePathHint = async (
   change: DetailedChange,
-  commonSource: BlueprintsSource
+  commonSource: NaclFilesSource
 ): Promise<string[] | undefined> => {
   if (change.path) return change.path
-  const refFilename = (await commonSource.getElementBlueprints(change.id))[0]
+  const refFilename = (await commonSource.getElementNaclFiles(change.id))[0]
   return refFilename
-    ? _.trimEnd(refFilename, BP_EXTENSION).split(path.sep)
+    ? _.trimEnd(refFilename, FILE_EXTENSION).split(path.sep)
     : undefined
 }
 
 export const routeNewEnv = async (
   change: DetailedChange,
-  primarySource: BlueprintsSource,
-  commonSource: BlueprintsSource,
-  secondarySources: Record<string, BlueprintsSource>
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource,
+  secondarySources: Record<string, NaclFilesSource>
 ): Promise<RoutedChanges> => {
   // This is an add change, which means the element is not in common.
   // so we will add it to the current action enviornment.
@@ -195,7 +195,7 @@ export const routeNewEnv = async (
 
 const partitionMergeableChanges = async (
   changes: DetailedChange[],
-  commonSource: BlueprintsSource
+  commonSource: NaclFilesSource
 ): Promise<[DetailedChange[], DetailedChange[]]> => (
   promises.array.partition(
     changes,
@@ -209,8 +209,8 @@ const partitionMergeableChanges = async (
 
 const toMergeableChanges = async (
   changes: DetailedChange[],
-  primarySource: BlueprintsSource,
-  commonSource: BlueprintsSource,
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource,
 ): Promise<DetailedChange[]> => {
   // First we create mergeable changes!
   // We need to modify a change iff:
@@ -232,9 +232,9 @@ const toMergeableChanges = async (
 
 export const routeChanges = async (
   rawChanges: DetailedChange[],
-  primarySource: BlueprintsSource,
-  commonSource: BlueprintsSource,
-  secondarySources: Record<string, BlueprintsSource>,
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource,
+  secondarySources: Record<string, NaclFilesSource>,
   mode?: RoutingMode
 ): Promise<RoutedChanges> => {
   const isIsolated = mode === 'isolated'

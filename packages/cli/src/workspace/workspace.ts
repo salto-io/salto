@@ -149,7 +149,7 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
         .forEach(s => log.info(s))
     }
 
-    await ws.updateBlueprints(
+    await ws.updateNaclFiles(
       changes.map(c => c.change),
       isolated ? 'isolated' : undefined
     )

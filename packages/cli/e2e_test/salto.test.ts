@@ -29,7 +29,7 @@ import {
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {
-  editBlueprint, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
+  editNaclFile, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
   verifyObject, runEmptyPreview, runSalesforceLogin, runPreview,
 } from './helpers/workspace'
 import { instanceExists, objectExists } from './helpers/salesforce'
@@ -63,9 +63,9 @@ describe('cli e2e', () => {
     )
   })
 
-  const addModelBP = `${__dirname}/../../e2e_test/BP/add.bp`
-  const configFile = `${__dirname}/../../e2e_test/BP/salto.config/workspace.bp`
-  const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/BP/salto.config/local/workspaceUser.bp`
+  const addModelNaclFile = `${__dirname}/../../e2e_test/NACL/add.nacl`
+  const configFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`
+  const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 
@@ -75,7 +75,7 @@ describe('cli e2e', () => {
   let localWorkspaceDir: string
   let statePath: string
   let randomString: string
-  let tmpBPRelativePath: string
+  let tmpNaclFileRelativePath: string
   let newInstanceElemName: string
   let newInstanceFullName: string
   let newObjectElemName: string
@@ -86,32 +86,32 @@ describe('cli e2e', () => {
   const ROLE = 'Role'
   let client: SalesforceClient
 
-  const fullPath = (bpPartialPath: string): string =>
-    path.join(fetchOutputDir, bpPartialPath)
+  const fullPath = (partialPath: string): string =>
+    path.join(fetchOutputDir, partialPath)
 
   beforeAll(async () => {
     homePath = tmp.dirSync().name
-    fetchOutputDir = `${homePath}/BP/test_fetch`
+    fetchOutputDir = `${homePath}/NACL/test_fetch`
     localStorageDir = `${homePath}/.salto/test_fetch`
     localWorkspaceDir = `${homePath}/e2e-375e3f65-be66-4fdc-a561-4c4f9735db94`
-    statePath = `${fetchOutputDir}/salto.config/states/default.bpc`
+    statePath = `${fetchOutputDir}/salto.config/states/default.jsonl`
     randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
     newObjectElemName = NEW_OBJECT_BASE_ELEM_NAME + randomString
     newObjectApiName = `${newObjectElemName}${SALESFORCE_CUSTOM_SUFFIX}`
-    newObjectStandardFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.bp`
-    newObjectAnnotationsRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}Annotations.bp`
-    tmpBPRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}.bp`
+    newObjectStandardFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.nacl`
+    newObjectAnnotationsRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}Annotations.nacl`
+    tmpNaclFileRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}.nacl`
 
     process.env[SALTO_HOME_VAR] = homePath
     client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials })
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)
-    await copyFile(configFile, `${fetchOutputDir}/salto.config/workspace.bp`)
-    await copyFile(localWorkspaceConfigFile, `${localWorkspaceDir}/workspaceUser.bp`)
-    await rm(fullPath(tmpBPRelativePath))
+    await copyFile(configFile, `${fetchOutputDir}/salto.config/workspace.nacl`)
+    await copyFile(localWorkspaceConfigFile, `${localWorkspaceDir}/workspaceUser.nacl`)
+    await rm(fullPath(tmpNaclFileRelativePath))
     if (await objectExists(client, newObjectApiName)) {
       await client.delete(CUSTOM_OBJECT, newObjectApiName)
     }
@@ -132,7 +132,7 @@ describe('cli e2e', () => {
     await rm(homePath)
   })
 
-  const verifyTmpBpObjectSourceMap = (sourceMap: SourceMap, object: ObjectType,
+  const verifyTmpNaclFileObjectSourceMap = (sourceMap: SourceMap, object: ObjectType,
     fieldNames: string[], annotations: string[] = [API_NAME, METADATA_TYPE],
     annotationTypes: string[] = [API_NAME, METADATA_TYPE]): void => {
     expect(sourceMap.has(object.elemID.getFullName())).toBeTruthy()
@@ -162,8 +162,8 @@ describe('cli e2e', () => {
   describe('deploy with a new object and instance', () => {
     let workspace: Workspace
     beforeAll(async () => {
-      await copyFile(addModelBP, fullPath(tmpBPRelativePath))
-      await editBlueprint(fullPath(tmpBPRelativePath), [
+      await copyFile(addModelNaclFile, fullPath(tmpNaclFileRelativePath))
+      await editNaclFile(fullPath(tmpNaclFileRelativePath), [
         [NEW_OBJECT_BASE_ELEM_NAME, newObjectElemName],
         [NEW_INSTANCE_BASE_ELEM_NAME, newInstanceElemName],
       ])
@@ -181,16 +181,17 @@ describe('cli e2e', () => {
       expect(await instanceExists(client, ROLE, newInstanceFullName,
         { description: 'To Be Modified' })).toBe(true)
     })
-    it('should update the object in the BP', async () => {
+    it('should update the object in the Nacl file', async () => {
       const newObject = verifyObject(await workspace.elements(), SALESFORCE, newObjectElemName,
         { [API_NAME]: BuiltinTypes.SERVICE_ID, [METADATA_TYPE]: BuiltinTypes.SERVICE_ID },
         { [API_NAME]: newObjectApiName, [METADATA_TYPE]: CUSTOM_OBJECT },
         { Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
           Beta: apiNameAnno(newObjectApiName, 'Beta__c') })
-      await verifyTmpBpObjectSourceMap(await workspace.getSourceMap(tmpBPRelativePath), newObject,
-        ['Alpha', 'Beta'])
+      await verifyTmpNaclFileObjectSourceMap(
+        await workspace.getSourceMap(tmpNaclFileRelativePath), newObject, ['Alpha', 'Beta']
+      )
     })
-    it('should update the instance in the BP', async () => {
+    it('should update the instance in the Nacl file', async () => {
       verifyInstance(await workspace.elements(), SALESFORCE, ROLE, newInstanceElemName,
         { description: 'To Be Modified', [INSTANCE_FULL_NAME_FIELD]: newInstanceFullName })
     })
@@ -201,7 +202,7 @@ describe('cli e2e', () => {
 
   describe('deploy after modifying the object and the instance', () => {
     beforeAll(async () => {
-      await editBlueprint(fullPath(tmpBPRelativePath), [
+      await editNaclFile(fullPath(tmpNaclFileRelativePath), [
         ['Beta', 'Modified'],
         ['Beta__c', 'Modified__c'],
         ['To Be Modified', 'I Am Modified'],
@@ -241,8 +242,9 @@ describe('cli e2e', () => {
           Modified: apiNameAnno(newObjectApiName, 'Modified__c'),
           IsDeleted: apiNameAnno(newObjectApiName, 'IsDeleted') })
 
-      await verifyTmpBpObjectSourceMap(await workspace.getSourceMap(tmpBPRelativePath), newObject,
-        ['Alpha', 'Modified'])
+      await verifyTmpNaclFileObjectSourceMap(
+        await workspace.getSourceMap(tmpNaclFileRelativePath), newObject, ['Alpha', 'Modified']
+      )
       const annotationObjSourceMap = await workspace.getSourceMap(newObjectAnnotationsRelativePath)
       const standardFieldsObjSourceMap = await workspace
         .getSourceMap(newObjectStandardFieldRelativePath)
@@ -270,7 +272,7 @@ describe('cli e2e', () => {
 
   describe('deploy after deleting the object and the instance', () => {
     beforeAll(async () => {
-      await rm(fullPath(tmpBPRelativePath))
+      await rm(fullPath(tmpNaclFileRelativePath))
       await rm(fullPath(newObjectAnnotationsRelativePath))
       await rm(fullPath(newObjectStandardFieldRelativePath))
       // We have to run preview first, otherwise the last plan won't be updated

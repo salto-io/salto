@@ -38,7 +38,7 @@ describe('formatter', () => {
           col: 10,
           line: 3,
         },
-        filename: 'test.bp',
+        filename: 'test.nacl',
       },
       fragment: '{ This is my code fragment }',
 

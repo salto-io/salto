@@ -18,38 +18,38 @@ import { EditorWorkspace } from '../../src/salto/workspace'
 import { mockWorkspace } from './workspace'
 
 describe('workspace', () => {
-  const workspaceBaseDir = path.resolve(`${__dirname}/../../../test/salto/test-bps`)
-  const bpFileName = path.join(workspaceBaseDir, 'all.bp')
+  const workspaceBaseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls`)
+  const naclFileName = path.join(workspaceBaseDir, 'all.nacl')
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
     expect(wsElements && wsElements.length).toBe(elements)
   }
   it('should initiate a workspace', async () => {
-    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(bpFileName))
+    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
     await validate(workspace, 17)
   })
 
   it('should collect errors', async () => {
-    const baseWs = await mockWorkspace(bpFileName)
+    const baseWs = await mockWorkspace(naclFileName)
     baseWs.hasErrors = jest.fn().mockResolvedValue(true)
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
     expect(workspace.hasErrors()).toBeTruthy()
   })
 
   it('should update a single file', async () => {
-    const baseWs = await mockWorkspace(bpFileName)
+    const baseWs = await mockWorkspace(naclFileName)
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-    workspace.setBlueprints({ filename: 'new', buffer: '' })
+    workspace.setNaclFiles({ filename: 'new', buffer: '' })
     await workspace.awaitAllUpdates()
-    expect((baseWs.setBlueprints as jest.Mock).mock.calls[0][0].filename).toContain('new')
+    expect((baseWs.setNaclFiles as jest.Mock).mock.calls[0][0].filename).toContain('new')
   })
 
   it('should maintain status on error', async () => {
-    const baseWs = await mockWorkspace(bpFileName)
+    const baseWs = await mockWorkspace(naclFileName)
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
     baseWs.hasErrors = jest.fn().mockResolvedValue(true)
-    workspace.setBlueprints({ filename: 'error', buffer: 'error content' })
+    workspace.setNaclFiles({ filename: 'error', buffer: 'error content' })
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
@@ -57,16 +57,16 @@ describe('workspace', () => {
   })
 
   it('should support file removal', async () => {
-    const baseWs = await mockWorkspace(bpFileName)
+    const baseWs = await mockWorkspace(naclFileName)
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-    workspace.removeBlueprints(path.basename(bpFileName))
+    workspace.removeNaclFiles(path.basename(naclFileName))
     await workspace.awaitAllUpdates()
-    const removeBlueprintsMock = baseWs.removeBlueprints as jest.Mock
-    expect(removeBlueprintsMock.mock.calls[0][0]).toContain('all.bp')
+    const removeNaclFilesMock = baseWs.removeNaclFiles as jest.Mock
+    expect(removeNaclFilesMock.mock.calls[0][0]).toContain('all.nacl')
   })
 
   it('should return last valid state if there are errors', async () => {
-    const baseWs = await mockWorkspace(bpFileName)
+    const baseWs = await mockWorkspace(naclFileName)
     baseWs.hasErrors = jest.fn().mockResolvedValue(false)
     const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
     const shouldBeCurrent = await workspace.getValidCopy()
@@ -76,7 +76,7 @@ describe('workspace', () => {
     expect(await shouldBeCurrent.elements).toEqual(await workspace.elements)
 
     baseWs.hasErrors = jest.fn().mockResolvedValue(true)
-    workspace.setBlueprints({ filename: 'error', buffer: 'error' })
+    workspace.setNaclFiles({ filename: 'error', buffer: 'error' })
     await workspace.awaitAllUpdates()
     expect(await workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
@@ -86,9 +86,9 @@ describe('workspace', () => {
     expect(lastValid).not.toEqual(workspace)
   })
 
-  it('should not allow to update blueprints before all pending operations are done', async () => {
-    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(bpFileName))
-    workspace.setBlueprints({ filename: 'new', buffer: 'new content' })
-    await expect(workspace.updateBlueprints([])).rejects.toThrow()
+  it('should not allow to update Nacl files before all pending operations are done', async () => {
+    const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
+    workspace.setNaclFiles({ filename: 'new', buffer: 'new content' })
+    await expect(workspace.updateNaclFiles([])).rejects.toThrow()
   })
 })

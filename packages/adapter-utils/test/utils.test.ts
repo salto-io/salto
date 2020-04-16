@@ -25,7 +25,7 @@ import {
 import {
   transformValues, resolvePath, TransformPrimitiveFunc,
   TransformReferenceFunc, restoreReferences, resolveReferences,
-  bpCase, findElement, findElements, findObjectType, findInstances, flattenElementStr,
+  naclCase, findElement, findElements, findObjectType, findInstances, flattenElementStr,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -673,20 +673,20 @@ describe('Test utils.ts', () => {
       })
     })
   })
-  describe('bpCase func', () => {
+  describe('naclCase func', () => {
     describe('names without special characters', () => {
       const normalNames = [
         'Offer__c', 'Lead', 'DSCORGPKG__DiscoverOrg_Update_History__c', 'NameWithNumber2',
         'CRMFusionDBR101__Scenario__C',
       ]
       it('should remain the same', () => {
-        normalNames.forEach(name => expect(bpCase(name)).toEqual(name))
+        normalNames.forEach(name => expect(naclCase(name)).toEqual(name))
       })
     })
 
     describe('names with spaces', () => {
       it('should be replaced with _', () => {
-        expect(bpCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
+        expect(naclCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
       })
     })
   })

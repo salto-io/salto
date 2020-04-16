@@ -16,33 +16,33 @@
 import { ElemID, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
-import { BlueprintsSource } from '../../src/workspace/blueprints/blueprints_source'
+import { NaclFilesSource } from '../../src/workspace/nacl_files/nacl_files_source'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
 
-export const createMockBlueprintSource = (
+export const createMockNaclFileSource = (
   elements: Element[],
-  blueprints: Record<string, Element[]> = {},
+  naclFiles: Record<string, Element[]> = {},
   errors: Errors = new Errors({ merge: [], parse: [], validation: [] }),
   sourceRanges: SourceRange[] = []
-): BlueprintsSource => ({
+): NaclFilesSource => ({
   list: async () => elements.map(e => e.elemID),
   get: async (id: ElemID) => elements.find(e => _.isEqual(id, e.elemID)),
   getAll: async () => elements,
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
-  updateBlueprints: jest.fn().mockImplementation(() => Promise.resolve()),
-  listBlueprints: jest.fn().mockImplementation(() => Promise.resolve(_.keys(blueprints))),
-  getBlueprint: jest.fn().mockImplementation(
-    (filename: string) => Promise.resolve(blueprints[filename] ? { filename, buffer: '' } : undefined)
+  updateNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
+  listNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(_.keys(naclFiles))),
+  getNaclFile: jest.fn().mockImplementation(
+    (filename: string) => Promise.resolve(naclFiles[filename] ? { filename, buffer: '' } : undefined)
   ),
-  setBlueprints: jest.fn().mockImplementation(() => Promise.resolve()),
-  removeBlueprints: jest.fn().mockImplementation(() => Promise.resolve()),
+  setNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
+  removeNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
   getSourceMap: jest.fn().mockImplementation(() => Promise.resolve()),
   getSourceRanges: jest.fn().mockImplementation(() => Promise.resolve(sourceRanges)),
   getErrors: jest.fn().mockImplementation(() => Promise.resolve(errors)),
   getElements: jest.fn().mockImplementation(
-    filename => Promise.resolve(blueprints[filename] || [])
+    filename => Promise.resolve(naclFiles[filename] || [])
   ),
-  getElementBlueprints: jest.fn().mockImplementation(() => Promise.resolve([path.join('test', 'path.bp')])),
+  getElementNaclFiles: jest.fn().mockImplementation(() => Promise.resolve([path.join('test', 'path.nacl')])),
   clone: jest.fn().mockImplementation(() => Promise.resolve()),
 })

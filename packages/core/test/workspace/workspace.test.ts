@@ -25,10 +25,10 @@ import {
 } from '@salto-io/adapter-utils'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { adapterCreators } from '../../src/core/adapters'
-import { blueprintsSource } from '../../src/workspace/blueprints/blueprints_source'
+import { naclFilesSource } from '../../src/workspace/nacl_files/nacl_files_source'
 import State from '../../src/workspace/state'
 import mockState from '../common/state'
-import { createMockBlueprintSource } from '../common/blueprint_source'
+import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import {
   Workspace,
@@ -42,24 +42,24 @@ import { DetailedChange } from '../../src/core/plan'
 
 import * as dump from '../../src/parser/dump'
 
-import { mockDirStore, mockParseCache } from '../common/blueprint_store'
+import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import {
   WORKSPACE_CONFIG_NAME, workspaceConfigType, USER_CONFIG_NAME,
   workspaceUserConfigType,
 } from '../../src/workspace/workspace_config_types'
 
-const changedBP = {
-  filename: 'file.bp',
+const changedNaclFile = {
+  filename: 'file.nacl',
   buffer: `type salesforce.lead {
     salesforce.text new_base {}
   }`,
 }
-const emptyBP = {
-  filename: 'willbempty.bp',
+const emptyNaclFile = {
+  filename: 'willbempty.nacl',
   buffer: ' ',
 }
-const newBP = {
-  filename: 'new.bp',
+const newNaclFile = {
+  filename: 'new.nacl',
   buffer: 'type salesforce.new {}',
 }
 const services = ['salesforce']
@@ -91,10 +91,10 @@ const createWorkspace = async (dirStore?: DirectoryStore, state?: State,
   loadWorkspace(configSource || mockConfigSource(), credentials || mockCredentialsSource(),
     {
       [COMMON_ENV_PREFIX]: {
-        blueprints: blueprintsSource(dirStore || mockDirStore(), mockParseCache()),
+        naclFiles: naclFilesSource(dirStore || mockDirStore(), mockParseCache()),
       },
       default: {
-        blueprints: createMockBlueprintSource([]),
+        naclFiles: createMockNaclFileSource([]),
         state: state || mockState(),
       },
     })
@@ -156,7 +156,7 @@ describe('workspace', () => {
       expect(await workspace.hasErrors()).toBeFalsy()
     })
     it('should contain parse errors', async () => {
-      const erroredWorkspace = await createWorkspace(mockDirStore(['dup.bp']))
+      const erroredWorkspace = await createWorkspace(mockDirStore(['dup.nacl']))
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
@@ -172,7 +172,7 @@ describe('workspace', () => {
       expect(workspaceErrors[0].sourceFragments).toHaveLength(1)
     })
     it('should contain merge errors', async () => {
-      const erroredWorkspace = await createWorkspace(mockDirStore(['error.bp']))
+      const erroredWorkspace = await createWorkspace(mockDirStore(['error.nacl']))
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
@@ -190,7 +190,7 @@ describe('workspace', () => {
       expect(wsErros.message).toMatch(mergeError)
       expect(wsErros.severity).toBe('Error')
       const firstSourceFragment = wsErros.sourceFragments[0]
-      expect(firstSourceFragment.sourceRange.filename).toBe('file.bp')
+      expect(firstSourceFragment.sourceRange.filename).toBe('file.nacl')
       expect(firstSourceFragment.sourceRange.start).toEqual({ byte: 24, col: 1, line: 3 })
       expect(firstSourceFragment.sourceRange.end).toEqual({ byte: 73, col: 2, line: 5 })
       expect(firstSourceFragment.fragment).toContain('salesforce.text base_field')
@@ -207,19 +207,19 @@ describe('workspace', () => {
     })
   })
 
-  describe('removeBlueprints', () => {
+  describe('removeNaclFiles', () => {
     const dirStore = mockDirStore()
     let workspace: Workspace
-    const removedPaths = ['file.bp', 'willbempty.bp']
+    const removedPaths = ['file.nacl', 'willbempty.nacl']
     let elemMap: Record<string, Element>
 
     beforeAll(async () => {
       workspace = await createWorkspace(dirStore)
-      await workspace.removeBlueprints(...removedPaths)
+      await workspace.removeNaclFiles(...removedPaths)
       elemMap = getElemMap(await workspace.elements())
     })
 
-    it('should update elements to not include fields from removed blueprints', () => {
+    it('should update elements to not include fields from removed Nacl files', () => {
       const lead = elemMap['salesforce.lead'] as ObjectType
       expect(_.keys(lead.fields)).toHaveLength(1)
     })
@@ -230,14 +230,14 @@ describe('workspace', () => {
     })
   })
 
-  describe('setBlueprints', () => {
-    const bpStore = mockDirStore()
+  describe('setNaclFiles', () => {
+    const naclFileStore = mockDirStore()
     let workspace: Workspace
     let elemMap: Record<string, Element>
 
     beforeAll(async () => {
-      workspace = await createWorkspace(bpStore)
-      await workspace.setBlueprints(changedBP, newBP, emptyBP)
+      workspace = await createWorkspace(naclFileStore)
+      await workspace.setNaclFiles(changedNaclFile, newNaclFile, emptyNaclFile)
       elemMap = getElemMap(await workspace.elements())
     })
 
@@ -250,18 +250,18 @@ describe('workspace', () => {
       expect(lead.fields.base_field).not.toBeDefined()
     })
 
-    it('should create blueprints that were added', async () => {
-      const mockSetBpStore = bpStore.set as jest.Mock
-      expect(mockSetBpStore).toHaveBeenCalledWith(newBP)
+    it('should create Nacl files that were added', async () => {
+      const mockSetNaclFileStore = naclFileStore.set as jest.Mock
+      expect(mockSetNaclFileStore).toHaveBeenCalledWith(newNaclFile)
     })
 
-    it('should change the content of blueprints that were updated', async () => {
-      const mockSetBpStore = bpStore.set as jest.Mock
-      expect(mockSetBpStore).toHaveBeenCalledWith(changedBP)
+    it('should change the content of Nacl files that were updated', async () => {
+      const mockSetNaclFileStore = naclFileStore.set as jest.Mock
+      expect(mockSetNaclFileStore).toHaveBeenCalledWith(changedNaclFile)
     })
   })
 
-  describe('updateBlueprints', () => {
+  describe('updateNaclFiles', () => {
     const newElemID = new ElemID('salesforce', 'new_elem')
     const newElem = new ObjectType({
       elemID: newElemID,
@@ -399,7 +399,7 @@ describe('workspace', () => {
 
     beforeAll(async () => {
       workspace = await createWorkspace(dirStore)
-      await workspace.updateBlueprints(changes)
+      await workspace.updateNaclFiles(changes)
       elemMap = getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
     })
@@ -412,9 +412,9 @@ describe('workspace', () => {
       expect(lead).toBeDefined()
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('foo')
     })
-    it('should update existing parsed blueprints content', () => {
-      const setBp = dirStore.set as jest.Mock
-      expect(setBp.mock.calls[0][0].buffer).toMatch(/base_field\s+{\s+_default = "foo"/s)
+    it('should update existing parsed Nacl files content', () => {
+      const setNaclFile = dirStore.set as jest.Mock
+      expect(setNaclFile.mock.calls[0][0].buffer).toMatch(/base_field\s+{\s+_default = "foo"/s)
     })
     it('should add new element', () => {
       expect(elemMap[newElemID.getFullName()]).toBeDefined()
@@ -472,7 +472,7 @@ describe('workspace', () => {
         data: { before: 'foo', after: 'blabla' },
       }
 
-      await workspace.updateBlueprints([change1, change2])
+      await workspace.updateNaclFiles([change1, change2])
       lead = findElement(await workspace.elements(), new ElemID('salesforce', 'lead')) as ObjectType
       expect(lead.fields.base_field.annotations[CORE_ANNOTATIONS.DEFAULT]).toEqual('blabla')
     })

@@ -17,7 +17,7 @@ import {
   ElemID, Field, InstanceElement, isListType, isObjectType, isPrimitiveType, ObjectType,
   PrimitiveType, PrimitiveTypes, PrimitiveValue, TypeElement, Value, Values,
 } from '@salto-io/adapter-api'
-import { bpCase } from '@salto-io/adapter-utils'
+import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Attributes, Element as XmlElement } from 'xml-js'
 import _ from 'lodash'
@@ -112,7 +112,7 @@ export const createInstanceElement = (rootXmlElement: XmlElement, type: ObjectTy
   const getInstanceName = (): string => {
     const nameField = Object.values(type.fields)
       .find(f => f.annotations[IS_NAME]) as Field
-    return bpCase((findInnerElement(nameField.name.toLowerCase()).elements)?.[0].text as string)
+    return naclCase((findInnerElement(nameField.name.toLowerCase()).elements)?.[0].text as string)
   }
 
   const instanceName = getInstanceName()

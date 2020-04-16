@@ -33,10 +33,10 @@ class AppConfigParseError extends Error {
   }
 }
 
+export const SALTO_HOME_VAR = 'SALTO_HOME'
 const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
 const GLOBAL_CONFIG_DIR = 'salto.config'
-const CONFIG_FILENAME = 'config.bp'
-export const SALTO_HOME_VAR = 'SALTO_HOME'
+const CONFIG_FILENAME = 'config.nacl'
 
 export const getSaltoHome = (): string =>
   process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
@@ -110,7 +110,7 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
   }
   return config
 }
-const configFromBPFile = async (filepath: string): Promise<AppConfig> => {
+const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
   const configInstance = parse(buf, filepath).elements.pop() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
@@ -128,6 +128,6 @@ export const configFromDisk = async (): Promise<AppConfig> => {
       telemetry: DEFAULT_TELEMETRY_CONFIG,
     })
   }
-  const bpConfig = await configFromBPFile(configFullPath())
-  return mergeConfigWithEnv(bpConfig)
+  const config = await configFromNaclFile(configFullPath())
+  return mergeConfigWithEnv(config)
 }

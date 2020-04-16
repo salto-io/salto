@@ -22,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   findObjectType,
-  bpCase, transformValues,
+  naclCase, transformValues,
 } from '@salto-io/adapter-utils'
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
@@ -361,7 +361,7 @@ const createNestedMetadataInstances = (instance: InstanceElement,
       return removeDuplicateInstances(nestedInstances).map(nestedInstance => {
         const fullName = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
           .join(API_NAME_SEPERATOR)
-        const elemIdName = bpCase(fullName)
+        const elemIdName = naclCase(fullName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
         return new InstanceElement(elemIdName, type, nestedInstance,
           [...(objPath as string[]).slice(0, -1), type.elemID.name, elemIdName],
@@ -375,7 +375,7 @@ const createFromInstance = (instance: InstanceElement,
     objectName: string): Field[] =>
     instanceFields
       .map((field: Values) => {
-        const fieldFullName = bpCase(field[INSTANCE_FULL_NAME_FIELD])
+        const fieldFullName = naclCase(field[INSTANCE_FULL_NAME_FIELD])
         return new Field(
           elemID,
           fieldFullName,

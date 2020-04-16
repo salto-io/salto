@@ -25,8 +25,8 @@ import { validateElements } from '../core/validator'
 import { SourceRange, ParseError, SourceMap } from '../parser/parse'
 import { ConfigSource } from './config_source'
 import State from './state'
-import { BlueprintsSource, Blueprint, RoutingMode } from './blueprints/blueprints_source'
-import { multiEnvSource } from './blueprints/mutil_env/multi_env_source'
+import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
+import { multiEnvSource } from './nacl_files/mutil_env/multi_env_source'
 import { Errors } from './errors'
 import { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig, WorkspaceUserConfig, EnvConfig, workspaceConfigInstance, workspaceUserConfigInstance } from './workspace_config_types'
 
@@ -91,18 +91,18 @@ export type Workspace = {
   servicesConfig: (names?: ReadonlyArray<string>) =>
     Promise<Readonly<Record<string, InstanceElement>>>
 
-  isEmpty(blueprintsOnly?: boolean): Promise<boolean>
+  isEmpty(naclFilesOnly?: boolean): Promise<boolean>
   getSourceFragment(sourceRange: SourceRange): Promise<SourceFragment>
   hasErrors(): Promise<boolean>
   errors(): Promise<Readonly<Errors>>
   transformToWorkspaceError<T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>>
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
-  updateBlueprints: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
-  listBlueprints: () => Promise<string[]>
-  getBlueprint: (filename: string) => Promise<Blueprint | undefined>
-  setBlueprints: (...blueprints: Blueprint[]) => Promise<void>
-  removeBlueprints: (...names: string[]) => Promise<void>
+  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
+  listNaclFiles: () => Promise<string[]>
+  getNaclFile: (filename: string) => Promise<NaclFile | undefined>
+  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<void>
+  removeNaclFiles: (...names: string[]) => Promise<void>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElements: (filename: string) => Promise<Element[]>
@@ -119,7 +119,7 @@ export type Workspace = {
 }
 
 // common source has no state
-export type EnviornmentSource = { blueprints: BlueprintsSource; state?: State }
+export type EnviornmentSource = { naclFiles: NaclFilesSource; state?: State }
 export type EnviornmentsSources = Record<string, EnviornmentSource>
 export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSource,
   elementsSources: EnviornmentsSources):
@@ -139,15 +139,17 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
   const state = (): State => elementsSources[currentEnv()].state as State
-  let blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),
+  let naclFilesSource = multiEnvSource(_.mapValues(elementsSources, e => e.naclFiles),
     currentEnv(), COMMON_ENV_PREFIX)
-  const elements = async (): Promise<ReadonlyArray<Element>> => (await blueprintsSource.getAll())
+  const elements = async (): Promise<ReadonlyArray<Element>> => (await naclFilesSource.getAll())
     .concat(workspaceConfigTypes)
 
   const getSourceFragment = async (sourceRange: SourceRange): Promise<SourceFragment> => {
-    const bp = await blueprintsSource.getBlueprint(sourceRange.filename)
-    const fragment = bp ? bp.buffer.substring(sourceRange.start.byte, sourceRange.end.byte) : ''
-    if (!bp) {
+    const naclFile = await naclFilesSource.getNaclFile(sourceRange.filename)
+    const fragment = naclFile
+      ? naclFile.buffer.substring(sourceRange.start.byte, sourceRange.end.byte)
+      : ''
+    if (!naclFile) {
       log.warn('failed to resolve source fragment for %o', sourceRange)
     }
     return {
@@ -161,7 +163,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
   })
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
-    const sourceRanges = await blueprintsSource.getSourceRanges(saltoElemErr.elemID)
+    const sourceRanges = await naclFilesSource.getSourceRanges(saltoElemErr.elemID)
     const sourceFragments = await Promise.all(sourceRanges.map(getSourceFragment))
     return {
       ...saltoElemErr,
@@ -187,7 +189,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
   const errors = async (): Promise<Errors> => {
     const resolvedElements = await elements()
     return new Errors({
-      ...await blueprintsSource.getErrors(),
+      ...await naclFilesSource.getErrors(),
       validation: validateElements(resolvedElements),
     })
   }
@@ -212,34 +214,34 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
     servicesConfig: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
       pickServices(names).map(async service => [service, await config.get(confPath(service))])
     )),
-    isEmpty: async (blueprintsOnly = false): Promise<boolean> => {
-      const isBlueprintsSourceEmpty = _.isEmpty(await blueprintsSource.getAll())
+    isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
+      const isNaclFilesSourceEmpty = _.isEmpty(await naclFilesSource.getAll())
       const isConfig = (elem: Element): boolean =>
         (isObjectType(elem) && workspaceConfigTypes.includes(elem))
           || (isInstanceElement(elem) && workspaceConfigTypes.includes(elem.type))
       const isStateEmpty = _.isEmpty((await state().getAll()).filter(e => !isConfig(e)))
-      return blueprintsOnly === true
-        ? isBlueprintsSourceEmpty
-        : isBlueprintsSourceEmpty && isStateEmpty
+      return naclFilesOnly === true
+        ? isNaclFilesSourceEmpty
+        : isNaclFilesSourceEmpty && isStateEmpty
     },
-    setBlueprints: blueprintsSource.setBlueprints,
-    updateBlueprints: blueprintsSource.updateBlueprints,
-    removeBlueprints: blueprintsSource.removeBlueprints,
-    getSourceMap: blueprintsSource.getSourceMap,
-    getSourceRanges: blueprintsSource.getSourceRanges,
-    listBlueprints: blueprintsSource.listBlueprints,
-    getBlueprint: blueprintsSource.getBlueprint,
-    getElements: blueprintsSource.getElements,
+    setNaclFiles: naclFilesSource.setNaclFiles,
+    updateNaclFiles: naclFilesSource.updateNaclFiles,
+    removeNaclFiles: naclFilesSource.removeNaclFiles,
+    getSourceMap: naclFilesSource.getSourceMap,
+    getSourceRanges: naclFilesSource.getSourceRanges,
+    listNaclFiles: naclFilesSource.listNaclFiles,
+    getNaclFile: naclFilesSource.getNaclFile,
+    getElements: naclFilesSource.getElements,
     transformToWorkspaceError,
     transformError,
     getSourceFragment,
     flush: async (): Promise<void> => {
       await state().flush()
-      await blueprintsSource.flush()
+      await naclFilesSource.flush()
     },
     clone: (): Promise<Workspace> => {
       const sources = _.mapValues(elementsSources, source =>
-        ({ blueprints: source.blueprints.clone(), state: source.state }))
+        ({ naclFiles: source.naclFiles.clone(), state: source.state }))
       return loadWorkspace(config, credentials, sources)
     },
 
@@ -272,7 +274,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       if (_.isUndefined(persist) || persist === true) {
         await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
       }
-      blueprintsSource = multiEnvSource(_.mapValues(elementsSources, e => e.blueprints),
+      naclFilesSource = multiEnvSource(_.mapValues(elementsSources, e => e.naclFiles),
         currentEnv(), COMMON_ENV_PREFIX)
     },
 

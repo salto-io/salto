@@ -24,8 +24,8 @@ import {
 import { promises } from '@salto-io/lowerdash'
 import { mergeElements, MergeError } from '../../core/merger'
 import {
-  getChangeLocations, updateBlueprintData, getChangesToUpdate, groupAnnotationTypeChanges,
-} from './blueprint_update'
+  getChangeLocations, updateNaclFileData, getChangesToUpdate, groupAnnotationTypeChanges,
+} from './nacl_file_update'
 import { mergeSourceMaps, SourceMap, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
@@ -39,167 +39,166 @@ const log = logger(module)
 
 export type RoutingMode = 'isolated' | 'default'
 
-export const BP_EXTENSION = '.bp'
+export const FILE_EXTENSION = '.nacl'
 const PARSE_CONCURRENCY = 20
 const DUMP_CONCURRENCY = 20
 // TODO: this should moved into cache implemenation
 const CACHE_READ_CONCURRENCY = 20
 
-export type Blueprint = {
+export type NaclFile = {
   buffer: string
   filename: string
   timestamp?: number
 }
 
-export type BlueprintsSource = ElementsSource & {
-  updateBlueprints: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
-  listBlueprints: () => Promise<string[]>
-  getBlueprint: (filename: string) => Promise<Blueprint | undefined>
-  getElementBlueprints: (id: ElemID) => Promise<string[]>
+export type NaclFilesSource = ElementsSource & {
+  updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
+  listNaclFiles: () => Promise<string[]>
+  getNaclFile: (filename: string) => Promise<NaclFile | undefined>
+  getElementNaclFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
-  setBlueprints: (...blueprints: Blueprint[]) => Promise<void>
-  removeBlueprints: (...names: string[]) => Promise<void>
+  setNaclFiles: (...naclFiles: NaclFile[]) => Promise<void>
+  removeNaclFiles: (...names: string[]) => Promise<void>
   getSourceMap: (filename: string) => Promise<SourceMap>
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getErrors: () => Promise<Errors>
   getElements: (filename: string) => Promise<Element[]>
-  clone: () => BlueprintsSource
+  clone: () => NaclFilesSource
 }
 
-type ParsedBlueprint = {
+type ParsedNaclFile = {
   filename: string
   elements: ElementMap
   errors: ParseError[]
   timestamp: number
 }
 
-type ParsedBlueprintMap = {
-  [key: string]: ParsedBlueprint
+type ParsedNaclFileMap = {
+  [key: string]: ParsedNaclFile
 }
 
-type BlueprintsState = {
-  readonly parsedBlueprints: ParsedBlueprintMap
+type NaclFilesState = {
+  readonly ParsedNaclFiles: ParsedNaclFileMap
   readonly elementsIndex: Record<string, string[]>
   readonly mergedElements: Record<string, Element>
   readonly mergeErrors: MergeError[]
 }
 
-const buildBlueprintsSource = (
-  blueprintsStore: DirectoryStore,
+const buildNaclFilesSource = (
+  naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
-  initState?: Promise<BlueprintsState>
-): BlueprintsSource => {
-  const parseBlueprint = async (bp: Blueprint): Promise<ParseResult> => {
-    const key = { filename: bp.filename, lastModified: bp.timestamp || Date.now() }
+  initState?: Promise<NaclFilesState>
+): NaclFilesSource => {
+  const parseNaclFile = async (naclFile: NaclFile): Promise<ParseResult> => {
+    const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
     let parseResult = await cache.get(key)
     if (parseResult === undefined) {
-      parseResult = parse(Buffer.from(bp.buffer), bp.filename)
+      parseResult = parse(Buffer.from(naclFile.buffer), naclFile.filename)
       await cache.put(key, parseResult)
     }
     return parseResult
   }
 
-  const parseBlueprints = async (blueprints: Blueprint[]): Promise<ParsedBlueprint[]> =>
-    withLimitedConcurrency(blueprints.map(bp => async () => {
-      const parsed = await parseBlueprint(bp)
+  const parseNaclFiles = async (naclFiles: NaclFile[]): Promise<ParsedNaclFile[]> =>
+    withLimitedConcurrency(naclFiles.map(naclFile => async () => {
+      const parsed = await parseNaclFile(naclFile)
       return {
-        timestamp: bp.timestamp || Date.now(),
-        filename: bp.filename,
+        timestamp: naclFile.timestamp || Date.now(),
+        filename: naclFile.filename,
         elements: _.keyBy(parsed.elements, e => e.elemID.getFullName()),
         errors: parsed.errors,
       }
     }), PARSE_CONCURRENCY)
 
-  const readAllBps = async (): Promise<Blueprint[]> =>
+  const readAllNaclFiles = async (): Promise<NaclFile[]> =>
     _.reject(
-      await blueprintsStore.getFiles(await blueprintsStore.list()),
+      await naclFilesStore.getFiles(await naclFilesStore.list()),
       _.isUndefined
-    ) as Blueprint[]
+    ) as NaclFile[]
 
-  const buildBlueprintsState = async (newBps: Blueprint[], current: ParsedBlueprintMap):
-    Promise<BlueprintsState> => {
-    log.debug(`going to parse ${newBps.length} blueprints`)
-    const parsedBlueprints = await parseBlueprints(newBps)
-    const newParsed = _.keyBy(parsedBlueprints, parsed => parsed.filename)
+  const buildNaclFilesState = async (newNaclFiles: NaclFile[], current: ParsedNaclFileMap):
+    Promise<NaclFilesState> => {
+    log.debug(`going to parse ${newNaclFiles.length} NaCl files`)
+    const ParsedNaclFiles = await parseNaclFiles(newNaclFiles)
+    const newParsed = _.keyBy(ParsedNaclFiles, parsed => parsed.filename)
     const allParsed = _.omitBy({ ...current, ...newParsed },
       parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
 
     const elementsIndex: Record<string, string[]> = {}
-    Object.values(allParsed).forEach(bp => Object.keys(bp.elements)
+    Object.values(allParsed).forEach(naclFile => Object.keys(naclFile.elements)
       .forEach(key => {
         elementsIndex[key] = elementsIndex[key] || []
-        elementsIndex[key] = _.uniq([...elementsIndex[key], bp.filename])
+        elementsIndex[key] = _.uniq([...elementsIndex[key], naclFile.filename])
       }))
 
     const mergeResult = mergeElements(
       _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
     )
 
-    log.info('workspace has %d elements and %d parsed blueprints',
+    log.info('workspace has %d elements and %d parsed NaCl files',
       _.size(elementsIndex), _.size(allParsed))
     return {
-      parsedBlueprints: allParsed,
+      ParsedNaclFiles: allParsed,
       mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
       mergeErrors: mergeResult.errors,
       elementsIndex,
     }
   }
 
-  let state: Promise<BlueprintsState> = initState || readAllBps()
-    .then(bps => buildBlueprintsState(bps, {}))
+  let state: Promise<NaclFilesState> = initState || readAllNaclFiles()
+    .then(naclFiles => buildNaclFilesState(naclFiles, {}))
 
-  const getElementBlueprints = async (elemID: ElemID): Promise<string[]> => {
+  const getElementNaclFiles = async (elemID: ElemID): Promise<string[]> => {
     const topLevelID = elemID.createTopLevelParentID()
     return (await state).elementsIndex[topLevelID.parent.getFullName()] || []
   }
 
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
-    const parsedBp = (await state).parsedBlueprints[filename]
-    const cachedParsedResult = await cache.get({ filename, lastModified: parsedBp.timestamp })
+    const parsedNaclFile = (await state).ParsedNaclFiles[filename]
+    const cachedParsedResult = await cache.get({ filename, lastModified: parsedNaclFile.timestamp })
     if (_.isUndefined(cachedParsedResult)) {
       log.warn('expected to find source map for filename %s, going to re-parse', filename)
-      const buffer = (await blueprintsStore.get(filename))?.buffer
+      const buffer = (await naclFilesStore.get(filename))?.buffer
       if (_.isUndefined(buffer)) {
-        log.error('failed to find %s in blueprint store', filename)
+        log.error('failed to find %s in NaCl file store', filename)
         return new Map<string, SourceRange[]>()
       }
-      return (await parseBlueprint({ filename, buffer })).sourceMap
+      return (await parseNaclFile({ filename, buffer })).sourceMap
     }
     return cachedParsedResult.sourceMap
   }
 
-  const setBlueprints = async (...blueprints: Blueprint[]): Promise<void> => {
-    const [emptyBlueprints, nonEmptyBlueprints] = _.partition(
-      blueprints,
-      bp => _.isEmpty(bp.buffer.trim())
+  const setNaclFiles = async (...naclFiles: NaclFile[]): Promise<void> => {
+    const [emptyNaclFiles, nonEmptyNaclFiles] = _.partition(
+      naclFiles,
+      naclFile => _.isEmpty(naclFile.buffer.trim())
     )
-    await Promise.all(nonEmptyBlueprints.map(bp => blueprintsStore.set(bp)))
-    await Promise.all(emptyBlueprints.map(bp => blueprintsStore.delete(bp.filename)))
+    await Promise.all(nonEmptyNaclFiles.map(naclFile => naclFilesStore.set(naclFile)))
+    await Promise.all(emptyNaclFiles.map(naclFile => naclFilesStore.delete(naclFile.filename)))
     // Swap state
-    state = buildBlueprintsState(blueprints, (await state).parsedBlueprints)
+    state = buildNaclFilesState(naclFiles, (await state).ParsedNaclFiles)
   }
-
-  const updateBlueprints = async (changes: DetailedChange[]): Promise<void> => {
-    const getBlueprintData = async (filename: string): Promise<string> => {
-      const bp = await blueprintsStore.get(filename)
-      return bp ? bp.buffer : ''
+  const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
+    const getNaclFileData = async (filename: string): Promise<string> => {
+      const naclFile = await naclFilesStore.get(filename)
+      return naclFile ? naclFile.buffer : ''
     }
 
     const changesToUpdate = getChangesToUpdate(changes, (await state).elementsIndex)
-    const bps = _(await Promise.all(changesToUpdate
+    const naclFiles = _(await Promise.all(changesToUpdate
       .map(change => change.id)
-      .map(elemID => getElementBlueprints(elemID))))
+      .map(elemID => getElementNaclFiles(elemID))))
       .flatten().uniq().value()
-    const { parsedBlueprints } = await state
+    const { ParsedNaclFiles } = await state
     const changedFileToSourceMap: Record<string, SourceMap> = _.fromPairs(
-      await withLimitedConcurrency(bps
-        .map(bp => async () => [parsedBlueprints[bp].filename,
-          await getSourceMap(parsedBlueprints[bp].filename)]),
+      await withLimitedConcurrency(naclFiles
+        .map(naclFile => async () => [ParsedNaclFiles[naclFile].filename,
+          await getSourceMap(ParsedNaclFiles[naclFile].filename)]),
       CACHE_READ_CONCURRENCY)
     )
 
     const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
-    const updatedBlueprints = (await withLimitedConcurrency(
+    const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
         .flatten()
@@ -209,22 +208,22 @@ const buildBlueprintsSource = (
           try {
             const updatedFileChanges = groupAnnotationTypeChanges(fileChanges,
               changedFileToSourceMap[filename])
-            const buffer = updateBlueprintData(await getBlueprintData(filename),
+            const buffer = updateNaclFileData(await getNaclFileData(filename),
               updatedFileChanges)
             return { filename, buffer }
           } catch (e) {
-            log.error('failed to update blueprint %s with %o changes due to: %o',
+            log.error('failed to update NaCl file %s with %o changes due to: %o',
               filename, fileChanges, e)
             return undefined
           }
         })
         .value(),
       DUMP_CONCURRENCY
-    )).filter(b => b !== undefined) as Blueprint[]
+    )).filter(b => b !== undefined) as NaclFile[]
 
-    if (updatedBlueprints.length > 0) {
-      log.debug('going to update %d blueprints', updatedBlueprints.length)
-      await setBlueprints(...updatedBlueprints)
+    if (updatedNaclFiles.length > 0) {
+      log.debug('going to update %d NaCl files', updatedNaclFiles.length)
+      await setNaclFiles(...updatedNaclFiles)
     }
   }
 
@@ -242,54 +241,55 @@ const buildBlueprintsSource = (
     getAll: async (): Promise<Element[]> => _.values((await state).mergedElements),
 
     flush: async (): Promise<void> => {
-      await blueprintsStore.flush()
+      await naclFilesStore.flush()
       await cache.flush()
     },
 
     getErrors: async (): Promise<Errors> => {
       const currentState = await state
       return new Errors({
-        parse: _.flatten(Object.values(currentState.parsedBlueprints).map(parsed => parsed.errors)),
+        parse: _.flatten(Object.values(currentState.ParsedNaclFiles).map(parsed => parsed.errors)),
         merge: currentState.mergeErrors,
         validation: [],
       })
     },
 
-    listBlueprints: () => blueprintsStore.list(),
+    listNaclFiles: () => naclFilesStore.list(),
 
-    getBlueprint: filename => blueprintsStore.get(filename),
+    getNaclFile: filename => naclFilesStore.get(filename),
 
     getElements: async filename =>
-      Object.values((await state).parsedBlueprints[filename]?.elements) || [],
+      Object.values((await state).ParsedNaclFiles[filename]?.elements) || [],
 
     getSourceRanges: async elemID => {
-      const bps = await getElementBlueprints(elemID)
-      const sourceRanges = await withLimitedConcurrency(bps
-        .map(bp => async () => (await getSourceMap(bp)).get(elemID.getFullName()) || []),
+      const naclFiles = await getElementNaclFiles(elemID)
+      const sourceRanges = await withLimitedConcurrency(naclFiles
+        .map(naclFile => async () => (await getSourceMap(naclFile))
+          .get(elemID.getFullName()) || []),
       CACHE_READ_CONCURRENCY)
       return _.flatten(sourceRanges)
     },
 
-    removeBlueprints: async (...names: string[]) => {
-      await Promise.all(names.map(name => blueprintsStore.delete(name)))
-      state = buildBlueprintsState(names
-        .map(filename => ({ filename, buffer: '' })), (await state).parsedBlueprints)
+    removeNaclFiles: async (...names: string[]) => {
+      await Promise.all(names.map(name => naclFilesStore.delete(name)))
+      state = buildNaclFilesState(names
+        .map(filename => ({ filename, buffer: '' })), (await state).ParsedNaclFiles)
     },
 
-    clone: () => buildBlueprintsSource(
-      blueprintsStore.clone(),
+    clone: () => buildNaclFilesSource(
+      naclFilesStore.clone(),
       cache.clone(),
       state
     ),
 
-    updateBlueprints,
-    setBlueprints,
+    updateNaclFiles,
+    setNaclFiles,
     getSourceMap,
-    getElementBlueprints,
+    getElementNaclFiles,
   }
 }
 
-export const blueprintsSource = (
-  blueprintsStore: DirectoryStore,
+export const naclFilesSource = (
+  naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
-): BlueprintsSource => buildBlueprintsSource(blueprintsStore, cache)
+): NaclFilesSource => buildNaclFilesSource(naclFilesStore, cache)

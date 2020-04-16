@@ -64,7 +64,7 @@ const mockWorkspace = (elements: Element[] = [], name?: string): workspace.Works
   currentEnv: 'default',
   services: () => SERVICES,
   state: () => mockState(),
-  updateBlueprints: jest.fn(),
+  updateNaclFiles: jest.fn(),
   flush: jest.fn(),
   servicesCredentials: jest.fn().mockResolvedValue({ [SERVICES[0]]: mockConfigInstance }),
   servicesConfig: jest.fn().mockResolvedValue({}),

@@ -48,11 +48,11 @@ export const mockFunction = <T extends (...args: never[]) => unknown>():
 jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 
 const buildMockWorkspace = (
-  blueprint?: string,
+  naclFile?: string,
   buffer?: string,
 ): Workspace => {
-  const baseDir = blueprint ? path.dirname(blueprint) : 'default_base_dir'
-  const filename = blueprint ? path.relative(baseDir, blueprint) : 'default.bp'
+  const baseDir = naclFile ? path.dirname(naclFile) : 'default_base_dir'
+  const filename = naclFile ? path.relative(baseDir, naclFile) : 'default.nacl'
   const parseResult = buffer
     ? parse(Buffer.from(buffer), filename)
     : { elements: [], errors: [] as ParseError[], sourceMap: new Map() as SourceMap }
@@ -71,9 +71,9 @@ const buildMockWorkspace = (
     getSourceMap: mockFunction<Workspace['getSourceMap']>().mockResolvedValue(parseResult.sourceMap),
     getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockImplementation(async elemID =>
       (parseResult.sourceMap.get(elemID.getFullName()) || [])),
-    getBlueprint: mockFunction<Workspace['getBlueprint']>().mockResolvedValue({ filename, buffer: buffer ?? '' }),
+    getNaclFile: mockFunction<Workspace['getNaclFile']>().mockResolvedValue({ filename, buffer: buffer ?? '' }),
     services: () => SERVICES,
-    updateBlueprints: mockFunction<Workspace['updateBlueprints']>(),
+    updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
     flush: mockFunction<Workspace['flush']>(),
     credentials: {
       get: mockFunction<ConfigSource['get']>().mockResolvedValue(mockConfigInstance),
@@ -86,20 +86,20 @@ const buildMockWorkspace = (
         sourceRange: {
           start: { line: 1, col: 1, byte: 1 },
           end: { line: 1, col: 2, byte: 2 },
-          filename: 'test.bp',
+          filename: 'test.nacl',
         },
       }],
     })),
-    setBlueprints: mockFunction<Workspace['setBlueprints']>().mockResolvedValue(),
-    removeBlueprints: mockFunction<Workspace['removeBlueprints']>().mockResolvedValue(),
-    listBlueprints: mockFunction<Workspace['listBlueprints']>().mockResolvedValue([filename]),
+    setNaclFiles: mockFunction<Workspace['setNaclFiles']>().mockResolvedValue(),
+    removeNaclFiles: mockFunction<Workspace['removeNaclFiles']>().mockResolvedValue(),
+    listNaclFiles: mockFunction<Workspace['listNaclFiles']>().mockResolvedValue([filename]),
     getElements: mockFunction<Workspace['getElements']>().mockResolvedValue(merged.merged),
-    clone: mockFunction<Workspace['clone']>().mockImplementation(() => Promise.resolve(buildMockWorkspace(blueprint, buffer))),
+    clone: mockFunction<Workspace['clone']>().mockImplementation(() => Promise.resolve(buildMockWorkspace(naclFile, buffer))),
   } as unknown as Workspace
 }
 
-export const mockWorkspace = async (blueprint?: string,
+export const mockWorkspace = async (naclFile?: string,
 ): Promise<Workspace> => {
-  const buffer = blueprint ? await file.readTextFile(blueprint) : 'blabla'
-  return buildMockWorkspace(blueprint, buffer)
+  const buffer = naclFile ? await file.readTextFile(naclFile) : 'blabla'
+  return buildMockWorkspace(naclFile, buffer)
 }

@@ -111,7 +111,7 @@ const getPositionContextType = (
   return 'instance'
 }
 
-const flattenBlueprintRanges = (
+const flattenNaclFileRanges = (
   sourceMap: SourceMap
 ): NamedRange[] => wu(sourceMap.entries())
   .map(([name, ranges]) => ranges.map(range => ({ name, range })))
@@ -178,7 +178,7 @@ export const buildDefinitionsTree = (
     extractFields(elements),
     fileContent,
     GLOBAL_RANGE,
-    flattenBlueprintRanges(sourceMap).sort(startPosComparator)
+    flattenNaclFileRanges(sourceMap).sort(startPosComparator)
   )
 }
 
@@ -203,7 +203,7 @@ export const getPositionContext = async (
 ): Promise<PositionContext> => {
   const definitionsTree = buildDefinitionsTree(
     // TODO: check what to do if buffer is undefined
-    (await workspace.getBlueprint(filename))?.buffer as string,
+    (await workspace.getNaclFile(filename))?.buffer as string,
     await workspace.getSourceMap(filename),
     await workspace.getElements(filename),
   )

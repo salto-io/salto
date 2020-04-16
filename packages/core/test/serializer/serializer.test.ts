@@ -177,12 +177,12 @@ describe('State serialization', () => {
       })
     })
     it('file', () => {
-      expect(funcElement.value).toHaveProperty('file', { relativeFileName: 'some/path.ext', bpPath: 'none' })
+      expect(funcElement.value).toHaveProperty('file', { relativeFileName: 'some/path.ext', naclFilePath: 'none' })
     })
     it('file with hash', () => {
       expect(funcElement.value).toHaveProperty('filewithhash', {
         relativeFileName: 'some/path.ext',
-        bpPath: 'none',
+        naclFilePath: 'none',
         hash: 'hash',
       })
     })

@@ -47,14 +47,14 @@ describe('app config', () => {
   it('should load config from disk', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'
     process.env.SALTO_TELEMETRY_URL = 'localhost'
-    const bpFileContent = `
+    const naclFileContent = `
     salto {
       installationID = "1234"
       telemetry = {
         enabled = true
       }
     }`
-    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockReadFile.mockResolvedValue(Buffer.from(naclFileContent, 'utf-8'))
     mockExists.mockResolvedValue(true)
     const appConfig = await conf.configFromDisk()
     expect(conf.getSaltoHome()).toEqual('/exists/home')
@@ -67,14 +67,14 @@ describe('app config', () => {
 
   it('should disable telemetry if telemetry config is disabled', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/home/u'
-    const bpFileContent = `
+    const naclFileContent = `
     salto {
       installationID = "9876"
       telemetry = {
         enabled = false
       }
     }`
-    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockReadFile.mockResolvedValue(Buffer.from(naclFileContent, 'utf-8'))
     mockExists.mockResolvedValue(false)
     const appConfig = await conf.configFromDisk()
     expect(appConfig.telemetry.enabled).toBeFalsy()
@@ -82,14 +82,14 @@ describe('app config', () => {
 
   it('should create the config if not existing', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/home/u'
-    const bpFileContent = `
+    const naclFileContent = `
     salto {
       installationID = "9876"
       telemetry = {
         enabled = false
       }
     }`
-    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockReadFile.mockResolvedValue(Buffer.from(naclFileContent, 'utf-8'))
     mockExists.mockResolvedValue(false)
     const appConfig = await conf.configFromDisk()
     expect(conf.getSaltoHome()).toEqual('/home/u')
@@ -98,19 +98,19 @@ describe('app config', () => {
     expect(mockReplaceContents).toHaveBeenCalled()
   })
 
-  it('should override config.bp with env variable', async () => {
+  it('should override config.nacl with env variable', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'
     process.env.SALTO_TELEMETRY_DISABLE = '1'
     process.env.SALTO_TELEMETRY_TOKEN = 'token'
     process.env.SALTO_TELEMETRY_URL = 'localhost'
-    const bpFileContent = `
+    const naclFileContent = `
     salto {
       installationID = "1234"
       telemetry = {
         enabled = true
       }
     }`
-    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockReadFile.mockResolvedValue(Buffer.from(naclFileContent, 'utf-8'))
     mockExists.mockResolvedValue(true)
     const appConfig = await conf.configFromDisk()
     expect(appConfig.installationID).toEqual('1234')
@@ -121,13 +121,13 @@ describe('app config', () => {
 
   it('should not throw an error if installationID is missing', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/home/no_installation_id'
-    const bpFileContent = `
+    const naclFileContent = `
     salto {
       telemetry = {
         enabled = true
       }
     }`
-    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockReadFile.mockResolvedValue(Buffer.from(naclFileContent, 'utf-8'))
     mockExists.mockResolvedValue(true)
     const appConfig = await conf.configFromDisk()
     expect(appConfig.installationID).toBeUndefined()
@@ -136,14 +136,14 @@ describe('app config', () => {
   it('should disable telemetry if enabled and url is empty', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/exists/home'
     process.env.SALTO_TELEMETRY_URL = ''
-    const bpFileContent = `
+    const naclFileContent = `
     salto {
       installationID = "1234"
       telemetry = {
         enabled = true
       }
     }`
-    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockReadFile.mockResolvedValue(Buffer.from(naclFileContent, 'utf-8'))
     mockExists.mockResolvedValue(true)
     const appConfig = await conf.configFromDisk()
     expect(appConfig.telemetry.url).toEqual('')
@@ -152,14 +152,14 @@ describe('app config', () => {
 
   it('should fail when config is invalid', async () => {
     process.env[conf.SALTO_HOME_VAR] = '/invalid/home'
-    const bpFileContent = `
+    const naclFileContent = `
     salto {
       installationID: "1234"
       telemetry = {
         enabled = true
       }
     }`
-    mockReadFile.mockResolvedValue(Buffer.from(bpFileContent, 'utf-8'))
+    mockReadFile.mockResolvedValue(Buffer.from(naclFileContent, 'utf-8'))
     mockExists.mockResolvedValue(true)
     await expect(conf.configFromDisk()).rejects.toThrow()
   })

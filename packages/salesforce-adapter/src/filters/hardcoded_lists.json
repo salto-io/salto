@@ -147,5 +147,8 @@
   "salesforce.WorkflowRule.field.actions",
   "salesforce.WorkflowRule.field.criteriaItems",
   "salesforce.WorkflowRule.field.workflowTimeTriggers",
-  "salesforce.WorkflowTimeTrigger.field.actions"
+  "salesforce.WorkflowTimeTrigger.field.actions",
+  "salesforce.ApprovalProcess.field.approvalStep",
+  "salesforce.ApprovalPageField.field.field",
+  "salesforce.ApprovalAction.field.action"
 ]

@@ -61,7 +61,7 @@ def parse_fields(raw_fields):
   return parsed_fields
 
 def generate_settings_file(settings_type):
-  return ''.join(['/Users/amitgoldfarb/Temp/SaltoFun/salesforce/Types/', settings_type, '.bp'])
+  return ''.join(['/Users/amitgoldfarb/Temp/SaltoFun/salesforce/Types/', settings_type, '.nacl'])
 
 def is_new_field(field, settings_type):
   try:

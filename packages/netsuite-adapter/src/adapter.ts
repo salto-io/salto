@@ -16,7 +16,7 @@
 import {
   BuiltinTypes, Element, FetchResult, Field, InstanceElement, isInstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
-import { bpCase } from '@salto-io/adapter-utils'
+import { naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import NetsuiteClient from './client/client'
 import { createInstanceElement, createXmlElement } from './transformer'
@@ -50,7 +50,7 @@ const addDefaults = (instance: InstanceElement): void => {
   if (_.isUndefined(instance.value[SCRIPT_ID])) {
     const { type } = instance
     const scriptIdPrefix = type.annotations[SCRIPT_ID_PREFIX]
-    const name = bpCase(instance.value[nameField(type).name]).toLowerCase()
+    const name = naclCase(instance.value[nameField(type).name]).toLowerCase()
     instance.value[SCRIPT_ID] = `${scriptIdPrefix}${name}`
   }
 }

@@ -17,12 +17,15 @@ import {
   BuiltinTypes, Element, FetchResult, Field, InstanceElement, isInstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { Element as XmlElement } from 'xml-js'
 import NetsuiteClient from './client/client'
 import { createInstanceElement, createXmlElement } from './transformer'
 import { Types } from './types'
 import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from './constants'
 
+const log = logger(module)
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
@@ -67,7 +70,10 @@ export default class NetsuiteAdapter {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<FetchResult> {
-    const customObjectXmls = await this.client.listCustomObjects()
+    const customObjectXmls = await this.client.listCustomObjects().catch(e => {
+      log.error('failed to list custom objects reason: %o', e)
+      return [] as XmlElement[]
+    })
     const instances = customObjectXmls.map(customObjectXml => {
       const type = Types.customTypes[customObjectXml.name as string]
       return type ? createInstanceElement(customObjectXml, type) : undefined

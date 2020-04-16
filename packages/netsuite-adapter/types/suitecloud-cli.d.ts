@@ -59,7 +59,21 @@ declare module '@oracle/suitecloud-sdk' {
         commandName: string
         runInInteractiveMode: boolean
         arguments: Values
-      }): void // todo add the operationResult
+      }): Promise<OperationResult>
     }
+
+    export class SDKOperationResultUtils {
+      static hasErrors(operationResult: OperationResult): boolean
+      static getErrorMessagesString(operationResult: OperationResult): string
+    }
+
+    export type OperationResultStatus = 'ERROR' | 'SUCCESS'
+
+    export interface OperationResult {
+      status: OperationResultStatus
+      resultMessage?: string
+      errorMessages?: string[]
+    }
+
   }
 }

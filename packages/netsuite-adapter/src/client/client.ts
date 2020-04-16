@@ -16,14 +16,17 @@
 import { NodeCli } from '@oracle/suitecloud-sdk'
 import { decorators } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import xmlConverter, { Element as XmlElement } from 'xml-js'
 import path from 'path'
 import os from 'os'
 import { readDir, readFile, writeFile } from './file'
 
+const log = logger(module)
+
 const {
   AuthenticationService, CLIConfigurationService, CommandActionExecutor, CommandInstanceFactory,
-  CommandOptionsValidator, CommandOutputHandler, CommandsMetadataService,
+  CommandOptionsValidator, CommandOutputHandler, CommandsMetadataService, SDKOperationResultUtils,
 } = NodeCli
 
 export type Credentials = {
@@ -72,8 +75,9 @@ export default class NetsuiteClient {
     this.authId = String(Date.now()).substring(8)
   }
 
-  static validateCredentials(_credentials: Credentials): Promise<void> { // todo
-    return Promise.resolve()
+  static async validateCredentials(credentials: Credentials): Promise<void> {
+    const netsuiteClient = new NetsuiteClient({ credentials })
+    await netsuiteClient.setupAccount()
   }
 
   private static initCommandActionExecutor(executionPath: string): NodeCli.CommandActionExecutor {
@@ -107,18 +111,40 @@ export default class NetsuiteClient {
     }
   )
 
+  private static logDecorator = decorators.wrapMethodWith(
+    async (
+      { call, name }: decorators.OriginalCall,
+    ): Promise<unknown> => {
+      const desc = `client.${name}`
+      try {
+        return await log.time(call, desc)
+      } catch (e) {
+        log.error('failed to run Netsuite client command on: %o', e)
+        throw e
+      }
+    }
+  )
+
   private static async createProject(): Promise<string> {
     const projectName = `TempProject${String(Date.now()).substring(8)}`
-    await NetsuiteClient.initCommandActionExecutor(baseExecutionPath).executeAction({
-      commandName: COMMANDS.CREATE_PROJECT,
-      runInInteractiveMode: false,
-      arguments: {
-        projectname: projectName,
-        type: 'ACCOUNTCUSTOMIZATION',
-        parentdirectory: rootCLIPath,
-      },
-    })
+    const operationResult = await NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
+      .executeAction({
+        commandName: COMMANDS.CREATE_PROJECT,
+        runInInteractiveMode: false,
+        arguments: {
+          projectname: projectName,
+          type: 'ACCOUNTCUSTOMIZATION',
+          parentdirectory: rootCLIPath,
+        },
+      })
+    NetsuiteClient.verifySuccessfulOperation(operationResult)
     return projectName
+  }
+
+  private static verifySuccessfulOperation(operationResult: NodeCli.OperationResult): void {
+    if (SDKOperationResultUtils.hasErrors(operationResult)) {
+      throw Error(SDKOperationResultUtils.getErrorMessagesString(operationResult))
+    }
   }
 
   private async executeProjectAction(commandName: string, commandArguments: Values): Promise<void> {
@@ -131,14 +157,16 @@ export default class NetsuiteClient {
         .initCommandActionExecutor(`${this.getProjectPath()}`)
     }
 
-    await this.projectCommandActionExecutor.executeAction({
+    const operationResult = await this.projectCommandActionExecutor.executeAction({
       commandName,
       runInInteractiveMode: false,
       arguments: commandArguments,
     })
+
+    NetsuiteClient.verifySuccessfulOperation(operationResult)
   }
 
-  private async setupAccount(): Promise<void> {
+  protected async setupAccount(): Promise<void> {
     // Todo: use the correct implementation and not Salto's temporary solution after:
     //  https://github.com/oracle/netsuite-suitecloud-sdk/issues/81 is resolved
     await this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
@@ -149,6 +177,7 @@ export default class NetsuiteClient {
     })
   }
 
+  @NetsuiteClient.logDecorator
   @NetsuiteClient.requiresSetupAccount
   async listCustomObjects(): Promise<XmlElement[]> {
     await this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
@@ -174,6 +203,7 @@ export default class NetsuiteClient {
     return path.resolve(baseExecutionPath, this.projectName as string)
   }
 
+  @NetsuiteClient.logDecorator
   @NetsuiteClient.requiresSetupAccount
   async deployCustomObject(filename: string, xmlElement: XmlElement): Promise<void> {
     await this.deploy(path.resolve(this.getObjectsDirPath(), `${filename}.xml`), xmlElement)

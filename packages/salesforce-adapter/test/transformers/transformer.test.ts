@@ -1187,10 +1187,10 @@ describe('transformer', () => {
         },
       }
       const [firstType] = Types.generateMissingTypes(testTypes, true) as ObjectType[]
-      expect((firstType).elemID.typeName).toEqual('testType1')
-      expect((firstType).fields.booleanField.type).toEqual(BuiltinTypes.BOOLEAN)
-      expect((firstType).fields.stringField.type).toEqual(BuiltinTypes.STRING)
-      expect((firstType).path).toEqual(
+      expect(firstType.elemID.typeName).toEqual('testType1')
+      expect(firstType.fields.booleanField.type).toEqual(BuiltinTypes.BOOLEAN)
+      expect(firstType.fields.stringField.type).toEqual(BuiltinTypes.STRING)
+      expect(firstType.path).toEqual(
         [SALESFORCE, TYPES_PATH, SUBTYPES_PATH, firstType.elemID.typeName]
       )
     })

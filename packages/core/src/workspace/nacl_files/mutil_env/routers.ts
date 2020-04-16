@@ -169,7 +169,7 @@ export const routeNewEnv = async (
     throw Error('Missing element in common')
   }
   // Add the changed part of common to the target source
-  const modifyWithCommonProj = change.action === 'modify' && commonChangeProjection
+  const modifyWithCommonProj = change.action === 'modify' && !_.isUndefined(commonChangeProjection)
   const addCommonProjectionToCurrentChanges = modifyWithCommonProj
     ? await projectChange(
       createAddChange(commonChangeProjection, change.id, pathHint),

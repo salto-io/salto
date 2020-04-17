@@ -15,5 +15,5 @@
 */
 import { createHash } from 'crypto'
 
-export const getMD5FromBuffer = (buffer: Buffer): string =>
+export const toMD5 = (buffer: Buffer | string): string =>
   createHash('md5').update(buffer).digest('hex')

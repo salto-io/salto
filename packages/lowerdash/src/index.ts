@@ -23,7 +23,7 @@ import * as functions from './functions'
 import * as retry from './retry'
 import * as validators from './validators'
 import * as stack from './stack'
-import * as files from './files'
+import * as hash from './hash'
 
 export {
   collections,
@@ -36,5 +36,5 @@ export {
   retry,
   validators,
   stack,
-  files,
+  hash,
 }

@@ -133,7 +133,9 @@ const getChangePathHint = async (
   commonSource: NaclFilesSource
 ): Promise<string[] | undefined> => {
   if (change.path) return change.path
-  const refFilename = (await commonSource.getElementNaclFiles(change.id))[0]
+  const refFilename = (await commonSource.getSourceRanges(change.id))
+    .map(sourceRange => sourceRange.filename)[0]
+
   return refFilename
     ? _.trimEnd(refFilename, FILE_EXTENSION).split(path.sep)
     : undefined

@@ -44,9 +44,7 @@
     "async": "^3.1.0",
     "axios": "^0.19.2",
     "chalk": "^2.3.0",
-    "csv-parser": "^2.3.2",
     "fuse.js": "^3.4.5",
-    "json2csv": "^4.5.2",
     "lodash": "^4.17.11",
     "mkdirp": "^0.5.1",
     "moo": "^0.5.1",
@@ -60,7 +58,6 @@
   "devDependencies": {
     "@types/async": "^3.0.0",
     "@types/jest": "^24.0.0",
-    "@types/json2csv": "^4.5.0",
     "@types/lodash": "^4.14.133",
     "@types/mkdirp": "^0.5.2",
     "@types/moo": "^0.5.0",

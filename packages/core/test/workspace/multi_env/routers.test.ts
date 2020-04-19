@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Field, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -23,10 +23,20 @@ import { routeChanges } from '../../../src/workspace/nacl_files/mutil_env/router
 const objectElemID = new ElemID('salto', 'object')
 const commonField = new Field(objectElemID, 'commonField', BuiltinTypes.STRING)
 const envField = new Field(objectElemID, 'envField', BuiltinTypes.STRING)
+const simpleObjID = new ElemID('salto', 'simple')
+const simpleObj = new ObjectType({
+  elemID: simpleObjID,
+  annotationTypes: {
+    str1: BuiltinTypes.STRING,
+    str2: BuiltinTypes.STRING,
+  },
+})
+const listField = new Field(objectElemID, 'listField', new ListType(simpleObj))
 const commonObj = new ObjectType({
   elemID: objectElemID,
   fields: {
     commonField,
+    listField,
   },
 })
 const envObj = new ObjectType({
@@ -35,12 +45,12 @@ const envObj = new ObjectType({
     envField,
   },
 })
-
 const sharedObject = new ObjectType({
   elemID: objectElemID,
   fields: {
     envField,
     commonField,
+    listField,
   },
 })
 
@@ -50,7 +60,13 @@ const newObj = new ObjectType({
   },
 })
 
-const commonSource = createMockNaclFileSource([commonObj, commonField])
+const commonInstance = new InstanceElement('commonInst', commonObj, {
+  commonField: 'commonField',
+  listField: [{
+    str1: 'STR_1',
+  }],
+})
+const commonSource = createMockNaclFileSource([commonObj, commonField, commonInstance])
 const envSource = createMockNaclFileSource([envObj, envField])
 const secEnv = createMockNaclFileSource([envObj, envField])
 
@@ -289,6 +305,51 @@ describe('compact routing', () => {
       action: 'add',
       data: { after: commonObj },
       id: commonObj.elemID,
+      path: ['test', 'path'],
+    })
+  })
+
+  it('should merge non mergeable changes into one mergeable change', async () => {
+    const removeChange: DetailedChange = {
+      action: 'remove',
+      data: { before: 'STR_1' },
+      id: commonInstance.elemID.createNestedID('0').createNestedID('str1'),
+    }
+    const addChange: DetailedChange = {
+      action: 'add',
+      data: { after: 'STR_2' },
+      id: commonInstance.elemID.createNestedID('0').createNestedID('str2'),
+    }
+    const routedChanges = await routeChanges(
+      [removeChange, addChange],
+      envSource,
+      commonSource,
+      { sec: secEnv },
+      'isolated'
+    )
+    expect(routedChanges.primarySource).toHaveLength(1)
+    const primaryChange = routedChanges.primarySource && routedChanges.primarySource[0]
+    expect(primaryChange).toEqual({
+      action: 'add',
+      id: commonInstance.elemID,
+      data: {
+        after: new InstanceElement('commonInst', commonObj, {
+          commonField: 'commonField',
+          listField: [{
+            str1: 'STR_1',
+          }],
+        }),
+      },
+      path: ['test', 'path'],
+    })
+    expect(routedChanges.commonSource).toHaveLength(1)
+    const commonChange = routedChanges.commonSource && routedChanges.commonSource[0]
+    expect(commonChange).toEqual({
+      action: 'remove',
+      id: commonInstance.elemID,
+      data: {
+        before: commonInstance,
+      },
       path: ['test', 'path'],
     })
   })

@@ -33,17 +33,17 @@ Salto is available under the Apache License, version 2.0.
 
 - Email us at <TODO> 
 - Our public slack channel <TODO> 
-- If you're looking to report a bug, file a feature request or contribute, please see [Contributing](https://www.notion.so/Contributing-70e9f8bd6af34163837a5d9518c7b833) .
+- If you're looking to report a bug, file a feature request or contribute, please see [Contributing](contributing.md) .
 
 ## Telemetry <link to the telemetry page> TODO 
 
 ## I'm missing feature X, how can I tell you about it?
 
-We would love to get your feedback! Please see [Contributing](https://www.notion.so/Contributing-70e9f8bd6af34163837a5d9518c7b833) for more information.
+We would love to get your feedback! Please see [Contributing](contributing.md) for more information.
 
 ## I love Salto, how can I contribute?
 
-Great question! Please see [Contributing](https://www.notion.so/Contributing-70e9f8bd6af34163837a5d9518c7b833) for more information.
+Great question! Please see [Contributing](contributing.md) for more information.
 
 ## What's the meaning of the name Salto?
 

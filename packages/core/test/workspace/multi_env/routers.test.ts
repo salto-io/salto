@@ -78,7 +78,10 @@ const commonInstance = new InstanceElement('commonInst', commonObj, {
     str1: 'STR_1',
   }],
 })
-const commonSource = createMockNaclFileSource([commonObj, commonField, commonInstance])
+const commonSource = createMockNaclFileSource(
+  [commonObj, commonField, commonInstance],
+  { 'test/path.nacl': [commonObj, commonField, commonInstance] }
+)
 const envSource = createMockNaclFileSource([envObj, envField])
 const secEnv = createMockNaclFileSource([envObj, envField])
 

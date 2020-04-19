@@ -111,7 +111,7 @@ export default class HubspotAdapter {
     const resolved = resolveReferences(instance, getLookUpName)
     const resp = await this.client.createInstance(
       resolved.type.elemID.name,
-      createHubspotMetadataFromInstanceElement(resolved.clone())
+      await createHubspotMetadataFromInstanceElement(resolved.clone(), this.client)
     )
     return restoreReferences(
       instance,
@@ -148,7 +148,7 @@ export default class HubspotAdapter {
     validateFormGuid(resolvedBefore, resolvedAfter)
     const resp = await this.client.updateInstance(
       resolvedAfter.type.elemID.name,
-      createHubspotMetadataFromInstanceElement(resolvedAfter.clone())
+      await createHubspotMetadataFromInstanceElement(resolvedAfter.clone(), this.client)
     )
     return restoreReferences(
       after,

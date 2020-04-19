@@ -14,13 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isObjectType, Values, ObjectType, TypeElement, isListType } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, isObjectType, Values, ObjectType, isListType } from '@salto-io/adapter-api'
 import { Owner } from 'src/client/types'
-import { Types } from '../transformers/transformer'
+import { isUserIdentifierType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
-
-const isUserIdentifierType = (type: TypeElement): boolean =>
-  type.elemID.isEqual(Types.userIdentifierType.elemID)
 
 const convertUserIdentifiers = (
   objectType: ObjectType,
@@ -35,9 +32,9 @@ const convertUserIdentifiers = (
         return
       }
       if (isUserIdentifierType(fieldType)) {
-        if (!Number.isNaN(Number(currentValue))) {
-          values[field.name] = ownersMap.get(Number(currentValue))
-            ? ownersMap.get(Number(currentValue)) : currentValue
+        const numVal = Number(currentValue)
+        if (!Number.isNaN(numVal)) {
+          values[field.name] = ownersMap.get(numVal) || numVal.toString()
           return
         }
       }

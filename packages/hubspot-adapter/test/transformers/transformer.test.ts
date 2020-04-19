@@ -16,6 +16,9 @@
 import {
   InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
+import { RequestPromise } from 'requestretry'
+import HubspotClient from '../../src/client/client'
+import mockClient from '../client'
 import { HUBSPOT } from '../../src/constants'
 import {
   createInstanceName, transformAfterUpdateOrAdd, createHubspotMetadataFromInstanceElement,
@@ -24,7 +27,7 @@ import {
 import {
   HubspotMetadata, Form,
 } from '../../src/client/types'
-import { afterFormInstanceValuesMock } from '../common/mock_elements'
+import { afterFormInstanceValuesMock, useridentifierObjectType } from '../common/mock_elements'
 
 describe('Transformer', () => {
   describe('transformAfterUpdateOrAdd func', () => {
@@ -205,12 +208,136 @@ describe('Transformer', () => {
       a: string
       c: string[]
     }
-    it('should parse JSON values', () => {
-      const metadataResult = createHubspotMetadataFromInstanceElement(
-        instanceWithJson
+    let hsClient: HubspotClient
+    beforeEach(() => {
+      const { client } = mockClient()
+      hsClient = client
+      const getOwners = async (): Promise<RequestPromise> => [
+        {
+          activeUserId: 12,
+          email: 'a@b.com',
+        },
+        {
+          activeUserId: 34,
+          email: 'c@d.com',
+        },
+        {
+          activeUserId: 56,
+          email: 'e@f.com',
+        }] as unknown as RequestPromise
+      hsClient.getOwners = jest.fn().mockImplementation(getOwners)
+    })
+
+    it('should parse JSON values', async () => {
+      const metadataResult = await createHubspotMetadataFromInstanceElement(
+        instanceWithJson,
+        hsClient
       ) as JSONMetadata
       expect(metadataResult.jsonType).toBeDefined()
       expect(metadataResult.jsonType).toEqual(JSON.parse(jsonString))
+    })
+
+    describe('handle useridentity', () => {
+      interface UserIdentityMetadata extends HubspotMetadata {
+        str: string
+        simple: number
+        simpleNum: number
+        stringList: string
+        stringArray: string
+        objField: UserIdentityMetadata
+        listOfObjField: UserIdentityMetadata[]
+      }
+      let userIdentityInstanceValues: Values
+      let mockUseridentityInstance: InstanceElement
+      let metadataResult: UserIdentityMetadata
+      beforeEach(async () => {
+        userIdentityInstanceValues = {
+          str: 'a@b.com',
+          simple: 'a@b.com',
+          simpleNum: '101',
+          stringList: ['a@b.com', 'c@d.com', 'e@f.com', 'no@owner.com'],
+          stringArray: ['a@b.com', 'c@d.com', 'e@f.com'],
+          objField: {
+            str: 'a@b.com',
+            simpleNum: '101',
+            simple: 'a@b.com',
+            stringList: ['a@b.com', 'c@d.com', 'e@f.com', 'no@owner.com'],
+            stringArray: ['a@b.com', 'c@d.com', 'e@f.com'],
+          },
+          listOfObjField: [
+            {
+              str: 'a@b.com',
+              simple: 'a@b.com',
+              simpleNum: '101',
+              stringList: ['a@b.com', 'c@d.com', 'e@f.com', 'no@owner.com'],
+              stringArray: ['a@b.com', 'c@d.com', 'e@f.com'],
+            },
+            {
+              str: 'c@d.com',
+              simple: 'c@d.com',
+              stringList: ['c@d.com', 'e@f.com', 'a@b.com'],
+              stringArray: ['c@d.com', 'e@f.com', 'a@b.com'],
+            },
+          ],
+        } as Values
+        mockUseridentityInstance = new InstanceElement(
+          'mockUseridentityInstance',
+          useridentifierObjectType,
+          userIdentityInstanceValues
+        )
+        metadataResult = await createHubspotMetadataFromInstanceElement(
+          mockUseridentityInstance,
+          hsClient
+        ) as UserIdentityMetadata
+      })
+      it('should not change non-useridentity values at top level', () => {
+        expect(metadataResult.str).toEqual(userIdentityInstanceValues.str)
+      })
+
+      it('should convert simple email to id at top level', () => {
+        expect(metadataResult.simple).toEqual(12)
+      })
+
+      it('should convert useridentifier string number to number at top level', () => {
+        expect(metadataResult.simpleNum).toEqual(101)
+      })
+
+      it('should convert array to string list at top level', () => {
+        expect(metadataResult.stringList).toEqual('12,34,56,no@owner.com')
+      })
+
+      it('should not change non-useridentity values inside obj', () => {
+        expect(metadataResult.objField.str).toEqual(userIdentityInstanceValues.objField.str)
+      })
+
+      it('should convert simple email to id inside obj', () => {
+        expect(metadataResult.objField.simple).toEqual(12)
+      })
+
+      it('should convert useridentifier string number to number inside obj', () => {
+        expect(metadataResult.objField.simpleNum).toEqual(101)
+      })
+
+      it('should convert array to string list inside obj', () => {
+        expect(metadataResult.objField.stringList).toEqual('12,34,56,no@owner.com')
+      })
+
+      it('should not change non-useridentity values inside array of obj', () => {
+        expect(metadataResult.listOfObjField[0].str)
+          .toEqual(userIdentityInstanceValues.listOfObjField[0].str)
+      })
+
+      it('should convert simple email to id inside array of obj', () => {
+        expect(metadataResult.listOfObjField[0].simple).toEqual(12)
+      })
+
+      it('should convert useridentifier string number to number inside array of obj', () => {
+        expect(metadataResult.listOfObjField[0].simpleNum).toEqual(101)
+      })
+
+      it('should convert array to string list inside array of obj', () => {
+        expect(metadataResult.listOfObjField[0].stringList).toEqual('12,34,56,no@owner.com')
+      })
     })
 
     const formInstance = new InstanceElement(
@@ -221,9 +348,10 @@ describe('Transformer', () => {
 
     describe('handle form instances field transformation', () => {
       let formMetadata: Form
-      beforeEach(() => {
-        formMetadata = createHubspotMetadataFromInstanceElement(
-          formInstance
+      beforeEach(async () => {
+        formMetadata = await createHubspotMetadataFromInstanceElement(
+          formInstance,
+          hsClient
         ) as Form
       })
 

@@ -277,7 +277,6 @@ export const formatExecutionPlan = (
   )
   return [
     emptyLine(),
-    header(Prompts.PLAN_STEPS_HEADER),
     planSteps,
     ...planErrorsOutput,
     emptyLine(),

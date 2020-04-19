@@ -25,7 +25,7 @@ import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
   formatConfigFieldInput, formatShouldAbortWithValidationError, formatShouldUpdateConfig,
-  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries,
+  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries, header,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
@@ -45,6 +45,7 @@ export const shouldDeploy = (stdout: WriteStream, workspace: Workspace) =>
     const planWorkspaceErrors = await Promise.all(
       actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
     )
+    stdout.write(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
     stdout.write(await formatExecutionPlan(actions, planWorkspaceErrors))
     if (_.isEmpty(actions)) {
       return false

@@ -1164,7 +1164,7 @@ describe('transformer', () => {
           serviceId: BuiltinTypes.SERVICE_ID,
         },
       }
-      const types = Types.generateMissingTypes(testTypes, TYPES_PATH)
+      const types = Types.generateMissingTypes(testTypes, false)
       expect((types[0] as ObjectType).elemID.typeName).toEqual('testType1')
       expect((types[0] as ObjectType).fields.booleanField.type).toEqual(BuiltinTypes.BOOLEAN)
       expect((types[0] as ObjectType).fields.stringField.type).toEqual(BuiltinTypes.STRING)
@@ -1174,6 +1174,20 @@ describe('transformer', () => {
       expect((types[1] as ObjectType).fields.jsonField.type).toEqual(BuiltinTypes.JSON)
       expect((types[1] as ObjectType).fields.serviceId.type).toEqual(BuiltinTypes.SERVICE_ID)
       expect((types[1] as ObjectType).path).toContain(TYPES_PATH)
+    })
+    it('Should generate missing types successfully', () => {
+      const testTypes = {
+        testType1: {
+          booleanField: BuiltinTypes.BOOLEAN,
+          stringField: BuiltinTypes.STRING,
+        },
+      }
+      const types = Types.generateMissingTypes(testTypes, true)
+      expect((types[0] as ObjectType).elemID.typeName).toEqual('testType1')
+      expect((types[0] as ObjectType).fields.booleanField.type).toEqual(BuiltinTypes.BOOLEAN)
+      expect((types[0] as ObjectType).fields.stringField.type).toEqual(BuiltinTypes.STRING)
+      expect((types[0] as ObjectType).path).toContain(TYPES_PATH)
+      expect((types[0] as ObjectType).path).toContain(SUBTYPES_PATH)
     })
   })
 })

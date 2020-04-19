@@ -144,8 +144,9 @@ describe('projections', () => {
       objectTypeElemID, k, k.includes('list') ? new ListType(v) : v, {}
     )),
   })
+  const partialFieldOBjectId = new ElemID('salto', 'parent')
   const partialField = new Field(
-    new ElemID('salto', 'parent'),
+    partialFieldOBjectId,
     'field',
     objectType,
     {
@@ -156,6 +157,12 @@ describe('projections', () => {
       },
     }
   )
+  const partialFieldObject = new ObjectType({
+    elemID: partialFieldOBjectId,
+    fields: {
+      field: partialField,
+    },
+  })
   const partialInstance = new InstanceElement(
     'instance',
     objectType,
@@ -168,7 +175,12 @@ describe('projections', () => {
     }
   )
 
-  const partialElements = [partialPrimitiveType, partialObjectType, partialInstance, partialField]
+  const partialElements = [
+    partialPrimitiveType,
+    partialObjectType,
+    partialInstance,
+    partialFieldObject,
+  ]
   const source = createMockNaclFileSource(partialElements)
 
   describe('project instances', () => {

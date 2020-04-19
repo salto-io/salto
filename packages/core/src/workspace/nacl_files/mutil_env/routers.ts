@@ -70,6 +70,7 @@ const getMergeableParentID = (id: ElemID): {mergeableID: ElemID; path: string[]}
     path: id.getFullNameParts().slice(firstListNamePart),
   }
 }
+
 const createMergeableChange = async (
   changes: DetailedChange[],
   primarySource: NaclFilesSource,
@@ -83,7 +84,12 @@ const createMergeableChange = async (
   const base = await commonSource.get(mergeableID) || await primarySource.get(mergeableID)
   const baseAfter = _.cloneDeep(base)
   changes.forEach(change => {
-    _.set(baseAfter, getMergeableParentID(change.id).path, getChangeElement(change))
+    const changePath = getMergeableParentID(change.id).path
+    if (change.action === 'remove') {
+      _.unset(baseAfter, changePath)
+    } else {
+      _.set(baseAfter, changePath, change.data.after)
+    }
   })
   return {
     action: 'modify',

@@ -1,13 +1,9 @@
-# salto - DAG
-
+# Salto - DAG
 ---
-
-### TODO high-level description of the project's goal
+An implementation of a directed acyclic graph for the usage of [Salto Core](core/../README.md).
 
 ### Build instructions
 
 ```
 yarn
 ```
-
-### Usage instructions

@@ -1,10 +1,10 @@
-# salto - CLI
+# Salto - CLI
 
-### TODO high-level description of the project's goal
+This project is the command line interface for Salto.
 
 ### Download prebuilt executable binary releases
 
-Salto is releasing a prebuilt executable binary for all major operating systems.
+Salto is releasing a prebuilt executable binary of the CLI for all major operating systems.
 The prebuilt binaries are built using [`webpack`](https://github.com/webpack/webpack) and [`nexe`](https://github.com/nexe/nexe).
 
 > TODO specific instructions on how to download
@@ -24,7 +24,7 @@ E2E tests need [valid SFDC credentials](../salesforce-adapter/README.md#E2E-test
 When running the first `salto init` command, a configuration file will be created in `$SALTO_HOME/.salto/salto.config/config.nacl`.
 The file includes a unique installation ID (uuidv4) and telemetry settings, and it generally structured as follows:
 
-```
+```hcl
 salto {
   installationID = "947270fd-bd63-4925-8e14-2e012ed6aa4b"
   telemetry = {

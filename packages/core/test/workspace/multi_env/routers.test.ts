@@ -25,6 +25,12 @@ const commonField = new Field(objectElemID, 'commonField', BuiltinTypes.STRING)
 const envField = new Field(objectElemID, 'envField', BuiltinTypes.STRING)
 const commonObj = new ObjectType({
   elemID: objectElemID,
+  annotationTypes: {
+    boolean: BuiltinTypes.BOOLEAN,
+  },
+  annotations: {
+    boolean: false,
+  },
   fields: {
     commonField,
   },
@@ -38,6 +44,12 @@ const envObj = new ObjectType({
 
 const sharedObject = new ObjectType({
   elemID: objectElemID,
+  annotationTypes: {
+    boolean: BuiltinTypes.BOOLEAN,
+  },
+  annotations: {
+    boolean: false,
+  },
   fields: {
     envField,
     commonField,
@@ -222,16 +234,21 @@ describe('compact routing', () => {
       data: { before: sharedObject, after: sharedObject },
       id: sharedObject.elemID,
     }
+    const specificChange: DetailedChange = {
+      action: 'modify',
+      data: { before: true, after: false },
+      id: objectElemID.createNestedID('attr').createNestedID('boolean'),
+    }
     const routedChanges = await routeChanges(
-      [change],
+      [change, specificChange],
       envSource,
       commonSource,
       { sec: secEnv },
       'isolated'
     )
-    expect(routedChanges.primarySource).toHaveLength(2)
-    expect(routedChanges.commonSource).toHaveLength(1)
-    expect(routedChanges.secondarySources?.sec).toHaveLength(1)
+    expect(routedChanges.primarySource).toHaveLength(3)
+    expect(routedChanges.commonSource).toHaveLength(2)
+    expect(routedChanges.secondarySources?.sec).toHaveLength(2)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual({
       action: 'modify',
       data: { before: envObj, after: envObj },
@@ -241,6 +258,12 @@ describe('compact routing', () => {
       action: 'add',
       data: { after: commonObj },
       id: commonObj.elemID,
+      path: ['test', 'path'],
+    })
+    expect(routedChanges.primarySource && routedChanges.primarySource[2]).toEqual({
+      action: 'add',
+      data: { after: false },
+      id: sharedObject.elemID.createNestedID('attr').createNestedID('boolean'),
       path: ['test', 'path'],
     })
     expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual({

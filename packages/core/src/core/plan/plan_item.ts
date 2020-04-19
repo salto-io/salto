@@ -99,7 +99,7 @@ export const addPlanItemAccessors = (
         // in fetch. See SALTO-322
         if (isField(change.data.before)
           && isField(change.data.after)
-          && isListType(change.data.after.type) !== isListType(change.data.before)) {
+          && isListType(change.data.after.type) !== isListType(change.data.before.type)) {
           return { ...change, id: elem.elemID }
         }
 

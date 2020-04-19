@@ -94,6 +94,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2]
     saltoOffice.fields.name.type = new ListType(saltoOffice.fields.name.type)
+    saltoOffice.fields.rooms.type = BuiltinTypes.STRING
     const plan = await getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   },

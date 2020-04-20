@@ -34,7 +34,6 @@ import {
   Workspace,
   initWorkspace,
   loadWorkspace,
-  COMMON_ENV_PREFIX,
   NoWorkspaceConfig,
   ADAPTERS_CONFIGS_PATH,
 } from '../../src/workspace/workspace'
@@ -90,12 +89,15 @@ const createWorkspace = async (dirStore?: DirectoryStore, state?: State,
   configSource?: ConfigSource, credentials?: ConfigSource): Promise<Workspace> =>
   loadWorkspace(configSource || mockConfigSource(), credentials || mockCredentialsSource(),
     {
-      [COMMON_ENV_PREFIX]: {
-        naclFiles: naclFilesSource(dirStore || mockDirStore(), mockParseCache()),
-      },
-      default: {
-        naclFiles: createMockNaclFileSource([]),
-        state: state || mockState(),
+      commonSourceName: '',
+      sources: {
+        '': {
+          naclFiles: naclFilesSource(dirStore || mockDirStore(), mockParseCache()),
+        },
+        default: {
+          naclFiles: createMockNaclFileSource([]),
+          state: state || mockState(),
+        },
       },
     })
 
@@ -485,7 +487,7 @@ describe('workspace', () => {
     })
     it('should init workspace configuration', async () => {
       const workspace = await initWorkspace('ws-name', 'uid', 'default', confSource,
-        mockCredentialsSource(), {})
+        mockCredentialsSource(), { commonSourceName: '', sources: {} })
       expect(confSource.set).toHaveBeenCalled()
       expect((confSource.set as jest.Mock).mock.calls[0][1]).toEqual(
         new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType,

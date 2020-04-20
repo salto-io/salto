@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import uuidv5 from 'uuid/v5'
 import { exists } from '../../file'
-import { Workspace, loadWorkspace, COMMON_ENV_PREFIX, EnviornmentsSources, initWorkspace } from '../workspace'
+import { Workspace, loadWorkspace, EnviornmentsSources, initWorkspace } from '../workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../../app_config'
 import { NaclFilesSource, FILE_EXTENSION, naclFilesSource } from '../nacl_files/nacl_files_source'
@@ -26,8 +26,10 @@ import { localState } from './state'
 import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspace_config'
 import { configSource, ConfigSource } from '../config_source'
 
+export const COMMON_ENV_PREFIX = ''
+export const ENVS_PREFIX = 'envs'
 export const STATES_DIR_NAME = 'states'
-const CREDENTIALS_CONFIG_PATH = 'credentials'
+export const CREDENTIALS_CONFIG_PATH = 'credentials'
 
 export class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {
@@ -63,23 +65,26 @@ const loadNaclFileSource = (
 
 const elementsSources = (baseDir: string, localStorage: string, envs: ReadonlyArray<string>):
 EnviornmentsSources => ({
-  ..._.fromPairs(envs.map(env =>
-    [
-      env,
-      {
-        naclFiles: loadNaclFileSource(
-          path.resolve(baseDir, env),
-          path.resolve(localStorage, env)
-        ),
-        state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.jsonl`)),
-      },
-    ])),
-  [COMMON_ENV_PREFIX]: {
-    naclFiles: loadNaclFileSource(
-      baseDir,
-      localStorage,
-      envs.map(env => path.join(baseDir, env))
-    ),
+  commonSourceName: COMMON_ENV_PREFIX,
+  sources: {
+    ..._.fromPairs(envs.map(env =>
+      [
+        env,
+        {
+          naclFiles: loadNaclFileSource(
+            path.resolve(baseDir, ENVS_PREFIX, env),
+            path.resolve(localStorage, ENVS_PREFIX, env)
+          ),
+          state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.jsonl`)),
+        },
+      ])),
+    [COMMON_ENV_PREFIX]: {
+      naclFiles: loadNaclFileSource(
+        baseDir,
+        localStorage,
+        envs.map(env => path.join(baseDir, env))
+      ),
+    },
   },
 })
 

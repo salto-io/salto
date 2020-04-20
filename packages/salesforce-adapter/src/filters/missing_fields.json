@@ -479,7 +479,7 @@
     ]
   },
   {
-    "id": "CUSTOM_FIELD",
+    "id": "CustomField",
     "fields": [
       {
         "name": "type",

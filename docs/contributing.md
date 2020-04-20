@@ -14,7 +14,7 @@ Provide as much information as you can. The easier it is for us to recreate your
 
 ## Feature Requests
 
-These are still very early days for Salto, and  feedback from our community on required features is extremely important for us.  Please open an issue on our issues list on GitHub which describes the feature you would like to see, why you need it, and how it should work.
+These are still very early days for Salto, and feedback from our community on required features is extremely important for us.  Please open an issue on our issues list on GitHub which describes the feature you would like to see, why you need it, and how it should work.
 
 ## Contributing code and documentation changes
 

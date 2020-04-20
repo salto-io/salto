@@ -37,11 +37,11 @@ Located inside the workspace directory in `salto.config/adapters/<adapter_name>.
 
 Each configuration file holds information that is relevant to the specific adapter
 
-## Global salto configuration
+## Global Salto configuration
 
 Located in `~/.salto/salto.config/config.nacl`
 
-This configuration holds information that is used to configure the behavior of the salto CLI
+This configuration holds information that is used to configure the behavior of the Salto CLI
 ```hcl
 AppConfig:
       installationID: string

@@ -34,7 +34,6 @@ const log = logger(module)
 
 const { makeArray } = collections.array
 
-export const COMMON_ENV_PREFIX = ''
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
 export const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 
@@ -120,7 +119,10 @@ export type Workspace = {
 
 // common source has no state
 export type EnviornmentSource = { naclFiles: NaclFilesSource; state?: State }
-export type EnviornmentsSources = Record<string, EnviornmentSource>
+export type EnviornmentsSources = {
+  commonSourceName: string
+  sources: Record<string, EnviornmentSource>
+}
 export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSource,
   elementsSources: EnviornmentsSources):
   Promise<Workspace> => {
@@ -138,9 +140,9 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
   const currentEnvConf = (): EnvConfig =>
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
-  const state = (): State => elementsSources[currentEnv()].state as State
-  let naclFilesSource = multiEnvSource(_.mapValues(elementsSources, e => e.naclFiles),
-    currentEnv(), COMMON_ENV_PREFIX)
+  const state = (): State => elementsSources.sources[currentEnv()].state as State
+  let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
+    currentEnv(), elementsSources.commonSourceName)
   const elements = async (): Promise<ReadonlyArray<Element>> => (await naclFilesSource.getAll())
     .concat(workspaceConfigTypes)
 
@@ -240,9 +242,10 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       await naclFilesSource.flush()
     },
     clone: (): Promise<Workspace> => {
-      const sources = _.mapValues(elementsSources, source =>
+      const sources = _.mapValues(elementsSources.sources, source =>
         ({ naclFiles: source.naclFiles.clone(), state: source.state }))
-      return loadWorkspace(config, credentials, sources)
+      return loadWorkspace(config, credentials,
+        { commonSourceName: elementsSources.commonSourceName, sources })
     },
 
     addService: async (service: string): Promise<void> => {
@@ -274,8 +277,8 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       if (_.isUndefined(persist) || persist === true) {
         await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
       }
-      naclFilesSource = multiEnvSource(_.mapValues(elementsSources, e => e.naclFiles),
-        currentEnv(), COMMON_ENV_PREFIX)
+      naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
+        currentEnv(), elementsSources.commonSourceName)
     },
 
     getStateRecency: async (): Promise<StateRecency> => {

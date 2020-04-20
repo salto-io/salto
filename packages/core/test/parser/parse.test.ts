@@ -23,7 +23,8 @@ import {
 import {
   Functions,
 } from '../../src/parser/functions'
-import { SourceRange, SourceMap, parse } from '../../src/parser/parse'
+import { SourceRange, SourceMap, parse, ParseError } from '../../src/parser/parse'
+import { HclParseError } from '../../src/parser/internal/types'
 
 const funcName = 'funcush'
 
@@ -536,7 +537,7 @@ describe('Salto parser', () => {
     })
   })
 
-  describe('error tests', () => {
+  describe('simple error tests', () => {
     it('fails on invalid inheritance syntax', async () => {
       const body = `
       type salesforce.string string {}
@@ -548,5 +549,79 @@ describe('Salto parser', () => {
   it('fails on invalid top level syntax', async () => {
     const body = 'bla'
     expect(parse(Buffer.from(body), 'none', functions).errors).not.toHaveLength(0)
+  })
+  describe('Advanced error tests', () => {
+    let errors: HclParseError[]
+    const src = `
+    type salesforce.AnimationRule {
+      annotations {
+        serviceid metadataType {
+        }
+      }
+      sadsd
+      serviceid fullName {
+        _required = false
+      }
+      string animationFrequency {
+        _required = falseee
+        _values = [
+            "always",
+            "often",
+            "rarely",
+            "sometimes",
+        ]
+        _restriction = {
+            enforce_value = false
+        }
+      }
+    `
+    beforeAll(() => {
+      ({ errors } = parse(Buffer.from(src), 'none', functions))
+    })
+    it('should have 2 errors', () => {
+      expect(errors.length).toEqual(2) // This verifies the filter heuristics for the errors.
+    })
+    it('should contain correct first error info', () => {
+      const error = (errors[0] as ParseError)
+      expect(error.subject.start.line).toEqual(7)
+      expect(error.subject.start.col).toEqual(12)
+      expect(error.subject.start.byte).toEqual(119)
+      expect(error.subject.end.line).toEqual(7)
+      expect(error.subject.end.col).toEqual(13)
+      expect(error.subject.end.byte).toEqual(120)
+      expect(error.subject.filename).toEqual('none')
+      expect(error.context.start.line).toEqual(5)
+      expect(error.context.start.col).toEqual(0)
+      expect(error.context.start.byte).toEqual(90)
+      expect(error.context.end.line).toEqual(9)
+      expect(error.context.end.col).toEqual(26)
+      expect(error.context.end.byte).toEqual(172)
+      expect(error.context.filename).toEqual('none')
+      expect(error.detail).toEqual('Expected ws, comment, ws or comment token but found: \\n instead.')
+      expect(error.message).toEqual('Expected ws, comment, ws or comment token but found: \\n instead.')
+      expect(error.summary).toEqual('Unexpected token: \\n')
+      expect(error.severity).toEqual('Error')
+    })
+    it('should contain correct second error info', () => {
+      const error = (errors[1] as ParseError)
+      expect(error.subject.start.line).toEqual(12)
+      expect(error.subject.start.col).toEqual(26)
+      expect(error.subject.start.byte).toEqual(240)
+      expect(error.subject.end.line).toEqual(12)
+      expect(error.subject.end.col).toEqual(28)
+      expect(error.subject.end.byte).toEqual(242)
+      expect(error.subject.filename).toEqual('none')
+      expect(error.context.start.line).toEqual(10)
+      expect(error.context.start.col).toEqual(0)
+      expect(error.context.start.byte).toEqual(173)
+      expect(error.context.end.line).toEqual(14)
+      expect(error.context.end.col).toEqual(22)
+      expect(error.context.end.byte).toEqual(284)
+      expect(error.context.filename).toEqual('none')
+      expect(error.detail).toEqual('Expected ws, newline or comment token but found: ee instead.')
+      expect(error.message).toEqual('Expected ws, newline or comment token but found: ee instead.')
+      expect(error.summary).toEqual('Unexpected token: ee')
+      expect(error.severity).toEqual('Error')
+    })
   })
 })

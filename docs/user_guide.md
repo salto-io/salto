@@ -194,11 +194,12 @@ salto fetch
 Lets stop and take a look at our workspace directory structure (for more info see [here](#workspace-directory-structure)):
 ```shell 
 — salto.config/ 
-	— dev/               # folder for the dev environment specific configuration
-	— salesforce/        # specific config for Salesforce in the dev env
-— prod/                # folder for the prod environment specific configuration
-	— salesforce/        # specific config for Salesforce in the prod env
-— salesforce/          # common cross-all-envs configuration for Salesforce
+- envs/                  # folder for env specific configuration
+    — dev/               # folder for the dev environment specific configuration
+	    — salesforce/    # specific config for Salesforce in the dev env
+    — prod/              # folder for the prod environment specific configuration
+	    — salesforce/    # specific config for Salesforce in the prod env
+— salesforce/            # common cross-all-envs configuration for Salesforce
 ```
 Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. After all tests in dev are done, we can go ahead and run:
 
@@ -252,7 +253,7 @@ Deploys the current NaCl files config to the target services
 
 ### **salto services <command> [name]**
 
-Manage your workspace services
+Manage your environments' services
 
 **Arguments:**
 * _command_ : The services management command [string] [required] [choices: "add", "login", "list"]
@@ -284,20 +285,21 @@ The workspace is structured as follows:
 
 - salto.config — all workspace specific internal salto files, including configuration and state files. See <LINK to Configuration> for more details
 - Directory per adapter, named after the adapter (e.g. Salesforce, HubSpot) — NaCl definitions which are **common** across all defined environments which are configured per that adapter.
-- Directory per environment, named after the environment — NaCl definitions which are **specific** per environment. Each environment directory is also divided by adapter (which applies for that environment)
+- envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment. Each environment directory is also divided by adapter (which applies for that environment)
 
 For example, a workspace with 3 environments (named dev, test and prod), each configured with both Salesforce and HubSpot would look like:
 ```shell 
 — salto.config/
-— dev/
-    — salesforce/
-    — hubspot/
-— test/
-    — salesforce/
-    —hubspot/
-— prod/
-    — salesforce/
-    — hubspot/
+- envs
+    — dev/
+        — salesforce/
+        — hubspot/
+    — test/
+        — salesforce/
+        — hubspot/
+    — prod/
+        — salesforce/
+        — hubspot/
 — salesforce/
 — hubspot/
 ```

@@ -52,8 +52,6 @@ const buildMultiEnvSource = (
   commonSourceName: string,
   initState?: Promise<MultiEnvState>
 ): NaclFilesSource => {
-  let state: Promise<MultiEnvState>
-
   const primarySource = (): NaclFilesSource => sources[primarySourceName]
   const commonSource = (): NaclFilesSource => sources[commonSourceName]
   const secondarySources = (): Record<string, NaclFilesSource> => (
@@ -76,7 +74,13 @@ const buildMultiEnvSource = (
     }
   }
 
-  state = initState || buildMutiEnvState()
+  let state = initState
+  const getState = (): Promise<MultiEnvState> => {
+    if (_.isUndefined(state)) {
+      state = buildMutiEnvState()
+    }
+    return state
+  }
 
   const getSourcePrefixForNaclFile = (fullName: string): string | undefined => {
     const isContained = (relPath: string, basePath: string): boolean => {
@@ -145,11 +149,11 @@ const buildMultiEnvSource = (
     getNaclFile,
     updateNaclFiles,
     flush,
-    list: async (): Promise<ElemID[]> => _.values((await state).elements).map(e => e.elemID),
+    list: async (): Promise<ElemID[]> => _.values((await getState()).elements).map(e => e.elemID),
     get: async (id: ElemID): Promise<Element | Value> => (
-      (await state).elements[id.getFullName()]
+      (await getState()).elements[id.getFullName()]
     ),
-    getAll: async (): Promise<Element[]> => _.values((await state).elements),
+    getAll: async (): Promise<Element[]> => _.values((await getState()).elements),
     listNaclFiles: async (): Promise<string[]> => (
       _.flatten(await Promise.all(_.entries(getActiveSources())
         .map(async ([prefix, source]) => (
@@ -204,7 +208,7 @@ const buildMultiEnvSource = (
             })),
           }
         })))
-      const { mergeErrors } = await state
+      const { mergeErrors } = await getState()
       return new Errors(_.reduce(srcErrors, (acc, errors) => ({
         ...acc,
         parse: [...acc.parse, ...errors.parse],

@@ -13,9 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  InstanceElement, ReferenceExpression, ElemID, Field, ListType, BuiltinTypes, ObjectType,
-} from '@salto-io/adapter-api'
+import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { HUBSPOT } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
@@ -1756,73 +1754,3 @@ export const marketingEmailMockArray = [
   thirdMarketingEmailMock,
   marketingEmailMock,
 ]
-
-const objectElemID = new ElemID(HUBSPOT, 'object')
-const innerObjectElemID = new ElemID(HUBSPOT, 'innerObject')
-const simpleField = (name: string, parentElemID: ElemID): Field =>
-  new Field(
-    parentElemID, name,
-    Types.userIdentifierType, {
-      name,
-      _readOnly: false,
-    },
-  )
-const stringListField = (parentElemID: ElemID): Field =>
-  new Field(
-    parentElemID, 'stringList',
-    new ListType(Types.userIdentifierType), {
-      name: 'stringList',
-      _readOnly: false,
-    },
-  )
-const stringArrayField = (parentElemID: ElemID): Field =>
-  new Field(
-    parentElemID, 'stringArray',
-    new ListType(Types.userIdentifierType), {
-      name: 'stringArray',
-      _readOnly: false,
-    },
-  )
-const strField = (parentElemID: ElemID): Field =>
-  new Field(
-    parentElemID, 'str', BuiltinTypes.STRING, {
-      name: 'str',
-    }
-  )
-const innerObject = new ObjectType(
-  {
-    elemID: innerObjectElemID,
-    fields: {
-      str: strField(innerObjectElemID),
-      simple: simpleField('simple', innerObjectElemID),
-      simpleNum: simpleField('simpleNum', innerObjectElemID),
-      stringList: stringListField(innerObjectElemID),
-      stringArray: stringArrayField(innerObjectElemID),
-    },
-  }
-)
-export const useridentifierObjectType = new ObjectType(
-  {
-    elemID: objectElemID,
-    fields: {
-      str: strField(objectElemID),
-      simple: simpleField('simple', objectElemID),
-      simpleNum: simpleField('simpleNum', objectElemID),
-      stringList: stringListField(objectElemID),
-      stringArray: stringArrayField(objectElemID),
-      objField: new Field(
-        objectElemID, 'objField', innerObject, {
-          name: 'objField',
-          _readOnly: false,
-        },
-      ),
-      listOfObjField: new Field(
-        objectElemID, 'listOfObjField',
-        new ListType(innerObject), {
-          name: 'listOfObjField',
-          _readOnly: false,
-        },
-      ),
-    },
-  }
-)

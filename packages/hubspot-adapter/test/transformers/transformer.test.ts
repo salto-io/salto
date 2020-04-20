@@ -27,7 +27,8 @@ import {
 import {
   HubspotMetadata, Form,
 } from '../../src/client/types'
-import { afterFormInstanceValuesMock, useridentifierObjectType } from '../common/mock_elements'
+import { afterFormInstanceValuesMock } from '../common/mock_elements'
+import { useridentifierObjectType } from '../common/mock_types'
 
 describe('Transformer', () => {
   describe('transformAfterUpdateOrAdd func', () => {

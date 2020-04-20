@@ -16,7 +16,7 @@
 import { RequestPromise } from 'requestretry'
 import { OnFetchFilter } from 'src/filter'
 import { Values, InstanceElement } from '@salto-io/adapter-api'
-import { useridentifierObjectType } from '../common/mock_elements'
+import { useridentifierObjectType } from '../common/mock_types'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/useridentifier'
 

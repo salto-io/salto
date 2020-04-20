@@ -35,7 +35,10 @@ Salto is available under the Apache License, version 2.0.
 - Our public slack channel <TODO> 
 - If you're looking to report a bug, file a feature request or contribute, please see [Contributing](contributing.md) .
 
-## Telemetry <link to the telemetry page> TODO 
+## Does Salto collect any telemetry data?
+
+While you can easily opt-out of sending any data, Salto does collect by default some telemetry data.
+Please see [Telemetry](telemetry.md) for more information.
 
 ## I'm missing feature X, how can I tell you about it?
 

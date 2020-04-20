@@ -67,6 +67,6 @@ is running the `init` command.
 | SALTO_LOG_FORMAT       | text                        | Control the log format (possible values: text, json)
 | SALTO_LOG_NS           | undefined (no filtering)    | If a string is specified, it is parsed as a glob - only logs having matching namespaces will be written
 | SALTO_LOG_COLOR        | null (colorize if writing to stdout and the stream supports color) | Override colorization in output
-| SALTO_TELEMETRY_DISABLE| defaults to the value from the global Salto configuration | Overrides the values from the global Salto configuration. Disables telemetry sending when the value is 1. TODO See HERE for information on Salto telemetry
-| SALTO_TELEMETRY_URL    | defaults to the value from the global Salto configuration. | Overrides the values from the global Salto configuration. URL to send telemetry information to. TODO See HERE for information on Salto telemetry
-| SALTO_TELEMETRY_TOKEN  | defaults to the value from the global Salto configuration. |Overrides the values from the global Salto configuration. The authentication token to use when sending telemetry information
+| SALTO_TELEMETRY_DISABLE| defaults to the value from the global Salto configuration | Overrides the values from the global Salto configuration. Disables telemetry sending when the value is 1. See [here](telemetry.md) for information on Salto telemetry.
+| SALTO_TELEMETRY_URL    | defaults to the value from the global Salto configuration. | Overrides the values from the global Salto configuration. URL to send telemetry information to.  See [here](telemetry.md) for information on Salto telemetry.
+| SALTO_TELEMETRY_TOKEN  | defaults to the value from the global Salto configuration. |Overrides the values from the global Salto configuration. The authentication token to use when sending telemetry information.

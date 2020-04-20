@@ -148,7 +148,6 @@ const buildNaclFilesSource = (
   let state = initState
   const getState = (): Promise<NaclFilesState> => {
     if (_.isUndefined(state)) {
-      log.warn('test')
       state = readAllNaclFiles().then(naclFiles => buildNaclFilesState(naclFiles, {}))
     }
     return state

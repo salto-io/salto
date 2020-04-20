@@ -46,13 +46,17 @@ This configuration holds information that is used to configure the behavior of t
 AppConfig:
       installationID: string
       telemetry: TelemetryConfig
-      
+
 TelemetryConfig:
       url: string
       enabled: boolean
       token: string
       flushInterval?: number
 ```
+
+This configuration file is being generated on the first time the user
+is running the `init` command.
+
 # Environment variables
 
 | Name                   | Default when undefined      | Description

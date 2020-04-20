@@ -15,23 +15,18 @@ For more information, see the [user guide](docs/user_guide.md) and the [FAQ](doc
 
 ### Building
 
-Install [yarn](https://yarnpkg.com/en/docs/install).
+  1. Install [yarn](https://yarnpkg.com/en/docs/install).
+  2. Fetch dependencies and build:
 
 ```bash
-brew install yarn
-```
-
-Install and build:
-
-```bash
-yarn
-yarn build
+$ yarn
+$ yarn build
 ```
 
 ### Running tests
 
 ```bash
-yarn test
+$ yarn test
 ```
 
 ### E2E tests

@@ -29,7 +29,7 @@ import {
   CUSTOM_VALUE, VALUE_SET_DEFINITION_FIELDS,
   OBJECTS_PATH, INSTALLED_PACKAGES_PATH, TYPES_PATH, RECORDS_PATH, WORKFLOW_METADATA_TYPE,
   ASSIGNMENT_RULES_METADATA_TYPE, LEAD_CONVERT_SETTINGS_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE,
-  CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE,
+  CUSTOM_TAB_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
 } from '../../src/constants'
 import mockAdapter from '../adapter'
 import { findElements, createValueSetEntry } from '../utils'
@@ -1311,6 +1311,29 @@ describe('Custom Objects filter', () => {
 
       it('should add PARENT annotation to customObjectTranslation instance', async () => {
         expect(customObjectTranslationInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
+          .toContainEqual(new ReferenceExpression(leadType.elemID))
+      })
+    })
+
+    describe('SharingRules', () => {
+      const sharingRulesType = new ObjectType({
+        elemID: new ElemID(SALESFORCE, SHARING_RULES_TYPE),
+        annotations: { [METADATA_TYPE]: SHARING_RULES_TYPE },
+      })
+      const sharingRulesInstance = new InstanceElement('Lead',
+        sharingRulesType, { [INSTANCE_FULL_NAME_FIELD]: 'Lead' })
+
+      beforeEach(async () => {
+        await filter().onFetch([sharingRulesInstance, sharingRulesInstance, leadType])
+      })
+
+      it('should set instance path correctly', () => {
+        expect(sharingRulesInstance.path)
+          .toEqual([SALESFORCE, OBJECTS_PATH, 'Lead', SHARING_RULES_TYPE])
+      })
+
+      it('should add PARENT annotation to instance', () => {
+        expect(sharingRulesInstance.annotations[INSTANCE_ANNOTATIONS.PARENT])
           .toContainEqual(new ReferenceExpression(leadType.elemID))
       })
     })

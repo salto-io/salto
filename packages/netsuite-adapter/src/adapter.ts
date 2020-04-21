@@ -43,9 +43,6 @@ const validateServiceIds = (before: InstanceElement, after: InstanceElement): vo
   })
 }
 
-const isCustomType = (type: ObjectType): boolean =>
-  !_.isUndefined(Types.customTypes[type.elemID.name.toLowerCase()])
-
 const nameField = (type: ObjectType): Field =>
   Object.values(type.fields).find(field => field.annotations[IS_NAME]) as Field
 
@@ -82,7 +79,7 @@ export default class NetsuiteAdapter {
   }
 
   public async add(instance: InstanceElement): Promise<InstanceElement> {
-    if (isCustomType(instance.type)) {
+    if (Types.isCustomType(instance.type)) {
       addDefaults(instance)
       await this.addOrUpdateCustomTypeInstance(instance)
       return instance
@@ -96,7 +93,7 @@ export default class NetsuiteAdapter {
   }
 
   public async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
-    if (isCustomType(after.type)) {
+    if (Types.isCustomType(after.type)) {
       validateServiceIds(before, after)
       await this.addOrUpdateCustomTypeInstance(after)
       return after

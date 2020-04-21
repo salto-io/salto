@@ -17,6 +17,7 @@ import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, PrimitiveType, PrimitiveTypes,
   RESTRICTION_ANNOTATIONS, ListType, TypeElement,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import {
   ENTITY_CUSTOM_FIELD, IS_ATTRIBUTE, IS_NAME, NETSUITE, SCRIPT_ID, SCRIPT_ID_PREFIX, SUBTYPES_PATH,
   TYPES_PATH,
@@ -326,6 +327,10 @@ export class Types {
       },
       path: [...typesFolderPath, entityCustomFieldElemID.name],
     }),
+  }
+
+  public static isCustomType(type: ObjectType): boolean {
+    return !_.isUndefined(Types.customTypes[type.elemID.name.toLowerCase()])
   }
 
   public static getAllTypes(): TypeElement[] {

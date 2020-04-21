@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import Hubspot, { ApiOptions } from 'hubspot'
+import { StatusCodeError } from 'request-promise/errors'
 import {
   RequestPromise,
 } from 'requestretry'
@@ -35,10 +37,8 @@ export type HubspotClientOpts = {
 const validateResponse = async (
   response: RequestPromise
 ): Promise<void> => {
-  const resp = await response
-  if (resp.status) {
-    throw new Error(resp.message)
-  }
+  await response.catch((reason: StatusCodeError) =>
+    new Error(reason.error.message))
 }
 
 const hubspotTypeErr = (typeName: string): void => {
@@ -142,12 +142,10 @@ export default class HubspotClient {
   }
 
   async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
-    // This is special issue for workflows objects:
-    // Only account with special permission can fetch instances
-    const getAllWorkflowsResponse = async (resp: RequestPromise): Promise<Workflows[]> => {
-      const { workflows } = await resp.catch(_ => ({ workflows: [] }))
+    const getWorkflowsFromValue = async (basicWorkflows: Workflows[]): Promise<Workflows[]> => {
       const workflowsAPI = this.hubspotObjectAPI.workflows as Workflow
-      const workflowsResp = workflows.map(async (basicWorkflow: Workflows): Promise<Workflows> => {
+      const workflowsResp = basicWorkflows.map(async (basicWorkflow: Workflows):
+        Promise<Workflows> => {
         const workflowResp = workflowsAPI.get(basicWorkflow.id)
         validateResponse(workflowResp)
         return workflowResp
@@ -155,24 +153,25 @@ export default class HubspotClient {
       return await Promise.all(workflowsResp) as Workflows[]
     }
 
-    // This is special issue for MarketingEmail objects:
-    // Only account with special permission can fetch instances
-    const getAllMarketingEmailResponse = async (resp: RequestPromise):
-      Promise<MarketingEmail[]> =>
-      (await resp.catch(_ => ({ objects: [] }))).objects
-
-
     const objectAPI = await this.extractHubspotObjectAPI(typeName)
-
-    const resp = objectAPI.getAll()
+    const responsePromise = objectAPI.getAll()
+    const responseValue = await responsePromise.catch((reason: StatusCodeError) => {
+      if (reason.statusCode === 403) {
+        return []
+      }
+      throw Error(reason.error.message)
+    })
+    // If account is not permitted to get this object return an empty list
+    if (_.isEqual(responseValue, [])) {
+      return responseValue
+    }
     switch (typeName) {
       case 'workflows':
-        return getAllWorkflowsResponse(resp)
+        return getWorkflowsFromValue(responseValue.workflows as Workflows[])
       case 'marketingEmail':
-        return getAllMarketingEmailResponse(resp)
+        return responseValue.objects
       default:
-        await validateResponse(resp)
-        return resp
+        return responseValue
     }
   }
 

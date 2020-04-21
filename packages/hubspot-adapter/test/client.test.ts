@@ -16,6 +16,9 @@
 import {
   RequestPromise,
 } from 'requestretry'
+import { StatusCodeError } from 'request-promise/errors'
+import { IncomingMessage } from 'http'
+import { Socket } from 'net'
 import createClient from './client'
 import {
   Form, HubspotMetadata, Workflows, MarketingEmail, ContactProperty,
@@ -31,6 +34,9 @@ import {
   contactPropertyMock,
 } from './common/mock_elements'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const createTestStatusCodeError = (statusCode: number, body: any): StatusCodeError =>
+  new StatusCodeError(statusCode, body, { url: 'test' }, new IncomingMessage(new Socket()))
 
 describe('Test HubSpot client', () => {
   const { connection, client } = createClient()
@@ -55,13 +61,15 @@ describe('Test HubSpot client', () => {
 
       describe('wrong apikey', () => {
         beforeEach(() => {
-          const getAllFormsResultMock = (): RequestPromise => (
-            {
-              status: 'error',
-              message: apiKeyDoesntExistErrStr,
-              correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
-              requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
-            } as unknown as RequestPromise)
+          const getAllFormsResultMock = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(400, {
+                status: 'error',
+                message: apiKeyDoesntExistErrStr,
+                correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+                requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+              })
+            ) as unknown as RequestPromise
 
           mockGetAllInstances = jest.fn().mockImplementation(getAllFormsResultMock)
           connection.forms.getAll = mockGetAllInstances
@@ -80,8 +88,10 @@ describe('Test HubSpot client', () => {
         let mockGetAllContactProperty: jest.Mock
 
         beforeEach(() => {
-          const getAllFormsResultMock = (): RequestPromise => (
-            formsMockArray as RequestPromise)
+          const getAllFormsResultMock = (): RequestPromise =>
+            Promise.resolve(
+              formsMockArray
+            ) as unknown as RequestPromise
 
           const getAllWorkflowsResultMock = (): RequestPromise =>
             Promise.resolve({
@@ -94,7 +104,9 @@ describe('Test HubSpot client', () => {
             }) as unknown as RequestPromise
 
           const getAllContactPropertyMock = (): RequestPromise =>
-            (contactPropertyMocks as RequestPromise)
+            Promise.resolve(
+              contactPropertyMocks
+            ) as unknown as RequestPromise
 
           mockGetAllForms = jest.fn().mockImplementation(getAllFormsResultMock)
           mockGetAllWorkflows = jest.fn().mockImplementation(getAllWorkflowsResultMock)
@@ -147,13 +159,15 @@ describe('Test HubSpot client', () => {
 
       describe('wrong apikey', () => {
         beforeEach(() => {
-          const unauthorizedResultMock = (): RequestPromise => (
-            {
-              status: 'error',
-              message: 'This apikey doesnt exist.',
-              correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
-              requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
-            } as unknown as RequestPromise)
+          const unauthorizedResultMock = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(400, {
+                status: 'error',
+                message: apiKeyDoesntExistErrStr,
+                correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+                requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+              })
+            ) as unknown as RequestPromise
 
           mockCreateInstance = jest.fn().mockImplementation(unauthorizedResultMock)
 
@@ -164,19 +178,19 @@ describe('Test HubSpot client', () => {
 
         it('should return error (FORM type)', async () => {
           await expect(client.createInstance(OBJECTS_NAMES.FORM, formMetadata)).rejects
-            .toThrow('This apikey doesnt exist.')
+            .toThrow(apiKeyDoesntExistErrStr)
           expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(formMetadata)
         })
 
         it('should return error (WORKFLOWS type)', async () => {
           await expect(client.createInstance(OBJECTS_NAMES.WORKFLOWS, workflowsMetadata)).rejects
-            .toThrow('This apikey doesnt exist.')
+            .toThrow(apiKeyDoesntExistErrStr)
           expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(workflowsMetadata)
         })
 
         it('should return error (MARKETINGEMAIL type)', async () => {
           await expect(client.createInstance(OBJECTS_NAMES.MARKETINGEMAIL, marketingEmailMetadata))
-            .rejects.toThrow('This apikey doesnt exist.')
+            .rejects.toThrow(apiKeyDoesntExistErrStr)
           expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(marketingEmailMetadata)
         })
       })
@@ -184,8 +198,8 @@ describe('Test HubSpot client', () => {
       describe('when instance create success', () => {
         describe('Form instance', () => {
           beforeEach(() => {
-            const createFormResultMock = (f: Form): RequestPromise => (
-              {
+            const createFormResultMock = (f: Form): RequestPromise =>
+              Promise.resolve({
                 guid: '3e2e7ef3-d0d4-418f-92e0-ad40ae2b622c',
                 name: f.name,
                 createdAt: 1435353453,
@@ -195,7 +209,7 @@ describe('Test HubSpot client', () => {
                 cssClass: f.cssClass,
                 submitText: f.submitText,
                 deletable: f.deletable,
-              } as unknown as RequestPromise)
+              }) as unknown as RequestPromise
 
             mockCreateInstance = jest.fn().mockImplementation(createFormResultMock)
 
@@ -222,8 +236,8 @@ describe('Test HubSpot client', () => {
 
         describe('Workflow instance', () => {
           beforeEach(() => {
-            const createWorkflowResult = (): RequestPromise => (
-              workflowsCreateResponse as unknown as RequestPromise)
+            const createWorkflowResult = (): RequestPromise =>
+              Promise.resolve(workflowsCreateResponse) as unknown as RequestPromise
 
             mockCreateInstance = jest.fn().mockImplementation(createWorkflowResult)
 
@@ -250,9 +264,8 @@ describe('Test HubSpot client', () => {
 
         describe('ContactProperty instance', () => {
           beforeEach(() => {
-            const createContactPropertyResult = (): RequestPromise => (
-              contactPropertyCreateResponse as unknown as RequestPromise
-            )
+            const createContactPropertyResult = (): RequestPromise =>
+              Promise.resolve(contactPropertyCreateResponse) as unknown as RequestPromise
             mockCreateInstance = jest.fn().mockImplementation(createContactPropertyResult)
 
             connection.contacts.properties.create = mockCreateInstance
@@ -298,8 +311,8 @@ describe('Test HubSpot client', () => {
 
         describe('MarketingEmail instance', () => {
           beforeEach(() => {
-            const createMarketingEmailResult = (): RequestPromise => (
-              marketingEmailCreateResponse as unknown as RequestPromise)
+            const createMarketingEmailResult = (): RequestPromise =>
+              Promise.resolve(marketingEmailCreateResponse) as unknown as RequestPromise
 
             mockCreateInstance = jest.fn().mockImplementation(createMarketingEmailResult)
 
@@ -343,14 +356,16 @@ describe('Test HubSpot client', () => {
       describe('duplicate name', () => {
         const formAlreadyExiststErrStr = "Form already exists with name 'newTestForm'"
         beforeEach(() => {
-          const formAlreadyExistsResultMock = (): RequestPromise => (
-            {
+          const formAlreadyExistsResultMock = (): RequestPromise =>
+          Promise.reject(
+            createTestStatusCodeError(400, {
               status: 'error',
               message: formAlreadyExiststErrStr,
               correlationId: '49ee8da1-7fb5-4066-b6ff-064c3066eb0f',
               type: 'DUPLICATE_NAME',
               requestId: '1c68e5ab-0729-4b9c-9848-f32cd237e058',
-            } as unknown as RequestPromise)
+            })
+          ) as unknown as RequestPromise
 
           mockCreateInstance = jest.fn().mockImplementation(formAlreadyExistsResultMock)
 
@@ -387,13 +402,15 @@ describe('Test HubSpot client', () => {
         beforeEach(() => {
           formMetadata.editable = false
 
-          const formWrongValueResultMock = (): RequestPromise => (
-            {
-              status: 'error',
-              message: privilegeErrStr,
-              correlationId: '03600615-45d5-4b38-bb92-805065b0f8b5',
-              requestId: '2b4100f6-b32c-4902-96ab-c94f4fe960d5',
-            } as unknown as RequestPromise)
+          const formWrongValueResultMock = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(400, {
+                status: 'error',
+                message: privilegeErrStr,
+                correlationId: '03600615-45d5-4b38-bb92-805065b0f8b5',
+                requestId: '2b4100f6-b32c-4902-96ab-c94f4fe960d5',
+              })
+            ) as unknown as RequestPromise
 
           mockCreateInstance = jest.fn().mockImplementation(formWrongValueResultMock)
 
@@ -432,13 +449,13 @@ describe('Test HubSpot client', () => {
 
     describe('wrong apikey', () => {
       beforeEach(() => {
-        const unauthorizedResultMock = (): RequestPromise => (
-          {
-            status: 'error',
-            message: apiKeyDoesntExistErrStr,
-            correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
-            requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
-          } as unknown as RequestPromise)
+        const unauthorizedResultMock = (): RequestPromise =>
+        Promise.reject(createTestStatusCodeError(400, {
+          status: 'error',
+          message: apiKeyDoesntExistErrStr,
+          correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+          requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+        })) as unknown as RequestPromise
 
         mockDeleteInstance = jest.fn().mockImplementation(unauthorizedResultMock)
         connection.forms.delete = mockDeleteInstance
@@ -453,8 +470,8 @@ describe('Test HubSpot client', () => {
     describe('When delete instance success', () => {
       describe('Delete Form instance', () => {
         beforeEach(() => {
-          const deleteFormResultMock = (): RequestPromise => (
-            undefined as unknown as RequestPromise)
+          const deleteFormResultMock = (): RequestPromise =>
+            Promise.resolve(undefined) as unknown as RequestPromise
           mockDeleteInstance = jest.fn().mockImplementation(deleteFormResultMock)
           connection.forms.delete = mockDeleteInstance
         })
@@ -471,8 +488,8 @@ describe('Test HubSpot client', () => {
 
       describe('Delete Workflow instance', () => {
         beforeEach(() => {
-          const deleteWorkflowResultMock = (): RequestPromise => (
-            undefined as unknown as RequestPromise)
+          const deleteWorkflowResultMock = (): RequestPromise =>
+            Promise.resolve(undefined) as unknown as RequestPromise
           mockDeleteInstance = jest.fn().mockImplementation(deleteWorkflowResultMock)
           connection.workflows.delete = mockDeleteInstance
         })
@@ -489,8 +506,8 @@ describe('Test HubSpot client', () => {
 
       describe('Delete ContactProperty instance', () => {
         beforeEach(() => {
-          const deleteContactPropertyResultMock = (): RequestPromise => (
-            undefined as unknown as RequestPromise)
+          const deleteContactPropertyResultMock = (): RequestPromise =>
+            Promise.resolve(undefined) as unknown as RequestPromise
           mockDeleteInstance = jest.fn().mockImplementation(deleteContactPropertyResultMock)
           connection.contacts.properties.delete = mockDeleteInstance
         })
@@ -512,8 +529,8 @@ describe('Test HubSpot client', () => {
 
       describe('Delete MarketingEmail instance', () => {
         beforeEach(() => {
-          const deleteMarketingEmailResultMock = (): RequestPromise => (
-            undefined as unknown as RequestPromise)
+          const deleteMarketingEmailResultMock = (): RequestPromise =>
+            Promise.resolve(undefined) as unknown as RequestPromise
           mockDeleteInstance = jest.fn().mockImplementation(deleteMarketingEmailResultMock)
           connection.marketingEmail.delete = mockDeleteInstance
         })
@@ -557,13 +574,15 @@ describe('Test HubSpot client', () => {
     describe('supported type', () => {
       describe('wrong apikey', () => {
         beforeEach(() => {
-          const unauthorizedResultMock = (): RequestPromise => (
-            {
-              status: 'error',
-              message: apiKeyDoesntExistErrStr,
-              correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
-              requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
-            } as unknown as RequestPromise)
+          const unauthorizedResultMock = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(400, {
+                status: 'error',
+                message: apiKeyDoesntExistErrStr,
+                correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+                requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+              })
+            ) as unknown as RequestPromise
 
           mockUpdateForm = jest.fn().mockImplementation(unauthorizedResultMock)
           connection.forms.update = mockUpdateForm
@@ -581,14 +600,16 @@ describe('Test HubSpot client', () => {
       describe('When no instance found with guid', () => {
         const noFormFoundErrStr = "No form found with guid 'guidToUpdate'"
         beforeEach(() => {
-          const notFoundResult = (): RequestPromise => (
-            {
-              status: 'error',
-              message: noFormFoundErrStr,
-              correlationId: '3c40a0ef-0bb8-4606-9133-1ddc3f947e49',
-              type: 'NOT_FOUND',
-              requestId: '873184b8-2842-4514-ac19-2b5a36413789',
-            } as unknown as RequestPromise)
+          const notFoundResult = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(400, {
+                status: 'error',
+                message: noFormFoundErrStr,
+                correlationId: '3c40a0ef-0bb8-4606-9133-1ddc3f947e49',
+                type: 'NOT_FOUND',
+                requestId: '873184b8-2842-4514-ac19-2b5a36413789',
+              })
+            ) as unknown as RequestPromise
 
           mockUpdateForm = jest.fn().mockImplementation(notFoundResult)
           connection.forms.update = mockUpdateForm
@@ -606,15 +627,17 @@ describe('Test HubSpot client', () => {
       describe('When instance is successfully updated', () => {
         describe('Form type', () => {
           beforeEach(() => {
-            const updatedFormResult = (): RequestPromise => (
-              {
-                portalId: 6774238,
-                guid: 'guidToUpdate',
-                name: 'updateTestForm',
-                submitText: 'Submit',
-                deletable: true,
-                redirect: 'google.com',
-              } as unknown as RequestPromise)
+            const updatedFormResult = (): RequestPromise =>
+              Promise.resolve(
+                {
+                  portalId: 6774238,
+                  guid: 'guidToUpdate',
+                  name: 'updateTestForm',
+                  submitText: 'Submit',
+                  deletable: true,
+                  redirect: 'google.com',
+                }
+              ) as unknown as RequestPromise
 
             mockUpdateForm = jest.fn().mockImplementation(updatedFormResult)
             connection.forms.update = mockUpdateForm
@@ -639,13 +662,15 @@ describe('Test HubSpot client', () => {
       describe('Wrong value', () => {
         beforeEach(() => {
           formToUpdate.editable = false
-          const wrongValueResult = (): RequestPromise => (
-            {
-              status: 'error',
-              message: privilegeErrStr,
-              correlationId: '00bf4db3-337a-4497-b899-6cc10f1bfde3',
-              requestId: '14e208be-e7ac-43ac-b7e4-c242bb6548b5',
-            } as unknown as RequestPromise)
+          const wrongValueResult = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(400, {
+                status: 'error',
+                message: privilegeErrStr,
+                correlationId: '00bf4db3-337a-4497-b899-6cc10f1bfde3',
+                requestId: '14e208be-e7ac-43ac-b7e4-c242bb6548b5',
+              })
+            ) as unknown as RequestPromise
 
           mockUpdateForm = jest.fn().mockImplementation(wrongValueResult)
           connection.forms.update = mockUpdateForm

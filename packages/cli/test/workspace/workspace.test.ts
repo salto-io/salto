@@ -32,7 +32,11 @@ const mockWsFunctions = {
   transformError: mockFunction<Workspace['transformError']>().mockImplementation(
     error => Promise.resolve({ ...error, sourceFragments: [] })
   ),
-  getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({ date: new Date(), status: 'Valid' }),
+  getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({
+    serviceName: 'salesforce',
+    date: new Date(),
+    status: 'Valid',
+  }),
 }
 
 const mockWs = mockWsFunctions as unknown as Workspace
@@ -125,9 +129,11 @@ describe('workspace', () => {
 
     it('prints the state recency when told to do so', async () => {
       const durationAfterLastModificationMs = 1000 * 60 * 60 * 8 // 8 hours
-      mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: new Date(now - durationAfterLastModificationMs), status: 'Valid' }
-      )
+      mockWsFunctions.getStateRecency.mockResolvedValueOnce({
+        date: new Date(now - durationAfterLastModificationMs),
+        status: 'Valid',
+        serviceName: 'salesforce',
+      })
       await loadWorkspace('', cliOutput, { force: true, printStateRecency: true, spinnerCreator: () => spinner })
       expect(cliOutput.stdout.content).toContain(
         moment.duration(durationAfterLastModificationMs).humanize()
@@ -136,7 +142,7 @@ describe('workspace', () => {
 
     it('prints that the state does not exist', async () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: undefined, status: 'Nonexistent' }
+        { date: undefined, status: 'Nonexistent', serviceName: 'salesforce' }
       )
       await loadWorkspace('', cliOutput, { force: true, printStateRecency: true, spinnerCreator: () => spinner })
       expect(cliOutput.stdout.content).toContain('unknown')
@@ -149,7 +155,7 @@ describe('workspace', () => {
 
     it('prompts user when the state is too old and recommend recency is enabled', async () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: new Date(now), status: 'Old' }
+        { date: new Date(now), status: 'Old', serviceName: 'salesforce' }
       )
       await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
       expect(mockPrompt).toHaveBeenCalledTimes(1)
@@ -157,7 +163,7 @@ describe('workspace', () => {
 
     it('prompts user when the state doesn\'t exist and recommend recency is enabled', async () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: new Date(now), status: 'Nonexistent' }
+        { date: new Date(now), status: 'Nonexistent', serviceName: 'salesforce' }
       )
       await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
       expect(mockPrompt).toHaveBeenCalledTimes(1)
@@ -165,7 +171,7 @@ describe('workspace', () => {
 
     it('does not prompt user when the state is valid and recommend recency is enabled', async () => {
       mockWsFunctions.getStateRecency.mockResolvedValueOnce(
-        { date: new Date(now), status: 'Valid' }
+        { date: new Date(now), status: 'Valid', serviceName: 'salesforce' }
       )
       await loadWorkspace('', cliOutput, { spinnerCreator: () => spinner, recommendStateRecency: true })
       expect(mockPrompt).not.toHaveBeenCalled()

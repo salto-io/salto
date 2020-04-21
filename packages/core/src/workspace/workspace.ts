@@ -72,6 +72,7 @@ export class NoWorkspaceConfig extends Error {
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'
 export type StateRecency = {
+  serviceName: string
   status: RecencyStatus
   date: Date | undefined
 }
@@ -114,7 +115,7 @@ export type Workspace = {
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
 
-  getStateRecency(): Promise<StateRecency>
+  getStateRecency(services: string): Promise<StateRecency>
 }
 
 // common source has no state
@@ -283,10 +284,10 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
         currentEnv(), elementsSources.commonSourceName)
     },
 
-    getStateRecency: async (): Promise<StateRecency> => {
+    getStateRecency: async (serviceName: string): Promise<StateRecency> => {
       const staleStateThresholdMs = (workspaceConfig.staleStateThresholdMinutes
         || DEFAULT_STALE_STATE_THRESHOLD_MINUTES) * 60 * 1000
-      const date = await state().getUpdateDate()
+      const date = (await state().getServicesUpdateDates())[serviceName]
       const status = (() => {
         if (date === undefined) {
           return 'Nonexistent'
@@ -296,7 +297,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
         }
         return 'Valid'
       })()
-      return { status, date }
+      return { serviceName, status, date }
     },
   }
 }

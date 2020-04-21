@@ -31,7 +31,7 @@ const log = logger(module)
 type StateData = {
   elements: ElementMap
   // The date of the last fetch
-  updateDate: Date | undefined
+  servicesUpdateDate: Record<string, Date>
 }
 
 export const localState = (filePath: string): State => {
@@ -41,14 +41,16 @@ export const localState = (filePath: string): State => {
   const loadFromFile = async (): Promise<StateData> => {
     const text = await exists(filePath) ? await readTextFile(filePath) : undefined
     if (text === undefined) {
-      return { elements: {}, updateDate: undefined }
+      return { elements: {}, servicesUpdateDate: {} }
     }
     const [elementsData, updateDateData] = text.split(EOL)
     const deserializedElements = deserialize(elementsData).map(flattenElementStr)
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
-    const updateDate = updateDateData ? new Date(updateDateData) : undefined
+    const servicesUpdateDate = updateDateData
+      ? _.mapValues(JSON.parse(updateDateData), dateStr => new Date(dateStr))
+      : {}
     log.debug(`loaded state [#elements=${elements.length}]`)
-    return { elements, updateDate }
+    return { elements, servicesUpdateDate }
   }
 
   const stateData = (): Promise<StateData> => {
@@ -75,31 +77,40 @@ export const localState = (filePath: string): State => {
       })
       dirty = true
     },
-    override: async (element: Element | Element[]): Promise<void> => {
-      const newElements = _.keyBy(makeArray(element), e => e.elemID.getFullName())
+    override: async (element: Element | Element[], services?: string[]): Promise<void> => {
+      const elements = makeArray(element)
+      const newServices = services || _(elements).map(e => e.elemID.adapter)
+        .uniq()
+        .filter(adapter => adapter !== GLOBAL_ADAPTER)
+        .value()
+      const newElements = _.keyBy(elements, e => e.elemID.getFullName())
       const data = await stateData()
       data.elements = newElements
-      data.updateDate = new Date(Date.now())
+      data.servicesUpdateDate = {
+        ...data.servicesUpdateDate,
+        ...newServices.reduce((acc, service) => {
+          acc[service] = new Date(Date.now())
+          return acc
+        }, {} as Record<string, Date>),
+      }
+
       dirty = true
     },
     flush: async (): Promise<void> => {
       if (!dirty) {
         return
       }
-      const { elements: elementsMap, updateDate } = (await stateData())
+      const { elements: elementsMap, servicesUpdateDate } = (await stateData())
       const elements = Object.values(elementsMap)
       const elementsString = serialize(Object.values(elements))
-      const dateString = updateDate === undefined ? '' : `${EOL}${updateDate.toISOString()}`
-      const stateText = `${elementsString}${dateString}`
+      const dateString = JSON.stringify(servicesUpdateDate)
+      const stateText = [elementsString, dateString].join(EOL)
       await mkdirp(path.dirname(filePath))
       await replaceContents(filePath, stateText)
       log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
     },
-    getUpdateDate: async (): Promise<Date | undefined> => (await stateData()).updateDate,
-    existingServices: async (): Promise<string[]> => _((await stateData()).elements)
-      .map(e => e.elemID.adapter)
-      .uniq()
-      .filter(adapter => adapter !== GLOBAL_ADAPTER)
-      .value(),
+    getServicesUpdateDates: async (): Promise<Record<string, Date>> => (await stateData())
+      .servicesUpdateDate,
+    existingServices: async (): Promise<string[]> => _.keys((await stateData()).servicesUpdateDate),
   }
 }

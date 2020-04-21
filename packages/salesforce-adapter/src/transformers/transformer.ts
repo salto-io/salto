@@ -774,27 +774,29 @@ export class Types {
   )
 
   static generateType = (
-    typeName: string, fieldTypes: Record<string, PrimitiveType>, typePath: string
+    typeName: string, fieldTypes: Record<string, PrimitiveType>, directory: string[]
   ): TypeElement => {
     const typeId = new ElemID(SALESFORCE, typeName)
     return new ObjectType({
       elemID: typeId,
-      path: [SALESFORCE, typePath, typeName],
+      path: [SALESFORCE, ...directory, typeName],
       fields: Types.fieldMap(fieldTypes, typeId),
     })
   }
 
   static generateMissingTypes = (
-    missingTypes: Record<string, Record<string, PrimitiveType>>, path: string
+    missingTypes: Record<string, Record<string, PrimitiveType>>, isSubType = false
   ): TypeElement[] => _.toArray(
     _.mapValues(missingTypes, (typeRecords, name) =>
-      Types.generateType(name, typeRecords, path))
+      Types.generateType(
+        name, typeRecords, isSubType ? [TYPES_PATH, SUBTYPES_PATH] : [TYPES_PATH]
+      ))
   )
 
   static getAllMissingTypes(): TypeElement[] {
     return ([] as TypeElement[]).concat(
-      Types.generateMissingTypes(allMissingTypes, TYPES_PATH),
-      Types.generateMissingTypes(allMissingSubTypes, SUBTYPES_PATH)
+      Types.generateMissingTypes(allMissingTypes),
+      Types.generateMissingTypes(allMissingSubTypes, true)
     )
   }
 

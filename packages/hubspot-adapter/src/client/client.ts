@@ -208,12 +208,11 @@ export default class HubspotClient {
 
   async deleteInstance(typeName: string, hubspotMetadata: HubspotMetadata): Promise<void> {
     const objectAPI = await this.extractHubspotObjectAPI(typeName)
-
-    // The instance id have different names in each HubSpot object
-    const instanceId = extractInstanceId(hubspotMetadata, typeName)
-    const resp = await objectAPI.delete(instanceId)
-    if (resp) {
-      throw new Error(resp.message)
-    }
+    const resp = objectAPI.delete(extractInstanceId(hubspotMetadata, typeName))
+    await resp.catch((reason: StatusCodeError) => {
+      if (!_.isUndefined(reason)) {
+        throw new Error(reason.error.message)
+      }
+    })
   }
 }

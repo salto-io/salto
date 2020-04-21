@@ -779,7 +779,7 @@ export class Types {
     const typeId = new ElemID(SALESFORCE, typeName)
     return new ObjectType({
       elemID: typeId,
-      path: [SALESFORCE, ...directory, typeName],
+      path: [...directory, typeName],
       fields: Types.fieldMap(fieldTypes, typeId),
     })
   }
@@ -789,7 +789,8 @@ export class Types {
   ): TypeElement[] => _.toArray(
     _.mapValues(missingTypes, (typeRecords, name) =>
       Types.generateType(
-        name, typeRecords, isSubType ? [TYPES_PATH, SUBTYPES_PATH] : [TYPES_PATH]
+        name, typeRecords,
+        isSubType ? [SALESFORCE, TYPES_PATH, SUBTYPES_PATH] : [SALESFORCE, TYPES_PATH]
       ))
   )
 

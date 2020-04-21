@@ -144,8 +144,8 @@ describe('fetch command', () => {
       const mockWorkspace = (
         elements?: Element[],
         name?: string,
-        existingServices: string[] = [],
-        envs: string[] = []
+        existingServices: Record<string, string[]> = { default: [] },
+        currentEnv = 'default'
       ): Workspace => ({
         name,
         hasErrors: () => false,
@@ -159,7 +159,9 @@ describe('fetch command', () => {
         isEmpty: () => (elements || []).length === 0,
         updateServiceConfig: jest.fn(),
         servicesCredentials: jest.fn().mockResolvedValue({}),
-        envs: () => envs,
+        envs: () => _.keys(existingServices),
+        fetchedServices: (envName? : string) => existingServices[envName || currentEnv],
+        currentEnv: () => currentEnv,
       } as unknown as Workspace)
 
       describe('with emitters called', () => {
@@ -563,12 +565,12 @@ describe('fetch command', () => {
         )
         const runFetchWithExisting = async (
           inputServices: string[],
-          existingServices: string[],
-          envs: string[],
+          existingServices: Record<string, string[]>,
+          currentEnv: string,
           isolated: boolean,
         ): Promise<void> => {
           await fetchCommand({
-            workspace: mockWorkspace([], undefined, existingServices, envs),
+            workspace: mockWorkspace([], undefined, existingServices, currentEnv),
             force: false,
             interactive: false,
             output: cliOutput,
@@ -598,37 +600,67 @@ describe('fetch command', () => {
         describe('when user accept changes', () => {
           it('should not suggest when no new services exist', async () => {
             mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(['salesforce'], ['salesforce'], ['dev', 'prod'], false)
+            await runFetchWithExisting(
+              ['salesforce'],
+              { dev: ['salesforce'], prod: ['salesforce'] },
+              'dev',
+              false
+            )
             expect(mockApproveIsolatedMode).not.toHaveBeenCalled()
             expect(verifyUpdateCall(['salesforce'], false)).toBeTruthy()
           })
           it('should not suggest when no multiple envs exist', async () => {
             mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(['salesforce'], [], ['dev'], false)
+            await runFetchWithExisting(
+              ['salesforce'],
+              { dev: [] },
+              'dev',
+              false
+            )
             expect(mockApproveIsolatedMode).not.toHaveBeenCalled()
             expect(verifyUpdateCall(['salesforce'], false)).toBeTruthy()
           })
           it('should not suggest when fetching in isolated mode for only for new services', async () => {
             mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(['salesforce'], ['salesforce', 'hubspot'], ['dev', 'prod'], true)
+            await runFetchWithExisting(
+              ['salesforce'],
+              { dev: ['hubspot'], prod: ['salesforce', 'hubspot'] },
+              'dev',
+              true
+            )
             expect(mockApproveIsolatedMode).not.toHaveBeenCalled()
             expect(verifyUpdateCall(['salesforce'], true)).toBeTruthy()
           })
-          it('should not suggest when fetching in isolated mode mode and all services are new', async () => {
+          it('should not suggest when fetching in isolated mode mode and all services are old', async () => {
             mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(['salesforce', 'hubspot'], ['salesforce', 'hubspot'], ['dev', 'prod'], true)
+            await runFetchWithExisting(
+              ['salesforce', 'hubspot'],
+              { dev: ['salesforce', 'hubspot'], prod: ['salesforce', 'hubspot'] },
+              'dev',
+              true
+            )
             expect(mockApproveIsolatedMode).not.toHaveBeenCalled()
             expect(verifyUpdateCall(['salesforce', 'hubspot'], true)).toBeTruthy()
           })
           it('should suggest isolated mode mode when fetching a new env without isolated mode', async () => {
             mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(['salesforce'], [], ['dev', 'prod'], false)
+            await runFetchWithExisting(
+              ['salesforce'],
+              { dev: [], prod: ['salesforce'] },
+              'dev',
+              false
+            )
             expect(mockApproveIsolatedMode).toHaveBeenCalled()
             expect(verifyUpdateCall(['salesforce'], true)).toBeTruthy()
           })
           it('should suggest when fetching in isolated mode with existing services and new services', async () => {
             mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(['salesforce', 'hubspot'], ['salesforce'], ['dev', 'prod'], true)
+            await runFetchWithExisting(
+              ['salesforce', 'hubspot'],
+              { dev: ['salesforce'], prod: ['salesforce', 'hubspot'] },
+              'dev',
+              true
+            )
             expect(mockApproveIsolatedMode).toHaveBeenCalled()
             expect(verifyUpdateCall(['hubspot'], true)).toBeTruthy()
           })
@@ -637,13 +669,23 @@ describe('fetch command', () => {
         describe('when the user rejects the recommendation', () => {
           it('should not modify fetch parameters it the user rejects the recommendation without isolated', async () => {
             mockApproveIsolatedMode.mockResolvedValueOnce(false)
-            await runFetchWithExisting(['salesforce'], [], ['dev', 'prod'], false)
+            await runFetchWithExisting(
+              ['salesforce'],
+              { dev: [], prod: ['salesforce'] },
+              'dev',
+              false
+            )
             expect(mockApproveIsolatedMode).toHaveBeenCalled()
             expect(verifyUpdateCall(['salesforce'], false)).toBeTruthy()
           })
           it('should not modify fetch parameters it the user rejects the recommendation with isolated', async () => {
             mockApproveIsolatedMode.mockResolvedValueOnce(false)
-            await runFetchWithExisting(['salesforce', 'hubspot'], ['salesforce'], ['dev', 'prod'], true)
+            await runFetchWithExisting(
+              ['salesforce', 'hubspot'],
+              { dev: [], prod: ['salesforce'] },
+              'dev',
+              true
+            )
             expect(mockApproveIsolatedMode).toHaveBeenCalled()
             expect(verifyUpdateCall(['salesforce', 'hubspot'], true)).toBeTruthy()
           })

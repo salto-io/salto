@@ -20,7 +20,7 @@ import { Credentials } from './src/client/client'
 
 export { default } from './src/adapter'
 export { creator } from './src/adapter_creator'
-export { changeValidator } from './src/change_validator'
+export { default as changeValidator } from './src/change_validator'
 export { default as SalesforceClient } from './src/client/client'
 export { Credentials } from './src/client/client'
 export { SALESFORCE as adapterId } from './src/constants'

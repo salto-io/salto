@@ -14,3 +14,4 @@
 * limitations under the License.
 */
 export * from './src/utils'
+export * from './src/change_validator'

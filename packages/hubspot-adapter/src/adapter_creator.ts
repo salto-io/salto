@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
-import { changeValidator } from './change_validator'
+import changeValidator from './change_validator'
 
 const configID = new ElemID('hubspot')
 

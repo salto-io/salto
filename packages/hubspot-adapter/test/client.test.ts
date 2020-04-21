@@ -43,6 +43,7 @@ describe('Test HubSpot client', () => {
 
   const apiKeyDoesntExistErrStr = "This apikey doesn't exist."
   const privilegeErrStr = 'You do not have enough privileges to change the editable property on this form'
+  const permissionsErrStr = 'This hapikey does not have proper permissions! (requires any of [content-core-api-access])'
 
   const workflowsMetadata = workflowsMock as unknown as Workflows
   const marketingEmailMetadata = marketingEmailMock as unknown as MarketingEmail
@@ -78,6 +79,27 @@ describe('Test HubSpot client', () => {
         it('should return error response (FORM type)', async () => {
           await expect(client.getAllInstances(OBJECTS_NAMES.FORM)).rejects
             .toThrow(apiKeyDoesntExistErrStr)
+        })
+      })
+
+      describe('no permissions to get', () => {
+        let mockGetAllWorkflows: jest.Mock
+        beforeEach(() => {
+          const getAllWorkflowsResultMock = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(403, {
+                status: 'error',
+                message: permissionsErrStr,
+                correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+                requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+              })
+            ) as unknown as RequestPromise
+          mockGetAllWorkflows = jest.fn().mockImplementation(getAllWorkflowsResultMock)
+          connection.workflows.getAll = jest.fn().mockImplementation(mockGetAllWorkflows)
+        })
+
+        it('should return empty list', async () => {
+          expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)).toHaveLength(0)
         })
       })
 
@@ -191,6 +213,44 @@ describe('Test HubSpot client', () => {
         it('should return error (MARKETINGEMAIL type)', async () => {
           await expect(client.createInstance(OBJECTS_NAMES.MARKETINGEMAIL, marketingEmailMetadata))
             .rejects.toThrow(apiKeyDoesntExistErrStr)
+          expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(marketingEmailMetadata)
+        })
+      })
+
+      describe('no permissions', () => {
+        beforeEach(() => {
+          const noPermissionsResultMock = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(403, {
+                status: 'error',
+                message: permissionsErrStr,
+                correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+                requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+              })
+            ) as unknown as RequestPromise
+
+          mockCreateInstance = jest.fn().mockImplementation(noPermissionsResultMock)
+
+          connection.forms.create = mockCreateInstance
+          connection.workflows.create = mockCreateInstance
+          connection.marketingEmail.create = mockCreateInstance
+        })
+
+        it('should return error (FORM type)', async () => {
+          await expect(client.createInstance(OBJECTS_NAMES.FORM, formMetadata)).rejects
+            .toThrow(permissionsErrStr)
+          expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(formMetadata)
+        })
+
+        it('should return error (WORKFLOWS type)', async () => {
+          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOWS, workflowsMetadata)).rejects
+            .toThrow(permissionsErrStr)
+          expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(workflowsMetadata)
+        })
+
+        it('should return error (MARKETINGEMAIL type)', async () => {
+          await expect(client.createInstance(OBJECTS_NAMES.MARKETINGEMAIL, marketingEmailMetadata))
+            .rejects.toThrow(permissionsErrStr)
           expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(marketingEmailMetadata)
         })
       })
@@ -358,7 +418,7 @@ describe('Test HubSpot client', () => {
         beforeEach(() => {
           const formAlreadyExistsResultMock = (): RequestPromise =>
           Promise.reject(
-            createTestStatusCodeError(400, {
+            createTestStatusCodeError(409, {
               status: 'error',
               message: formAlreadyExiststErrStr,
               correlationId: '49ee8da1-7fb5-4066-b6ff-064c3066eb0f',
@@ -597,12 +657,35 @@ describe('Test HubSpot client', () => {
         })
       })
 
+      describe('No permissions', () => {
+        beforeEach(() => {
+          const noPermissionsResult = (): RequestPromise =>
+            Promise.reject(
+              createTestStatusCodeError(403, {
+                status: 'error',
+                message: permissionsErrStr,
+                correlationId: '3c40a0ef-0bb8-4606-9133-1ddc3f947e49',
+                requestId: '873184b8-2842-4514-ac19-2b5a36413789',
+              })
+            ) as unknown as RequestPromise
+          mockUpdateForm = jest.fn().mockImplementation(noPermissionsResult)
+          connection.forms.update = mockUpdateForm
+        })
+
+        it('should return error (403 response)', async () => {
+          await expect(client.updateInstance(
+            OBJECTS_NAMES.FORM,
+            formToUpdate as HubspotMetadata
+          )).rejects.toThrow(permissionsErrStr)
+        })
+      })
+
       describe('When no instance found with guid', () => {
         const noFormFoundErrStr = "No form found with guid 'guidToUpdate'"
         beforeEach(() => {
           const notFoundResult = (): RequestPromise =>
             Promise.reject(
-              createTestStatusCodeError(400, {
+              createTestStatusCodeError(404, {
                 status: 'error',
                 message: noFormFoundErrStr,
                 correlationId: '3c40a0ef-0bb8-4606-9133-1ddc3f947e49',

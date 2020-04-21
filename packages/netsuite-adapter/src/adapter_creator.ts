@@ -16,6 +16,7 @@
 import {
   AdapterCreator, BuiltinTypes, ElemID, Field, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
+import changeValidator from './change_validator'
 import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter from './adapter'
 import { NETSUITE } from './constants'
@@ -50,4 +51,5 @@ export const creator: AdapterCreator = {
     return NetsuiteClient.validateCredentials(credentials)
   },
   credentialsType,
+  changeValidator,
 }

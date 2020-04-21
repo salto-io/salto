@@ -527,6 +527,26 @@ describe('Test HubSpot client', () => {
       })
     })
 
+    describe('no permissions', () => {
+      beforeEach(() => {
+        const noPermissionsResultMock = (): RequestPromise =>
+        Promise.reject(createTestStatusCodeError(403, {
+          status: 'error',
+          message: permissionsErrStr,
+          correlationId: 'db8f8a2f-d799-4353-8a67-b85df639b3df',
+          requestId: '493c8493-861b-4f56-be3b-3f6067238efd',
+        })) as unknown as RequestPromise
+
+        mockDeleteInstance = jest.fn().mockImplementation(noPermissionsResultMock)
+        connection.forms.delete = mockDeleteInstance
+      })
+
+      it('should return error', async () => {
+        await expect(client.deleteInstance(OBJECTS_NAMES.FORM, formToDelete as HubspotMetadata))
+          .rejects.toThrow(permissionsErrStr)
+      })
+    })
+
     describe('When delete instance success', () => {
       describe('Delete Form instance', () => {
         beforeEach(() => {

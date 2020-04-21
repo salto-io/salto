@@ -21,13 +21,13 @@ import {
   LoginStatus,
   updateLoginConfig,
   Workspace,
+  loadLocalWorkspace,
 } from '@salto-io/core'
 
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import { CliOutput, ParsedCliInput, CliCommand, CliExitCode, WriteStream } from '../types'
-import { loadWorkspace } from '../workspace/workspace'
 import { getCredentialsFromUser } from '../callbacks'
 import { serviceCmdFilter, ServiceCmdArgs } from '../filters/services'
 import {
@@ -50,6 +50,15 @@ const getLoginInputFlow = async (
   stdout.write(formatLoginUpdated)
 }
 
+const loadWorkspace = async (workspaceDir: string, inputEnvironment?: string):
+Promise<Workspace> => {
+  const workspace = await loadLocalWorkspace(workspaceDir)
+  if (!_.isUndefined(inputEnvironment)) {
+    await workspace.setCurrentEnv(inputEnvironment, false)
+  }
+  return workspace
+}
+
 const addService = async (
   workspaceDir: string,
   { stdout, stderr }: CliOutput,
@@ -57,14 +66,7 @@ const addService = async (
   serviceName: string,
   inputEnvironment?: string,
 ): Promise<CliExitCode> => {
-  const { workspace, errored } = await loadWorkspace(
-    workspaceDir,
-    { stdout, stderr },
-    { sessionEnv: inputEnvironment }
-  )
-  if (errored) {
-    return CliExitCode.AppError
-  }
+  const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (workspace.services().includes(serviceName)) {
     stderr.write(formatServiceAlreadyAdded(serviceName))
     return CliExitCode.UserInputError
@@ -88,14 +90,7 @@ const listServices = async (
   serviceName: string,
   inputEnvironment?: string,
 ): Promise<CliExitCode> => {
-  const { workspace, errored } = await loadWorkspace(
-    workspaceDir,
-    cliOutput,
-    { sessionEnv: inputEnvironment },
-  )
-  if (errored) {
-    return CliExitCode.AppError
-  }
+  const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (_.isEmpty(serviceName)) {
     cliOutput.stdout.write(formatConfiguredServices(workspace.services()))
   } else if (workspace.services().includes(serviceName)) {
@@ -113,14 +108,7 @@ const loginService = async (
   serviceName: string,
   inputEnvironment?: string,
 ): Promise<CliExitCode> => {
-  const { workspace, errored } = await loadWorkspace(
-    workspaceDir,
-    { stdout, stderr },
-    { sessionEnv: inputEnvironment },
-  )
-  if (errored) {
-    return CliExitCode.AppError
-  }
+  const workspace = await loadWorkspace(workspaceDir, inputEnvironment)
   if (!workspace.services().includes(serviceName)) {
     stderr.write(formatServiceNotConfigured(serviceName))
     return CliExitCode.AppError

@@ -13,14 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import * as core from '@salto-io/core'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/env'
-import * as workspace from '../../src/workspace/workspace'
 
-jest.mock('../../src/workspace/workspace')
+jest.mock('@salto-io/core')
 describe('env commands', () => {
-  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
-  mockLoadWorkspace.mockImplementation(baseDir => ({ workspace: mocks.mockLoadWorkspace(baseDir) }))
+  const mockLoadWorkspace = core.loadLocalWorkspace as jest.Mock
+  mockLoadWorkspace.mockImplementation(baseDir => mocks.mockLoadWorkspace(baseDir))
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
 
   beforeEach(async () => {

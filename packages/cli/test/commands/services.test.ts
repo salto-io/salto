@@ -13,12 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { LoginStatus, updateLoginConfig, Workspace } from '@salto-io/core'
+import { LoginStatus, updateLoginConfig, Workspace, loadLocalWorkspace, addAdapter } from '@salto-io/core'
 import { ObjectType } from '@salto-io/adapter-api'
-import { CliExitCode } from '../../src/types'
 import { command } from '../../src/commands/services'
 import * as mocks from '../mocks'
-import * as workspace from '../../src/workspace/workspace'
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
@@ -52,8 +50,9 @@ jest.mock('@salto-io/core', () => ({
     })
     return loginStatuses
   }),
+  loadLocalWorkspace: jest.fn(),
 }))
-jest.mock('../../src/workspace/workspace')
+
 describe('services command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockGetCredentialsFromUser = mocks.createMockGetCredentialsFromUser({
@@ -62,48 +61,26 @@ describe('services command', () => {
     token: 'test',
     sandbox: false,
   })
-  const mockLoadWorkspace = workspace.loadWorkspace as jest.Mock
-  mockLoadWorkspace.mockImplementation(baseDir => {
-    if (baseDir === 'errdir') {
-      return { workspace: {
-        services: () => ['salesforce', 'hubspot'],
-        hasErrors: () => true,
-        errors: () => ({
-          strings: () => ['Error', 'Error'],
-        }),
-      },
-      errored: true }
-    }
-    return { workspace: {
-      services: () => ['salesforce', 'hubspot'],
+  const currentEnv = 'env'
+  const mockLoadWorkspace = loadLocalWorkspace as jest.Mock
+  mockLoadWorkspace.mockImplementation(() => {
+    let services = ['salesforce']
+    let env = currentEnv
+    return {
+      services: () => services,
       hasErrors: () => false,
-    },
-    errored: false }
+      setCurrentEnv: (newEnv: string) => {
+        env = newEnv
+        services = ['netsuite']
+      },
+      currentEnv: () => env,
+    }
   })
 
   beforeEach(() => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
   })
 
-  describe('when workspace fails to load', () => {
-    let result: number
-
-    it('should fail add', async () => {
-      result = await command('errdir', 'add', cliOutput, mockGetCredentialsFromUser, 'service')
-        .execute()
-      expect(result).toBe(CliExitCode.AppError)
-    })
-    it('should fail list', async () => {
-      result = await command('errdir', 'list', cliOutput, mockGetCredentialsFromUser, 'service')
-        .execute()
-      expect(result).toBe(CliExitCode.AppError)
-    })
-    it('should fail login', async () => {
-      result = await command('errdir', 'login', cliOutput, mockGetCredentialsFromUser, 'service')
-        .execute()
-      expect(result).toBe(CliExitCode.AppError)
-    })
-  })
   describe('Invalid service command', () => {
     it('invalid command', async () => {
       try {
@@ -127,13 +104,13 @@ describe('services command', () => {
 
         it('should print configured services', () => {
           expect(cliOutput.stdout.content).toContain('The configured services are:')
-          expect(cliOutput.stdout.content).toContain('hubspot')
+          expect(cliOutput.stdout.content).toContain('salesforce')
         })
       })
 
       describe('when called with service that is configured', () => {
         beforeEach(async () => {
-          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'hubspot').execute()
+          await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
         })
 
         it('should load the workspace', async () => {
@@ -141,7 +118,7 @@ describe('services command', () => {
         })
 
         it('should print configured services', async () => {
-          expect(cliOutput.stdout.content).toContain('hubspot is configured in this environment')
+          expect(cliOutput.stdout.content).toContain('salesforce is configured in this environment')
         })
       })
 
@@ -156,29 +133,24 @@ describe('services command', () => {
       })
       describe('Environment flag', () => {
         beforeEach(async () => {
-          mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
           mockLoadWorkspace.mockClear()
         })
         it('should use current env when env is not provided', async () => {
           await command('', 'list', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
-            mocks.withoutEnvironmentParam
-          )
+          expect(cliOutput.stdout.content).toContain('salesforce')
         })
         it('should use provided env', async () => {
+          const injectedEnv = 'injected'
           await command(
             '',
             'list',
             cliOutput,
             mockGetCredentialsFromUser,
-            'salesforce',
-            mocks.withEnvironmentParam,
+            undefined,
+            injectedEnv,
           ).execute()
-          expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
-            mocks.withEnvironmentParam
-          )
+          expect(cliOutput.stdout.content).toContain('netsuite')
         })
       })
     })
@@ -236,16 +208,15 @@ describe('services command', () => {
           })
         })
         describe('Environment flag', () => {
+          const mockAddAdapter = addAdapter as jest.Mock
           beforeEach(async () => {
-            mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
             mockLoadWorkspace.mockClear()
+            mockAddAdapter.mockClear()
           })
           it('should use current env when env is not provided', async () => {
-            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
+            await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'hubspot').execute()
             expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-            expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
-              mocks.withoutEnvironmentParam
-            )
+            expect(mockAddAdapter.mock.calls[0][0].currentEnv()).toEqual(currentEnv)
           })
           it('should use provided env', async () => {
             await command(
@@ -253,13 +224,11 @@ describe('services command', () => {
               'add',
               cliOutput,
               mockGetCredentialsFromUser,
-              'salesforce',
-              mocks.withEnvironmentParam
+              undefined,
+              'injected'
             ).execute()
             expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-            expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
-              mocks.withEnvironmentParam
-            )
+            expect(mockAddAdapter.mock.calls[0][0].currentEnv()).toEqual('injected')
           })
         })
       })
@@ -304,7 +273,6 @@ describe('services command', () => {
         beforeEach(async () => {
           await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
         })
-
         it('should get config from user', () => {
           expect(mockGetCredentialsFromUser).toHaveBeenCalled()
         })
@@ -318,16 +286,16 @@ describe('services command', () => {
         })
       })
       describe('Environment flag', () => {
+        const mockUpdateLoginConfig = updateLoginConfig as jest.Mock
         beforeEach(async () => {
-          mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
           mockLoadWorkspace.mockClear()
+          mockUpdateLoginConfig.mockClear()
         })
         it('should use current env when env is not provided', async () => {
           await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
-            mocks.withoutEnvironmentParam
-          )
+          expect((mockUpdateLoginConfig.mock.calls[0][0] as Workspace).currentEnv())
+            .toEqual(currentEnv)
         })
         it('should use provided env', async () => {
           await command(
@@ -335,13 +303,12 @@ describe('services command', () => {
             'login',
             cliOutput,
             mockGetCredentialsFromUser,
-            'salesforce',
-            mocks.withEnvironmentParam
+            'netsuite',
+            'injected'
           ).execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
-            mocks.withEnvironmentParam
-          )
+          expect((mockUpdateLoginConfig.mock.calls[0][0] as Workspace).currentEnv())
+            .toEqual('injected')
         })
       })
     })

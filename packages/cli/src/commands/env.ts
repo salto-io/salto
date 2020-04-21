@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace } from '@salto-io/core'
+import { Workspace, loadLocalWorkspace } from '@salto-io/core'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'
 import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv } from '../formatter'
-import { loadWorkspace } from '../workspace/workspace'
 
 const outputLine = ({ stdout }: CliOutput, text: string): void => stdout.write(`${text}\n`)
 
@@ -78,7 +77,7 @@ export const command = (
         + `Example usage: salto env ${commandName}`)
     }
 
-    const { workspace } = await loadWorkspace(workspaceDir, output)
+    const workspace = await loadLocalWorkspace(workspaceDir)
     switch (commandName) {
       case 'create':
         return createEnvironment(envName as string, output, workspace)

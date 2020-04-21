@@ -116,6 +116,7 @@ export type Workspace = {
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
 
   getStateRecency(services: string): Promise<StateRecency>
+  fetchedServices(env?: string): Promise<string[]>
 }
 
 // common source has no state
@@ -299,6 +300,10 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       })()
       return { serviceName, status, date }
     },
+
+    fetchedServices: async (env?: string): Promise<string[]> => (_.isUndefined(env)
+      ? state().existingServices()
+      : elementsSources.sources[env]?.state?.existingServices() ?? []),
   }
 }
 

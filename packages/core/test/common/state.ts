@@ -15,7 +15,7 @@
 */
 import State from '../../src/workspace/state'
 
-const mockState = (): State => ({
+const mockState = (services: string[] = []): State => ({
   list: jest.fn().mockImplementation(() => Promise.resolve([])),
   get: jest.fn().mockImplementation(() => Promise.resolve()),
   getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
@@ -24,7 +24,7 @@ const mockState = (): State => ({
   override: jest.fn().mockImplementation(() => Promise.resolve()),
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
   getServicesUpdateDates: jest.fn().mockImplementation(() => Promise.resolve()),
-  existingServices: jest.fn().mockImplementation(() => Promise.resolve()),
+  existingServices: jest.fn().mockImplementation(() => Promise.resolve(services)),
 })
 
 export default mockState

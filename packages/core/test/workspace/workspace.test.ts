@@ -104,7 +104,11 @@ const createWorkspace = async (
         },
         default: {
           naclFiles: createMockNaclFileSource([]),
-          state: state || mockState(),
+          state: state || mockState(['salesforce']),
+        },
+        sec: {
+          naclFiles: createMockNaclFileSource([]),
+          state: state || mockState(['hubspot']),
         },
       },
     })
@@ -695,6 +699,30 @@ describe('workspace', () => {
     it('should get creds partials', async () => {
       await workspace.servicesCredentials(services)
       expect(credsSource.get).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('fetchedServices', () => {
+    let workspace: Workspace
+    beforeAll(async () => {
+      workspace = await createWorkspace()
+    })
+
+    it('should return the services in the current state when env is not provided', async () => {
+      expect(await workspace.fetchedServices()).toEqual(['salesforce'])
+    })
+
+    it('should return the services in the provided env name', async () => {
+      expect(await workspace.fetchedServices('default')).toEqual(['salesforce'])
+      expect(await workspace.fetchedServices('sec')).toEqual(['hubspot'])
+    })
+
+    it('should return an empty array for nonexistent env name', async () => {
+      expect(await workspace.fetchedServices('nope')).toEqual([])
+    })
+
+    it('should return an empty array for an env with no state', async () => {
+      expect(await workspace.fetchedServices('')).toEqual([])
     })
   })
 })

@@ -23,7 +23,7 @@ const { readFile, readDir, writeFile } = file
 
 
 jest.mock('../../src/client/file', () => ({
-  readDir: jest.fn().mockImplementation(() => ['a', 'b']),
+  readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'c.html']),
   readFile: jest.fn().mockImplementation(filePath => `<elementName filePath="${filePath}">`),
   writeFile: jest.fn(),
 }))

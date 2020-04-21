@@ -200,7 +200,10 @@ export default class NetsuiteClient {
 
     const objectsDirPath = this.getObjectsDirPath()
     const dirContent = await readDir(objectsDirPath)
-    return Promise.all(dirContent.map(async filename => {
+    // Todo: when we'll support more types (e.g. emailTemplates), there might be other file types
+    //  in the directory. remove the below row once these types are supported
+    const xmlFilesInDir = dirContent.filter(filename => filename.endsWith('xml'))
+    return Promise.all(xmlFilesInDir.map(async filename => {
       const xmlContent = await readFile(path.resolve(objectsDirPath, filename))
       return convertToSingleXmlElement(xmlContent)
     }))

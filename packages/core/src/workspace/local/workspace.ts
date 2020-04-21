@@ -97,7 +97,7 @@ EnvironmentsSources => ({
       naclFiles: loadNaclFileSource(
         baseDir,
         localStorage,
-        envs.map(env => path.join(baseDir, env))
+        [path.join(baseDir, ENVS_PREFIX)]
       ),
     },
   },

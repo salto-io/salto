@@ -33,7 +33,7 @@ Once you've downloaded the binary, it is advised to copy it somewhere safe and a
 
 For example, on Mac / Linux (using bash) one could do (TODO fix link):
 
-```shell 
+```shell
 mkdir ~/salto
 curl https://salto.io/binaries/latest/mac/salto --output ~/salto/salto
 echo "export PATH=$PATH:~/salto" >> ~/.bash_profile
@@ -63,7 +63,7 @@ First, we'll create a new Salto workspace to store all the Salto NaCl files whic
 
 In your home directory, please run:
 
-```shell 
+```shell
 mkdir quickstart
 cd quickstart
 salto init
@@ -74,7 +74,7 @@ This will create a new directory named `quickstart` in your home directory which
 ### Add a new service to the workspace
 
 Next, we'll connect this workspace to a Salesforce account, by running:
-```shell 
+```shell
 salto services add salesforce
 ```
 
@@ -86,7 +86,7 @@ This command will prompt you to enter the credentials for your account, please d
 
 Now, we will fetch the current configuration of the connected salto account into this workspace by running:
 
-```shell 
+```shell
 salto fetch
 ```
 
@@ -109,7 +109,7 @@ salesforce.Text saltoQuickStartField {
 This `element` describes your intent to add a new text field named "saltoQuickStartField" with a length of 32 characters to Lead.
 
 Next, run:
-```shell 
+```shell
 salto deploy
 ```
 
@@ -162,7 +162,7 @@ In Salto, `environments` are first-level citizens, which also enable the encapsu
 - A `fetch` operation can work in `isolated mode` , when it will not modify common configuration, or in standard (non-isolated) mode when it will recalculate the common configuration. As a rule of thumb, `isolated mode` should be used when running fetch for the first time on a new service in an environment, and in standard mode when developing features (as the assumption is that the intent of the user is to eventually deploy the fetched changes to the other environments).
 
 Now, let's follow a common scenario of adding two environments to salto:
-```shell 
+```shell
 salto init
 ```
 
@@ -170,14 +170,14 @@ Note that you've been prompted to give a name for the the first environment in t
 
 Next, we'll continue similarly to quick-start by adding a service and running fetch:
 
-```shell 
+```shell
 salto services add salesforce
 # provide credentials to your "prod" instance
 salto fetch
 ```
 
 Next we will add another environment (`dev`) by running:
-```shell 
+```shell
 salto env create dev
 ```
 
@@ -185,14 +185,14 @@ Note that creating this env, also changed the current env to be `dev` (see `salt
 
 Now we'll configure this environment to connect to a `dev` instance (e.g. a Salesforce sandbox synched with `prod`) and run fetch:
 
-```shell 
+```shell
 salto services add salesforce
 # provide credentials to your "dev" instance
 salto fetch
 ```
 
 Lets stop and take a look at our workspace directory structure (for more info see [here](#workspace-directory-structure)):
-```shell 
+```shell
 — salto.config/ 
 - envs/                  # folder for env specific configuration
     — dev/               # folder for the dev environment specific configuration
@@ -202,9 +202,10 @@ Lets stop and take a look at our workspace directory structure (for more info se
 — salesforce/            # common cross-all-envs configuration for Salesforce
 ```
 Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. After all tests in dev are done, we can go ahead and run:
-
-    salto env set prod
-    salto deploy
+```shell
+salto env set prod
+salto deploy
+```
 
 Good luck! You've just pushed your first feature from dev to prod using Salto!
 
@@ -288,7 +289,7 @@ The workspace is structured as follows:
 - envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment. Each environment directory is also divided by adapter (which applies for that environment)
 
 For example, a workspace with 3 environments (named dev, test and prod), each configured with both Salesforce and HubSpot would look like:
-```shell 
+```shell
 — salto.config/
 - envs
     — dev/

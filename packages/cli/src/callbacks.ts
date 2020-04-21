@@ -24,8 +24,9 @@ import { Plan, FetchChange, Workspace, StateRecency } from '@salto-io/core'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
-  formatConfigFieldInput, formatShouldAbortWithValidationError, formatShouldUpdateConfig,
-  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries, header,
+  formatConfigFieldInput, formatShouldAbortWithValidationError, formatUnknownErrorIntro,
+  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries,
+  header,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
@@ -82,9 +83,12 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
 export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):
 Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
 
-export const shouldUpdateConfig = async (adapterName: string, formattedChanges: string):
-Promise<boolean> => getUserBooleanInput(formatShouldUpdateConfig(adapterName, formattedChanges))
-
+export const shouldUpdateConfig = async (stdout: WriteStream, adapterName: string,
+  formattedChanges: string):
+Promise<boolean> => {
+  stdout.write(formatUnknownErrorIntro(adapterName, formattedChanges))
+  return getUserBooleanInput(Prompts.UNKNOWN_ERROR_SHOULD_UPDATE_CONFIG_QUESTION)
+}
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,
   interactive: boolean,

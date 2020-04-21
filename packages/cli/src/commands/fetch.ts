@@ -33,7 +33,7 @@ import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput,
-  CliExitCode, SpinnerCreator, CliTelemetry,
+  CliExitCode, SpinnerCreator, CliTelemetry, WriteStream,
 } from '../types'
 import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
@@ -59,6 +59,7 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 type shouldUpdateConfigFunc = (
+  stdout: WriteStream,
   adapterName: string,
   formattedChanges: string
 ) => Promise<boolean>
@@ -205,9 +206,8 @@ export const fetchCommand = async (
           log.error('Got non instance config from adapter %s - %o', adapterName, newConfig)
           return false
         }
-        const shouldWriteToConfig = await shouldUpdateConfig(
-          adapterName, formatDetailedChanges([change.detailedChanges()], true)
-        )
+        const shouldWriteToConfig = await shouldUpdateConfig(output.stdout,
+          adapterName, formatDetailedChanges([change.detailedChanges()], true))
         if (shouldWriteToConfig) {
           await workspace.updateServiceConfig(adapterName, newConfig)
         }

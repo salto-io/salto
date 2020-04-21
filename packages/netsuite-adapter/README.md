@@ -1,6 +1,6 @@
 # Netsuite adapter
 
-Netsuite adapter for salto.io
+Netsuite adapter for salto.io, in very early development stages (not functional!)
 
 
 ### Build instructions

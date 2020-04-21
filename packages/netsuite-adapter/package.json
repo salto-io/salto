@@ -27,7 +27,7 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@oracle/suitecloud-sdk": "https://github.com/salto-io/netsuite-suitecloud-sdk.git",
+    "@salto-io/suitecloud-cli": "^1.0.2-salto-2",
     "@salto-io/adapter-api": "0.1.12",
     "@salto-io/adapter-utils": "0.1.12",
     "@salto-io/logging": "0.1.12",

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { NodeCli } from '@oracle/suitecloud-sdk'
+import { OperationResult } from '@salto-io/suitecloud-cli'
 import _ from 'lodash'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
 import * as file from '../../src/client/file'
@@ -33,25 +33,23 @@ const writeFileMock = writeFile as jest.Mock
 
 const mockExecuteAction = jest.fn()
 
-jest.mock('@oracle/suitecloud-sdk', () => ({
-  NodeCli: {
-    SDKOperationResultUtils: {
-      hasErrors: jest.fn().mockImplementation((operationResult: NodeCli.OperationResult) =>
-        operationResult.status === 'ERROR'),
-      getErrorMessagesString: jest.fn().mockReturnValue('Error message'),
-    },
-    CommandOutputHandler: jest.fn(),
-    CommandOptionsValidator: jest.fn(),
-    CLIConfigurationService: jest.fn(),
-    CommandInstanceFactory: jest.fn(),
-    AuthenticationService: jest.fn(),
-    CommandsMetadataService: jest.fn().mockImplementation(() => ({
-      initializeCommandsMetadata: jest.fn(),
-    })),
-    CommandActionExecutor: jest.fn().mockImplementation(() => ({
-      executeAction: mockExecuteAction,
-    })),
+jest.mock('@salto-io/suitecloud-cli', () => ({
+  SDKOperationResultUtils: {
+    hasErrors: jest.fn().mockImplementation((operationResult: OperationResult) =>
+      operationResult.status === 'ERROR'),
+    getErrorMessagesString: jest.fn().mockReturnValue('Error message'),
   },
+  CommandOutputHandler: jest.fn(),
+  CommandOptionsValidator: jest.fn(),
+  CLIConfigurationService: jest.fn(),
+  CommandInstanceFactory: jest.fn(),
+  AuthenticationService: jest.fn(),
+  CommandsMetadataService: jest.fn().mockImplementation(() => ({
+    initializeCommandsMetadata: jest.fn(),
+  })),
+  CommandActionExecutor: jest.fn().mockImplementation(() => ({
+    executeAction: mockExecuteAction,
+  })),
 }))
 
 describe('netsuite client', () => {

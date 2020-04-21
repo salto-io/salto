@@ -13,7 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { NodeCli } from '@oracle/suitecloud-sdk'
+import {
+  AuthenticationService, CLIConfigurationService, CommandActionExecutor, CommandInstanceFactory,
+  CommandOptionsValidator, CommandOutputHandler, CommandsMetadataService, SDKOperationResultUtils,
+  OperationResult,
+} from '@salto-io/suitecloud-cli'
 import { decorators, hash } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -23,11 +27,6 @@ import os from 'os'
 import { readDir, readFile, writeFile } from './file'
 
 const log = logger(module)
-
-const {
-  AuthenticationService, CLIConfigurationService, CommandActionExecutor, CommandInstanceFactory,
-  CommandOptionsValidator, CommandOutputHandler, CommandsMetadataService, SDKOperationResultUtils,
-} = NodeCli
 
 export type Credentials = {
   accountId: string
@@ -51,7 +50,7 @@ const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
 
 const rootCLIPath = path.normalize(path.join(__dirname, ...Array(5).fill('..'), 'node_modules',
-  '@oracle', 'suitecloud-sdk', 'packages', 'node-cli', 'src'))
+  '@salto-io', 'suitecloud-cli', 'src'))
 const baseExecutionPath = os.tmpdir()
 
 export const convertToSingleXmlElement = (xmlContent: string): XmlElement => {
@@ -64,7 +63,7 @@ export const convertToXmlString = (xmlElement: XmlElement): string =>
 
 export default class NetsuiteClient {
   private projectName?: string
-  private projectCommandActionExecutor?: NodeCli.CommandActionExecutor
+  private projectCommandActionExecutor?: CommandActionExecutor
   private isAccountSetUp = false
   private readonly credentials: Credentials
   private readonly authId: string
@@ -79,7 +78,7 @@ export default class NetsuiteClient {
     await netsuiteClient.setupAccount()
   }
 
-  private static initCommandActionExecutor(executionPath: string): NodeCli.CommandActionExecutor {
+  private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
     const commandsMetadataService = new CommandsMetadataService(rootCLIPath)
     commandsMetadataService.initializeCommandsMetadata()
     return new CommandActionExecutor({
@@ -140,7 +139,7 @@ export default class NetsuiteClient {
     return projectName
   }
 
-  private static verifySuccessfulOperation(operationResult: NodeCli.OperationResult): void {
+  private static verifySuccessfulOperation(operationResult: OperationResult): void {
     if (SDKOperationResultUtils.hasErrors(operationResult)) {
       throw Error(SDKOperationResultUtils.getErrorMessagesString(operationResult))
     }

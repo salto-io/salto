@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as file from '../../../src/file'
+import * as file from '@salto-io/file'
 
 import { StaticFilesCache } from '../../../src/workspace/static_files/cache'
 
@@ -21,7 +21,7 @@ import {
   buildLocalStaticFilesCache, CACHE_FILENAME,
 } from '../../../src/workspace/local/static_files_cache'
 
-jest.mock('../../../src/file')
+jest.mock('@salto-io/file')
 describe('Static Files Cache', () => {
   afterEach(() => {
     jest.clearAllMocks()

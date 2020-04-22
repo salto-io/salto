@@ -17,8 +17,8 @@ import { promisify } from 'util'
 import fs from 'fs'
 import rimRafLib from 'rimraf'
 import mkdirpLib from 'mkdirp'
-import { strings } from '@salto-io/lowerdash'
 import path from 'path'
+import { strings } from '@salto-io/lowerdash'
 
 const statP = promisify(fs.stat)
 const readFileP = promisify(fs.readFile)
@@ -48,7 +48,6 @@ export const notFoundAsUndefined = <
     }
   }
 
-export type Stats = fs.Stats
 export const stat = (filename: string): Promise<fs.Stats> => statP(filename)
 
 stat.notFoundAsUndefined = notFoundAsUndefined(stat)

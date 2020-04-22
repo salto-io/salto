@@ -15,14 +15,21 @@
 * limitations under the License.
 */
 
+import { exists, mkdirp, readFile, replaceContents } from '@salto-io/file'
 import * as conf from '../src/app_config'
-import * as file from '../src/file'
 
-jest.mock('../src/file')
-const mockMkdirp = file.mkdirp as jest.Mock
-const mockReplaceContents = file.replaceContents as jest.Mock
-const mockExists = file.exists as jest.Mock
-const mockReadFile = file.readFile as unknown as jest.Mock
+
+jest.mock('@salto-io/file', () => ({
+  ...jest.requireActual('@salto-io/file'),
+  mkdirp: jest.fn(),
+  replaceContents: jest.fn(),
+  exists: jest.fn(),
+  readFile: jest.fn(),
+}))
+const mockMkdirp = mkdirp as jest.Mock
+const mockReplaceContents = replaceContents as jest.Mock
+const mockExists = exists as jest.Mock
+const mockReadFile = readFile as unknown as jest.Mock
 
 const cleanEnvVars = (): void => (
   [

@@ -15,9 +15,12 @@
 */
 import readdirp from 'readdirp'
 import path from 'path'
+import { Stats } from 'fs'
 import _ from 'lodash'
+import {
+  stat, readTextFile, exists, rm, mkdirp, replaceContents, isEmptyDir, isSubDirectory,
+} from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
-import { stat, readTextFile, Stats, exists, rm, mkdirp, replaceContents, isEmptyDir, isSubDirectory } from '../../file'
 import { DirectoryStore, File } from '../dir_store'
 
 const { withLimitedConcurrency } = promises.array

@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { Workspace, parse, file, Errors } from '@salto-io/core'
+import { Workspace, parse, Errors } from '@salto-io/core'
+import { readTextFile } from '@salto-io/file'
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ParseError } from '@salto-io/core/dist/src/parser/parse'
@@ -100,6 +101,6 @@ const buildMockWorkspace = (
 
 export const mockWorkspace = async (naclFile?: string,
 ): Promise<Workspace> => {
-  const buffer = naclFile ? await file.readTextFile(naclFile) : 'blabla'
+  const buffer = naclFile ? await readTextFile(naclFile) : 'blabla'
   return buildMockWorkspace(naclFile, buffer)
 }

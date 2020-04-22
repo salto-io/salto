@@ -15,7 +15,8 @@
 */
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { file, FILE_EXTENSION } from '@salto-io/core'
+import { FILE_EXTENSION } from '@salto-io/core'
+import { readTextFile } from '@salto-io/file'
 import { EditorWorkspace } from './salto/workspace'
 import { getDiagnostics } from './salto/diagnostics'
 import { toVSDiagnostics } from './adapters'
@@ -61,7 +62,7 @@ export const onFileChange = async (
   workspace: EditorWorkspace,
   filename: string
 ): Promise<void> => {
-  const buffer = await file.readTextFile(filename)
+  const buffer = await readTextFile(filename)
   workspace.setNaclFiles({ filename, buffer })
   return workspace.awaitAllUpdates()
 }

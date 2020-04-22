@@ -28,9 +28,6 @@ export class ElemID {
   static fromFullName(fullName: string): ElemID {
     const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
     if (idType === undefined) {
-      if (adapter !== ElemID.VARIABLES_NAMESPACE) {
-        return new ElemID(adapter, typeName)
-      }
       return new ElemID(adapter, typeName)
     }
     if (!isElemIDType(idType)) {

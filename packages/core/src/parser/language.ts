@@ -15,6 +15,7 @@
 */
 export enum Keywords {
   TYPE_DEFINITION = 'type',
+  VARIABLES_DEFINITION = 'vars',
   SETTINGS_DEFINITION = 'settings',
   LIST_DEFINITION = 'list',
   TYPE_INHERITANCE_SEPARATOR = 'is',

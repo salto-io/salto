@@ -16,13 +16,13 @@
 import _ from 'lodash'
 import {
   TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
-  Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS, ListType,
+  Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS, ListType, Variable, Value,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
 import {
   SourceRange as InternalSourceRange, SourceMap as SourceMapImpl,
-  ParsedHclBlock, HclParseError,
+  ParsedHclBlock, HclParseError, HclAttribute,
 } from './internal/types'
 import { parse as hclParse } from './internal/parse'
 import evaluate from './expressions'
@@ -109,17 +109,19 @@ export const parse = (
           .value()
       }).pop() || {}
 
+  const attrValue = (attr: HclAttribute, elemID: ElemID): Value => {
+    const exp = attr.expressions[0]
+    // Use attribute source as expression source so it includes the key as well
+    return evaluate(
+      { ...exp, source: attr.source },
+      elemID,
+      sourceMap,
+      functions
+    )
+  }
+
   const attrValues = (block: ParsedHclBlock, parentId: ElemID): Values => (
-    _(block.attrs).mapValues((val, key) => {
-      const exp = val.expressions[0]
-      // Use attribute source as expression source so it includes the key as well
-      return evaluate(
-        { ...exp, source: val.source },
-        parentId.createNestedID(key),
-        sourceMap,
-        functions
-      )
-    })
+    _(block.attrs).mapValues((val, key) => attrValue(val, parentId.createNestedID(key)))
       .omitBy(_.isUndefined)
       .value()
   )
@@ -221,7 +223,19 @@ export const parse = (
     return inst
   }
 
-  const elements = body.blocks.map((value: ParsedHclBlock): Element => {
+  const parseVariable = (name: string, varAttribute: HclAttribute): Element => {
+    const elemID = new ElemID(ElemID.VARIABLES_NAMESPACE, name)
+    const value = attrValue(varAttribute, elemID)
+    const variable = new Variable(elemID, value)
+    sourceMap.push(variable.elemID, varAttribute)
+    return variable
+  }
+
+  const parseVariablesBlock = (variablesBlock: ParsedHclBlock): Element[] => _.values(
+    _(variablesBlock.attrs).mapValues((v, k) => parseVariable(k, v)).value()
+  )
+
+  const elements = _.flatten(body.blocks.map((value: ParsedHclBlock): Element | Element[] => {
     if (value.type === Keywords.TYPE_DEFINITION && value.labels.length > 1) {
       return parsePrimitiveType(value)
     }
@@ -231,13 +245,16 @@ export const parse = (
     if (value.type === Keywords.SETTINGS_DEFINITION) {
       return parseType(value, true)
     }
+    if (value.type === Keywords.VARIABLES_DEFINITION) {
+      return parseVariablesBlock(value)
+    }
     if (value.labels.length === 0 || value.labels.length === 1) {
       return parseInstance(value)
     }
     // Without this exception the linter won't allow us to end the function
     // without a return value
     throw new Error('unsupported block')
-  })
+  }))
   const errors: ParseError[] = parseErrors.map(err =>
   ({ ...err,
     ...{

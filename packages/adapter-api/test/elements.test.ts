@@ -17,7 +17,8 @@ import _ from 'lodash'
 import { BuiltinTypes } from '../src/builtins'
 import {
   Field, InstanceElement, ObjectType, PrimitiveType, isObjectType, isInstanceElement,
-  PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements,
+  PrimitiveTypes, ListType, isPrimitiveType, isType, isListType, isEqualElements, Variable,
+  isVariable,
 } from '../src/elements'
 import { ElemID } from '../src/element_id'
 
@@ -170,6 +171,7 @@ describe('Test elements.ts', () => {
     const strField = new Field(new ElemID('test', 'obj'), 'str_field', primStr)
     const lstField = new Field(new ElemID('test', 'objList'), 'list_field', new ListType(primStr))
     const inst = new InstanceElement('inst', objT, { str: 'test' })
+    const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 3)
 
     it('should identify equal primitive types', () => {
       expect(isEqualElements(primStr, _.cloneDeep(primStr))).toBeTruthy()
@@ -224,6 +226,16 @@ describe('Test elements.ts', () => {
       expect(isEqualElements(inst, ot)).toBeFalsy()
     })
 
+    it('should identify equal variable elements', () => {
+      expect(isEqualElements(variable, _.cloneDeep(variable))).toBeTruthy()
+    })
+
+    it('should identify different variables', () => {
+      const otVariable = variable.clone()
+      otVariable.value = 8
+      expect(isEqualElements(variable, otVariable)).toBeFalsy()
+    })
+
     it('should identify primitive type', () => {
       expect(isPrimitiveType(primStr)).toBeTruthy()
       expect(isPrimitiveType(inst)).toBeFalsy()
@@ -248,6 +260,11 @@ describe('Test elements.ts', () => {
       expect(isInstanceElement(inst)).toBeTruthy()
       expect(isInstanceElement(primStr)).toBeFalsy()
     })
+
+    it('should identify variable elements', () => {
+      expect(isVariable(variable)).toBeTruthy()
+      expect(isVariable(inst)).toBeFalsy()
+    })
   })
 
   describe('ElemID', () => {
@@ -259,6 +276,30 @@ describe('Test elements.ts', () => {
     const valueId = typeInstId.createNestedID('nested', 'value')
     const configTypeId = new ElemID('adapter')
     const configInstId = configTypeId.createNestedID('instance', ElemID.CONFIG_NAME)
+    const variableId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+
+    describe('constructor', () => {
+      it('should throw error on variables not in the var namespace', () => {
+        expect((() => new ElemID('salesforce', 'varName',
+          'var'))).toThrow(/.*salesforce\.varName[^.].*/)
+      })
+      it('should throw error on id types which are not \'var\' in the var namespace', () => {
+        expect((() => new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName',
+          'type'))).toThrow(/.*var\.varName[^.].*/)
+        expect((() => new ElemID(ElemID.VARIABLES_NAMESPACE, 't', 'instance',
+          'name'))).toThrow(/.*var\.t\.instance\.name[^.].*/)
+      })
+      it('should throw error on nested variables', () => {
+        expect((() => new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName', 'var',
+          'k'))).toThrow(/.*var\.varName\.k[^.].*/)
+      })
+      it('should create a variable when no type is provided but the namespace is var', () => {
+        expect(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName').idType).toEqual('var')
+      })
+      it('should create a type when no type is provided and the namespace is not var', () => {
+        expect(new ElemID('salesforce', 'name').idType).toEqual('type')
+      })
+    })
 
     describe('getFullName', () => {
       it('should contain adapter and type name for type ID', () => {
@@ -287,12 +328,15 @@ describe('Test elements.ts', () => {
           `${configTypeId.adapter}.${configTypeId.typeName}.instance`,
         )
       })
+      it('should contain namespace and variable name for variable ID', () => {
+        expect(variableId.getFullName()).toEqual('var.varName')
+      })
     })
 
     describe('fromFullName', () => {
       it('should create elem ID from its full name', () => {
         [typeId, fieldId, annotationTypesId, annotationTypeId, typeInstId, valueId, configTypeId,
-          configInstId]
+          configInstId, variableId]
           .forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
       })
       it('should fail on invalid id type', () => {
@@ -301,12 +345,13 @@ describe('Test elements.ts', () => {
     })
 
     describe('nestingLevel', () => {
-      describe('for config, types and instances', () => {
+      describe('for config, types, instances and variables', () => {
         it('should be zero', () => {
           expect(typeId.nestingLevel).toEqual(0)
           expect(typeInstId.nestingLevel).toEqual(0)
           expect(configTypeId.nestingLevel).toEqual(0)
           expect(configInstId.nestingLevel).toEqual(0)
+          expect(variableId.nestingLevel).toEqual(0)
         })
       })
       describe('for nested ids', () => {
@@ -371,6 +416,12 @@ describe('Test elements.ts', () => {
           expect(nestedId.name).toEqual('nested')
         })
       })
+      describe('from variable ID', () => {
+        // We don't support object variables for now
+        it('should always fail', () => {
+          expect(() => variableId.createNestedID('nested')).toThrow(/.*var\.varName\.nested[^.].*/)
+        })
+      })
     })
 
     describe('createParentID', () => {
@@ -404,6 +455,11 @@ describe('Test elements.ts', () => {
           expect(annotationTypeId.createParentID()).toEqual(annotationTypesId)
         })
       })
+      describe('from variable ID', () => {
+        it('should return the namespace ID', () => {
+          expect(variableId.createParentID()).toEqual(new ElemID(variableId.adapter))
+        })
+      })
       describe('from nested ID', () => {
         it('should return one nesting level less deep', () => {
           [fieldId, typeInstId, configInstId].forEach(
@@ -416,7 +472,7 @@ describe('Test elements.ts', () => {
     describe('createTopLevelParentID', () => {
       describe('from top level element', () => {
         it('should return the same ID and empty path', () => {
-          [typeId, typeInstId, configTypeId, configInstId].forEach(id => {
+          [typeId, typeInstId, configTypeId, configInstId, variableId].forEach(id => {
             const { parent, path } = id.createTopLevelParentID()
             expect(parent).toEqual(id)
             expect(path).toHaveLength(0)

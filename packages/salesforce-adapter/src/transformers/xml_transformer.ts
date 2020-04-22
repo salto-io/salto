@@ -49,6 +49,7 @@ type ZipPropsMap = {
   ReportFolder: ZipProps
   Dashboard: ZipProps
   DashboardFolder: ZipProps
+  SharingRules: ZipProps
 }
 
 const zipPropsMap: ZipPropsMap = {
@@ -118,6 +119,11 @@ const zipPropsMap: ZipPropsMap = {
     folderType: 'Dashboard',
     dirName: 'dashboards',
     fileSuffix: METADATA_XML_SUFFIX,
+    isMetadataWithContent: false,
+  },
+  SharingRules: {
+    dirName: 'sharingRules',
+    fileSuffix: '.sharingRules',
     isMetadataWithContent: false,
   },
 }

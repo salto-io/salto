@@ -235,6 +235,7 @@ export default class SalesforceAdapter {
       ReportType: undefined,
       Report: 'ReportFolder',
       Dashboard: 'DashboardFolder',
+      SharingRules: undefined, // upsert does not work for creating rules
     },
     metadataAdditionalTypes = [
       'ProfileUserPermission',
@@ -255,7 +256,6 @@ export default class SalesforceAdapter {
       'Flow', // update fails for Active flows
       'EscalationRules',
       'AutoResponseRules',
-      'SharingRules',
     ],
     nestedMetadataTypes = {
       ...absoluteIDMetadataTypes,

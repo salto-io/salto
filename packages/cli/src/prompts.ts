@@ -124,13 +124,14 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`
     } - do you want to abort?`
 
-  public static readonly UNKNOWN_ERROR_MSG = (adapterName: string, formattedChanges: string):
+  public static readonly STOP_MANAGING_ITEMS_MSG =
+  (adapterName: string, formattedChanges: string):
     string =>
     `\nSalto failed to fetch some of ${adapterName} items. In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:\n
       ${formattedChanges}
       \n`
 
-  public static readonly UNKNOWN_ERROR_SHOULD_UPDATE_CONFIG_QUESTION = 'Would you like to apply this configuration change (answering no will cancel the fetch operation)?'
+  public static readonly SHOULD_STOP_MANAGING_ITEMS = 'Would you like to apply this configuration change (answering no will cancel the fetch operation)?'
 
   public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended to fetch more frequently so Salto\'s deployment plan can take into account the latest state - do you want to cancel?'
   public static readonly SHOULD_CANCEL_WITH_NONEXISTENT_STATE = 'It is highly recommended to run salto fetch before deploying, to ensure the deploy plan takes into account the current state - do you want to cancel?'

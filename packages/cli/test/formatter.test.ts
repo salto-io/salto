@@ -20,7 +20,7 @@ import {
 import { WorkspaceError, FetchChange } from '@salto-io/core'
 import { formatSearchResults, formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
-  formatChangeErrors, formatUnknownErrorIntro } from '../src/formatter'
+  formatChangeErrors, formatStopManagingItemsMsg } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
@@ -359,7 +359,7 @@ describe('formatter', () => {
     const adapterName = 'FakeAdapter'
 
     beforeAll(() => {
-      formattedString = formatUnknownErrorIntro(adapterName, 'test')
+      formattedString = formatStopManagingItemsMsg(adapterName, 'test')
     })
 
     it('should print adapter name', () => {

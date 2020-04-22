@@ -33,7 +33,7 @@ import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import {
   ParsedCliInput, CliCommand, CliOutput,
-  CliExitCode, SpinnerCreator, CliTelemetry, WriteStream,
+  CliExitCode, SpinnerCreator, CliTelemetry,
 } from '../types'
 import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
@@ -42,8 +42,7 @@ import {
   formatApproveIsolatedModePrompt,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
-  shouldUpdateConfig as cliShouldUpdateConfig,
-  cliApproveIsolatedMode } from '../callbacks'
+  shouldStopManagingItems, cliApproveIsolatedMode } from '../callbacks'
 import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
@@ -59,7 +58,7 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 type shouldUpdateConfigFunc = (
-  stdout: WriteStream,
+  { stdout }: CliOutput,
   adapterName: string,
   formattedChanges: string
 ) => Promise<boolean>
@@ -206,7 +205,7 @@ export const fetchCommand = async (
           log.error('Got non instance config from adapter %s - %o', adapterName, newConfig)
           return false
         }
-        const shouldWriteToConfig = await shouldUpdateConfig(output.stdout,
+        const shouldWriteToConfig = await shouldUpdateConfig(output,
           adapterName, formatDetailedChanges([change.detailedChanges()], true))
         if (shouldWriteToConfig) {
           await workspace.updateServiceConfig(adapterName, newConfig)
@@ -279,7 +278,7 @@ export const command = (
       output,
       fetch: apiFetch,
       getApprovedChanges: cliGetApprovedChanges,
-      shouldUpdateConfig: cliShouldUpdateConfig,
+      shouldUpdateConfig: shouldStopManagingItems,
       approveIsolatedMode: cliApproveIsolatedMode,
       inputServices,
       inputIsolated,

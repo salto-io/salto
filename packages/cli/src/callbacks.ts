@@ -24,7 +24,7 @@ import { Plan, FetchChange, Workspace, StateRecency } from '@salto-io/core'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
-  formatConfigFieldInput, formatShouldAbortWithValidationError, formatUnknownErrorIntro,
+  formatConfigFieldInput, formatShouldAbortWithValidationError, formatStopManagingItemsMsg,
   formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries,
   header,
 } from './formatter'
@@ -83,11 +83,11 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
 export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):
 Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
 
-export const shouldUpdateConfig = async (stdout: WriteStream, adapterName: string,
+export const shouldStopManagingItems = async ({ stdout }: CliOutput, adapterName: string,
   formattedChanges: string):
 Promise<boolean> => {
-  stdout.write(formatUnknownErrorIntro(adapterName, formattedChanges))
-  return getUserBooleanInput(Prompts.UNKNOWN_ERROR_SHOULD_UPDATE_CONFIG_QUESTION)
+  stdout.write(formatStopManagingItemsMsg(adapterName, formattedChanges))
+  return getUserBooleanInput(Prompts.SHOULD_STOP_MANAGING_ITEMS)
 }
 export const getApprovedChanges = async (
   changes: ReadonlyArray<FetchChange>,

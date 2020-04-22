@@ -474,8 +474,8 @@ export const formatShouldContinueWithWarning = (numWarnings: number): string =>
 export const formatShouldAbortWithValidationError = (numErrors: number): string =>
   error(Prompts.SHOULD_ABORT(numErrors))
 
-export const formatUnknownErrorIntro = (adapterName: string, formattedChanges: string):
-string => Prompts.UNKNOWN_ERROR_MSG(adapterName, formattedChanges)
+export const formatStopManagingItemsMsg = (adapterName: string, formattedChanges: string):
+string => Prompts.STOP_MANAGING_ITEMS_MSG(adapterName, formattedChanges)
 
 export const formatShouldCancelWithOldState = warn(Prompts.SHOULD_CANCEL_WITH_OLD_STATE)
 

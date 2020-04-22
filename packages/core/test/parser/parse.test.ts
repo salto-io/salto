@@ -151,6 +151,13 @@ describe('Salto parser', () => {
         name = 7
         name2 = "some string"
       }
+      type salesforce.type {
+        data = '''
+        This
+        is
+        Multiline
+        '''
+      }
        `
     beforeAll(() => {
       ({ elements, sourceMap } = parse(Buffer.from(body), 'none', functions))
@@ -158,7 +165,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(16)
+        expect(elements.length).toBe(17)
       })
     })
 
@@ -556,7 +563,19 @@ describe('Salto parser', () => {
         expect(variable2.value).toBe('some string')
       })
     })
+
+    describe('multiline strings', () => {
+      let multilineObject: ObjectType
+      beforeAll(() => {
+        multilineObject = elements[15] as ObjectType
+      })
+      it('should have a multiline string field', () => {
+        expect(multilineObject.annotations).toHaveProperty('data')
+        expect(multilineObject.annotations.data).toEqual('        This\n        is\n        Multiline')
+      })
+    })
   })
+
 
   describe('error tests', () => {
     it('fails on invalid inheritance syntax', async () => {

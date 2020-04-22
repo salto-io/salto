@@ -187,14 +187,19 @@ export const convertMultilineString = (
   mlEnd: LexerToken
 ): HclExpression => ({
   type: 'template',
-  expressions: contentTokens.map(t => (t.type === 'reference'
-    ? convertReference(t)
-    : {
-      type: 'literal',
-      value: t.text,
-      expressions: [],
-      source: createSourceRange(t, t),
-    } as HclExpression)),
+  expressions: contentTokens.map((t, index) => {
+    const value = index === contentTokens.length - 1
+      ? t.text.slice(0, t.text.length - 1) // Remove the last \n
+      : t.text
+    return t.type === 'reference'
+      ? convertReference(t)
+      : {
+        type: 'literal',
+        value,
+        expressions: [],
+        source: createSourceRange(t, t),
+      } as HclExpression
+  }),
   source: createSourceRange(mlStart, mlEnd),
 })
 

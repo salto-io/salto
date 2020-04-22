@@ -145,10 +145,10 @@ describe('HCL parse', () => {
 
   it('parses multiline strings', async () => {
     const blockDef = `type label {
-        thing = <<EOF
+        thing = '''
           omg
           asd
-          EOF
+          '''
       }`
 
     const { body } = parse(Buffer.from(blockDef), 'none')

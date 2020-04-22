@@ -20,11 +20,11 @@ import {
 } from '@salto-io/suitecloud-cli'
 import { decorators, hash } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
+import { readDir, readFile, writeFile } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import xmlConverter, { Element as XmlElement } from 'xml-js'
 import path from 'path'
 import os from 'os'
-import { readDir, readFile, writeFile } from './file'
 
 const log = logger(module)
 
@@ -204,7 +204,7 @@ export default class NetsuiteClient {
     const xmlFilesInDir = dirContent.filter(filename => filename.endsWith('xml'))
     return Promise.all(xmlFilesInDir.map(async filename => {
       const xmlContent = await readFile(path.resolve(objectsDirPath, filename))
-      return convertToSingleXmlElement(xmlContent)
+      return convertToSingleXmlElement(xmlContent.toString())
     }))
   }
 

@@ -472,6 +472,47 @@ describe('file', () => {
     })
   })
 
+  describe('readDir', () => {
+    let dir: string
+
+    beforeEach(async () => {
+      dir = (await tmp.dir()).path
+    })
+
+    afterEach(async () => {
+      await file.rm(dir)
+    })
+
+    describe('when given an empty directory', () => {
+      it('returns empty list', async () => {
+        expect(await file.readDir(dir)).toEqual([])
+      })
+    })
+
+    describe('when given a non-empty directory', () => {
+      describe('with a subdirectory', () => {
+        beforeEach(async () => {
+          await file.mkdirp(path.join(dir, 'subdir'))
+        })
+
+        it('returns false', async () => {
+          expect(await file.readDir(dir)).toEqual(['subdir'])
+        })
+      })
+
+      describe('with files', () => {
+        beforeEach(async () => {
+          await file.writeFile(path.join(dir, 'somefile1'), '')
+          await file.writeFile(path.join(dir, 'somefile2'), '')
+        })
+
+        it('returns false', async () => {
+          expect(await file.readDir(dir)).toEqual(['somefile1', 'somefile2'])
+        })
+      })
+    })
+  })
+
   describe('isSubDirectory', () => {
     describe('when given a subdirectory', () => {
       it('returns true', () => {

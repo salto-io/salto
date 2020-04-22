@@ -154,7 +154,6 @@ export const beforeFormInstanceValuesMock = {
                 contactProperty: datePropReference,
                 contactPropertyOverrides: {
                   label: 'Date of birth override',
-                  description: 'l',
                 },
                 isSmartField: false,
                 required: false,
@@ -212,6 +211,7 @@ export const afterFormInstanceValuesMock = {
           contactPropertyOverrides: {
             label: 'g1!',
           },
+          helpText: 'helpText',
           dependentFieldFilters: [
             {
               filters: [
@@ -226,9 +226,9 @@ export const afterFormInstanceValuesMock = {
               ],
               dependentFormField: {
                 contactProperty: datePropReference,
+                helpText: 'HELP!',
                 contactPropertyOverrides: {
                   label: 'Date of birth override',
-                  description: 'l',
                 },
                 isSmartField: false,
                 required: false,

@@ -14,66 +14,63 @@
 * limitations under the License.
 */
 
-declare module '@oracle/suitecloud-sdk' {
+declare module '@salto-io/suitecloud-cli' {
   import { Values } from '@salto-io/adapter-api'
 
-  namespace NodeCli {
-    export class CommandsMetadataService {
-      constructor(rootCLIPath: string)
+  export class CommandsMetadataService {
+    constructor(rootCLIPath: string)
 
-      initializeCommandsMetadata(): void
-    }
+    initializeCommandsMetadata(): void
+  }
 
-    export class CommandInstanceFactory {
-      constructor()
-    }
+  export class CommandInstanceFactory {
+    constructor()
+  }
 
-    export class CommandOptionsValidator {
-      constructor()
-    }
+  export class CommandOptionsValidator {
+    constructor()
+  }
 
-    export class CLIConfigurationService {
-      constructor()
-    }
+  export class CLIConfigurationService {
+    constructor()
+  }
 
-    export class AuthenticationService {
-      constructor(executionPath: string)
-    }
+  export class AuthenticationService {
+    constructor(executionPath: string)
+  }
 
-    export class CommandOutputHandler {
-      constructor()
-    }
+  export class CommandOutputHandler {
+    constructor()
+  }
 
-    export class CommandActionExecutor {
-      constructor(dependencies: {
-        executionPath: string
-        commandOutputHandler: CommandOutputHandler
-        commandOptionsValidator: CommandOptionsValidator
-        cliConfigurationService: CLIConfigurationService
-        commandInstanceFactory: CommandInstanceFactory
-        authenticationService: AuthenticationService
-        commandsMetadataService: CommandsMetadataService
-      })
+  export class CommandActionExecutor {
+    constructor(dependencies: {
+      executionPath: string
+      commandOutputHandler: CommandOutputHandler
+      commandOptionsValidator: CommandOptionsValidator
+      cliConfigurationService: CLIConfigurationService
+      commandInstanceFactory: CommandInstanceFactory
+      authenticationService: AuthenticationService
+      commandsMetadataService: CommandsMetadataService
+    })
 
-      executeAction(context: {
-        commandName: string
-        runInInteractiveMode: boolean
-        arguments: Values
-      }): Promise<OperationResult>
-    }
+    executeAction(context: {
+      commandName: string
+      runInInteractiveMode: boolean
+      arguments: Values
+    }): Promise<OperationResult>
+  }
 
-    export class SDKOperationResultUtils {
-      static hasErrors(operationResult: OperationResult): boolean
-      static getErrorMessagesString(operationResult: OperationResult): string
-    }
+  export class SDKOperationResultUtils {
+    static hasErrors(operationResult: OperationResult): boolean
+    static getErrorMessagesString(operationResult: OperationResult): string
+  }
 
-    export type OperationResultStatus = 'ERROR' | 'SUCCESS'
+  export type OperationResultStatus = 'ERROR' | 'SUCCESS'
 
-    export interface OperationResult {
-      status: OperationResultStatus
-      resultMessage?: string
-      errorMessages?: string[]
-    }
-
+  export interface OperationResult {
+    status: OperationResultStatus
+    resultMessage?: string
+    errorMessages?: string[]
   }
 }

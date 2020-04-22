@@ -124,6 +124,10 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`
     } - do you want to abort?`
 
+  /**
+  * this message is currently coupled with sfdc adapter,
+  * be careful in case you would like to use it in differen adapter
+  */
   public static readonly STOP_MANAGING_ITEMS_MSG =
   (adapterName: string, formattedChanges: string):
     string =>

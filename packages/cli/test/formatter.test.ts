@@ -379,9 +379,6 @@ describe('formatter', () => {
     it('should print the start line', () => {
       expect(formattedErrors).toContain('2')
     })
-    it('should print the start col', () => {
-      expect(formattedErrors).toContain('10')
-    })
     it('should print the error', () => {
       expect(formattedErrors).toContain('This is my error')
     })

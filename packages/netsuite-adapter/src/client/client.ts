@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { NodeCli } from '@oracle/suitecloud-sdk'
-import { decorators } from '@salto-io/lowerdash'
+import { decorators, hash } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import xmlConverter, { Element as XmlElement } from 'xml-js'
@@ -71,8 +71,7 @@ export default class NetsuiteClient {
 
   constructor({ credentials }: NetsuiteClientOpts) {
     this.credentials = credentials
-    // todo modify to tokenId.substring(0, 10) once doing retry on existing authId
-    this.authId = String(Date.now()).substring(8)
+    this.authId = hash.toMD5(this.credentials.tokenId)
   }
 
   static async validateCredentials(credentials: Credentials): Promise<void> {
@@ -169,12 +168,24 @@ export default class NetsuiteClient {
   protected async setupAccount(): Promise<void> {
     // Todo: use the correct implementation and not Salto's temporary solution after:
     //  https://github.com/oracle/netsuite-suitecloud-sdk/issues/81 is resolved
-    await this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
-      authid: this.authId,
-      accountid: this.credentials.accountId,
-      tokenid: this.credentials.tokenId,
-      tokensecret: this.credentials.tokenSecret,
-    })
+    const setupAccountUsingExistingAuthID = async (): Promise<void> =>
+      this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
+        authid: this.authId,
+      })
+
+    const setupAccountUsingNewAuthID = async (): Promise<void> =>
+      this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
+        authid: this.authId,
+        accountid: this.credentials.accountId,
+        tokenid: this.credentials.tokenId,
+        tokensecret: this.credentials.tokenSecret,
+      })
+
+    try {
+      await setupAccountUsingExistingAuthID()
+    } catch (e) {
+      await setupAccountUsingNewAuthID()
+    }
   }
 
   @NetsuiteClient.logDecorator

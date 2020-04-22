@@ -16,7 +16,7 @@
 import { join, basename } from 'path'
 
 import { StaticFile } from '@salto-io/adapter-api'
-import { files } from '@salto-io/lowerdash'
+import { hash as hashUtils } from '@salto-io/lowerdash'
 
 import { DirectoryStore } from '../dir_store'
 import { StaticFilesCache } from './cache'
@@ -57,7 +57,7 @@ export const buildStaticFilesSource = (
         return new InvalidStaticFile(staticFile.filepath)
       }
 
-      const hash = files.getMD5FromBuffer(Buffer.from(file.buffer))
+      const hash = hashUtils.toMD5(Buffer.from(file.buffer))
       const staticFileMetaDataWithHash = new StaticFileMetaData(
         staticFile.filepath,
         hash,

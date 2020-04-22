@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { getMD5FromBuffer } from '../src/files'
+import { toMD5 } from '../src/hash'
 
-describe('Files', () => {
+describe('Hash', () => {
   it('should calculate MD5 from buffer', () =>
-    expect(getMD5FromBuffer(Buffer.from('ZOMG'))).toEqual('4dc55a74daa147a028360ee5687389d7'))
+    expect(toMD5(Buffer.from('ZOMG'))).toEqual('4dc55a74daa147a028360ee5687389d7'))
 })

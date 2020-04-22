@@ -15,15 +15,24 @@
 */
 import * as path from 'path'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import { stat, mkdirp, replaceContents, readTextFile, exists } from '@salto-io/file'
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 import { parseResultCache } from '../../../src/workspace/cache'
 import { SourceMap } from '../../../src/parser/internal/types'
-import { stat, mkdirp, replaceContents, readTextFile, exists } from '../../../src/file'
 
 
-jest.mock('../../../src/file')
+jest.mock('@salto-io/file', () => ({
+  ...jest.requireActual('@salto-io/file'),
+  stat: jest.fn(),
+  exists: jest.fn(),
+  readTextFile: jest.fn(),
+  replaceContents: jest.fn(),
+  mkdirp: jest.fn(),
+}))
+
 describe('localParseResultCache', () => {
   const mockBaseDirPath = '.salto/local/cache'
+  stat.notFoundAsUndefined = jest.fn()
   const mockStateNotFoundAsUndefine = stat.notFoundAsUndefined as unknown as jest.Mock
   const mockState = stat as unknown as jest.Mock
   const mockFileExists = exists as jest.Mock

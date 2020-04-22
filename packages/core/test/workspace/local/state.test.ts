@@ -15,14 +15,16 @@
 */
 import { EOL } from 'os'
 import { ObjectType, ElemID, isObjectType } from '@salto-io/adapter-api'
+import { replaceContents, exists, readTextFile } from '@salto-io/file'
 import State from '../../../src/workspace/state'
 import { localState } from '../../../src/workspace/local/state'
 import { getAllElements } from '../../common/elements'
 import { expectTypesToMatch } from '../../common/helpers'
 import { serialize } from '../../../src/serializer/elements'
-import { replaceContents, exists, readTextFile } from '../../../src/file'
 
-jest.mock('../../../src/file', () => ({
+
+jest.mock('@salto-io/file', () => ({
+  ...jest.requireActual('@salto-io/file'),
   replaceContents: jest.fn().mockImplementation(() => Promise.resolve()),
   readTextFile: jest.fn().mockImplementation((filename: string) => {
     if (filename === 'error') {

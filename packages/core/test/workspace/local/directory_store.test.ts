@@ -15,25 +15,39 @@
 */
 import * as path from 'path'
 import readdirp from 'readdirp'
+import {
+  stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
+} from '@salto-io/file'
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
-import * as file from '../../../src/file'
 
-jest.mock('../../../src/file')
+jest.mock('@salto-io/file', () => ({
+  ...jest.requireActual('@salto-io/file'),
+  readdirp: jest.fn(),
+  stat: jest.fn(),
+  exists: jest.fn(),
+  readTextFile: jest.fn(),
+  promise: jest.fn(),
+  replaceContents: jest.fn(),
+  mkdirp: jest.fn(),
+  rm: jest.fn(),
+  isEmptyDir: jest.fn(),
+  isSubDirectory: jest.fn(),
+}))
 jest.mock('readdirp')
 describe('localDirectoryStore', () => {
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
-  const mockState = file.stat as unknown as jest.Mock
-  const mockFileExists = file.exists as jest.Mock
-  const mockReadFile = file.readTextFile as unknown as jest.Mock
+  const mockState = stat as unknown as jest.Mock
+  const mockFileExists = exists as jest.Mock
+  const mockReadFile = readTextFile as unknown as jest.Mock
   const mockReaddirp = readdirp.promise as jest.Mock
-  const mockReplaceContents = file.replaceContents as jest.Mock
-  const mockMkdir = file.mkdirp as jest.Mock
-  const mockRm = file.rm as jest.Mock
-  const mockEmptyDir = file.isEmptyDir as jest.Mock
-  const mockIsSubFolder = file.isSubDirectory as jest.Mock
+  const mockReplaceContents = replaceContents as jest.Mock
+  const mockMkdir = mkdirp as jest.Mock
+  const mockRm = rm as jest.Mock
+  const mockEmptyDir = isEmptyDir as jest.Mock
+  const mockIsSubFolder = isSubDirectory as jest.Mock
 
   describe('list', () => {
     it('returns empty list if dir not exists', async () => {

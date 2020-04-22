@@ -17,8 +17,9 @@ import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings } from '@salto-io/lowerdash'
+import { copyFile, rm, mkdirp, exists } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient } from '@salto-io/salesforce-adapter'
-import { Plan, file, Workspace, SALTO_HOME_VAR, SourceMap } from '@salto-io/core'
+import { Plan, Workspace, SALTO_HOME_VAR, SourceMap } from '@salto-io/core'
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
   API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE,
@@ -34,7 +35,6 @@ import {
 } from './helpers/workspace'
 import { instanceExists, objectExists } from './helpers/salesforce'
 
-const { copyFile, rm, mkdirp, exists } = file
 
 let lastPlan: Plan
 

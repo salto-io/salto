@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { file, Plan, Workspace, telemetrySender } from '@salto-io/core'
+import { Plan, Workspace, telemetrySender } from '@salto-io/core'
+import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
@@ -55,11 +56,11 @@ export const runSalesforceLogin = async (workspaceDir: string): Promise<void> =>
 
 export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):
   Promise<void> => {
-  let fileAsString = await file.readTextFile(filename)
+  let fileAsString = await readTextFile(filename)
   replacements.forEach(pair => {
     fileAsString = fileAsString.replace(pair[0], pair[1])
   })
-  await file.writeFile(filename, fileAsString)
+  await writeFile(filename, fileAsString)
 }
 
 export const runFetch = async (fetchOutputDir: string): Promise<void> => {

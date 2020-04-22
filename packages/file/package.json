@@ -1,11 +1,11 @@
 {
-  "name": "@salto-io/core",
+  "name": "@salto-io/file",
   "version": "0.1.12",
   "license": "Apache-2.0",
-  "description": "Salto core",
+  "description": "File System Utils",
   "repository": {
     "type": "git",
-    "url": "https://github.com/salto-io/salto"
+    "url": "https://github.com/salto-io/salto_monorepo"
   },
   "publishConfig": {
     "access": "public"
@@ -13,7 +13,6 @@
   "files": [
     "dist",
     "src",
-    "test",
     "index.ts"
   ],
   "main": "dist/index.js",
@@ -21,47 +20,29 @@
   "scripts": {
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
-    "build": "yarn run lint  && yarn run build-ts && yarn run build-parser",
+    "build": "yarn run lint && yarn run build-ts",
     "test": "jest",
     "clean": "rm -rf ./dist",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
     "build-ts": "tsc",
-    "build-parser": "yarn run nearleyc src/parser/internal/hcl.ne -o dist/src/parser/internal/hcl.js",
     "watch-ts": "tsc -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.12",
-    "@salto-io/adapter-utils": "0.1.12",
-    "@salto-io/dag": "0.1.12",
-    "@salto-io/file": "0.1.12",
-    "@salto-io/hubspot-adapter": "0.1.12",
-    "@salto-io/logging": "0.1.12",
     "@salto-io/lowerdash": "0.1.12",
-    "@salto-io/salesforce-adapter": "0.1.12",
-    "axios": "^0.19.2",
-    "fuse.js": "^3.4.5",
-    "lodash": "^4.17.11",
-    "moo": "^0.5.1",
-    "nearley": "2.19.2",
-    "pietile-eventemitter": "^1.0.0",
-    "readdirp": "^3.1.1",
-    "uuid": "^3.3.3",
-    "wu": "^2.1.0"
+    "mkdirp": "^0.5.1",
+    "rimraf": "^3.0.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.0",
-    "@types/lodash": "^4.14.133",
-    "@types/moo": "^0.5.0",
-    "@types/nearley": "^2.11.0",
+    "@types/mkdirp": "^0.5.2",
     "@types/node": "^12.7.1",
+    "@types/rimraf": "^2.0.3",
+    "@types/shelljs": "^0.7.8",
     "@types/supertest": "^2.0.4",
-    "@types/tmp": "^0.1.0",
-    "@types/uuid": "^3.4.5",
-    "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "2.21.0",
     "@typescript-eslint/parser": "2.21.0",
     "eslint": "^6.2.2",
@@ -75,9 +56,9 @@
     "jest": "^24.0.0",
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
-    "nock": "^12.0.1",
     "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
+    "tmp-promise": "^2.0.2",
     "typescript": "3.8.3"
   }
 }

@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import path from 'path'
+import { readTextFile, exists, mkdirp, replaceContents } from '@salto-io/file'
 import { StaticFileMetaData } from '../static_files/common'
 import { StaticFilesCache } from '../static_files/cache'
-import { readTextFile, exists, mkdirp, replaceContents } from '../../file'
 
 export const CACHE_FILENAME = 'static-file-cache'
 

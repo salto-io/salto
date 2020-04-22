@@ -15,17 +15,20 @@
 */
 import path from 'path'
 import { DirectoryStore } from 'src/workspace/dir_store'
-import * as mockFiles from '../../../src/file'
+import { exists } from '@salto-io/file'
 import { initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError, loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH } from '../../../src/workspace/local/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import * as mockWs from '../../../src/workspace/workspace'
 import * as mockDirStore from '../../../src/workspace/local/dir_store'
 
-jest.mock('../../../src/file')
+jest.mock('@salto-io/file', () => ({
+  ...jest.requireActual('@salto-io/file'),
+  exists: jest.fn(),
+}))
 jest.mock('../../../src/workspace/workspace')
 jest.mock('../../../src/workspace/local/dir_store')
 describe('local workspace', () => {
-  const mockExists = mockFiles.exists as jest.Mock
+  const mockExists = exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
   const mockDirStoreInstance = (): DirectoryStore => ({
     get: jest.fn(),

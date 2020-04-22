@@ -15,14 +15,14 @@
 */
 import readdirp from 'readdirp'
 import tmp from 'tmp-promise'
-import { file, SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
+import { SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
+import { copyFile, rm, mkdirp } from '@salto-io/file'
 import { EditorWorkspace } from '../src/salto/workspace'
 import { getPositionContext } from '../src/salto/context'
 import { provideWorkspaceCompletionItems } from '../src/salto/completions/provider'
 import { getDiagnostics } from '../src/salto/diagnostics'
 import { provideWorkspaceDefinition } from '../src/salto/definitions'
 
-const { copyFile, rm, mkdirp } = file
 
 // TODO: enable this back - tests fails
 // eslint-disable-next-line jest/no-disabled-tests

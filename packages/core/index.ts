@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as file from './src/file'
 import * as ErrorTypes from './src/errors'
 
-export { file, ErrorTypes }
+export { ErrorTypes }
 export { Plan, PlanItem, DetailedChange } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'

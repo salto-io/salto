@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import uuidv5 from 'uuid/v5'
-import { exists } from '../../file'
+import { exists } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace } from '../workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../../app_config'

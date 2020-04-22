@@ -22,7 +22,7 @@ import {
   CORE_ANNOTATIONS, BuiltinTypes,
   Field, ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
-import { replaceContents, exists, mkdirp, readFile } from './file'
+import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
 import { TelemetryConfig } from './telemetry'
 import { dumpElements } from './parser/dump'
 import { parse } from './parser/parse'

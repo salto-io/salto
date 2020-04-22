@@ -60,9 +60,13 @@ export const isSubDirectory = (
   return !relative.startsWith('..') && !path.isAbsolute(relative)
 }
 
+export const readDir = async (
+  dirPath: string
+): Promise<string[]> => readDirP(dirPath)
+
 export const isEmptyDir = async (
-  dirName: string
-): Promise<boolean> => (await readDirP(dirName)).length === 0
+  dirPath: string
+): Promise<boolean> => (await readDir(dirPath)).length === 0
 
 
 export const exists = async (

@@ -15,19 +15,17 @@
 */
 import { OperationResult } from '@salto-io/suitecloud-cli'
 import _ from 'lodash'
+import { readFile, readDir, writeFile } from '@salto-io/file'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
-import * as file from '../../src/client/file'
 import NetsuiteClient, { COMMANDS } from '../../src/client/client'
 
-const { readFile, readDir, writeFile } = file
 
-
-jest.mock('../../src/client/file', () => ({
+jest.mock('@salto-io/file', () => ({
   readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'c.html']),
   readFile: jest.fn().mockImplementation(filePath => `<elementName filePath="${filePath}">`),
   writeFile: jest.fn(),
 }))
-const readFileMock = readFile as jest.Mock
+const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock
 const writeFileMock = writeFile as jest.Mock
 

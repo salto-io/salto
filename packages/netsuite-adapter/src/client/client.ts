@@ -39,7 +39,7 @@ export type NetsuiteClientOpts = {
   credentials: Credentials
 }
 
-const COMMANDS = {
+export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
   SETUP_ACCOUNT: 'account:setup',
   IMPORT_OBJECTS: 'object:import',

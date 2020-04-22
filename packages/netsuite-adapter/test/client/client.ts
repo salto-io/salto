@@ -15,13 +15,18 @@
 */
 import NetsuiteClient from '../../src/client/client'
 
+const DUMMY_ACCOUNT_ID = 'dummyAccountId'
+const DUMMY_TOKEN_ID = 'dummyTokenId'
+const DUMMY_TOKEN_SECRET = 'dummyTokenSecret'
+
+export const DUMMY_CREDENTIALS = {
+  accountId: DUMMY_ACCOUNT_ID,
+  tokenId: DUMMY_TOKEN_ID,
+  tokenSecret: DUMMY_TOKEN_SECRET,
+}
 const mockClient = (): NetsuiteClient =>
   new NetsuiteClient({
-    credentials: {
-      accountId: 'dummyAccountId',
-      tokenId: 'dummyTokenId',
-      tokenSecret: 'dummyTokenSecret',
-    },
+    credentials: DUMMY_CREDENTIALS,
   })
 
 export default mockClient

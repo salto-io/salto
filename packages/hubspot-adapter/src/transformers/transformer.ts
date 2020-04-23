@@ -872,6 +872,9 @@ export class Types {
             name: WORKFLOWS_FIELDS.TYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.RESTRICTION]: {
+              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
+            },
             [CORE_ANNOTATIONS.VALUES]: ['PROPERTY_ANCHOR', 'STATIC_ANCHOR', 'DRIP_DELAY'],
           },
         ),

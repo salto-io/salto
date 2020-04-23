@@ -127,7 +127,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', optionsElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', optionsElemID.name],
     })
 
   private static fieldFilterType: ObjectType =
@@ -178,7 +178,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', fieldFilterElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', fieldFilterElemID.name],
     })
 
     private static contactPropertyOverridesType: ObjectType =
@@ -219,7 +219,7 @@ export class Types {
             },
           ),
         },
-        path: [HUBSPOT, 'types', 'subtypes', contactPropertyOverridesElemID.name],
+        path: [HUBSPOT, 'Types', 'Subtypes', contactPropertyOverridesElemID.name],
       })
 
     private static createFormFieldType = (
@@ -281,7 +281,7 @@ export class Types {
             },
           ),
         },
-        path: [HUBSPOT, 'types', 'subtypes', elemID.name],
+        path: [HUBSPOT, 'Types', 'Subtypes', elemID.name],
       })
       if (isFatherProperty) {
         Object.assign(formPropertyType.fields, {
@@ -333,7 +333,7 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', dependentFormFieldFiltersElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', dependentFormFieldFiltersElemID.name],
     })
 
   private static dependentFormFieldType = Types.createFormFieldType(
@@ -353,7 +353,7 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', richTextElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', richTextElemID.name],
     })
 
   private static propertyGroupType: ObjectType =
@@ -390,7 +390,7 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', propertyGroupElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', propertyGroupElemID.name],
     })
 
   private static eventAnchorType: ObjectType =
@@ -413,7 +413,7 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', eventAnchorElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', eventAnchorElemID.name],
     })
 
   private static anchorSettingType: ObjectType =
@@ -442,7 +442,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', anchorSettingElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', anchorSettingElemID.name],
     })
 
   private static criteriaType: ObjectType =
@@ -499,7 +499,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', criteriaElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', criteriaElemID.name],
     })
 
     // Create action type in steps cause of recursive fields
@@ -585,7 +585,7 @@ export class Types {
             },
           ),
         },
-        path: [HUBSPOT, 'types', 'subtypes', actionElemID.name],
+        path: [HUBSPOT, 'Types', 'Subtypes', actionElemID.name],
       })
 
       const acceptActionsField = new Field(
@@ -635,7 +635,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', nurtureTimeRangeElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', nurtureTimeRangeElemID.name],
     })
 
   private static contactListIdsType: ObjectType =
@@ -671,7 +671,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', contactListIdsElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', contactListIdsElemID.name],
     })
 
   private static rssToEmailTimingType: ObjectType =
@@ -708,7 +708,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'types', 'subtypes', rssToEmailTimingElemID.name],
+      path: [HUBSPOT, 'Types', 'Subtypes', rssToEmailTimingElemID.name],
     })
 
   /**
@@ -832,7 +832,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'objects', formElemID.name],
+      path: [HUBSPOT, 'Types', formElemID.name],
     }),
     [OBJECTS_NAMES.WORKFLOWS]: new ObjectType({
       elemID: workflowsElemID,
@@ -975,7 +975,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'objects', workflowsElemID.name],
+      path: [HUBSPOT, 'Types', workflowsElemID.name],
     }),
     [OBJECTS_NAMES.MARKETINGEMAIL]: new ObjectType({
       elemID: marketingEmailElemID,
@@ -1661,7 +1661,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'objects', marketingEmailElemID.name],
+      path: [HUBSPOT, 'Types', marketingEmailElemID.name],
     }),
     [OBJECTS_NAMES.CONTACT_PROPERTY]: new ObjectType({
       elemID: contactPropertyElemID,
@@ -1796,7 +1796,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'objects', contactPropertyElemID.name],
+      path: [HUBSPOT, 'Types', contactPropertyElemID.name],
     }),
   }
 
@@ -1936,7 +1936,7 @@ export const createHubspotInstanceElement = (
     new ElemID(HUBSPOT, instanceName).name,
     type,
     hubspotMetadata as Values,
-    [HUBSPOT, 'records', typeName, instanceName],
+    [HUBSPOT, 'Records', typeName, instanceName],
   )
 }
 

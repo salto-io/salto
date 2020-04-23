@@ -15,12 +15,15 @@
 */
 import * as nearley from 'nearley'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { startParse, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
 import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression, SourceRange } from './types'
 import { WILDCARD } from './lexer'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
+
+const log = logger(module)
 
 const SURROUNDING_LINE_CONTEXT = 2
 const MAX_FILE_ERRORS = 20
@@ -34,26 +37,37 @@ const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
     : undefined
 }
 
-const lineToOffset = (src: string, line: number, untilEol = false): number => src
-  .split('\n')
-  .slice(0, untilEol ? line : line - 1)
-  .map(l => l.length + 1) // Add 1 for the \n removed
-  .reduce((sum, current) => sum + current, 0)
+const lineToOffset = (src: string, line: number, untilEol = false): number => {
+  if (line === 0 && untilEol) return src.split('\n')[0].length
+  if (line === 0) return 0
+  return src
+    .split('\n')
+    .slice(0, untilEol ? line : (line - 1))
+    .map(l => l.length + 1) // Add 1 for the \n removed
+    .reduce((sum, current) => sum + current, 0)
+}
 
-const getContextSourceRange = (filename: string, line: number, src: string): SourceRange => ({
-  start: {
-    line: line - SURROUNDING_LINE_CONTEXT,
-    col: 0,
-    byte: lineToOffset(src, line - SURROUNDING_LINE_CONTEXT),
-  },
-  end: {
-    line: line + SURROUNDING_LINE_CONTEXT,
-    col: lineToOffset(src, line + SURROUNDING_LINE_CONTEXT, true)
-      - lineToOffset(src, line + SURROUNDING_LINE_CONTEXT),
-    byte: lineToOffset(src, line + SURROUNDING_LINE_CONTEXT, true) - 1, // Remove the last \n
-  },
-  filename,
-})
+const getContextSourceRange = (filename: string, line: number, src: string): SourceRange => {
+  let rebasedLineStart = line - SURROUNDING_LINE_CONTEXT
+  let rebasedLineEnd = line + SURROUNDING_LINE_CONTEXT
+  if (rebasedLineStart < 0) rebasedLineStart = 0
+  if (rebasedLineEnd > src.split('\n').length) rebasedLineEnd = src.split('\n').length
+
+  return {
+    start: {
+      line: rebasedLineStart,
+      col: 0,
+      byte: lineToOffset(src, rebasedLineStart),
+    },
+    end: {
+      line: rebasedLineEnd,
+      col: lineToOffset(src, rebasedLineEnd, true)
+        - lineToOffset(src, rebasedLineEnd),
+      byte: lineToOffset(src, rebasedLineEnd, true) - 1, // Remove the last \n
+    },
+    filename,
+  }
+}
 
 const EmptyContext = (): SourceRange => (
   { start: { line: 0, col: 0, byte: 0 }, end: { line: 0, col: 0, byte: 0 }, filename: '' }
@@ -73,16 +87,17 @@ const convertParserError = (
     : expected[0]
   const text = token.value || ''
   const errorLength = text.length
+  const errorCol = token.col ?? 0
   const errorOffset = token.offset ?? 0
   const summary = err.message.includes('\n') ? `Unexpected token: ${
-    text === '\n' ? '\\n' : text}` : err.message
+    text === '\n' ? '\\n' : text}` : err.message // TODO: Handle escaping if reocurrs in other ways
   const start = token?.source?.start
     ?? { line: token.line,
-      col: token.col,
+      col: errorCol,
       byte: errorOffset } as unknown as SourcePos
   const end = token?.source?.end
     ?? { line: token.line,
-      col: token.col + errorLength,
+      col: errorCol + errorLength,
       byte: errorOffset + errorLength } as unknown as SourcePos
 
   return {
@@ -196,26 +211,13 @@ export const parseBuffer = (
   return [fixedBuffer, blockItems, prevErrors]
 }
 
-const isWildcardToken = (error: HclParseError): boolean => error.summary.includes(WILDCARD)
-
 // This function removes all errors that are generated because of wildcard use
-const filterErrors = (errors: HclParseError[], src: string): HclParseError[] => {
-  if (errors === []) {
-    return errors
-  }
-
-  let prevError = errors[0]
-  return errors
-    .filter(error => !isWildcardToken(error))
-    .filter(error => {
-      if (src.slice(prevError.subject.start.byte, error.subject.start.byte) === WILDCARD) {
-        prevError = error
-        return false
-      }
-      prevError = error
-      return true
-    })
-}
+// The method for doing this is allowing one parse error per line
+const filterErrors = (errors: HclParseError[]): HclParseError[] =>
+  errors.filter((error, index) => {
+    if (index === 0) return true
+    return errors[index - 1].subject.start.line !== error.subject.start.line
+  })
 
 const generateErrorContext = (src: string, error: HclParseError): HclParseError => {
   error.context = getContextSourceRange(error.subject.filename, error.subject.start.line, src)
@@ -225,6 +227,7 @@ const generateErrorContext = (src: string, error: HclParseError): HclParseError 
 const subtractWildcardOffset = (pos: SourcePos, amountWildcards: number): SourcePos => (
   { line: pos.line, col: pos.col, byte: pos.byte - amountWildcards * WILDCARD.length })
 
+// Calculate the amount of wildcards before parameter error starts in the patched src.
 const calculateAmountWildcards = (patchedSrc: string, error: HclParseError): number => {
   let sum = 0
   return patchedSrc
@@ -235,7 +238,7 @@ const calculateAmountWildcards = (patchedSrc: string, error: HclParseError): num
       return sum
     }) // Until Here produces an array with the indexes of wildcards
     .reduce((amountWildcards, current) =>
-      (current < error.subject.start.byte ? amountWildcards + 1 : amountWildcards), 0)
+      (current < error.subject.end.byte ? amountWildcards + 1 : amountWildcards), 0)
 }
 
 const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError): HclParseError => {
@@ -251,8 +254,12 @@ const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError): HclPa
 
 const recalibrateErrors = (
   errors: HclParseError[], patchedSrc: string, src: string
-): HclParseError[] => filterErrors(errors, patchedSrc)
-  .map(error => generateErrorContext(src, error))
+): HclParseError[] => filterErrors(errors)
+  .map(error => {
+    const updatedError = generateErrorContext(src, error)
+    log.debug(`error.context.start=${error.context.start.byte}, error.context.end=${error.context.end.byte}`)
+    return updatedError
+  })
   .map(error => restoreErrorOrigRanges(patchedSrc, error))
 
 export const parse = (src: Buffer, filename: string): HclParseReturn => {

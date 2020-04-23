@@ -57,31 +57,33 @@ export const formatWordsSeries = (words: string[]): string => (words.length > 1
   * Format workspace errors
   */
 const TAB = '  '
+const EOL = '\n'
 
 const formatSourceFragmentHeader = (headerMetaData: SourceRange): string =>
   `${chalk.underline(headerMetaData.filename)}(${chalk.cyan(`line: ${headerMetaData.start.line}`)})\n`
 
-const formatSourceFragmentWithRef = (sf: Readonly<SourceFragment>): string => {
-  const refPos = sf.refPos ?? sf.sourceRange
-  return `${formatSourceFragmentHeader(refPos)}${TAB}${
-    subHeader(sf.fragment.slice(0, refPos.start.byte - sf.sourceRange.start.byte))
-  }${warn(sf.fragment.slice(
-    refPos.start.byte - sf.sourceRange.start.byte,
-    refPos.end.byte - sf.sourceRange.start.byte
-  ))
-  }${subHeader(sf.fragment.slice(refPos.end.byte - sf.sourceRange.start.byte))}\n`
+const formatSourceFragmentWithsubRange = (sf: Readonly<SourceFragment>): string => {
+  const sourceSubRange = sf.subRange ?? sf.sourceRange
+  const beforeSubRange = sf.fragment.slice(0, sourceSubRange.start.byte - sf.sourceRange.start.byte)
+  const subRange = sf.fragment.slice(sourceSubRange.start.byte - sf.sourceRange.start.byte,
+    sourceSubRange.end.byte - sf.sourceRange.start.byte)
+  const afterSubRange = sf.fragment.slice(sourceSubRange.end.byte - sf.sourceRange.start.byte)
+  return `${formatSourceFragmentHeader(sourceSubRange)}${TAB}${
+    subHeader(beforeSubRange)
+  }${chalk.white(subRange)
+  }${subHeader(afterSubRange)}${EOL}`
 }
 
-const formatSourceFragmentWithoutRef = (sf: Readonly<SourceFragment>): string =>
+const formatSourceFragmentWithoutsubRange = (sf: Readonly<SourceFragment>): string =>
   `${formatSourceFragmentHeader(sf.sourceRange)}${TAB}${
-    subHeader(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+    subHeader(sf.fragment.split(`${EOL}`).join(`${EOL}${TAB}`))}${EOL}`
 
 const formatSourceFragment = (sf: Readonly<SourceFragment>): string =>
-  (sf.refPos ? formatSourceFragmentWithRef(sf) : formatSourceFragmentWithoutRef(sf))
+  (sf.subRange ? formatSourceFragmentWithsubRange(sf) : formatSourceFragmentWithoutsubRange(sf))
 
 const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
   (sourceFragments.length > 0
-    ? `\n on ${sourceFragments.map(formatSourceFragment).join('\n and ')}`
+    ? `${EOL} on ${sourceFragments.map(formatSourceFragment).join(`${EOL} and `)}`
     : '')
 
 export const formatWorkspaceError = (we: Readonly<WorkspaceError<SaltoError>>): string =>

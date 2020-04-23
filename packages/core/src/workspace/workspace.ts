@@ -44,7 +44,7 @@ export type WorkspaceError<T extends SaltoError> = Readonly<T & {
 export type SourceFragment = {
   sourceRange: SourceRange
   fragment: string
-  refPos?: SourceRange
+  subRange?: SourceRange
 }
 
 class EnvDuplicationError extends Error {
@@ -150,8 +150,9 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
     .concat(workspaceConfigTypes)
 
   const getSourceFragment = async (
-    sourceRange: SourceRange, refPos?: SourceRange): Promise<SourceFragment> => {
+    sourceRange: SourceRange, subRange?: SourceRange): Promise<SourceFragment> => {
     const naclFile = await naclFilesSource.getNaclFile(sourceRange.filename)
+    log.debug(`error context: start=${sourceRange.start.byte}, end=${sourceRange.end.byte}`)
     const fragment = naclFile
       ? naclFile.buffer.substring(sourceRange.start.byte, sourceRange.end.byte)
       : ''
@@ -161,7 +162,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
     return {
       sourceRange,
       fragment,
-      refPos,
+      subRange,
     }
   }
   const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({

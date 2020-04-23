@@ -558,12 +558,11 @@ describe('Salto parser', () => {
         serviceid metadataType {
         }
       }
-      sadsd
       serviceid fullName {
         _required = false
       }
       string animationFrequency {
-        _required = falseee
+        _required = false
         _values = [
             "always",
             "often",
@@ -571,9 +570,16 @@ describe('Salto parser', () => {
             "sometimes",
         ]
         _restriction = {
-            enforce_value = false
+            enforce_value = fal se e
         }
       }
+      string developerName {
+        _required = falsee
+      }
+      boolean isActive {
+        _required = false
+      }
+    }
     `
     beforeAll(() => {
       ({ errors } = parse(Buffer.from(src), 'none', functions))
@@ -583,44 +589,44 @@ describe('Salto parser', () => {
     })
     it('should contain correct first error info', () => {
       const error = (errors[0] as ParseError)
-      expect(error.subject.start.line).toEqual(7)
-      expect(error.subject.start.col).toEqual(12)
-      expect(error.subject.start.byte).toEqual(119)
-      expect(error.subject.end.line).toEqual(7)
-      expect(error.subject.end.col).toEqual(13)
-      expect(error.subject.end.byte).toEqual(120)
+      expect(error.subject.start.line).toEqual(19)
+      expect(error.subject.start.col).toEqual(36)
+      expect(error.subject.start.byte).toEqual(409)
+      expect(error.subject.end.line).toEqual(19)
+      expect(error.subject.end.col).toEqual(37)
+      expect(error.subject.end.byte).toEqual(410)
       expect(error.subject.filename).toEqual('none')
-      expect(error.context.start.line).toEqual(5)
+      expect(error.context.start.line).toEqual(17)
       expect(error.context.start.col).toEqual(0)
-      expect(error.context.start.byte).toEqual(90)
-      expect(error.context.end.line).toEqual(9)
-      expect(error.context.end.col).toEqual(26)
-      expect(error.context.end.byte).toEqual(172)
+      expect(error.context.start.byte).toEqual(339)
+      expect(error.context.end.line).toEqual(21)
+      expect(error.context.end.col).toEqual(8)
+      expect(error.context.end.byte).toEqual(428)
       expect(error.context.filename).toEqual('none')
-      expect(error.detail).toEqual('Expected ws, comment, ws or comment token but found: \\n instead.')
-      expect(error.message).toEqual('Expected ws, comment, ws or comment token but found: \\n instead.')
-      expect(error.summary).toEqual('Unexpected token: \\n')
+      expect(error.detail).toEqual('Expected ws or comment token but found instead: e.')
+      expect(error.message).toEqual('Expected ws or comment token but found instead: e.')
+      expect(error.summary).toEqual('Unexpected token: e')
       expect(error.severity).toEqual('Error')
     })
     it('should contain correct second error info', () => {
       const error = (errors[1] as ParseError)
-      expect(error.subject.start.line).toEqual(12)
+      expect(error.subject.start.line).toEqual(23)
       expect(error.subject.start.col).toEqual(26)
-      expect(error.subject.start.byte).toEqual(240)
-      expect(error.subject.end.line).toEqual(12)
-      expect(error.subject.end.col).toEqual(28)
-      expect(error.subject.end.byte).toEqual(242)
+      expect(error.subject.start.byte).toEqual(483)
+      expect(error.subject.end.line).toEqual(23)
+      expect(error.subject.end.col).toEqual(27)
+      expect(error.subject.end.byte).toEqual(484)
       expect(error.subject.filename).toEqual('none')
-      expect(error.context.start.line).toEqual(10)
+      expect(error.context.start.line).toEqual(21)
       expect(error.context.start.col).toEqual(0)
-      expect(error.context.start.byte).toEqual(173)
-      expect(error.context.end.line).toEqual(14)
-      expect(error.context.end.col).toEqual(22)
-      expect(error.context.end.byte).toEqual(284)
+      expect(error.context.start.byte).toEqual(421)
+      expect(error.context.end.line).toEqual(25)
+      expect(error.context.end.col).toEqual(25)
+      expect(error.context.end.byte).toEqual(517)
       expect(error.context.filename).toEqual('none')
-      expect(error.detail).toEqual('Expected ws, newline or comment token but found: ee instead.')
-      expect(error.message).toEqual('Expected ws, newline or comment token but found: ee instead.')
-      expect(error.summary).toEqual('Unexpected token: ee')
+      expect(error.detail).toEqual('Expected ws, newline or comment token but found instead: e.')
+      expect(error.message).toEqual('Expected ws, newline or comment token but found instead: e.')
+      expect(error.summary).toEqual('Unexpected token: e')
       expect(error.severity).toEqual('Error')
     })
   })

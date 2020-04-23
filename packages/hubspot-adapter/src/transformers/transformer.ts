@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS,
-  TypeMap, Values, isPrimitiveType, Value, ListType,
+  TypeMap, Values, isPrimitiveType, Value, ListType, RESTRICTION_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
   TransformPrimitiveFunc, naclCase, transformValues,
@@ -1203,6 +1203,9 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.EMAILTYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.RESTRICTION]: {
+              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
+            },
             [CORE_ANNOTATIONS.VALUES]: ['BATCH_EMAIL', 'AB_EMAIL', 'AUTOMATED_EMAIL', 'BLOG_EMAIL', 'BLOG_EMAIL_CHILD', 'FOLLOWUP_EMAIL',
               'LOCALTIME_EMAIL', 'OPTIN_EMAIL', 'OPTIN_FOLLOWUP_EMAIL', 'RESUBSCRIBE_EMAIL', 'RSS_EMAIL', 'RSS_EMAIL_CHILD', 'SINGLE_SEND_API',
               'SMTP_TOKEN', 'LEADFLOW_EMAIL', 'FEEDBACK_CES_EMAIL', 'FEEDBACK_NPS_EMAIL', 'FEEDBACK_CUSTOM_EMAIL', 'TICKET_EMAIL',
@@ -1214,6 +1217,9 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.RESTRICTION]: {
+              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
+            },
             [CORE_ANNOTATIONS.VALUES]: ['NPS', 'CES', 'CUSTOM'],
           }
         ),
@@ -1382,6 +1388,9 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.RESTRICTION]: {
+              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
+            },
             [CORE_ANNOTATIONS.VALUES]: ['UNDEFINED', 'PUBLISHED', 'PUBLISHED_OR_SCHEDULED', 'SCHEDULED', 'PROCESSING',
               'PRE_PROCESSING', 'ERROR', 'CANCELED_FORCIBLY', 'CANCELED_ABUSE'],
           }
@@ -1540,8 +1549,11 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.SUBCATEGORY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.RESTRICTION]: {
+              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
+            },
             [CORE_ANNOTATIONS.VALUES]: ['ab_master', 'ab_variant', 'automated', 'automated_for_deal', 'automated_for_form',
-              'automated_for_form_legacy', 'automated_for_form_buffer', 'automated_for_form_draft',
+              'automated_for_form_legacy', 'automated_for_form_buffer', 'automated_for_form_draft', 'ticket_closed_kickback_email',
               'rss_to_email', 'rss_to_email_child', 'blog_email', 'blog_email_child', 'optin_email', 'optin_followup_email',
               'batch', 'resubscribe_email', 'single_send_api', 'smtp_token', 'localtime', 'automated_for_ticket', 'automated_for_leadflow',
               'automated_for_feedback_ces', 'automated_for_feedback_nps', 'automated_for_feedback_custom',

@@ -394,10 +394,3 @@ workflows:
           requires:
             - build
             - e2e_test
-      - create_github_release:
-          requires:
-            - test_cli_win
-            - test_cli_linux
-            - test_cli_mac
-            - e2e_test
-

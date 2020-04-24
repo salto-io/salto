@@ -202,6 +202,10 @@ jobs:
           from: ${S3_PKG_HASH_PREFIX}/cli/mac/salto
           to: assets/salto-mac
 
+      - aws-s3/copy:
+          from: ${S3_PKG_HASH_PREFIX}/vscode/salto.vsix/salto.vsix
+          to: assets/salto-vscode-extension.vsix
+
       - run:
           name: chmod linux and mac binaries
           command: chmod +x assets/salto-{mac,linux}

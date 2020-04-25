@@ -29,7 +29,6 @@ describe('Static Files Cache', () => {
 
   const mockFileExists = file.exists as jest.Mock
   const mockReplaceContents = file.replaceContents as jest.Mock
-  const mockMkdir = file.mkdirp as jest.Mock
   const mockReadFile = file.readTextFile as unknown as jest.Mock
   let staticFilesCache: StaticFilesCache
 
@@ -50,20 +49,17 @@ describe('Static Files Cache', () => {
   })
 
   beforeEach(() => {
-    staticFilesCache = buildLocalStaticFilesCache('localStorage')
+    jest.resetAllMocks()
+    staticFilesCache = buildLocalStaticFilesCache('cacheDir')
   })
   it('does not fail if no cache file exists', async () => {
     expect((await staticFilesCache.get(baseMetaData.filepath))).toBeUndefined()
-    expect(mockFileExists).toHaveBeenCalledTimes(2)
-    expect(mockMkdir).toHaveBeenCalledTimes(1)
-    expect(mockMkdir.mock.calls[0][0]).toMatch(/localStorage\/cache/)
   })
   it('uses content of cache file if existed', async () => {
     mockFileExists
       .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(true)
     mockReadFile.mockResolvedValueOnce(expectedCacheContent)
-    staticFilesCache = buildLocalStaticFilesCache('localStorage')
+    staticFilesCache = buildLocalStaticFilesCache('cacheDir')
     return expect(staticFilesCache.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
   })
   it('puts and retrieves value', async () => {
@@ -75,7 +71,7 @@ describe('Static Files Cache', () => {
     await staticFilesCache.flush()
     expect(mockReplaceContents).toHaveBeenCalledTimes(1)
     const [filepath, content] = mockReplaceContents.mock.calls[0]
-    expect(filepath).toMatch(new RegExp(`localStorage\\/cache\\/${CACHE_FILENAME}`))
+    expect(filepath).toMatch(new RegExp(`cacheDir\\/${CACHE_FILENAME}`))
     expect(content).toEqual(expectedCacheContent)
   })
   it('clones', async () => {

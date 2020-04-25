@@ -102,37 +102,4 @@ describe('adapters.ts', () => {
       )).toThrow()
     })
   })
-
-  // TODO: move this to workspace tests
-  /*
-  describe('create default adapter config', () => {
-    const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('test') }))
-    const mockSet = jest.fn().mockImplementation()
-    const mockGet = jest.fn().mockImplementation()
-    const mockConfigSource = (configSource as jest.Mock)
-      .mockImplementation(() => ({ get: mockGet, set: mockSet }))
-    const serviceName = 'salesforce'
-
-    beforeEach(() => {
-      mockSet.mockReset()
-    })
-
-    it('should set default adapter config if there is no adapter config file', async () => {
-      mockGet.mockResolvedValueOnce(undefined)
-      const defaultConfig = createDefaultInstanceFromType(
-        ElemID.CONFIG_NAME, adapterCreators[serviceName].configType as ObjectType,
-      )
-      expect(default (serviceName, mockConfigSource() as ConfigSource))
-        .toEqual(defaultConfig)
-      expect(mockSet).toHaveBeenCalledTimes(1)
-      expect(mockSet).toHaveBeenCalledWith(serviceName, defaultConfig)
-    })
-
-    it('should not set default adapter config if there is adapter config file', async () => {
-      mockGet.mockResolvedValueOnce(instance)
-      expect(await createDefaultAdapterConfig(serviceName, mockConfigSource() as ConfigSource))
-        .toEqual(instance)
-      expect(mockSet).not.toHaveBeenCalled()
-    })
-  }) */
 })

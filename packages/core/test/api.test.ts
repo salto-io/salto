@@ -16,6 +16,7 @@
 import {
   Adapter,
   BuiltinTypes,
+  CORE_ANNOTATIONS,
   Element,
   ElemID,
   Field,
@@ -98,10 +99,23 @@ describe('api.ts', () => {
   describe('fetch', () => {
     const mockedFetchChanges = fetch.fetchChanges as jest.Mock
     const objType = new ObjectType({ elemID: new ElemID(SERVICES[0], 'dummy') })
+    const typeWithHiddenField = new ObjectType({
+      elemID: new ElemID(SERVICES[0], 'dummyHidden'),
+      fields: {
+        hidden: new Field(
+          new ElemID(SERVICES[0], 'dummyHidden'),
+          'hidden',
+          BuiltinTypes.STRING,
+          { [CORE_ANNOTATIONS.HIDDEN]: true }
+        ),
+      },
+    })
+
     const fetchedElements = [
       objType,
       new InstanceElement('instance_1', objType, {}),
       new InstanceElement('instance_2', objType, {}),
+      new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden' }),
     ]
     mockedFetchChanges.mockReturnValue({
       elements: fetchedElements,

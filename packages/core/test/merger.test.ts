@@ -15,12 +15,12 @@
 */
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement, CORE_ANNOTATIONS, ListType,
+  PrimitiveTypes, TypeElement, CORE_ANNOTATIONS, ListType, Variable,
 } from '@salto-io/adapter-api'
 import {
   mergeElements,
   MultipleBaseDefinitionsMergeError,
-  NoBaseDefinitionMergeError, DuplicateAnnotationTypeError,
+  NoBaseDefinitionMergeError, DuplicateAnnotationTypeError, DuplicateVariableNameError,
   DuplicateAnnotationError, DuplicateAnnotationFieldDefinitionError, DuplicateInstanceKeyError,
   MultiplePrimitiveTypesUnsupportedError, createDefaultInstanceFromType,
 } from '../src/core/merger'
@@ -415,6 +415,32 @@ describe('merger', () => {
       const { errors } = mergeElements(elements)
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(MultiplePrimitiveTypesUnsupportedError)
+    })
+  })
+
+  describe('merging variables', () => {
+    it('should fail when more then one variable is defined with same elemID', () => {
+      const var1 = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 5)
+      const var2 = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 5)
+      const elements = [var1, var2]
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0]).toBeInstanceOf(DuplicateVariableNameError)
+    })
+
+    it('should succeed when no more then one variable is defined with same elemID', () => {
+      const var1 = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 5)
+      const var2 = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName2'), 8)
+      const elements = [var1, var2]
+      const { merged, errors } = mergeElements(elements)
+      expect(errors).toHaveLength(0)
+      expect(merged).toHaveLength(2)
+      const merged1 = merged[0] as Variable
+      const merged2 = merged[1] as Variable
+      expect(merged1.value).toEqual(5)
+      expect(merged2.value).toEqual(8)
+      expect(merged1.elemID.getFullName()).toEqual('var.varName')
+      expect(merged2.elemID.getFullName()).toEqual('var.varName2')
     })
   })
 

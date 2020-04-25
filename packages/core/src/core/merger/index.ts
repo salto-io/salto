@@ -16,11 +16,12 @@
 import _ from 'lodash'
 import {
   ObjectType, isType, isObjectType, isInstanceElement, Element,
-  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isListType,
+  isPrimitiveType, BuiltinTypes, TypeMap, ListType, isListType, isVariable,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { mergeObjectTypes } from './internal/object_types'
 import { mergeInstances } from './internal/instances'
+import { mergeVariables } from './internal/variables'
 import { mergePrimitives } from './internal/primitives'
 import { MergeResult as InternalMergeResult } from './internal/common'
 
@@ -34,6 +35,7 @@ export {
 
 export { DuplicateInstanceKeyError, createDefaultInstanceFromType } from './internal/instances'
 export { MultiplePrimitiveTypesUnsupportedError } from './internal/primitives'
+export { DuplicateVariableNameError } from './internal/variables'
 
 const log = logger(module)
 
@@ -90,11 +92,13 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
   const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]
   const primitives = mergePrimitives(primitiveElements)
   const listTypes = getListTypes(elements.filter(isListType))
+  const variables = mergeVariables(elements.filter(isVariable))
 
   const mergedElements = [
-    ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e)),
+    ...elements.filter(e => !isObjectType(e) && !isInstanceElement(e) && !isVariable(e)),
     ...Object.values(objects.merged),
     ...instances.merged,
+    ...variables.merged,
   ]
 
   const updated = updateMergedTypes(
@@ -106,6 +110,7 @@ export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => 
     ...objects.errors,
     ...instances.errors,
     ...primitives.errors,
+    ...variables.errors,
   ]
 
   log.debug(`merged ${elements.length} elements to ${updated.length} elements [errors=${

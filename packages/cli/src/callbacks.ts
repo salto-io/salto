@@ -60,10 +60,10 @@ export const shouldDeploy = (stdout: WriteStream, workspace: Workspace) =>
   }
 
 export const shouldCancelInCaseOfNoRecentState = async (
-  invalidRecencies: StateRecency[],
+  recencies: StateRecency[],
   { stdout }: CliOutput
 ): Promise<boolean> => {
-  const prompt = invalidRecencies.find(recency => recency.status !== 'Nonexistent')
+  const prompt = recencies.find(recency => recency.status !== 'Nonexistent')
     ? formatShouldCancelWithOldState : formatShouldCancelWithNonexistentState
   const shouldCancel = await getUserBooleanInput(prompt)
   if (shouldCancel) {

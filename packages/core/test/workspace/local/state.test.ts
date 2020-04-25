@@ -201,14 +201,6 @@ describe('local state', () => {
       const overrideDate = await state.getServicesUpdateDates()
       expect(overrideDate).toEqual({})
     })
-    it('should update the fetch time for a service even if no elements were fetched', async () => {
-      mockExists.mockResolvedValueOnce(true)
-      const state = localState('empty')
-
-      await state.override([], ['salto'])
-      const overrideDate = await state.getServicesUpdateDates()
-      expect(overrideDate.salto).toBeDefined()
-    })
   })
 
   describe('exsitingAdapters', () => {

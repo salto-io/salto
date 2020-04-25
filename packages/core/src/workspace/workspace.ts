@@ -82,7 +82,7 @@ export type Workspace = {
   name: string
 
   elements: () => Promise<ReadonlyArray<Element>>
-  state: () => State
+  state: (envName?: string) => State
   envs: () => ReadonlyArray<string>
   currentEnv: () => string
   services: () => ReadonlyArray<string>
@@ -116,7 +116,6 @@ export type Workspace = {
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
 
   getStateRecency(services: string): Promise<StateRecency>
-  fetchedServices(env?: string): Promise<string[]>
 }
 
 // common source has no state
@@ -144,7 +143,9 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
   const currentEnvConf = (): EnvConfig =>
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
   const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
-  const state = (): State => elementsSources.sources[currentEnv()].state as State
+  const state = (envName?: string): State => (
+    elementsSources.sources[envName || currentEnv()].state as State
+  )
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
     currentEnv(), elementsSources.commonSourceName)
   const elements = async (): Promise<ReadonlyArray<Element>> => (await naclFilesSource.getAll())
@@ -300,10 +301,6 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       })()
       return { serviceName, status, date }
     },
-
-    fetchedServices: async (env?: string): Promise<string[]> => (_.isUndefined(env)
-      ? state().existingServices()
-      : elementsSources.sources[env]?.state?.existingServices() ?? []),
   }
 }
 

@@ -153,14 +153,13 @@ describe('fetch command', () => {
         services: () => services,
         updateNaclFiles: jest.fn(),
         flush: jest.fn(),
-        state: () => ({
-          existingServices: jest.fn().mockResolvedValue(existingServices),
+        state: (envName? : string) => ({
+          existingServices: jest.fn().mockResolvedValue(existingServices[envName || currentEnv]),
         }),
         isEmpty: () => (elements || []).length === 0,
         updateServiceConfig: jest.fn(),
         servicesCredentials: jest.fn().mockResolvedValue({}),
         envs: () => _.keys(existingServices),
-        fetchedServices: (envName? : string) => existingServices[envName || currentEnv],
         currentEnv: () => currentEnv,
       } as unknown as Workspace)
 

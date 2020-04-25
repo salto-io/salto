@@ -83,16 +83,16 @@ export type FetchCommandArgs = {
   inputServices?: string[]
 }
 
-const shouldRecommendIsolatedMode = (
-  isolatedFetchServices: string[],
-  normalFetchServices: string[],
+const shouldRecommendIsolatedModeForNewServices = (
+  servicesNewOnlyInCurrentEnv: string[],
+  existingOrNewToAllEnvsServices: string[],
   envNames: readonly string[],
   isolatedOveride?: boolean
 ): boolean => {
-  if (_.isEmpty(isolatedFetchServices)) return false
+  if (_.isEmpty(servicesNewOnlyInCurrentEnv)) return false
   if (envNames.length <= 1) return false
-  if (!_.isEmpty(normalFetchServices) && isolatedOveride) return true
-  if (_.isEmpty(normalFetchServices) && !isolatedOveride) return true
+  if (!_.isEmpty(existingOrNewToAllEnvsServices) && isolatedOveride) return true
+  if (_.isEmpty(existingOrNewToAllEnvsServices) && !isolatedOveride) return true
   return false
 }
 
@@ -105,32 +105,36 @@ const getRelevantServicesAndIsolatedMode = async (
   outputLine: (text: string) => void
 ): Promise<{services: string[]; isolated: boolean}> => {
   const envNames = workspace.envs()
-  const currentEnvServices = await workspace.fetchedServices()
+  const currentEnvServices = await workspace.state().existingServices()
   const otherEnvsServices = _(await Promise.all(envNames
-    .filter(env => env !== workspace.currentEnv()).map(env => workspace.fetchedServices(env))))
-    .flatten().uniq().value()
+    .filter(env => env !== workspace.currentEnv()).map(
+      env => workspace.state(env).existingServices()
+    ))).flatten().uniq().value()
 
-  const [isolatedFetchServices, normalFetchServices] = _.partition(
+  const [servicesNewOnlyInCurrentEnv, existingOrNewToAllEnvsServices] = _.partition(
     inputServices,
     service => !currentEnvServices.includes(service) && otherEnvsServices.includes(service)
   )
   // We have a first fetch of a service in a multi-env setup.
   // The recommended practice here is to initiate the new service
   // by making an isolated fetch for the new services only.
-  const shouldRecommend = shouldRecommendIsolatedMode(
-    isolatedFetchServices,
-    normalFetchServices,
+  if (!force && shouldRecommendIsolatedModeForNewServices(
+    servicesNewOnlyInCurrentEnv,
+    existingOrNewToAllEnvsServices,
     envNames,
     inputIsolated
-  )
-  if (!force && shouldRecommend) {
+  )) {
     outputLine(formatApproveIsolatedModePrompt(
-      isolatedFetchServices,
-      normalFetchServices,
+      servicesNewOnlyInCurrentEnv,
+      existingOrNewToAllEnvsServices,
       inputIsolated
     ))
-    if (await approveIsolatedMode(isolatedFetchServices, normalFetchServices, inputIsolated)) {
-      return { services: isolatedFetchServices, isolated: true }
+    if (await approveIsolatedMode(
+      servicesNewOnlyInCurrentEnv,
+      existingOrNewToAllEnvsServices,
+      inputIsolated
+    )) {
+      return { services: servicesNewOnlyInCurrentEnv, isolated: true }
     }
   }
 

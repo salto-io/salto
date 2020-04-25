@@ -77,15 +77,14 @@ export const localState = (filePath: string): State => {
       })
       dirty = true
     },
-    override: async (element: Element | Element[], services?: string[]): Promise<void> => {
+    override: async (element: Element | Element[]): Promise<void> => {
       const elements = makeArray(element)
-      const newServices = services || _(elements).map(e => e.elemID.adapter)
+      const newServices = _(elements).map(e => e.elemID.adapter)
         .uniq()
         .filter(adapter => adapter !== GLOBAL_ADAPTER)
         .value()
-      const newElements = _.keyBy(elements, e => e.elemID.getFullName())
       const data = await stateData()
-      data.elements = newElements
+      data.elements = _.keyBy(elements, e => e.elemID.getFullName())
       data.servicesUpdateDate = {
         ...data.servicesUpdateDate,
         ...newServices.reduce((acc, service) => {

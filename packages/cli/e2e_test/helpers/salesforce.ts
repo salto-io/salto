@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
+import SalesforceAdapter, {
   SalesforceClient,
   testHelpers as salesforceTestHelpers,
   testTypes as salesforceTestTypes,
 } from '@salto-io/salesforce-adapter'
+import { Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
@@ -49,4 +50,12 @@ export const instanceExists = async (client: SalesforceClient, type: string, nam
     return Object.entries(expectedValues).every(entry => _.get(result, entry[0]) === entry[1])
   }
   return true
+}
+
+export const addElements = async (
+  client: SalesforceClient, 
+  elements: Element[]
+): Promise<void> => {
+  const adapter = new SalesforceAdapter({client, config: {}})
+  await Promise.all(elements.map(element => adapter.add(element)))
 }

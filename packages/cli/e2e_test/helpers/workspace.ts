@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Plan, Workspace, telemetrySender } from '@salto-io/core'
+import { parse, Plan, Workspace, telemetrySender } from '@salto-io/core'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
+import fs from 'fs'
+import path from 'path'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
   Element, TypeMap,
@@ -27,12 +29,15 @@ import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
 import adapterConfigs from '../adapter_configs'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
-import { CliOutput, CliExitCode } from '../../src/types'
+import { CliOutput, CliExitCode, CliTelemetry } from '../../src/types'
 import { loadWorkspace } from '../../src/workspace/workspace'
 import { DeployCommand } from '../../src/commands/deploy'
 import { command as preview } from '../../src/commands/preview'
 import { command as servicesCommand } from '../../src/commands/services'
+import { command as initCommand } from '../../src/commands/init'
+import { command as envCommand } from '../../src/commands/env'
 import { getCliTelemetry } from '../../src/telemetry'
+import * as formatterImpl from '../../src/formatter'
 
 export type ReplacementPair = [string | RegExp, string]
 
@@ -44,10 +49,37 @@ const getSalesforceConfig = (): Promise<InstanceElement> =>
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
+const mockCliTelementy: CliTelemetry = {
+  start: () => jest.fn(),
+  failure: () => jest.fn(),
+  success: () => jest.fn(),
+  mergeErrors: () => jest.fn(),
+  changes: () => jest.fn(),
+  changesToApply: () => jest.fn(),
+  errors: () => jest.fn(),
+  failedRows: () => jest.fn(),
+  actionsSuccess: () => jest.fn(),
+  actionsFailure: () => jest.fn(),
+  stacktrace: () => jest.fn(),
+}
+
 const mockTelemetry = telemetrySender(
   { url: 'http://0.0.0.0', token: '1234', enabled: false },
   { installationID: 'abcd', app: 'test' },
 )
+
+export const runAddSalesforceService = async (
+  workspaceDir: string, credentials: InstanceElement
+): Promise<void> => {
+  console.log("ADDDDINNNNGGGGGGGGG", credentials)
+  await servicesCommand(
+    workspaceDir, 
+    'add', 
+    mockCliOutput(), 
+    () => Promise.resolve(credentials), 
+    'salesforce'
+  ).execute()
+}
 
 export const runSalesforceLogin = async (workspaceDir: string): Promise<void> => {
   await servicesCommand(workspaceDir, 'login', mockCliOutput(), getSalesforceConfig, 'salesforce')
@@ -63,7 +95,41 @@ export const editNaclFile = async (filename: string, replacements: ReplacementPa
   await writeFile(filename, fileAsString)
 }
 
-export const runFetch = async (fetchOutputDir: string): Promise<void> => {
+export const runInit = async (
+  workspaceName: string, 
+  defaultEnvName: string,
+  baseDir?: string
+): Promise<void> => {
+  const origDir = process.cwd()
+  if (baseDir) {
+    console.log("CHANGING DIR FROM TO",origDir, baseDir)
+    process.chdir(baseDir)
+  }
+  console.log("CURRNT DIR IS", process.cwd())
+  await initCommand(
+    workspaceName,
+    mockCliTelementy,
+    mockCliOutput(),
+    jest.fn().mockResolvedValue(defaultEnvName)
+  ).execute()
+  console.log("STILL IN DIR IS", process.cwd())
+  if (baseDir) {
+    process.chdir(origDir)
+  }
+}
+
+export const runCreateEnv = async (workspaceDir: string, envName: string): Promise<void> => {
+  await envCommand(workspaceDir, 'create', mockCliOutput(), envName).execute()
+}
+
+export const runSetEnv = async (workspaceDir: string, envName: string): Promise<void> => {
+  await envCommand(workspaceDir, 'set', mockCliOutput(), envName).execute()
+}
+
+export const runFetch = async (
+  fetchOutputDir: string, 
+  isolated: boolean = false
+): Promise<void> => {
   await fetch(
     fetchOutputDir,
     true,
@@ -71,10 +137,9 @@ export const runFetch = async (fetchOutputDir: string): Promise<void> => {
     mockTelemetry,
     mockCliOutput(),
     mockSpinnerCreator([]),
-    false,
+    isolated,
     services,
-  )
-    .execute()
+  ).execute()
 }
 
 export const runDeploy = async (
@@ -106,6 +171,22 @@ export const runPreview = async (fetchOutputDir: string): Promise<CliExitCode> =
     true,
   ).execute()
 )
+
+export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan | undefined> => {
+  let plan: Plan | undefined = undefined
+  jest.spyOn(formatterImpl, 'formatExecutionPlan')
+    .mockImplementationOnce((p: Plan, _planErrors): string => {
+    plan = p
+    return 'plan'
+  })
+  await preview(
+    fetchOutputDir, getCliTelemetry(mockTelemetry, 'preview'),
+    mockCliOutput(), mockSpinnerCreator([]),
+    services,
+    true,
+  ).execute()
+  return plan
+}
 
 export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {
   if (lastPlan) {
@@ -158,3 +239,30 @@ export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, 
   })
   return object
 }
+
+export const fromNaclTemplate = (templatePath: string, data: Record<string, string>): string => {
+  const replaceVars = (
+    templ: string, 
+    values: Record<string, string>  
+  ): string => templ.replace(/\${([^}]*)}/g, (_s, varName)=> {
+    if (!_.has(values, varName)) throw new Error(`Missing variable ${varName}`)
+    return values[varName]
+  })
+  
+  return replaceVars(
+    fs.readFileSync(templatePath, 'utf8'),
+    data
+  )
+}
+
+export const getElementFromTemplate = (
+  templateName: string, 
+  data: Record<string, string>
+): Element[] => {
+  return parse(Buffer.from(fromNaclTemplate(templateName, data)), templateName).elements
+}
+
+export const ensureDir = (dirPath: string, filePathes: string[]): boolean => (
+  fs.existsSync(dirPath)
+  && _.every(filePathes.map(filename => fs.existsSync(path.join(dirPath, filename))))
+)

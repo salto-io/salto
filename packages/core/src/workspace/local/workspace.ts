@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import uuidv5 from 'uuid/v5'
+import uuidv4 from 'uuid/v4'
 import { exists } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace } from '../workspace'
 import { localDirectoryStore } from './dir_store'
@@ -129,7 +129,7 @@ Promise<Workspace> => {
 export const initLocalWorkspace = async (baseDir: string, name?: string, envName = 'default'):
 Promise<Workspace> => {
   const workspaceName = name || path.basename(path.resolve(baseDir))
-  const uid = uuidv5(workspaceName, '1b671a64-40d5-491e-99b0-da01ff1f3341')
+  const uid = uuidv4()
   const localStorage = path.join(getSaltoHome(), `${workspaceName}-${uid}`)
   if (await locateWorkspaceRoot(path.resolve(baseDir))) {
     throw new ExistingWorkspaceError()

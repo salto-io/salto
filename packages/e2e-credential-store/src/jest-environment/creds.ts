@@ -96,7 +96,8 @@ export default <TCreds extends {}>(
   }
 
   const envUtils = createEnvUtils(env)
-
+  // eslint-disable-next-line
+  console.log('======== >>>>>>>>>>', spec.envHasCreds(env))
   return envUtils.bool('USE_CRED_POOL') || !spec.envHasCreds(env)
     ? fromPool()
     : Promise.resolve(fromEnv())

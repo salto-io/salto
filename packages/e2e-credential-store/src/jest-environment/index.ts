@@ -27,7 +27,7 @@ const CREDS_INTERVAL_ID = 'waiting for creds'
 
 export type CredsNodeEnvironmentOpts<TCreds> = {
   logBaseName: string
-  credsSpec: CredsSpec<TCreds>
+  credsSpecs: CredsSpec<TCreds>[]
 }
 
 export type JestEnvironmentConstructorArgs = ConstructorParameters<typeof NodeEnvironment>
@@ -35,15 +35,15 @@ export type JestEnvironmentConstructorArgs = ConstructorParameters<typeof NodeEn
 export class CredsJestEnvironment<TCreds> extends NodeEnvironment {
   protected readonly log: Logger
   protected readonly runningTasksPrinter: IntervalScheduler
-  protected readonly credsSpec: CredsSpec<TCreds>
-  credsLease: CredsLease<TCreds> | undefined
+  protected readonly credsSpecs: CredsSpec<TCreds>[]
+  credsLeases: CredsLease<TCreds>[] | undefined
 
   constructor(
-    { logBaseName, credsSpec }: CredsNodeEnvironmentOpts<TCreds>,
+    { logBaseName, credsSpecs }: CredsNodeEnvironmentOpts<TCreds>,
     ...args: JestEnvironmentConstructorArgs
   ) {
     super(...args)
-    this.credsSpec = credsSpec
+    this.credsSpecs = credsSpecs
     this.log = logger([logBaseName, process.env.JEST_WORKER_ID].filter(x => x).join('/'))
     this.runningTasksPrinter = new IntervalScheduler(
       (id, startTime) => {
@@ -59,21 +59,30 @@ export class CredsJestEnvironment<TCreds> extends NodeEnvironment {
 
     this.runningTasksPrinter.schedule(CREDS_INTERVAL_ID)
     try {
-      this.credsLease = await creds(this.credsSpec, process.env, this.log)
+      this.credsLeases = await Promise.all(
+        this.credsSpecs.map(async credsSpec => {
+          const lease = await creds(credsSpec, process.env, this.log)
+          this.global[credsSpec.globalProp as keyof Global.Global] = lease.value
+          this.log.warn(`setup, using creds: ${lease.id}`)
+          return lease
+        })
+      )
     } finally {
       this.runningTasksPrinter.unschedule(CREDS_INTERVAL_ID)
     }
-
-    this.global[this.credsSpec.globalProp as keyof Global.Global] = this.credsLease.value
-    this.log.warn(`setup, using creds: ${this.credsLease.id}`)
   }
 
   async teardown(): Promise<void> {
-    delete this.global[this.credsSpec.globalProp as keyof Global.Global]
-    if (this.credsLease !== undefined) {
-      await this.credsLease.return?.()
-      this.log.warn(`teardown, returned creds ${this.credsLease?.id}`)
-      this.credsLease = undefined
+    this.credsSpecs.forEach(credsSpec => {
+      delete this.global[credsSpec.globalProp as keyof Global.Global]
+    })
+    if (this.credsLeases !== undefined) {
+      await Promise.all(this.credsLeases?.filter(lease => lease !== undefined)
+        .map(async lease => {
+          await lease.return?.()
+          this.log.warn(`teardown, returned creds ${lease?.id}`)
+        }))
+      this.credsLeases = undefined
     }
 
     this.runningTasksPrinter.clear()

@@ -41,5 +41,5 @@ const getSalesfoceCreds = (): InstanceElement[] => (
 )
 export default {
   salesforce: () => getSalesfoceCreds()[0],
-  salesforceMulti: getSalesfoceCreds
+  salesforceMulti: getSalesfoceCreds,
 }

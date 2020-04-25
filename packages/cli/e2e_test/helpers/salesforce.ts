@@ -21,6 +21,7 @@ import SalesforceAdapter, {
 import { Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
+export const naclNameToSFName = (objName: string): string => `${objName}__c`
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
   missingFields: string[] = []): Promise<boolean> => {
   const result = (
@@ -53,9 +54,17 @@ export const instanceExists = async (client: SalesforceClient, type: string, nam
 }
 
 export const addElements = async (
-  client: SalesforceClient, 
+  client: SalesforceClient,
   elements: Element[]
 ): Promise<void> => {
-  const adapter = new SalesforceAdapter({client, config: {}})
+  const adapter = new SalesforceAdapter({ client, config: {} })
   await Promise.all(elements.map(element => adapter.add(element)))
+}
+
+export const removeElements = async (
+  client: SalesforceClient,
+  elements: Element[]
+): Promise<void> => {
+  const adapter = new SalesforceAdapter({ client, config: {} })
+  await Promise.all(elements.map(element => adapter.remove(element)))
 }

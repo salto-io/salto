@@ -17,13 +17,19 @@ import { format } from 'util'
 import { Credentials } from '../src/client/client'
 import { credsSpec } from './jest_environment'
 
-export default (): Credentials => {
-  const { globalProp } = credsSpec
-  const credentials = global[globalProp as keyof typeof global]
-  if (!credentials) {
+export default (): Credentials[] => {
+  const env1CredentialsProp = credsSpec().globalProp
+  const env2CredentialsProp = credsSpec('ENV_2').globalProp
+  const env1Credentials = global[env1CredentialsProp as keyof typeof global]
+  const env2Credentials = global[env2CredentialsProp as keyof typeof global]
+  if (!(env1Credentials && env2Credentials)) {
     throw new Error(
-      `global[${format(globalProp)}] not set. Is the Jest testEnvironment setup correctly?`
+      `global[${
+        format(env1CredentialsProp)
+      }] or  global[${
+        format(env2CredentialsProp)
+      }] are not set. Is the Jest testEnvironment setup correctly?`
     )
   }
-  return credentials
+  return [env1Credentials, env2Credentials]
 }

@@ -33,15 +33,22 @@ const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
 const log = logger(module)
 
-export const credsSpec: CredsSpec<Credentials> = {
-  envHasCreds: env => 'SF_USER' in env,
+export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
+  console.log("HI!")
+  const userEnvVarName = envName === undefined ? 'SF_USER' : `SF_USER_${envName}`
+  const passwordEnvVarName = envName === undefined ? 'SF_PASSWORD' : `SF_PASSWORD_${envName}`
+  const tokenEnvVarName = envName === undefined ? 'SF_TOKEN' : `SF_TOKEN_${envName}`
+  const sandboxEnvVarName = envName === undefined ? 'SF_SANDBOX' : `SF_SANDBOX_${envName}`
+  console.log(userEnvVarName)
+  return {
+  envHasCreds: env => userEnvVarName in env,
   fromEnv: env => {
     const envUtils = createEnvUtils(env)
     return {
-      username: envUtils.required('SF_USER'),
-      password: envUtils.required('SF_PASSWORD'),
-      apiToken: env.SF_TOKEN ?? '',
-      isSandbox: envUtils.bool('SF_SANDBOX'),
+      username: envUtils.required(userEnvVarName),
+      password: envUtils.required(passwordEnvVarName),
+      apiToken: env[tokenEnvVarName] ?? '',
+      isSandbox: envUtils.bool(sandboxEnvVarName),
     }
   },
   validate: async (creds: Credentials): Promise<void> => {
@@ -55,31 +62,40 @@ export const credsSpec: CredsSpec<Credentials> = {
     }
   },
   typeName: 'salesforce',
-  globalProp: 'salesforceCredentials',
-}
+  globalProp: envName ? `salesforce_${envName}` : 'salseforce'
+}}
 
 export default class SalesforceCredsEnvironment extends CredsJestEnvironment<Credentials> {
-  dailyRequestsRemainingOnSetup: number | undefined
+  dailyEnv1RequestsRemainingOnSetup: number | undefined
+  dailyEnv2RequestsRemainingOnSetup: number | undefined
 
   constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace, credsSpec }, ...args)
+    super({ logBaseName: log.namespace, credsSpecs: [credsSpec(), credsSpec('ENV_2')] }, ...args)
   }
 
   async setup(): Promise<void> {
     await super.setup()
-    if (this.credsLease) {
-      this.dailyRequestsRemainingOnSetup = await getRemainingDailyRequests(this.credsLease.value)
-      this.log.warn('remaining daily requests on creds %o: %o', this.credsLease.id, this.dailyRequestsRemainingOnSetup)
+    const [ dailyEnv1Requests, dailyEnv2Requests ] = await Promise.all( 
+      (this.credsLeases ?? []).map(lease => getRemainingDailyRequests(lease.value))
+    )
+    if (dailyEnv1Requests && dailyEnv2Requests) {
+      this.dailyEnv1RequestsRemainingOnSetup = dailyEnv1Requests
+      this.log.warn('remaining daily requests on creds env1: %o', dailyEnv1Requests)
+      this.dailyEnv2RequestsRemainingOnSetup = dailyEnv2Requests
+      this.log.warn('remaining daily requests on creds env2: %o', dailyEnv1Requests)
     }
   }
 
   async teardown(): Promise<void> {
-    if (this.credsLease && this.dailyRequestsRemainingOnSetup !== undefined) {
-      const dailyRequestsRemainingOnTeardown = await getRemainingDailyRequests(
-        this.credsLease.value,
-      )
-      const usedRequests = this.dailyRequestsRemainingOnSetup - dailyRequestsRemainingOnTeardown
-      this.log.warn('this run used %o of daily requests quota', usedRequests)
+    if (this.dailyEnv1RequestsRemainingOnSetup !== undefined && 
+      this.dailyEnv2RequestsRemainingOnSetup !== undefined) {
+        const [ remainingEnv1Requests, remainingEnv2Requests ] = await Promise.all( 
+          (this.credsLeases ?? []).map(lease => getRemainingDailyRequests(lease.value))
+        )
+      const usedRequestsEnv1 = this.dailyEnv1RequestsRemainingOnSetup - remainingEnv1Requests
+      this.log.warn('this run used %o of daily requests quota for env 1:', usedRequestsEnv1)
+      const usedRequestsEnv2 = this.dailyEnv2RequestsRemainingOnSetup - remainingEnv2Requests
+      this.log.warn('this run used %o of daily requests quota for env 2:', usedRequestsEnv2)
     }
     await super.teardown()
   }

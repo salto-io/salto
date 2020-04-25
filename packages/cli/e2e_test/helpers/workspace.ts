@@ -1,3 +1,4 @@
+/* eslint-disable */ 
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -17,7 +18,7 @@ import { parse, Plan, Workspace, telemetrySender } from '@salto-io/core'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
 import fs from 'fs'
-import path from 'path'
+import glob from 'glob'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
   Element, TypeMap,
@@ -71,12 +72,11 @@ const mockTelemetry = telemetrySender(
 export const runAddSalesforceService = async (
   workspaceDir: string, credentials: InstanceElement
 ): Promise<void> => {
-  console.log("ADDDDINNNNGGGGGGGGG", credentials)
   await servicesCommand(
-    workspaceDir, 
-    'add', 
-    mockCliOutput(), 
-    () => Promise.resolve(credentials), 
+    workspaceDir,
+    'add',
+    mockCliOutput(),
+    () => Promise.resolve(credentials),
     'salesforce'
   ).execute()
 }
@@ -96,23 +96,23 @@ export const editNaclFile = async (filename: string, replacements: ReplacementPa
 }
 
 export const runInit = async (
-  workspaceName: string, 
+  workspaceName: string,
   defaultEnvName: string,
   baseDir?: string
 ): Promise<void> => {
   const origDir = process.cwd()
   if (baseDir) {
-    console.log("CHANGING DIR FROM TO",origDir, baseDir)
+    console.log('CHANGING DIR FROM TO', origDir, baseDir)
     process.chdir(baseDir)
   }
-  console.log("CURRNT DIR IS", process.cwd())
+  console.log('CURRNT DIR IS', process.cwd())
   await initCommand(
     workspaceName,
     mockCliTelementy,
     mockCliOutput(),
     jest.fn().mockResolvedValue(defaultEnvName)
   ).execute()
-  console.log("STILL IN DIR IS", process.cwd())
+  console.log('STILL IN DIR IS', process.cwd())
   if (baseDir) {
     process.chdir(origDir)
   }
@@ -127,8 +127,8 @@ export const runSetEnv = async (workspaceDir: string, envName: string): Promise<
 }
 
 export const runFetch = async (
-  fetchOutputDir: string, 
-  isolated: boolean = false
+  fetchOutputDir: string,
+  isolated = false
 ): Promise<void> => {
   await fetch(
     fetchOutputDir,
@@ -144,6 +144,7 @@ export const runFetch = async (
 
 export const runDeploy = async (
   lastPlan: Plan | undefined, fetchOutputDir: string, force = false,
+  allowErrors = false
 ): Promise<void> => {
   if (lastPlan) {
     lastPlan.clear()
@@ -159,7 +160,9 @@ export const runDeploy = async (
   ).execute()
   const errs = (output.stderr as MockWriteStream).content
   // This assert is before result assert so will see the error
-  expect(errs).toHaveLength(0)
+  if (!allowErrors) {
+    expect(errs).toHaveLength(0)
+  }
   expect(result).toBe(CliExitCode.Success)
 }
 
@@ -173,12 +176,12 @@ export const runPreview = async (fetchOutputDir: string): Promise<CliExitCode> =
 )
 
 export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan | undefined> => {
-  let plan: Plan | undefined = undefined
+  let plan: Plan | undefined
   jest.spyOn(formatterImpl, 'formatExecutionPlan')
     .mockImplementationOnce((p: Plan, _planErrors): string => {
-    plan = p
-    return 'plan'
-  })
+      plan = p
+      return 'plan'
+    })
   await preview(
     fetchOutputDir, getCliTelemetry(mockTelemetry, 'preview'),
     mockCliOutput(), mockSpinnerCreator([]),
@@ -242,13 +245,13 @@ export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, 
 
 export const fromNaclTemplate = (templatePath: string, data: Record<string, string>): string => {
   const replaceVars = (
-    templ: string, 
-    values: Record<string, string>  
-  ): string => templ.replace(/\${([^}]*)}/g, (_s, varName)=> {
+    templ: string,
+    values: Record<string, string>
+  ): string => templ.replace(/\${([^}]*)}/g, (_s, varName) => {
     if (!_.has(values, varName)) throw new Error(`Missing variable ${varName}`)
     return values[varName]
   })
-  
+
   return replaceVars(
     fs.readFileSync(templatePath, 'utf8'),
     data
@@ -256,13 +259,14 @@ export const fromNaclTemplate = (templatePath: string, data: Record<string, stri
 }
 
 export const getElementFromTemplate = (
-  templateName: string, 
+  templateName: string,
   data: Record<string, string>
-): Element[] => {
-  return parse(Buffer.from(fromNaclTemplate(templateName, data)), templateName).elements
-}
+): Element[] => parse(Buffer.from(fromNaclTemplate(templateName, data)), templateName).elements
 
-export const ensureDir = (dirPath: string, filePathes: string[]): boolean => (
-  fs.existsSync(dirPath)
-  && _.every(filePathes.map(filename => fs.existsSync(path.join(dirPath, filename))))
-)
+export const ensureFilesExist = (filePathes: string[]): boolean => {
+  const res = _.every(filePathes.map(filename => !_.isEmpty(glob.sync(filename))))
+  if (!res) {
+    console.log("FAILED TO FIND FILES:", filePathes)
+  }
+  return res
+}

@@ -46,6 +46,7 @@ export class MockWriteStream {
   colors: boolean
   isTTY: boolean
 
+  // eslint-disable-next-line
   write(s: string): void { console.log(s); this.content += s }
 }
 

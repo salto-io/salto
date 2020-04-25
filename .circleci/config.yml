@@ -176,13 +176,7 @@ jobs:
 
       - run:
           name: Halt the job if there is no new lerna version
-          command: |
-            CURRENT_VERSION="$(jq -j .version lerna.json)"
-            PREV_VERSION="$(git show << pipeline.git.base_revision >>:lerna.json | jq -j .version)"
-            if [ "$CURRENT_VERSION" == "$PREV_VERSION" ]; then
-              echo "version was not changed, halting job"
-              circleci-agent step halt
-            fi
+          command: ./.circleci/scripts/check_if_version_changed.sh << pipeline.git.base_revision >>
 
       - set_s3_pkg_urls
 

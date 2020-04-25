@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   win: circleci/windows@2.2.0
   aws-s3: circleci/aws-s3@1.0.15
+  aws-cli: circleci/aws-cli@1.0.0
 
 commands:
   set_s3_pkg_urls:
@@ -174,41 +175,13 @@ jobs:
           fingerprints:
               - "49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17"
 
-      - run:
-          name: Halt the job if there is no new lerna version
-          command: ./.circleci/scripts/check_if_version_changed.sh << pipeline.git.base_revision >>
-
       - set_s3_pkg_urls
 
-      - run:
-          name: create a dir for release assets
-          command: mkdir assets
-
-      - aws-s3/copy:
-          from: ${S3_PKG_HASH_PREFIX}/cli/linux/salto
-          to: assets/salto-linux
-
-      - aws-s3/copy:
-          from: ${S3_PKG_HASH_PREFIX}/cli/win/salto.exe
-          to: assets/salto-win.exe
-
-      - aws-s3/copy:
-          from: ${S3_PKG_HASH_PREFIX}/cli/mac/salto
-          to: assets/salto-mac
-
-      - aws-s3/copy:
-          from: ${S3_PKG_HASH_PREFIX}/vscode/salto.vsix/salto.vsix
-          to: assets/salto-vscode-extension.vsix
+      - aws-cli/setup
 
       - run:
-          name: chmod linux and mac binaries
-          command: chmod +x assets/salto-{mac,linux}
-
-      - run:
-          name: Tag git version, publish to NPM and create Github release
-          command: |
-            FILES_TO_UPLOAD=$(find assets -type f) \
-              ./.circleci/scripts/tag_repo_and_publish.sh
+          name: Release version
+          command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
 
   e2e_test:
     docker:

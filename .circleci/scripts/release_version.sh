@@ -16,13 +16,33 @@ if [ -z "$NPM_TOKEN" ]; then
   exit 1
 fi
 
-if [ -z "$FILES_TO_UPLOAD" ]; then
-  echo >&2 "missing FILES_TO_UPLOAD environment variable (filenames to upload to the Github release)"
+if [ -z "$S3_PKG_HASH_PREFIX" ]; then
+  echo >&2 "missing S3_PKG_HASH_PREFIX environment variable"
+  exit 1
+fi
+
+GIT_BASE_REVISION=${1-}
+if [ -z "$GIT_BASE_REVISION" ]; then
+  echo >&2 "usage: $0 git_base_revision"
   exit 1
 fi
 
 CURRENT_VERSION="$(jq -j .version lerna.json)"
+PREV_VERSION="$(git show ${GIT_BASE_REVISION}:lerna.json | jq -j .version)"
+
+if [ "$CURRENT_VERSION" == "$PREV_VERSION" ]; then
+  echo "version was not changed, nothing to do"
+  exit 0
+fi
+
 VERSION_TAG="v${CURRENT_VERSION}"
+
+copy_files_from_s3() {
+  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/linux/salto" "${1}/salto-linux"
+  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/mac/salto" "${1}/salto-mac"
+  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/win/salto.exe" "${1}/salto-windows.exe"
+  aws s3 cp "${S3_PKG_HASH_PREFIX}/vscode/salto.vsix/salto.vsix" "${1}/salto-vscode-extension.vsix"
+}
 
 push_new_git_tag() {
   echo "tagging and pushing new git tag: ${VERSION_TAG}"
@@ -48,10 +68,10 @@ create_release_in_github() {
   # https://developer.github.com/v3/repos/releases/#create-a-release
   new_release_json=$(echo -e "
   {
-    \"tag_name\": \"${CIRCLE_TAG}\",
+    \"tag_name\": \"${VERSION_TAG}\",
     \"prerelease\": false,
     \"draft\": false,
-    \"name\": \"Salto ${CIRCLE_TAG}\"
+    \"name\": \"Salto ${VERSION_TAG}\"
   }" | jq -cM)
 
   release_result=$(curl -L -XPOST --fail \
@@ -62,7 +82,8 @@ create_release_in_github() {
 
   # attach assets to the release
   release_id=$(echo "$release_result" | jq .id -j)
-  for f in $FILES_TO_UPLOAD; do
+  files_to_upload=$(find "$1" -type f)
+  for f in $files_to_upload; do
     curl "${GITHUB_UPLOADS_ENDPOINT}/repos/${REPO}/releases/${release_id}/assets?name=$(basename $f)" \
       -L -XPOST --fail \
       --data-binary @"$f" \
@@ -72,6 +93,8 @@ create_release_in_github() {
   wait
 }
 
+tmp_assets_dir=$(mktemp -d)
+copy_files_from_s3 $tmp_assets_dir
 push_new_git_tag
 publish_packages_to_npm
-create_release_in_github
+create_release_in_github $tmp_assets_dir

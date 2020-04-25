@@ -147,6 +147,7 @@ export type FetchChangesResult = {
   elements: Element[]
   mergeErrors: MergeErrorWithElements[]
   configChanges: Plan
+  configChangeIntoMessage: Record<string, string>
 }
 
 export class FatalFetchMergeError extends Error {
@@ -216,17 +217,19 @@ const fetchAndProcessMergeErrors = async (
     serviceElements: Element[]
     processErrorsResult: ProcessMergeErrorsResult
     configs: InstanceElement[]
+    configChangeIntoMessage: Record<string, string>
   }> => {
   try {
     const fetchResults = await Promise.all(
-      Object.values(adapters)
-        .map(async adapter => {
+      Object.entries(adapters)
+        .map(async ([adapterName, adapter]) => {
           const fetchResult = await adapter.fetch()
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
           return {
             elements: fetchResult.elements.map(flattenElementStr),
             config: fetchResult.config ? flattenElementStr(fetchResult.config) : undefined,
+            configChangeIntoMessage: { [adapterName]: fetchResult.configChangeMessageIntro },
           }
         })
     )
@@ -234,6 +237,7 @@ const fetchAndProcessMergeErrors = async (
     const configs = fetchResults
       .map(res => res.config)
       .filter(c => !_.isUndefined(c)) as InstanceElement[]
+    const configChangeIntoMessage = _.merge({}, ...fetchResults.map(e => e.configChangeIntoMessage))
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
     log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
@@ -247,7 +251,7 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
       mergeErrors.length}]`)
-    return { serviceElements, processErrorsResult, configs }
+    return { serviceElements, processErrorsResult, configs, configChangeIntoMessage }
   } catch (error) {
     getChangesEmitter.emit('failed')
     throw error
@@ -302,7 +306,7 @@ export const fetchChanges = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
   const {
-    serviceElements, processErrorsResult, configs,
+    serviceElements, processErrorsResult, configs, configChangeIntoMessage,
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
@@ -342,6 +346,7 @@ export const fetchChanges = async (
     elements: processErrorsResult.keptElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,
+    configChangeIntoMessage,
   }
 }
 

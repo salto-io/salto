@@ -20,7 +20,7 @@ import {
 import { WorkspaceError, FetchChange } from '@salto-io/core'
 import { formatSearchResults, formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
-  formatChangeErrors, formatShouldUpdateConfig } from '../src/formatter'
+  formatChangeErrors, formatConfigChangeNeeded } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
@@ -363,20 +363,21 @@ describe('formatter', () => {
       })
     })
   })
-  describe('formatShouldUpdateConfig', () => {
+  describe('formatConfigChangeNeeded', () => {
     let formattedString: string
-    const adapterName = 'FakeAdapter'
+    const introMessage = 'intro'
+    const formattedChange = 'test'
 
     beforeAll(() => {
-      formattedString = formatShouldUpdateConfig(adapterName, 'test')
+      formattedString = formatConfigChangeNeeded(introMessage, formattedChange)
     })
 
     it('should print adapter name', () => {
-      expect(formattedString).toContain(adapterName)
+      expect(formattedString).toContain(introMessage)
     })
 
     it('should print formatted changes', () => {
-      expect(formattedString).toContain('test')
+      expect(formattedString).toContain(formattedChange)
     })
   })
 

@@ -24,6 +24,7 @@ import { DependencyChanger } from './dependency_changer'
 export interface FetchResult {
   elements: Element[]
   config?: InstanceElement
+  configChangeMessageIntro?: string
 }
 
 export interface Adapter {

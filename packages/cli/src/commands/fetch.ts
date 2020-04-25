@@ -59,7 +59,8 @@ type approveChangesFunc = (
 ) => Promise<ReadonlyArray<FetchChange>>
 
 type shouldUpdateConfigFunc = (
-  adapterName: string,
+  { stdout }: CliOutput,
+  introMessage: string,
   formattedChanges: string
 ) => Promise<boolean>
 
@@ -226,7 +227,9 @@ export const fetchCommand = async (
           return false
         }
         const shouldWriteToConfig = force || await shouldUpdateConfig(
-          adapterName, formatDetailedChanges([change.detailedChanges()], true)
+          output,
+          fetchResult.configChangeIntoMessage?.[adapterName] || '',
+          formatDetailedChanges([change.detailedChanges()], true)
         )
         if (shouldWriteToConfig) {
           await workspace.updateServiceConfig(adapterName, newConfig)

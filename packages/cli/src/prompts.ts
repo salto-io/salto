@@ -124,12 +124,10 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     `Workspace has ${numErrors === 1 ? 'an error' : `${numErrors} errors`
     } - do you want to abort?`
 
-  public static readonly SHOULD_UPDATE_CONFIG = (adapterName: string, formattedChanges: string):
-  string =>
-    `Fetching ${adapterName} requires the following changes to the config in order to succeed:
-${formattedChanges}
-Do you want to update your config file accordingly?`
+  public static readonly CONFIG_CHANGE_NEEDED = (introMessage: string, formattedChanges: string):
+  string => `\n${introMessage}\n\n${formattedChanges}\n\n`
 
+  public static readonly SHOULD_UPDATE_CONFIG = 'Would you like to apply this configuration change (answering no will cancel the fetch operation)?'
   public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended to fetch more frequently so Salto\'s deployment plan can take into account the latest state - do you want to cancel?'
   public static readonly SHOULD_CANCEL_WITH_NONEXISTENT_STATE = 'It is highly recommended to run salto fetch before deploying, to ensure the deploy plan takes into account the current state - do you want to cancel?'
 

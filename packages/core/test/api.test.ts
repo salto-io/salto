@@ -96,26 +96,33 @@ describe('api.ts', () => {
     [SERVICES[0]]: {} as unknown as Adapter,
   })
 
+  const typeWithHiddenField = new ObjectType({
+    elemID: new ElemID(SERVICES[0], 'dummyHidden'),
+    fields: {
+      hidden: new Field(
+        new ElemID(SERVICES[0], 'dummyHidden'),
+        'hidden',
+        BuiltinTypes.STRING,
+        { [CORE_ANNOTATIONS.HIDDEN]: true }
+      ),
+      regField: new Field(
+        new ElemID(SERVICES[0], 'dummyHidden'),
+        'regField',
+        BuiltinTypes.STRING,
+        { [CORE_ANNOTATIONS.HIDDEN]: false }
+      ),
+    },
+  })
+
   describe('fetch', () => {
     const mockedFetchChanges = fetch.fetchChanges as jest.Mock
     const objType = new ObjectType({ elemID: new ElemID(SERVICES[0], 'dummy') })
-    const typeWithHiddenField = new ObjectType({
-      elemID: new ElemID(SERVICES[0], 'dummyHidden'),
-      fields: {
-        hidden: new Field(
-          new ElemID(SERVICES[0], 'dummyHidden'),
-          'hidden',
-          BuiltinTypes.STRING,
-          { [CORE_ANNOTATIONS.HIDDEN]: true }
-        ),
-      },
-    })
 
     const fetchedElements = [
       objType,
       new InstanceElement('instance_1', objType, {}),
       new InstanceElement('instance_2', objType, {}),
-      new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden' }),
+      new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden', regField: 'regValue' }),
     ]
     mockedFetchChanges.mockReturnValue({
       elements: fetchedElements,
@@ -147,7 +154,7 @@ describe('api.ts', () => {
       expect(mockedState.override).toHaveBeenCalledWith(fetchedElements)
     })
 
-    it('should call flush', () => {
+    it('should not call flush', () => {
       expect(mockFlush).not.toHaveBeenCalled()
     })
   })
@@ -158,11 +165,42 @@ describe('api.ts', () => {
     mockedGetPlan.mockReturnValueOnce(mockGetPlanResult)
     let result: plan.Plan
 
+    const stateInstance = new InstanceElement(
+      'hidden_inst',
+      typeWithHiddenField,
+      {
+        hidden: 'Hidden',
+        regField: 'regValue',
+      }
+    )
+    const stateElements = [stateInstance]
+
+    // workspace elements should not contains hidden values
+    const workspaceInstance = stateInstance.clone()
+    workspaceInstance.value = { regField: 'regValue' }
+
+    const workspaceElements = [workspaceInstance]
+    const ws = mockWorkspace(workspaceElements)
+    const mockFlush = ws.flush as jest.Mock
+    const mockedState = { ...mockState(), getAll: jest.fn().mockResolvedValue(stateElements) }
+    ws.state = jest.fn().mockReturnValue(mockedState)
+
     beforeAll(async () => {
-      result = await api.preview(mockWorkspace(), SERVICES)
+      result = await api.preview(ws, SERVICES)
     })
-    it('should call getPlan', async () => {
+    it('should call getPlan with the correct elements', async () => {
       expect(mockedGetPlan).toHaveBeenCalledTimes(1)
+
+      expect(mockedGetPlan).toHaveBeenCalledWith(
+        stateElements,
+        stateElements,
+        expect.anything(),
+        expect.anything()
+      )
+    })
+
+    it('should not call flush', async () => {
+      expect(mockFlush).not.toHaveBeenCalled()
     })
 
     it('should return getPlan response', async () => {

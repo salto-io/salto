@@ -191,6 +191,7 @@ describe('api.ts', () => {
     it('should call getPlan with the correct elements', async () => {
       expect(mockedGetPlan).toHaveBeenCalledTimes(1)
 
+      // checking that we call get plan after adding hidden values to workspace elements
       expect(mockedGetPlan).toHaveBeenCalledWith(
         stateElements,
         stateElements,

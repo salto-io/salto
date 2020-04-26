@@ -22,8 +22,8 @@ import {
   ADAPTER, ElemIdGetter, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
-  resolvePath, TransformPrimitiveFunc, transformValues,
-  flattenElementStr,
+  resolvePath, TransformPrimitiveFunc,
+  flattenElementStr, transformElement,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
@@ -51,20 +51,11 @@ export const removeElementHiddenValues = (elem: Element):
       return val
     }
 
-    const transformedValues = transformValues({
-      values: elem.value,
-      type: elem.type,
+    return transformElement({
+      element: elem,
       transformPrimitives: removeHiddenValue,
       strict: false,
     }) || {}
-
-    return new InstanceElement(
-      elem.elemID.name,
-      elem.type,
-      transformedValues,
-      elem.path,
-      elem.annotations
-    )
   }
   return elem
 }

@@ -19,7 +19,6 @@ import {
   Element,
   InstanceElement,
   ObjectType,
-  Value,
   isInstanceElement,
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
@@ -83,10 +82,8 @@ const addHiddenValues = (
   return workspaceElements.map(elem => {
     const stateElement = stateElementsMap[elem.elemID.getFullName()]
     if (isInstanceElement(elem) && stateElement !== undefined) {
-      const hiddenPathsValuesMap = new Map<string, Value>()
-      const createHiddenMapCallback: TransformPrimitiveFunc = (val, pathID, field) => {
-        if (pathID && field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-          hiddenPathsValuesMap.set(pathID.getFullName(), val)
+      const createHiddenMapCallback: TransformPrimitiveFunc = (val, _pathID, field) => {
+        if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
           return val
         }
         return undefined
@@ -95,10 +92,10 @@ const addHiddenValues = (
       const hiddenValuesInstance = transformElement({
         element: stateElement,
         transformPrimitives: createHiddenMapCallback,
-        strict: false,
+        strict: true,
       }) as InstanceElement
 
-      elem.value = _.mergeWith(elem.value, hiddenValuesInstance.value)
+      elem.value = _.merge(elem.value, hiddenValuesInstance.value)
     }
     return elem
   })
@@ -110,9 +107,9 @@ export const preview = async (
   const stateElements = await workspace.state().getAll()
   return getPlan(
     filterElementsByServices(stateElements, services),
-    filterElementsByServices(
-      addHiddenValues(await workspace.elements(), stateElements),
-      services
+    addHiddenValues(
+      filterElementsByServices(await workspace.elements(), services),
+      stateElements
     ),
     getAdapterChangeValidators(),
     defaultDependencyChangers.concat(getAdapterDependencyChangers()),

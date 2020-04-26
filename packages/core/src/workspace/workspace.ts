@@ -290,11 +290,13 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       _.remove(workspaceConfig.envs, e => e.name === env)
       await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
 
+      // We assume here that all the credentials files sit under the credentials' env directory
       await credentials.delete(env)
+
       const environmentSource = elementsSources.sources[env]
       if (environmentSource) {
-        await environmentSource.naclFiles.deleteAll()
-        await environmentSource.state?.deleteAll()
+        await environmentSource.naclFiles.clear()
+        await environmentSource.state?.clear()
       }
       delete elementsSources.sources[env]
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),

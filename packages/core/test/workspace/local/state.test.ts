@@ -207,7 +207,7 @@ describe('local state', () => {
     const mockRm = rm as jest.Mock
     it('should delete state file', async () => {
       const state = localState('on-delete')
-      await state.deleteAll()
+      await state.clear()
       expect(mockRm).toHaveBeenCalledTimes(1)
       expect(mockRm).toHaveBeenCalledWith('on-delete')
     })

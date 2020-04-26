@@ -53,12 +53,12 @@ describe('Nacl Files Source', () => {
     }
   })
 
-  describe('deleteAll', () => {
+  describe('clear', () => {
     it('should delete everything', async () => {
       mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
-      await naclFilesSource(mockDirStore, mockCache, mockStaticFilesSource).deleteAll()
+      await naclFilesSource(mockDirStore, mockCache, mockStaticFilesSource).clear()
       expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
       expect(mockCache.clear).toHaveBeenCalledTimes(1)
       expect(mockStaticFilesSource.clear).toHaveBeenCalledTimes(1)

@@ -108,7 +108,7 @@ export const localState = (filePath: string): State => {
       await replaceContents(filePath, stateText)
       log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
     },
-    deleteAll: async (): Promise<void> => {
+    clear: async (): Promise<void> => {
       await rm(filePath)
     },
     getServicesUpdateDates: async (): Promise<Record<string, Date>> => (await stateData())

@@ -15,16 +15,19 @@
 */
 import _ from 'lodash'
 import path from 'path'
+import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, Value } from '@salto-io/adapter-api'
+import { promises } from '@salto-io/lowerdash'
 import { ParseError, SourceMap, SourceRange } from 'src/parser/parse'
 import { ValidationError } from 'src/core/validator'
-import wu from 'wu'
 import { mergeElements, MergeError } from '../../../core/merger'
 import { DetailedChange } from '../../../core/plan'
 import { routeChanges } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
 import { Errors } from '../../errors'
+
+const { series } = promises.array
 
 export class UnknownEnviornmentError extends Error {
   constructor(envName: string) {
@@ -229,8 +232,10 @@ const buildMultiEnvSource = (
         .map(async ([prefix, source]) => (
           await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))))
     ),
-    deleteAll: async (): Promise<void> => {
-      await primarySource().deleteAll()
+    clear: async (): Promise<void> => {
+      // We use series here since we don't want to perform too much delete operation concurrently
+      await series([primarySource(), commonSource(), ...Object.values(secondarySources())]
+        .map(f => () => f.clear()))
     },
     clone: () => buildMultiEnvSource(
       _.mapValues(sources, source => source.clone()),

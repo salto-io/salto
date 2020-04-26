@@ -656,8 +656,8 @@ describe('workspace', () => {
 
       it('should delete files', () => {
         expect(credSource.delete).toHaveBeenCalledTimes(1)
-        expect(state.deleteAll).toHaveBeenCalledTimes(1)
-        expect(naclFiles.deleteAll).toHaveBeenCalledTimes(1)
+        expect(state.clear).toHaveBeenCalledTimes(1)
+        expect(naclFiles.clear).toHaveBeenCalledTimes(1)
       })
     })
 

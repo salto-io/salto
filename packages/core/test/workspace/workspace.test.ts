@@ -104,7 +104,11 @@ const createWorkspace = async (
         },
         default: {
           naclFiles: createMockNaclFileSource([]),
-          state: state || mockState(),
+          state: state || mockState(['salesforce']),
+        },
+        sec: {
+          naclFiles: createMockNaclFileSource([]),
+          state: state || mockState(['hubspot']),
         },
       },
     })
@@ -523,10 +527,10 @@ describe('workspace', () => {
       const ws = await createWorkspace(undefined, undefined, mockConfigSource(
         { staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }
       ))
-      ws.state().getUpdateDate = jest.fn().mockImplementation(
-        () => Promise.resolve(modificationDate)
+      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(
+        () => Promise.resolve({ salesforce: modificationDate })
       )
-      const recency = await ws.getStateRecency()
+      const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Valid')
       expect(recency.date).toBe(modificationDate)
     })
@@ -534,17 +538,17 @@ describe('workspace', () => {
       const ws = await createWorkspace(undefined, undefined, mockConfigSource(
         { staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }
       ))
-      ws.state().getUpdateDate = jest.fn().mockImplementation(
-        () => Promise.resolve(modificationDate)
+      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(
+        () => Promise.resolve({ salesforce: modificationDate })
       )
-      const recency = await ws.getStateRecency()
+      const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Old')
       expect(recency.date).toBe(modificationDate)
     })
     it('should return nonexistent when the state does not exist', async () => {
       const ws = await createWorkspace()
-      ws.state().getUpdateDate = jest.fn().mockImplementation(() => Promise.resolve(undefined))
-      const recency = await ws.getStateRecency()
+      ws.state().getServicesUpdateDates = jest.fn().mockImplementation(() => Promise.resolve({}))
+      const recency = await ws.getStateRecency('salesforce')
       expect(recency.status).toBe('Nonexistent')
       expect(recency.date).toBe(undefined)
     })

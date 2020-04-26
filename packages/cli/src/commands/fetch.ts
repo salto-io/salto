@@ -83,37 +83,58 @@ export type FetchCommandArgs = {
   inputServices?: string[]
 }
 
-const shouldRecommendIsolatedMode = (
-  newServices: string[],
-  oldServices: string[],
-  envNames: string[],
+const shouldRecommendIsolatedModeForNewServices = (
+  servicesNewOnlyInCurrentEnv: string[],
+  existingOrNewToAllEnvsServices: string[],
+  envNames: readonly string[],
   isolatedOveride?: boolean
 ): boolean => {
-  if (_.isEmpty(newServices)) return false
+  if (_.isEmpty(servicesNewOnlyInCurrentEnv)) return false
   if (envNames.length <= 1) return false
-  if (!_.isEmpty(oldServices) && isolatedOveride) return true
-  if (_.isEmpty(oldServices) && !isolatedOveride) return true
+  if (!_.isEmpty(existingOrNewToAllEnvsServices) && isolatedOveride) return true
+  if (_.isEmpty(existingOrNewToAllEnvsServices) && !isolatedOveride) return true
   return false
 }
 
 const getRelevantServicesAndIsolatedMode = async (
   inputServices: string[],
-  workspaceServices: string[],
-  envNames: string[],
+  workspace: Workspace,
   inputIsolated: boolean,
   force: boolean,
   approveIsolatedMode: approveIsolatedModeFunc,
   outputLine: (text: string) => void
 ): Promise<{services: string[]; isolated: boolean}> => {
-  const newServices = _.without(inputServices, ...workspaceServices)
-  const oldServices = _.without(inputServices, ...newServices)
+  const envNames = workspace.envs()
+  const currentEnvServices = await workspace.state().existingServices()
+  const otherEnvsServices = _(await Promise.all(envNames
+    .filter(env => env !== workspace.currentEnv()).map(
+      env => workspace.state(env).existingServices()
+    ))).flatten().uniq().value()
+
+  const [servicesNewOnlyInCurrentEnv, existingOrNewToAllEnvsServices] = _.partition(
+    inputServices,
+    service => !currentEnvServices.includes(service) && otherEnvsServices.includes(service)
+  )
   // We have a first fetch of a service in a multi-env setup.
   // The recommended practice here is to initiate the new service
   // by making an isolated fetch for the new services only.
-  if (!force && shouldRecommendIsolatedMode(newServices, oldServices, envNames, inputIsolated)) {
-    outputLine(formatApproveIsolatedModePrompt(newServices, oldServices, inputIsolated))
-    if (await approveIsolatedMode(newServices, oldServices, inputIsolated)) {
-      return { services: newServices, isolated: true }
+  if (!force && shouldRecommendIsolatedModeForNewServices(
+    servicesNewOnlyInCurrentEnv,
+    existingOrNewToAllEnvsServices,
+    envNames,
+    inputIsolated
+  )) {
+    outputLine(formatApproveIsolatedModePrompt(
+      servicesNewOnlyInCurrentEnv,
+      existingOrNewToAllEnvsServices,
+      inputIsolated
+    ))
+    if (await approveIsolatedMode(
+      servicesNewOnlyInCurrentEnv,
+      existingOrNewToAllEnvsServices,
+      inputIsolated
+    )) {
+      return { services: servicesNewOnlyInCurrentEnv, isolated: true }
     }
   }
 
@@ -168,8 +189,7 @@ export const fetchCommand = async (
 
   const { services, isolated } = await getRelevantServicesAndIsolatedMode(
     inputServices || [...workspace.services()],
-    await workspace.state().existingServices(),
-    _.keys(workspace.envs()),
+    workspace,
     inputIsolated,
     force,
     approveIsolatedMode,

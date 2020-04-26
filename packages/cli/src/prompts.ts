@@ -133,9 +133,12 @@ Do you want to update your config file accordingly?`
   public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended to fetch more frequently so Salto\'s deployment plan can take into account the latest state - do you want to cancel?'
   public static readonly SHOULD_CANCEL_WITH_NONEXISTENT_STATE = 'It is highly recommended to run salto fetch before deploying, to ensure the deploy plan takes into account the current state - do you want to cancel?'
 
-  public static readonly NONEXISTENT_STATE = 'Currently, the state of the target service(s) is unknown to Salto.'
-  public static readonly STATE_RECENCY = (date: Date): string =>
-    `The last time you fetched the state of your target service(s) was ${moment.duration(
+  public static readonly NONEXISTENT_STATE = (
+    serviceName: string
+  ): string => `Currently, the state of the ${serviceName} service is unknown to Salto.`
+
+  public static readonly STATE_RECENCY = (serviceName: string, date: Date): string =>
+    `The last time you fetched the state of the ${serviceName} service was ${moment.duration(
       Date.now() - date.getTime()
     ).humanize()} ago.`
 

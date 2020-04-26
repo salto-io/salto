@@ -52,6 +52,7 @@ export type LoadWorkspaceOptions = {
   recommendStateRecency: boolean
   spinnerCreator: SpinnerCreator
   sessionEnv?: string
+  services?: string[]
 }
 
 export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusErrors> => {
@@ -92,7 +93,8 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
     printStateRecency = false,
     recommendStateRecency = false,
     spinnerCreator = undefined,
-    sessionEnv = undefined }: Partial<LoadWorkspaceOptions> = {}): Promise<LoadWorkspaceResult> => {
+    sessionEnv = undefined,
+    services = undefined }: Partial<LoadWorkspaceOptions> = {}): Promise<LoadWorkspaceResult> => {
   const spinner = spinnerCreator
     ? spinnerCreator(Prompts.LOADING_WORKSPACE, {})
     : { succeed: () => undefined, fail: () => undefined }
@@ -110,16 +112,20 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
     spinner.succeed(formatFinishedLoading(workspace.currentEnv()))
   }
   // Print state's recency
-  const stateRecency = await workspace.getStateRecency()
+  const stateRecencies = await Promise.all((services || workspace.services())
+    .map(service => workspace.getStateRecency(service)))
+
   if (printStateRecency) {
-    const prompt = stateRecency.status === 'Nonexistent'
-      ? Prompts.NONEXISTENT_STATE : Prompts.STATE_RECENCY(stateRecency.date as Date)
+    const prompt = stateRecencies.map(recency => (recency.status === 'Nonexistent'
+      ? Prompts.NONEXISTENT_STATE(recency.serviceName)
+      : Prompts.STATE_RECENCY(recency.serviceName, recency.date as Date))).join(EOL)
     cliOutput.stdout.write(prompt + EOL)
   }
   // Offer to cancel because of stale state
+  const invalidRecencies = stateRecencies.filter(recency => recency.status !== 'Valid')
   if (recommendStateRecency && !force
-    && stateRecency.status !== 'Valid' && status !== 'Error') {
-    const shouldCancel = await shouldCancelInCaseOfNoRecentState(stateRecency, cliOutput)
+    && !_.isEmpty(invalidRecencies) && status !== 'Error') {
+    const shouldCancel = await shouldCancelInCaseOfNoRecentState(invalidRecencies, cliOutput)
     if (shouldCancel) {
       return { workspace, errored: true }
     }

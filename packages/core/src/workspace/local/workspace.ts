@@ -32,6 +32,7 @@ export const COMMON_ENV_PREFIX = ''
 export const ENVS_PREFIX = 'envs'
 export const STATES_DIR_NAME = 'states'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
+export const CACHE_DIR_NAME = 'cache'
 
 export class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {
@@ -53,7 +54,7 @@ export class NotAWorkspaceError extends Error {
 
 const loadNaclFileSource = (
   sourceBaseDir: string,
-  localStorage: string,
+  cacheDir: string,
   excludeDirs: string[] = []
 ): NaclFilesSource => {
   const dirPathToIgnore = (dirPath: string): boolean =>
@@ -69,10 +70,10 @@ const loadNaclFileSource = (
     dirPathToIgnore,
   )
 
-  const cacheStore = localDirectoryStore(path.join(localStorage, 'cache'))
+  const cacheStore = localDirectoryStore(cacheDir)
   const staticFilesSource = buildStaticFilesSource(
     naclStaticFilesStore,
-    buildLocalStaticFilesCache(localStorage),
+    buildLocalStaticFilesCache(cacheDir),
   )
 
   return naclFilesSource(naclFilesStore, parseResultCache(cacheStore), staticFilesSource)
@@ -88,7 +89,7 @@ EnvironmentsSources => ({
         {
           naclFiles: loadNaclFileSource(
             path.resolve(baseDir, ENVS_PREFIX, env),
-            path.resolve(localStorage, ENVS_PREFIX, env)
+            path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env)
           ),
           state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.jsonl`)),
         },
@@ -96,7 +97,7 @@ EnvironmentsSources => ({
     [COMMON_ENV_PREFIX]: {
       naclFiles: loadNaclFileSource(
         baseDir,
-        localStorage,
+        path.resolve(localStorage, CACHE_DIR_NAME, 'common'),
         [path.join(baseDir, ENVS_PREFIX)]
       ),
     },

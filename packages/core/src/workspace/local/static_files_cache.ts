@@ -23,20 +23,13 @@ export const CACHE_FILENAME = 'static-file-cache'
 export type StaticFilesCacheState = Record<string, StaticFileMetaData>
 
 export const buildLocalStaticFilesCache = (
-  localStorage: string,
+  cacheDir: string,
   initCacheState?: Promise<StaticFilesCacheState>,
 ): StaticFilesCache => {
-  const cacheDir = path.resolve(path.join(localStorage, 'cache'))
   const cacheFile = path.join(cacheDir, CACHE_FILENAME)
 
-  const initCache = async (): Promise<StaticFilesCacheState> => {
-    if (!await exists(cacheDir)) {
-      await mkdirp(cacheDir)
-    }
-    return !(await exists(cacheFile))
-      ? {}
-      : JSON.parse(await readTextFile(cacheFile))
-  }
+  const initCache = async (): Promise<StaticFilesCacheState> =>
+    (!(await exists(cacheFile)) ? {} : JSON.parse(await readTextFile(cacheFile)))
 
   const cache: Promise<StaticFilesCacheState> = initCacheState || initCache()
 
@@ -52,7 +45,12 @@ export const buildLocalStaticFilesCache = (
         },
       }
     },
-    flush: async () => replaceContents(cacheFile, JSON.stringify((await cache))),
-    clone: () => buildLocalStaticFilesCache(localStorage, cache),
+    flush: async () => {
+      if (!await exists(cacheDir)) {
+        await mkdirp(cacheDir)
+      }
+      replaceContents(cacheFile, JSON.stringify((await cache)))
+    },
+    clone: () => buildLocalStaticFilesCache(cacheDir, cache),
   }
 }

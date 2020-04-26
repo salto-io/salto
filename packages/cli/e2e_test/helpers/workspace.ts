@@ -1,4 +1,3 @@
-/* eslint-disable */ 
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -102,17 +101,14 @@ export const runInit = async (
 ): Promise<void> => {
   const origDir = process.cwd()
   if (baseDir) {
-    console.log('CHANGING DIR FROM TO', origDir, baseDir)
     process.chdir(baseDir)
   }
-  console.log('CURRNT DIR IS', process.cwd())
   await initCommand(
     workspaceName,
     mockCliTelementy,
     mockCliOutput(),
     jest.fn().mockResolvedValue(defaultEnvName)
   ).execute()
-  console.log('STILL IN DIR IS', process.cwd())
   if (baseDir) {
     process.chdir(origDir)
   }
@@ -160,10 +156,12 @@ export const runDeploy = async (
   ).execute()
   const errs = (output.stderr as MockWriteStream).content
   // This assert is before result assert so will see the error
+  // This is not a mistake, we will have errors on some deployments
+  // with delete changes, and its expected.
   if (!allowErrors) {
     expect(errs).toHaveLength(0)
+    expect(result).toBe(CliExitCode.Success)
   }
-  expect(result).toBe(CliExitCode.Success)
 }
 
 export const runPreview = async (fetchOutputDir: string): Promise<CliExitCode> => (
@@ -263,10 +261,6 @@ export const getElementFromTemplate = (
   data: Record<string, string>
 ): Element[] => parse(Buffer.from(fromNaclTemplate(templateName, data)), templateName).elements
 
-export const ensureFilesExist = (filePathes: string[]): boolean => {
-  const res = _.every(filePathes.map(filename => !_.isEmpty(glob.sync(filename))))
-  if (!res) {
-    console.log("FAILED TO FIND FILES:", filePathes)
-  }
-  return res
-}
+export const ensureFilesExist = (filePathes: string[]): boolean => (
+  _.every(filePathes.map(filename => !_.isEmpty(glob.sync(filename))))
+)

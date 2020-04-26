@@ -18,7 +18,7 @@ import SalesforceAdapter, {
   testHelpers as salesforceTestHelpers,
   testTypes as salesforceTestTypes,
 } from '@salto-io/salesforce-adapter'
-import { Element } from '@salto-io/adapter-api'
+import { Element, isObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
@@ -56,9 +56,21 @@ export const instanceExists = async (client: SalesforceClient, type: string, nam
 export const addElements = async (
   client: SalesforceClient,
   elements: Element[]
-): Promise<void> => {
+): Promise<Element[]> => {
   const adapter = new SalesforceAdapter({ client, config: {} })
-  await Promise.all(elements.map(element => adapter.add(element)))
+  const updatedElements = await Promise.all(elements.map(element => adapter.add(element)))
+  await Promise.all(elements.map(async e => {
+    if (isObjectType(e)) {
+      if (!(await objectExists(client, naclNameToSFName(e.elemID.typeName)))) {
+        // eslint-disable-next-line
+        console.log('FAILED TO ADD ', e.elemID.getFullName())
+      }
+    } else if (!(await instanceExists(client, 'Role', e.elemID.name))) {
+      // eslint-disable-next-line
+      console.log('FAILED TO ADD ', e.elemID.getFullName())
+    }
+  }))
+  return updatedElements
 }
 
 export const removeElements = async (
@@ -67,4 +79,15 @@ export const removeElements = async (
 ): Promise<void> => {
   const adapter = new SalesforceAdapter({ client, config: {} })
   await Promise.all(elements.map(element => adapter.remove(element)))
+  await Promise.all(elements.map(async e => {
+    if (isObjectType(e)) {
+      if (await objectExists(client, naclNameToSFName(e.elemID.typeName))) {
+        // eslint-disable-next-line
+        console.log('FAILED TO DELETE ', e.elemID.getFullName())
+      }
+    } else if (await instanceExists(client, 'Role', e.elemID.name)) {
+      // eslint-disable-next-line
+      console.log('FAILED TO DELETE ', e.elemID.getFullName())
+    }
+  }))
 }

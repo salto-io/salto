@@ -1,4 +1,3 @@
-/* eslint-disable */ 
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -15,18 +14,16 @@
 * limitations under the License.
 */
 import { SalesforceClient } from '@salto-io/salesforce-adapter'
-import _ from 'lodash'
 import path from 'path'
 import { Plan, dumpElements } from '@salto-io/core'
 import { strings } from '@salto-io/lowerdash'
+import tmp from 'tmp-promise'
+import { writeFile, rm } from '@salto-io/file'
+import { Element } from '@salto-io/adapter-api'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements } from './helpers/salesforce'
 import { ensureFilesExist, runInit, runSetEnv, runFetch, runPreviewGetPlan, runAddSalesforceService, runCreateEnv, runDeploy } from './helpers/workspace'
 import * as templates from './helpers/templates'
-import tmp from 'tmp-promise'
 import adapterConfigs from './adapter_configs'
-import { writeFile, rm } from '@salto-io/file'
-
-console.log([runSetEnv as unknown as Plan, runFetch, runPreviewGetPlan].length)
 
 describe('multi env tests', () => {
   jest.setTimeout(15 * 60 * 1000)
@@ -37,7 +34,6 @@ describe('multi env tests', () => {
   let baseDir: string
   let saltoHomeDir: string
   const tempID = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
-  console.log("TTTTTEEEEEEMMMMMMPPPPPPPP", tempID)
   const commonObjName = `TestObj${tempID}`
   const commonWithDiffName = `TestDiffObj${tempID}`
   const env1ObjName = `Env1TestObj${tempID}`
@@ -49,27 +45,27 @@ describe('multi env tests', () => {
 
   const commonInst = templates.instance({
     instName: commonInstName,
-    description: 'Common instance'
+    description: 'Common instance',
   })
 
   const env1Inst = templates.instance({
     instName: env1InstName,
-    description: 'Common instance'
+    description: 'Common instance',
   })
 
   const env2Inst = templates.instance({
     instName: env2InstName,
-    description: 'Common instance'
+    description: 'Common instance',
   })
 
   const diffInstEnv1 = templates.instance({
     instName: commonInstWithDiffName,
-    description: 'Common instance Env 1'
+    description: 'Common instance Env 1',
   })
 
   const diffInstEnv2 = templates.instance({
     instName: commonInstWithDiffName,
-    description: 'Common instance Env 2'
+    description: 'Common instance Env 2',
   })
 
   const commonObj = templates.customObject({
@@ -100,7 +96,7 @@ describe('multi env tests', () => {
 
   const env1Elements = [commonObj, env1Obj, diffObjEnv1, commonInst, env1Inst, diffInstEnv1]
   const env2Elements = [commonObj, env2Obj, diffObjEnv2, commonInst, env2Inst, diffInstEnv2]
-
+  let env1ElementAfterDeploy: Element[]
 
   const [env1Creds, env2Creds] = adapterConfigs.salesforceMulti()
   const env1Client = new SalesforceClient({ credentials: {
@@ -121,11 +117,9 @@ describe('multi env tests', () => {
     saltoHomeDir = (await tmp.dir()).path
 
     // Create the base elements in the services
-    process.env['SALTO_HOME'] = saltoHomeDir
-    await Promise.all([
-      addElements(env1Client, env1Elements),
-      addElements(env2Client, env2Elements),
-    ])
+    process.env.SALTO_HOME = saltoHomeDir
+    env1ElementAfterDeploy = await addElements(env1Client, env1Elements)
+    await addElements(env2Client, env2Elements)
   })
 
   describe('init envs', () => {
@@ -142,13 +136,13 @@ describe('multi env tests', () => {
 
     it('should create proper env structure', async () => {
       const filesToValidate = [
-        path.join(baseDir, 'salto.config','workspace.nacl'),
-        path.join(baseDir, 'salto.config','adapters', 'salesforce.nacl'),
-        path.join(saltoHomeDir,`${WS_NAME}*`,'credentials', ENV1_NAME, 'salesforce.nacl'),
-        path.join(saltoHomeDir,`${WS_NAME}*`,'credentials', ENV2_NAME, 'salesforce.nacl'),
-        path.join(saltoHomeDir,`${WS_NAME}*`,'envs', ENV1_NAME, 'cache'),
-        path.join(saltoHomeDir,`${WS_NAME}*`,'envs', ENV2_NAME, 'cache'),
-        path.join(saltoHomeDir,`${WS_NAME}*`,'workspaceUser.nacl')
+        path.join(baseDir, 'salto.config', 'workspace.nacl'),
+        path.join(baseDir, 'salto.config', 'adapters', 'salesforce.nacl'),
+        path.join(saltoHomeDir, `${WS_NAME}*`, 'credentials', ENV1_NAME, 'salesforce.nacl'),
+        path.join(saltoHomeDir, `${WS_NAME}*`, 'credentials', ENV2_NAME, 'salesforce.nacl'),
+        path.join(saltoHomeDir, `${WS_NAME}*`, 'envs', ENV1_NAME, 'cache'),
+        path.join(saltoHomeDir, `${WS_NAME}*`, 'envs', ENV2_NAME, 'cache'),
+        path.join(saltoHomeDir, `${WS_NAME}*`, 'workspaceUser.nacl'),
       ]
       expect(ensureFilesExist(filesToValidate)).toBeTruthy()
     })
@@ -168,46 +162,63 @@ describe('multi env tests', () => {
         // will be different between envs so we might see them in env 1 or env 2.
         // In the other tests we also ensure that nothing was created in wrong envs...
         expect(ensureFilesExist([
-          path.join(baseDir, 'salesforce','Objects', naclNameToSFName(commonObjName)),
-          path.join(baseDir, 'salesforce','Records','Roles', `${commonInstName}.nacl`),
+          path.join(baseDir, 'salesforce', 'Objects', naclNameToSFName(commonObjName)),
+          path.join(baseDir, 'salesforce', 'Records', 'Role', `${commonInstName}.nacl`),
         ])).toBeTruthy()
       })
 
       it('should place env unique elements in the env folder', () => {
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Objects', naclNameToSFName(env1ObjName)),
-          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Objects', naclNameToSFName(env2ObjName)),
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Records','Roles', `${env1InstName}.nacl`),
-          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Records','Roles', `${env2InstName}.nacl`)
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Objects', naclNameToSFName(env1ObjName)),
         ])).toBeTruthy()
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Objects', naclNameToSFName(env1ObjName)),
+          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Objects', naclNameToSFName(env2ObjName)),
+        ])).toBeTruthy()
+        expect(ensureFilesExist([
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Records', 'Role', `${env1InstName}.nacl`),
+        ])).toBeTruthy()
+        expect(ensureFilesExist([
+          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Records', 'Role', `${env2InstName}.nacl`),
+        ])).toBeTruthy()
+
+        expect(ensureFilesExist([
+          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Objects', naclNameToSFName(env1ObjName)),
         ])).toBeFalsy()
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Objects', naclNameToSFName(env2ObjName)),
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Objects', naclNameToSFName(env2ObjName)),
         ])).toBeFalsy()
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Records','Roles', `${env2InstName}.nacl`),
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Records', 'Role', `${env2InstName}.nacl`),
         ])).toBeFalsy()
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Records','Roles', `${env1InstName}.nacl`)
+          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Records', 'Role', `${env1InstName}.nacl`),
         ])).toBeFalsy()
       })
 
       it('should split common elements with diffs between common and env folders', () => {
         expect(ensureFilesExist([
-          path.join(baseDir, 'salesforce','Objects', naclNameToSFName(commonWithDiffName)),
-          path.join(baseDir, 'salesforce','Records','Roles', `${commonInstWithDiffName}.nacl`),
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Objects', naclNameToSFName(commonWithDiffName)),
-          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Objects', naclNameToSFName(commonWithDiffName)),
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Records','Roles', `${commonInstWithDiffName}.nacl`),
-          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Records','Roles', `${commonInstWithDiffName}.nacl`)
+          path.join(baseDir, 'salesforce', 'Objects', naclNameToSFName(commonWithDiffName))
+        ])).toBeTruthy()
+        expect(ensureFilesExist([
+          path.join(baseDir, 'salesforce', 'Records', 'Role', `${commonInstWithDiffName}.nacl`),
+        ])).toBeTruthy()
+        expect(ensureFilesExist([  
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Objects', naclNameToSFName(commonWithDiffName)),
+        ])).toBeTruthy()
+        expect(ensureFilesExist([
+          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Objects', naclNameToSFName(commonWithDiffName)),
+        ])).toBeTruthy()
+        expect(ensureFilesExist([
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Records', 'Role', `${commonInstWithDiffName}.nacl`),
+        ])).toBeTruthy()
+        expect(ensureFilesExist([  
+          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Records', 'Role', `${commonInstWithDiffName}.nacl`),
         ])).toBeTruthy()
       })
     })
 
     describe('have empty previews', () => {
-      let env1Plan: Plan | undefined 
+      let env1Plan: Plan | undefined
       let env2Plan: Plan | undefined
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV1_NAME)
@@ -225,6 +236,7 @@ describe('multi env tests', () => {
   describe('handle changes that originated in the service', () => {
     const objToSyncFromServiceName = `TestSyncFromServiceObj${tempID}`
     const instToSyncFromServiceName = `TestSyncFromServiceInst${tempID}`
+    let fromSyncToRemove: Element[]
     const objToSyncFromService = templates.customObject({
       objName: objToSyncFromServiceName,
       alphaLabel: 'alpha2',
@@ -232,14 +244,16 @@ describe('multi env tests', () => {
     })
     const instToSyncFromService = templates.instance({
       instName: instToSyncFromServiceName,
-      description: 'This was created on the service'
+      description: 'This was created on the service',
     })
-    
+
     describe('fetch an add change from the service', () => {
-      let afterFetchPlan: Plan | undefined 
+      let afterFetchPlan: Plan | undefined
       beforeAll(async () => {
         // Add the new element directly to the service
-        await addElements(env1Client, [objToSyncFromService, instToSyncFromService])
+        fromSyncToRemove = await addElements(
+          env1Client, [objToSyncFromService, instToSyncFromService]
+        )
         // We fetch it to common
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode
@@ -248,27 +262,26 @@ describe('multi env tests', () => {
 
       it('should add the fetched element to the common folder', () => {
         expect(ensureFilesExist([
-          path.join(baseDir, 'salesforce','Objects', naclNameToSFName(objToSyncFromServiceName)),
-          path.join(baseDir, 'salesforce','Records','Roles', `${instToSyncFromServiceName}.nacl`),
+          path.join(baseDir, 'salesforce', 'Objects', naclNameToSFName(objToSyncFromServiceName)),
+          path.join(baseDir, 'salesforce', 'Records', 'Role', `${instToSyncFromServiceName}.nacl`),
         ])).toBeTruthy()
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Objects', naclNameToSFName(objToSyncFromServiceName))
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Objects', naclNameToSFName(objToSyncFromServiceName)),
         ])).toBeFalsy()
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Objects', naclNameToSFName(objToSyncFromServiceName))
+          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Objects', naclNameToSFName(objToSyncFromServiceName)),
         ])).toBeFalsy()
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Records','Roles', `${instToSyncFromServiceName}.nacl`)
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Records', 'Role', `${instToSyncFromServiceName}.nacl`),
         ])).toBeFalsy()
         expect(ensureFilesExist([
-          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Records','Roles', `${instToSyncFromServiceName}.nacl`)
+          path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Records', 'Role', `${instToSyncFromServiceName}.nacl`),
         ])).toBeFalsy()
       })
 
       it('should have empty preview for the env from which the element was fetched', () => {
         expect(afterFetchPlan?.size).toBe(0)
       })
-
     })
 
     describe('apply the add chnage to the target env', () => {
@@ -278,8 +291,8 @@ describe('multi env tests', () => {
         await runSetEnv(baseDir, ENV2_NAME)
         afterOtherEnvFetchPlan = await runPreviewGetPlan(baseDir)
         // Just a safety check to avoid deploying changes if something
-        // went etong. 
-        if (afterOtherEnvFetchPlan && afterOtherEnvFetchPlan.size> 10) {
+        // went etong.
+        if (afterOtherEnvFetchPlan && afterOtherEnvFetchPlan.size > 10) {
           throw new Error('To many unexpected changes. Aborting')
         }
         await runDeploy(undefined, baseDir, true)
@@ -290,7 +303,10 @@ describe('multi env tests', () => {
       })
 
       it('should create the element in the target env', async () => {
-        expect(await objectExists(env2Client, naclNameToSFName(objToSyncFromServiceName))).toBeTruthy()
+        expect(await objectExists(
+          env2Client,
+          naclNameToSFName(objToSyncFromServiceName)
+        )).toBeTruthy()
         expect(await instanceExists(env2Client, 'Role', instToSyncFromServiceName)).toBeTruthy()
       })
     })
@@ -299,18 +315,12 @@ describe('multi env tests', () => {
       let afterDeleteFetchPlan: Plan | undefined
 
       // Just a note on what we delete here - we delete all of the things that
-      // were added to env1 and common. env2 cleanup will happen when we will 
-      // test Nacl based deletion below... 
+      // were added to env1 and common. env2 cleanup will happen when we will
+      // test Nacl based deletion below...
       beforeAll(async () => {
         await removeElements(env1Client, [
-          objToSyncFromService,
-          instToSyncFromService,
-          commonObj,
-          commonInst,
-          diffObjEnv1,
-          diffInstEnv1,
-          env1Obj,
-          env1Inst
+          ...fromSyncToRemove,
+          ...env1ElementAfterDeploy,
         ])
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode
@@ -319,26 +329,26 @@ describe('multi env tests', () => {
 
       it('should remove the elements from the nacl files in the common folder', async () => {
         const commonFilesToDelete = [
-          path.join(baseDir, 'salesforce','Objects', naclNameToSFName(commonObjName)),
-          path.join(baseDir, 'salesforce','Records','Roles', `${commonInstName}.nacl`),
-          path.join(baseDir, 'salesforce','Objects', naclNameToSFName(objToSyncFromServiceName)),
-          path.join(baseDir, 'salesforce','Records','Roles', `${instToSyncFromServiceName}.nacl`),
-          path.join(baseDir, 'salesforce','Objects', naclNameToSFName(commonWithDiffName)),
-          path.join(baseDir, 'salesforce','Records','Roles', `${commonInstWithDiffName}.nacl`),
+          path.join(baseDir, 'salesforce', 'Objects', naclNameToSFName(commonObjName)),
+          path.join(baseDir, 'salesforce', 'Records', 'Role', `${commonInstName}.nacl`),
+          path.join(baseDir, 'salesforce', 'Objects', naclNameToSFName(objToSyncFromServiceName)),
+          path.join(baseDir, 'salesforce', 'Records', 'Role', `${instToSyncFromServiceName}.nacl`),
+          path.join(baseDir, 'salesforce', 'Objects', naclNameToSFName(commonWithDiffName)),
+          path.join(baseDir, 'salesforce', 'Records', 'Role', `${commonInstWithDiffName}.nacl`),
         ]
         commonFilesToDelete.forEach(
-          async filename =>expect(ensureFilesExist([filename])).toBeFalsy()
+          async filename => expect(ensureFilesExist([filename])).toBeFalsy()
         )
       })
       it('should remove the elements from the nacl files in the env folder', async () => {
         const envFilesToDelete = [
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Objects', naclNameToSFName(env1ObjName)),
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Records','Roles', `${env1InstName}.nacl`),
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Objects', naclNameToSFName(commonWithDiffName)),
-          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce','Records','Roles', `${commonInstWithDiffName}.nacl`),
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Objects', naclNameToSFName(env1ObjName)),
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Records', 'Role', `${env1InstName}.nacl`),
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Objects', naclNameToSFName(commonWithDiffName)),
+          path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'Records', 'Role', `${commonInstWithDiffName}.nacl`),
         ]
         envFilesToDelete.forEach(
-          async filename =>expect(ensureFilesExist([filename])).toBeFalsy()
+          async filename => expect(ensureFilesExist([filename])).toBeFalsy()
         )
       })
       it('should have empty preview after fetching the delete changes', async () => {
@@ -352,7 +362,7 @@ describe('multi env tests', () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV2_NAME)
         afterDeleteOtherEnvFetchPlan = await runPreviewGetPlan(baseDir)
-        await runDeploy(undefined, baseDir, true)
+        await runDeploy(undefined, baseDir, true, true)
       })
 
       it('should have a non empty preview for the target enviornment', () => {
@@ -360,15 +370,16 @@ describe('multi env tests', () => {
       })
 
       it('should delete the elements in the target env', async () => {
-        expect(await objectExists(env2Client, naclNameToSFName(objToSyncFromServiceName))).toBeFalsy()
+        expect(await objectExists(
+          env2Client,
+          naclNameToSFName(objToSyncFromServiceName)
+        )).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', instToSyncFromServiceName)).toBeFalsy()
-        expect(await objectExists(env2Client, naclNameToSFName(commonObjName))).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', commonInstName)).toBeFalsy()
         expect(await objectExists(env2Client, naclNameToSFName(commonWithDiffName))).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', commonInstWithDiffName)).toBeFalsy()
       })
     })
-
   })
 
   describe('handle changes that originated in the NaCL files', () => {
@@ -386,8 +397,8 @@ describe('multi env tests', () => {
       }),
       templates.instance({
         instName: commonNaclFileInstName,
-        description: 'Common from Nacl'
-      })
+        description: 'Common from Nacl',
+      }),
     ])
     const env1NaclFile = dumpElements([
       templates.customObject({
@@ -397,8 +408,8 @@ describe('multi env tests', () => {
       }),
       templates.instance({
         instName: env1NaclFileInstName,
-        description: 'Env1 from Nacl'
-      })
+        description: 'Env1 from Nacl',
+      }),
     ])
     const env2NaclFile = dumpElements([
       templates.customObject({
@@ -408,12 +419,9 @@ describe('multi env tests', () => {
       }),
       templates.instance({
         instName: env2NaclFileInstName,
-        description: 'Env2 from Nacl'
-      })
+        description: 'Env2 from Nacl',
+      }),
     ])
-
-    let naclChangeEnv1Plan: Plan | undefined
-    let naclChangeEnv2Plan: Plan | undefined
 
     describe('handle nacl based add change', () => {
       beforeAll(async () => {
@@ -421,30 +429,37 @@ describe('multi env tests', () => {
         await writeFile(path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'env1.nacl'), env1NaclFile)
         await writeFile(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'env2.nacl'), env2NaclFile)
         await runSetEnv(baseDir, ENV1_NAME)
-        naclChangeEnv1Plan = await runPreviewGetPlan(baseDir)
+        await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV2_NAME)
-        naclChangeEnv2Plan = await runPreviewGetPlan(baseDir)
-        if ((naclChangeEnv1Plan?.size ?? 0) > 10 || (naclChangeEnv2Plan?.size ?? 0) > 10) {
-          // Just a safety check to avoid deploying changes if something
-          // went etong. 
-          throw new Error('To many unexpected changes. Aborting')
-        }
+        await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV1_NAME)
-        await runDeploy(undefined, baseDir, true)
+        await runDeploy(undefined, baseDir, true, true)
         await runSetEnv(baseDir, ENV2_NAME)
-        await runDeploy(undefined, baseDir, true)
+        await runDeploy(undefined, baseDir, true, true)
       })
 
       it('should create common elements in both envs', async () => {
-        expect(await objectExists(env1Client, naclNameToSFName(commonNaclFileObjectName))).toBeTruthy()
-        expect(await objectExists(env2Client, naclNameToSFName(commonNaclFileObjectName))).toBeTruthy()
+        expect(await objectExists(
+          env1Client,
+          naclNameToSFName(commonNaclFileObjectName)
+        )).toBeTruthy()
+        expect(await objectExists(
+          env2Client,
+          naclNameToSFName(commonNaclFileObjectName)
+        )).toBeTruthy()
         expect(await instanceExists(env1Client, 'Role', commonNaclFileInstName)).toBeTruthy()
         expect(await instanceExists(env2Client, 'Role', commonNaclFileInstName)).toBeTruthy()
       })
 
       it('should create env specific elements in proper env', async () => {
-        expect(await objectExists(env1Client, naclNameToSFName(env1NaclFileObjectName))).toBeTruthy()
-        expect(await objectExists(env2Client, naclNameToSFName(env2NaclFileObjectName))).toBeTruthy()
+        expect(await objectExists(
+          env1Client,
+          naclNameToSFName(env1NaclFileObjectName)
+        )).toBeTruthy()
+        expect(await objectExists(
+          env2Client,
+          naclNameToSFName(env2NaclFileObjectName)
+        )).toBeTruthy()
         expect(await instanceExists(env1Client, 'Role', env1NaclFileInstName)).toBeTruthy()
         expect(await instanceExists(env2Client, 'Role', env2NaclFileInstName)).toBeTruthy()
       })
@@ -456,18 +471,18 @@ describe('multi env tests', () => {
         expect(await instanceExists(env2Client, 'Role', env1NaclFileInstName)).toBeFalsy()
       })
     })
-    
+
     describe('handle nacl file delete changes', () => {
       beforeAll(async () => {
         await rm(path.join(baseDir, 'salesforce', 'common.nacl'))
         await rm(path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'env1.nacl'))
         await rm(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'env2.nacl'))
-        await rm(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Objects', naclNameToSFName(env2ObjName)))
-        await rm(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce','Records','Roles', `${env2InstName}.nacl`))
+        await rm(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Objects', naclNameToSFName(env2ObjName)))
+        await rm(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'Records', 'Role', `${env2InstName}.nacl`))
         await runSetEnv(baseDir, ENV1_NAME)
-        naclChangeEnv1Plan = await runPreviewGetPlan(baseDir)
+        await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV2_NAME)
-        naclChangeEnv2Plan = await runPreviewGetPlan(baseDir)
+        await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV1_NAME)
         await runDeploy(undefined, baseDir, true, true)
         await runSetEnv(baseDir, ENV2_NAME)
@@ -475,8 +490,14 @@ describe('multi env tests', () => {
       })
 
       it('should remove common elements from nacl change', async () => {
-        expect(await objectExists(env1Client, naclNameToSFName(commonNaclFileObjectName))).toBeFalsy()
-        expect(await objectExists(env2Client, naclNameToSFName(commonNaclFileObjectName))).toBeFalsy()
+        expect(await objectExists(
+          env1Client,
+          naclNameToSFName(commonNaclFileObjectName)
+        )).toBeFalsy()
+        expect(await objectExists(
+          env2Client,
+          naclNameToSFName(commonNaclFileObjectName)
+        )).toBeFalsy()
         expect(await instanceExists(env1Client, 'Role', commonNaclFileInstName)).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', commonNaclFileInstName)).toBeFalsy()
       })

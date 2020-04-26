@@ -24,19 +24,19 @@ const sfText = new PrimitiveType({
   },
 })
 
-const sfRoleID = new ElemID('salesforce','Role')
+const sfRoleID = new ElemID('salesforce', 'Role')
 const sfRole = new ObjectType({
-  elemID: new ElemID('salesforce','Role'),
-  annotationTypes : {
-    metadataType : BuiltinTypes.SERVICE_ID
+  elemID: new ElemID('salesforce', 'Role'),
+  annotationTypes: {
+    metadataType: BuiltinTypes.SERVICE_ID,
   },
-  annotations : {
-    metadataType: 'Role'
+  annotations: {
+    metadataType: 'Role',
   },
-  fields : {
+  fields: {
     description: new Field(sfRoleID, 'description', BuiltinTypes.STRING),
-    name: new Field(sfRoleID, 'name', BuiltinTypes.STRING)
-  }
+    name: new Field(sfRoleID, 'name', BuiltinTypes.STRING),
+  },
 })
 
 export const customObject = (
@@ -57,10 +57,8 @@ export const customObject = (
 }
 
 export const instance = (
-  data : {instName: string, description: string}
-): InstanceElement => {
-  return new InstanceElement(data.instName, sfRole, {
-    description: data.description,
-    name: data.instName
-  })
-}
+  data: {instName: string; description: string}
+): InstanceElement => new InstanceElement(data.instName, sfRole, {
+  description: data.description,
+  name: data.instName,
+})

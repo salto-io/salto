@@ -46,8 +46,7 @@ export class MockWriteStream {
   colors: boolean
   isTTY: boolean
 
-  // eslint-disable-next-line
-  write(s: string): void { console.log(s); this.content += s }
+  write(s: string): void { this.content += s }
 }
 
 export type MockWritableStream = NodeJS.WritableStream & {

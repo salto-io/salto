@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
-  CORE_ANNOTATIONS, isListType } from '@salto-io/adapter-api'
+  isListType, getRestriction } from '@salto-io/adapter-api'
 import { dumpElemID, parseElemID } from '@salto-io/core'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { ContextReference } from '../context'
@@ -43,9 +43,8 @@ export const isInsertText = (value: any): value is InsertText => (
 )
 
 const getRestrictionValues = (annotatingElem: TypeElement|Field, valueType: TypeElement):
-Value[]|undefined =>
-  annotatingElem.annotations[CORE_ANNOTATIONS.VALUES]
-  || valueType.annotations[CORE_ANNOTATIONS.VALUES]
+ReadonlyArray<Value>|undefined =>
+  getRestriction(annotatingElem).values ?? getRestriction(valueType).values
 
 const getAllInstances = (
   elements: ReadonlyArray<Element>,

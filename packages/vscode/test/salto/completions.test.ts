@@ -309,7 +309,7 @@ describe('Test auto complete', () => {
     })
 
     it('should return list brackets', async () => {
-      const pos = { line: 137, col: 16 }
+      const pos = { line: 139, col: 16 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -319,7 +319,7 @@ describe('Test auto complete', () => {
     })
 
     it('should return list inside value', async () => {
-      const pos = { line: 137, col: 24 }
+      const pos = { line: 139, col: 24 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -330,7 +330,7 @@ describe('Test auto complete', () => {
   })
 
   it('should return list brackets for new element in list of list', async () => {
-    const pos = { line: 138, col: 37 }
+    const pos = { line: 140, col: 37 }
     const line = await getLine(workspace, naclFileName, pos)
     const ctx = await getPositionContext(workspace, naclFileName, pos)
     const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -341,7 +341,7 @@ describe('Test auto complete', () => {
 
   describe('references', () => {
     it('should suggest all adapters on empty first token', async () => {
-      const pos = { line: 143, col: 16 }
+      const pos = { line: 145, col: 16 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -351,7 +351,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all types on first token with adapter', async () => {
-      const pos = { line: 143, col: 19 }
+      const pos = { line: 145, col: 19 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -361,7 +361,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all instance fields', async () => {
-      const pos = { line: 143, col: 45 }
+      const pos = { line: 145, col: 45 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -371,7 +371,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all instance fields with 1 level nesting', async () => {
-      const pos = { line: 146, col: 53 }
+      const pos = { line: 148, col: 53 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -381,7 +381,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all instance fields with 2 level nesting', async () => {
-      const pos = { line: 146, col: 63 }
+      const pos = { line: 148, col: 63 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -391,7 +391,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest fields when base is an object type', async () => {
-      const pos = { line: 149, col: 30 }
+      const pos = { line: 151, col: 30 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -402,7 +402,7 @@ describe('Test auto complete', () => {
 
 
     it('should suggest annotations when base is an object type with 1 level nesting', async () => {
-      const pos = { line: 149, col: 37 }
+      const pos = { line: 151, col: 37 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -412,7 +412,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest nothing on empty first token in string without template', async () => {
-      const pos = { line: 152, col: 17 }
+      const pos = { line: 154, col: 17 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -422,7 +422,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all adapters on empty first token in template', async () => {
-      const pos = { line: 152, col: 19 }
+      const pos = { line: 154, col: 19 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -432,7 +432,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all types on first token with adapter in template', async () => {
-      const pos = { line: 152, col: 22 }
+      const pos = { line: 154, col: 22 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -442,7 +442,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all fields inside string template', async () => {
-      const pos = { line: 152, col: 33 }
+      const pos = { line: 154, col: 33 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -452,7 +452,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all field\'s annotations inside string template', async () => {
-      const pos = { line: 152, col: 41 }
+      const pos = { line: 154, col: 41 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -462,7 +462,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest nothing on empty first token in string with prefix without template', async () => {
-      const pos = { line: 155, col: 21 }
+      const pos = { line: 157, col: 21 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -472,7 +472,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all adapters on empty first token in template with prefix', async () => {
-      const pos = { line: 155, col: 23 }
+      const pos = { line: 157, col: 23 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -482,7 +482,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all types on first token with adapter in template with prefix', async () => {
-      const pos = { line: 155, col: 26 }
+      const pos = { line: 157, col: 26 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -492,7 +492,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all fields inside string template with prefix', async () => {
-      const pos = { line: 155, col: 37 }
+      const pos = { line: 157, col: 37 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -503,7 +503,7 @@ describe('Test auto complete', () => {
 
 
     it('should suggest all field\'s annotations inside string template with prefix', async () => {
-      const pos = { line: 155, col: 45 }
+      const pos = { line: 157, col: 45 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -513,7 +513,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest nothing on empty first token in string with empty prefix without template', async () => {
-      const pos = { line: 158, col: 21 }
+      const pos = { line: 160, col: 21 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -523,7 +523,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all adapters on empty first token in template with empty prefix', async () => {
-      const pos = { line: 158, col: 23 }
+      const pos = { line: 160, col: 23 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -533,7 +533,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all types on first token with adapter in template with empty prefix', async () => {
-      const pos = { line: 158, col: 26 }
+      const pos = { line: 160, col: 26 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -543,7 +543,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all fields inside string template with empty prefix', async () => {
-      const pos = { line: 158, col: 37 }
+      const pos = { line: 160, col: 37 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -553,7 +553,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all field\'s annotations inside string template with empty prefix', async () => {
-      const pos = { line: 158, col: 45 }
+      const pos = { line: 160, col: 45 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -566,7 +566,7 @@ describe('Test auto complete', () => {
     // /
 
     it('should suggest nothing on empty first token in string with complex prefix without template', async () => {
-      const pos = { line: 161, col: 21 }
+      const pos = { line: 163, col: 21 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -576,7 +576,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all adapters on empty first token in template with complex prefix', async () => {
-      const pos = { line: 161, col: 23 }
+      const pos = { line: 163, col: 23 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -586,7 +586,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all types on first token with adapter in template with complex prefix', async () => {
-      const pos = { line: 161, col: 26 }
+      const pos = { line: 163, col: 26 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -596,7 +596,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all fields inside string template with complex prefix', async () => {
-      const pos = { line: 161, col: 37 }
+      const pos = { line: 163, col: 37 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -606,7 +606,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest all field\'s annotations inside string template with complex prefix', async () => {
-      const pos = { line: 161, col: 45 }
+      const pos = { line: 163, col: 45 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -616,7 +616,7 @@ describe('Test auto complete', () => {
     })
 
     it('should suggest a complex annotation fields', async () => {
-      const pos = { line: 164, col: 41 }
+      const pos = { line: 166, col: 41 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -626,7 +626,7 @@ describe('Test auto complete', () => {
     })
 
     it('should return nothing on non-existing base element', async () => {
-      const pos = { line: 143, col: 31 }
+      const pos = { line: 145, col: 31 }
       const line = (await getLine(workspace, naclFileName, pos)).replace('vs_weekend_car', 'nothing')
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
@@ -636,7 +636,7 @@ describe('Test auto complete', () => {
     })
 
     it('should return instance annotations', async () => {
-      const pos = { line: 196, col: 40 }
+      const pos = { line: 198, col: 40 }
       const line = (await getLine(workspace, naclFileName, pos)).replace('vs_weekend_car', 'nothing')
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)

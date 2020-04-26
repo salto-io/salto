@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes,
-  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType,
+  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType, getRestriction,
 } from '@salto-io/adapter-api'
 import { MetadataInfo, ListMetadataQuery } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
@@ -141,7 +141,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(flow.fields.enum.type.elemID.name).toBe('string')
       expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.DEFAULT]).toBe('yes')
       // Note the order here is important because we expect restriction values to be sorted
-      expect(flow.fields.enum.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['no', 'yes'])
+      expect(getRestriction(flow.fields.enum).values).toEqual(['no', 'yes'])
       expect(flow.path).toEqual([constants.SALESFORCE, constants.TYPES_PATH, 'Flow'])
       expect(flow.fields[constants.INSTANCE_FULL_NAME_FIELD].type).toEqual(BuiltinTypes.SERVICE_ID)
       expect(flow.annotationTypes[constants.METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)

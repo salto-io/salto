@@ -112,13 +112,15 @@ vs.loan not_a_loan {
 
 type vs.loan {
     vs.str risk {
-        _values = [
-            "accident",
-            "car",
-            "plane",
-            "ticket",
-            "to much fun"
-        ]
+        _restriction = {
+            values = [
+                "accident",
+                "car",
+                "plane",
+                "ticket",
+                "to much fun"
+            ]
+        }
     }
 }
 

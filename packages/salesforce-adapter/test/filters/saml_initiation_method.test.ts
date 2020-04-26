@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  createRestriction,
 } from '@salto-io/adapter-api'
 import filterCreator, { CANVAS_METADATA_TYPE_ID, SAML_INIT_METHOD_FIELD_NAME }
   from '../../src/filters/saml_initiation_method'
@@ -30,7 +31,9 @@ describe('saml initiation method filter', () => {
           CANVAS_METADATA_TYPE_ID,
           SAML_INIT_METHOD_FIELD_NAME,
           BuiltinTypes.STRING,
-          { [CORE_ANNOTATIONS.VALUES]: ['None', 'IdpInitiated', 'SpInitiated'] },
+          { [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: ['None', 'IdpInitiated', 'SpInitiated'],
+          }) },
         ),
       },
     }

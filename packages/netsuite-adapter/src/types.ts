@@ -15,7 +15,7 @@
 */
 import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, PrimitiveType, PrimitiveTypes,
-  RESTRICTION_ANNOTATIONS, ListType, TypeElement,
+  ListType, TypeElement, createRestriction,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
@@ -46,12 +46,7 @@ export class Types {
     elemID: accessLevelElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-      [CORE_ANNOTATIONS.VALUES]: [
-        '0',
-        '1',
-        '2',
-      ],
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['0', '1', '2'] }),
     },
     path: [...subtypesFolderPath, accessLevelElemID.name],
   })
@@ -60,12 +55,7 @@ export class Types {
     elemID: searchLevelElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-      [CORE_ANNOTATIONS.VALUES]: [
-        '0',
-        '1',
-        '2',
-      ],
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['0', '1', '2'] }),
     },
     path: [...subtypesFolderPath, searchLevelElemID.name],
   })
@@ -74,11 +64,7 @@ export class Types {
     elemID: onParentDeleteElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-      [CORE_ANNOTATIONS.VALUES]: [
-        'NO_ACTION',
-        'SET_NULL',
-      ],
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['NO_ACTION', 'SET_NULL'] }),
     },
     path: [...subtypesFolderPath, onParentDeleteElemID.name],
   })
@@ -87,14 +73,9 @@ export class Types {
     elemID: displayTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-      [CORE_ANNOTATIONS.VALUES]: [
-        'HIDDEN',
-        'LOCKED',
-        'NORMAL',
-        'SHOWASLIST',
-        'STATICTEXT',
-      ],
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+        values: ['HIDDEN', 'LOCKED', 'NORMAL', 'SHOWASLIST', 'STATICTEXT'],
+      }),
     },
     path: [...subtypesFolderPath, displayTypeElemID.name],
   })
@@ -103,15 +84,9 @@ export class Types {
     elemID: dynamicDefaultElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-      [CORE_ANNOTATIONS.VALUES]: [
-        'DEPARTMENT',
-        'LOCATION',
-        'ME',
-        'NOW',
-        'SUBSIDIARY',
-        'SUPERVISOR',
-      ],
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+        values: ['DEPARTMENT', 'LOCATION', 'ME', 'NOW', 'SUBSIDIARY', 'SUPERVISOR'],
+      }),
     },
     path: [...subtypesFolderPath, dynamicDefaultElemID.name],
   })
@@ -120,17 +95,9 @@ export class Types {
     elemID: fieldFilterCompareTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-      [CORE_ANNOTATIONS.VALUES]: [
-        'EQ',
-        'GT',
-        'GTE',
-        'LIKE',
-        'LT',
-        'LTE',
-        'NE',
-        'NOTLIKE',
-      ],
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+        values: ['EQ', 'GT', 'GTE', 'LIKE', 'LT', 'LTE', 'NE', 'NOTLIKE'],
+      }),
     },
     path: [...subtypesFolderPath, fieldFilterCompareTypeElemID.name],
   })
@@ -176,31 +143,13 @@ export class Types {
     elemID: fieldTypeElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-      [CORE_ANNOTATIONS.VALUES]: [
-        'CHECKBOX',
-        'CLOBTEXT',
-        'CURRENCY',
-        'DATE',
-        'DATETIMETZ',
-        'DOCUMENT',
-        'EMAIL',
-        'FLOAT',
-        'HELP',
-        'IMAGE',
-        'INLINEHTML',
-        'INTEGER',
-        'MULTISELECT',
-        'PASSWORD',
-        'PERCENT',
-        'PHONE',
-        'RICHTEXT',
-        'SELECT',
-        'TEXT',
-        'TEXTAREA',
-        'TIMEOFDAY',
-        'URL',
-      ],
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+        values: [
+          'CHECKBOX', 'CLOBTEXT', 'CURRENCY', 'DATE', 'DATETIMETZ', 'DOCUMENT', 'EMAIL', 'FLOAT',
+          'HELP', 'IMAGE', 'INLINEHTML', 'INTEGER', 'MULTISELECT', 'PASSWORD', 'PERCENT', 'PHONE',
+          'RICHTEXT', 'SELECT', 'TEXT', 'TEXTAREA', 'TIMEOFDAY', 'URL',
+        ],
+      }),
     },
     path: [...subtypesFolderPath, fieldTypeElemID.name],
   })

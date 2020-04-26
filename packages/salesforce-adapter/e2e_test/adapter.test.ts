@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
-  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
-  TypeElement, isObjectType,
+  isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
+  TypeElement, isObjectType, getRestriction,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -1062,9 +1062,7 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.fields.description.type).toEqual(BuiltinTypes.STRING)
       expect(flow.fields.isTemplate.type).toEqual(BuiltinTypes.BOOLEAN)
       expect(flow.fields.actionCalls.type).toEqual(findElements(result, 'FlowActionCall')[0])
-      expect(flow.fields.processType
-        .annotations[CORE_ANNOTATIONS.RESTRICTION][RESTRICTION_ANNOTATIONS.ENFORCE_VALUE])
-        .toEqual(false)
+      expect(getRestriction(flow.fields.processType).enforce_value).toEqual(false)
     })
 
     it('should fetch settings instance', () => {

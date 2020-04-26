@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Element, ElemID, CORE_ANNOTATIONS, ObjectType, InstanceElement,
+  Element, ElemID, ObjectType, InstanceElement, getRestriction,
 } from '@salto-io/adapter-api'
 import {
   findObjectType, findInstances,
@@ -41,10 +41,10 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
    */
   onFetch: async (elements: Element[]) => {
     const transformShortValues = (animationRule: InstanceElement, fieldName: string,
-      fieldFullValueNames: string[]): void => {
+      fieldFullValueNames: ReadonlyArray<string>): void => {
       const isShortValueName = (val: string): boolean => (val !== undefined && val.length === 1)
 
-      const fullValueName = (fullNameValues: string[], shortValue: string): string =>
+      const fullValueName = (fullNameValues: ReadonlyArray<string>, shortValue: string): string =>
         fullNameValues.find(v => v.toLowerCase().startsWith(shortValue.toLowerCase())) ?? shortValue
 
       const fieldValue = animationRule.value[fieldName]
@@ -54,9 +54,12 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     }
 
     const animationRuleType = findObjectType(elements, ANIMATION_RULE_TYPE_ID) as ObjectType
-    const getValues = (fieldName: string): string[] =>
-      animationRuleType?.fields[fieldName]?.annotations[CORE_ANNOTATIONS.VALUES] ?? []
-
+    const getValues = (fieldName: string): ReadonlyArray<string> => {
+      const field = animationRuleType?.fields[fieldName]
+      return field === undefined
+        ? []
+        : (getRestriction(field).values ?? []) as ReadonlyArray<string>
+    }
     const animationFrequencyValues = getValues(ANIMATION_FREQUENCY)
     const recordTypeContextValues = getValues(RECORD_TYPE_CONTEXT)
 

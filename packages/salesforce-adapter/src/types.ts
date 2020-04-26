@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, BuiltinTypes, Field, CORE_ANNOTATIONS,
-  RESTRICTION_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
+import {
+  ElemID, ObjectType, BuiltinTypes, Field, CORE_ANNOTATIONS, ListType, createRestriction,
+} from '@salto-io/adapter-api'
 import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
@@ -78,11 +79,7 @@ export const configType = new ObjectType({
       BuiltinTypes.NUMBER,
       {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
-        [CORE_ANNOTATIONS.RESTRICTION]: {
-          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
-          [RESTRICTION_ANNOTATIONS.MIN]: 1,
-          [RESTRICTION_ANNOTATIONS.MAX]: 25,
-        },
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 25 }),
       },
     ),
     [MAX_ITEMS_IN_RETRIEVE_REQUEST]: new Field(
@@ -91,11 +88,7 @@ export const configType = new ObjectType({
       BuiltinTypes.NUMBER,
       {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-        [CORE_ANNOTATIONS.RESTRICTION]: {
-          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
-          [RESTRICTION_ANNOTATIONS.MIN]: 1000,
-          [RESTRICTION_ANNOTATIONS.MAX]: 10000,
-        },
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1000, max: 10000 }),
       },
     ),
   },

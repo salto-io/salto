@@ -35,6 +35,7 @@ import {
   nurtureTimeRangeElemID, anchorSettingElemID, actionElemID, eventAnchorElemID,
   contactPropertyElemID, dependentFormFieldFiltersElemID, contactPropertyFieldTypeValues,
   fieldFilterElemID, richTextElemID, contactPropertyTypeValues, contactPropertyOverridesElemID,
+  SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH,
 } from '../constants'
 import {
   HubspotMetadata,
@@ -127,7 +128,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', optionsElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, optionsElemID.name],
     })
 
   private static fieldFilterType: ObjectType =
@@ -178,7 +179,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', fieldFilterElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, fieldFilterElemID.name],
     })
 
     private static contactPropertyOverridesType: ObjectType =
@@ -219,7 +220,7 @@ export class Types {
             },
           ),
         },
-        path: [HUBSPOT, 'Types', 'Subtypes', contactPropertyOverridesElemID.name],
+        path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactPropertyOverridesElemID.name],
       })
 
     private static createFormFieldType = (
@@ -281,7 +282,7 @@ export class Types {
             },
           ),
         },
-        path: [HUBSPOT, 'Types', 'Subtypes', elemID.name],
+        path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, elemID.name],
       })
       if (isFatherProperty) {
         Object.assign(formPropertyType.fields, {
@@ -333,7 +334,7 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', dependentFormFieldFiltersElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, dependentFormFieldFiltersElemID.name],
     })
 
   private static dependentFormFieldType = Types.createFormFieldType(
@@ -353,7 +354,7 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', richTextElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, richTextElemID.name],
     })
 
   private static propertyGroupType: ObjectType =
@@ -390,7 +391,7 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', propertyGroupElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, propertyGroupElemID.name],
     })
 
   private static eventAnchorType: ObjectType =
@@ -413,7 +414,7 @@ export class Types {
           }
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', eventAnchorElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, eventAnchorElemID.name],
     })
 
   private static anchorSettingType: ObjectType =
@@ -442,7 +443,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', anchorSettingElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, anchorSettingElemID.name],
     })
 
   private static criteriaType: ObjectType =
@@ -499,7 +500,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', criteriaElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, criteriaElemID.name],
     })
 
     // Create action type in steps cause of recursive fields
@@ -585,7 +586,7 @@ export class Types {
             },
           ),
         },
-        path: [HUBSPOT, 'Types', 'Subtypes', actionElemID.name],
+        path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, actionElemID.name],
       })
 
       const acceptActionsField = new Field(
@@ -635,7 +636,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', nurtureTimeRangeElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, nurtureTimeRangeElemID.name],
     })
 
   private static contactListIdsType: ObjectType =
@@ -671,7 +672,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', contactListIdsElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactListIdsElemID.name],
     })
 
   private static rssToEmailTimingType: ObjectType =
@@ -708,7 +709,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', 'Subtypes', rssToEmailTimingElemID.name],
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, rssToEmailTimingElemID.name],
     })
 
   /**
@@ -832,7 +833,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', formElemID.name],
+      path: [HUBSPOT, TYPES_PATH, formElemID.name],
     }),
     [OBJECTS_NAMES.WORKFLOWS]: new ObjectType({
       elemID: workflowsElemID,
@@ -975,7 +976,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', workflowsElemID.name],
+      path: [HUBSPOT, TYPES_PATH, workflowsElemID.name],
     }),
     [OBJECTS_NAMES.MARKETINGEMAIL]: new ObjectType({
       elemID: marketingEmailElemID,
@@ -1661,7 +1662,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', marketingEmailElemID.name],
+      path: [HUBSPOT, TYPES_PATH, marketingEmailElemID.name],
     }),
     [OBJECTS_NAMES.CONTACT_PROPERTY]: new ObjectType({
       elemID: contactPropertyElemID,
@@ -1796,7 +1797,7 @@ export class Types {
           },
         ),
       },
-      path: [HUBSPOT, 'Types', contactPropertyElemID.name],
+      path: [HUBSPOT, TYPES_PATH, contactPropertyElemID.name],
     }),
   }
 
@@ -1826,7 +1827,7 @@ export class Types {
       Object.values(Types.fieldTypes),
     ).map(type => {
       const fieldType = type.clone()
-      fieldType.path = [HUBSPOT, 'types', 'field_types']
+      fieldType.path = [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, 'field_types']
       return fieldType
     })
   }
@@ -1936,7 +1937,7 @@ export const createHubspotInstanceElement = (
     new ElemID(HUBSPOT, instanceName).name,
     type,
     hubspotMetadata as Values,
-    [HUBSPOT, 'Records', typeName, instanceName],
+    [HUBSPOT, RECORDS_PATH, typeName, instanceName],
   )
 }
 

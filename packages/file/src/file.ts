@@ -24,11 +24,11 @@ const statP = promisify(fs.stat)
 const readFileP = promisify(fs.readFile)
 const copyFileP = promisify(fs.copyFile)
 const writeFileP = promisify(fs.writeFile)
-const renameP = promisify(fs.rename)
 const readDirP = promisify(fs.readdir)
 
 export const rm = promisify(rimRafLib)
 export const mkdirp = promisify(mkdirpLib)
+export const rename = promisify(fs.rename)
 
 export const notFoundAsUndefined = <
   TArgs extends unknown[],
@@ -104,5 +104,5 @@ export const replaceContents = async (
 ): Promise<void> => {
   const tempFilename = `${filename}.tmp.${strings.insecureRandomString()}`
   await writeFile(tempFilename, contents)
-  await renameP(tempFilename, filename)
+  await rename(tempFilename, filename)
 }

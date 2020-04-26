@@ -86,11 +86,13 @@ const mockConfigSource = (conf?: Values): ConfigSource => ({
   )),
   set: jest.fn(),
   delete: jest.fn(),
+  rename: jest.fn(),
 })
 const mockCredentialsSource = (): ConfigSource => ({
   get: jest.fn(),
   set: jest.fn(),
   delete: jest.fn(),
+  rename: jest.fn(),
 })
 
 const createWorkspace = async (
@@ -131,6 +133,7 @@ describe('workspace', () => {
         get: jest.fn().mockResolvedValue(undefined),
         set: jest.fn(),
         delete: jest.fn(),
+        rename: jest.fn(),
       }
       await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects
         .toThrow(NoWorkspaceConfig)
@@ -142,6 +145,7 @@ describe('workspace', () => {
         )),
         set: jest.fn(),
         delete: jest.fn(),
+        rename: jest.fn(),
       }
       expect(await createWorkspace(undefined, undefined, noUserConfig)).toBeDefined()
     })
@@ -677,6 +681,28 @@ describe('workspace', () => {
     })
   })
 
+  describe('renameEnvironment', () => {
+    let confSource: ConfigSource
+    let workspace: Workspace
+
+    beforeEach(async () => {
+      confSource = mockConfigSource()
+      workspace = await createWorkspace(undefined, undefined, confSource)
+      await workspace.renameEnvironment('inactive', 'new-inactive')
+    })
+
+    it('should change workspace state', async () => {
+      expect(workspace.envs().includes('new-inactive')).toBeTruthy()
+    })
+
+    it('should persist', () => {
+      expect(confSource.set).toHaveBeenCalledTimes(1)
+      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
+      const envs = instance.value.envs.map((e: {name: string}) => e.name)
+      expect(envs.includes('new-inactive')).toBeTruthy()
+    })
+  })
+
   describe('addService', () => {
     let confSource: ConfigSource
     let workspace: Workspace
@@ -753,6 +779,7 @@ describe('workspace', () => {
         ),
         set: jest.fn(),
         delete: jest.fn(),
+        rename: jest.fn(),
       }
       workspace = await createWorkspace(undefined, undefined, undefined, credsSource)
     })

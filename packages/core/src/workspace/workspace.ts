@@ -119,6 +119,7 @@ export type Workspace = {
   addService: (service: string) => Promise<void>
   addEnvironment: (env: string) => Promise<void>
   deleteEnvironment: (env: string) => Promise<void>
+  renameEnvironment: (currentEnvName: string, newEnvName: string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
@@ -303,6 +304,27 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
         await environmentSource.state?.clear()
       }
       delete elementsSources.sources[env]
+      naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
+        currentEnv(), elementsSources.commonSourceName)
+    },
+    renameEnvironment: async (currentEnvName: string, newEnvName: string) => {
+      const envConfig = workspaceConfig.envs.find(e => e.name === currentEnvName)
+      if (_.isUndefined(envConfig)) {
+        throw new UnknownEnvError(currentEnvName)
+      }
+      envConfig.name = newEnvName
+      userConfig.currentEnv = newEnvName
+      await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
+      await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
+
+      await credentials.rename(currentEnvName, newEnvName)
+      const environmentSource = elementsSources.sources[currentEnvName]
+      if (environmentSource) {
+        await environmentSource.naclFiles.rename(newEnvName)
+        await environmentSource.state?.rename(newEnvName)
+      }
+      elementsSources.sources[newEnvName] = environmentSource
+      delete elementsSources.sources[currentEnvName]
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
         currentEnv(), elementsSources.commonSourceName)
     },

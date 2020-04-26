@@ -31,6 +31,7 @@ describe('Nacl Files Source', () => {
       getStaticFile: jest.fn().mockResolvedValue(undefined),
       flush: () => Promise.resolve(),
       clear: () => Promise.resolve(),
+      rename: () => Promise.resolve(),
       clone: () => mockStaticFilesSource,
     }
     mockCache = {
@@ -39,6 +40,7 @@ describe('Nacl Files Source', () => {
       clone: () => mockCache,
       flush: () => Promise.resolve(),
       clear: () => Promise.resolve(),
+      rename: () => Promise.resolve(),
     }
     mockDirStore = {
       list: () => Promise.resolve([]),
@@ -47,6 +49,7 @@ describe('Nacl Files Source', () => {
       set: () => Promise.resolve(),
       delete: () => Promise.resolve(),
       clear: () => Promise.resolve(),
+      rename: () => Promise.resolve(),
       flush: () => Promise.resolve(),
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
       clone: () => mockDirStore,

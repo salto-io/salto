@@ -294,6 +294,12 @@ const buildNaclFilesSource = (
       await cache.clear()
     },
 
+    rename: async (name: string) => {
+      await naclFilesStore.rename(name)
+      await staticFileSource.rename(name)
+      await cache.rename(name)
+    },
+
     clone: () => buildNaclFilesSource(
       naclFilesStore.clone(),
       cache.clone(),

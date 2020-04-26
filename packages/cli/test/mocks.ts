@@ -249,6 +249,7 @@ export const mockLoadWorkspace = (name: string): Workspace =>
     isEmpty: jest.fn().mockResolvedValue(false),
     addEnvironment: jest.fn(),
     deleteEnvironment: jest.fn(),
+    renameEnvironment: jest.fn(),
     setCurrentEnv: jest.fn().mockReturnValue('active'),
     transformToWorkspaceError: () => ({
       sourceFragments: [],

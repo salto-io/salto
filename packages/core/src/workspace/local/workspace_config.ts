@@ -60,5 +60,8 @@ Promise<WorkspaceConfigSource> => {
     delete: async (name: string): Promise<void> => {
       await localConfigSource.delete(name)
     },
+    rename: async (currentName: string, newName: string): Promise<void> => {
+      await localConfigSource.rename(currentName, newName)
+    },
   }
 }

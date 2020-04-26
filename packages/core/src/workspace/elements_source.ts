@@ -21,4 +21,5 @@ export interface ElementsSource {
   getAll(): Promise<Element[]>
   flush(): Promise<void>
   clear(): Promise<void>
+  rename(name: string): Promise<void>
 }

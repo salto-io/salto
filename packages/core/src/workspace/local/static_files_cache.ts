@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { readTextFile, exists, mkdirp, replaceContents, rm } from '@salto-io/file'
+import { readTextFile, exists, mkdirp, replaceContents, rm, rename } from '@salto-io/file'
 import { StaticFileMetaData } from '../static_files/common'
 import { StaticFilesCache } from '../static_files/cache'
 
@@ -26,10 +26,10 @@ export const buildLocalStaticFilesCache = (
   cacheDir: string,
   initCacheState?: Promise<StaticFilesCacheState>,
 ): StaticFilesCache => {
-  const cacheFile = path.join(cacheDir, CACHE_FILENAME)
+  let currentCacheFile = path.join(cacheDir, CACHE_FILENAME)
 
   const initCache = async (): Promise<StaticFilesCacheState> =>
-    (!(await exists(cacheFile)) ? {} : JSON.parse(await readTextFile(cacheFile)))
+    (!(await exists(currentCacheFile)) ? {} : JSON.parse(await readTextFile(currentCacheFile)))
 
   const cache: Promise<StaticFilesCacheState> = initCacheState || initCache()
 
@@ -49,10 +49,15 @@ export const buildLocalStaticFilesCache = (
       if (!await exists(cacheDir)) {
         await mkdirp(cacheDir)
       }
-      replaceContents(cacheFile, JSON.stringify((await cache)))
+      replaceContents(currentCacheFile, JSON.stringify((await cache)))
     },
     clear: async () => {
-      await rm(cacheFile)
+      await rm(currentCacheFile)
+    },
+    rename: async (name: string) => {
+      const newCacheFile = path.join(path.dirname(cacheDir), name, CACHE_FILENAME)
+      await rename(currentCacheFile, newCacheFile)
+      currentCacheFile = newCacheFile
     },
     clone: () => buildLocalStaticFilesCache(cacheDir, cache),
   }

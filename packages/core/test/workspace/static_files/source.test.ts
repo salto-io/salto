@@ -43,6 +43,7 @@ describe('Static Files Source', () => {
       put: jest.fn().mockResolvedValue(Promise.resolve()),
       flush: () => Promise.resolve(),
       clear: () => Promise.resolve(),
+      rename: () => Promise.resolve(),
       clone: () => mockCacheStore,
     } as StaticFilesCache
     mockDirStore = {
@@ -52,6 +53,7 @@ describe('Static Files Source', () => {
       set: () => Promise.resolve(),
       delete: () => Promise.resolve(),
       clear: () => Promise.resolve(),
+      rename: () => Promise.resolve(),
       flush: () => Promise.resolve(),
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
       clone: () => mockDirStore,

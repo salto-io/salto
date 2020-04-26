@@ -18,7 +18,7 @@ import { Workspace, loadLocalWorkspace } from '@salto-io/core'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'
-import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv } from '../formatter'
+import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv, formatRenameEnv } from '../formatter'
 
 const outputLine = ({ stdout }: CliOutput, text: string): void => stdout.write(`${text}\n`)
 
@@ -53,6 +53,20 @@ const deleteEnvironment = async (
   return CliExitCode.Success
 }
 
+const renameEnvironment = async (
+  currentEnvName: string,
+  newEnvName: string,
+  output: CliOutput,
+  workspace: Workspace,
+): Promise<CliExitCode> => {
+  if (!workspace.envs().includes(currentEnvName)) {
+    throw new Error(`Failed to rename unexist environment - ${currentEnvName}`)
+  }
+  await workspace.renameEnvironment(currentEnvName, newEnvName)
+  outputLine(output, formatRenameEnv(currentEnvName, newEnvName))
+  return CliExitCode.Success
+}
+
 const getCurrentEnv = (
   output: CliOutput,
   workspace: Workspace,
@@ -70,14 +84,21 @@ const listEnvs = (
   return CliExitCode.Success
 }
 
-const nameRequiredCommands = ['create', 'set', 'delete']
+const namesRequiredCommands = ['rename']
+const nameRequiredCommands = ['create', 'set', 'delete', ...namesRequiredCommands]
 export const command = (
   workspaceDir: string,
   commandName: string,
   output: CliOutput,
   envName?: string,
+  newEnvName?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
+    if (namesRequiredCommands.includes(commandName)
+      && (_.isEmpty(envName) || _.isEmpty(newEnvName))) {
+      throw new Error('Missing required argument\n\n'
+        + `Example usage: salto env ${commandName} <envName> <newEnvName>`)
+    }
     if (_.isEmpty(envName) && nameRequiredCommands.includes(commandName)) {
       throw new Error('Missing required argument: name\n\n'
         + `Example usage: salto env ${commandName} <envName>`)
@@ -99,6 +120,8 @@ export const command = (
         return listEnvs(output, workspace)
       case 'current':
         return getCurrentEnv(output, workspace)
+      case 'rename':
+        return renameEnvironment(envName as string, newEnvName as string, output, workspace)
       default:
         throw new Error('Unknown environment management command')
     }

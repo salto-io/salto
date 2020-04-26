@@ -3,6 +3,7 @@ version: 2.1
 orbs:
   win: circleci/windows@2.2.0
   aws-s3: circleci/aws-s3@1.0.15
+  aws-cli: circleci/aws-cli@1.0.0
 
 commands:
   set_s3_pkg_urls:
@@ -174,9 +175,13 @@ jobs:
           fingerprints:
               - "49:dd:95:76:13:c0:cd:9d:75:48:b0:30:5c:3c:4c:17"
 
+      - set_s3_pkg_urls
+
+      - aws-cli/setup
+
       - run:
-          name: publish to NPM if version changed
-          command: ./.circleci/scripts/publish_to_npm_if_version_changed.sh << pipeline.git.base_revision >>
+          name: Release version
+          command: ./.circleci/scripts/release_version.sh << pipeline.git.base_revision >>
 
   e2e_test:
     docker:

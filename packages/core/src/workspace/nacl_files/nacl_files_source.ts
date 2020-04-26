@@ -312,4 +312,6 @@ export const naclFilesSource = (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
-): NaclFilesSource => buildNaclFilesSource(naclFilesStore, cache, staticFileSource)
+): NaclFilesSource => buildNaclFilesSource(
+  naclFilesStore, cache, staticFileSource
+)

@@ -244,6 +244,11 @@ describe('Transformer', () => {
             .contactPropertyOverrides.label
         )
 
+        // Overriden by helpText (special case for description)
+        expect(fieldWithDependent.description).toEqual(
+          formInstance.value.formFieldGroups[0].fields[0].helpText
+        )
+
         // From field
         expect(fieldWithDependent.required).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].required
@@ -270,10 +275,6 @@ describe('Transformer', () => {
           formInstance.value.formFieldGroups[0].fields[0]
             .contactProperty.value.displayOrder
         )
-        expect(fieldWithDependent.description).toEqual(
-          formInstance.value.formFieldGroups[0].fields[0]
-            .contactProperty.value.description
-        )
         expect(fieldWithDependent.options).toEqual(
           formInstance.value.formFieldGroups[0].fields[0]
             .contactProperty.value.options
@@ -289,6 +290,9 @@ describe('Transformer', () => {
           formInstance.value.formFieldGroups[1].fields[0]
             .contactPropertyOverrides.options
         )
+
+        // Overriden by '' if helpText is empty (special case for description)
+        expect(fieldWithOptions.description).toEqual('')
 
         // From Field
         expect(fieldWithOptions.selectedOptions).toEqual(
@@ -320,9 +324,11 @@ describe('Transformer', () => {
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
             .dependentFormField.contactPropertyOverrides.label
         )
+
+        // Overriden by helpText (special description case)
         expect(dependentFormField.description).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-            .dependentFormField.contactPropertyOverrides.description
+            .dependentFormField.helpText
         )
 
         // From form field

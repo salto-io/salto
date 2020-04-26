@@ -202,6 +202,7 @@ export const FORM_PROPERTY_FIELDS = {
   SELECTEDOPTIONS: 'selectedOptions',
   DEPENDENTFIELDFILTERS: 'dependentFieldFilters',
   PLACEHOLDER: 'placeholder',
+  DESCRIPTION: 'description',
 
   // From contactProperty
   NAME,
@@ -214,19 +215,18 @@ export const FORM_PROPERTY_FIELDS = {
   DISPLAYORDER,
   LABEL,
   OPTIONS: PROPERTY_OPTIONS,
-  DESCRIPTION: 'description',
 }
 
 export const FORM_PROPERTY_INNER_FIELDS = {
   CONTACT_PROPERTY: 'contactProperty',
   CONTACT_PROPERTY_OVERRIDES: 'contactPropertyOverrides',
+  HELPTEXT: 'helpText',
 }
 
 export const CONTACT_PROPERTY_OVERRIDES_FIELDS = {
   LABEL,
   DISPLAYORDER,
   OPTIONS: PROPERTY_OPTIONS,
-  DESCRIPTION: 'description',
 }
 
 export const DEPENDENT_FIELD_FILTER_FIELDS = {

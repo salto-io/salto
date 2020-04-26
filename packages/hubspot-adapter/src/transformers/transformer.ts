@@ -202,14 +202,6 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           ),
-          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION]: new Field(
-            contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
-            BuiltinTypes.STRING, {
-              name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DESCRIPTION,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            }
-          ),
           [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: new Field(
             contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
             new ListType(Types.optionsType), {
@@ -258,6 +250,14 @@ export class Types {
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
+          ),
+          [FORM_PROPERTY_INNER_FIELDS.HELPTEXT]: new Field(
+            elemID, FORM_PROPERTY_INNER_FIELDS.HELPTEXT,
+            BuiltinTypes.STRING, {
+              name: FORM_PROPERTY_INNER_FIELDS.HELPTEXT,
+              _readOnly: false,
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+            }
           ),
           [FORM_PROPERTY_FIELDS.REQUIRED]: new Field(
             elemID, FORM_PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
@@ -1892,26 +1892,47 @@ export const transformAfterUpdateOrAdd = async (
   return clonedInstance
 }
 
+/*
+* Merge the values of a Form Field from the 3 values source available
+*   1. The field specific override values (values that can come from property but are overriden)
+*   2. The related Contact Property
+*   3. The field specific values (values that are only relevant to the field, not the property)
+*
+* #3 are values not in 1 & 2. #1 overrides values in #2 and rest relevant values come from #2.
+* Mathematically - (#3 + (#2-#1) + #1)
+*
+* A special case is 'helpText' that is stored at #3 but actually overrides 'description' from #2
+*/
 const mergeFormFieldAndContactProperty = (field: Value): Value => {
   const newField = _.clone(field)
+  const fieldHelpText = newField[FORM_PROPERTY_INNER_FIELDS.HELPTEXT] || ''
   const contactPropertyValues = _.clone(field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY].value)
-  const merged = _.pick(_.merge(
-    contactPropertyValues,
-    _.merge(newField, field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES])
-  ), Object.values(FORM_PROPERTY_FIELDS))
+  const fieldAndOverridesValues = _.merge(
+    newField,
+    field[FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES]
+  )
+  const fieldAndContactPropertyValues = _.merge(contactPropertyValues, fieldAndOverridesValues)
+  const relevantFormPropertyValues = _.pick(
+    fieldAndContactPropertyValues,
+    Object.values(FORM_PROPERTY_FIELDS)
+  )
+
+  // Override description with helpText
+  relevantFormPropertyValues[FORM_PROPERTY_FIELDS.DESCRIPTION] = fieldHelpText
 
   // Only available at top level so there's no endless recursion
-  if (merged.dependentFieldFilters) {
-    merged.dependentFieldFilters = merged.dependentFieldFilters.map(
-      (dependentFieldFilter: Value) => {
-        dependentFieldFilter.dependentFormField = mergeFormFieldAndContactProperty(
-          dependentFieldFilter.dependentFormField
-        )
-        return dependentFieldFilter
-      }
-    )
+  if (relevantFormPropertyValues.dependentFieldFilters) {
+    relevantFormPropertyValues.dependentFieldFilters = relevantFormPropertyValues
+      .dependentFieldFilters.map(
+        (dependentFieldFilter: Value) => {
+          dependentFieldFilter.dependentFormField = mergeFormFieldAndContactProperty(
+            dependentFieldFilter.dependentFormField
+          )
+          return dependentFieldFilter
+        }
+      )
   }
-  return merged
+  return relevantFormPropertyValues
 }
 
 export const createHubspotMetadataFromInstanceElement = (element: Readonly<InstanceElement>):

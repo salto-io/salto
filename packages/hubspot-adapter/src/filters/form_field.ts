@@ -49,8 +49,12 @@ const filterCreator: FilterCreator = () => ({
       })
 
     const transformField = (field: Value, fieldsToRemove: Set<string>): void => {
+      // Special case of description. Differs in meanings between form field and contact property
+      if (!_.isUndefined(field.description)) {
+        field.helpText = field.description
+      }
       const property = findContactProperty(field.name)
-      if (!property) {
+      if (_.isUndefined(property)) {
         fieldsToRemove.add(field.name)
       } else {
         field.contactProperty = new ReferenceExpression(property.elemID)

@@ -188,10 +188,16 @@ describe('form_field filter', () => {
 
   it('should not include equal values in contactPropertyOverrides', () => {
     // g1 property (formfieldGroups[0].fields[0])
-    expect(formValues.formFieldGroups[0].fields[0].description)
-      .toEqual(g1PropInstance.value.description)
-    expect(formInstance.value.formFieldGroups[0].fields[0].contactPropertyOverrides.description)
+    expect(formValues.formFieldGroups[0].fields[0].displayOrder)
+      .toEqual(g1PropInstance.value.displayOrder)
+    expect(formInstance.value.formFieldGroups[0].fields[0].contactPropertyOverrides.displayOrder)
       .toBeUndefined()
+  })
+
+  it('should put description value in helpText at top level', () => {
+    // g1 property (formfieldGroups[0].fields[0])
+    expect(formInstance.value.formFieldGroups[0].fields[0].helpText)
+      .toEqual(formValues.formFieldGroups[0].fields[0].description)
   })
 
   it('should add references to contactProperties in dependent fields', () => {
@@ -223,11 +229,6 @@ describe('form_field filter', () => {
     expect(formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
       .dependentFormField.contactPropertyOverrides.label)
       .not.toEqual(datePropInstance.value.label)
-    expect(formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-      .dependentFormField.contactPropertyOverrides.description).toBeDefined()
-    expect(formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
-      .dependentFormField.contactPropertyOverrides.description)
-      .not.toEqual(datePropInstance.value.description)
   })
 
   it('should not include equal values in contactPropertyOverrides in dependent fields', () => {
@@ -236,5 +237,12 @@ describe('form_field filter', () => {
       .toEqual(datePropInstance.value.displayOrder)
     expect(formInstance.value.formFieldGroups[0].fields[0].contactPropertyOverrides.displayOrder)
       .toBeUndefined()
+  })
+
+  it('should put description value in helpText in dependent fields', () => {
+    expect(formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
+      .dependentFormField.helpText)
+      .toEqual(formValues.formFieldGroups[0].fields[0].dependentFieldFilters[0]
+        .dependentFormField.helpText)
   })
 })

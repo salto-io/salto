@@ -264,3 +264,7 @@ export const getElementFromTemplate = (
 export const ensureFilesExist = (filePathes: string[]): boolean => (
   _.every(filePathes.map(filename => !_.isEmpty(glob.sync(filename))))
 )
+
+export const ensureFilesDontExist = (filePathes: string[]): boolean => (
+  _.every(filePathes.map(filename => _.isEmpty(glob.sync(filename))))
+)

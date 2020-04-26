@@ -28,12 +28,11 @@ export class DuplicateVariableNameError extends MergeError {
 }
 
 const mergeVariableDefinitions = (
-  variable: Variable,
   variableDefs: Variable[]
 ): MergeResult<Variable> => ({
-  merged: variable,
+  merged: variableDefs[0],
   errors: variableDefs.length > 1
-    ? [new DuplicateVariableNameError({ elemID: variable.elemID })]
+    ? [new DuplicateVariableNameError({ elemID: variableDefs[0].elemID })]
     : [],
 })
 
@@ -42,7 +41,7 @@ export const mergeVariables = (
 ): MergeResult<Variable[]> => {
   const mergeResults = _(variables)
     .groupBy(i => i.elemID.getFullName())
-    .map(variableGroup => mergeVariableDefinitions(variableGroup[0], variableGroup))
+    .map(variableGroup => mergeVariableDefinitions(variableGroup))
     .value()
 
   const merged = mergeResults.map(r => r.merged)

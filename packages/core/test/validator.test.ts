@@ -54,10 +54,7 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedType'),
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-        enforce_value: true,
-        values: ['val1', 'val2'],
-      }),
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['val1', 'val2'] }),
     },
   })
 

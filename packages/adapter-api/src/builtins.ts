@@ -82,7 +82,7 @@ export const CoreAnnotationTypes: TypeMap = {
     fields: Object.assign(
       {},
       ...Object.entries(RESTRICTION_ANNOTATIONS_FIELDS)
-        .map(([name, type]) => ({ name: new Field(restrictionElemID, name, type) }))
+        .map(([name, type]) => ({ [name]: new Field(restrictionElemID, name, type) }))
     ),
   }),
 }

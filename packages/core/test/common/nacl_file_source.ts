@@ -34,6 +34,7 @@ export const createMockNaclFileSource = (
     return element && !_.isEmpty(idPath) ? resolvePath(element, id) : element
   },
   getAll: async () => elements,
+  deleteAll: jest.fn().mockImplementation(() => Promise.resolve()),
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
   updateNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
   listNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(_.keys(naclFiles))),

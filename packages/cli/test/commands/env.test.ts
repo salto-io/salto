@@ -55,4 +55,17 @@ describe('env commands', () => {
       expect(cliOutput.stdout.content.search('inactive')).toBeGreaterThan(0)
     })
   })
+
+  describe('delete environment command', () => {
+    it('should display the deleted environment', async () => {
+      await command('.', 'delete', cliOutput, 'inactive').execute()
+      expect(cliOutput.stdout.content.search('inactive')).toBeGreaterThan(0)
+    })
+  })
+
+  describe('unknown environment command', () => {
+    it('should throws exception upon unknown command', async () => {
+      await expect(command('.', 'not-exist', cliOutput).execute()).rejects.toThrow()
+    })
+  })
 })

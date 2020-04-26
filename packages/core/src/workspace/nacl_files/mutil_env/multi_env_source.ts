@@ -229,6 +229,9 @@ const buildMultiEnvSource = (
         .map(async ([prefix, source]) => (
           await source.getElementNaclFiles(id)).map(p => buidFullPath(prefix, p)))))
     ),
+    deleteAll: async (): Promise<void> => {
+      await primarySource().deleteAll()
+    },
     clone: () => buildMultiEnvSource(
       _.mapValues(sources, source => source.clone()),
       primarySourceName,

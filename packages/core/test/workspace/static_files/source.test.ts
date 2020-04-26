@@ -42,6 +42,7 @@ describe('Static Files Source', () => {
       getByFile: jest.fn().mockResolvedValue(undefined),
       put: jest.fn().mockResolvedValue(Promise.resolve()),
       flush: () => Promise.resolve(),
+      clear: () => Promise.resolve(),
       clone: () => mockCacheStore,
     } as StaticFilesCache
     mockDirStore = {
@@ -50,6 +51,7 @@ describe('Static Files Source', () => {
       getFiles: jest.fn().mockResolvedValue([undefined]),
       set: () => Promise.resolve(),
       delete: () => Promise.resolve(),
+      clear: () => Promise.resolve(),
       flush: () => Promise.resolve(),
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
       clone: () => mockDirStore,
@@ -184,6 +186,15 @@ describe('Static Files Source', () => {
       await staticFilesSource.flush()
       expect(mockCacheStore.flush).toHaveBeenCalledTimes(1)
       expect(mockDirStore.flush).toHaveBeenCalledTimes(1)
+    })
+  })
+  describe('Clear', () => {
+    it('should clear all directory stores', async () => {
+      mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      mockCacheStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      await staticFilesSource.clear()
+      expect(mockCacheStore.clear).toHaveBeenCalledTimes(1)
+      expect(mockDirStore.clear).toHaveBeenCalledTimes(1)
     })
   })
   describe('Clone', () => {

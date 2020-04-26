@@ -287,6 +287,12 @@ const buildNaclFilesSource = (
         .map(filename => ({ filename, buffer: '' })), (await getState()).ParsedNaclFiles)
     },
 
+    deleteAll: async () => {
+      await naclFilesStore.clear()
+      await staticFileSource.clear()
+      await cache.clear()
+    },
+
     clone: () => buildNaclFilesSource(
       naclFilesStore.clone(),
       cache.clone(),
@@ -305,4 +311,6 @@ export const naclFilesSource = (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
-): NaclFilesSource => buildNaclFilesSource(naclFilesStore, cache, staticFileSource)
+): NaclFilesSource => buildNaclFilesSource(
+  naclFilesStore, cache, staticFileSource
+)

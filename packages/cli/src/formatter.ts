@@ -557,6 +557,8 @@ export const formatSetEnv = (envName: string): string => (
 
 export const formatCreateEnv = (envName: string): string => Prompts.CREATED_ENV(envName)
 
+export const formatDeleteEnv = (envName: string): string => Prompts.DELETED_ENV(envName)
+
 export const formatFinishedLoading = (envName?: string): string => (
   envName
     ? [Prompts.FINISHED_LOADING_FOR_ENV, envName].join(' ')

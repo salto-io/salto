@@ -26,6 +26,7 @@ const log = logger(module)
 export interface ConfigSource {
   get(name: string): Promise<InstanceElement | undefined>
   set(name: string, config: Readonly<InstanceElement>): Promise<void>
+  delete(name: string): Promise<void>
 }
 
 class ConfigParseError extends Error {
@@ -62,6 +63,11 @@ export const configSource = (
 
     set: async (name: string, config: InstanceElement): Promise<void> => {
       await dirStore.set({ filename: filename(name), buffer: dumpElements([config]) })
+      await dirStore.flush()
+    },
+
+    delete: async (name: string): Promise<void> => {
+      await dirStore.delete(name)
       await dirStore.flush()
     },
   }

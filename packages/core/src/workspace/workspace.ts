@@ -58,9 +58,15 @@ class ServiceDuplicationError extends Error {
   }
 }
 
-class UnknownEnvError extends Error {
+export class UnknownEnvError extends Error {
   constructor(envName: string) {
-    super(`Unkown enviornment ${envName}`)
+    super(`Unkown environment ${envName}`)
+  }
+}
+
+export class DeleteCurrentEnvError extends Error {
+  constructor(envName: string) {
+    super(`Cannot delete the current env: ${envName}`)
   }
 }
 
@@ -111,6 +117,7 @@ export type Workspace = {
 
   addService: (service: string) => Promise<void>
   addEnvironment: (env: string) => Promise<void>
+  deleteEnvironment: (env: string) => Promise<void>
   setCurrentEnv: (env: string, persist?: boolean) => Promise<void>
   updateServiceCredentials: (service: string, creds: Readonly<InstanceElement>) => Promise<void>
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
@@ -119,7 +126,6 @@ export type Workspace = {
 }
 
 // common source has no state
-
 export type EnvironmentSource = { naclFiles: NaclFilesSource; state?: State }
 export type EnvironmentsSources = {
   commonSourceName: string
@@ -273,6 +279,26 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       }
       workspaceConfig.envs = [...workspaceConfig.envs, { name: env }]
       await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
+    },
+    deleteEnvironment: async (env: string): Promise<void> => {
+      if (!(workspaceConfig.envs.map(e => e.name).includes(env))) {
+        throw new UnknownEnvError(env)
+      }
+      if (env === currentEnv()) {
+        throw new DeleteCurrentEnvError(env)
+      }
+      _.remove(workspaceConfig.envs, e => e.name === env)
+      await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
+
+      await credentials.delete(env)
+      const environmentSource = elementsSources.sources[env]
+      if (environmentSource) {
+        await environmentSource.naclFiles.deleteAll()
+        await environmentSource.state?.deleteAll()
+      }
+      delete elementsSources.sources[env]
+      naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
+        currentEnv(), elementsSources.commonSourceName)
     },
     setCurrentEnv: async (env: string, persist?: boolean): Promise<void> => {
       if (!envs().includes(env)) {

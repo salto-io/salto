@@ -235,8 +235,8 @@ const subtractWildcardOffset = (pos: SourcePos, amountWildcards: number): Source
   { line: pos.line, col: pos.col, byte: pos.byte - amountWildcards * WILDCARD.length })
 
 // Calculate the amount of wildcards before parameter error starts in the patched src.
-const calculateAmountWildcards = (patchedSrc: string, error: HclParseError): number => {
-  return patchedSrc
+const calculateAmountWildcards = (patchedSrc: string, error: HclParseError): number =>
+  patchedSrc
     .split(WILDCARD)
     .map(value => value.length + WILDCARD.length)
     .reduce((newArr, current) => {
@@ -246,7 +246,6 @@ const calculateAmountWildcards = (patchedSrc: string, error: HclParseError): num
     }, ([] as number[])) // Until Here produces an array with the indexes of wildcards
     .reduce((amountWildcards, current) =>
       (current < error.subject.end.byte ? amountWildcards + 1 : amountWildcards), 0)
-}
 
 const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError): HclParseError => {
   const amountWildcardsBefore = calculateAmountWildcards(patchedSrc, error)

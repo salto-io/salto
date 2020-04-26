@@ -17,8 +17,8 @@ import _ from 'lodash'
 import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType,
   ObjectType, InstanceElement, isType, isElement, isExpression,
-  ReferenceExpression, TemplateExpression, Expression,
-  isInstanceElement, isReferenceExpression,
+  ReferenceExpression, TemplateExpression, Expression, VariableExpression,
+  isInstanceElement, isReferenceExpression, Variable,
 } from '@salto-io/adapter-api'
 
 import { StaticFileNaclValue } from '../workspace/static_files/common'
@@ -46,7 +46,7 @@ export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
     if (isReferenceExpression(e)) {
-      const o = new ReferenceExpression(e.elemId) as ReferenceExpression & ClassName
+      const o = e.createWithValue(undefined) as typeof e & ClassName
       o[SALTO_CLASS_FIELD] = e.constructor.name
       return o
     }
@@ -94,6 +94,7 @@ export const deserialize = (data: string): Element[] => {
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
+    [Variable.serializedTypeName]: v => new Variable(reviveElemID(v.elemID), v.value),
     [PrimitiveType.serializedTypeName]: v => new PrimitiveType({
       elemID: reviveElemID(v.elemID),
       primitive: v.primitive,
@@ -111,6 +112,7 @@ export const deserialize = (data: string): Element[] => {
     ),
     [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
     [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
+    [VariableExpression.serializedTypeName]: v => new VariableExpression(reviveElemID(v.elemId)),
     [StaticFileNaclValue.serializedTypeName]: v => new StaticFileNaclValue(v.filepath),
   }
 

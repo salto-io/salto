@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ReferenceExpression, TemplateExpression, ElemID,
+  ReferenceExpression, VariableExpression, TemplateExpression, ElemID,
 } from '@salto-io/adapter-api'
 import {
   Functions,
@@ -70,6 +70,14 @@ describe('HCL Expression', () => {
     const ref = new ReferenceExpression(new ElemID('a', 'b', 'type'))
     const exp = devaluate(ref)
     expect(evaluate(exp)).toEqual(ref)
+    expect(evaluate(exp) instanceof ReferenceExpression).toBe(true)
+  })
+
+  it('should evaluate variable', () => {
+    const ref = new VariableExpression(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'))
+    const exp = devaluate(ref)
+    expect(evaluate(exp)).toEqual(ref)
+    expect(evaluate(exp) instanceof VariableExpression).toBe(true)
   })
 
   it('should evaluate reference with invalid syntax', () => {

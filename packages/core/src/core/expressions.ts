@@ -17,7 +17,8 @@ import _ from 'lodash'
 
 import {
   ElemID, Element, isObjectType, isInstanceElement, Value,
-  ReferenceExpression, TemplateExpression,
+  ReferenceExpression, TemplateExpression, isVariable,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -45,11 +46,9 @@ const resolveMaybeExpression: Resolver<Value> = (
   contextElements: Record<string, Element[]>,
   visited: Set<string> = new Set<string>(),
 ): Value => {
-  if (value instanceof ReferenceExpression) {
-    return new ReferenceExpression(
-      value.elemId,
-      resolveReferenceExpression(value, contextElements, visited)
-    )
+  if (isReferenceExpression(value)) {
+    const resValue = resolveReferenceExpression(value, contextElements, visited)
+    return value.createWithValue(resValue)
   }
 
   if (value instanceof TemplateExpression) {
@@ -74,7 +73,7 @@ resolveReferenceExpression = (
 
   const fullElemID = ElemID.fromFullName(traversal)
   const { parent } = fullElemID.createTopLevelParentID()
-  // Validation should throw an error if there is not match, or more than one match
+  // Validation should throw an error if there is no match, or more than one match
   const rootElement = contextElements[parent.getFullName()]
     && contextElements[parent.getFullName()][0]
 
@@ -86,6 +85,10 @@ resolveReferenceExpression = (
 
   if (value === undefined) {
     return new UnresolvedReference(fullElemID)
+  }
+
+  if (isVariable(value)) {
+    return value.value
   }
 
   return resolveMaybeExpression(value, contextElements, visited) || value

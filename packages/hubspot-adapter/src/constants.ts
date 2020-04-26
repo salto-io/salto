@@ -16,6 +16,9 @@
 import { ElemID } from '@salto-io/adapter-api'
 
 export const HUBSPOT = 'hubspot'
+export const RECORDS_PATH = 'Records'
+export const TYPES_PATH = 'Types'
+export const SUBTYPES_PATH = 'Subtypes'
 export const NAME = 'name'
 const LABEL = 'label'
 const PROPERTY_OPTIONS = 'options'

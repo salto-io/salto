@@ -18,7 +18,7 @@ import { Workspace, loadLocalWorkspace } from '@salto-io/core'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'
-import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv } from '../formatter'
+import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv } from '../formatter'
 
 const outputLine = ({ stdout }: CliOutput, text: string): void => stdout.write(`${text}\n`)
 
@@ -43,6 +43,16 @@ const createEnvironment = async (
   return CliExitCode.Success
 }
 
+const deleteEnvironment = async (
+  envName: string,
+  output: CliOutput,
+  workspace: Workspace,
+): Promise<CliExitCode> => {
+  await workspace.deleteEnvironment(envName)
+  outputLine(output, formatDeleteEnv(envName))
+  return CliExitCode.Success
+}
+
 const getCurrentEnv = (
   output: CliOutput,
   workspace: Workspace,
@@ -60,7 +70,7 @@ const listEnvs = (
   return CliExitCode.Success
 }
 
-const nameRequiredCommands = ['create', 'set']
+const nameRequiredCommands = ['create', 'set', 'delete']
 export const command = (
   workspaceDir: string,
   commandName: string,
@@ -81,6 +91,8 @@ export const command = (
     switch (commandName) {
       case 'create':
         return createEnvironment(envName as string, output, workspace)
+      case 'delete':
+        return deleteEnvironment(envName as string, output, workspace)
       case 'set':
         return setEnvironment(envName as string, output, workspace)
       case 'list':
@@ -107,7 +119,7 @@ const envsBuilder = createCommandBuilder({
     positional: {
       command: {
         type: 'string',
-        choices: ['create', 'set', 'list', 'current'],
+        choices: ['create', 'set', 'list', 'current', 'delete'],
         description: 'The environment management command',
       },
       name: {

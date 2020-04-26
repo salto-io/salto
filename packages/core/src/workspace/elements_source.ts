@@ -20,4 +20,5 @@ export interface ElementsSource {
   get(id: ElemID): Promise<Element | Value>
   getAll(): Promise<Element[]>
   flush(): Promise<void>
+  clear(): Promise<void>
 }

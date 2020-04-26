@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { readTextFile, exists, mkdirp, replaceContents } from '@salto-io/file'
+import { readTextFile, exists, mkdirp, replaceContents, rm } from '@salto-io/file'
 import { StaticFileMetaData } from '../static_files/common'
 import { StaticFilesCache } from '../static_files/cache'
 
@@ -50,6 +50,9 @@ export const buildLocalStaticFilesCache = (
         await mkdirp(cacheDir)
       }
       replaceContents(cacheFile, JSON.stringify((await cache)))
+    },
+    clear: async () => {
+      await rm(cacheFile)
     },
     clone: () => buildLocalStaticFilesCache(cacheDir, cache),
   }

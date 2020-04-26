@@ -172,7 +172,6 @@ export const parseBuffer = (
   prevErrors: HclParseError[] = []
 ): [string, HclExpression[], HclParseError[]] => {
   const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-  let fixedBuffer = src
   try {
     hclParser.feed(src)
   } catch (err) {
@@ -187,7 +186,7 @@ export const parseBuffer = (
     // is a condition in which the error recovery does not change the state.
     if (prevErrors.length < MAX_FILE_ERRORS && !hasFatalError(src)) {
       // Adding the wildcard token to bypass the error and give the parser another change
-      fixedBuffer = [
+      const fixedBuffer = [
         src.slice(0, parserError.subject.start.byte),
         WILDCARD,
         src.slice(parserError.subject.start.byte),
@@ -202,17 +201,17 @@ export const parseBuffer = (
       return [finalFixedBuffer,
         restoreOrigBlockRanges(blockItems, parserError.subject.start), errors]
     }
-    return [fixedBuffer, [], [...prevErrors, parserError]]
+    return [src, [], [...prevErrors, parserError]]
   }
   const blockItems = hclParser.finish()[0]
-  return [fixedBuffer, blockItems, prevErrors]
+  return [src, blockItems, prevErrors]
 }
 
 const isWildcardToken = (error: HclParseError): boolean => error.detail.includes(WILDCARD)
 
 // This function removes all errors that are generated because of wildcard use
 const filterErrors = (errors: HclParseError[], src: string): HclParseError[] => {
-  if (errors === []) {
+  if (_.isEmpty(errors)) {
     return errors
   }
 
@@ -237,14 +236,14 @@ const subtractWildcardOffset = (pos: SourcePos, amountWildcards: number): Source
 
 // Calculate the amount of wildcards before parameter error starts in the patched src.
 const calculateAmountWildcards = (patchedSrc: string, error: HclParseError): number => {
-  let sum = 0
   return patchedSrc
     .split(WILDCARD)
     .map(value => value.length + WILDCARD.length)
-    .map(value => {
-      sum += value
-      return sum
-    }) // Until Here produces an array with the indexes of wildcards
+    .reduce((newArr, current) => {
+      if (_.isEmpty(newArr)) return [current]
+      newArr.push(current + newArr[newArr.length - 1])
+      return newArr
+    }, ([] as number[])) // Until Here produces an array with the indexes of wildcards
     .reduce((amountWildcards, current) =>
       (current < error.subject.end.byte ? amountWildcards + 1 : amountWildcards), 0)
 }

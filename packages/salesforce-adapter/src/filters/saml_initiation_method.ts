@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import {
-  Element, CORE_ANNOTATIONS, ElemID,
+  Element, ElemID, getRestriction,
 } from '@salto-io/adapter-api'
 import {
   findObjectType, findInstances,
@@ -39,7 +39,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
     const canvasType = findObjectType(elements, CANVAS_METADATA_TYPE_ID)
     const initMethods = canvasType ? canvasType.fields[SAML_INIT_METHOD_FIELD_NAME] : undefined
-    const values = initMethods ? initMethods.annotations[CORE_ANNOTATIONS.VALUES] : undefined
+    const values = initMethods ? getRestriction(initMethods).values : undefined
 
     wu(findInstances(elements, CANVAS_METADATA_TYPE_ID))
       .forEach(canvas => {

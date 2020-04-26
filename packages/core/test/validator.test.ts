@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+/* eslint-disable @typescript-eslint/camelcase */
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
-  RESTRICTION_ANNOTATIONS, ListType,
+  ListType, getRestriction, createRestriction,
 } from '@salto-io/adapter-api'
 import {
   validateElements, InvalidValueValidationError,
@@ -34,7 +34,9 @@ describe('Elements validation', () => {
   const simpleType = new ObjectType({
     elemID: baseElemID,
     fields: {
-      str: new Field(baseElemID, 'str', BuiltinTypes.STRING, { _values: ['str'] }),
+      str: new Field(baseElemID, 'str', BuiltinTypes.STRING, {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['str'] }),
+      }),
       num: new Field(baseElemID, 'num', BuiltinTypes.NUMBER),
       bool: new Field(baseElemID, 'bool', BuiltinTypes.BOOLEAN, { _required: true }),
     },
@@ -52,8 +54,7 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedType'),
     primitive: PrimitiveTypes.STRING,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true },
-      [CORE_ANNOTATIONS.VALUES]: ['val1', 'val2'],
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['val1', 'val2'] }),
     },
   })
 
@@ -61,9 +62,9 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: {
-        [RESTRICTION_ANNOTATIONS.MIN]: 1, [RESTRICTION_ANNOTATIONS.MAX]: 10,
-      },
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+        min: 1, max: 10,
+      }),
     },
   })
 
@@ -71,7 +72,7 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMinType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.MAX]: 10 },
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max: 10 }),
     },
   })
 
@@ -79,7 +80,7 @@ describe('Elements validation', () => {
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMaxType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.MIN]: 1 },
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1 }),
     },
   })
 
@@ -110,15 +111,15 @@ describe('Elements validation', () => {
       listOfObject: new Field(nestedElemID, 'listOfObject', new ListType(simpleType)),
       reqStr: new Field(nestedElemID, 'reqStr', BuiltinTypes.STRING),
       restrictStr: new Field(nestedElemID, 'restrictStr', BuiltinTypes.STRING, {
-        _values: [
-          'restriction1', 'restriction2',
-        ],
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: ['restriction1', 'restriction2'],
+        }),
       }),
       restrictNumber: new Field(nestedElemID, 'restrictNumber', BuiltinTypes.NUMBER, {
-        [CORE_ANNOTATIONS.RESTRICTION]: {
-          [RESTRICTION_ANNOTATIONS.MIN]: 1,
-          [RESTRICTION_ANNOTATIONS.MAX]: 10,
-        },
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+          max: 10,
+        }),
       }),
       restrictedAnnotation: new Field(nestedElemID, 'restrictedAnnotation', restrictedAnnotation, {
         temp: 'val1',
@@ -139,7 +140,7 @@ describe('Elements validation', () => {
     let clonedType: ObjectType
 
     beforeEach(() => {
-      clonedType = _.cloneDeep(nestedType)
+      clonedType = nestedType.clone()
     })
 
     it('should validate a correct type', () => {
@@ -186,7 +187,7 @@ describe('Elements validation', () => {
     it('should return error object/primitive mismatch', () => {
       clonedType.fields.nested.annotations.annostr = {}
 
-      const badObj = _.cloneDeep(nestedType)
+      const badObj = nestedType.clone()
       badObj.annotations.nested = 'not an object'
       const errors = validateElements([badObj, clonedType])
       expect(errors).toHaveLength(2)
@@ -343,14 +344,16 @@ describe('Elements validation', () => {
     let extInst: InstanceElement
 
     beforeEach(() => {
-      extInst = _.cloneDeep(nestedInstance)
+      extInst = nestedInstance.clone()
     })
 
     describe('validate values/annotations corresponding', () => {
+      let extType: ObjectType
+      beforeEach(() => {
+        extType = nestedType.clone()
+      })
       describe('required annotation', () => {
         it('should succeed when all required fields exist with values', () => {
-          const extType = _.cloneDeep(nestedType)
-
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extInst.type = extType
@@ -365,8 +368,6 @@ describe('Elements validation', () => {
         })
 
         it('should return error when required primitive field is missing', () => {
-          const extType = _.cloneDeep(nestedType)
-
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extInst.type = extType
           const errors = validateElements([extInst])
@@ -376,8 +377,6 @@ describe('Elements validation', () => {
         })
 
         it('should return error when required object field is missing', () => {
-          const extType = _.cloneDeep(nestedType)
-
           extType.fields.reqNested.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extInst.type = extType
           const errors = validateElements([extInst])
@@ -388,8 +387,6 @@ describe('Elements validation', () => {
         })
 
         it('should return error when lists elements missing required fields', () => {
-          const extType = _.cloneDeep(nestedType)
-
           extType.fields.reqNested.type = new ListType(extType.fields.reqNested.type)
           extInst.type = extType
           extInst.value.reqNested = [
@@ -418,28 +415,24 @@ describe('Elements validation', () => {
         })
 
         it('should succeed when restriction values are not enforced even if the value not in _values', () => {
-          const extType = _.cloneDeep(nestedType)
           extType.fields.restrictStr
-            .annotations[CORE_ANNOTATIONS.RESTRICTION] = {
-              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
-            }
-          extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.VALUES] = ['val1', 'val2']
+            .annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
+              enforce_value: false,
+              values: ['val1', 'val2'],
+            })
           extInst.value.restrictStr = 'wrongValue'
           extInst.type = extType
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
         it('should succeed when restriction values is not a list', () => {
-          const extType = _.cloneDeep(nestedType)
-          extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.VALUES] = 'str'
+          extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = { values: 'str' }
           extInst.type = extType
           extInst.value.restrictStr = 'str'
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
         it('should succeed when restriction values are not defined and enforce_values is undefined', () => {
-          const extType = _.cloneDeep(nestedType)
-          delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.VALUES]
           extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION] = {}
           extInst.type = extType
           extInst.value.restrictStr = 'str'
@@ -447,8 +440,6 @@ describe('Elements validation', () => {
         })
 
         it('should succeed when restriction values are not defined and _restriction is undefined', () => {
-          const extType = _.cloneDeep(nestedType)
-          delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.VALUES]
           delete extType.fields.restrictStr.annotations[CORE_ANNOTATIONS.RESTRICTION]
           extInst.type = extType
           extInst.value.restrictStr = 'str'
@@ -485,19 +476,13 @@ describe('Elements validation', () => {
           expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('restrictStr'))
         }
 
-        it('should return an error when fields values doesnt match restriction values with explicit _restriction.enforce_value', () => {
-          const extType = _.cloneDeep(nestedType)
-          // eslint-disable-next-line @typescript-eslint/camelcase
-          extType.fields.restrictStr
-            .annotations[CORE_ANNOTATIONS.RESTRICTION] = {
-              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true,
-            }
+        it('should return an error when fields values do not match restriction values with explicit _restriction.enforce_value', () => {
+          getRestriction(extType.fields.restrictStr).enforce_value = true
           extInst.type = extType
           testValuesAreNotListedButEnforced()
         })
 
-        it('should return an error when annotations values doesnt match restriction values', () => {
-          const extType = _.cloneDeep(nestedType)
+        it('should return an error when annotations values do not match restriction values', () => {
           extType.fields.restrictedAnnotation.annotations.temp = 'wrong'
           const errors = validateElements([extType])
           expect(errors).toHaveLength(1)
@@ -511,14 +496,12 @@ describe('Elements validation', () => {
         })
 
         it('should succeed when annotation value is inside the range', () => {
-          const extType = _.cloneDeep(nestedType)
           extType.fields.restrictedAnnotation.annotations.range = 7
           const errors = validateElements([extType])
           expect(errors).toHaveLength(0)
         })
 
         it('should return an error when annotations value is bigger than max restriction', () => {
-          const extType = _.cloneDeep(nestedType)
           extType.fields.restrictedAnnotation.annotations.range = 11
           extType.fields.restrictedAnnotation.annotations.rangeNoMin = 11
           const errors = validateElements([extType])
@@ -540,7 +523,6 @@ describe('Elements validation', () => {
         })
 
         it('should return an error when annotations value is smaller than min restriction', () => {
-          const extType = _.cloneDeep(nestedType)
           extType.fields.restrictedAnnotation.annotations.range = 0
           extType.fields.restrictedAnnotation.annotations.rangeNoMax = 0
           const errors = validateElements([extType])
@@ -561,9 +543,10 @@ describe('Elements validation', () => {
           )
         })
 
-        it('should return an error when list fields values doesnt match restriction values', () => {
-          const extType = _.cloneDeep(nestedType)
-          extType.fields.list.annotations[CORE_ANNOTATIONS.VALUES] = ['restriction']
+        it('should return an error when list fields values do not match restriction values', () => {
+          extType.fields.list.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
+            values: ['restriction'],
+          })
           extInst.type = extType
 
           expect(validateElements([extInst])).toHaveLength(2)

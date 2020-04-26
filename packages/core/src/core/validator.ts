@@ -18,7 +18,7 @@ import { types, collections } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
-  ReferenceExpression, Values, isElement, RESTRICTION_ANNOTATIONS, isListType,
+  ReferenceExpression, Values, isElement, isListType, getRestriction,
 } from '@salto-io/adapter-api'
 import { InvalidStaticFile, StaticFileMetaData } from '../workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -174,8 +174,9 @@ export class MissingStaticFileError extends ValidationError {
 const validateAnnotationsValue = (
   elemID: ElemID, value: Value, annotations: Values, type: TypeElement
 ): ValidationError[] | undefined => {
+  const restrictions = getRestriction({ annotations })
   const shouldEnforceValue = (): boolean =>
-    annotations[CORE_ANNOTATIONS.RESTRICTION]?.[RESTRICTION_ANNOTATIONS.ENFORCE_VALUE] !== false
+    restrictions.enforce_value !== false
     && !(value instanceof ReferenceExpression && isElement(value.value))
 
   const validateRestrictionsValue = (val: Value):
@@ -186,8 +187,8 @@ const validateAnnotationsValue = (
     }
 
     const validateValueInsideRange = (): ValidationError[] => {
-      const minValue = annotations[CORE_ANNOTATIONS.RESTRICTION]?.[RESTRICTION_ANNOTATIONS.MIN]
-      const maxValue = annotations[CORE_ANNOTATIONS.RESTRICTION]?.[RESTRICTION_ANNOTATIONS.MAX]
+      const minValue = restrictions.min
+      const maxValue = restrictions.max
       if ((minValue && (val < minValue)) || (maxValue && (val > maxValue))) {
         return [
           new InvalidValueRangeValidationError(
@@ -199,7 +200,7 @@ const validateAnnotationsValue = (
     }
 
     const validateValueInList = (): ValidationError[] => {
-      const restrictionValues = makeArray(annotations[CORE_ANNOTATIONS.VALUES])
+      const restrictionValues = makeArray(restrictions.values)
       if (_.isEmpty(restrictionValues)) {
         return []
       }

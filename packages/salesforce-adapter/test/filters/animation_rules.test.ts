@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  createRestriction,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -30,11 +31,15 @@ describe('animation rules filter', () => {
     fields: {
       [ANIMATION_FREQUENCY]: new Field(ANIMATION_RULE_TYPE_ID, ANIMATION_FREQUENCY,
         BuiltinTypes.STRING, {
-          [CORE_ANNOTATIONS.VALUES]: ['always', 'often', 'rarely', 'sometimes'],
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: ['always', 'often', 'rarely', 'sometimes'],
+          }),
         }),
       [RECORD_TYPE_CONTEXT]: new Field(ANIMATION_RULE_TYPE_ID, RECORD_TYPE_CONTEXT,
         BuiltinTypes.STRING, {
-          [CORE_ANNOTATIONS.VALUES]: ['All', 'Custom', 'Master'],
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: ['All', 'Custom', 'Master'],
+          }),
         }),
     },
   })

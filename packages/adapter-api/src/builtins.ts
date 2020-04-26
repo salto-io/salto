@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID } from './element_id'
-import { TypeMap, ObjectType, Field, PrimitiveType, PrimitiveTypes } from './elements'
+import { Element, TypeMap, ObjectType, Field, PrimitiveType, PrimitiveTypes } from './elements'
 
 export const GLOBAL_ADAPTER = ''
 
@@ -44,7 +44,6 @@ export const BuiltinTypes: Record<string, PrimitiveType> = {
 export const CORE_ANNOTATIONS = {
   DEFAULT: '_default',
   REQUIRED: '_required',
-  VALUES: '_values',
   RESTRICTION: '_restriction',
 }
 
@@ -58,27 +57,41 @@ export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.PARENT]: BuiltinTypes.STRING,
 }
 
-export const RESTRICTION_ANNOTATIONS = {
-  ENFORCE_VALUE: 'enforce_value',
-  MIN: 'min',
-  MAX: 'max',
+const RESTRICTION_ANNOTATIONS_FIELDS = {
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  enforce_value: BuiltinTypes.BOOLEAN,
+  values: BuiltinTypes.STRING,
+  min: BuiltinTypes.NUMBER,
+  max: BuiltinTypes.NUMBER,
 }
+
+type RestrictionAnnotationType = Partial<{
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  enforce_value: boolean
+  values: ReadonlyArray<unknown>
+  min: number
+  max: number
+}>
 
 const restrictionElemID = new ElemID('', 'restriction')
 export const CoreAnnotationTypes: TypeMap = {
   [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
   [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
-  [CORE_ANNOTATIONS.VALUES]: BuiltinTypes.STRING,
-  [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({ elemID: restrictionElemID,
-    fields: {
-      [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: new Field(
-        restrictionElemID, RESTRICTION_ANNOTATIONS.ENFORCE_VALUE, BuiltinTypes.BOOLEAN
-      ),
-      [RESTRICTION_ANNOTATIONS.MIN]: new Field(
-        restrictionElemID, RESTRICTION_ANNOTATIONS.MIN, BuiltinTypes.NUMBER
-      ),
-      [RESTRICTION_ANNOTATIONS.MAX]: new Field(
-        restrictionElemID, RESTRICTION_ANNOTATIONS.MAX, BuiltinTypes.NUMBER
-      ),
-    } }),
+  [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({
+    elemID: restrictionElemID,
+    fields: Object.assign(
+      {},
+      ...Object.entries(RESTRICTION_ANNOTATIONS_FIELDS)
+        .map(([name, type]) => ({ [name]: new Field(restrictionElemID, name, type) }))
+    ),
+  }),
 }
+
+export const getRestriction = (
+  { annotations }: { annotations: Element['annotations'] },
+): RestrictionAnnotationType => (
+  annotations[CORE_ANNOTATIONS.RESTRICTION] ?? {}
+)
+
+// Hack to get typescript to enforce the type
+export const createRestriction = (def: RestrictionAnnotationType): RestrictionAnnotationType => def

@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+/* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS,
-  TypeMap, Values, isPrimitiveType, Value, ListType, RESTRICTION_ANNOTATIONS,
+  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction,
 } from '@salto-io/adapter-api'
 import {
   TransformPrimitiveFunc, naclCase, transformValues,
@@ -684,7 +685,9 @@ export class Types {
             name: RSSTOEMAILTIMING_FIELDS.REPEATS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.VALUES]: ['instant', 'daily', 'weekly', 'monthly'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              values: ['instant', 'daily', 'weekly', 'monthly'],
+            }),
           },
         ),
         [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY]: new Field(
@@ -873,10 +876,10 @@ export class Types {
             name: WORKFLOWS_FIELDS.TYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.RESTRICTION]: {
-              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
-            },
-            [CORE_ANNOTATIONS.VALUES]: ['PROPERTY_ANCHOR', 'STATIC_ANCHOR', 'DRIP_DELAY'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              enforce_value: false,
+              values: ['PROPERTY_ANCHOR', 'STATIC_ANCHOR', 'DRIP_DELAY'],
+            }),
           },
         ),
         [WORKFLOWS_FIELDS.ENABLED]: new Field(
@@ -1010,7 +1013,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT]: new Field(
@@ -1018,7 +1021,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.ABSTATUS]: new Field(
@@ -1026,7 +1029,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.ABSTATUS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.VALUES]: ['master', 'variant'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC]: new Field(
@@ -1034,7 +1037,9 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.VALUES]: ['CLICKS_BY_OPENS', 'CLICKS_BY_DELIVERED', 'OPENS_BY_DELIVERED'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              values: ['CLICKS_BY_OPENS', 'CLICKS_BY_DELIVERED', 'OPENS_BY_DELIVERED'],
+            }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.ABTESTID]: new Field(
@@ -1120,7 +1125,9 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.VALUES]: ['instant', 'daily', 'weekly', 'monthly'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              values: ['instant', 'daily', 'weekly', 'monthly'],
+            }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS]: new Field(
@@ -1207,13 +1214,13 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.EMAILTYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.RESTRICTION]: {
-              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
-            },
-            [CORE_ANNOTATIONS.VALUES]: ['BATCH_EMAIL', 'AB_EMAIL', 'AUTOMATED_EMAIL', 'BLOG_EMAIL', 'BLOG_EMAIL_CHILD', 'FOLLOWUP_EMAIL',
-              'LOCALTIME_EMAIL', 'OPTIN_EMAIL', 'OPTIN_FOLLOWUP_EMAIL', 'RESUBSCRIBE_EMAIL', 'RSS_EMAIL', 'RSS_EMAIL_CHILD', 'SINGLE_SEND_API',
-              'SMTP_TOKEN', 'LEADFLOW_EMAIL', 'FEEDBACK_CES_EMAIL', 'FEEDBACK_NPS_EMAIL', 'FEEDBACK_CUSTOM_EMAIL', 'TICKET_EMAIL',
-            ],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              enforce_value: false,
+              values: ['BATCH_EMAIL', 'AB_EMAIL', 'AUTOMATED_EMAIL', 'BLOG_EMAIL', 'BLOG_EMAIL_CHILD', 'FOLLOWUP_EMAIL',
+                'LOCALTIME_EMAIL', 'OPTIN_EMAIL', 'OPTIN_FOLLOWUP_EMAIL', 'RESUBSCRIBE_EMAIL', 'RSS_EMAIL', 'RSS_EMAIL_CHILD', 'SINGLE_SEND_API',
+                'SMTP_TOKEN', 'LEADFLOW_EMAIL', 'FEEDBACK_CES_EMAIL', 'FEEDBACK_NPS_EMAIL', 'FEEDBACK_CUSTOM_EMAIL', 'TICKET_EMAIL',
+              ],
+            }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY]: new Field(
@@ -1221,10 +1228,10 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.RESTRICTION]: {
-              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
-            },
-            [CORE_ANNOTATIONS.VALUES]: ['NPS', 'CES', 'CUSTOM'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              enforce_value: false,
+              values: ['NPS', 'CES', 'CUSTOM'],
+            }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID]: new Field(
@@ -1392,11 +1399,11 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.RESTRICTION]: {
-              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
-            },
-            [CORE_ANNOTATIONS.VALUES]: ['UNDEFINED', 'PUBLISHED', 'PUBLISHED_OR_SCHEDULED', 'SCHEDULED', 'PROCESSING',
-              'PRE_PROCESSING', 'ERROR', 'CANCELED_FORCIBLY', 'CANCELED_ABUSE'],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              enforce_value: false,
+              values: ['UNDEFINED', 'PUBLISHED', 'PUBLISHED_OR_SCHEDULED', 'SCHEDULED', 'PROCESSING',
+                'PRE_PROCESSING', 'ERROR', 'CANCELED_FORCIBLY', 'CANCELED_ABUSE'],
+            }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.PUBLISHDATE]: new Field(
@@ -1553,15 +1560,15 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.SUBCATEGORY,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
-            [CORE_ANNOTATIONS.RESTRICTION]: {
-              [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
-            },
-            [CORE_ANNOTATIONS.VALUES]: ['ab_master', 'ab_variant', 'automated', 'automated_for_deal', 'automated_for_form',
-              'automated_for_form_legacy', 'automated_for_form_buffer', 'automated_for_form_draft', 'ticket_closed_kickback_email',
-              'rss_to_email', 'rss_to_email_child', 'blog_email', 'blog_email_child', 'optin_email', 'optin_followup_email',
-              'batch', 'resubscribe_email', 'single_send_api', 'smtp_token', 'localtime', 'automated_for_ticket', 'automated_for_leadflow',
-              'automated_for_feedback_ces', 'automated_for_feedback_nps', 'automated_for_feedback_custom',
-            ],
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              enforce_value: false,
+              values: ['ab_master', 'ab_variant', 'automated', 'automated_for_deal', 'automated_for_form',
+                'automated_for_form_legacy', 'automated_for_form_buffer', 'automated_for_form_draft',
+                'rss_to_email', 'rss_to_email_child', 'blog_email', 'blog_email_child', 'optin_email', 'optin_followup_email',
+                'batch', 'resubscribe_email', 'single_send_api', 'smtp_token', 'localtime', 'automated_for_ticket', 'automated_for_leadflow',
+                'automated_for_feedback_ces', 'automated_for_feedback_nps', 'automated_for_feedback_custom',
+              ],
+            }),
           }
         ),
         [MARKETING_EMAIL_FIELDS.SUBJECT]: new Field(
@@ -1715,7 +1722,9 @@ export class Types {
             name: CONTACT_PROPERTY_FIELDS.TYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [CORE_ANNOTATIONS.VALUES]: contactPropertyTypeValues,
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              values: contactPropertyTypeValues,
+            }),
           },
         ),
         [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: new Field(
@@ -1723,7 +1732,9 @@ export class Types {
             name: CONTACT_PROPERTY_FIELDS.FIELDTYPE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: true,
-            [CORE_ANNOTATIONS.VALUES]: contactPropertyFieldTypeValues,
+            [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+              values: contactPropertyFieldTypeValues,
+            }),
           },
         ),
         [CONTACT_PROPERTY_FIELDS.OPTIONS]: new Field(

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, RESTRICTION_ANNOTATIONS,
+  ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, getRestriction, createRestriction,
 } from '@salto-io/adapter-api'
 import filterCreator, { FLOW_METADATA_TYPE_ID } from '../../src/filters/flow'
 
@@ -28,15 +28,14 @@ describe('flow filter', () => {
     fields: {
       name: new Field(elemID, 'name', BuiltinTypes.STRING,
         {
-          [CORE_ANNOTATIONS.VALUES]: values,
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values }),
         }),
     },
   })
 
   it('remove restriction values from flow_metadata_value.name', () => {
     filter.onFetch([mockFlow])
-    expect(mockFlow.fields.name.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(values)
-    expect(mockFlow.fields.name
-      .annotations[CORE_ANNOTATIONS.RESTRICTION][RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]).toBe(false)
+    expect(getRestriction(mockFlow.fields.name).values).toEqual(values)
+    expect(getRestriction(mockFlow.fields.name).enforce_value).toBe(false)
   })
 })

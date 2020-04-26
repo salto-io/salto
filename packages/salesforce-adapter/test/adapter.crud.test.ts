@@ -15,8 +15,10 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes,
-  CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  createRestriction,
+} from '@salto-io/adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult, DeployDetails,
 } from 'jsforce'
@@ -457,7 +459,9 @@ describe('SalesforceAdapter CRUD', () => {
             Types.primitiveDataTypes.Text,
             {
               [constants.LABEL]: 'Text description label',
-              [CORE_ANNOTATIONS.VALUES]: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+                values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
+              }),
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
               [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
               [constants.FIELD_ANNOTATIONS.LENGTH]: 90,

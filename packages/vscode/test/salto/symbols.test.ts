@@ -69,7 +69,7 @@ describe('Cursor context resolver', () => {
   })
 
   it('should create array symbol', async () => {
-    const pos = { line: 137, col: 6 }
+    const pos = { line: 139, col: 6 }
     const ctx = await getPositionContext(workspace, naclFilename, pos)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('nicknames')
@@ -77,7 +77,7 @@ describe('Cursor context resolver', () => {
   })
 
   it('should create array item symbol', async () => {
-    const pos = { line: 137, col: 19 }
+    const pos = { line: 139, col: 19 }
     const ctx = await getPositionContext(workspace, naclFilename, pos)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('[0]')
@@ -85,7 +85,7 @@ describe('Cursor context resolver', () => {
   })
 
   it('should create array item symbol for lit of list', async () => {
-    const pos = { line: 138, col: 23 }
+    const pos = { line: 140, col: 23 }
     const ctx = await getPositionContext(workspace, naclFilename, pos)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('[0]')
@@ -93,7 +93,7 @@ describe('Cursor context resolver', () => {
   })
 
   it('should create file symbol', async () => {
-    const pos = { line: 133, col: 0 }
+    const pos = { line: 135, col: 0 }
     const ctx = await getPositionContext(workspace, naclFilename, pos)
     const symbol = createSaltoSymbol(ctx)
     expect(symbol.name).toBe('global')

@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
-  RESTRICTION_ANNOTATIONS, ListType,
+  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
+  createRestriction,
 } from '@salto-io/adapter-api'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
@@ -47,8 +47,9 @@ describe('convert types filter', () => {
       })), {}),
       numArray: new Field(mockObjId, 'numArray', new ListType(BuiltinTypes.NUMBER), {}),
       picklist: new Field(mockObjId, 'picklist', BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.VALUES]: ['a', 'b', 'c'],
-          [CORE_ANNOTATIONS.RESTRICTION]: { [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: true } }),
+        {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['a', 'b', 'c'] }),
+        }),
     },
   })
   type XsdValueType = { _: string; $: { 'xsi:type': string }}

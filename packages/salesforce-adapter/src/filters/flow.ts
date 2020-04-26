@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Element, CORE_ANNOTATIONS, ElemID, RESTRICTION_ANNOTATIONS,
+  Element, ElemID, getRestriction,
 } from '@salto-io/adapter-api'
 import {
   findObjectType,
@@ -37,10 +37,8 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     // fix flowMetadataValue - mark restriction values as not enforced, see: SALTO-93
     const flowMetadataValue = findObjectType(elements, FLOW_METADATA_TYPE_ID)
     if (flowMetadataValue && flowMetadataValue.fields.name) {
-      flowMetadataValue.fields.name
-        .annotations[CORE_ANNOTATIONS.RESTRICTION] = {
-          [RESTRICTION_ANNOTATIONS.ENFORCE_VALUE]: false,
-        }
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      getRestriction(flowMetadataValue.fields.name).enforce_value = false
     }
   },
 })

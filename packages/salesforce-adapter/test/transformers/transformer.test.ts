@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, ElemID, Field, BuiltinTypes, TypeElement, Field as TypeField, Values,
-  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement,
+  CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
@@ -79,10 +79,10 @@ describe('transformer', () => {
       })
       describe('restriction values', () => {
         it('should not have duplicate values', () => {
-          expect(enumField.annotations[CORE_ANNOTATIONS.VALUES]).toHaveLength(2)
+          expect(getRestriction(enumField).values).toHaveLength(2)
         })
         it('should be sorted alphabetically', () => {
-          expect(enumField.annotations[CORE_ANNOTATIONS.VALUES]).toEqual(['a', 'b'])
+          expect(getRestriction(enumField).values).toEqual(['a', 'b'])
         })
       })
     })

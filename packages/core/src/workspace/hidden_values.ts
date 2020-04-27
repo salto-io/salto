@@ -52,7 +52,7 @@ export const addHiddenValues = (
   })
 }
 
-export const removeElementHiddenValues = (elem: Element):
+export const removeHiddenValues = (elem: Element):
   Element => {
   if (isInstanceElement(elem)) {
     const removeHiddenValue: TransformPrimitiveFunc = (val, _pathID, field) => {

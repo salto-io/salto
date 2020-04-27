@@ -47,7 +47,7 @@ import {
 import { Workspace } from './workspace/workspace'
 import { defaultDependencyChangers } from './core/plan/plan'
 import {
-  addHiddenValues, removeElementHiddenValues,
+  addHiddenValues, removeHiddenValues,
 } from './workspace/hidden_values'
 
 const log = logger(module)
@@ -113,7 +113,7 @@ export const deploy = async (
       ((action === 'remove')
         ? workspace.state().remove(element.elemID)
         : workspace.state().set(element)
-          .then(() => { changedElements.push(removeElementHiddenValues(element)) }))
+          .then(() => { changedElements.push(removeHiddenValues(element)) }))
     const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())

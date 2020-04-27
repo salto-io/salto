@@ -30,7 +30,7 @@ import { StepEvents } from './deploy'
 import { getPlan, DetailedChange, Plan } from './plan'
 import { mergeElements, MergeError } from './merger'
 import {
-  removeElementHiddenValues,
+  removeHiddenValues,
 } from '../workspace/hidden_values'
 
 const log = logger(module)
@@ -48,7 +48,7 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {
     id: elem.elemID,
     action: 'add',
-    data: { after: removeElementHiddenValues(elem) },
+    data: { after: removeHiddenValues(elem) },
   }
   return { change, serviceChange: change }
 }
@@ -255,7 +255,7 @@ const fetchAndProcessMergeErrors = async (
 }
 
 const removeElementsHiddenValues = (serviceElements: ReadonlyArray<Element>):
-  Element[] => serviceElements.map(elem => removeElementHiddenValues(elem))
+  Element[] => serviceElements.map(elem => removeHiddenValues(elem))
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all service elements should be consider as "add" changes.

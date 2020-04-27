@@ -27,7 +27,7 @@ import {
 import * as merger from '../../src/core/merger'
 import { getPlan, Plan } from '../../src/core/plan'
 import {
-  removeElementHiddenValues,
+  removeHiddenValues,
 } from '../../src/workspace/hidden_values'
 
 const { DuplicateAnnotationError } = merger
@@ -82,7 +82,7 @@ describe('fetch', () => {
   })
 
   // Workspace elements should not contains hidden values
-  const workspaceInstance = removeElementHiddenValues(hiddenInstance)
+  const workspaceInstance = removeHiddenValues(hiddenInstance)
 
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,

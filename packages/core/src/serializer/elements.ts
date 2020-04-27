@@ -46,6 +46,7 @@ export const serialize = (elements: Element[]): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
     if (isReferenceExpression(e)) {
+      // Add property SALTO_CLASS_FIELD to o
       const o = e.createWithValue(undefined) as typeof e & ClassName
       o[SALTO_CLASS_FIELD] = e.constructor.name
       return o

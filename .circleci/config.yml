@@ -376,8 +376,7 @@ workflows:
             - build
             - e2e_test
       - build_and_upload_docs:
-          requires:
-            - build
+          name: build_and_upload_docs
           # filters:
           #   branches:
           #     only:

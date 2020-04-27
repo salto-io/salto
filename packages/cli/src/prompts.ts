@@ -159,6 +159,7 @@ Do you want to update your config file accordingly?`
   public static readonly WORKING_ON_ENV = 'The active environment is'
   public static readonly NO_CURRENT_ENV = 'No active environment is currently set'
   public static readonly SET_ENV = 'Active environment is set to'
+  public static readonly DELETED_ENV = (envName: string): string => `Deleted environment - ${envName}`
   public static readonly CREATED_ENV = (envName: string): string =>
     `Created environment - ${envName}.
 ${Prompts.SERVICE_ADD_HELP}`

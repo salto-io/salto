@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,
-  SourceFragment, FetchChange, FetchResult,
+  SourceFragment, FetchChange, FetchResult, SourceRange,
 } from '@salto-io/core'
 import Prompts from './prompts'
 
@@ -57,20 +57,37 @@ export const formatWordsSeries = (words: string[]): string => (words.length > 1
   * Format workspace errors
   */
 const TAB = '  '
+
+const formatSourceFragmentHeader = (headerMetaData: SourceRange): string =>
+  `${chalk.underline(headerMetaData.filename)}(${chalk.cyan(`line: ${headerMetaData.start.line}`)})\n`
+
+const formatSourceFragmentWithsubRange = (sf: Readonly<SourceFragment>): string => {
+  const sourceSubRange = sf.subRange ?? sf.sourceRange
+  const beforeSubRange = sf.fragment.slice(0, sourceSubRange.start.byte - sf.sourceRange.start.byte)
+  let subRange = sf.fragment.slice(sourceSubRange.start.byte - sf.sourceRange.start.byte,
+    sourceSubRange.end.byte - sf.sourceRange.start.byte)
+  subRange = subRange === '\n' ? '\\n\n' : subRange
+  const afterSubRange = sf.fragment.slice(sourceSubRange.end.byte - sf.sourceRange.start.byte)
+  return `${formatSourceFragmentHeader(sourceSubRange)}${TAB}${
+    subHeader(beforeSubRange)
+  }${chalk.white(subRange)
+  }${subHeader(afterSubRange)}\n`
+}
+
+const formatSourceFragmentWithoutsubRange = (sf: Readonly<SourceFragment>): string =>
+  `${formatSourceFragmentHeader(sf.sourceRange)}${TAB}${
+    subHeader(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+
 const formatSourceFragment = (sf: Readonly<SourceFragment>): string =>
-  `${chalk.underline(sf.sourceRange.filename)}(${chalk.cyan(`${sf.sourceRange.start.line}`)}`
-   + `:${chalk.cyan(`${sf.sourceRange.start.col}`)})\n${TAB}${
-     subHeader(sf.fragment.split('\n').join(`\n${TAB}`))}\n`
+  (sf.subRange ? formatSourceFragmentWithsubRange(sf) : formatSourceFragmentWithoutsubRange(sf))
 
 const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): string =>
   (sourceFragments.length > 0
     ? `\n on ${sourceFragments.map(formatSourceFragment).join('\n and ')}`
     : '')
 
-
 export const formatWorkspaceError = (we: Readonly<WorkspaceError<SaltoError>>): string =>
   `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`
-
 
 const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)
@@ -556,6 +573,8 @@ export const formatSetEnv = (envName: string): string => (
 )
 
 export const formatCreateEnv = (envName: string): string => Prompts.CREATED_ENV(envName)
+
+export const formatDeleteEnv = (envName: string): string => Prompts.DELETED_ENV(envName)
 
 export const formatFinishedLoading = (envName?: string): string => (
   envName

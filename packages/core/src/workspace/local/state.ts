@@ -18,7 +18,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, ElemID, ElementMap, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, replaceContents, mkdirp } from '@salto-io/file'
+import { exists, readTextFile, replaceContents, mkdirp, rm } from '@salto-io/file'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
 import { serialize, deserialize } from '../../serializer/elements'
@@ -107,6 +107,9 @@ export const localState = (filePath: string): State => {
       await mkdirp(path.dirname(filePath))
       await replaceContents(filePath, stateText)
       log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
+    },
+    clear: async (): Promise<void> => {
+      await rm(filePath)
     },
     getServicesUpdateDates: async (): Promise<Record<string, Date>> => (await stateData())
       .servicesUpdateDate,

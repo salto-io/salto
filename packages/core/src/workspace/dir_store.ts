@@ -24,6 +24,7 @@ export type DirectoryStore = {
   get(filename: string): Promise<File | undefined>
   set(file: File): Promise<void>
   delete(filename: string): Promise<void>
+  clear(): Promise<void>
   flush(): Promise<void>
   mtimestamp(filename: string): Promise<number | undefined>
   getFiles(filenames: string[]): Promise<(File | undefined) []>

@@ -26,6 +26,7 @@ export const mockStaticFileSource = (): StaticFilesSource => ({
   getMetaData: jest.fn(),
   getStaticFile: jest.fn(),
   flush: jest.fn(),
+  clear: jest.fn(),
   clone: jest.fn(),
 })
 

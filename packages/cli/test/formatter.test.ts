@@ -28,22 +28,31 @@ describe('formatter', () => {
   const workspaceErrorWithSourceFragments: WorkspaceError<SaltoError> = {
     sourceFragments: [{
       sourceRange: {
-        start: {
-          byte: 20,
-          col: 10,
-          line: 2,
-        },
-        end: {
-          byte: 30,
-          col: 10,
-          line: 3,
-        },
+        start: { byte: 20, col: 10, line: 2 },
+        end: { byte: 30, col: 10, line: 3 },
         filename: 'test.nacl',
       },
-      fragment: '{ This is my code fragment }',
-
+      subRange: {
+        start: { line: 2, col: 3, byte: 30 },
+        end: { line: 2, col: 4, byte: 31 },
+        filename: 'test.nacl',
+      },
+      fragment: '{ This is my first code fragment }',
+    },
+    {
+      sourceRange: {
+        start: { byte: 100, col: 10, line: 10 },
+        end: { byte: 150, col: 10, line: 15 },
+        filename: 'test.nacl',
+      },
+      fragment: '{ This is my second code fragment }',
     }],
     message: 'This is my error',
+    severity: 'Error',
+  }
+  const workspaceErrorWithoutSourceFragments: WorkspaceError<SaltoError> = {
+    message: 'This is my error',
+    sourceFragments: [],
     severity: 'Error',
   }
   describe('formatSearchResults', () => {
@@ -371,7 +380,7 @@ describe('formatter', () => {
     })
   })
 
-  describe('workspace error format', () => {
+  describe('workspace error format with source fragments', () => {
     let formattedErrors: string
     beforeEach(() => {
       formattedErrors = formatWorkspaceError(workspaceErrorWithSourceFragments)
@@ -379,14 +388,23 @@ describe('formatter', () => {
     it('should print the start line', () => {
       expect(formattedErrors).toContain('2')
     })
-    it('should print the start col', () => {
-      expect(formattedErrors).toContain('10')
-    })
     it('should print the error', () => {
       expect(formattedErrors).toContain('This is my error')
     })
-    it('should print the code fragment', () => {
-      expect(formattedErrors).toContain('{ This is my code fragment }')
+    it('should print the first code fragment', () => {
+      expect(formattedErrors).toContain('first code') // The formatted error is chalked.
+    })
+    it('should print the second code fragment', () => {
+      expect(formattedErrors).toContain('{ This is my second code fragment }')
+    })
+  })
+  describe('workspace error format without source fragments', () => {
+    let formattedErrors: string
+    beforeEach(() => {
+      formattedErrors = formatWorkspaceError(workspaceErrorWithoutSourceFragments)
+    })
+    it('should print the error', () => {
+      expect(formattedErrors).toContain('This is my error')
     })
   })
 })

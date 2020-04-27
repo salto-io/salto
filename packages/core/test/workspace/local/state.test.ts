@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { replaceContents, exists, readTextFile } from '@salto-io/file'
+import { replaceContents, exists, readTextFile, rm } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import State from '../../../src/workspace/state'
 import { localState } from '../../../src/workspace/local/state'
 import { getAllElements } from '../../common/elements'
 import { expectTypesToMatch } from '../../common/helpers'
 import { serialize } from '../../../src/serializer/elements'
-
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -38,6 +37,7 @@ jest.mock('@salto-io/file', () => ({
     }
     return Promise.resolve('[]')
   }),
+  rm: jest.fn().mockImplementation(),
   mkdirp: jest.fn().mockImplementation(),
   exists: jest.fn().mockImplementation(((filename: string) => Promise.resolve(filename !== 'empty'))),
 }))
@@ -200,6 +200,16 @@ describe('local state', () => {
       await state.set([BuiltinTypes.STRING])
       const overrideDate = await state.getServicesUpdateDates()
       expect(overrideDate).toEqual({})
+    })
+  })
+
+  describe('delete', () => {
+    const mockRm = rm as jest.Mock
+    it('should delete state file', async () => {
+      const state = localState('on-delete')
+      await state.clear()
+      expect(mockRm).toHaveBeenCalledTimes(1)
+      expect(mockRm).toHaveBeenCalledWith('on-delete')
     })
   })
 

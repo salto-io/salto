@@ -47,12 +47,12 @@ export type DumpedHclBlock = HclBlock<Values> & {
 
 // hcl.Diagnostic struct taken from
 // https://github.com/hashicorp/hcl2/blob/f45c1cd/hcl/diagnostic.go#L26
-// TODO: include expression and evalContext when it's needed
+// TODO: include expression and bubble up error message detail
 export interface HclParseError {
   summary: string
   detail: string
   subject: SourceRange
-  context?: SourceRange
+  context: SourceRange
 }
 
 export type ParsedHclBody = Pick<ParsedHclBlock, 'attrs' | 'blocks'>

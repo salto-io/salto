@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { adapterCreators } from '../../src/core/adapters'
-import { naclFilesSource } from '../../src/workspace/nacl_files/nacl_files_source'
+import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files/nacl_files_source'
 import State from '../../src/workspace/state'
 import mockState from '../common/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
@@ -36,6 +36,9 @@ import {
   loadWorkspace,
   NoWorkspaceConfig,
   ADAPTERS_CONFIGS_PATH,
+  EnvironmentSource,
+  DeleteCurrentEnvError,
+  UnknownEnvError,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 
@@ -82,20 +85,24 @@ const mockConfigSource = (conf?: Values): ConfigSource => ({
       })
   )),
   set: jest.fn(),
+  delete: jest.fn(),
 })
 const mockCredentialsSource = (): ConfigSource => ({
   get: jest.fn(),
   set: jest.fn(),
+  delete: jest.fn(),
 })
+
 const createWorkspace = async (
   dirStore?: DirectoryStore, state?: State,
   configSource?: ConfigSource, credentials?: ConfigSource,
   staticFilesSource?: StaticFilesSource,
+  elementSources?: Record<string, EnvironmentSource>,
 ): Promise<Workspace> =>
   loadWorkspace(configSource || mockConfigSource(), credentials || mockCredentialsSource(),
     {
       commonSourceName: '',
-      sources: {
+      sources: elementSources || {
         '': {
           naclFiles: naclFilesSource(
             dirStore || mockDirStore(), mockParseCache(),
@@ -120,7 +127,11 @@ jest.mock('../../src/workspace/dir_store')
 describe('workspace', () => {
   describe('loadWorkspace', () => {
     it('should fail if no workspace config', async () => {
-      const noWorkspaceConfig = { get: jest.fn().mockResolvedValue(undefined), set: jest.fn() }
+      const noWorkspaceConfig = {
+        get: jest.fn().mockResolvedValue(undefined),
+        set: jest.fn(),
+        delete: jest.fn(),
+      }
       await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects
         .toThrow(NoWorkspaceConfig)
     })
@@ -130,6 +141,7 @@ describe('workspace', () => {
           (name === WORKSPACE_CONFIG_NAME) ? wsConfInstance() : undefined
         )),
         set: jest.fn(),
+        delete: jest.fn(),
       }
       expect(await createWorkspace(undefined, undefined, noUserConfig)).toBeDefined()
     })
@@ -174,7 +186,7 @@ describe('workspace', () => {
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
-      const err = 'Expected ws, comment or word token but found: } instead.'
+      const err = 'Expected ws, comment or word token but found instead: }.'
       expect(errors.strings()[0]).toMatch(err)
       expect(errors.parse[0].detail).toMatch(err)
 
@@ -612,6 +624,59 @@ describe('workspace', () => {
     })
   })
 
+  describe('deleteEnvironment', () => {
+    describe('should delete environment', () => {
+      let confSource: ConfigSource
+      let credSource: ConfigSource
+      let workspace: Workspace
+      let state: State
+      let naclFiles: NaclFilesSource
+      const envName = 'inactive'
+
+      beforeAll(async () => {
+        confSource = mockConfigSource()
+        credSource = mockCredentialsSource()
+        state = mockState()
+        naclFiles = createMockNaclFileSource([])
+        workspace = await createWorkspace(undefined, undefined, confSource, credSource,
+          undefined, { inactive: { naclFiles, state } })
+        await workspace.deleteEnvironment(envName)
+      })
+
+      it('should not be included in the workspace envs', async () => {
+        expect(workspace.envs().includes(envName)).toBeFalsy()
+      })
+
+      it('should persist', () => {
+        expect(confSource.set).toHaveBeenCalledTimes(1)
+        const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
+        const envs = instance.value.envs.map((e: {name: string}) => e.name)
+        expect(envs.includes(envName)).toBeFalsy()
+      })
+
+      it('should delete files', () => {
+        expect(credSource.delete).toHaveBeenCalledTimes(1)
+        expect(state.clear).toHaveBeenCalledTimes(1)
+        expect(naclFiles.clear).toHaveBeenCalledTimes(1)
+      })
+    })
+
+    describe('should fail to delete environment', () => {
+      let workspace: Workspace
+      beforeEach(async () => {
+        workspace = await createWorkspace()
+      })
+
+      it('should not be able to delete current environment', async () => {
+        await expect(workspace.deleteEnvironment('default')).rejects.toThrow(DeleteCurrentEnvError)
+      })
+
+      it('should not be able to delete unknown environment', async () => {
+        await expect(workspace.deleteEnvironment('unknown')).rejects.toThrow(UnknownEnvError)
+      })
+    })
+  })
+
   describe('addService', () => {
     let confSource: ConfigSource
     let workspace: Workspace
@@ -687,6 +752,7 @@ describe('workspace', () => {
             { usename: 'default', password: 'default', currentEnv: 'default' })
         ),
         set: jest.fn(),
+        delete: jest.fn(),
       }
       workspace = await createWorkspace(undefined, undefined, undefined, credsSource)
     })

@@ -16,12 +16,13 @@
 import * as nearley from 'nearley'
 import _ from 'lodash'
 import { startParse, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
-import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression } from './types'
+import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression, SourceRange } from './types'
 import { WILDCARD } from './lexer'
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
 
-
+const SURROUNDING_LINE_CONTEXT = 2
 const MAX_FILE_ERRORS = 20
 // This value was set for the longest minimal length of an empty non-literal
 // in the grammer.
@@ -32,6 +33,42 @@ const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
     ? symbol.type
     : undefined
 }
+
+const lineToOffset = (src: string, line: number, untilEol = false): number => {
+  if (line === 0 && untilEol) return src.split('\n')[0].length
+  if (line === 0) return 0
+  return src
+    .split('\n')
+    .slice(0, untilEol ? line : (line - 1))
+    .map(l => l.length + 1) // Add 1 for the \n removed
+    .reduce((sum, current) => sum + current, 0)
+}
+
+const getContextSourceRange = (filename: string, line: number, src: string): SourceRange => {
+  let rebasedLineStart = line - SURROUNDING_LINE_CONTEXT
+  let rebasedLineEnd = line + SURROUNDING_LINE_CONTEXT
+  if (rebasedLineStart < 0) rebasedLineStart = 0
+  if (rebasedLineEnd > src.split('\n').length) rebasedLineEnd = src.split('\n').length
+
+  return {
+    start: {
+      line: rebasedLineStart,
+      col: 0,
+      byte: lineToOffset(src, rebasedLineStart),
+    },
+    end: {
+      line: rebasedLineEnd,
+      col: lineToOffset(src, rebasedLineEnd, true)
+        - lineToOffset(src, rebasedLineEnd),
+      byte: lineToOffset(src, rebasedLineEnd, true) - 1, // Remove the last \n
+    },
+    filename,
+  }
+}
+
+const EmptyContext = (): SourceRange => (
+  { start: { line: 0, col: 0, byte: 0 }, end: { line: 0, col: 0, byte: 0 }, filename: '' }
+)
 
 const convertParserError = (
   err: NearleyError,
@@ -46,20 +83,29 @@ const convertParserError = (
     ? `${expected.slice(0, -1).join(', ')} or ${expected[expected.length - 1]}`
     : expected[0]
   const text = token.value || ''
-  const summary = err.message.includes('\n') ? `Unexpected token: ${text}` : err.message
-
+  const errorLength = text.length
+  const errorCol = token.col ?? 0
+  const errorOffset = token.offset ?? 0
+  const summary = err.message.includes('\n') ? `Unexpected token: ${
+    text === '\n' ? '\\n' : text}` : err.message // TODO: Handle escaping if reocurrs in other ways
   const start = token?.source?.start
-    ?? { line: token.line, col: token.col, byte: token.offset } as unknown as SourcePos
-  const end = token?.source?.start
-    ?? { line: token.line, col: token.col, byte: token.offset } as unknown as SourcePos
+    ?? { line: token.line,
+      col: errorCol,
+      byte: errorOffset } as unknown as SourcePos
+  const end = token?.source?.end
+    ?? { line: token.line,
+      col: errorCol + errorLength,
+      byte: errorOffset + errorLength } as unknown as SourcePos
+
   return {
     summary,
-    detail: `Expected ${expectedMsg} token but found: ${text} instead.`,
+    detail: `Expected ${expectedMsg} token but found instead: ${text === '\n' ? '\\n' : text}.`,
     subject: {
       filename,
       start,
       end,
     },
+    context: EmptyContext(), // Will be filled later in flow with unpatched source for context
   }
 }
 
@@ -93,16 +139,17 @@ const unexpectedEOFError = (src: string, filename: string): HclParseError => {
       start: pos,
       end: pos,
     },
+    context: { filename, start: pos, end: pos },
   }
 }
 
 const addLineOffset = (pos: SourcePos, wildcardPosition: SourcePos): SourcePos => (
   pos.line === wildcardPosition.line && pos.col > wildcardPosition.col
-    ? { line: pos.line, col: pos.col - WILDCARD.length, byte: pos.byte }
+    ? { line: pos.line, col: pos.col - WILDCARD.length, byte: pos.byte - WILDCARD.length }
     : pos
 )
 
-const restoreOrigRanges = (
+const restoreOrigBlockRanges = (
   blockItems: HclExpression[],
   wildcardPosition: SourcePos
 ): HclExpression[] => (
@@ -123,7 +170,7 @@ export const parseBuffer = (
   src: string,
   filename: string,
   prevErrors: HclParseError[] = []
-): [HclExpression[], HclParseError[]] => {
+): [string, HclExpression[], HclParseError[]] => {
   const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
   try {
     hclParser.feed(src)
@@ -145,30 +192,91 @@ export const parseBuffer = (
         src.slice(parserError.subject.start.byte),
       ].join('')
       setErrorRecoveryMode() // Allows the wildcard token to be parsed from now on in this file
-      const [blockItems, errors] = parseBuffer(
+
+      const [finalFixedBuffer, blockItems, errors] = parseBuffer(
         fixedBuffer,
         filename,
         [...prevErrors, parserError]
       )
-      return [restoreOrigRanges(blockItems, parserError.subject.start), errors]
+      return [finalFixedBuffer,
+        restoreOrigBlockRanges(blockItems, parserError.subject.start), errors]
     }
-    return [[], [...prevErrors, parserError]]
+    return [src, [], [...prevErrors, parserError]]
   }
   const blockItems = hclParser.finish()[0]
-  return [blockItems, prevErrors]
+  return [src, blockItems, prevErrors]
+}
+
+const isWildcardToken = (error: HclParseError): boolean => error.detail.includes(WILDCARD)
+
+// This function removes all errors that are generated because of wildcard use
+const filterErrors = (errors: HclParseError[], src: string): HclParseError[] => {
+  if (_.isEmpty(errors)) {
+    return errors
+  }
+
+  return errors
+    .filter((error, i) => {
+      if (i === 0) return true
+      if (src.slice(errors[i - 1].subject.start.byte, error.subject.start.byte) === WILDCARD) {
+        return false
+      }
+      return true
+    })
+    .filter(error => !isWildcardToken(error))
+}
+
+const generateErrorContext = (src: string, error: HclParseError): HclParseError => {
+  error.context = getContextSourceRange(error.subject.filename, error.subject.start.line, src)
+  return error
+}
+
+const subtractWildcardOffset = (pos: SourcePos, amountWildcards: number): SourcePos => (
+  { line: pos.line, col: pos.col, byte: pos.byte - amountWildcards * WILDCARD.length })
+
+// Calculate the amount of wildcards before parameter error starts in the patched src.
+const calculateAmountWildcards = (patchedSrc: string, error: HclParseError): number =>
+  patchedSrc
+    .split(WILDCARD)
+    .map(value => value.length + WILDCARD.length)
+    .reduce((newArr, current) => {
+      if (_.isEmpty(newArr)) return [current]
+      newArr.push(current + newArr[newArr.length - 1])
+      return newArr
+    }, ([] as number[])) // Until Here produces an array with the indexes of wildcards
+    .reduce((amountWildcards, current) =>
+      (current < error.subject.end.byte ? amountWildcards + 1 : amountWildcards), 0)
+
+const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError): HclParseError => {
+  const amountWildcardsBefore = calculateAmountWildcards(patchedSrc, error)
+  error.subject.start = subtractWildcardOffset(
+    error.subject.start, amountWildcardsBefore
+  )
+  error.subject.end = subtractWildcardOffset(
+    error.subject.end, amountWildcardsBefore
+  )
+  return error
 }
 
 export const parse = (src: Buffer, filename: string): HclParseReturn => {
   startParse(filename)
-  const [blockItems, errors] = parseBuffer(src.toString(), filename)
+  const srcString = src.toString()
+  const [patchedSrc, blockItems, errors] = parseBuffer(srcString, filename)
+  let fixedErrors = filterErrors(errors, patchedSrc)
+  fixedErrors = fixedErrors
+    .map(error => {
+      const updatedError = generateErrorContext(srcString, error)
+      return updatedError
+    })
+    .map(error => restoreErrorOrigRanges(patchedSrc, error))
   if (blockItems !== undefined) {
     return {
       body: convertMain(blockItems),
-      errors,
+      errors: fixedErrors,
     }
   }
   return {
-    body: createEmptyBody(src.toString(), filename),
-    errors: [unexpectedEOFError(src.toString(), filename)],
+    body: createEmptyBody(srcString, filename),
+    errors: [unexpectedEOFError(srcString, filename)],
   }
 }

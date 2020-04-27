@@ -76,6 +76,7 @@ export const mockDirStore = (exclude: string[] = ['error.nacl', 'dup.nacl']): Di
     get: jest.fn().mockImplementation((filename: string) => Promise.resolve(naclFiles[filename])),
     set: jest.fn().mockImplementation(() => Promise.resolve()),
     delete: jest.fn().mockImplementation(() => Promise.resolve()),
+    clear: jest.fn().mockImplementation(() => Promise.resolve()),
     flush: jest.fn().mockImplementation(() => Promise.resolve()),
     mtimestamp: jest.fn(),
     getFiles: jest.fn().mockImplementation((filenames: string[]) =>
@@ -88,5 +89,6 @@ export const mockParseCache = (): ParseResultCache => ({
   put: () => Promise.resolve(),
   get: () => Promise.resolve(undefined),
   flush: () => Promise.resolve(undefined),
+  clear: () => Promise.resolve(),
   clone: () => mockParseCache(),
 })

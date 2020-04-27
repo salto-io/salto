@@ -57,5 +57,8 @@ Promise<WorkspaceConfigSource> => {
       }
       return repoConfigSource.set(configName, config)
     },
+    delete: async (name: string): Promise<void> => {
+      await localConfigSource.delete(name)
+    },
   }
 }

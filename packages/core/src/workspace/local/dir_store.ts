@@ -51,7 +51,7 @@ const buildLocalDirectoryStore = (
 
   const listDirFiles = async (): Promise<string[]> => (await exists(baseDir)
     ? readdirp.promise(baseDir, {
-      fileFilter,
+      fileFilter: fileFilter || (() => true),
       directoryFilter: e => e.basename[0] !== '.'
           && (!directoryFilter || directoryFilter(e.fullPath)),
     }).then(entries => entries.map(e => e.fullPath).map(getRelativeFileName))
@@ -85,8 +85,10 @@ const buildLocalDirectoryStore = (
 
   const deleteFile = async (filename: string): Promise<void> => {
     const absFileName = getAbsFileName(filename)
-    await rm(absFileName)
-    await removeDirIfEmpty(path.dirname(absFileName))
+    if (await exists(absFileName)) {
+      await rm(absFileName)
+      await removeDirIfEmpty(path.dirname(absFileName))
+    }
   }
 
   const mtimestampFile = async (filename: string): Promise<number | undefined> => (updated[filename]
@@ -97,15 +99,24 @@ const buildLocalDirectoryStore = (
     const relFilename = getRelativeFileName(filename)
     return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
   }
+  const list = async (): Promise<string[]> =>
+    _(await listDirFiles())
+      .concat(Object.keys(updated))
+      .filter(file => !deleted.includes(file))
+      .uniq()
+      .value()
+
+  const flush = async (): Promise<void> => {
+    await withLimitedConcurrency(
+      Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY
+    )
+    await withLimitedConcurrency(deleted.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
+    updated = {}
+    deleted = []
+  }
 
   return {
-    list: async (): Promise<string[]> =>
-      _(await listDirFiles())
-        .concat(Object.keys(updated))
-        .filter(file => !deleted.includes(file))
-        .uniq()
-        .value(),
-
+    list,
     get,
 
     set: async (file: File): Promise<void> => {
@@ -120,6 +131,15 @@ const buildLocalDirectoryStore = (
       deleted.push(relFilename)
     },
 
+    clear: async (): Promise<void> => {
+      (await list()).forEach(f => deleted.push(f))
+      updated = {}
+      await flush()
+
+      // Handles the case when there are no files
+      await removeDirIfEmpty(baseDir)
+    },
+
     mtimestamp: async (filename: string): Promise<undefined | number> => {
       const relFilename = getRelativeFileName(filename)
       return (updated[relFilename]
@@ -127,18 +147,10 @@ const buildLocalDirectoryStore = (
         : mtimestampFile(relFilename))
     },
 
-    flush: async (): Promise<void> => {
-      await withLimitedConcurrency(
-        Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY
-      )
-      await withLimitedConcurrency(deleted.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
-      updated = {}
-      deleted = []
-    },
+    flush,
 
     getFiles: async (filenames: string[]): Promise<(File | undefined) []> =>
       withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY),
-
 
     clone: () => buildLocalDirectoryStore(
       baseDir,

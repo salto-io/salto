@@ -37,10 +37,12 @@ describe('configs', () => {
   const dumpedConfig = { filename: `${adapter}.nacl`, buffer: dumpElements([config]) }
   const mockSet = jest.fn()
   const mockGet = jest.fn()
+  const mockDelete = jest.fn()
   const mockFlush = jest.fn()
   const mockedDirStore = {
     get: mockGet,
     set: mockSet,
+    delete: mockDelete,
     flush: mockFlush,
   } as unknown as DirectoryStore
 
@@ -60,6 +62,11 @@ describe('configs', () => {
     mockGet.mockResolvedValueOnce(dumpedConfig)
     const fromConfigStore = await configSource(mockedDirStore).get(adapter)
     expect(fromConfigStore?.value).toEqual(config.value)
+  })
+
+  it('should delete adapter config', async () => {
+    await configSource(mockedDirStore).delete(adapter)
+    expect(mockDelete).toHaveBeenCalledTimes(1)
   })
 
   it('should not fail if adapter config not exists', async () => {

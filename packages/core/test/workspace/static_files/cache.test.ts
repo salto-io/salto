@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import path from 'path'
 import * as file from '@salto-io/file'
 
 import { StaticFilesCache } from '../../../src/workspace/static_files/cache'
@@ -29,6 +30,7 @@ describe('Static Files Cache', () => {
 
   const mockFileExists = file.exists as jest.Mock
   const mockReplaceContents = file.replaceContents as jest.Mock
+  const mockRm = file.rm as jest.Mock
   const mockReadFile = file.readTextFile as unknown as jest.Mock
   let staticFilesCache: StaticFilesCache
 
@@ -73,6 +75,11 @@ describe('Static Files Cache', () => {
     const [filepath, content] = mockReplaceContents.mock.calls[0]
     expect(filepath).toMatch(new RegExp(`cacheDir\\/${CACHE_FILENAME}`))
     expect(content).toEqual(expectedCacheContent)
+  })
+  it('clear', async () => {
+    await staticFilesCache.clear()
+    expect(mockRm).toHaveBeenCalledTimes(1)
+    expect(mockRm).toHaveBeenCalledWith(path.join('cacheDir', CACHE_FILENAME))
   })
   it('clones', async () => {
     await staticFilesCache.put(expectedResult)

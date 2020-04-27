@@ -287,6 +287,12 @@ const buildNaclFilesSource = (
         .map(filename => ({ filename, buffer: '' })), (await getState()).ParsedNaclFiles)
     },
 
+    clear: async () => {
+      await naclFilesStore.clear()
+      await staticFileSource.clear()
+      await cache.clear()
+    },
+
     clone: () => buildNaclFilesSource(
       naclFilesStore.clone(),
       cache.clone(),

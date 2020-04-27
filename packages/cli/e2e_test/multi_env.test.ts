@@ -76,10 +76,10 @@ describe('multi env tests', () => {
     path.join(homeWSDir(), 'credentials', ENV2_NAME, 'salesforce.nacl')
   )
   const env1CacheFilePath = (): string => (
-    path.join(homeWSDir(), 'envs', ENV1_NAME, 'cache')
+    path.join(homeWSDir(), 'cache', ENV1_NAME)
   )
   const env2CacheFilePath = (): string => (
-    path.join(homeWSDir(), 'envs', ENV1_NAME, 'cache')
+    path.join(homeWSDir(), 'cache', ENV2_NAME)
   )
   const workspaceUserConfigFilePath = (): string => (
     path.join(homeWSDir(), 'workspaceUser.nacl')

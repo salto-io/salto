@@ -334,7 +334,11 @@ Salto supports various annotations whose semantic is enforced by the tool itself
 The following types are supported in the language:
 | Name      | Example field definition | Example value  | Description
 |-----------|--------------------------|----------------|------------
-| `string`    | string name {}           | "me"           |
+| `string`    | string name {}           | "me"           | Use " to define single line string.
+|             |                          | '''            | Use ''' to define a multiline string.
+|             |                          | Multiline      |
+|             |                          | String         |
+|             |                          | '''            |
 | `number`    | number age {}            | 12             |
 | `boolean`   | boolean isOpen {}        | true / false   |
 | `json`      | json value {}            | "{ \"a\": 12 }"| A string value that expects the value to be in JSON format

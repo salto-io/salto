@@ -24,8 +24,8 @@ import { HclExpression } from './internal/types'
 import { FunctionExpression } from './internal/functions'
 
 export type FunctionImplementation = {
- toValue(funcExp: HclExpression): Value
- fromValue(val: Value): FunctionExpression
+ toValue(funcExp: HclExpression): Promise<Value>
+ fromValue(val: Value): Promise<FunctionExpression>
  isSerializedAsFunction(val: Value): boolean
 }
 
@@ -46,15 +46,15 @@ export class MissingFunctionError implements SaltoError {
 
 export const getSystemFunctions = (): Functions => ({
   file: {
-    toValue: (funcExp: HclExpression): StaticFileNaclValue => {
+    toValue: (funcExp: HclExpression): Promise<StaticFileNaclValue> => {
       const [filepath] = funcExp.value.parameters
 
-      return new StaticFileNaclValue(filepath)
+      return Promise.resolve(new StaticFileNaclValue(filepath))
     },
-    fromValue: (val: Value): FunctionExpression => new FunctionExpression(
+    fromValue: (val: Value): Promise<FunctionExpression> => Promise.resolve(new FunctionExpression(
       'file',
       [val.filepath],
-    ),
+    )),
     isSerializedAsFunction: (val: Value) => val instanceof StaticFileNaclValue,
   },
 })
@@ -62,12 +62,12 @@ export const getSystemFunctions = (): Functions => ({
 export const evaluateFunction = (
   funcExp: HclExpression,
   functions: Functions = getSystemFunctions(),
-): Value | MissingFunctionError => {
+): Promise<Value | MissingFunctionError> => {
   const { funcName } = funcExp.value
 
   const func = functions[funcName]
   if (func === undefined) {
-    return new MissingFunctionError(funcName)
+    return Promise.resolve(new MissingFunctionError(funcName))
   }
 
   return func.toValue(funcExp)
@@ -76,7 +76,7 @@ export const evaluateFunction = (
 export const getFunctionExpression = (
   val: Value,
   functions: Functions = getSystemFunctions(),
-): FunctionExpression | undefined => {
+): Promise<FunctionExpression | undefined> => {
   const [funcPerhaps] = Object.values(functions)
     .filter(maybeRelevantFuncObj => maybeRelevantFuncObj.isSerializedAsFunction(val))
     .map(funcObj => funcObj.fromValue(val))

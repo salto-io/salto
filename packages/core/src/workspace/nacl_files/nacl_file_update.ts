@@ -159,17 +159,17 @@ export const groupAnnotationTypeChanges = (fileChanges: DetailedChangeWithSource
   return [...otherChanges, ...transformedAnnotationTypeChanges]
 }
 
-export const updateNaclFileData = (
+export const updateNaclFileData = async (
   currentData: string,
   changes: DetailedChangeWithSource[]
-): string => {
+): Promise<string> => {
   type BufferChange = {
     newData: string
     start: number
     end: number
   }
 
-  const toBufferChange = (change: DetailedChangeWithSource): BufferChange => {
+  const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
     if (elem !== undefined) {
@@ -182,12 +182,12 @@ export const updateNaclFileData = (
           newData = dumpAnnotationTypes(elem)
         }
       } else if (isElement(elem)) {
-        newData = dumpElements([elem])
+        newData = await dumpElements([elem])
       } else if (isListElement) {
-        newData = dumpValues(elem)
+        newData = await dumpValues(elem)
       } else {
         // When dumping values (attributes) we need to dump the key as well
-        newData = dumpValues({ [changeKey]: elem })
+        newData = await dumpValues({ [changeKey]: elem })
       }
       if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
         // Trim trailing newline (the original value already has one)
@@ -205,7 +205,7 @@ export const updateNaclFileData = (
     data.slice(0, change.start) + change.newData + data.slice(change.end)
   )
 
-  const bufferChanges = changes.map(toBufferChange)
+  const bufferChanges = await Promise.all(changes.map(toBufferChange))
   // We want to replace buffers from last to first, that way we won't have to re-calculate
   // the source locations after every change
   const sortedChanges = _.sortBy(bufferChanges, change => change.start).reverse()

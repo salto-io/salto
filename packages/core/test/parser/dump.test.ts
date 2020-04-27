@@ -118,6 +118,7 @@ describe('Salto Dump', () => {
     {
       func2: new TestFuncImpl(funcName, ['aaa']),
       func1: new StaticFileNaclValue('some/path.ext'),
+      inarr: [1, 2, 3, 4, new TestFuncImpl(funcName, ['bbb'])],
       nested: {
         before: 'something',
         func3: new TestFuncImpl(funcName, ['well', [1, 2, [false, 'soo']]]),
@@ -133,8 +134,8 @@ describe('Salto Dump', () => {
   describe('dump elements', () => {
     let body: string
 
-    beforeAll(() => {
-      body = dumpElements([
+    beforeAll(async () => {
+      body = await dumpElements([
         strType, numType, boolType,
         fieldType, model, instance, config,
         instanceStartsWithNumber, instanceWithFunctions,
@@ -160,6 +161,9 @@ describe('Salto Dump', () => {
       })
       it('custom function', () => {
         expect(body).toMatch(/func2\s=\sZOMG\("aaa"\)/)
+      })
+      it('in array', () => {
+        expect(body).toMatch(/ZOMG\("bbb"\)/)
       })
       it('deep as duck', () => {
         expect(body).toMatch(/func4\s=\sZOMG\("lanternfish"\)/)
@@ -208,8 +212,9 @@ describe('Salto Dump', () => {
       expect(body).toMatch(/salesforce.test "3me"/)
     })
 
-    it('can be parsed back', () => {
-      const { elements, errors } = parse(Buffer.from(body), 'none', functions)
+    it('can be parsed back', async () => {
+      const result = await parse(Buffer.from(body), 'none', functions)
+      const { elements, errors } = result
       expect(errors).toHaveLength(0)
       expect(elements).toHaveLength(10)
       expect(elements[0]).toEqual(strType)
@@ -227,8 +232,8 @@ describe('Salto Dump', () => {
   describe('dump field', () => {
     let body: string
 
-    beforeAll(() => {
-      body = dumpElements([model.fields.name])
+    beforeAll(async () => {
+      body = await dumpElements([model.fields.name])
     })
 
     it('should contain only field', () => {
@@ -237,24 +242,24 @@ describe('Salto Dump', () => {
   })
 
   describe('dump function', () => {
-    it('static file', () => {
-      const body = dumpValues({ asset: new StaticFileNaclValue('some/path.ext') })
+    it('static file', async () => {
+      const body = await dumpValues({ asset: new StaticFileNaclValue('some/path.ext') })
 
       expect(body).toMatch(/^asset\s+=\s+file\("some\/path.ext"\)$/m)
     })
 
-    it('should dump custom function a single parameter', () => {
-      const body = dumpValues({ attrush: new TestFuncImpl(funcName, [false]) }, functions)
+    it('should dump custom function a single parameter', async () => {
+      const body = await dumpValues({ attrush: new TestFuncImpl(funcName, [false]) }, functions)
 
       expect(body).toMatch(/attrush = ZOMG\(false\)/)
     })
-    it('should dump custom function that is nested', () => {
-      const body = dumpValues({ nestalicous: { nestFunc: new TestFuncImpl(funcName, ['yes']) } }, functions)
+    it('should dump custom function that is nested', async () => {
+      const body = await dumpValues({ nestalicous: { nestFunc: new TestFuncImpl(funcName, ['yes']) } }, functions)
 
       expect(body).toMatch(/nestFunc = ZOMG\("yes"\)/)
     })
-    it('should dump custom function that is nested with other properties', () => {
-      const body = dumpValues({
+    it('should dump custom function that is nested with other properties', async () => {
+      const body = await dumpValues({
         nestalicous: {
           ss: 321,
           nestFunc: new TestFuncImpl(funcName, ['yes']),
@@ -287,8 +292,8 @@ deep = {
   describe('dump attribute', () => {
     let body: string
 
-    beforeAll(() => {
-      body = dumpValues({ attr: 'value' })
+    beforeAll(async () => {
+      body = await dumpValues({ attr: 'value' })
     })
 
     it('should contain only attribute', () => {
@@ -321,16 +326,16 @@ deep = {
   })
   describe('dump primitive', () => {
     it('should serialize numbers', async () => {
-      expect(dumpValues(123)).toEqual('123')
+      expect(await dumpValues(123)).toEqual('123')
     })
     it('should serialize strings', async () => {
-      expect(dumpValues('aaa')).toEqual('"aaa"')
+      expect(await dumpValues('aaa')).toEqual('"aaa"')
     })
     it('should serialize booleans', async () => {
-      expect(dumpValues(false)).toEqual('false')
+      expect(await dumpValues(false)).toEqual('false')
     })
     it('should dump list', async () => {
-      expect(dumpValues([1, 'asd', true, { complex: 'value' }])).toMatch(
+      expect(await dumpValues([1, 'asd', true, { complex: 'value' }])).toMatch(
         /\[\s+1,\s+"asd",\s+true,\s+\{\s+complex = "value"\s+\}\s+]/s
       )
     })

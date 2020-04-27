@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, ListType } from '@salto-io/adapter-api'
+import {
+  ElemID, ObjectType, Field, BuiltinTypes,
+  InstanceElement, ListType, Value,
+} from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser/dump'
 import { configSource } from '../../src/workspace/config_source'
@@ -34,7 +37,7 @@ describe('configs', () => {
     field2: 'test3',
   })
 
-  const dumpedConfig = { filename: `${adapter}.nacl`, buffer: dumpElements([config]) }
+  let dumpedConfig: Value
   const mockSet = jest.fn()
   const mockGet = jest.fn()
   const mockDelete = jest.fn()
@@ -46,7 +49,8 @@ describe('configs', () => {
     flush: mockFlush,
   } as unknown as DirectoryStore
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    dumpedConfig = { filename: `${adapter}.nacl`, buffer: await dumpElements([config]) }
     jest.resetAllMocks()
   })
 

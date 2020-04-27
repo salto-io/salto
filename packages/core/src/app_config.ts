@@ -89,7 +89,7 @@ export const saltoAppConfigType = new ObjectType({
 const dumpConfig = async (config: AppConfig): Promise<void> => (
   replaceContents(
     configFullPath(),
-    dumpElements([new InstanceElement(
+    await dumpElements([new InstanceElement(
       ElemID.CONFIG_NAME,
       saltoAppConfigType,
       {
@@ -112,7 +112,7 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
 }
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
-  const configInstance = parse(buf, filepath).elements.pop() as InstanceElement
+  const configInstance = (await parse(buf, filepath)).elements.pop() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
   const saltoConfigInstance = configInstance.value as AppConfig

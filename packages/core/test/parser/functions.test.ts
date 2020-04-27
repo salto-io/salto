@@ -62,14 +62,14 @@ export const registerTestFunction = (
   registerFunction(
     funcName,
     {
-      toValue: (funcExp: HclExpression) => new TestFuncImpl(
+      toValue: (funcExp: HclExpression) => Promise.resolve(new TestFuncImpl(
         funcExp.value.funcName,
         funcExp.value.parameters,
-      ),
-      fromValue: (val: Value) => new FunctionExpression(
+      )),
+      fromValue: (val: Value) => Promise.resolve(new FunctionExpression(
         funcName,
         val.parameters,
-      ),
+      )),
       isSerializedAsFunction: (val: Value) => val instanceof TestFuncImpl,
     },
     functions,
@@ -111,29 +111,29 @@ describe('Functions', () => {
     })
   })
   describe('Factory', () => {
-    it('should initiate file function with default parameters', () => {
+    it('should initiate file function with default parameters', async () => {
       const hclFunc = getHclFunc('file', ['some/path.ext'])
 
-      const fileFunc = evaluateFunction(hclFunc)
+      const fileFunc = await evaluateFunction(hclFunc)
 
       expect(fileFunc instanceof StaticFileNaclValue).toEqual(true)
       expect(fileFunc).toHaveProperty('filepath', 'some/path.ext')
     })
-    it('should initiate file function with explicit parameters', () => {
+    it('should initiate file function with explicit parameters', async () => {
       const hclFunc = getHclFunc('file', ['some/path.ext'])
 
-      const fileFunc = evaluateFunction(hclFunc, functions)
+      const fileFunc = await evaluateFunction(hclFunc, functions)
 
       expect(fileFunc instanceof StaticFileNaclValue).toEqual(true)
       expect(fileFunc).toHaveProperty('filepath', 'some/path.ext')
     })
-    it('should fail if missing function with default parameters', () => {
+    it('should fail if missing function with default parameters', async () => {
       const hclFunc = getHclFunc('ZOMG', ['arg', 'us'])
-      expect(evaluateFunction(hclFunc)).toEqual(new MissingFunctionError('ZOMG'))
+      expect(await evaluateFunction(hclFunc)).toEqual(new MissingFunctionError('ZOMG'))
     })
-    it('should fail if missing function with explicit parameters', () => {
+    it('should fail if missing function with explicit parameters', async () => {
       const hclFunc = getHclFunc('ZOMG', ['arg', 'us'])
-      expect(evaluateFunction(hclFunc, functions)).toEqual(new MissingFunctionError('ZOMG'))
+      expect(await evaluateFunction(hclFunc, functions)).toEqual(new MissingFunctionError('ZOMG'))
     })
   })
 })

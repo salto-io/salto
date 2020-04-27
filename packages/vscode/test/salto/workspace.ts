@@ -18,7 +18,7 @@ import { Workspace, parse, Errors } from '@salto-io/core'
 import { readTextFile } from '@salto-io/file'
 import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { ParseError } from '@salto-io/core/dist/src/parser/parse'
+import { ParseError, ParseResult } from '@salto-io/core/dist/src/parser/parse'
 import { mergeElements } from '@salto-io/core/dist/src/core/merger'
 import { SourceMap } from '@salto-io/core/dist/src/parser/internal/types'
 import { ConfigSource } from '@salto-io/core/dist/src/workspace/config_source'
@@ -48,15 +48,18 @@ export const mockErrors = (errors: SaltoError[]): Errors => ({
 export const mockFunction = <T extends (...args: never[]) => unknown>():
 jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 
-const buildMockWorkspace = (
+const buildMockWorkspace = async (
   naclFile?: string,
   buffer?: string,
-): Workspace => {
+): Promise<Workspace> => {
   const baseDir = naclFile ? path.dirname(naclFile) : 'default_base_dir'
   const filename = naclFile ? path.relative(baseDir, naclFile) : 'default.nacl'
-  const parseResult = buffer
-    ? parse(Buffer.from(buffer), filename)
-    : { elements: [], errors: [] as ParseError[], sourceMap: new Map() as SourceMap }
+  let parseResult: ParseResult
+  if (buffer) {
+    parseResult = await parse(Buffer.from(buffer), filename)
+  } else {
+    parseResult = { elements: [], errors: [] as ParseError[], sourceMap: new Map() as SourceMap }
+  }
   const merged = mergeElements(parseResult.elements)
   return {
     elements: () => merged.merged,

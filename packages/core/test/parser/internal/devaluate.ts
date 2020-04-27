@@ -28,7 +28,7 @@ const source: SourceRange = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const devaluate = (value: any): HclExpression => {
+const devaluate = async (value: any): Promise<HclExpression> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const devaluateValue = (v: any): HclExpression => ({
     type: 'literal',
@@ -45,17 +45,17 @@ const devaluate = (value: any): HclExpression => {
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const devaluateArray = (arr: any[]): HclExpression => ({
+  const devaluateArray = async (arr: any[]): Promise<HclExpression> => ({
     type: 'list',
-    expressions: arr.map(e => devaluate(e)),
+    expressions: await Promise.all(arr.map(e => devaluate(e))),
     source,
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const devaluateObject = (obj: Record<string, any>): HclExpression => ({
+  const devaluateObject = async (obj: Record<string, any>): Promise<HclExpression> => ({
     type: 'map',
-    expressions: _(obj).entries().flatten().map(e => devaluate(e))
-      .value(),
+    expressions: await Promise.all(_(obj).entries().flatten().map(e => devaluate(e))
+      .value()),
     source,
   })
 
@@ -74,38 +74,38 @@ const devaluate = (value: any): HclExpression => {
     source,
   })
 
-  const devaluateFunction = (funcExp: FunctionExpression): HclExpression => ({
+  const devaluateFunction = async (funcExp: FunctionExpression): Promise<HclExpression> => ({
     type: 'func',
     expressions: [],
     value: {
       funcName: funcExp.funcName,
-      parameters: funcExp.parameters.map(devaluate),
+      parameters: await Promise.all(funcExp.parameters.map(devaluate)),
     },
     source,
   })
 
   if (_.isString(value)) {
-    return devaluateString(value as string)
+    return Promise.resolve(devaluateString(value as string))
   }
   if (_.isArray(value)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return devaluateArray(value as any[])
+    return Promise.resolve(devaluateArray(value as any[]))
   }
   if (_.isPlainObject(value)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return devaluateObject(value as Record<string, any>)
   }
   if (value instanceof ReferenceExpression) {
-    return devaluateReference(value)
+    return Promise.resolve(devaluateReference(value))
   }
   if (value instanceof TemplateExpression) {
-    return devaluateTemplateExpression(value)
+    return Promise.resolve(devaluateTemplateExpression(value))
   }
 
-  const funcValue = getFunctionExpression(value)
+  const funcValue = await getFunctionExpression(value)
 
   return funcValue === undefined
-    ? devaluateValue(value)
+    ? Promise.resolve(devaluateValue(value))
     : devaluateFunction(funcValue)
 }
 

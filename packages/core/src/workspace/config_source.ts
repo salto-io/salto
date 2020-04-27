@@ -47,7 +47,7 @@ export const configSource = (
       if (_.isUndefined(naclFile)) {
         return undefined
       }
-      const parseResult = parse(Buffer.from(naclFile.buffer), naclFile.filename)
+      const parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
       if (!_.isEmpty(parseResult.errors)) {
         log.error('failed to parse %s due to %o', name, parseResult.errors)
         throw new ConfigParseError(name)
@@ -62,7 +62,7 @@ export const configSource = (
     },
 
     set: async (name: string, config: InstanceElement): Promise<void> => {
-      await dirStore.set({ filename: filename(name), buffer: dumpElements([config]) })
+      await dirStore.set({ filename: filename(name), buffer: await dumpElements([config]) })
       await dirStore.flush()
     },
 

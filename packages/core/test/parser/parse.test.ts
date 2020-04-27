@@ -153,8 +153,10 @@ describe('Salto parser', () => {
         name2 = "some string"
       }
        `
-    beforeAll(() => {
-      ({ elements, sourceMap } = parse(Buffer.from(body), 'none', functions))
+    beforeAll(async () => {
+      const parsed = await parse(Buffer.from(body), 'none', functions)
+      elements = parsed.elements
+      sourceMap = parsed.sourceMap
     })
 
     describe('parse result', () => {
@@ -560,17 +562,19 @@ describe('Salto parser', () => {
   })
 
   describe('simple error tests', () => {
-    it('fails on invalid inheritance syntax', async () => {
+    it('fails on invalid inheritance syntax', () => {
       const body = `
       type salesforce.string string {}
       `
-      expect(() => parse(Buffer.from(body), 'none', functions)).toThrow()
+      return parse(Buffer.from(body), 'none', functions)
+        .catch(e => expect(e.message).toEqual('expected keyword is. found string'))
     })
   })
 
   it('fails on invalid top level syntax', async () => {
     const body = 'bla'
-    expect(parse(Buffer.from(body), 'none', functions).errors).not.toHaveLength(0)
+    const result = await parse(Buffer.from(body), 'none', functions)
+    expect(result.errors).not.toHaveLength(0)
   })
   describe('Advanced error tests', () => {
     let errors: HclParseError[]
@@ -603,8 +607,9 @@ describe('Salto parser', () => {
       }
     }
     `
-    beforeAll(() => {
-      ({ errors } = parse(Buffer.from(src), 'none', functions))
+    beforeAll(async () => {
+      const result = await parse(Buffer.from(src), 'none', functions)
+      errors = result.errors
     })
     it('should have 2 errors', () => {
       expect(errors.length).toEqual(2) // This verifies the filter heuristics for the errors.

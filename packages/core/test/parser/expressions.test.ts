@@ -36,51 +36,51 @@ beforeAll(() => {
 })
 
 describe('HCL Expression', () => {
-  it('should evaluate strings', () => {
+  it('should evaluate strings', async () => {
     const ref = 'This must be Thursday. I never could get the hang of Thursdays.'
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
+    const exp = await devaluate(ref)
+    expect(await evaluate(exp)).toEqual(ref)
   })
 
-  it('should evaluate maps', () => {
+  it('should evaluate maps', async () => {
     const ref = { time: 'an illusion', lunchtime: 'doubly so' }
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
+    const exp = await devaluate(ref)
+    expect(await evaluate(exp)).toEqual(ref)
   })
 
-  it('should evaluate lists', () => {
+  it('should evaluate lists', async () => {
     const ref = [1, 2, 4, 16, 31]
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
+    const exp = await devaluate(ref)
+    expect(await evaluate(exp)).toEqual(ref)
   })
 
-  it('should evaluate number', () => {
+  it('should evaluate number', async () => {
     const ref = 12
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
+    const exp = await devaluate(ref)
+    expect(await evaluate(exp)).toEqual(ref)
   })
 
-  it('should evaluate boolean', () => {
+  it('should evaluate boolean', async () => {
     const ref = true
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
+    const exp = await devaluate(ref)
+    expect(await evaluate(exp)).toEqual(ref)
   })
 
-  it('should evaluate reference', () => {
+  it('should evaluate reference', async () => {
     const ref = new ReferenceExpression(new ElemID('a', 'b', 'type'))
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
-    expect(evaluate(exp) instanceof ReferenceExpression).toBe(true)
+    const exp = await devaluate(ref)
+    expect(await evaluate(exp)).toEqual(ref)
+    expect(await evaluate(exp) instanceof ReferenceExpression).toBe(true)
   })
 
-  it('should evaluate variable', () => {
+  it('should evaluate variable', async () => {
     const ref = new VariableExpression(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'))
-    const exp = devaluate(ref)
-    expect(evaluate(exp)).toEqual(ref)
-    expect(evaluate(exp) instanceof VariableExpression).toBe(true)
+    const exp = await devaluate(ref)
+    expect(await evaluate(exp)).toEqual(ref)
+    expect(await evaluate(exp) instanceof VariableExpression).toBe(true)
   })
 
-  it('should evaluate reference with invalid syntax', () => {
+  it('should evaluate reference with invalid syntax', async () => {
     const exp: HclExpression = {
       type: 'reference',
       value: ['salto', 'foo', 'inst'],
@@ -91,48 +91,48 @@ describe('HCL Expression', () => {
         end: { line: 0, col: 0, byte: 0 },
       },
     }
-    expect(evaluate(exp)).toBeInstanceOf(IllegalReference)
+    expect(await evaluate(exp)).toBeInstanceOf(IllegalReference)
   })
 
-  it('should evaluate template reference', () => {
+  it('should evaluate template reference', async () => {
     const ref = new ReferenceExpression(new ElemID('a', 'b', 'type'))
     const templ = new TemplateExpression({ parts: [ref] })
-    const exp = devaluate(templ)
-    expect(evaluate(exp)).toEqual(templ)
+    const exp = await devaluate(templ)
+    expect(await evaluate(exp)).toEqual(templ)
   })
 
   describe('should evaluate functions', () => {
-    it('with single parameter', () => {
+    it('with single parameter', async () => {
       const ref = new TestFuncImpl('funcush', ['aa'])
-      const exp = devaluate(ref)
-      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
+      const exp = await devaluate(ref)
+      expect(await evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
-    it('with several parameters', () => {
+    it('with several parameters', async () => {
       const ref = new TestFuncImpl('funcush', ['aa', 312])
-      const exp = devaluate(ref)
-      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
+      const exp = await devaluate(ref)
+      expect(await evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
-    it('with list', () => {
+    it('with list', async () => {
       const ref = new TestFuncImpl('funcush', [['aa', 'bb']])
-      const exp = devaluate(ref)
-      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
+      const exp = await devaluate(ref)
+      expect(await evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
-    it('with object', () => {
+    it('with object', async () => {
       const ref = new TestFuncImpl('funcush', [{ aa: 'bb' }])
-      const exp = devaluate(ref)
-      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
+      const exp = await devaluate(ref)
+      expect(await evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
-    it('with mixed', () => {
+    it('with mixed', async () => {
       const ref = new TestFuncImpl('funcush', [false, ['aa', 'bb', [1, 2, { wat: 'ZOMG' }]]])
-      const exp = devaluate(ref)
-      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
+      const exp = await devaluate(ref)
+      expect(await evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
-    it('file function', () => {
+    it('file function', async () => {
       const exp: HclExpression = {
         type: 'func',
         value: {
           funcName: 'file',
-          parameters: [devaluate('some/path.ext')],
+          parameters: [await devaluate('some/path.ext')],
         },
         expressions: [],
         source: {
@@ -141,14 +141,14 @@ describe('HCL Expression', () => {
           end: { line: 0, col: 0, byte: 0 },
         },
       }
-      expect(evaluate(exp)).toEqual(new StaticFileNaclValue('some/path.ext'))
+      expect(await evaluate(exp)).toEqual(new StaticFileNaclValue('some/path.ext'))
     })
-    it('nested', () => {
+    it('nested', async () => {
       const ref = {
         nestush: new TestFuncImpl('funcush', [false, ['aa', 'bb', [1, 2, { wat: 'ZOMG' }]]]),
       }
-      const exp = devaluate(ref)
-      expect(evaluate(exp, undefined, undefined, functions)).toEqual(ref)
+      const exp = await devaluate(ref)
+      expect(await evaluate(exp, undefined, undefined, functions)).toEqual(ref)
     })
   })
 })

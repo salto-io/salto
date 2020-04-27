@@ -15,8 +15,10 @@
 */
 import _ from 'lodash'
 import {
-  TemplateExpression, ReferenceExpression, ElemID,
+  TemplateExpression, ReferenceExpression, ElemID, Value,
 } from '@salto-io/adapter-api'
+import { promises } from '@salto-io/lowerdash'
+
 import { parse } from '../../../src/parser/internal/parse'
 import { dump } from '../../../src/parser/internal/dump'
 import {
@@ -35,6 +37,7 @@ import {
   registerTestFunction,
 } from '../functions.test'
 
+const { object: { mapValuesAsync } } = promises
 
 const expectSourceLocation = (
   { source }: { source: SourceRange},
@@ -83,7 +86,7 @@ describe('HCL parse', () => {
     expect(config.type).toEqual('salesforce')
     expect(config.attrs).toHaveProperty('user')
     expect(config.attrs.user).toHaveProperty('expressions')
-    expectExpressionsMatch(config.attrs.user.expressions[0], devaluate('me'))
+    expectExpressionsMatch(config.attrs.user.expressions[0], await devaluate('me'))
   })
 
   it('parses type definition block', async () => {
@@ -109,14 +112,14 @@ describe('HCL parse', () => {
 
     expect(typeBlock.blocks[0].type).toEqual('string')
     expect(typeBlock.blocks[0].labels).toEqual(['name'])
-    expectExpressionsMatch(typeBlock.blocks[0].attrs.label.expressions[0], devaluate('Name'))
+    expectExpressionsMatch(typeBlock.blocks[0].attrs.label.expressions[0], await devaluate('Name'))
     expectSourceLocation(typeBlock.blocks[0], 2, 9, 5, 10)
     expectSourceLocation(typeBlock.blocks[0].attrs.label, 4, 11, 4, 25)
 
     expect(typeBlock.blocks[1].type).toEqual('number')
     expect(typeBlock.blocks[1].labels).toEqual(['num'])
     // eslint-disable-next-line no-underscore-dangle
-    expectExpressionsMatch(typeBlock.blocks[1].attrs._default.expressions[0], devaluate(35))
+    expectExpressionsMatch(typeBlock.blocks[1].attrs._default.expressions[0], await devaluate(35))
     expectSourceLocation(typeBlock.blocks[1], 8, 9, 10, 10)
     // eslint-disable-next-line no-underscore-dangle
     expectSourceLocation(typeBlock.blocks[1].attrs._default, 9, 11, 9, 24)
@@ -136,11 +139,11 @@ describe('HCL parse', () => {
     expect(instBlock.type).toEqual('salto_employee')
     expect(instBlock.labels).toEqual(['me'])
     expect(instBlock.attrs).toHaveProperty('name')
-    expectExpressionsMatch(instBlock.attrs.name.expressions[0], devaluate('person'))
+    expectExpressionsMatch(instBlock.attrs.name.expressions[0], await devaluate('person'))
     expect(instBlock.attrs).toHaveProperty('nicknames')
     expect(instBlock.attrs.nicknames.expressions).toBeDefined()
     const nicknamesExpr = instBlock.attrs.nicknames.expressions[0]
-    expectExpressionsMatch(nicknamesExpr, devaluate(['a', 's', 'd']))
+    expectExpressionsMatch(nicknamesExpr, await devaluate(['a', 's', 'd']))
   })
 
   it('parses multiline strings', async () => {
@@ -221,7 +224,7 @@ describe('HCL parse', () => {
     const { body } = parse(Buffer.from(blockDef), 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
-    expect(evaluate(body.blocks[0].attrs.thing.expressions[0]).length).toEqual(5)
+    expect(await evaluate(body.blocks[0].attrs.thing.expressions[0])).toHaveLength(5)
   })
 
   describe('parse error', () => {
@@ -308,12 +311,12 @@ describe('HCL parse', () => {
       expect(errors[0].summary).toContain('Unexpected token')
     })
 
-    it('should create the parseable blocks', () => {
+    it('should create the parseable blocks', async () => {
       expect(body.blocks).toHaveLength(1)
       const block = body.blocks[0]
       expect(_.keys(block.attrs)).toEqual(['novalue', 'hasvalue'])
       expect(block.attrs.hasvalue.expressions).toHaveLength(1)
-      expect(evaluate(block.attrs.hasvalue.expressions[0])).toEqual('value')
+      expect(await evaluate(block.attrs.hasvalue.expressions[0])).toEqual('value')
     })
 
     it('should have proper ranges for the rest of the elements', () => {
@@ -452,14 +455,14 @@ describe('HCL dump', () => {
     expect(serialized).toMatch(/nested\s*=\s*{\s*val\s*=\s*"so deep",*\s*}/m)
   })
   it('dumps parsable text', async () => {
-    const parsed = parse(Buffer.from(serialized), 'none')
+    const parsed = await parse(Buffer.from(serialized), 'none')
 
     expect(parsed.errors).toHaveLength(0)
     // Filter out source ranges since they are only generated during parsing
-    const removeSrcFromBlock = (block: Partial<ParsedHclBlock>): ParsedHclBlock =>
-      _.mapValues(block, (val, key) => {
+    const removeSrcFromBlock = (block: Partial<ParsedHclBlock>): Promise<ParsedHclBlock> =>
+      mapValuesAsync(block, (val: Value, key) => {
         if (key === 'attrs') {
-          return _.mapValues(val as Record<string, HclAttribute>, v => evaluate(
+          return mapValuesAsync(val as Record<string, HclAttribute>, v => evaluate(
             v.expressions[0],
             undefined,
             undefined,
@@ -467,15 +470,15 @@ describe('HCL dump', () => {
           ))
         }
         if (key === 'blocks') {
-          return (val as ParsedHclBlock[]).map(blk => removeSrcFromBlock(blk))
+          return Promise.all((val as ParsedHclBlock[]).map(blk => removeSrcFromBlock(blk)))
         }
         if (key === 'source') {
-          return undefined
+          return Promise.resolve(undefined)
         }
         return val
-      }) as ParsedHclBlock
+      }) as Promise<ParsedHclBlock>
 
-    const parsedBody = removeSrcFromBlock(parsed.body)
+    const parsedBody = await removeSrcFromBlock(parsed.body)
     expect(body).toEqual(parsedBody)
   })
 })

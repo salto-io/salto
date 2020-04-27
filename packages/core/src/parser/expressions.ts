@@ -23,60 +23,62 @@ import {
   Functions,
 } from './functions'
 
-type ExpEvaluator = (expression: HclExpression) => Value
+type ExpEvaluator = (expression: HclExpression) => Promise<Value>
 
 export class IllegalReference {
   constructor(public ref: string, public message: string) {}
 }
 
-const evaluate = (
+const evaluate = async (
   expression: HclExpression,
   baseId?: ElemID,
   sourceMap?: SourceMap,
   functions?: Functions,
-): Value => {
-  const evalSubExpression = (exp: HclExpression, key: string): Value =>
+): Promise<Value> => {
+  const evalSubExpression = (exp: HclExpression, key: string): Promise<Value> =>
     evaluate(exp, baseId && baseId.createNestedID(key), sourceMap, functions)
 
   const evaluators: Record<ExpressionType, ExpEvaluator> = {
-    list: exp => exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString())),
-    template: exp => (
+    list: exp => Promise.all(exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString()))),
+    template: async exp => (
       exp.expressions.filter(e => e.type !== 'literal').length === 0
-        ? exp.expressions.map(e => evaluate(e, undefined, undefined, functions)).join('')
-        : new TemplateExpression({ parts: exp.expressions.map(e => evaluate(e)) })
+        ? (await Promise.all(exp.expressions.map(e => evaluate(e, undefined, undefined, functions)))).join('')
+        : new TemplateExpression(
+          { parts: await Promise.all(exp.expressions.map(e => evaluate(e))) }
+        )
     ),
-    map: exp => _(exp.expressions)
+    map: async exp => _.fromPairs(await Promise.all(_(exp.expressions)
       .chunk(2)
-      .map(([keyExp, valExp]) => {
-        const key = evaluate(keyExp, undefined, undefined, functions)
+      .map(async ([keyExp, valExp]) => {
+        const key = await evaluate(keyExp, undefined, undefined, functions)
         // Change source start to include the key expression as well
         const updatedValExp = {
           ...valExp,
           source: { ...valExp.source, start: keyExp.source.start },
         }
-        return [key, evalSubExpression(updatedValExp, key)]
-      })
-      .fromPairs()
-      .value(),
-    literal: exp => exp.value,
-    dynamic: _exp => undefined,
+        return [key, await evalSubExpression(updatedValExp, key)]
+      }).value())),
+    literal: exp => Promise.resolve(exp.value),
+    dynamic: _exp => Promise.resolve(undefined),
     reference: exp => {
       const traversalParts = exp.value as unknown as string[]
       const ref = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
       try {
         const elemId = ElemID.fromFullName(ref)
         return elemId.adapter === ElemID.VARIABLES_NAMESPACE
-          ? new VariableExpression(elemId)
-          : new ReferenceExpression(elemId)
+          ? Promise.resolve(new VariableExpression(elemId))
+          : Promise.resolve(new ReferenceExpression(elemId))
       } catch (e) {
-        return new IllegalReference(ref, e.message)
+        return Promise.resolve(new IllegalReference(ref, e.message))
       }
     },
-    func: exp => {
+    func: async exp => {
       const { value: { parameters } } = exp
       const params: Value[] = (parameters.type && parameters.type === 'list')
-        ? evaluators[parameters.type as ExpressionType](parameters)
-        : parameters.map((x: HclExpression) => evaluate(x, baseId, sourceMap, functions))
+        ? await evaluators[parameters.type as ExpressionType](parameters)
+        : await Promise.all(
+          parameters.map((x: HclExpression) => evaluate(x, baseId, sourceMap, functions))
+        )
       return evaluateFunction(
         {
           ...exp,
@@ -90,7 +92,6 @@ const evaluate = (
         functions
       )
     },
-
   }
 
   if (sourceMap && baseId && expression.source) {

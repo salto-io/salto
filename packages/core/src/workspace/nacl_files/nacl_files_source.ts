@@ -96,7 +96,7 @@ const buildNaclFilesSource = (
     const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
     let parseResult = await cache.get(key)
     if (parseResult === undefined) {
-      parseResult = parse(Buffer.from(naclFile.buffer), naclFile.filename)
+      parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
       await cache.put(key, parseResult)
     }
     return parseResult
@@ -220,7 +220,7 @@ const buildNaclFilesSource = (
           try {
             const updatedFileChanges = groupAnnotationTypeChanges(fileChanges,
               changedFileToSourceMap[filename])
-            const buffer = updateNaclFileData(await getNaclFileData(filename),
+            const buffer = await updateNaclFileData(await getNaclFileData(filename),
               updatedFileChanges)
             return { filename, buffer }
           } catch (e) {

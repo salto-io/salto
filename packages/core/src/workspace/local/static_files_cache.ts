@@ -56,7 +56,9 @@ export const buildLocalStaticFilesCache = (
     },
     rename: async (name: string) => {
       const newCacheFile = path.join(path.dirname(cacheDir), name, CACHE_FILENAME)
-      await rename(currentCacheFile, newCacheFile)
+      if (await exists(currentCacheFile)) {
+        await rename(currentCacheFile, newCacheFile)
+      }
       currentCacheFile = newCacheFile
     },
     clone: () => buildLocalStaticFilesCache(cacheDir, cache),

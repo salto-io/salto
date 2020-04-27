@@ -131,28 +131,33 @@ export const command = (
 interface EnvsArgs {
   command: string
   name: string
+  newName: string
 }
 
 type EnvsParsedCliInput = ParsedCliInput<EnvsArgs>
 
 const envsBuilder = createCommandBuilder({
   options: {
-    command: 'env <command> [name]',
+    command: 'env <command> [name] [newName]',
     description: 'Manage your workspace environments',
     positional: {
       command: {
         type: 'string',
-        choices: ['create', 'set', 'list', 'current', 'delete'],
+        choices: ['create', 'set', 'list', 'current', 'delete', 'rename'],
         description: 'The environment management command',
       },
       name: {
         type: 'string',
-        desc: 'The name of the environment (required for create & set)',
+        desc: 'The name of the environment (required for create, set and delete)',
+      },
+      newName: {
+        type: 'string',
+        desc: 'The new name of the environment (required for rename)',
       },
     },
   },
   async build(input: EnvsParsedCliInput, output: CliOutput) {
-    return command('.', input.args.command, output, input.args.name)
+    return command('.', input.args.command, output, input.args.name, input.args.newName)
   },
 })
 

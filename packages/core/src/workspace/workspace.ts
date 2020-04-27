@@ -47,7 +47,7 @@ export type SourceFragment = {
   subRange?: SourceRange
 }
 
-class EnvDuplicationError extends Error {
+export class EnvDuplicationError extends Error {
   constructor(envName: string) {
     super(`${envName} is already defined in this workspace`)
   }
@@ -312,11 +312,18 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       if (_.isUndefined(envConfig)) {
         throw new UnknownEnvError(currentEnvName)
       }
-      envConfig.name = newEnvName
-      userConfig.currentEnv = newEnvName
-      await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
-      await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
 
+      if (!_.isUndefined(workspaceConfig.envs.find(e => e.name === newEnvName))) {
+        throw new EnvDuplicationError(newEnvName)
+      }
+
+      envConfig.name = newEnvName
+      await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
+
+      if (currentEnvName === userConfig.currentEnv) {
+        userConfig.currentEnv = newEnvName
+        await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
+      }
       await credentials.rename(currentEnvName, newEnvName)
       const environmentSource = elementsSources.sources[currentEnvName]
       if (environmentSource) {

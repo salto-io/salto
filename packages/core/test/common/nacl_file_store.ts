@@ -78,6 +78,7 @@ export const mockDirStore = (exclude: string[] = ['error.nacl', 'dup.nacl']): Di
     delete: jest.fn().mockImplementation(() => Promise.resolve()),
     clear: jest.fn().mockImplementation(() => Promise.resolve()),
     rename: jest.fn().mockImplementation(() => Promise.resolve()),
+    renameFile: jest.fn().mockImplementation(() => Promise.resolve()),
     flush: jest.fn().mockImplementation(() => Promise.resolve()),
     mtimestamp: jest.fn(),
     getFiles: jest.fn().mockImplementation((filenames: string[]) =>

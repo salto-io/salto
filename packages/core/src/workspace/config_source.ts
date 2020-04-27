@@ -71,8 +71,8 @@ export const configSource = (
       await dirStore.delete(name)
       await dirStore.flush()
     },
-    rename: async (newName: string): Promise<void> => {
-      await dirStore.rename(newName)
+    rename: async (currentName: string, newName: string): Promise<void> => {
+      await dirStore.renameFile(currentName, newName)
     },
   }
 }

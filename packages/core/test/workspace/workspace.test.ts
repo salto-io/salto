@@ -39,6 +39,7 @@ import {
   EnvironmentSource,
   DeleteCurrentEnvError,
   UnknownEnvError,
+  EnvDuplicationError,
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 
@@ -682,24 +683,61 @@ describe('workspace', () => {
   })
 
   describe('renameEnvironment', () => {
-    let confSource: ConfigSource
-    let workspace: Workspace
+    describe('should rename environment', () => {
+      let confSource: ConfigSource
+      let workspace: Workspace
+      let credSource: ConfigSource
+      let state: State
+      let naclFiles: NaclFilesSource
+      const currentEnvName = 'default'
+      const newEnvName = 'new-default'
 
-    beforeEach(async () => {
-      confSource = mockConfigSource()
-      workspace = await createWorkspace(undefined, undefined, confSource)
-      await workspace.renameEnvironment('inactive', 'new-inactive')
+      beforeEach(async () => {
+        confSource = mockConfigSource()
+        credSource = mockCredentialsSource()
+        state = mockState()
+        naclFiles = createMockNaclFileSource([])
+        workspace = await createWorkspace(undefined, undefined, confSource, credSource,
+          undefined, { [currentEnvName]: { naclFiles, state } })
+        await workspace.renameEnvironment(currentEnvName, newEnvName)
+      })
+
+      it('should change workspace state', async () => {
+        expect(workspace.envs().includes(newEnvName)).toBeTruthy()
+      })
+
+      it('should persist both workspace config and workspace user config', async () => {
+        expect(confSource.set).toHaveBeenCalledTimes(2)
+        const workspaceConfig = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
+        const envs = workspaceConfig.value.envs.map((e: {name: string}) => e.name)
+        expect(envs.includes(newEnvName)).toBeTruthy()
+        const workspaceUserConfig = (confSource.set as jest.Mock)
+          .mock.calls[1][1] as InstanceElement
+        expect(workspaceUserConfig.value.currentEnv).toEqual(newEnvName)
+      })
+
+      it('should rename files', async () => {
+        expect(credSource.rename).toHaveBeenCalledTimes(1)
+        expect(state.rename).toHaveBeenCalledTimes(1)
+        expect(naclFiles.rename).toHaveBeenCalledTimes(1)
+      })
     })
 
-    it('should change workspace state', async () => {
-      expect(workspace.envs().includes('new-inactive')).toBeTruthy()
-    })
+    describe('should fail to rename environment', () => {
+      let workspace: Workspace
+      beforeEach(async () => {
+        workspace = await createWorkspace()
+      })
 
-    it('should persist', () => {
-      expect(confSource.set).toHaveBeenCalledTimes(1)
-      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
-      const envs = instance.value.envs.map((e: {name: string}) => e.name)
-      expect(envs.includes('new-inactive')).toBeTruthy()
+      it('should not be able to delete unknown environment', async () => {
+        await expect(workspace.renameEnvironment('unknown', 'new-unknown'))
+          .rejects.toThrow(UnknownEnvError)
+      })
+
+      it('should not be able to rename to existing environment name', async () => {
+        await expect(workspace.renameEnvironment('default', 'default'))
+          .rejects.toThrow(EnvDuplicationError)
+      })
     })
   })
 

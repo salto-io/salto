@@ -160,10 +160,6 @@ describe('fetch command', () => {
         updateServiceConfig: jest.fn(),
         servicesCredentials: jest.fn().mockResolvedValue({}),
         envs: () => _.keys(existingServices),
-<<<<<<< HEAD
-=======
-        fetchedServices: (envName? : string) => existingServices[envName || currentEnv],
->>>>>>> changed fetch flow to recommend on fetch mode based on all env states
         currentEnv: () => currentEnv,
       } as unknown as Workspace)
 

@@ -47,13 +47,13 @@ The easiest way to upgrade Salto's CLI is to download a new version and replace 
 
 ### Build From Source
 
-Please refer to [https://github.com/salto-io/salto](https://github.com/salto-io/salto) for build from source instructions (routinely tested on MacOS and Linux, should also work on Windows). 
+Please refer to [https://github.com/salto-io/salto](https://github.com/salto-io/salto) for build from source instructions (routinely tested on MacOS and Linux, should also work on Windows).
 
 ## Quick Start
 
 >Examples for CLI interactions throughout the guide assume you're in a **unix style shell** (e.g. on Mac or Linux). In case you're using some other shell on Windows, please make sure to make the required adjustments.
 
-We will walk you through `initiating` a new Salto `workspace`, adding a service to it, `fetching` the current configuration from the service, making a change to it and `deploying` the change back to the service. 
+We will walk you through `initiating` a new Salto `workspace`, adding a service to it, `fetching` the current configuration from the service, making a change to it and `deploying` the change back to the service.
 
 This quick start guide assumes you have credentials for a `Salesforce` dev account (for the sake of the example). If not, either do the relevant adaptations for the business application you would like to interact with, or open a Salesforce developer account at <LINK>.
 
@@ -80,7 +80,7 @@ salto services add salesforce
 
 This command will prompt you to enter the credentials for your account, please do so.
 
-![salto_service_add.png](salto_service_add.png)
+![salto_service_add.png](salto_service_add.png =70%x70%)
 
 ### Fetch the configuration from your business application to the workspace
 
@@ -115,7 +115,7 @@ salto deploy
 
 Salto will analyze the actions required to perform in order to deploy your changes, and will prompt you to approve these operations. Review the changes, and approve them:
 
-![salto_deploy.png](salto_deploy.png)
+![salto_deploy.png](salto_deploy.png =70%x70%)
 
 Now, log in into Salesforce's UI, and validate that the relevant field was added.
 
@@ -193,7 +193,7 @@ salto fetch
 
 Lets stop and take a look at our workspace directory structure (for more info see [here](#workspace-directory-structure)):
 ```shell
-— salto.config/ 
+— salto.config/
 - envs/                  # folder for env specific configuration
     — dev/               # folder for the dev environment specific configuration
 	    — salesforce/    # specific config for Salesforce in the dev env
@@ -276,9 +276,9 @@ Manage your workspace environments
 
 The following flags are available for all commands:
 
-* _--version_ : Show version number 
-* _--help, -h_ : Show help 
-* _--verbose, -v_ : Output extra logs 
+* _--version_ : Show version number
+* _--help, -h_ : Show help
+* _--verbose, -v_ : Output extra logs
 
 ## Workspace directory structure
 
@@ -307,13 +307,13 @@ For example, a workspace with 3 environments (named dev, test and prod), each co
 
 ## Salto's configuration
 
-Please see [Salto configuration](salto_configuration.md) 
+Please see [Salto configuration](salto_configuration.md)
 
 ## NaCl language spec
 
 A formal language specification is coming soon.
 
-Till then, the basic syntax is mostly HCL2 ([https://github.com/hashicorp/hcl/tree/hcl2](https://github.com/hashicorp/hcl/tree/hcl2)) with some minor deviations. 
+Till then, the basic syntax is mostly HCL2 ([https://github.com/hashicorp/hcl/tree/hcl2](https://github.com/hashicorp/hcl/tree/hcl2)) with some minor deviations.
 
 ## Salto Core annotations
 

@@ -71,7 +71,8 @@ echo "uploading ${OUTPUT} to S3 buckets"
 IFS=","
 for bucket in $DOCS_S3_BUCKETS; do
   aws s3 cp "$OUTPUT" "s3://${bucket}"
-  aws s3 cp "${SCRIPT_DIR}/*.png" "s3://${bucket}"
+  find "$SCRIPT_DIR" -type f -name '*.png' \
+    -exec aws s3 cp {} "s3://${bucket}" \;
 done
 
 # Invalidate cloudfront caches

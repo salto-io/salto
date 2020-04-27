@@ -80,7 +80,7 @@ salto services add salesforce
 
 This command will prompt you to enter the credentials for your account, please do so.
 
-<img src="/salto-io/salto/raw/master/docs/salto_service_add.png" alt="salto service add" style="max-width:70%;">
+<img src="https://raw.githubusercontent.com/salto-io/salto/master/docs/salto_deploy.png" alt="salto service add" style="max-width:70%;">
 
 ### Fetch the configuration from your business application to the workspace
 
@@ -115,7 +115,7 @@ salto deploy
 
 Salto will analyze the actions required to perform in order to deploy your changes, and will prompt you to approve these operations. Review the changes, and approve them:
 
-<img src="/salto-io/salto/raw/master/docs/salto_deploy.png" alt="salto deploy" style="max-width:70%;">
+<img src="https://raw.githubusercontent.com/salto-io/salto/master/docs/salto_service_add.png" alt="salto deploy" style="max-width:70%;">
 
 Now, log in into Salesforce's UI, and validate that the relevant field was added.
 

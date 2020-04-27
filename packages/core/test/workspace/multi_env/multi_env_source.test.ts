@@ -72,6 +72,7 @@ const commonErrors = new Errors({
     detail: 'common error',
     subject: commonSourceRange,
     message: 'common error',
+    context: commonSourceRange,
   }],
 })
 
@@ -96,6 +97,7 @@ const envErrors = new Errors({
     detail: 'env error',
     subject: envSourceRange,
     message: 'env error',
+    context: envSourceRange,
   }],
 })
 const envNaclFiles = {
@@ -127,6 +129,7 @@ const inactiveErrors = new Errors({
     detail: 'inactive error',
     subject: inactiveSourceRange,
     message: 'inactive error',
+    context: inactiveSourceRange,
   }],
 })
 const commonSource = createMockNaclFileSource(

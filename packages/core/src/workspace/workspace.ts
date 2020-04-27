@@ -44,6 +44,7 @@ export type WorkspaceError<T extends SaltoError> = Readonly<T & {
 export type SourceFragment = {
   sourceRange: SourceRange
   fragment: string
+  subRange?: SourceRange
 }
 
 class EnvDuplicationError extends Error {
@@ -157,8 +158,10 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
   const elements = async (): Promise<ReadonlyArray<Element>> => (await naclFilesSource.getAll())
     .concat(workspaceConfigTypes)
 
-  const getSourceFragment = async (sourceRange: SourceRange): Promise<SourceFragment> => {
+  const getSourceFragment = async (
+    sourceRange: SourceRange, subRange?: SourceRange): Promise<SourceFragment> => {
     const naclFile = await naclFilesSource.getNaclFile(sourceRange.filename)
+    log.debug(`error context: start=${sourceRange.start.byte}, end=${sourceRange.end.byte}`)
     const fragment = naclFile
       ? naclFile.buffer.substring(sourceRange.start.byte, sourceRange.end.byte)
       : ''
@@ -168,16 +171,17 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
     return {
       sourceRange,
       fragment,
+      subRange,
     }
   }
   const transformParseError = async (error: ParseError): Promise<WorkspaceError<SaltoError>> => ({
     ...error,
-    sourceFragments: [await getSourceFragment(error.subject)],
+    sourceFragments: [await getSourceFragment(error.context, error.subject)],
   })
   const transformToWorkspaceError = async <T extends SaltoElementError>(saltoElemErr: T):
     Promise<Readonly<WorkspaceError<T>>> => {
     const sourceRanges = await naclFilesSource.getSourceRanges(saltoElemErr.elemID)
-    const sourceFragments = await Promise.all(sourceRanges.map(getSourceFragment))
+    const sourceFragments = await Promise.all(sourceRanges.map(range => getSourceFragment(range)))
     return {
       ...saltoElemErr,
       message: saltoElemErr.message,

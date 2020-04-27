@@ -189,6 +189,7 @@ const buildNaclFilesSource = (
     // Swap state
     state = buildNaclFilesState(naclFiles, (await getState()).ParsedNaclFiles)
   }
+
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)

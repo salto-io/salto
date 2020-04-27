@@ -34,12 +34,16 @@ shift $(($OPTIND-1))
 # the -a option did not work
 # see showdown CLI documentation
 # in here: https://github.com/showdownjs/showdown/wiki/CLI-tool
+# We're using `sed` to resize the png only in the HTML output, since
+# there's no such configuration option for showdown and Github doesn't like
+# resizing images easily
 temp_md_file=$(mktemp)
 combined_md_content=$(cat \
   "${SCRIPT_DIR}/user_guide.md" \
   "${SCRIPT_DIR}/faq.md" \
   "${SCRIPT_DIR}/salto_configuration.md" \
   "${SCRIPT_DIR}/telemetry.md" \
+  | sed 's/.png)/.png =70%x70%)/g' \
   > "$temp_md_file"
 )
 
@@ -67,6 +71,7 @@ echo "uploading ${OUTPUT} to S3 buckets"
 IFS=","
 for bucket in $DOCS_S3_BUCKETS; do
   aws s3 cp "$OUTPUT" "s3://${bucket}"
+  aws s3 cp "${SCRIPT_DIR}/*.png" "s3://${bucket}"
 done
 
 # Invalidate cloudfront caches

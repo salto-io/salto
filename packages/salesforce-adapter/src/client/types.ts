@@ -172,6 +172,7 @@ export class CustomField implements MetadataInfo {
     relatedTo?: string[],
     relationshipName?: string,
     allowLookupRecordDeletion?: boolean,
+    length?: number,
   ) {
     this.type = type
     if (formula) {
@@ -179,14 +180,14 @@ export class CustomField implements MetadataInfo {
     } else {
       switch (this.type) {
         case 'Text':
-          this.length = 80
+          this.length = length ?? 80
           break
         case 'LongTextArea':
         case 'Html':
-          this.length = 32768
+          this.length = length ?? 32768
           break
         case 'EncryptedText':
-          this.length = 32
+          this.length = length ?? 32
           break
         default:
           break

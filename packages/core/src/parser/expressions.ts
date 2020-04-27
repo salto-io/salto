@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Value, ElemID, TemplateExpression, ReferenceExpression,
+  Value, ElemID, TemplateExpression, ReferenceExpression, VariableExpression,
 } from '@salto-io/adapter-api'
 import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
 import {
@@ -64,9 +64,10 @@ const evaluate = (
       const traversalParts = exp.value as unknown as string[]
       const ref = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
       try {
-        return new ReferenceExpression(
-          ElemID.fromFullName(ref)
-        )
+        const elemId = ElemID.fromFullName(ref)
+        return elemId.adapter === ElemID.VARIABLES_NAMESPACE
+          ? new VariableExpression(elemId)
+          : new ReferenceExpression(elemId)
       } catch (e) {
         return new IllegalReference(ref, e.message)
       }

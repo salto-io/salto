@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
-  ReferenceExpression, TemplateExpression, ListType,
+  ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
+  isVariableExpression,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
@@ -33,6 +34,8 @@ describe('Test Salto Expressions', () => {
 
   describe('Reference Expression', () => {
     const baseElemID = new ElemID('salto', 'base')
+    const varElemID = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+    const variable = new Variable(varElemID, 7)
     const objElemID = new ElemID('salto', 'obj')
     const base = new ObjectType({
       elemID: baseElemID,
@@ -66,6 +69,10 @@ describe('Test Salto Expressions', () => {
 
     const simpleRefInst = new InstanceElement('simpleref', simpleRefType, {
       test: refTo(baseInst, 'simple'),
+    })
+
+    const varRefInst = new InstanceElement('simplerefinst', simpleRefType, {
+      test: new VariableExpression(varElemID),
     })
 
     const nestedRefInst = new InstanceElement('nesetedref', simpleRefType, {
@@ -116,9 +123,11 @@ describe('Test Salto Expressions', () => {
 
     const elements = [
       base,
+      variable,
       baseInst,
       noRefInst,
       simpleRefInst,
+      varRefInst,
       nestedRefInst,
       arrayRefInst,
       annoRefInst,
@@ -143,7 +152,14 @@ describe('Test Salto Expressions', () => {
 
     it('should resolve simple references', () => {
       const element = findResolved<InstanceElement>(simpleRefInst)
+      expect(isVariableExpression(element.value.test)).toBe(false)
       expect(element.value.test.value).toEqual('simple')
+    })
+
+    it('should resolve variable references', () => {
+      const element = findResolved<InstanceElement>(varRefInst)
+      expect(isVariableExpression(element.value.test)).toBe(true)
+      expect(element.value.test.value).toEqual(7)
     })
 
     describe('functions', () => {

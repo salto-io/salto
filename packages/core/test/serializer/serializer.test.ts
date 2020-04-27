@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement, ListType,
-  ObjectType, InstanceElement, TemplateExpression, ReferenceExpression,
+  ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
+  VariableExpression,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
@@ -43,6 +44,9 @@ describe('State serialization', () => {
   })
 
   const strListType = new ListType(strType)
+
+  const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+  const variable = new Variable(varElemId, 'I am a var')
 
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
@@ -75,6 +79,7 @@ describe('State serialization', () => {
     model,
     {
       num: new ReferenceExpression(instance.elemID.createNestedID('num')),
+      name: new VariableExpression(varElemId),
     }
   )
 
@@ -113,7 +118,7 @@ describe('State serialization', () => {
     { name: 'other', num: 5 },
   )
 
-  const elements = [strType, numType, boolType, model, strListType,
+  const elements = [strType, numType, boolType, model, strListType, variable,
     instance, refInstance, templateRefInstance, functionRefInstance, config]
 
   it('should serialize and deserialize all element types', () => {

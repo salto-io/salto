@@ -43,6 +43,17 @@ export class ReferenceExpression {
     public readonly elemId: ElemID, private resValue?: Value
   ) {}
 
+  /**
+   * Create a new instance which is of the same type as the current instance, and
+   * has the provided value.
+   * For example, if the instance is a VariableExpression,
+   * create a VariableExpression, not a ReferenceExpression.
+   */
+  public createWithValue(resValue: Value): ReferenceExpression {
+    const ExpressionCtor = this.constructor as typeof ReferenceExpression
+    return new ExpressionCtor(this.elemId, resValue)
+  }
+
   static get serializedTypeName(): string { return 'ReferenceExpression' }
 
   get traversalParts(): string[] {
@@ -54,6 +65,10 @@ export class ReferenceExpression {
       ? this.resValue.value
       : this.resValue
   }
+}
+
+export class VariableExpression extends ReferenceExpression {
+  static get serializedTypeName(): string { return 'VariableExpression' }
 }
 
 export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {
@@ -85,6 +100,11 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isReferenceExpression = (value: any): value is ReferenceExpression => (
   value instanceof ReferenceExpression
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isVariableExpression = (value: any): value is VariableExpression => (
+  value instanceof VariableExpression
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

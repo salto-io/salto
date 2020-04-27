@@ -14,12 +14,28 @@
 * limitations under the License.
 */
 
-import {
-  StaticFile,
-  isEqualValues,
-} from '../src/values'
+import { ElemID } from '../src/element_id'
+import { StaticFile, isEqualValues, VariableExpression,
+  ReferenceExpression } from '../src/values'
 
 describe('Values', () => {
+  describe('ReferenceExpression.createWithValue', () => {
+    it('should return correct type', () => {
+      const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+      const varExp = new VariableExpression(varElemId, 17)
+      const varExpAsRef = varExp as ReferenceExpression
+      const newVarExp = varExpAsRef.createWithValue(undefined)
+      expect(newVarExp instanceof VariableExpression).toBe(true)
+      expect(newVarExp.value).toBe(undefined)
+    })
+    it('should return correct value', () => {
+      const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+      const varExp = new VariableExpression(varElemId, 17)
+      const newVarExp = varExp.createWithValue(16)
+      expect(newVarExp.value).toBe(16)
+    })
+  })
+
   describe('StaticFile', () => {
     describe('equality (direct)', () => {
       it('equals', () => {

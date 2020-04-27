@@ -323,6 +323,8 @@ jobs:
       - attach_workspace:
           at: .
 
+      - aws-cli/setup
+
       - run:
           name: Build and upload docs
           command: ./docs/build.sh

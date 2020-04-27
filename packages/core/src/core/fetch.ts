@@ -19,16 +19,19 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, ElemIdGetter, CORE_ANNOTATIONS,
+  ADAPTER, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import {
-  resolvePath, TransformPrimitiveFunc,
-  flattenElementStr, transformElement,
+  resolvePath,
+  flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
 import { getPlan, DetailedChange, Plan } from './plan'
 import { mergeElements, MergeError } from './merger'
+import {
+  removeElementHiddenValues,
+} from '../workspace/hidden_values'
 
 const log = logger(module)
 
@@ -39,25 +42,6 @@ export type FetchChange = {
   serviceChange: DetailedChange
   // The change between the working copy and the state
   pendingChange?: DetailedChange
-}
-
-export const removeElementHiddenValues = (elem: Element):
-  Element => {
-  if (isInstanceElement(elem)) {
-    const removeHiddenValue: TransformPrimitiveFunc = (val, _pathID, field) => {
-      if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-        return undefined
-      }
-      return val
-    }
-
-    return transformElement({
-      element: elem,
-      transformPrimitives: removeHiddenValue,
-      strict: false,
-    }) || {}
-  }
-  return elem
 }
 
 export const toAddFetchChange = (elem: Element): FetchChange => {

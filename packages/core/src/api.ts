@@ -19,16 +19,11 @@ import {
   Element,
   InstanceElement,
   ObjectType,
-  isInstanceElement,
-  CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises } from '@salto-io/lowerdash'
-import {
-  transformElement, TransformPrimitiveFunc,
-} from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
@@ -36,7 +31,8 @@ import {
 } from './core/adapters'
 import { getPlan, Plan, PlanItem } from './core/plan'
 import {
-  createElementsMap, findElement, SearchResult,
+  findElement,
+  SearchResult,
 } from './core/search'
 import {
   createElemIdGetter,
@@ -46,11 +42,13 @@ import {
   FetchProgressEvents,
   getDetailedChanges,
   MergeErrorWithElements,
-  removeElementHiddenValues,
   toChangesWithPath,
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
 import { defaultDependencyChangers } from './core/plan/plan'
+import {
+  addHiddenValues, removeElementHiddenValues,
+} from './workspace/hidden_values'
 
 const log = logger(module)
 
@@ -73,33 +71,6 @@ const filterElementsByServices = (
   services: ReadonlyArray<string>
 ): Element[] => elements.filter(e => services.includes(e.elemID.adapter))
 
-const addHiddenValues = (
-  workspaceElements: ReadonlyArray<Element>,
-  stateElements: Element[],
-): Element[] => {
-  const stateElementsMap = createElementsMap(stateElements)
-
-  return workspaceElements.map(elem => {
-    const stateElement = stateElementsMap[elem.elemID.getFullName()]
-    if (isInstanceElement(elem) && stateElement !== undefined) {
-      const createHiddenMapCallback: TransformPrimitiveFunc = (val, _pathID, field) => {
-        if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-          return val
-        }
-        return undefined
-      }
-
-      const hiddenValuesInstance = transformElement({
-        element: stateElement,
-        transformPrimitives: createHiddenMapCallback,
-        strict: true,
-      }) as InstanceElement
-
-      elem.value = _.merge(elem.value, hiddenValuesInstance.value)
-    }
-    return elem
-  })
-}
 export const preview = async (
   workspace: Workspace,
   services = workspace.services(),

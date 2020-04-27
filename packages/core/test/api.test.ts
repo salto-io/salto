@@ -173,13 +173,13 @@ describe('api.ts', () => {
         regField: 'regValue',
       }
     )
-    const stateElements = [stateInstance]
+    const stateElements = [stateInstance, typeWithHiddenField]
 
     // workspace elements should not contains hidden values
     const workspaceInstance = stateInstance.clone()
     workspaceInstance.value = { regField: 'regValue' }
 
-    const workspaceElements = [workspaceInstance]
+    const workspaceElements = [workspaceInstance, typeWithHiddenField]
     const ws = mockWorkspace(workspaceElements)
     const mockFlush = ws.flush as jest.Mock
     const mockedState = { ...mockState(), getAll: jest.fn().mockResolvedValue(stateElements) }

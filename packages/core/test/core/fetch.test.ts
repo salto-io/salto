@@ -22,10 +22,13 @@ import {
 } from '@salto-io/adapter-api'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
-  FetchChangesResult, FetchProgressEvents, removeElementHiddenValues,
+  FetchChangesResult, FetchProgressEvents,
 } from '../../src/core/fetch'
 import * as merger from '../../src/core/merger'
 import { getPlan, Plan } from '../../src/core/plan'
+import {
+  removeElementHiddenValues,
+} from '../../src/workspace/hidden_values'
 
 const { DuplicateAnnotationError } = merger
 

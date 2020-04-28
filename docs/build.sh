@@ -41,7 +41,7 @@ for md_file in $(find "$SCRIPT_DIR" -type f -name '*.md'); do
   echo "generating ${md_file} html"
   filename_without_extension=$(basename "$md_file" '.md')
   tmpfile=$(mktemp)
-  cat "$md_file" | sed 's/.png)/.png =70%x70%)/g' > "$tmpfile"
+  cat "$md_file" | sed 's/.png)/.png =80%x80%)/g' > "$tmpfile"
   npx showdown makehtml \
     --tables \
     --parseImgDimensions \

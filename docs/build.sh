@@ -34,24 +34,12 @@ shift $(($OPTIND-1))
 mkdir -p "$OUTPUT_DIR"
 cp "$SCRIPT_DIR"/*.png "$OUTPUT_DIR"
 
-# We're using `sed` to resize the png only in the HTML output, since
-# there's no such configuration option for showdown and Github doesn't like
-# resizing images easily
+npm i -g showdown
+
 for md_file in $(find "$SCRIPT_DIR" -type f -name '*.md'); do
   echo "generating ${md_file} html"
   filename_without_extension=$(basename "$md_file" '.md')
-  tmpfile=$(mktemp)
-  cat "$md_file" | sed 's/.png)/.png =80%x80%)/g' > "$tmpfile"
-  npx showdown makehtml \
-    --tables \
-    --parseImgDimensions \
-    --ghCodeBlocks \
-    --ghCompatibleHeaderId \
-    --encodeEmails \
-    --parseImgDimensions \
-    -i "$tmpfile" \
-    -o "${OUTPUT_DIR}/${filename_without_extension}.html"
-  rm "$tmpfile"
+  node showdown_wrapper.js "$md_file" > "${OUTPUT_DIR}/${filename_without_extension}.html"
 done
 
 # Upload newly generated file to S3 buckets

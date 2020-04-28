@@ -57,7 +57,7 @@ In addition to the usage data, the following metadata is being sent;
   * Installation ID: an ID that is being generated in the first ever `salto init`. It's common to all of the workspaces on the same installation / computer
   * App (CLI) version
 
-## How to opt out of telemtry data collection?
+## How to opt out of telemetry data collection?
 
 Any user can opt out of sending usage data.
 There are two ways to disable telemetry:

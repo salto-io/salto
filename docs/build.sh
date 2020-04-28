@@ -3,7 +3,7 @@
 set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-OUTPUT=${OUTPUT:-doc.html}
+OUTPUT_DIR=${OUTPUT_DIR:-output}
 
 function usage () {
   echo "Build and sync Salto documentation
@@ -20,7 +20,7 @@ function usage () {
     exit 0
 }
 
-while getopts ":hv" opt
+while getopts ":h" opt
 do
   case $opt in
 
@@ -31,34 +31,28 @@ do
 done
 shift $(($OPTIND-1))
 
-# the -a option did not work
-# see showdown CLI documentation
-# in here: https://github.com/showdownjs/showdown/wiki/CLI-tool
+mkdir -p "$OUTPUT_DIR"
+cp "$SCRIPT_DIR"/*.png "$OUTPUT_DIR"
+
 # We're using `sed` to resize the png only in the HTML output, since
 # there's no such configuration option for showdown and Github doesn't like
 # resizing images easily
-temp_md_file=$(mktemp)
-combined_md_content=$(cat \
-  "${SCRIPT_DIR}/user_guide.md" \
-  "${SCRIPT_DIR}/faq.md" \
-  "${SCRIPT_DIR}/salto_configuration.md" \
-  "${SCRIPT_DIR}/telemetry.md" \
-  | sed 's/.png)/.png =70%x70%)/g' \
-  > "$temp_md_file"
-)
-
-echo "generating ${OUTPUT}"
-npx showdown makehtml \
-  --tables \
-  --parseImgDimensions \
-  --ghCodeBlocks \
-  --ghCompatibleHeaderId \
-  --encodeEmails \
-  --parseImgDimensions \
-  -i "$temp_md_file" \
-  -o "$OUTPUT"
-
-rm "$temp_md_file"
+for md_file in $(find "$SCRIPT_DIR" -type f -name '*.md'); do
+  echo "generating ${md_file} html"
+  filename_without_extension=$(basename "$md_file" '.md')
+  tmpfile=$(mktemp)
+  cat "$md_file" | sed 's/.png)/.png =70%x70%)/g' > "$tmpfile"
+  npx showdown makehtml \
+    --tables \
+    --parseImgDimensions \
+    --ghCodeBlocks \
+    --ghCompatibleHeaderId \
+    --encodeEmails \
+    --parseImgDimensions \
+    -i "$tmpfile" \
+    -o "${OUTPUT_DIR}/${filename_without_extension}.html"
+  rm "$tmpfile"
+done
 
 # Upload newly generated file to S3 buckets
 
@@ -70,8 +64,7 @@ fi
 echo "uploading ${OUTPUT} to S3 buckets"
 IFS=","
 for bucket in $DOCS_S3_BUCKETS; do
-  aws s3 cp "$OUTPUT" "s3://${bucket}"
-  find "$SCRIPT_DIR" -type f -name '*.png' \
+  find "$OUTPUT_DIR" -type f \
     -exec aws s3 cp {} "s3://${bucket}" \;
 done
 

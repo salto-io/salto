@@ -379,7 +379,7 @@ workflows:
           name: build_and_upload_docs
           requires:
             - build
-          # filters:
-          #   branches:
-          #     only:
-          #       - master
+          filters:
+            branches:
+              only:
+                - master

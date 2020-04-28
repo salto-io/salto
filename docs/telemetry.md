@@ -45,9 +45,9 @@ in the code).
 The data that's being sent is usage data and error reporting along with metadata;
 
   1. Counters, for example:
-    * Number of changes upon `fetch`
-    * Failed running some command (counting number of failures)
-    * Started running some command
+  * Number of changes upon `fetch`
+  * Failed running some command (counting number of failures)
+  * Started running some command
   2. Errors & stacktrace - the prebuilt binaries are being packaged with `webpack` ([see the prebuilt binary releases section](#download-prebuilt-executable-binary-releases)) so the file paths will be in the [custom webpack sourcemap protocol](https://webpack.js.org/configuration/output/#output-devtoolmodulefilenametemplate), thus no personal data will be sent.
 
 In addition to the usage data, the following metadata is being sent;

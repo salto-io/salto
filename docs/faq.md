@@ -31,7 +31,7 @@ Salto is available under the Apache License, version 2.0.
 
 ## How can I contact you?
 
-- Email us at [opensource@salto.io](mailto://open-source@salto.io) 
+- Email us at [open-source@salto.io](mailto://open-source@salto.io) 
 - Join our public Slack channel [here](https://invite.playplay.io/invite?team_id=T011W61EVHD)
 - If you're looking to report a bug, file a feature request or contribute, please see [Contributing](contributing.md) .
 

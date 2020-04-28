@@ -34,7 +34,7 @@ shift $(($OPTIND-1))
 mkdir -p "$OUTPUT_DIR"
 cp "$SCRIPT_DIR"/*.png "$OUTPUT_DIR"
 
-npm i -g showdown
+npm i --no-save showdown
 
 for md_file in $(find "$SCRIPT_DIR" -type f -name '*.md'); do
   echo "generating ${md_file} html"

@@ -36,12 +36,12 @@ showdown.extension('internal_link', function() {
     },
     {
       type: 'output',
-      regex: /<a href="([\w\d\-\_]+)\.md(#[\d\w\-\_]+)">/g,
+      regex: /<a href="([\w\d\-\_]+)\.md#([\d\w\-\_]+)">/g,
       replace: '<a href="#$3" onclick="return placeContent(\'$1.html\')">'
     },
     {
       type: 'output',
-      regex: /<a href="(#[\d\w\-\_]+)">/g,
+      regex: /<a href="#([\d\w\-\_]+)">/g,
       replace: '<a href="#$1">'
     }
   ]

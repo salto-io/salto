@@ -13,6 +13,8 @@ Salto consists of 3 main components:
 
 For more information, see the [user guide](docs/user_guide.md) and the [FAQ](docs/faq.md).
 
+You can contact us by email at [open-source@salto.io](mailto://open-source@salto.io), or join our public Slack channel [here](https://invite.playplay.io/invite?team_id=T011W61EVHD).
+
 ### Building
 
   1. Install [yarn](https://yarnpkg.com/en/docs/install).
@@ -75,3 +77,6 @@ Once the PR is merged, the version will be published and a git tag will be creat
 ### Usage instructions
 
 See READMEs of individual packages under the `packages` directory.
+
+### License
+[Apache License 2.0](LICENSE)

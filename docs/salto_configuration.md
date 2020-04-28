@@ -61,12 +61,12 @@ is running the `init` command.
 
 | Name                   | Default when undefined      | Description
 | -----------------------| ----------------------------| -----------
-| SALTO_HOME             | ~/.salto                    | determines default the location of workspace local configs, credentials and cache
-| SALTO_LOG_FILE         | null (write to stdout)      | Path of the file to write log messages to
-| SALTO_LOG_LEVEL        | none                        | Log level (possible values: info, debug, warn, error, none)
-| SALTO_LOG_FORMAT       | text                        | Control the log format (possible values: text, json)
-| SALTO_LOG_NS           | undefined (no filtering)    | If a string is specified, it is parsed as a glob - only logs having matching namespaces will be written
-| SALTO_LOG_COLOR        | null (colorize if writing to stdout and the stream supports color) | Override colorization in output
-| SALTO_TELEMETRY_DISABLE| defaults to the value from the global Salto configuration | Overrides the values from the global Salto configuration. Disables telemetry sending when the value is 1. See [here](telemetry.md) for information on Salto telemetry.
-| SALTO_TELEMETRY_URL    | defaults to the value from the global Salto configuration. | Overrides the values from the global Salto configuration. URL to send telemetry information to.  See [here](telemetry.md) for information on Salto telemetry.
-| SALTO_TELEMETRY_TOKEN  | defaults to the value from the global Salto configuration. |Overrides the values from the global Salto configuration. The authentication token to use when sending telemetry information.
+| SALTO\_HOME             | ~/.salto                    | determines default the location of workspace local configs, credentials and cache
+| SALTO\_LOG\_FILE         | null (write to stdout)      | Path of the file to write log messages to
+| SALTO\_LOG\_LEVEL        | none                        | Log level (possible values: info, debug, warn, error, none)
+| SALTO\_LOG\_FORMAT       | text                        | Control the log format (possible values: text, json)
+| SALTO\_LOG\_NS           | undefined (no filtering)    | If a string is specified, it is parsed as a glob - only logs having matching namespaces will be written
+| SALTO\_LOG\_COLOR        | null (colorize if writing to stdout and the stream supports color) | Override colorization in output
+| SALTO\_TELEMETRY\_DISABLE| defaults to the value from the global Salto configuration | Overrides the values from the global Salto configuration. Disables telemetry sending when the value is 1. See [here](telemetry.md) for information on Salto telemetry.
+| SALTO\_TELEMETRY\_URL    | defaults to the value from the global Salto configuration. | Overrides the values from the global Salto configuration. URL to send telemetry information to.  See [here](telemetry.md) for information on Salto telemetry.
+| SALTO\_TELEMETRY\_TOKEN  | defaults to the value from the global Salto configuration. |Overrides the values from the global Salto configuration. The authentication token to use when sending telemetry information.

@@ -27,16 +27,17 @@ Support for other business applications is in the works.
 
 ### Install Binary
 
-The easiest way to install Salto's command line interface (CLI)  is by downloading its latest binary from <link> per your operating system type (MacOS / Linux / Windows). TODO: fix link!
+The easiest way to install Salto's command line interface (CLI) is by downloading its latest binary from the GitHub [Releases page](https://github.com/salto-io/salto/releases/latest) per your operating system type (MacOS / Linux / Windows).
 
 Once you've downloaded the binary, it is advised to copy it somewhere safe and add it to your path.
 
-For example, on Mac / Linux (using bash) one could do (TODO fix link):
+For example, on Mac / Linux (using bash) one could do (make sure to update the URL to the latest version):
 
 ```shell
 mkdir ~/salto
-curl https://salto.io/binaries/latest/mac/salto --output ~/salto/salto
+curl https://github.com/salto-io/salto/releases/download/v0.1.13/salto-mac --output ~/salto/salto
 echo "export PATH=$PATH:~/salto" >> ~/.bash_profile
+chmod +x ~/salto/salto
 ```
 
 Alternatively, you can also just download and copy the binary using other standard tools, and manually edit the PATH per your OS's instructions.
@@ -135,7 +136,7 @@ In some cases, it is useful to reference one element from another. Such referenc
 
 A reference is done to a `Salto ID`, which conforms with the following schema:
 
-```html
+```
     <adapter>.<type>.attr.<name>[.<key>...]
     <adapter>.<type>.field.<name>[.<key>...]
     <adapter>.<type>.instance.<name>[.<key>...]
@@ -326,7 +327,7 @@ Salto supports various annotations whose semantic is enforced by the tool itself
     - **min** For number fields, the smallest allowed value
     - **max** For number fields, the greatest allowed value
     - **enforce_value** A boolean specifying whether the restriction should be enforced. when set to true, restriction violations will create warnings (this is the default behavior), when set to `false` a violation of this restriction will be ignored (the restriction is essentially disabled)
-- **_depends_on** Can be used to explicitly define dependencies between blocks. Its value is a list of references, each reference marks that this block depends on the reference target
+- **\_depends\_on** Can be used to explicitly define dependencies between blocks. Its value is a list of references, each reference marks that this block depends on the reference target
 - **_parent** Can be used to explicitly define a relationship between blocks. Its value is a list of references, each reference marks that this block is a child of the reference target, unlike _depends_on, a parent relationship means the child block is assumed to be deleted automatically (by the service) when the parent is removed
 
 ## Salto builtin types

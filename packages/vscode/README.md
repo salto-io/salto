@@ -24,7 +24,7 @@
 
 ## Installation
 Salto is still not registered in the marketplace. To install:
-- Download the latest vsix file
+- Download the latest vsix file from [here](https://github.com/salto-io/salto/releases/latest)
 - Open the extension menu
 - Select install from .vsix
 - Choose the downloaded file

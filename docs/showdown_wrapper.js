@@ -48,15 +48,15 @@ showdown.extension('internal_link', function() {
 })
 
 const converter = new showdown.Converter({
-  flavor: 'github',
   tables: true,
-  parseImgDimensions: true,
   ghCodeBlocks: true,
   ghCompatibleHeaderId: true,
   encodeEmails: true,
   parseImgDimensions: true,
   extensions: ['img_class', 'internal_link']
-});
+})
+
+converter.setFlavor('github')
 
 if(process.argv.length !== 3) {
   console.error(`usage: ${process.argv[1]} <path_to_file.md>`)

@@ -63,9 +63,25 @@ describe('Nacl Files Source', () => {
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
       await naclFilesSource(mockDirStore, mockCache, mockStaticFilesSource).clear()
-      expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
+      expect(mockDirStore.clear).toHaveBeenCalledTimes(1)
       expect(mockCache.clear).toHaveBeenCalledTimes(1)
       expect(mockStaticFilesSource.clear).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('rename', () => {
+    it('should rename everything', async () => {
+      const newName = 'new'
+      mockDirStore.rename = jest.fn().mockResolvedValue(Promise.resolve())
+      mockCache.rename = jest.fn().mockResolvedValue(Promise.resolve())
+      mockStaticFilesSource.rename = jest.fn().mockResolvedValue(Promise.resolve())
+      await naclFilesSource(mockDirStore, mockCache, mockStaticFilesSource).rename(newName)
+      expect(mockDirStore.rename).toHaveBeenCalledTimes(1)
+      expect(mockDirStore.rename).toHaveBeenCalledWith(newName)
+      expect(mockCache.rename).toHaveBeenCalledTimes(1)
+      expect(mockCache.rename).toHaveBeenCalledWith(newName)
+      expect(mockStaticFilesSource.rename).toHaveBeenCalledTimes(1)
+      expect(mockStaticFilesSource.rename).toHaveBeenCalledWith(newName)
     })
   })
 })

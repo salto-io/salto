@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { replaceContents, exists, readTextFile, rm } from '@salto-io/file'
+import { replaceContents, exists, readTextFile, rm, rename } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import State from '../../../src/workspace/state'
 import { localState } from '../../../src/workspace/local/state'
@@ -38,6 +38,7 @@ jest.mock('@salto-io/file', () => ({
     return Promise.resolve('[]')
   }),
   rm: jest.fn().mockImplementation(),
+  rename: jest.fn().mockImplementation(),
   mkdirp: jest.fn().mockImplementation(),
   exists: jest.fn().mockImplementation(((filename: string) => Promise.resolve(filename !== 'empty'))),
 }))
@@ -203,13 +204,25 @@ describe('local state', () => {
     })
   })
 
-  describe('delete', () => {
+  describe('clear', () => {
     const mockRm = rm as jest.Mock
     it('should delete state file', async () => {
       const state = localState('on-delete')
       await state.clear()
       expect(mockRm).toHaveBeenCalledTimes(1)
       expect(mockRm).toHaveBeenCalledWith('on-delete')
+    })
+  })
+
+  describe('rename', () => {
+    const mockRename = rename as jest.Mock
+    const filePath = '/base/old.jsonl'
+
+    it('should rename state file', async () => {
+      const state = localState(filePath)
+      await state.rename('new')
+      expect(mockRename).toHaveBeenCalledTimes(1)
+      expect(mockRename).toHaveBeenCalledWith(filePath, '/base/new.jsonl')
     })
   })
 

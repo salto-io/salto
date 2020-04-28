@@ -16,7 +16,7 @@
 import * as path from 'path'
 import readdirp from 'readdirp'
 import {
-  stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
+  stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory, rename,
 } from '@salto-io/file'
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 
@@ -30,6 +30,7 @@ jest.mock('@salto-io/file', () => ({
   replaceContents: jest.fn(),
   mkdirp: jest.fn(),
   rm: jest.fn(),
+  rename: jest.fn(),
   isEmptyDir: jest.fn(),
   isSubDirectory: jest.fn(),
 }))
@@ -46,6 +47,7 @@ describe('localDirectoryStore', () => {
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
   const mockRm = rm as jest.Mock
+  const mockRename = rename as jest.Mock
   const mockEmptyDir = isEmptyDir as jest.Mock
   const mockIsSubFolder = isSubDirectory as jest.Mock
 
@@ -169,6 +171,30 @@ describe('localDirectoryStore', () => {
       await naclFileStore.clear()
       expect(mockRm).toHaveBeenCalledTimes(1)
       expect(mockRm).toHaveBeenCalledWith(baseDir)
+    })
+  })
+
+  describe('rename', () => {
+    const baseDir = '/base'
+    const naclFileStore = localDirectoryStore(baseDir)
+
+    it('should rename the all files', async () => {
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValue([{ fullPath: path.join(baseDir, 'test1') }])
+      await naclFileStore.rename('new')
+      expect(mockRename).toHaveBeenCalledTimes(1)
+      expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'test1'), path.join('/new', 'test1'))
+    })
+  })
+
+  describe('renameFile', () => {
+    const baseDir = '/base'
+    const naclFileStore = localDirectoryStore(baseDir)
+
+    it('should rename the file', async () => {
+      await naclFileStore.renameFile('old', 'new')
+      expect(mockRename).toHaveBeenCalledTimes(1)
+      expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
     })
   })
 })

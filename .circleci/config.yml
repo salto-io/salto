@@ -327,7 +327,7 @@ jobs:
 
       - run:
           name: Build and upload docs
-          command: ./docs/build.sh
+          command: cd docs && ./build.sh
 
 workflows:
   version: 2

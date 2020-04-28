@@ -39,7 +39,7 @@ npm i --no-save showdown
 for md_file in $(find "$SCRIPT_DIR" -type f -name '*.md'); do
   echo "generating ${md_file} html"
   filename_without_extension=$(basename "$md_file" '.md')
-  node showdown_wrapper.js "$md_file" > "${OUTPUT_DIR}/${filename_without_extension}.html"
+  node "${SCRIPT_DIR}/showdown_wrapper.js" "$md_file" > "${OUTPUT_DIR}/${filename_without_extension}.html"
 done
 
 # Upload newly generated file to S3 buckets

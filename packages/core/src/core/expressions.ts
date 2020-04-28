@@ -18,7 +18,7 @@ import _ from 'lodash'
 import {
   ElemID, Element, isObjectType, isInstanceElement, Value,
   ReferenceExpression, TemplateExpression, isVariable,
-  isReferenceExpression,
+  isReferenceExpression, isVariableExpression,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -81,17 +81,23 @@ resolveReferenceExpression = (
     return new UnresolvedReference(fullElemID)
   }
 
-  const value = resolvePath(rootElement, fullElemID)
+  let value = resolvePath(rootElement, fullElemID)
 
   if (value === undefined) {
     return new UnresolvedReference(fullElemID)
   }
 
-  if (isVariable(value)) {
-    return value.value
+  /**
+  When resolving a VariableExpression which references a Variable element, we should get a
+  VariableExpression with the value of that variable as its value.
+  So Variable elements should not appear in the value of VariableExpressions.
+  */
+  if (isVariableExpression(expression)) {
+    // Replace the Variable element by its value.
+    value = value.value
   }
 
-  return resolveMaybeExpression(value, contextElements, visited) || value
+  return resolveMaybeExpression(value, contextElements, visited) ?? value
 }
 
 resolveTemplateExpression = (
@@ -117,6 +123,10 @@ export const resolveElement = (
 
   if (isObjectType(element)) {
     element.fields = _.cloneDeepWith(element.fields, referenceCloner)
+  }
+
+  if (isVariable(element)) {
+    element.value = _.cloneDeepWith(element.value, referenceCloner)
   }
 
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)

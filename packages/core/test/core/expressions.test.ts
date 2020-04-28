@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
   ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
-  isVariableExpression,
+  isVariableExpression, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
@@ -35,7 +35,10 @@ describe('Test Salto Expressions', () => {
   describe('Reference Expression', () => {
     const baseElemID = new ElemID('salto', 'base')
     const varElemID = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
+    const falsyVarElemID = new ElemID(ElemID.VARIABLES_NAMESPACE, 'falsyVarName')
     const variable = new Variable(varElemID, 7)
+    const falsyVariable = new Variable(falsyVarElemID, false)
+    const varRefElemID = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varRefName')
     const objElemID = new ElemID('salto', 'obj')
     const base = new ObjectType({
       elemID: baseElemID,
@@ -60,6 +63,9 @@ describe('Test Salto Expressions', () => {
       arr: ['A', 'B'],
     })
 
+    const varRef = new Variable(varRefElemID,
+      new ReferenceExpression(baseInst.elemID.createNestedID('simple')))
+
     const simpleRefType = new ObjectType({
       elemID: new ElemID('salto', 'simple_ref_type'),
     })
@@ -71,8 +77,12 @@ describe('Test Salto Expressions', () => {
       test: refTo(baseInst, 'simple'),
     })
 
-    const varRefInst = new InstanceElement('simplerefinst', simpleRefType, {
+    const varRefInst = new InstanceElement('varref', simpleRefType, {
       test: new VariableExpression(varElemID),
+    })
+
+    const falsyVarRefInst = new InstanceElement('falsyvarref', simpleRefType, {
+      test: new VariableExpression(falsyVarElemID),
     })
 
     const nestedRefInst = new InstanceElement('nesetedref', simpleRefType, {
@@ -124,10 +134,13 @@ describe('Test Salto Expressions', () => {
     const elements = [
       base,
       variable,
+      falsyVariable,
       baseInst,
       noRefInst,
       simpleRefInst,
       varRefInst,
+      falsyVarRefInst,
+      varRef,
       nestedRefInst,
       arrayRefInst,
       annoRefInst,
@@ -150,7 +163,7 @@ describe('Test Salto Expressions', () => {
       expect(element.value.test).toEqual(`${baseInst.elemID.getFullName()}.simple`)
     })
 
-    it('should resolve simple references', () => {
+    it('should resolve simple variable references', () => {
       const element = findResolved<InstanceElement>(simpleRefInst)
       expect(isVariableExpression(element.value.test)).toBe(false)
       expect(element.value.test.value).toEqual('simple')
@@ -160,6 +173,18 @@ describe('Test Salto Expressions', () => {
       const element = findResolved<InstanceElement>(varRefInst)
       expect(isVariableExpression(element.value.test)).toBe(true)
       expect(element.value.test.value).toEqual(7)
+    })
+
+    it('should resolve a falsy variable references', () => {
+      const element = findResolved<InstanceElement>(falsyVarRefInst)
+      expect(isVariableExpression(element.value.test)).toBe(true)
+      expect(element.value.test.value).toEqual(false)
+    })
+
+    it('should resolve a variable value which is a reference', () => {
+      const element = findResolved<Variable>(varRef)
+      expect(isReferenceExpression(element.value)).toBe(true)
+      expect(element.value.value).toEqual('simple')
     })
 
     describe('functions', () => {

@@ -17,11 +17,12 @@
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
-  ListType, getRestriction, createRestriction,
+  ListType, getRestriction, createRestriction, VariableExpression, Variable,
 } from '@salto-io/adapter-api'
 import {
-  validateElements, InvalidValueValidationError,
+  validateElements, InvalidValueValidationError, CircularReferenceValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
+  UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
 } from '../src/core/validator'
 import {
   InvalidStaticFile, StaticFileMetaData,
@@ -133,6 +134,17 @@ describe('Elements validation', () => {
     annotationTypes: {
       nested: simpleType,
       restrictedPrimitive: restrictedType,
+    },
+  })
+
+  const noResElemID = new ElemID('salto', 'no_res_type')
+  const emptyType = new ObjectType({
+    elemID: new ElemID('salto', 'empty'),
+  })
+  const noRestrictionsType = new ObjectType({
+    elemID: noResElemID,
+    fields: {
+      someVal: new Field(noResElemID, 'someVal', emptyType),
     },
   })
 
@@ -308,6 +320,28 @@ describe('Elements validation', () => {
         str: 'str',
         num: 12,
         bool: new ReferenceExpression(nestedInstance.elemID.createNestedID('nope')),
+      }
+    )
+
+    const varElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'exists')
+    const variable = new Variable(varElemId, false)
+    const varInst = new InstanceElement(
+      'withVar',
+      simpleType,
+      {
+        str: 'str',
+        num: 12,
+        bool: new VariableExpression(varElemId),
+      }
+    )
+
+    const illegalValueVarInst = new InstanceElement(
+      'withVar',
+      simpleType,
+      {
+        str: 'str',
+        num: new VariableExpression(varElemId),
+        bool: true,
       }
     )
 
@@ -560,7 +594,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(0)
       })
 
-      it('should ignore static files thar are valid', () => {
+      it('should ignore static files that are valid', () => {
         const instWithFile = new InstanceElement(
           'withFile',
           new ObjectType({
@@ -746,7 +780,7 @@ describe('Elements validation', () => {
         const errors = validateElements([extInst])
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1'))
-        // TODO: The second error is a stange UX and we should not have it
+        // TODO: The second error is a strange UX and we should not have it
         expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('listOfObject', '1', 'bool'))
       })
 
@@ -769,6 +803,25 @@ describe('Elements validation', () => {
         const errors = validateElements([circularRefInst, circularRefInst2])
         expect(errors).toHaveLength(2)
         expect(errors[0].elemID).toEqual(circularRefInst.elemID.createNestedID('bool'))
+        expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
+      })
+
+      it('should return error when encountering a reference to self', () => {
+        const refToSelfInst = new InstanceElement(
+          'unresolved',
+          simpleType,
+          {
+            str: 'str',
+            num: 12,
+          }
+        )
+        refToSelfInst.value.bool = new ReferenceExpression(
+          refToSelfInst.elemID.createNestedID('bool')
+        )
+        const errors = validateElements([refToSelfInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0].elemID).toEqual(refToSelfInst.elemID.createNestedID('bool'))
+        expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
       })
 
       it('should validate throw error on reference that points to a bad type', () => {
@@ -782,6 +835,111 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0].elemID).toEqual(illegalRefInst.elemID.createNestedID('bool'))
         expect(errors[0]).toBeInstanceOf(IllegalReferenceValidationError)
+      })
+    })
+
+    describe('variable validation', () => {
+      it('should return error when encountering an unresolved variable expression', () => {
+        const errors = validateElements([varInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toBeInstanceOf(UnresolvedReferenceValidationError)
+        expect(errors[0].elemID).toEqual(varInst.elemID.createNestedID('bool'))
+      })
+
+      it('should not return error when encountering a valid variable expression', () => {
+        const errors = validateElements([varInst, variable])
+        expect(errors).toHaveLength(0)
+      })
+      it('should return error when the type of a variable\'s value is incorrect', () => {
+        const errors = validateElements([illegalValueVarInst, variable])
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toBeInstanceOf(InvalidValueTypeValidationError)
+        expect(errors[0].elemID).toEqual(varInst.elemID.createNestedID('num'))
+      })
+      it('should return error when a Variable element serves as a value', () => {
+        const varElementInst = new InstanceElement(
+          'withVarElement',
+          noRestrictionsType,
+          {
+            someVal: new Variable(varElemId, 5),
+          }
+        )
+        const errors = validateElements([varElementInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
+        expect(errors[0].elemID).toEqual(varElementInst.elemID.createNestedID('someVal'))
+        expect(errors[0].message).toMatch('not a variable')
+      })
+      it('should return error when the value is an object (not supported for now)', () => {
+        const objVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'objVar')
+        const objVar = new Variable(objVarElemId, { key: 'val' })
+        const errors = validateElements([objVar])
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
+        expect(errors[0].elemID).toEqual(objVarElemId)
+        expect(errors[0].message).toMatch(`${JSON.stringify({ key: 'val' })}`)
+      })
+      it('should return error when the value is a reference to an element', () => {
+        const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
+        const objVar = new Variable(instVarElemId, new ReferenceExpression(extInst.elemID))
+        const errors = validateElements([objVar, extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
+        expect(errors[0].elemID).toEqual(instVarElemId)
+        expect(errors[0].message).toMatch('a primitive')
+      })
+      it('should return error when the value is a reference to an object', () => {
+        const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
+        const objVar = new Variable(instVarElemId,
+          new ReferenceExpression(extInst.elemID.createNestedID('nested')))
+        const errors = validateElements([objVar, extInst])
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
+        expect(errors[0].elemID).toEqual(instVarElemId)
+        expect(errors[0].message).toMatch('a primitive')
+      })
+      it('should return error when the value is an unresolved reference', () => {
+        const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
+        const refVar = new Variable(refVarElemId,
+          new ReferenceExpression(new ElemID('salesforce', 'nonexistent')))
+        const errors = validateElements([refVar])
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toBeInstanceOf(UnresolvedReferenceValidationError)
+        expect(errors[0].elemID).toEqual(refVarElemId)
+      })
+      it('should return error when there is a circular reference of variables', () => {
+        const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
+        const refVarElemId2 = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar2')
+        const refVar = new Variable(refVarElemId,
+          new VariableExpression(refVarElemId2))
+        const refVar2 = new Variable(refVarElemId2,
+          new VariableExpression(refVarElemId))
+        const errors = validateElements([refVar, refVar2])
+        expect(errors).toHaveLength(2)
+        expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
+        expect(errors[0].elemID).toEqual(refVarElemId)
+      })
+      it('should return error when the value is referencing itself', () => {
+        const refVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'refVar')
+        const refVar = new Variable(refVarElemId,
+          new VariableExpression(refVarElemId))
+        const errors = validateElements([refVar])
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toBeInstanceOf(CircularReferenceValidationError)
+        expect(errors[0].elemID).toEqual(refVarElemId)
+      })
+      it('should not return error when the value is a number/string/boolean', () => {
+        const numVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'numVar'), 6)
+        const boolVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'boolVar'), true)
+        const strVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'strVar'), 'hi')
+        const errors = validateElements([numVar, boolVar, strVar])
+        expect(errors).toHaveLength(0)
+      })
+      it('should not return error when the value is a reference to a primitive', () => {
+        const numVar = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'numVar'),
+          new ReferenceExpression(extInst.elemID.createNestedID('flatnum')))
+        const errors = validateElements([numVar, extInst])
+        expect(errors).toHaveLength(0)
       })
     })
   })

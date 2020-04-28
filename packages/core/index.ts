@@ -23,11 +23,16 @@ export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
-  Workspace, WorkspaceError, SourceFragment, StateRecency,
+  Workspace, WorkspaceError, SourceFragment, StateRecency, loadWorkspace, EnvironmentsSources,
 } from './src/workspace/workspace'
 export {
-  loadLocalWorkspace, initLocalWorkspace,
+  loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources,
 } from './src/workspace/local/workspace'
+export {
+  workspaceConfigSource as localWorkspaceConfigSource,
+  WorkspaceConfigSource as LocalWorkspaceConfigSource,
+} from './src/workspace/local/workspace_config'
+export { ConfigSource } from './src/workspace/config_source'
 export { Errors } from './src/workspace/errors'
 export { NaclFile, FILE_EXTENSION } from './src/workspace/nacl_files/nacl_files_source'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'

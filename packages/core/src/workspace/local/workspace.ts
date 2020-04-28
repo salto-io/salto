@@ -79,8 +79,8 @@ const loadNaclFileSource = (
   return naclFilesSource(naclFilesStore, parseResultCache(cacheStore), staticFilesSource)
 }
 
-const elementsSources = (baseDir: string, localStorage: string, envs: ReadonlyArray<string>):
-EnvironmentsSources => ({
+export const loadLocalElementsSources = (baseDir: string, localStorage: string,
+  envs: ReadonlyArray<string>): EnvironmentsSources => ({
   commonSourceName: COMMON_ENV_PREFIX,
   sources: {
     ..._.fromPairs(envs.map(env =>
@@ -123,7 +123,8 @@ Promise<Workspace> => {
   }
   const workspaceConfig = await workspaceConfigSource(baseDir)
   const credentials = credentialsSource(workspaceConfig.localStorage)
-  const elemSources = elementsSources(baseDir, workspaceConfig.localStorage, workspaceConfig.envs)
+  const elemSources = loadLocalElementsSources(baseDir, workspaceConfig.localStorage,
+    workspaceConfig.envs)
   return loadWorkspace(workspaceConfig, credentials, elemSources)
 }
 
@@ -141,7 +142,7 @@ Promise<Workspace> => {
 
   const workspaceConfig = await workspaceConfigSource(baseDir, localStorage)
   const credentials = credentialsSource(localStorage)
-  const elemSources = elementsSources(path.resolve(baseDir), localStorage, [envName])
+  const elemSources = loadLocalElementsSources(path.resolve(baseDir), localStorage, [envName])
 
   return initWorkspace(
     workspaceName, uid, envName, workspaceConfig,

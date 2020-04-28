@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/file",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "license": "Apache-2.0",
   "description": "File System Utils",
   "repository": {
@@ -32,7 +32,7 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto-io/lowerdash": "0.1.12",
+    "@salto-io/lowerdash": "0.1.13",
     "mkdirp": "^0.5.1",
     "rimraf": "^3.0.0"
   },
@@ -56,9 +56,9 @@
     "jest": "^24.0.0",
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
+    "tmp-promise": "^2.0.2",
     "ts-cleaner": "^1.0.2",
     "tsc-watch": "^2.2.1",
-    "tmp-promise": "^2.0.2",
     "typescript": "3.8.3"
   }
 }

@@ -16,7 +16,11 @@
 import path from 'path'
 import { DirectoryStore } from 'src/workspace/dir_store'
 import { exists } from '@salto-io/file'
-import { initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError, loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH } from '../../../src/workspace/local/workspace'
+import {
+  initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
+  loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH,
+  loadLocalElementsSources,
+} from '../../../src/workspace/local/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import * as mockWs from '../../../src/workspace/workspace'
 import * as mockDirStore from '../../../src/workspace/local/dir_store'
@@ -50,6 +54,19 @@ describe('local workspace', () => {
       : `${path.basename(path.dirname(dir))}${path.sep}${path.basename(dir)}`)
 
   beforeEach(() => jest.clearAllMocks())
+
+  describe('load elements  sources', () => {
+    it('should build the appropriate nacl source', () => {
+      mockExists.mockResolvedValue(true)
+      const elemSources = loadLocalElementsSources('.', path.join(getSaltoHome(), 'local'), ['env1', 'env2'])
+      expect(Object.keys(elemSources.sources)).toHaveLength(3)
+      expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
+      const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
+        .map(toWorkspaceRelative)
+      expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env1'))
+      expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))
+    })
+  })
 
   describe('initLocalWorkspace', () => {
     const mockInit = mockWs.initWorkspace as jest.Mock
@@ -89,7 +106,6 @@ describe('local workspace', () => {
       expect(mockInit.mock.calls[0][0]).toBe(path.basename(path.resolve('.')))
     })
   })
-
 
   describe('loadLocalWorkspace', () => {
     const mockLoad = mockWs.loadWorkspace as jest.Mock

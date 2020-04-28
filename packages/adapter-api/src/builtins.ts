@@ -45,6 +45,7 @@ export const CORE_ANNOTATIONS = {
   DEFAULT: '_default',
   REQUIRED: '_required',
   RESTRICTION: '_restriction',
+  HIDDEN: '_hidden',
 }
 
 export const INSTANCE_ANNOTATIONS = {

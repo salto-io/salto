@@ -30,7 +30,10 @@ import {
   getAdapterDependencyChangers, getDefaultAdapterConfig, initAdapters, getAdaptersCreatorConfigs,
 } from './core/adapters'
 import { getPlan, Plan, PlanItem } from './core/plan'
-import { findElement, SearchResult } from './core/search'
+import {
+  findElement,
+  SearchResult,
+} from './core/search'
 import {
   createElemIdGetter,
   FatalFetchMergeError,
@@ -43,6 +46,9 @@ import {
 } from './core/fetch'
 import { Workspace } from './workspace/workspace'
 import { defaultDependencyChangers } from './core/plan/plan'
+import {
+  addHiddenValues, removeHiddenValues,
+} from './workspace/hidden_values'
 
 const log = logger(module)
 
@@ -68,12 +74,18 @@ const filterElementsByServices = (
 export const preview = async (
   workspace: Workspace,
   services = workspace.services(),
-): Promise<Plan> => getPlan(
-  filterElementsByServices(await workspace.state().getAll(), services),
-  filterElementsByServices(await workspace.elements(), services),
-  getAdapterChangeValidators(),
-  defaultDependencyChangers.concat(getAdapterDependencyChangers()),
-)
+): Promise<Plan> => {
+  const stateElements = await workspace.state().getAll()
+  return getPlan(
+    filterElementsByServices(stateElements, services),
+    addHiddenValues(
+      filterElementsByServices(await workspace.elements(), services),
+      stateElements
+    ),
+    getAdapterChangeValidators(),
+    defaultDependencyChangers.concat(getAdapterDependencyChangers()),
+  )
+}
 
 export interface DeployResult {
   success: boolean
@@ -101,7 +113,7 @@ export const deploy = async (
       ((action === 'remove')
         ? workspace.state().remove(element.elemID)
         : workspace.state().set(element)
-          .then(() => { changedElements.push(element) }))
+          .then(() => { changedElements.push(removeHiddenValues(element)) }))
     const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())

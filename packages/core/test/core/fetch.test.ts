@@ -16,7 +16,9 @@
 import { EventEmitter } from 'pietile-eventemitter'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
-  PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, ListType,
+  PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
+  isModificationDiff,
+  ListType,
 } from '@salto-io/adapter-api'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
@@ -24,6 +26,9 @@ import {
 } from '../../src/core/fetch'
 import * as merger from '../../src/core/merger'
 import { getPlan, Plan } from '../../src/core/plan'
+import {
+  removeHiddenValues,
+} from '../../src/workspace/hidden_values'
 
 const { DuplicateAnnotationError } = merger
 
@@ -48,6 +53,37 @@ describe('fetch', () => {
     fields: { base: new Field(newTypeID, 'base', BuiltinTypes.STRING) },
     path: ['path', 'base'],
   })
+
+  const anotherTypeID = new ElemID('dummy', 'hiddenType')
+  const typeWithHiddenField = new ObjectType({
+    elemID: anotherTypeID,
+    fields: {
+      reg: new Field(anotherTypeID, 'reg', BuiltinTypes.STRING),
+      notHidden: new Field(
+        anotherTypeID,
+        'notHidden',
+        BuiltinTypes.STRING,
+        { [CORE_ANNOTATIONS.HIDDEN]: false }
+      ),
+      hidden: new Field(
+        anotherTypeID,
+        'hidden',
+        BuiltinTypes.STRING,
+        { [CORE_ANNOTATIONS.HIDDEN]: true }
+      ),
+    },
+    path: ['records', 'hidden'],
+  })
+
+  const hiddenInstance = new InstanceElement('instance_elem_id_name', typeWithHiddenField, {
+    reg: 'reg',
+    notHidden: 'notHidden',
+    hidden: 'Hidden',
+  })
+
+  // Workspace elements should not contains hidden values
+  const workspaceInstance = removeHiddenValues(hiddenInstance)
+
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,
     fields: { base: new Field(newTypeID, 'base', new ListType(BuiltinTypes.STRING), {}) },
@@ -206,40 +242,57 @@ describe('fetch', () => {
       let elements: Element[]
       beforeEach(async () => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [newTypeBase, newTypeExt] }),
+          Promise.resolve({ elements: [newTypeBase, newTypeExt, hiddenInstance] }),
         )
+
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
-          [newTypeMerged],
-          [newTypeMerged],
+          [newTypeMerged, workspaceInstance],
+          [newTypeMerged, hiddenInstance],
           [],
         )
         elements = result.elements
         changes = [...result.changes]
       })
+
       it('should return merged elements', () => {
-        expect(elements).toHaveLength(1)
+        expect(elements).toHaveLength(2)
       })
       it('should not return changes', () => {
         expect(changes).toHaveLength(0)
       })
     })
+
     describe('when the change is only in the service', () => {
+      const hiddenChangedVal = 'hiddenChanged'
+
       beforeEach(async () => {
+        // the (changed) service instance
+        const hiddenInstanceFromService = hiddenInstance.clone()
+        hiddenInstanceFromService.value.hidden = hiddenChangedVal
+        hiddenInstanceFromService.value.notHidden = 'notHiddenChanged'
+
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [typeWithFieldChange] })
+          Promise.resolve({ elements: [typeWithFieldChange, hiddenInstanceFromService] })
         )
+
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
-          [typeWithField],
-          [typeWithField],
+          [typeWithField, workspaceInstance],
+          [typeWithField, hiddenInstance],
           [],
         )
         changes = [...result.changes]
       })
+
       it('should return the change with no conflict', () => {
-        expect(changes).toHaveLength(1)
-        expect(changes[0].pendingChange).toBeUndefined()
+        expect(changes).toHaveLength(2)
+        changes.forEach(c => expect(c.pendingChange).toBeUndefined())
+      })
+
+      it('shouldn remove hidden values from changes', () => {
+        changes.forEach(c => expect(isModificationDiff(c.change)).toEqual(true))
+        changes.forEach(c => expect(getChangeElement(c.change)).not.toEqual(hiddenChangedVal))
       })
     })
     describe('when a progressEmitter is provided', () => {
@@ -553,7 +606,7 @@ describe('fetch', () => {
     describe('first fetch', () => {
       beforeEach(async () => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [typeWithField] })
+          Promise.resolve({ elements: [typeWithField, hiddenInstance] })
         )
         const result = await fetchChanges(
           mockAdapters as unknown as Record<string, Adapter>,
@@ -563,9 +616,16 @@ describe('fetch', () => {
         )
         changes = [...result.changes]
       })
+
       it('should return the change with no conflict', () => {
-        expect(changes).toHaveLength(1)
-        expect(changes[0].pendingChange).toBeUndefined()
+        expect(changes).toHaveLength(2)
+        changes.forEach(c => expect(c.pendingChange).toBeUndefined())
+      })
+
+      it('shouldn remove hidden values from changes', () => {
+        const fetchedInst = getChangeElement(changes[1].change)
+        expect(fetchedInst.value.hidden).toBeUndefined()
+        expect(fetchedInst.value.notHidden).toEqual('notHidden')
       })
     })
   })

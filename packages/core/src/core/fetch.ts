@@ -22,12 +22,16 @@ import {
   ADAPTER, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import {
-  resolvePath, flattenElementStr,
+  resolvePath,
+  flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
 import { getPlan, DetailedChange, Plan } from './plan'
 import { mergeElements, MergeError } from './merger'
+import {
+  removeHiddenValues,
+} from '../workspace/hidden_values'
 
 const log = logger(module)
 
@@ -44,7 +48,7 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {
     id: elem.elemID,
     action: 'add',
-    data: { after: elem },
+    data: { after: removeHiddenValues(elem) },
   }
   return { change, serviceChange: change }
 }
@@ -250,6 +254,9 @@ const fetchAndProcessMergeErrors = async (
   }
 }
 
+const removeElementsHiddenValues = (serviceElements: ReadonlyArray<Element>):
+  Element[] => serviceElements.map(elem => removeHiddenValues(elem))
+
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all service elements should be consider as "add" changes.
 const calcFetchChanges = async (
@@ -258,16 +265,21 @@ const calcFetchChanges = async (
   stateElements: ReadonlyArray<Element>,
   workspaceElements: ReadonlyArray<Element>
 ): Promise<Iterable<FetchChange>> => {
+  const serviceElementsHiddenRemoved = removeElementsHiddenValues(serviceElements)
+  const mergedServiceElementsHiddenRemoved = removeElementsHiddenValues(mergedServiceElements)
+  const stateElementsHiddenRemoved = removeElementsHiddenValues(stateElements)
   const serviceChanges = await log.time(() =>
-    getDetailedChanges(stateElements, mergedServiceElements),
+    getDetailedChanges(stateElementsHiddenRemoved, mergedServiceElementsHiddenRemoved),
   'finished to calculate service-state changes')
-  const pendingChanges = await log.time(() => getChangeMap(stateElements, workspaceElements),
-    'finished to calculate pending changes')
+  const pendingChanges = await log.time(() => getChangeMap(
+    stateElementsHiddenRemoved,
+    workspaceElements
+  ), 'finished to calculate pending changes')
   const workspaceToServiceChanges = await log.time(() => getChangeMap(workspaceElements,
-    mergedServiceElements), 'finished to calculate service-workspace changes')
+    mergedServiceElementsHiddenRemoved), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
-    serviceElements,
+    serviceElementsHiddenRemoved,
     se => se.elemID.getFullName()
   )
   return wu(serviceChanges)

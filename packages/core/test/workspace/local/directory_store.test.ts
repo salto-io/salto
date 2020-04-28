@@ -165,12 +165,32 @@ describe('localDirectoryStore', () => {
     const baseDir = '/base'
     const naclFileStore = localDirectoryStore(baseDir)
 
-    it('should delete the directory', async () => {
+    it('should delete the all the files', async () => {
+      mockEmptyDir.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+      mockIsSubFolder.mockResolvedValueOnce(true)
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValueOnce([
+        { fullPath: path.join(baseDir, 'test1') },
+        { fullPath: path.join(baseDir, 'test2') },
+      ]).mockResolvedValueOnce([])
+      await naclFileStore.clear()
+      expect(mockRm).toHaveBeenCalledTimes(3)
+      expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'test1'))
+      expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'test2'))
+      expect(mockRm).toHaveBeenCalledWith(baseDir)
+    })
+
+    it('should delete empty directories', async () => {
       mockEmptyDir.mockResolvedValueOnce(true)
       mockIsSubFolder.mockResolvedValueOnce(true)
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { fullPath: path.join(baseDir, 'emptyDir') },
+        ])
       await naclFileStore.clear()
       expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith(baseDir)
+      expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'emptyDir'))
     })
   })
 

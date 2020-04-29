@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { parse, Plan, Workspace, telemetrySender } from '@salto-io/core'
+import { Plan, Workspace, telemetrySender } from '@salto-io/core'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
-import fs from 'fs'
 import glob from 'glob'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
@@ -160,8 +159,8 @@ export const runDeploy = async (
   // with delete changes, and its expected.
   if (!allowErrors) {
     expect(errs).toHaveLength(0)
-    expect(result).toBe(CliExitCode.Success)
   }
+  expect(result).toBe(CliExitCode.Success)
 }
 
 export const runPreview = async (fetchOutputDir: string): Promise<CliExitCode> => (
@@ -240,26 +239,6 @@ export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, 
   })
   return object
 }
-
-export const fromNaclTemplate = (templatePath: string, data: Record<string, string>): string => {
-  const replaceVars = (
-    templ: string,
-    values: Record<string, string>
-  ): string => templ.replace(/\${([^}]*)}/g, (_s, varName) => {
-    if (!_.has(values, varName)) throw new Error(`Missing variable ${varName}`)
-    return values[varName]
-  })
-
-  return replaceVars(
-    fs.readFileSync(templatePath, 'utf8'),
-    data
-  )
-}
-
-export const getElementFromTemplate = (
-  templateName: string,
-  data: Record<string, string>
-): Element[] => parse(Buffer.from(fromNaclTemplate(templateName, data)), templateName).elements
 
 export const ensureFilesExist = (filePathes: string[]): boolean => (
   _.every(filePathes.map(filename => !_.isEmpty(glob.sync(filename))))

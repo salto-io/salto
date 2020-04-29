@@ -75,12 +75,6 @@ describe('multi env tests', () => {
   const env2SFCredsFilePath = (): string => (
     path.join(homeWSDir(), 'credentials', ENV2_NAME, 'salesforce.nacl')
   )
-  const env1CacheFilePath = (): string => (
-    path.join(homeWSDir(), 'cache', ENV1_NAME)
-  )
-  const env2CacheFilePath = (): string => (
-    path.join(homeWSDir(), 'cache', ENV2_NAME)
-  )
   const workspaceUserConfigFilePath = (): string => (
     path.join(homeWSDir(), 'workspaceUser.nacl')
   )
@@ -168,7 +162,8 @@ describe('multi env tests', () => {
 
   const env1Elements = [commonObj, env1Obj, diffObjEnv1, commonInst, env1Inst, diffInstEnv1]
   const env2Elements = [commonObj, env2Obj, diffObjEnv2, commonInst, env2Inst, diffInstEnv2]
-  let env1ElementAfterDeploy: Element[]
+  let env1ElementsAfterDeploy: Element[]
+  let env2ElementsAfterDeploy: Element[]
 
   const [env1Creds, env2Creds] = adapterConfigs.salesforceMulti()
   const env1Client = new SalesforceClient({ credentials: {
@@ -190,8 +185,13 @@ describe('multi env tests', () => {
 
     // Create the base elements in the services
     process.env.SALTO_HOME = saltoHomeDir
-    env1ElementAfterDeploy = await addElements(env1Client, env1Elements)
-    await addElements(env2Client, env2Elements)
+    env1ElementsAfterDeploy = await addElements(env1Client, env1Elements)
+    env2ElementsAfterDeploy = await addElements(env2Client, env2Elements)
+  })
+
+  afterAll(async () => {
+    await removeElements(env1Client, env1ElementsAfterDeploy)
+    await removeElements(env2Client, env2ElementsAfterDeploy)
   })
 
   describe('init envs', () => {
@@ -212,8 +212,6 @@ describe('multi env tests', () => {
         adapterConfigsFilePath(),
         env1SFCredsFilePath(),
         env2SFCredsFilePath(),
-        env1CacheFilePath(),
-        env2CacheFilePath(),
         workspaceUserConfigFilePath(),
       ])).toBeTruthy()
     })
@@ -306,6 +304,10 @@ describe('multi env tests', () => {
         afterFetchPlan = await runPreviewGetPlan(baseDir)
       })
 
+      afterAll(async () => {
+        await removeElements(env1Client, fromSyncToRemove)
+      })
+
       it('should add the fetched element to the common folder', () => {
         expect(ensureFilesExist([
           path.join(commonObjectDir(), naclNameToSFName(objToSyncFromServiceName)),
@@ -361,7 +363,7 @@ describe('multi env tests', () => {
       beforeAll(async () => {
         await removeElements(env1Client, [
           ...fromSyncToRemove,
-          ...env1ElementAfterDeploy,
+          ...env1ElementsAfterDeploy,
         ])
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode
@@ -422,42 +424,42 @@ describe('multi env tests', () => {
     const commonNaclFileInstName = `CommonInstNacl${tempID}`
     const env1NaclFileInstName = `Env1InstNacl${tempID}`
     const env2NaclFileInstName = `Env2InstNacl${tempID}`
-    const commonNaclFile = dumpElements([
-      templates.customObject({
-        objName: commonNaclFileObjectName,
-        alphaLabel: 'alpha1',
-        betaLabel: 'beta1',
-      }),
-      templates.instance({
-        instName: commonNaclFileInstName,
-        description: 'Common from Nacl',
-      }),
-    ])
-    const env1NaclFile = dumpElements([
-      templates.customObject({
-        objName: env1NaclFileObjectName,
-        alphaLabel: 'alpha1',
-        betaLabel: 'beta1',
-      }),
-      templates.instance({
-        instName: env1NaclFileInstName,
-        description: 'Env1 from Nacl',
-      }),
-    ])
-    const env2NaclFile = dumpElements([
-      templates.customObject({
-        objName: env2NaclFileObjectName,
-        alphaLabel: 'alpha1',
-        betaLabel: 'beta1',
-      }),
-      templates.instance({
-        instName: env2NaclFileInstName,
-        description: 'Env2 from Nacl',
-      }),
-    ])
 
     describe('handle nacl based add change', () => {
       beforeAll(async () => {
+        const commonNaclFile = await dumpElements([
+          templates.customObject({
+            objName: commonNaclFileObjectName,
+            alphaLabel: 'alpha1',
+            betaLabel: 'beta1',
+          }),
+          templates.instance({
+            instName: commonNaclFileInstName,
+            description: 'Common from Nacl',
+          }),
+        ])
+        const env1NaclFile = await dumpElements([
+          templates.customObject({
+            objName: env1NaclFileObjectName,
+            alphaLabel: 'alpha1',
+            betaLabel: 'beta1',
+          }),
+          templates.instance({
+            instName: env1NaclFileInstName,
+            description: 'Env1 from Nacl',
+          }),
+        ])
+        const env2NaclFile = await dumpElements([
+          templates.customObject({
+            objName: env2NaclFileObjectName,
+            alphaLabel: 'alpha1',
+            betaLabel: 'beta1',
+          }),
+          templates.instance({
+            instName: env2NaclFileInstName,
+            description: 'Env2 from Nacl',
+          }),
+        ])
         await writeFile(path.join(baseDir, 'salesforce', 'common.nacl'), commonNaclFile)
         await writeFile(path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'env1.nacl'), env1NaclFile)
         await writeFile(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'env2.nacl'), env2NaclFile)

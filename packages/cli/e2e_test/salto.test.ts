@@ -105,7 +105,7 @@ describe('cli e2e', () => {
     tmpNaclFileRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}.nacl`
 
     process.env[SALTO_HOME_VAR] = homePath
-    client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials })
+    client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials[0] })
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)

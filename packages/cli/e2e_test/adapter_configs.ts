@@ -21,14 +21,13 @@ import {
   testHelpers as salesforceTestHelpers,
 } from '@salto-io/salesforce-adapter'
 
-export default {
-  salesforce: (): InstanceElement => {
-    const { credentials } = salesforceTestHelpers()
+const getSalesfoceCreds = (): InstanceElement[] => (
+  salesforceTestHelpers().credentials.map(envCredentials => {
     const configValues = {
-      username: credentials.username,
-      password: credentials.password,
-      token: credentials.apiToken ?? '',
-      sandbox: credentials.isSandbox,
+      username: envCredentials.username,
+      password: envCredentials.password,
+      token: envCredentials.apiToken ?? '',
+      sandbox: envCredentials.isSandbox,
     }
 
     const { credentialsType } = salesforceAdapterCreator
@@ -38,5 +37,9 @@ export default {
       credentialsType,
       configValues,
     )
-  },
+  })
+)
+export default {
+  salesforce: () => getSalesfoceCreds()[0],
+  salesforceMulti: getSalesfoceCreds,
 }

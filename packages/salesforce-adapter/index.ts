@@ -26,7 +26,7 @@ export { Credentials } from './src/client/client'
 export { SALESFORCE as adapterId } from './src/constants'
 
 export type TestHelpers = {
-  credentials: Credentials
+  credentials: Credentials[]
   CUSTOM_OBJECT: string
 }
 

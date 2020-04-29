@@ -9,8 +9,8 @@ function usage () {
   echo "Build and sync Salto documentation
     -h       Display this message
 
-    The script generates an html file, uploading it to S3 and
-    invalidating cloudfront cache.
+    The script generates an html file per markdown file, uploading it to S3 and
+    invalidates cloudfront caches.
     Available environment variables:
     DOCS_S3_BUCKETS:          A comma separated string of  bucket names
                               you want to upload the generated file to.
@@ -53,7 +53,7 @@ echo "uploading ${OUTPUT} to S3 buckets"
 IFS=","
 for bucket in $DOCS_S3_BUCKETS; do
   find "$OUTPUT_DIR" -type f \
-    -exec aws s3 cp {} "s3://${bucket}" \;
+    -exec aws s3 cp {} "s3://${bucket}/docs/" \;
 done
 
 # Invalidate cloudfront caches

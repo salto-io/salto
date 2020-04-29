@@ -21,8 +21,8 @@ showdown.extension('img_class', function() {
   return [
     {
       type: 'output',
-      regex: '<img (.*)/>',
-      replace: '<img class="salto_md_image" $1>'
+      regex: '<img src="(.*)" (.*)/>',
+      replace: '<img src="docs/$1" class="salto_md_image" $2>'
     }
   ]
 })
@@ -31,18 +31,8 @@ showdown.extension('internal_link', function() {
   return [
     {
       type: 'output',
-      regex: /<a href="([\w\d\-\_]+)\.md">/g,
-      replace: '<a href="#" onclick="return placeContent(\'$1.html\')">'
-    },
-    {
-      type: 'output',
-      regex: /<a href="([\w\d\-\_]+)\.md#([\d\w\-\_]+)">/g,
-      replace: '<a href="#$2" onclick="return placeContent(\'$1.html\')">'
-    },
-    {
-      type: 'output',
-      regex: /<a href="#([\d\w\-\_]+)">/g,
-      replace: '<a href="#$1">'
+      regex: /<a href="([\w\d\-\_]+)\.md(#[\d\w\-\_]+)?">/g,
+      replace: '<a href="$1_c.html$2">'
     }
   ]
 })

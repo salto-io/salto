@@ -225,7 +225,7 @@ export const fetchCommand = async (
           log.error('Got non instance config from adapter %s - %o', adapterName, newConfig)
           return false
         }
-        const shouldWriteToConfig = await shouldUpdateConfig(
+        const shouldWriteToConfig = force || await shouldUpdateConfig(
           adapterName, formatDetailedChanges([change.detailedChanges()], true)
         )
         if (shouldWriteToConfig) {

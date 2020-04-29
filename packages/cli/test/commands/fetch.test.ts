@@ -255,7 +255,7 @@ describe('fetch command', () => {
           const workspace = mockWorkspace(undefined, workspaceName)
           fetchArgs = {
             workspace,
-            force: true,
+            force: false,
             interactive: false,
             inputServices: services,
             cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),

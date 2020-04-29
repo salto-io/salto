@@ -336,14 +336,14 @@ export default class SalesforceAdapter {
       (await this.filtersRunner.onFetch(elements)) ?? []
     ) as ConfigChangeSuggestion[]
 
-    return {
-      elements,
-      config: getConfigFromConfigChanges(
-        Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])),
-        this.config,
-      ),
-      configChangeMessageIntro: STOP_MANAGING_ITEMS_MSG,
+    const config = getConfigFromConfigChanges(
+      Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])),
+      this.config,
+    )
+    if (_.isUndefined(config)) {
+      return { elements }
     }
+    return { elements, updatedConfig: { config, message: STOP_MANAGING_ITEMS_MSG } }
   }
 
   /**

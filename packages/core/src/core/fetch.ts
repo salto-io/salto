@@ -147,7 +147,7 @@ export type FetchChangesResult = {
   elements: Element[]
   mergeErrors: MergeErrorWithElements[]
   configChanges: Plan
-  configChangeIntoMessage: Record<string, string>
+  adapterNameToConfigMessage: Record<string, string>
 }
 
 export class FatalFetchMergeError extends Error {
@@ -209,6 +209,11 @@ const processMergeErrors = (
 }, 'process merge errors for %o elements with %o errors and %o state elements',
 elements.length, errors.length, stateElementIDs.length)
 
+type UpdatedConfig = {
+  config: InstanceElement
+  message: string
+}
+
 const fetchAndProcessMergeErrors = async (
   adapters: Record<string, Adapter>,
   stateElements: ReadonlyArray<Element>,
@@ -216,28 +221,28 @@ const fetchAndProcessMergeErrors = async (
   Promise<{
     serviceElements: Element[]
     processErrorsResult: ProcessMergeErrorsResult
-    configs: InstanceElement[]
-    configChangeIntoMessage: Record<string, string>
+    updatedConfigs: UpdatedConfig[]
   }> => {
   try {
     const fetchResults = await Promise.all(
-      Object.entries(adapters)
-        .map(async ([adapterName, adapter]) => {
+      Object.values(adapters)
+        .map(async adapter => {
           const fetchResult = await adapter.fetch()
           // We need to flatten the elements string to avoid a memory leak. See docs
           // of the flattenElementStr method for more details.
+          const { updatedConfig } = fetchResult
           return {
             elements: fetchResult.elements.map(flattenElementStr),
-            config: fetchResult.config ? flattenElementStr(fetchResult.config) : undefined,
-            configChangeIntoMessage: { [adapterName]: fetchResult.configChangeMessageIntro },
+            updatedConfig: updatedConfig
+              ? { config: flattenElementStr(updatedConfig.config), message: updatedConfig.message }
+              : undefined,
           }
         })
     )
     const serviceElements = _.flatten(fetchResults.map(res => res.elements))
-    const configs = fetchResults
-      .map(res => res.config)
-      .filter(c => !_.isUndefined(c)) as InstanceElement[]
-    const configChangeIntoMessage = _.merge({}, ...fetchResults.map(e => e.configChangeIntoMessage))
+    const updatedConfigs = fetchResults
+      .map(res => res.updatedConfig)
+      .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
     log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
@@ -251,7 +256,7 @@ const fetchAndProcessMergeErrors = async (
 
     log.debug(`after merge there are ${processErrorsResult.keptElements.length} elements [errors=${
       mergeErrors.length}]`)
-    return { serviceElements, processErrorsResult, configs, configChangeIntoMessage }
+    return { serviceElements, processErrorsResult, updatedConfigs }
   } catch (error) {
     getChangesEmitter.emit('failed')
     throw error
@@ -306,7 +311,7 @@ export const fetchChanges = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, adapterNames)
   }
   const {
-    serviceElements, processErrorsResult, configs, configChangeIntoMessage,
+    serviceElements, processErrorsResult, updatedConfigs,
   } = await fetchAndProcessMergeErrors(
     adapters,
     stateElements,
@@ -336,17 +341,20 @@ export const fetchChanges = async (
   if (progressEmitter) {
     calculateDiffEmitter.emit('completed')
   }
+  const configs = updatedConfigs.map(c => c.config)
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
   const configChanges = await getPlan(
     currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
     configs,
   )
+  const adapterNameToConfigMessage = _
+    .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
   return {
     changes,
     elements: processErrorsResult.keptElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,
-    configChangeIntoMessage,
+    adapterNameToConfigMessage,
   }
 }
 

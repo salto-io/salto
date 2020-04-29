@@ -20,12 +20,13 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
-import { Plan, FetchChange, Workspace, StateRecency } from '@salto-io/core'
+import { Plan, FetchChange, Workspace, StateRecency, PlanItem } from '@salto-io/core'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
   formatConfigFieldInput, formatShouldAbortWithValidationError, formatConfigChangeNeeded,
-  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries, header,
+  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries,
+  header, formatDetailedChanges,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
@@ -85,9 +86,12 @@ export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: num
 Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
 
 export const shouldUpdateConfig = async (
-  { stdout }: CliOutput, introMessage: string, formattedChanges: string
+  { stdout }: CliOutput, introMessage: string, change: PlanItem
 ): Promise<boolean> => {
-  stdout.write(formatConfigChangeNeeded(introMessage, formattedChanges))
+  stdout.write(formatConfigChangeNeeded(
+    introMessage,
+    formatDetailedChanges([change.detailedChanges()], true)
+  ))
   return getUserBooleanInput(Prompts.SHOULD_UPDATE_CONFIG)
 }
 

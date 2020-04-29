@@ -728,7 +728,7 @@ describe('SalesforceAdapter fetch', () => {
       })
 
       it('should not consist config changes', () => {
-        expect(result.config).toBeUndefined()
+        expect(result.updatedConfig).toBeUndefined()
       })
 
       it('should skip skippedlist types', () => {
@@ -847,7 +847,7 @@ describe('SalesforceAdapter fetch', () => {
             } }) }))
 
         result = await adapter.fetch()
-        config = result?.config as InstanceElement
+        config = result?.updatedConfig?.config as InstanceElement
       })
 
       it('should return config upon errors', () => {

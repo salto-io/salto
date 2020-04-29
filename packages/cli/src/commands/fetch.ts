@@ -24,6 +24,7 @@ import {
   FetchProgressEvents,
   StepEmitter,
   Telemetry,
+  PlanItem,
 } from '@salto-io/core'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
@@ -38,7 +39,6 @@ import {
 import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
-  formatDetailedChanges,
   formatApproveIsolatedModePrompt,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
@@ -61,7 +61,7 @@ type approveChangesFunc = (
 type shouldUpdateConfigFunc = (
   { stdout }: CliOutput,
   introMessage: string,
-  formattedChanges: string
+  changes: PlanItem
 ) => Promise<boolean>
 
 type approveIsolatedModeFunc = (
@@ -228,8 +228,8 @@ export const fetchCommand = async (
         }
         const shouldWriteToConfig = force || await shouldUpdateConfig(
           output,
-          fetchResult.configChangeIntoMessage?.[adapterName] || '',
-          formatDetailedChanges([change.detailedChanges()], true)
+          fetchResult.adapterNameToConfigMessage?.[adapterName] || '',
+          change,
         )
         if (shouldWriteToConfig) {
           await workspace.updateServiceConfig(adapterName, newConfig)

@@ -26,7 +26,7 @@ import {
   transformValues, resolvePath, TransformPrimitiveFunc,
   TransformReferenceFunc, restoreReferences, resolveReferences,
   naclCase, findElement, findElements, findObjectType,
-  findInstances, flattenElementStr, valuesDeepSome,
+  findInstances, flattenElementStr, valuesDeepSome, filterByID,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -858,6 +858,155 @@ describe('Test utils.ts', () => {
         { a: 321, b: [3, 2, 1], c: [{ aha: 41 }], d: 44 },
         predicate,
       )).toEqual(false)
+    })
+  })
+  describe('filterByID', () => {
+    const annoTypeID = new ElemID('salto', 'annoType')
+    const annoType = new ObjectType({
+      elemID: annoTypeID,
+      fields: {
+        str: new Field(annoTypeID, 'str', BuiltinTypes.STRING),
+        num: new Field(annoTypeID, 'str', BuiltinTypes.NUMBER),
+      },
+    })
+    const objElemID = new ElemID('salto', 'obj')
+    const obj = new ObjectType({
+      elemID: objElemID,
+      annotationTypes: {
+        obj: annoType,
+        list: new ListType(BuiltinTypes.STRING),
+      },
+      annotations: {
+        obj: {
+          str: 'HOW MUCH IS 6 * 9',
+          num: 42,
+        },
+        list: ['I', 'do', 'not', 'write', 'jokes', 'in', 'base 13'],
+      },
+      fields: {
+        obj: new Field(objElemID, 'obj', annoType),
+        list: new Field(objElemID, 'list', new ListType(BuiltinTypes.STRING)),
+      },
+    })
+    const inst = new InstanceElement('inst', obj, {
+      obj: { str: 'Well I do', num: 42 },
+      list: ['Do', 'you', 'get', 'it', '?'],
+    })
+    const prim = new PrimitiveType({
+      elemID: new ElemID('salto', 'prim'),
+      annotationTypes: {
+        obj: annoType,
+      },
+      annotations: {
+        obj: {
+          str: 'I knew you would get',
+          num: 17,
+        },
+      },
+      primitive: PrimitiveTypes.STRING,
+    })
+    it('should filter object type', async () => {
+      const onlyFields = await filterByID(
+        objElemID,
+        obj,
+        id => Promise.resolve(id.idType === 'type' || id.idType === 'field')
+      )
+      expect(onlyFields).toBeDefined()
+      expect(onlyFields?.fields).toEqual(obj.fields)
+      expect(onlyFields?.annotations).toEqual({})
+      expect(onlyFields?.annotationTypes).toEqual({})
+      const onlyAnno = await filterByID(
+        objElemID,
+        obj,
+        id => Promise.resolve(id.idType === 'type' || id.idType === 'attr')
+      )
+      expect(onlyAnno).toBeDefined()
+      expect(onlyAnno?.fields).toEqual({})
+      expect(onlyAnno?.annotations).toEqual(obj.annotations)
+      expect(onlyAnno?.annotationTypes).toEqual({})
+
+      const onlyAnnoType = await filterByID(
+        objElemID,
+        obj,
+        id => Promise.resolve(id.idType === 'type' || id.idType === 'annotation')
+      )
+      expect(onlyAnnoType).toBeDefined()
+      expect(onlyAnnoType?.fields).toEqual({})
+      expect(onlyAnnoType?.annotations).toEqual({})
+      expect(onlyAnnoType?.annotationTypes).toEqual(obj.annotationTypes)
+
+      const withoutAnnoObjStr = await filterByID(
+        objElemID,
+        obj,
+        id => Promise.resolve(!id.getFullNameParts().includes('str'))
+      )
+      expect(withoutAnnoObjStr).toBeDefined()
+      expect(withoutAnnoObjStr?.fields).toEqual(obj.fields)
+      expect(withoutAnnoObjStr?.annotations.obj).toEqual({ num: 42 })
+      expect(withoutAnnoObjStr?.annotations.list).toEqual(obj.annotations.list)
+      expect(withoutAnnoObjStr?.annotationTypes).toEqual(obj.annotationTypes)
+
+      const onlyI = await filterByID(
+        objElemID,
+        obj,
+        id => Promise.resolve(
+          Number.isNaN(Number(_.last(id.getFullNameParts())))
+          || Number(_.last(id.getFullNameParts())) === 0
+        )
+      )
+      expect(onlyI).toBeDefined()
+      expect(onlyI?.fields).toEqual(obj.fields)
+      expect(onlyI?.annotations.obj).toEqual(obj.annotations.obj)
+      expect(onlyI?.annotations.list).toEqual(['I'])
+      expect(onlyI?.annotationTypes).toEqual(obj.annotationTypes)
+    })
+
+    it('should filter primitive type', async () => {
+      const filteredPrim = await filterByID(
+        prim.elemID,
+        prim,
+        id => Promise.resolve(!id.getFullNameParts().includes('str'))
+      )
+      expect(filteredPrim?.annotations.obj).toEqual({ num: 17 })
+      expect(filteredPrim?.annotationTypes).toEqual({ obj: annoType })
+    })
+
+    it('should filter instances', async () => {
+      const filteredInstance = await filterByID(
+        inst.elemID,
+        inst,
+        id => Promise.resolve(
+          !id.getFullNameParts().includes('list')
+        )
+      )
+      expect(filteredInstance?.value).toEqual({ obj: inst.value.obj })
+    })
+
+    it('should return undefined if the base item fails the filter func', async () => {
+      const filteredInstance = await filterByID(
+        inst.elemID,
+        inst,
+        id => Promise.resolve(id.idType !== 'instance')
+      )
+      expect(filteredInstance).toBeUndefined()
+    })
+
+    it('should not set array and obj values that are empty after filtering', async () => {
+      const withoutList = await filterByID(
+        inst.elemID,
+        inst,
+        id => Promise.resolve(Number.isNaN(Number(_.last(id.getFullNameParts()))))
+      )
+      expect(withoutList?.value).toEqual({ obj: inst.value.obj })
+
+      const withoutObj = await filterByID(
+        inst.elemID,
+        inst,
+        id => Promise.resolve(
+          !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
+        )
+      )
+      expect(withoutObj?.value).toEqual({ list: inst.value.list })
     })
   })
 })

@@ -31,8 +31,9 @@ import {
   isField,
   isReferenceExpression,
   ReferenceExpression,
-  Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
+  Field, InstanceAnnotationTypes, isType, isObjectType, isListType, FieldMap,
 } from '@salto-io/adapter-api'
+import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
 
 const log = logger(module)
 
@@ -440,4 +441,85 @@ export const valuesDeepSome = (value: Value, predicate: (val: Value) => boolean)
     return _.values(value).some(x => valuesDeepSome(x, predicate))
   }
   return false
+}
+
+export const filterByID = async <T>(
+  id: ElemID, value: T,
+  filterFunc: (id: ElemID) => Promise<boolean>
+): Promise<T | undefined> => {
+  const filterAnnotations = async (annotations: Value): Promise<Value> => (
+    filterByID(id.createNestedID('attr'), annotations, filterFunc)
+  )
+
+  const filterAnnotationType = async (annoTypes: TypeMap): Promise<TypeMap> => _.pickBy(
+    await mapValuesAsync(annoTypes, async (anno, annoName) => (
+      await filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
+    )),
+    anno => anno !== undefined
+  ) as TypeMap
+
+  if (!await filterFunc(id)) {
+    return undefined
+  }
+  if (isObjectType(value)) {
+    return new ObjectType({
+      elemID: value.elemID,
+      annotations: await filterAnnotations(value.annotations),
+      annotationTypes: await filterAnnotationType(value.annotationTypes),
+      fields: _.pickBy(
+        await mapValuesAsync(
+          value.fields,
+          async field => filterByID(field.elemID, field, filterFunc)
+        ),
+        field => field !== undefined
+      ) as FieldMap,
+      path: value.path,
+      isSettings: value.isSettings,
+    }) as Value as T
+  }
+  if (isPrimitiveType(value)) {
+    return new PrimitiveType({
+      elemID: value.elemID,
+      annotations: await filterAnnotations(value.annotations),
+      annotationTypes: await filterAnnotationType(value.annotationTypes),
+      primitive: value.primitive,
+      path: value.path,
+    }) as Value as T
+  }
+  if (isField(value)) {
+    return new Field(
+      value.parentID,
+      value.name,
+      value.type,
+      await filterAnnotations(value.annotations)
+    ) as Value as T
+  }
+  if (isInstanceElement(value)) {
+    return new InstanceElement(
+      value.elemID.name,
+      value.type,
+      await filterByID(value.elemID, value.value, filterFunc),
+      value.path,
+      await filterAnnotations(value.annotations)
+    ) as Value as T
+  }
+
+  if (_.isPlainObject(value)) {
+    const filteredObj = _.pickBy(
+      await mapValuesAsync(
+        value,
+        async (val: Value, key: string) => filterByID(id.createNestedID(key), val, filterFunc)
+      ),
+      val => val !== undefined
+    )
+    return _.isEmpty(filteredObj) ? undefined : filteredObj as Value as T
+  }
+  if (_.isArray(value)) {
+    const filteredArray = (await (Promise.all(value.map(
+      async (item, i) => filterByID(id.createNestedID(i.toString()), item, filterFunc)
+    )))).filter(item => item !== undefined)
+    return _.isEmpty(filteredArray) ? undefined : filteredArray as Value as T
+  }
+
+  return value
 }

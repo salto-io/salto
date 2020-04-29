@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ElemID } from '@salto-io/adapter-api'
+import { getChangeElement, ElemID, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises } from '@salto-io/lowerdash'
 import { ElementsSource } from 'src/workspace/elements_source'
+import { resolvePath, filterByID } from '@salto-io/adapter-utils'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
@@ -30,6 +31,55 @@ export interface RoutedChanges {
     commonSource?: DetailedChange[]
     secondarySources?: Record<string, DetailedChange[]>
 }
+
+const filterByFile = async (
+  valueID: ElemID,
+  value: Value,
+  filename: string,
+  source: NaclFilesSource
+): Promise<Value> => filterByID(
+  valueID,
+  value,
+  async id => !_.isEmpty((await source.getElements(filename))
+    .filter(e => resolvePath(e, id) !== undefined))
+)
+
+const seperateChangeByFiles = async (
+  change: DetailedChange,
+  source: NaclFilesSource
+): Promise<DetailedChange[]> => Promise.all(
+  (await source.getSourceRanges(change.id))
+    .map(range => range.filename)
+    .map(async filename => {
+      const pathHint = _.trimEnd(filename, FILE_EXTENSION).split(path.sep)
+      if (change.action === 'add') {
+        return {
+          ...change,
+          path: pathHint,
+          data: {
+            after: await filterByFile(change.id, change.data.after, filename, source),
+          },
+        }
+      }
+      if (change.action === 'remove') {
+        return {
+          ...change,
+          path: pathHint,
+          data: {
+            before: await filterByFile(change.id, change.data.before, filename, source),
+          },
+        }
+      }
+      return {
+        ...change,
+        path: pathHint,
+        data: {
+          before: await filterByFile(change.id, change.data.before, filename, source),
+          after: await filterByFile(change.id, change.data.after, filename, source),
+        },
+      }
+    })
+)
 
 const createUpdateChanges = async (
   changes: DetailedChange[],
@@ -179,9 +229,13 @@ export const routeNewEnv = async (
   // Add the changed part of common to the target source
   const modifyWithCommonProj = change.action === 'modify' && !_.isUndefined(commonChangeProjection)
   const addCommonProjectionToCurrentChanges = modifyWithCommonProj
-    ? await projectChange(
-      createAddChange(commonChangeProjection, change.id, pathHint),
-      primarySource
+    ? _.flatten(
+      await Promise.all(
+        (await projectChange(
+          createAddChange(commonChangeProjection, change.id, pathHint),
+          primarySource
+        )).map(projectedChange => seperateChangeByFiles(projectedChange, commonSource))
+      )
     )
     : []
   // Add the old value of common to the inactive sources
@@ -190,7 +244,14 @@ export const routeNewEnv = async (
       _.entries(secondarySources)
         .map(async ([name, source]) => [
           name,
-          await projectChange(createAddChange(currentCommonElement, change.id, pathHint), source),
+          _.flatten(
+            await Promise.all(
+              (await projectChange(
+                createAddChange(currentCommonElement, change.id, pathHint), source
+              )
+              ).map(projectedChange => seperateChangeByFiles(projectedChange, commonSource))
+            )
+          ),
         ])
     )
   )

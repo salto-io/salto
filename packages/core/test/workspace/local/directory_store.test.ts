@@ -140,19 +140,10 @@ describe('localDirectoryStore', () => {
     const naclFilePath = path.join(naclFileDir, naclFileName)
     const naclFileStore = localDirectoryStore(baseDir)
 
-    it('delete the Nacl file', async () => {
-      mockEmptyDir.mockResolvedValueOnce(false)
-      mockFileExists.mockResolvedValueOnce(true)
-      await naclFileStore.delete(naclFilePath)
-      await naclFileStore.flush()
-      expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith(naclFilePath)
-    })
-
-    it('delete an empty directory', async () => {
+    it('delete the Nacl file and its empty directory', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-      mockIsSubFolder.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
-      mockFileExists.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
+      mockIsSubFolder.mockResolvedValue(true)
+      mockFileExists.mockResolvedValue(true)
       await naclFileStore.delete(naclFilePath)
       await naclFileStore.flush()
       expect(mockRm).toHaveBeenCalledTimes(2)
@@ -166,8 +157,8 @@ describe('localDirectoryStore', () => {
     const naclFileStore = localDirectoryStore(baseDir)
 
     it('should delete the all the files', async () => {
-      mockEmptyDir.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
-      mockIsSubFolder.mockResolvedValueOnce(true)
+      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      mockIsSubFolder.mockResolvedValue(true)
       mockFileExists.mockResolvedValue(true)
       mockReaddirp.mockResolvedValueOnce([
         { fullPath: path.join(baseDir, 'test1') },

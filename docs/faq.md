@@ -31,14 +31,14 @@ Salto is available under the Apache License, version 2.0.
 
 ## How can I contact you?
 
-- Email us at <TODO> 
-- Our public slack channel <TODO> 
+- Email us at [open-source@salto.io](mailto://open-source@salto.io) 
+- Join our public Slack channel [here](https://invite.playplay.io/invite?team_id=T011W61EVHD)
 - If you're looking to report a bug, file a feature request or contribute, please see [Contributing](contributing.md) .
 
 ## Does Salto collect any telemetry data?
 
 While you can easily opt-out of sending any data, Salto does collect by default some telemetry data.
-Please see [Telemetry](telemetry.md) for more information.
+Please see [Telemetry](telemetry.md) for more information, as well as the project's [privacy policy](https://salto.io/oss_privacy_policy.html).
 
 ## I'm missing feature X, how can I tell you about it?
 

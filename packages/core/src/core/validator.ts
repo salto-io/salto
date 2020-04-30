@@ -281,7 +281,7 @@ export class InvalidValueTypeValidationError extends ValidationError {
   }
 }
 
-const validateBadReference = (elemID: ElemID, value: Value): ValidationError[] => {
+const createReferenceValidationErrors = (elemID: ElemID, value: Value): ValidationError[] => {
   if (value instanceof UnresolvedReference) {
     return [new UnresolvedReferenceValidationError({ elemID, target: value.target })]
   }
@@ -300,9 +300,9 @@ const validateValue = (elemID: ElemID, value: Value,
     return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
   }
 
-  const badReferenceErrors = validateBadReference(elemID, value)
-  if (!_.isEmpty(badReferenceErrors)) {
-    return badReferenceErrors
+  const referenceValidationErrors = createReferenceValidationErrors(elemID, value)
+  if (!_.isEmpty(referenceValidationErrors)) {
+    return referenceValidationErrors
   }
 
   if (value instanceof StaticFileMetaData) {
@@ -415,9 +415,9 @@ const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] 
   if (isReferenceExpression(value)) {
     return validateVariableValue(elemID, value.value)
   }
-  const badReferenceErrors = validateBadReference(elemID, value)
-  if (!_.isEmpty(badReferenceErrors)) {
-    return badReferenceErrors
+  const referenceValidationErrors = createReferenceValidationErrors(elemID, value)
+  if (!_.isEmpty(referenceValidationErrors)) {
+    return referenceValidationErrors
   }
 
   if (!_.some(Object.values(primitiveValidators), validator => validator(value))) {
@@ -442,7 +442,7 @@ export const validateElements = (elements: ReadonlyArray<Element>): ValidationEr
         return validateInstanceElements(e)
       }
       if (isVariable(e)) {
-        return validateVariable(e as Variable)
+        return validateVariable(e)
       }
       return validateType(e as TypeElement)
     })

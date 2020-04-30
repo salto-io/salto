@@ -81,7 +81,7 @@ resolveReferenceExpression = (
     return new UnresolvedReference(fullElemID)
   }
 
-  let value = resolvePath(rootElement, fullElemID)
+  const value = resolvePath(rootElement, fullElemID)
 
   if (value === undefined) {
     return new UnresolvedReference(fullElemID)
@@ -94,7 +94,7 @@ resolveReferenceExpression = (
   */
   if (isVariableExpression(expression)) {
     // Replace the Variable element by its value.
-    value = value.value
+    return resolveMaybeExpression(value.value, contextElements, visited) ?? value.value
   }
 
   return resolveMaybeExpression(value, contextElements, visited) ?? value
@@ -126,7 +126,7 @@ export const resolveElement = (
   }
 
   if (isVariable(element)) {
-    element.value = _.cloneDeepWith(element.value, referenceCloner)
+    element.value = _.cloneWith(element.value, referenceCloner)
   }
 
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)

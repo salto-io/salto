@@ -22,6 +22,10 @@ import * as constants from './constants'
 
 const { makeArray } = collections.array
 
+export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from salesforce. '
+  + 'In order to complete the fetch operation, '
+  + 'Salto needs to stop managing these items by applying the following configuration change:'
+
 export const createSkippedListConfigChange = (type: string, instance?: string):
 ConfigChangeSuggestion => {
   if (_.isUndefined(instance)) {

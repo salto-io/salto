@@ -143,6 +143,7 @@ export type FetchResult = {
   mergeErrors: MergeErrorWithElements[]
   success: boolean
   configChanges?: Plan
+  adapterNameToConfigMessage?: Record<string, string>
 }
 export type fetchFunc = (
   workspace: Workspace,
@@ -175,7 +176,9 @@ export const fetch: fetchFunc = async (
     progressEmitter.emit('adaptersDidInitialize')
   }
   try {
-    const { changes, elements, mergeErrors, configChanges } = await fetchChanges(
+    const {
+      changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage,
+    } = await fetchChanges(
       adapters,
       filterElementsByServices(await workspace.elements(), fetchServices),
       filteredStateElements,
@@ -190,6 +193,7 @@ export const fetch: fetchFunc = async (
       mergeErrors,
       success: true,
       configChanges,
+      adapterNameToConfigMessage,
     }
   } catch (error) {
     if (error instanceof FatalFetchMergeError) {

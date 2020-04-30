@@ -58,7 +58,8 @@ import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
-  createRetrieveConfigChange, getConfigFromConfigChanges } from './config_change'
+  createRetrieveConfigChange, getConfigFromConfigChanges,
+  STOP_MANAGING_ITEMS_MSG } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 
@@ -335,13 +336,14 @@ export default class SalesforceAdapter {
       (await this.filtersRunner.onFetch(elements)) ?? []
     ) as ConfigChangeSuggestion[]
 
-    return {
-      elements,
-      config: getConfigFromConfigChanges(
-        Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])),
-        this.config,
-      ),
+    const config = getConfigFromConfigChanges(
+      Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])),
+      this.config,
+    )
+    if (_.isUndefined(config)) {
+      return { elements }
     }
+    return { elements, updatedConfig: { config, message: STOP_MANAGING_ITEMS_MSG } }
   }
 
   /**

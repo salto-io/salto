@@ -23,7 +23,7 @@ import { DependencyChanger } from './dependency_changer'
 
 export interface FetchResult {
   elements: Element[]
-  config?: InstanceElement
+  updatedConfig?: { config: InstanceElement; message: string }
 }
 
 export interface Adapter {

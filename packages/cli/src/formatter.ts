@@ -491,8 +491,8 @@ export const formatShouldContinueWithWarning = (numWarnings: number): string =>
 export const formatShouldAbortWithValidationError = (numErrors: number): string =>
   error(Prompts.SHOULD_ABORT(numErrors))
 
-export const formatShouldUpdateConfig = (adapterName: string, formattedChanges: string):
-string => Prompts.SHOULD_UPDATE_CONFIG(adapterName, formattedChanges)
+export const formatConfigChangeNeeded = (introMessage: string, formattedChanges: string):
+string => Prompts.CONFIG_CHANGE_NEEDED(introMessage, formattedChanges)
 
 export const formatShouldCancelWithOldState = warn(Prompts.SHOULD_CANCEL_WITH_OLD_STATE)
 

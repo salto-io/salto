@@ -61,7 +61,7 @@ type approveChangesFunc = (
 type shouldUpdateConfigFunc = (
   { stdout }: CliOutput,
   introMessage: string,
-  changes: PlanItem
+  change: PlanItem
 ) => Promise<boolean>
 
 type approveIsolatedModeFunc = (

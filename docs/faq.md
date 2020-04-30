@@ -50,7 +50,7 @@ Great question! Please see [Contributing](contributing.md) for more information.
 
 ## What's the meaning of the name Salto?
 
-*Salto* in Italian and Spanish is a noun which most frequently means "jump" or "leap".
+`Salto` in Italian and Spanish is a noun which most frequently means "jump" or "leap".
 
 ## What's NaCl?
 

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/adapter-utils",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "license": "Apache-2.0",
   "description": "Salto Adapter Utils",
   "repository": {
@@ -32,10 +32,10 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.13",
-    "@salto-io/dag": "0.1.13",
-    "@salto-io/logging": "0.1.13",
-    "@salto-io/lowerdash": "0.1.13",
+    "@salto-io/adapter-api": "0.1.14",
+    "@salto-io/dag": "0.1.14",
+    "@salto-io/logging": "0.1.14",
+    "@salto-io/lowerdash": "0.1.14",
     "lodash": "^4.17.11",
     "wu": "^2.1.0"
   },

@@ -728,6 +728,7 @@ export class Types {
             name: FORM_FIELDS.GUID,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         ),
         [FORM_FIELDS.NAME]: new Field(

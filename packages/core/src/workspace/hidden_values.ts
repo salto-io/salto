@@ -43,6 +43,9 @@ export const addHiddenValues = (
       const hiddenValuesInstance = transformElement({
         element: stateElement,
         transformPrimitives: createHiddenMapCallback,
+        // This leads to reference values not being supported for hidden values
+        // if we want to add support we need to implement transformReference differently
+        transformReferences: () => undefined,
         strict: true,
       }) as InstanceElement
 

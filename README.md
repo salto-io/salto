@@ -24,7 +24,7 @@ There you'll find prebuilt binaries for major OSes (MacOS, Linux, Windows).
 
 #### VSCode extension
 
-See [vscode packages documentation](packages/vscode/README.md#installation)
+See [the vscode package documentation](packages/vscode/README.md#installation)
 
 ### Building from source
 

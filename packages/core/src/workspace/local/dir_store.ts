@@ -90,11 +90,13 @@ const buildLocalDirectoryStore = (
     }
   }
 
-  const deleteFile = async (filename: string): Promise<void> => {
+  const deleteFile = async (filename: string, shouldDeleteEmptyDir = false): Promise<void> => {
     const absFileName = getAbsFileName(filename)
     if (await exists(absFileName)) {
       await rm(absFileName)
-      await removeDirIfEmpty(path.dirname(absFileName))
+      if (shouldDeleteEmptyDir) {
+        await removeDirIfEmpty(path.dirname(absFileName))
+      }
     }
   }
 
@@ -117,7 +119,7 @@ const buildLocalDirectoryStore = (
     await withLimitedConcurrency(
       Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY
     )
-    await withLimitedConcurrency(deleted.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
+    await withLimitedConcurrency(deleted.map(f => () => deleteFile(f, true)), DELETE_CONCURRENCY)
     updated = {}
     deleted = []
   }
@@ -144,9 +146,10 @@ const buildLocalDirectoryStore = (
     },
 
     clear: async (): Promise<void> => {
-      (await list()).forEach(f => deleted.push(f))
+      const allFiles = await list()
+      await withLimitedConcurrency(allFiles.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
       updated = {}
-      await flush()
+      deleted = []
       await deleteAllEmptyDirectories()
       await removeDirIfEmpty(currentBaseDir)
     },
@@ -158,14 +161,13 @@ const buildLocalDirectoryStore = (
         const newPath = getAbsFileName(file, newBaseDir)
         const currentPath = getAbsFileName(file)
         if (await exists(currentPath)) {
-          if (!(await exists(path.dirname(newPath)))) {
-            await mkdirp(path.dirname(newPath))
-          }
+          await mkdirp(path.dirname(newPath))
           await rename(currentPath, newPath)
         }
       }
       await withLimitedConcurrency(allFiles.map(f => () => renameFile(f)), RENAME_CONCURRENCY)
       await deleteAllEmptyDirectories()
+      removeDirIfEmpty(currentBaseDir)
       currentBaseDir = newBaseDir
     },
 

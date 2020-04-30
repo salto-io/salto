@@ -76,11 +76,7 @@ const loadNaclFileSource = (
     buildLocalStaticFilesCache(cacheDir),
   )
 
-  return naclFilesSource(
-    naclFilesStore,
-    parseResultCache(cacheStore),
-    staticFilesSource
-  )
+  return naclFilesSource(naclFilesStore, parseResultCache(cacheStore), staticFilesSource)
 }
 
 export const loadLocalElementsSources = (baseDir: string, localStorage: string,

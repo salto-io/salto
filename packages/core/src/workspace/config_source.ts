@@ -27,7 +27,7 @@ export interface ConfigSource {
   get(name: string): Promise<InstanceElement | undefined>
   set(name: string, config: Readonly<InstanceElement>): Promise<void>
   delete(name: string): Promise<void>
-  rename(currentName: string, newName: string): Promise<void>
+  rename(name: string, newName: string): Promise<void>
 }
 
 class ConfigParseError extends Error {
@@ -71,8 +71,8 @@ export const configSource = (
       await dirStore.delete(name)
       await dirStore.flush()
     },
-    rename: async (currentName: string, newName: string): Promise<void> => {
-      await dirStore.renameFile(currentName, newName)
+    rename: async (name: string, newName: string): Promise<void> => {
+      await dirStore.renameFile(name, newName)
     },
   }
 }

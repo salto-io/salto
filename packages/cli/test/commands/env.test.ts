@@ -78,11 +78,6 @@ describe('env commands', () => {
       await expect(command('.', 'rename', cliOutput, 'active').execute()).rejects.toThrow()
     })
 
-    it('should fail if there is no such environment to rename', async () => {
-      await expect(command('.', 'rename', cliOutput, 'not-exist', 'new-not-exist').execute())
-        .rejects.toThrow()
-    })
-
     it('should display renamed environment', async () => {
       await command('.', 'rename', cliOutput, 'inactive', 'new-inactive').execute()
       expect(cliOutput.stdout.content.search('inactive')).toBeGreaterThan(0)

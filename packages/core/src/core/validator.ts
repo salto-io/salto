@@ -220,6 +220,7 @@ const validateAnnotationsValue = (
 
   const validateRequiredValue = (): ValidationError[] =>
     (annotations[CORE_ANNOTATIONS.REQUIRED] === true
+    && annotations[CORE_ANNOTATIONS.HIDDEN] !== true
       ? [new MissingRequiredFieldValidationError({ elemID, fieldName: elemID.name })] : [])
 
   // Checking _required annotation

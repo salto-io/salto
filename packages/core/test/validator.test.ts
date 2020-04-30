@@ -367,6 +367,14 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(0)
         })
 
+        it('should not return error when required primitive field is missing but field is hidden', () => {
+          extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
+          extType.fields.reqStr.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+          extInst.type = extType
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(0)
+        })
+
         it('should return error when required primitive field is missing', () => {
           extType.fields.reqStr.annotations[CORE_ANNOTATIONS.REQUIRED] = true
           extInst.type = extType

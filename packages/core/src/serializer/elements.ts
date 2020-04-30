@@ -18,7 +18,7 @@ import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType,
   ObjectType, InstanceElement, isType, isElement, isExpression,
   ReferenceExpression, TemplateExpression, Expression, VariableExpression,
-  isInstanceElement, isReferenceExpression, Variable,
+  isInstanceElement, isReferenceExpression, Variable, isListType,
 } from '@salto-io/adapter-api'
 
 import { StaticFileNaclValue } from '../workspace/static_files/common'
@@ -66,7 +66,8 @@ export const serialize = (elements: Element[]): string => {
 
   const weakElements = elements.map(element => _.cloneDeepWith(
     element,
-    (v, k) => ((k !== undefined && isType(v)) ? new ObjectType({ elemID: v.elemID }) : undefined)
+    (v, k) => ((k !== undefined && isType(v) && !isListType(v))
+      ? new ObjectType({ elemID: v.elemID }) : undefined)
   ))
   const sortedElements = _.sortBy(weakElements, e => e.elemID.getFullName())
   return JSON.stringify(sortedElements, elementReplacer)

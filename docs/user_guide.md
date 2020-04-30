@@ -31,14 +31,18 @@ The easiest way to install Salto's command line interface (CLI) is by downloadin
 
 Once you've downloaded the binary, it is advised to copy it somewhere safe and add it to your path.
 
-For example, on Mac / Linux (using bash) one could do (make sure to update the URL to the latest version):
+For example, on Mac (using bash) one could do:
 
 ```shell
 mkdir ~/salto
-curl https://github.com/salto-io/salto/releases/download/v0.1.13/salto-mac --output ~/salto/salto
+curl https://github.com/salto-io/salto/releases/latest/download/salto-macos.tar.gz --output ~/salto/salto.tar.gz
+tar -xzf ~/salto/salto.tar.gz
+rm ~/salto.tar.gz
 echo "export PATH=$PATH:~/salto" >> ~/.bash_profile
 chmod +x ~/salto/salto
 ```
+
+>Note that on new MacOS versions, you will get prompted when trying to run `salto` for the first time, as currently the executable is not signed. As a workaround, you could open Finder, Right-Click the downloaded file, choose `Open` and click `Open` again. This downloaded file will be saved as an exception to your security settings.
 
 Alternatively, you can also just download and copy the binary using other standard tools, and manually edit the PATH per your OS's instructions.
 
@@ -222,70 +226,70 @@ Creates a new Salto workspace in the current directory
 
 **Arguments**:
 
-_workspace-name_ The name of the workspace [string]
+`workspace-name` The name of the workspace [string]
 
 ### **salto fetch**
 
 Syncs this workspace's NaCl files with the services' current state
 
 **Options:**
-* _--force, -f_ : Accept all incoming changes, even if there's a conflict with local changes [boolean] [default: false]
-* _--interactive, -i_ : Interactively approve every incoming change [boolean] [default: false]
-* _--isolated, -t_ : Restrict fetch from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
-* _--services, -s_ : Specific services to perform this action for (default=all) [array]
-* _--env, -e_ : The name of the environment to use
+* `--force, -f` : Accept all incoming changes, even if there's a conflict with local changes [boolean] [default: false]
+* `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
+* `--isolated, -t` : Restrict fetch from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
+* `--services, -s` : Specific services to perform this action for (default=all) [array]
+* `--env, -e` : The name of the environment to use
 
 ### **salto preview**
 
 Shows Salto's execution plan next time deploy is run
 
 **Options:**
-* _--force, -f_ : Do not ask for approval if there are warnings in the workspace [boolean] [default: false]
-* _--services, -s_ : Specific services to perform this action for (default=all) [array]
-* _--env, -e_ : The name of the environment to use
+* `--force, -f` : Do not ask for approval if there are warnings in the workspace [boolean] [default: false]
+* `--services, -s` : Specific services to perform this action for (default=all) [array]
+* `--env, -e` : The name of the environment to use
 
 ### **salto deploy**
 
 Deploys the current NaCl files config to the target services
 
 **Options:**
-* _--force, -f_ : Do not ask for approval before deploying the changes [boolean] [default: false]
-* _--services, -s_ : Specific services to perform this action for (default=all) [array]
-* _--env, -e_ : The name of the environment to use
+* `--force, -f` : Do not ask for approval before deploying the changes [boolean] [default: false]
+* `--services, -s` : Specific services to perform this action for (default=all) [array]
+* `--env, -e` : The name of the environment to use
 
 ### **salto services <command> [name]**
 
 Manage your environments' services
 
 **Arguments:**
-* _command_ : The services management command [string] [required] [choices: "add", "login", "list"]
-* _name_ : The name of the service [required for add & login] [string]
+* `command` : The services management command [string] [required] [choices: "add", "login", "list"]
+* `name` : The name of the service [required for add & login] [string]
 
 **Options:**
 
-* _--env, -e_ : The name of the environment to use
+* `--env, -e` : The name of the environment to use
 
 ### **salto env <command> [name]**
 
 Manage your workspace environments
 
 **Arguments:**
-* _command_ : The environment management command [string] [required] [choices: "create", "set", "list", "current"]
-* _name_ : The name of the environment (required for create & set) [string]
+* `command` : The environment management command [string] [required] [choices: "create", "set", "list", "current"]
+* `name` : The name of the environment (required for create & set) [string]
 
-### *Generic Flags*
+### Generic Flags
 
 The following flags are available for all commands:
 
-* _--version_ : Show version number 
-* _--help, -h_ : Show help 
-* _--verbose, -v_ : Output extra logs 
+* `--version` : Show version number 
+* `--help, -h` : Show help 
+* `--verbose, -v` : Output extra logs 
 
 ## Workspace directory structure
 
 The workspace is structured as follows:
 
-- salto.config — all workspace specific internal salto files, including configuration and state files. See <LINK to Configuration> for more details
+- `salto.config` — all workspace specific internal salto files, including configuration and state files. See [Salto Configuration](salto_configuration.md) for more details.
 - Directory per adapter, named after the adapter (e.g. Salesforce, HubSpot) — NaCl definitions which are **common** across all defined environments which are configured per that adapter.
 - envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment. Each environment directory is also divided by adapter (which applies for that environment)
 

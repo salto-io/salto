@@ -50,7 +50,7 @@ The data that's being sent is usage data and error reporting along with metadata
   * Started running some command
   2. Errors & stacktrace - the prebuilt binaries are being packaged with `webpack`, thus the file paths will be in the [custom webpack sourcemap protocol](https://webpack.js.org/configuration/output/#output-devtoolmodulefilenametemplate), and no personal data will be sent.
 
-In addition to the usage data, the following metadata is being sent;
+In addition to the usage data, the following metadata is being sent:
 
   * Operating system (platform, arch and release version)
   * Workspace ID: the ID of the specific workspace (uuidv4)

@@ -146,12 +146,12 @@ describe('HCL parse', () => {
     expectExpressionsMatch(nicknamesExpr, await devaluate(['a', 's', 'd']))
   })
 
-  it('parses multiline strings', async () => {
+  it('parses multiline strings basic', async () => {
     const blockDef = `type label {
-        thing = <<EOF
+        thing = '''
           omg
           asd
-          EOF
+          '''
       }`
 
     const { body } = parse(Buffer.from(blockDef), 'none')
@@ -159,6 +159,34 @@ describe('HCL parse', () => {
     expect(body.blocks[0].attrs).toHaveProperty('thing')
     expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('template')
     expect(body.blocks[0].attrs.thing.expressions[0].expressions.length).toEqual(2)
+  })
+
+  it('parses multiline strings with references', async () => {
+    const blockDef = `type label {
+          thing = a.b
+          that = '''
+          omg \${a.b}
+          asd
+          '''
+      }`
+
+    const { body } = parse(Buffer.from(blockDef), 'none')
+    const thingExpressions = body.blocks[0].attrs.thing.expressions[0]
+    const thatExpressions = body.blocks[0].attrs.that.expressions[0].expressions
+    expect(body.blocks.length).toEqual(1)
+    expect(body.blocks[0].attrs).toHaveProperty('thing')
+    expect(body.blocks[0].attrs).toHaveProperty('that')
+    expect(thingExpressions.type).toEqual('reference')
+    expect(thingExpressions.value).toEqual(['a', 'b'])
+    expect(thatExpressions.length).toEqual(4)
+    expect(thatExpressions[0].value).toEqual('          omg ')
+    expect(thatExpressions[0].type).toEqual('literal')
+    expect(thatExpressions[1].value).toEqual(['a', 'b'])
+    expect(thatExpressions[1].type).toEqual('reference')
+    expect(thatExpressions[2].value).toEqual('\n')
+    expect(thatExpressions[2].type).toEqual('literal')
+    expect(thatExpressions[3].value).toEqual('          asd')
+    expect(thatExpressions[3].type).toEqual('literal')
   })
 
   it('parses references', async () => {

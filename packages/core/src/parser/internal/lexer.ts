@@ -20,7 +20,7 @@ export const WILDCARD = '****dynamic****'
 export const rules: Record<string, moo.Rules> = {
   main: {
     wildcard: WILDCARD,
-    mlStart: { match: /<<EOF[ \t]*\n/, lineBreaks: true, push: 'multilineString' },
+    mlStart: { match: /'''[ \t]*[(\r\n)(\n)]/, lineBreaks: true, push: 'multilineString' },
     dq: { match: '"', push: 'string' },
     number: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
     boolean: /true|false/,
@@ -48,8 +48,8 @@ export const rules: Record<string, moo.Rules> = {
   multilineString: {
     wildcard: WILDCARD,
     reference: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
-    mlEnd: { match: /^[ \t]*EOF/, pop: 1 },
-    content: { match: /^.*\n/, lineBreaks: true },
+    mlEnd: { match: /^[ \t]*'''/, pop: 1 },
+    content: { match: /.*?(?=\$\{)|^.*[(\r\n)(\n)]|[(\r\n)(\n)]/, lineBreaks: true },
     invalidSyntax: { match: /[^ ]+/, error: true },
   },
 }

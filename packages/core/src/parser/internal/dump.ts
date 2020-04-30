@@ -31,6 +31,8 @@ const C_ARR = ']'
 const O_PAREN = '('
 const C_PAREN = ')'
 const IDENT = '  '
+const MULTILINE_STRING_PREFIX = '\'\'\'\n'
+const MULTILINE_STRING_SUFFIX = '\n\'\'\''
 
 const ident = (lines: string[]): string[] => {
   // Using the good ol` for i syntax here for memory effeciancy.
@@ -57,7 +59,14 @@ const separateByCommas = (items: string[][]): string[][] => {
   return items
 }
 
-const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
+const isMultilineString = (prim: string): boolean => _.isString(prim) && prim.includes('\n')
+
+const dumpMultilineString = (prim: string): string =>
+  [MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
+
+const dumpPrimitive = (prim: Value): string =>
+  (isMultilineString(prim)
+    ? dumpMultilineString(prim) : JSON.stringify(prim))
 
 const dumpObject = (obj: Value): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define

@@ -152,6 +152,13 @@ describe('Salto parser', () => {
         name = 7
         name2 = "some string"
       }
+      type salesforce.type {
+        data = '''
+        This
+        is
+        Multiline
+        '''
+      }
        `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
@@ -161,7 +168,7 @@ describe('Salto parser', () => {
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(16)
+        expect(elements.length).toBe(17)
       })
     })
 
@@ -557,6 +564,17 @@ describe('Salto parser', () => {
       it('should have the correct value', () => {
         expect(variable1.value).toBe(7)
         expect(variable2.value).toBe('some string')
+      })
+    })
+
+    describe('multiline strings', () => {
+      let multilineObject: ObjectType
+      beforeAll(() => {
+        multilineObject = elements[15] as ObjectType
+      })
+      it('should have a multiline string field', () => {
+        expect(multilineObject.annotations).toHaveProperty('data')
+        expect(multilineObject.annotations.data).toEqual('        This\n        is\n        Multiline')
       })
     })
   })

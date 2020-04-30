@@ -45,7 +45,7 @@ func -> %word args {% d => converters.convertFunction(d[0], d[1][2], d[1][3]) %}
 args -> "(" _nl arrayItems ")" {% d => d %}
 
 string -> "\"" (content {% id %} |reference {% id %}):* stringEnd {% d => converters.convertString(d[0], d[1], d[2]) %}
-multilineString -> %mlStart (content {% id %} | reference {% id %}):* %mlEnd {% d => converters.convertMultilineString(d[0], d[1], d[2]) %}
+multilineString -> %mlStart (reference {% id %} | content {% id %}):* %mlEnd {% d => converters.convertMultilineString(d[0], d[1], d[2]) %}
 stringEnd -> "\"" {% id %} | %wildcard {% id %}
 content -> %content {% id %} | %wildcard {% id %}
 reference -> %reference {% id %} | %wildcard {% id %}

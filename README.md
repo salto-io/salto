@@ -15,7 +15,18 @@ For more information, see the [user guide](docs/user_guide.md) and the [FAQ](doc
 
 You can contact us by email at [open-source@salto.io](mailto://open-source@salto.io), or join our public Slack channel [here](https://invite.playplay.io/invite?team_id=T011W61EVHD).
 
-### Building
+### Installing salto
+
+#### CLI
+
+Please head to our [releases](https://github.com/salto-io/salto/releases) page.
+There you'll find prebuilt binaries for major OSes (MacOS, Linux, Windows).
+
+#### VSCode extension
+
+See [the vscode package documentation](packages/vscode/README.md#installation)
+
+### Building from source
 
   1. Install [yarn](https://yarnpkg.com/en/docs/install).
   2. Fetch dependencies and build:
@@ -45,7 +56,17 @@ E2E tests are run on CircleCI builds, and you should also run them locally befor
 
 **Important** E2E tests for the `cli` and `salesforce-adapter` need [valid SFDC credentials](packages/salesforce-adapter/README.md#E2E-tests) to run.
 
-### Publishing to NPM
+### Creating a release
+
+_Salto_ is versioned using the [semantic versioning scheme](https://semver.org/). Therefore, when composing a new
+release, we would:
+
+  1. Bump the version in the packages' `package.json` files. For that, we're using `lerna`
+  2. Tag the git repository with the new version
+  3. Publish the packages in this repo to [npm](https://www.npmjs.com/org/salto-io)
+  3. Build artifacts and attach them to a new [release in this repository](https://github.com/salto-io/salto/releases)
+
+Here is how to do it:
 
 #### TL;DR Quick method
 

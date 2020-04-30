@@ -38,10 +38,25 @@ fi
 VERSION_TAG="v${CURRENT_VERSION}"
 
 copy_files_from_s3() {
-  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/linux/salto" "${1}/salto-linux"
-  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/mac/salto" "${1}/salto-mac"
-  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/win/salto.exe" "${1}/salto-windows.exe"
-  aws s3 cp "${S3_PKG_HASH_PREFIX}/vscode/salto.vsix/salto.vsix" "${1}/salto-vscode-extension.vsix"
+  pushd "$1"
+
+  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/linux/salto" ./salto
+  chmod +x salto
+  tar -zcf salto-linux64.tar.gz salto
+  rm salto
+
+  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/mac/salto" ./salto
+  chmod +x salto
+  tar -zcf salto-macos.tar.gz salto
+  rm salto
+
+  aws s3 cp "${S3_PKG_HASH_PREFIX}/cli/win/salto.exe" ./salto.exe
+  zip salto-win64.zip salto.exe
+  rm salto.exe
+
+  aws s3 cp "${S3_PKG_HASH_PREFIX}/vscode/salto.vsix/salto.vsix" ./salto.vsix
+
+  popd
 }
 
 push_new_git_tag() {

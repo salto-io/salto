@@ -42,6 +42,8 @@ echo "export PATH=$PATH:~/salto" >> ~/.bash_profile
 chmod +x ~/salto/salto
 ```
 
+>Note that on new MacOS versions, you will get prompted when trying to run `salto` for the first time, as currently the executable is not signed. As a workaround, you could open Finder, Right-Click the downloaded file, choose `Open` and click `Open` again. This downloaded file will be saved as an exception to your security settings.
+
 Alternatively, you can also just download and copy the binary using other standard tools, and manually edit the PATH per your OS's instructions.
 
 ### Upgrade Instructions

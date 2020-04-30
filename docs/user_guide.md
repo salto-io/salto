@@ -31,11 +31,11 @@ The easiest way to install Salto's command line interface (CLI) is by downloadin
 
 Once you've downloaded the binary, it is advised to copy it somewhere safe and add it to your path.
 
-For example, on Mac / Linux (using bash) one could do (make sure to update the URL to the latest version):
+For example, on Mac (using bash) one could do:
 
 ```shell
 mkdir ~/salto
-curl https://github.com/salto-io/salto/releases/download/v0.1.14/salto-macos.tar.gz --output ~/salto/salto.tar.gz
+curl https://github.com/salto-io/salto/releases/latest/download/salto-macos.tar.gz --output ~/salto/salto.tar.gz
 tar -xzf ~/salto/salto.tar.gz
 rm ~/salto.tar.gz
 echo "export PATH=$PATH:~/salto" >> ~/.bash_profile

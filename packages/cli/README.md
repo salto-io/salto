@@ -4,7 +4,8 @@ This project is the command line interface for Salto.
 
 ### Download prebuilt executable binary releases
 
-Salto is releasing a prebuilt executable binary of the CLI for all major operating systems [here](https://github.com/salto-io/salto/releases)
+Salto is releasing a prebuilt executable binary of the CLI for all major operating systems [here](https://github.com/salto-io/salto/releases).
+
 The prebuilt binaries are built using [`webpack`](https://github.com/webpack/webpack) and [`nexe`](https://github.com/nexe/nexe).
 
 ### Build instructions

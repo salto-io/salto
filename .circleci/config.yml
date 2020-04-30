@@ -315,6 +315,20 @@ jobs:
           to: s3://${S3_PKG_BUCKET}/${CIRCLE_BRANCH}/latest/
           arguments: '--acl public-read'
 
+  build_and_upload_docs:
+    docker:
+      - image: circleci/node:12.12
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - aws-cli/setup
+
+      - run:
+          name: Build and upload docs
+          command: cd docs && ./build.sh
+
 workflows:
   version: 2
 
@@ -361,3 +375,11 @@ workflows:
           requires:
             - build
             - e2e_test
+      - build_and_upload_docs:
+          name: build_and_upload_docs
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - master

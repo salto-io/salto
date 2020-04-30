@@ -45,10 +45,10 @@ in the code).
 The data that's being sent is usage data and error reporting along with metadata;
 
   1. Counters, for example:
-    * Number of changes upon `fetch`
-    * Failed running some command (counting number of failures)
-    * Started running some command
-  2. Errors & stacktrace - the prebuilt binaries are being packaged with `webpack` ([see the prebuilt binary releases section](#download-prebuilt-executable-binary-releases)) so the file paths will be in the [custom webpack sourcemap protocol](https://webpack.js.org/configuration/output/#output-devtoolmodulefilenametemplate), thus no personal data will be sent.
+  * Number of changes upon `fetch`
+  * Failed running some command (counting number of failures)
+  * Started running some command
+  2. Errors & stacktrace - the prebuilt binaries are being packaged with `webpack`, thus the file paths will be in the [custom webpack sourcemap protocol](https://webpack.js.org/configuration/output/#output-devtoolmodulefilenametemplate), and no personal data will be sent.
 
 In addition to the usage data, the following metadata is being sent;
 
@@ -57,7 +57,7 @@ In addition to the usage data, the following metadata is being sent;
   * Installation ID: an ID that is being generated in the first ever `salto init`. It's common to all of the workspaces on the same installation / computer
   * App (CLI) version
 
-## How to opt out of telemtry data collection?
+## How to opt out of telemetry data collection?
 
 Any user can opt out of sending usage data.
 There are two ways to disable telemetry:

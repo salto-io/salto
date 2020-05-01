@@ -19,9 +19,11 @@ import { Logger } from '@salto-io/logging'
 import {
   Pool, dynamoDbRepo, RenewedLease, Lease,
 } from '@salto-io/persistent-pool'
-import REPO_PARAMS from '../repo_params'
+import humanizeDuration from 'humanize-duration'
+import REPO_PARAMS from './repo_params'
 import createEnvUtils from './process_env'
-import { SuspendCredentialsError } from '../types'
+import { SuspendCredentialsError } from './types'
+import IntervalScheduler from './interval_scheduler'
 
 const { retryStrategies } = retry
 
@@ -36,6 +38,9 @@ export type CredsSpec<TCreds extends {}> = {
 export type CredsLease<TCreds extends {}> = Lease<TCreds> & {
   return?: () => Promise<void>
 }
+
+const STILL_RUNNING_WARN_INTERVAL = 1000 * 30
+const CREDS_INTERVAL_ID = 'waiting for creds'
 
 const LEASE_TIMEOUT = 1000 * 60 * 5
 const LEASE_UPDATE_MARGIN = 1000 * 60
@@ -77,13 +82,25 @@ export default <TCreds extends {}>(
         throw e
       }
     }
-
-    return new RenewedLease<TCreds>({
-      poolOrFactory: pool,
-      lease: await tryLease(),
-      timeout: LEASE_TIMEOUT,
-      renewMargin: LEASE_UPDATE_MARGIN,
-    })
+    const runningLeasePrinter = new IntervalScheduler(
+      (id, startTime) => {
+        const duration = humanizeDuration(Date.now() - startTime.getTime(), { round: true })
+        logger.warn('Still running (%s): %s', duration, id)
+      },
+      STILL_RUNNING_WARN_INTERVAL,
+    )
+    try {
+      runningLeasePrinter.schedule(CREDS_INTERVAL_ID)
+      const lease = new RenewedLease<TCreds>({
+        poolOrFactory: pool,
+        lease: await tryLease(),
+        timeout: LEASE_TIMEOUT,
+        renewMargin: LEASE_UPDATE_MARGIN,
+      })
+      return lease
+    } finally {
+      runningLeasePrinter.unschedule(CREDS_INTERVAL_ID)
+    }
   }
 
   const fromEnv = async (): Promise<CredsLease<TCreds>> => {

@@ -18,7 +18,7 @@ import wu from 'wu'
 import tmp from 'tmp-promise'
 import { strings } from '@salto-io/lowerdash'
 import { copyFile, rm, mkdirp, exists } from '@salto-io/file'
-import { testHelpers as salesforceTestHelpers, SalesforceClient } from '@salto-io/salesforce-adapter'
+import { testHelpers as salesforceTestHelpers, SalesforceClient, Credentials } from '@salto-io/salesforce-adapter'
 import { Plan, Workspace, SALTO_HOME_VAR, SourceMap } from '@salto-io/core'
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
@@ -27,16 +27,18 @@ import {
 import {
   BuiltinTypes, ObjectType,
 } from '@salto-io/adapter-api'
+import { CredsLease } from '@salto-io/e2e-credentials-store/dist/src/creds'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {
   editNaclFile, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
   verifyObject, runEmptyPreview, runSalesforceLogin, runPreview,
 } from './helpers/workspace'
-import { instanceExists, objectExists } from './helpers/salesforce'
+import { instanceExists, objectExists, getSalesfoceCredsInstance } from './helpers/salesforce'
 
 
 let lastPlan: Plan
+let credsLease: CredsLease<Credentials>
 
 const apiNameAnno = (
   obj: string,
@@ -105,7 +107,8 @@ describe('cli e2e', () => {
     tmpNaclFileRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}.nacl`
 
     process.env[SALTO_HOME_VAR] = homePath
-    client = new SalesforceClient({ credentials: salesforceTestHelpers().credentials[0] })
+    credsLease = await salesforceTestHelpers().credentials()
+    client = new SalesforceClient({ credentials: credsLease.value })
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)
@@ -118,7 +121,7 @@ describe('cli e2e', () => {
     if (await instanceExists(client, ROLE, newInstanceFullName)) {
       await client.delete(ROLE, newInstanceFullName)
     }
-    await runSalesforceLogin(fetchOutputDir)
+    await runSalesforceLogin(fetchOutputDir, getSalesfoceCredsInstance(credsLease.value))
     await runFetch(fetchOutputDir)
   })
 
@@ -130,6 +133,9 @@ describe('cli e2e', () => {
       await client.delete(ROLE, newInstanceFullName)
     }
     await rm(homePath)
+    if (credsLease.return) {
+      await credsLease.return()
+    }
   })
 
   const verifyTmpNaclFileObjectSourceMap = (sourceMap: SourceMap, object: ObjectType,

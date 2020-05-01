@@ -25,7 +25,6 @@ import {
 } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
-import adapterConfigs from '../adapter_configs'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput, CliExitCode } from '../../src/types'
 import { loadWorkspace } from '../../src/workspace/workspace'
@@ -38,9 +37,6 @@ export type ReplacementPair = [string | RegExp, string]
 
 const services = ['salesforce']
 
-const getSalesforceConfig = (): Promise<InstanceElement> =>
-  Promise.resolve(adapterConfigs.salesforce())
-
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
@@ -49,9 +45,17 @@ const mockTelemetry = telemetrySender(
   { installationID: 'abcd', app: 'test' },
 )
 
-export const runSalesforceLogin = async (workspaceDir: string): Promise<void> => {
-  await servicesCommand(workspaceDir, 'login', mockCliOutput(), getSalesforceConfig, 'salesforce')
-    .execute()
+export const runSalesforceLogin = async (
+  workspaceDir: string,
+  sfCredsInstance: InstanceElement
+): Promise<void> => {
+  await servicesCommand(
+    workspaceDir,
+    'login',
+    mockCliOutput(),
+    () => Promise.resolve(sfCredsInstance),
+    'salesforce'
+  ).execute()
 }
 
 export const editNaclFile = async (filename: string, replacements: ReplacementPair[]):

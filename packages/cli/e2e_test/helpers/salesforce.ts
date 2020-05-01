@@ -17,8 +17,11 @@ import {
   SalesforceClient,
   testHelpers as salesforceTestHelpers,
   testTypes as salesforceTestTypes,
+  creator as salesforceAdapterCreator,
+  Credentials,
 } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
+import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
   missingFields: string[] = []): Promise<boolean> => {
@@ -49,4 +52,20 @@ export const instanceExists = async (client: SalesforceClient, type: string, nam
     return Object.entries(expectedValues).every(entry => _.get(result, entry[0]) === entry[1])
   }
   return true
+}
+
+export const getSalesfoceCredsInstance = (creds: Credentials): InstanceElement => {
+  const configValues = {
+    username: creds.username,
+    password: creds.password,
+    token: creds.apiToken ?? '',
+    sandbox: creds.isSandbox,
+  }
+  const { credentialsType } = salesforceAdapterCreator
+
+  return new InstanceElement(
+    ElemID.CONFIG_NAME,
+    credentialsType,
+    configValues,
+  )
 }

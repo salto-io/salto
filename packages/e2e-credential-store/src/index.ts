@@ -15,10 +15,9 @@
 */
 import cliMain from './cli'
 
-export { CredsSpec } from './jest-environment/creds'
+export { default as creds, CredsSpec, CredsLease } from './creds'
 
-export { default as createEnvUtils } from './jest-environment/process_env'
-export * from './jest-environment'
+export { default as createEnvUtils } from './process_env'
 
 export * from './types'
 export const cli = { main: cliMain }

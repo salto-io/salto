@@ -13,25 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto-io/logging'
 import {
-  CredsJestEnvironment,
   createEnvUtils,
   CredsSpec,
   SuspendCredentialsError,
-  JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
 import {
   Credentials,
   validateCredentials,
-  getRemainingDailyRequests,
   ApiLimitsTooLowError,
 } from '../src/client/client'
 
 const MIN_API_REQUESTS_NEEDED = 500
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
-
-const log = logger(module)
 
 export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
   const userEnvVarName = envName === undefined ? 'SF_USER' : `SF_USER_${envName}`
@@ -61,41 +55,5 @@ export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
     },
     typeName: 'salesforce',
     globalProp: envName ? `salesforce_${envName}` : 'salseforce',
-  }
-}
-
-export default class SalesforceCredsEnvironment extends CredsJestEnvironment<Credentials> {
-  dailyEnv1RequestsRemainingOnSetup: number | undefined
-  dailyEnv2RequestsRemainingOnSetup: number | undefined
-
-  constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace, credsSpecs: [credsSpec(), credsSpec('ENV_2')] }, ...args)
-  }
-
-  async setup(): Promise<void> {
-    await super.setup()
-    const [dailyEnv1Requests, dailyEnv2Requests] = await Promise.all(
-      (this.credsLeases ?? []).map(lease => getRemainingDailyRequests(lease.value))
-    )
-    if (dailyEnv1Requests && dailyEnv2Requests) {
-      this.dailyEnv1RequestsRemainingOnSetup = dailyEnv1Requests
-      this.log.warn('remaining daily requests on creds env1: %o', dailyEnv1Requests)
-      this.dailyEnv2RequestsRemainingOnSetup = dailyEnv2Requests
-      this.log.warn('remaining daily requests on creds env2: %o', dailyEnv1Requests)
-    }
-  }
-
-  async teardown(): Promise<void> {
-    if (this.dailyEnv1RequestsRemainingOnSetup !== undefined
-      && this.dailyEnv2RequestsRemainingOnSetup !== undefined) {
-      const [remainingEnv1Requests, remainingEnv2Requests] = await Promise.all(
-        (this.credsLeases ?? []).map(lease => getRemainingDailyRequests(lease.value))
-      )
-      const usedRequestsEnv1 = this.dailyEnv1RequestsRemainingOnSetup - remainingEnv1Requests
-      this.log.warn('this run used %o of daily requests quota for env 1:', usedRequestsEnv1)
-      const usedRequestsEnv2 = this.dailyEnv2RequestsRemainingOnSetup - remainingEnv2Requests
-      this.log.warn('this run used %o of daily requests quota for env 2:', usedRequestsEnv2)
-    }
-    await super.teardown()
   }
 }

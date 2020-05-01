@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import SalesforceClient from '../src/client/client'
-import credentials from './credentials'
+import SalesforceClient, { Credentials } from '../src/client/client'
 
-export default (): SalesforceClient => new SalesforceClient({ credentials: credentials()[0] })
+export default (credentials: Credentials): SalesforceClient => new SalesforceClient({ credentials })

@@ -78,7 +78,64 @@ const commonInstance = new InstanceElement('commonInst', commonObj, {
     str1: 'STR_1',
   }],
 })
-const commonSource = createMockNaclFileSource([commonObj, commonField, commonInstance])
+const splitObjectID = new ElemID('salto', 'split')
+const splitObjectFields = new ObjectType({
+  elemID: splitObjectID,
+  fields: _.mapValues(commonObj.fields, field => new Field(
+    splitObjectID,
+    field.name,
+    field.type,
+    field.annotations
+  )),
+})
+const splitObjectAnnotations = new ObjectType({
+  elemID: splitObjectID,
+  annotations: commonObj.annotations,
+})
+const splitObjectAnnotationTypes = new ObjectType({
+  elemID: splitObjectID,
+  annotationTypes: commonObj.annotationTypes,
+})
+const splitObjJoined = new ObjectType({
+  elemID: splitObjectID,
+  fields: splitObjectFields.fields,
+  annotationTypes: splitObjectAnnotationTypes.annotationTypes,
+  annotations: splitObjectAnnotations.annotations,
+})
+const splitInstName = 'splitInst'
+const splitInstance1 = new InstanceElement(
+  splitInstName,
+  commonObj,
+  {
+    commonField: 'STR',
+  }
+)
+const splitInstance2 = new InstanceElement(
+  splitInstName,
+  commonObj,
+  {
+    listField: ['STR'],
+  }
+)
+const splitInstanceJoined = new InstanceElement(
+  splitInstName,
+  commonObj,
+  {
+    ...splitInstance1.value,
+    ...splitInstance2.value,
+  }
+)
+const commonSource = createMockNaclFileSource(
+  [commonObj, commonField, commonInstance, splitObjJoined, splitInstanceJoined],
+  {
+    'test/path.nacl': [commonObj, commonInstance],
+    'test/anno.nacl': [splitObjectAnnotations],
+    'test/annoTypes.nacl': [splitObjectAnnotationTypes],
+    'test/fields.nacl': [splitObjectFields],
+    'test/inst1.nacl': [splitInstance1],
+    'test/inst2.nacl': [splitInstance2],
+  }
+)
 const envSource = createMockNaclFileSource([envObj, envField])
 const secEnv = createMockNaclFileSource([envObj, envField])
 
@@ -294,6 +351,66 @@ describe('compact routing', () => {
       data: { after: commonObj },
       id: commonObj.elemID,
       path: ['test', 'path'],
+    })
+  })
+  it('should route a common removal diff to comon and revert the change in secondary envs', async () => {
+    const splitObjChange: DetailedChange = {
+      action: 'remove',
+      data: { before: splitObjJoined },
+      id: splitObjectID,
+    }
+    const splitInstChange: DetailedChange = {
+      action: 'remove',
+      data: { before: splitInstanceJoined },
+      id: splitInstanceJoined.elemID,
+    }
+    const routedChanges = await routeChanges(
+      [splitObjChange, splitInstChange],
+      envSource,
+      commonSource,
+      { sec: secEnv },
+      'isolated'
+    )
+    expect(routedChanges.primarySource).toHaveLength(0)
+    expect(routedChanges.commonSource).toHaveLength(2)
+    expect(routedChanges.commonSource && routedChanges.commonSource[0].action).toEqual('remove')
+    expect(routedChanges.commonSource && routedChanges.commonSource[0].id)
+      .toEqual(splitObjectID)
+    expect(routedChanges.commonSource && routedChanges.commonSource[1].action).toEqual('remove')
+    expect(routedChanges.commonSource && routedChanges.commonSource[1].id)
+      .toEqual(splitInstanceJoined.elemID)
+
+    const secChanges = routedChanges.secondarySources?.sec
+    expect(secChanges).toHaveLength(5)
+    expect(secChanges && secChanges[0]).toEqual({
+      action: 'add',
+      id: splitObjectID,
+      data: { after: splitObjectAnnotations },
+      path: ['test', 'anno'],
+    })
+    expect(secChanges && secChanges[1]).toEqual({
+      action: 'add',
+      id: splitObjectID,
+      data: { after: splitObjectAnnotationTypes },
+      path: ['test', 'annoTypes'],
+    })
+    expect(secChanges && secChanges[2]).toEqual({
+      action: 'add',
+      id: splitObjectID,
+      data: { after: splitObjectFields },
+      path: ['test', 'fields'],
+    })
+    expect(secChanges && secChanges[3]).toEqual({
+      action: 'add',
+      id: splitInstanceJoined.elemID,
+      data: { after: splitInstance1 },
+      path: ['test', 'inst1'],
+    })
+    expect(secChanges && secChanges[4]).toEqual({
+      action: 'add',
+      id: splitInstanceJoined.elemID,
+      data: { after: splitInstance2 },
+      path: ['test', 'inst2'],
     })
   })
   it('should route a removal diff to comon and env and revert the change in secondary envs', async () => {

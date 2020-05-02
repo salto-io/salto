@@ -66,5 +66,5 @@ fi
 echo "invalidating cloudfront distributions"
 IFS=","
 for dist_id in $DOCS_CLOUDFRONT_DIST_IDS; do
-  aws cloudfront create-invalidation --distribution-id "$dist_id" --paths '/*'
+  AWS_PAGER="" aws cloudfront create-invalidation --distribution-id "$dist_id" --paths '/*'
 done

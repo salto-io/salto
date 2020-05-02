@@ -23,7 +23,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce-types'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { testHelpers } from 'index'
+import { testHelpers } from '../index'
 import realAdapter from './adapter'
 import SalesforceClient, { Credentials } from '../src/client/client'
 import {

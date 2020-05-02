@@ -26,7 +26,7 @@ import {
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { testHelpers } from 'index'
+import { testHelpers } from '../index'
 import * as constants from '../src/constants'
 import {
   INSTANCE_TYPE_FIELD, NESTED_INSTANCE_TYPE_NAME,

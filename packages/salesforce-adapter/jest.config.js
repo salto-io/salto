@@ -24,7 +24,6 @@ module.exports = deepMerge(
     collectCoverageFrom: [
       '!<rootDir>/dist/index.js',
     ],
-    testEnvironment: process.env.RUN_E2E_TESTS ? './dist/e2e_test/jest_environment' : undefined,
     coverageThreshold: {
       'global': {
         branches: 89,

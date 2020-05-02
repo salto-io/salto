@@ -38,10 +38,7 @@ module.exports = deepMerge(
         lines: 42.72,
         statements: 41.55,
       },
-    },
-    testEnvironment: process.env.RUN_E2E_TESTS
-    ? '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
-    : undefined,
+    }
   }
 )
 

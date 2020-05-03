@@ -895,7 +895,9 @@ describe('Test utils.ts', () => {
         list: ['I', 'do', 'not', 'write', 'jokes', 'in', 'base 13'],
       },
       fields: {
-        obj: new Field(objElemID, 'obj', annoType),
+        obj: new Field(objElemID, 'obj', annoType, {
+          label: 'LABEL',
+        }),
         list: new Field(objElemID, 'list', new ListType(BuiltinTypes.STRING)),
       },
     })
@@ -957,6 +959,17 @@ describe('Test utils.ts', () => {
       expect(withoutAnnoObjStr?.annotations.list).toEqual(obj.annotations.list)
       expect(withoutAnnoObjStr?.annotationTypes).toEqual(obj.annotationTypes)
 
+      const withoutFieldAnnotations = await filterByID(
+        objElemID,
+        obj,
+        id => Promise.resolve(id.getFullName() !== 'salto.obj.field.obj.label')
+      )
+
+      expect(withoutFieldAnnotations).toBeDefined()
+      expect(withoutFieldAnnotations?.annotations).toEqual(obj.annotations)
+      expect(withoutFieldAnnotations?.annotationTypes).toEqual(obj.annotationTypes)
+      expect(withoutFieldAnnotations?.fields.obj).toBeDefined()
+      expect(withoutFieldAnnotations?.fields.obj.annotations).toEqual({})
       const onlyI = await filterByID(
         objElemID,
         obj,

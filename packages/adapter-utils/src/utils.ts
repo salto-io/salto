@@ -484,7 +484,7 @@ export const filterByID = async <T>(
       value.parentID,
       value.name,
       value.type,
-      await filterAnnotations(value.annotations)
+      await filterByID(value.elemID, value.annotations, filterFunc)
     ) as Value as T
   }
   if (isInstanceElement(value)) {

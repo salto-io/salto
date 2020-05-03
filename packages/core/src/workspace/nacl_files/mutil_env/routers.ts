@@ -229,15 +229,10 @@ export const routeNewEnv = async (
   // Add the changed part of common to the target source
   const modifyWithCommonProj = change.action === 'modify' && !_.isUndefined(commonChangeProjection)
   const addCommonProjectionToCurrentChanges = modifyWithCommonProj
-    ? _.flatten(
-      await Promise.all(
-        (await projectChange(
-          createAddChange(commonChangeProjection, change.id, pathHint),
-          primarySource
-        )).map(projectedChange => seperateChangeByFiles(projectedChange, commonSource))
-      )
-    )
-    : []
+    ? await projectChange(
+      createAddChange(commonChangeProjection, change.id, pathHint),
+      primarySource
+    ) : []
   // Add the old value of common to the inactive sources
   const secondaryChanges = _.fromPairs(
     await Promise.all(

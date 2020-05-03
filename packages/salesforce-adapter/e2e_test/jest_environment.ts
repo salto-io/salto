@@ -28,10 +28,13 @@ const MIN_API_REQUESTS_NEEDED = 500
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
 export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
-  const userEnvVarName = envName === undefined ? 'SF_USER' : `SF_USER_${envName}`
-  const passwordEnvVarName = envName === undefined ? 'SF_PASSWORD' : `SF_PASSWORD_${envName}`
-  const tokenEnvVarName = envName === undefined ? 'SF_TOKEN' : `SF_TOKEN_${envName}`
-  const sandboxEnvVarName = envName === undefined ? 'SF_SANDBOX' : `SF_SANDBOX_${envName}`
+  const addEnvName = (varName: string): string => (envName === undefined
+    ? varName
+    : [varName, envName].join('_'))
+  const userEnvVarName = addEnvName('SF_USER')
+  const passwordEnvVarName = addEnvName('SF_PASSWORD')
+  const tokenEnvVarName = addEnvName('SF_TOKEN')
+  const sandboxEnvVarName = addEnvName('SF_SANDBOX')
   return {
     envHasCreds: env => userEnvVarName in env,
     fromEnv: env => {

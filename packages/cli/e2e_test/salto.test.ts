@@ -27,7 +27,7 @@ import {
 import {
   BuiltinTypes, ObjectType,
 } from '@salto-io/adapter-api'
-import { CredsLease } from '@salto-io/e2e-credentials-store/dist/src/creds'
+import { CredsLease } from '@salto-io/e2e-credentials-store'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
 import {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
+import { creds, CredsLease, SaltoE2EJestEnvironment } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
 import { credsSpec } from './e2e_test/jest_environment'
 import { Credentials } from './src/client/client'
@@ -38,7 +38,8 @@ export const testHelpers = (): TestHelpers => ({
   credentials: (envName?: string) => creds(
     credsSpec(envName),
     process.env,
-    log
+    log,
+    SaltoE2EJestEnvironment.runningTasksPrinter
   ),
 })
 

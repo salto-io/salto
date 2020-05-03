@@ -39,9 +39,8 @@ export const filterInvalidChanges = async (
 ): Promise<FilterResult> => {
   const validateChanges = async (groupLevelChange: Change, group: Group<Change>):
     Promise<ReadonlyArray<ChangeError>> => {
-    console.log(groupLevelChange.data)
     const changeValidator = changeValidators[getChangeElement(groupLevelChange).elemID.adapter]
-    if (_.isUndefined(changeValidator) || 1 > 0) {
+    if (_.isUndefined(changeValidator)) {
       return []
     }
     switch (groupLevelChange.action) {

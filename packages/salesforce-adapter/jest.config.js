@@ -25,7 +25,7 @@ module.exports = deepMerge(
       '!<rootDir>/dist/index.js',
     ],
     testEnvironment: process.env.RUN_E2E_TESTS	
-      ? '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'	
+      ? '@salto-io/e2e-credentials-store/dist/src/jest-environment/index'	
       : undefined,
     coverageThreshold: {
       'global': {

@@ -63,3 +63,5 @@ export class SaltoE2EJestEnvironment extends NodeEnvironment {
     }
   }
 }
+
+export default SaltoE2EJestEnvironment

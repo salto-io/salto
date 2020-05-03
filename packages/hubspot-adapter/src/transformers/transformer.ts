@@ -16,7 +16,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType,
+  ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType,
   TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, isPrimitiveValue,
 } from '@salto-io/adapter-api'
@@ -2051,14 +2051,21 @@ export const createHubspotMetadataFromInstanceElement = async (
         return ownersMap.get(val) || numVal
       }
       if (isListType(fieldType) && _.isArray(val)) {
-        const fieldInnerType = fieldType.innerType
-        if (isUserIdentifierType(fieldInnerType)) {
-          // Currently all array are repesented as a string in HubSpot
-          // If there will be "real" array ones we need to support it
-          return val.map(v => ownersMap.get(v) || v).join(',')
+        const fieldDeepInnerType = getDeepInnerType(fieldType)
+        if (isUserIdentifierType(fieldDeepInnerType)) {
+          return _.cloneDeepWith(val, v =>
+            (_.every(v, _.isString)
+              // Currently all array are repesented as a string in HubSpot
+              // If there will be "real" array ones we need to support it
+              ? val.map(strVal => ownersMap.get(strVal) || strVal).join(',')
+              : undefined))
         }
-        if (isObjectType(fieldInnerType)) {
-          return val.map(v => createMetadataValueFromObject(fieldInnerType, v))
+        if (isObjectType(fieldDeepInnerType)) {
+          return _.cloneDeepWith(val, v =>
+            (!_.every(v, _.isArray)
+              ? v.map((objVal: Values) =>
+                createMetadataValueFromObject(fieldDeepInnerType, objVal))
+              : undefined))
         }
       }
       if (isObjectType(fieldType)) {

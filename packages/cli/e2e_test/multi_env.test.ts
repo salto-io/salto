@@ -69,18 +69,6 @@ describe('multi env tests', () => {
   const adapterConfigsFilePath = (): string => (
     path.join(baseDir, 'salto.config', 'adapters', 'salesforce.nacl')
   )
-  const env1SFCredsFilePath = (): string => (
-    path.join(homeWSDir(), 'credentials', ENV1_NAME, 'salesforce.nacl')
-  )
-  const env2SFCredsFilePath = (): string => (
-    path.join(homeWSDir(), 'credentials', ENV2_NAME, 'salesforce.nacl')
-  )
-  const env1CacheFilePath = (): string => (
-    path.join(homeWSDir(), 'cache', ENV1_NAME)
-  )
-  const env2CacheFilePath = (): string => (
-    path.join(homeWSDir(), 'cache', ENV2_NAME)
-  )
   const workspaceUserConfigFilePath = (): string => (
     path.join(homeWSDir(), 'workspaceUser.nacl')
   )
@@ -222,10 +210,6 @@ describe('multi env tests', () => {
       expect(ensureFilesExist([
         workspaceConfigFilePath(),
         adapterConfigsFilePath(),
-        env1SFCredsFilePath(),
-        env2SFCredsFilePath(),
-        env1CacheFilePath(),
-        env2CacheFilePath(),
         workspaceUserConfigFilePath(),
       ])).toBeTruthy()
     })

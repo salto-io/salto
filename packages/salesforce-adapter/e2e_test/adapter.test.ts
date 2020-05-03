@@ -84,6 +84,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const accountApiName = 'Account'
   const fetchedRollupSummaryFieldName = 'rollupsummary__c'
   const customObjectWithFieldsName = 'TestFields__c'
+  const customObjectAddFieldsName = 'TestAddFields__c'
   const randomString = String(Date.now()).substring(6)
 
   // Custom field names
@@ -111,6 +112,16 @@ describe('Salesforce adapter E2E with real account', () => {
   const masterDetailFieldName = `Romeo${randomString}__c`
   const formulaFieldName = 'Whiskey__c'
 
+  const removeCustomObjectsWithVariousFields = async (): Promise<void> => {
+    const deleteCustomObject = async (objectName: string): Promise<void> => {
+      if (await objectExists(client, constants.CUSTOM_OBJECT, objectName)) {
+        await client.delete(constants.CUSTOM_OBJECT, objectName)
+      }
+    }
+    await Promise.all([customObjectWithFieldsName, customObjectAddFieldsName]
+      .map(o => deleteCustomObject(o)))
+  }
+
   beforeAll(async () => {
     const verifyObjectsDependentFieldsExist = async (): Promise<void> => {
       await client.upsert('GlobalValueSet', {
@@ -134,208 +145,198 @@ describe('Salesforce adapter E2E with real account', () => {
     }
 
     const addCustomObjectWithVariousFields = async (): Promise<void> => {
-      const fieldsToAdd = [
-        {
-          fullName: `${customObjectWithFieldsName}.${picklistFieldName}`,
-          label: 'Picklist label',
-          description: 'Picklist description',
-          required: false,
-          type: constants.FIELD_TYPE_NAMES.PICKLIST,
-          valueSet: {
-            restricted: true,
-            valueSetDefinition: {
-              value: [
-                {
-                  default: true,
-                  fullName: 'NEW',
-                  label: 'NEW',
-                  color: '#FF0000',
-                },
-                {
-                  default: false,
-                  fullName: 'OLD',
-                  label: 'OLD',
-                  isActive: true,
-                },
-                {
-                  default: false,
-                  fullName: 'OLDEST',
-                  label: 'OLDEST',
-                  isActive: false,
-                },
-              ],
-            },
-          },
-        },
-        {
-          defaultValue: 25,
-          fullName: `${customObjectWithFieldsName}.${currencyFieldName}`,
-          label: 'Currency label',
-          description: 'Currency description',
-          inlineHelpText: 'Currency help',
-          precision: 18,
-          required: true,
-          scale: 3,
-          type: constants.FIELD_TYPE_NAMES.CURRENCY,
-        },
-        {
-          displayFormat: 'ZZZ-{0000}',
-          fullName: `${customObjectWithFieldsName}.${autoNumberFieldName}`,
-          label: 'Autonumber label',
-          description: 'Autonumber description',
-          inlineHelpText: 'Autonumber help',
-          externalId: true,
-          type: constants.FIELD_TYPE_NAMES.AUTONUMBER,
-        },
-        {
-          defaultValue: 'Today() + 7',
-          fullName: `${customObjectWithFieldsName}.${dateFieldName}`,
-          label: 'Date label',
-          description: 'Date description',
-          inlineHelpText: 'Date help',
-          required: false,
-          type: constants.FIELD_TYPE_NAMES.DATE,
-        },
-        {
-          defaultValue: 'TIMENOW() + 5',
-          fullName: `${customObjectWithFieldsName}.${timeFieldName}`,
-          label: 'Time label',
-          description: 'Time description',
-          inlineHelpText: 'Time help',
-          required: true,
-          type: constants.FIELD_TYPE_NAMES.TIME,
-        },
-        {
-          defaultValue: 'NOW() + 7',
-          fullName: `${customObjectWithFieldsName}.${dateTimeFieldName}`,
-          label: 'DateTime label',
-          description: 'DateTime description',
-          inlineHelpText: 'DateTime help',
-          required: false,
-          type: constants.FIELD_TYPE_NAMES.DATETIME,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${emailFieldName}`,
-          label: 'Email label',
-          required: false,
-          unique: true,
-          externalId: true,
-          type: constants.FIELD_TYPE_NAMES.EMAIL,
-        },
-        {
-          displayLocationInDecimal: true,
-          fullName: `${customObjectWithFieldsName}.${locationFieldName}`,
-          label: 'Location label',
-          required: false,
-          scale: 2,
-          type: constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${percentFieldName}`,
-          label: 'Percent label',
-          description: 'Percent description',
-          precision: 12,
-          required: false,
-          scale: 3,
-          type: constants.FIELD_TYPE_NAMES.PERCENT,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${phoneFieldName}`,
-          label: 'Phone label',
-          inlineHelpText: 'Phone help',
-          required: true,
-          type: constants.FIELD_TYPE_NAMES.PHONE,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${longTextAreaFieldName}`,
-          label: 'LongTextArea label',
-          length: 32700,
-          required: false,
-          type: constants.FIELD_TYPE_NAMES.LONGTEXTAREA,
-          visibleLines: 5,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${richTextAreaFieldName}`,
-          label: 'RichTextArea label',
-          description: 'RichTextArea description',
-          inlineHelpText: 'RichTextArea help',
-          length: 32600,
-          required: false,
-          type: constants.FIELD_TYPE_NAMES.RICHTEXTAREA,
-          visibleLines: 32,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${textAreaFieldName}`,
-          label: 'TextArea label',
-          description: 'TextArea description',
-          inlineHelpText: 'TextArea help',
-          required: false,
-          type: constants.FIELD_TYPE_NAMES.TEXTAREA,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${encryptedTextFieldName}`,
-          label: 'EncryptedText label',
-          length: 35,
-          maskChar: 'asterisk',
-          maskType: 'creditCard',
-          required: false,
-          type: constants.FIELD_TYPE_NAMES.ENCRYPTEDTEXT,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${urlFieldName}`,
-          label: 'Url label',
-          required: false,
-          type: constants.FIELD_TYPE_NAMES.URL,
-        },
-        {
-          defaultValue: 42,
-          fullName: `${customObjectWithFieldsName}.${numberFieldName}`,
-          label: 'Number label',
-          precision: 15,
-          required: false,
-          scale: 3,
-          type: constants.FIELD_TYPE_NAMES.NUMBER,
-          unique: true,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${textFieldName}`,
-          label: 'Text label',
-          required: false,
-          length: 100,
-          caseSensitive: true,
-          externalId: true,
-          type: constants.FIELD_TYPE_NAMES.TEXT,
-          unique: true,
-        },
-        {
-          defaultValue: true,
-          fullName: `${customObjectWithFieldsName}.${checkboxFieldName}`,
-          label: 'Checkbox label',
-          type: constants.FIELD_TYPE_NAMES.CHECKBOX,
-        },
-        {
-          fullName: `${customObjectWithFieldsName}.${globalPicklistFieldName}`,
-          label: 'Global Picklist label',
-          required: false,
-          valueSet: {
-            restricted: true,
-            valueSetName: gvsName,
-          },
-          type: constants.FIELD_TYPE_NAMES.PICKLIST,
-        },
-        {
-          formula: '5 > 4',
-          fullName: `${customObjectWithFieldsName}.${formulaFieldName}`,
-          label: 'Formula Checkbox label',
-          businessStatus: 'Hidden',
-          securityClassification: 'Restricted',
-          formulaTreatBlanksAs: 'BlankAsZero',
-          type: constants.FIELD_TYPE_NAMES.CHECKBOX,
-        },
-      ] as CustomField[]
+      await removeCustomObjectsWithVariousFields()
       const objectToAdd = {
         deploymentStatus: 'Deployed',
         fields: [
+          {
+            fullName: picklistFieldName,
+            label: 'Picklist label',
+            description: 'Picklist description',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.PICKLIST,
+            valueSet: {
+              restricted: true,
+              valueSetDefinition: {
+                value: [
+                  {
+                    default: true,
+                    fullName: 'NEW',
+                    label: 'NEW',
+                    color: '#FF0000',
+                  },
+                  {
+                    default: false,
+                    fullName: 'OLD',
+                    label: 'OLD',
+                    isActive: true,
+                  },
+                  {
+                    default: false,
+                    fullName: 'OLDEST',
+                    label: 'OLDEST',
+                    isActive: false,
+                  },
+                ],
+              },
+            },
+          },
+          {
+            defaultValue: 25,
+            fullName: currencyFieldName,
+            label: 'Currency label',
+            description: 'Currency description',
+            inlineHelpText: 'Currency help',
+            precision: 18,
+            required: true,
+            scale: 3,
+            type: constants.FIELD_TYPE_NAMES.CURRENCY,
+          },
+          {
+            displayFormat: 'ZZZ-{0000}',
+            fullName: autoNumberFieldName,
+            label: 'Autonumber label',
+            description: 'Autonumber description',
+            inlineHelpText: 'Autonumber help',
+            externalId: true,
+            type: constants.FIELD_TYPE_NAMES.AUTONUMBER,
+          },
+          {
+            defaultValue: 'Today() + 7',
+            fullName: dateFieldName,
+            label: 'Date label',
+            description: 'Date description',
+            inlineHelpText: 'Date help',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.DATE,
+          },
+          {
+            defaultValue: 'TIMENOW() + 5',
+            fullName: timeFieldName,
+            label: 'Time label',
+            description: 'Time description',
+            inlineHelpText: 'Time help',
+            required: true,
+            type: constants.FIELD_TYPE_NAMES.TIME,
+          },
+          {
+            defaultValue: 'NOW() + 7',
+            fullName: dateTimeFieldName,
+            label: 'DateTime label',
+            description: 'DateTime description',
+            inlineHelpText: 'DateTime help',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.DATETIME,
+          },
+          {
+            fullName: emailFieldName,
+            label: 'Email label',
+            required: false,
+            unique: true,
+            externalId: true,
+            type: constants.FIELD_TYPE_NAMES.EMAIL,
+          },
+          {
+            displayLocationInDecimal: true,
+            fullName: locationFieldName,
+            label: 'Location label',
+            required: false,
+            scale: 2,
+            type: constants.COMPOUND_FIELD_TYPE_NAMES.LOCATION,
+          },
+          {
+            fullName: percentFieldName,
+            label: 'Percent label',
+            description: 'Percent description',
+            precision: 12,
+            required: false,
+            scale: 3,
+            type: constants.FIELD_TYPE_NAMES.PERCENT,
+          },
+          {
+            fullName: phoneFieldName,
+            label: 'Phone label',
+            inlineHelpText: 'Phone help',
+            required: true,
+            type: constants.FIELD_TYPE_NAMES.PHONE,
+          },
+          {
+            fullName: longTextAreaFieldName,
+            label: 'LongTextArea label',
+            length: 32700,
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.LONGTEXTAREA,
+            visibleLines: 5,
+          },
+          {
+            fullName: richTextAreaFieldName,
+            label: 'RichTextArea label',
+            description: 'RichTextArea description',
+            inlineHelpText: 'RichTextArea help',
+            length: 32600,
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.RICHTEXTAREA,
+            visibleLines: 32,
+          },
+          {
+            fullName: textAreaFieldName,
+            label: 'TextArea label',
+            description: 'TextArea description',
+            inlineHelpText: 'TextArea help',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.TEXTAREA,
+          },
+          {
+            fullName: encryptedTextFieldName,
+            label: 'EncryptedText label',
+            length: 35,
+            maskChar: 'asterisk',
+            maskType: 'creditCard',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.ENCRYPTEDTEXT,
+          },
+          {
+            fullName: urlFieldName,
+            label: 'Url label',
+            required: false,
+            type: constants.FIELD_TYPE_NAMES.URL,
+          },
+          {
+            defaultValue: 42,
+            fullName: numberFieldName,
+            label: 'Number label',
+            precision: 15,
+            required: false,
+            scale: 3,
+            type: constants.FIELD_TYPE_NAMES.NUMBER,
+            unique: true,
+          },
+          {
+            fullName: textFieldName,
+            label: 'Text label',
+            required: false,
+            length: 100,
+            caseSensitive: true,
+            externalId: true,
+            type: constants.FIELD_TYPE_NAMES.TEXT,
+            unique: true,
+          },
+          {
+            defaultValue: true,
+            fullName: checkboxFieldName,
+            label: 'Checkbox label',
+            type: constants.FIELD_TYPE_NAMES.CHECKBOX,
+          },
+          {
+            fullName: globalPicklistFieldName,
+            label: 'Global Picklist label',
+            required: false,
+            valueSet: {
+              restricted: true,
+              valueSetName: gvsName,
+            },
+            type: constants.FIELD_TYPE_NAMES.PICKLIST,
+          },
           {
             fullName: masterDetailFieldName,
             label: 'MasterDetail label',
@@ -348,6 +349,15 @@ describe('Salesforce adapter E2E with real account', () => {
             type: constants.FIELD_TYPE_NAMES.MASTER_DETAIL,
             writeRequiresMasterRead: true,
             relationshipOrder: 0,
+          },
+          {
+            formula: '5 > 4',
+            fullName: formulaFieldName,
+            label: 'Formula Checkbox label',
+            businessStatus: 'Hidden',
+            securityClassification: 'Restricted',
+            formulaTreatBlanksAs: 'BlankAsZero',
+            type: constants.FIELD_TYPE_NAMES.CHECKBOX,
           },
         ] as CustomField[],
         fullName: customObjectWithFieldsName,
@@ -411,17 +421,17 @@ describe('Salesforce adapter E2E with real account', () => {
         summaryForeignKey: 'Opportunity.AccountId',
         summaryOperation: 'sum',
         type: 'Summary',
-      }] as CustomField[]
+      }]
       const lookupField = {
         deleteConstraint: 'Restrict',
-        fullName: `${customObjectWithFieldsName}.${lookupFieldName}`,
+        fullName: lookupFieldName,
         label: 'Lookup label',
         referenceTo: ['Opportunity'],
         relationshipName: lookupFieldName.split(constants.SALESFORCE_CUSTOM_SUFFIX)[0],
         required: false,
         type: constants.FIELD_TYPE_NAMES.LOOKUP,
       } as CustomField
-      fieldsToAdd.push(lookupField)
+      objectToAdd.fields.push(lookupField)
       const lookupFilter = {
         active: true,
         booleanFilter: '1 OR 2',
@@ -440,11 +450,7 @@ describe('Salesforce adapter E2E with real account', () => {
         }],
       }
       await verifyObjectsDependentFieldsExist()
-      if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectWithFieldsName)) {
-        await client.delete(constants.CUSTOM_OBJECT, customObjectWithFieldsName)
-      }
       await client.upsert(constants.CUSTOM_OBJECT, objectToAdd as MetadataInfo)
-      await client.upsert(constants.CUSTOM_FIELD, fieldsToAdd as MetadataInfo[])
       await client.upsert(constants.CUSTOM_FIELD, additionalFieldsToAdd as MetadataInfo[])
 
       // Add the fields permissions
@@ -452,7 +458,7 @@ describe('Salesforce adapter E2E with real account', () => {
         .filter(field => !field.required)
         .filter(field => field.type !== constants.FIELD_TYPE_NAMES.MASTER_DETAIL)
         .map(field => `${customObjectWithFieldsName}.${field.fullName}`)
-      const additionalFieldNames = fieldsToAdd.concat(additionalFieldsToAdd)
+      const additionalFieldNames = additionalFieldsToAdd
         .filter(field => !field.required)
         .map(f => f.fullName)
       const fieldNames = objectFieldNames.concat(additionalFieldNames)
@@ -918,6 +924,10 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyLeadHasConvertSettings(),
     ])
     result = (await adapter.fetch()).elements
+  })
+
+  afterAll(async () => {
+    await removeCustomObjectsWithVariousFields()
   })
 
   describe('should fetch account settings', () => {
@@ -2322,7 +2332,6 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       describe('add', () => {
-        const customObjectName = 'TestAddFields__c'
         const testAddFieldPrefix = 'TestAdd'
         const mockElemID = new ElemID(constants.SALESFORCE, 'test add object with field types')
         let customFieldsObject: ObjectType
@@ -2340,7 +2349,7 @@ describe('Salesforce adapter E2E with real account', () => {
                   lookupFieldName,
                 ].includes(field.name) ? `${testAddFieldPrefix}${field.name}` : field.name
                 const newField = field.clone()
-                newField.annotations[constants.API_NAME] = `${customObjectName}.${name}`
+                newField.annotations[constants.API_NAME] = `${customObjectAddFieldsName}.${name}`
 
                 if (name === multiSelectPicklistFieldName) {
                   newField.annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
@@ -2353,7 +2362,7 @@ describe('Salesforce adapter E2E with real account', () => {
               .fromPairs()
               .value(),
             annotations: {
-              [constants.API_NAME]: customObjectName,
+              [constants.API_NAME]: customObjectAddFieldsName,
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
             },
           })
@@ -2372,12 +2381,12 @@ describe('Salesforce adapter E2E with real account', () => {
               )
             })
 
-          if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)) {
+          if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectAddFieldsName)) {
             await adapter.remove(newCustomObject)
           }
           post = await adapter.add(newCustomObject) as ObjectType
           objectInfo = await getMetadata(client, constants.CUSTOM_OBJECT,
-            customObjectName) as CustomObject
+            customObjectAddFieldsName) as CustomObject
         })
 
         it('custom object', async () => {
@@ -2612,12 +2621,12 @@ describe('Salesforce adapter E2E with real account', () => {
                   [CORE_ANNOTATIONS.REQUIRED]: false,
                   [constants.LABEL]: 'Summary label',
                   [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldApiName),
-                  [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectName}.${currencyFieldName}`,
-                  [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectName}.${masterDetailApiName}`,
+                  [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectAddFieldsName}.${currencyFieldName}`,
+                  [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectAddFieldsName}.${masterDetailApiName}`,
                   [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
                   [constants.FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS]: [
                     {
-                      [constants.FILTER_ITEM_FIELDS.FIELD]: `${customObjectName}.${currencyFieldName}`,
+                      [constants.FILTER_ITEM_FIELDS.FIELD]: `${customObjectAddFieldsName}.${currencyFieldName}`,
                       [constants.FILTER_ITEM_FIELDS.OPERATION]: 'greaterThan',
                       [constants.FILTER_ITEM_FIELDS.VALUE]: '1',
                     },
@@ -2633,13 +2642,13 @@ describe('Salesforce adapter E2E with real account', () => {
               const fetchedRollupSummary = await getMetadata(client, constants.CUSTOM_FIELD,
                 `Case.${rollupSummaryFieldApiName}`) as CustomField
               expect(_.get(fetchedRollupSummary, 'summarizedField'))
-                .toEqual(`${customObjectName}.${currencyFieldName}`)
+                .toEqual(`${customObjectAddFieldsName}.${currencyFieldName}`)
               expect(_.get(fetchedRollupSummary, 'summaryForeignKey'))
-                .toEqual(`${customObjectName}.${masterDetailApiName}`)
+                .toEqual(`${customObjectAddFieldsName}.${masterDetailApiName}`)
               expect(_.get(fetchedRollupSummary, 'summaryOperation')).toEqual('max')
               expect(fetchedRollupSummary.summaryFilterItems).toBeDefined()
               const filterItems = fetchedRollupSummary.summaryFilterItems as FilterItem
-              expect(filterItems.field).toEqual(`${customObjectName}.${currencyFieldName}`)
+              expect(filterItems.field).toEqual(`${customObjectAddFieldsName}.${currencyFieldName}`)
               expect(filterItems.operation).toEqual('greaterThan')
               expect(filterItems.value).toEqual('1')
             }

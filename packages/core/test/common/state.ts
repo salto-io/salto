@@ -22,6 +22,7 @@ const mockState = (services: string[] = []): State => ({
   set: jest.fn().mockImplementation(() => Promise.resolve()),
   remove: jest.fn().mockImplementation(() => Promise.resolve()),
   clear: jest.fn().mockImplementation(() => Promise.resolve()),
+  rename: jest.fn().mockImplementation(() => Promise.resolve()),
   override: jest.fn().mockImplementation(() => Promise.resolve()),
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
   getServicesUpdateDates: jest.fn().mockImplementation(() => Promise.resolve()),

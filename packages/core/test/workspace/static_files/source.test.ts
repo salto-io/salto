@@ -43,6 +43,7 @@ describe('Static Files Source', () => {
       put: jest.fn().mockResolvedValue(Promise.resolve()),
       flush: () => Promise.resolve(),
       clear: () => Promise.resolve(),
+      rename: () => Promise.resolve(),
       clone: () => mockCacheStore,
     } as StaticFilesCache
     mockDirStore = {
@@ -52,6 +53,8 @@ describe('Static Files Source', () => {
       set: () => Promise.resolve(),
       delete: () => Promise.resolve(),
       clear: () => Promise.resolve(),
+      rename: () => Promise.resolve(),
+      renameFile: () => Promise.resolve(),
       flush: () => Promise.resolve(),
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
       clone: () => mockDirStore,
@@ -195,6 +198,18 @@ describe('Static Files Source', () => {
       await staticFilesSource.clear()
       expect(mockCacheStore.clear).toHaveBeenCalledTimes(1)
       expect(mockDirStore.clear).toHaveBeenCalledTimes(1)
+    })
+  })
+  describe('Rename', () => {
+    it('should rename all directory stores', async () => {
+      const newName = 'new'
+      mockDirStore.rename = jest.fn().mockResolvedValue(Promise.resolve())
+      mockCacheStore.rename = jest.fn().mockResolvedValue(Promise.resolve())
+      await staticFilesSource.rename(newName)
+      expect(mockCacheStore.rename).toHaveBeenCalledTimes(1)
+      expect(mockCacheStore.rename).toHaveBeenCalledWith(newName)
+      expect(mockDirStore.rename).toHaveBeenCalledTimes(1)
+      expect(mockDirStore.rename).toHaveBeenCalledWith(newName)
     })
   })
   describe('Clone', () => {

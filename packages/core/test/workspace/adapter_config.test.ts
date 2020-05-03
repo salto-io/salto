@@ -41,11 +41,13 @@ describe('configs', () => {
   const mockSet = jest.fn()
   const mockGet = jest.fn()
   const mockDelete = jest.fn()
+  const mockRename = jest.fn()
   const mockFlush = jest.fn()
   const mockedDirStore = {
     get: mockGet,
     set: mockSet,
     delete: mockDelete,
+    renameFile: mockRename,
     flush: mockFlush,
   } as unknown as DirectoryStore
 
@@ -71,6 +73,13 @@ describe('configs', () => {
   it('should delete adapter config', async () => {
     await configSource(mockedDirStore).delete(adapter)
     expect(mockDelete).toHaveBeenCalledTimes(1)
+    expect(mockDelete).toHaveBeenCalledWith(adapter)
+  })
+
+  it('should rename adapter config', async () => {
+    await configSource(mockedDirStore).rename('old', 'new')
+    expect(mockRename).toHaveBeenCalledTimes(1)
+    expect(mockRename).toHaveBeenCalledWith('old', 'new')
   })
 
   it('should not fail if adapter config not exists', async () => {

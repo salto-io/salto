@@ -31,6 +31,7 @@ describe('Static Files Cache', () => {
   const mockFileExists = file.exists as jest.Mock
   const mockReplaceContents = file.replaceContents as jest.Mock
   const mockRm = file.rm as jest.Mock
+  const mockRename = file.rename as jest.Mock
   const mockReadFile = file.readTextFile as unknown as jest.Mock
   let staticFilesCache: StaticFilesCache
 
@@ -58,8 +59,7 @@ describe('Static Files Cache', () => {
     expect((await staticFilesCache.get(baseMetaData.filepath))).toBeUndefined()
   })
   it('uses content of cache file if existed', async () => {
-    mockFileExists
-      .mockResolvedValueOnce(true)
+    mockFileExists.mockResolvedValueOnce(true)
     mockReadFile.mockResolvedValueOnce(expectedCacheContent)
     staticFilesCache = buildLocalStaticFilesCache('cacheDir')
     return expect(staticFilesCache.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
@@ -80,6 +80,16 @@ describe('Static Files Cache', () => {
     await staticFilesCache.clear()
     expect(mockRm).toHaveBeenCalledTimes(1)
     expect(mockRm).toHaveBeenCalledWith(path.join('cacheDir', CACHE_FILENAME))
+  })
+
+  it('rename', async () => {
+    mockFileExists.mockResolvedValueOnce(true)
+    await staticFilesCache.rename('new')
+    expect(mockRename).toHaveBeenCalledTimes(1)
+    expect(mockRename).toHaveBeenCalledWith(
+      path.join('cacheDir', CACHE_FILENAME),
+      path.join('new', CACHE_FILENAME)
+    )
   })
   it('clones', async () => {
     await staticFilesCache.put(expectedResult)

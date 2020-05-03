@@ -162,6 +162,9 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     `Created environment - ${envName}.
 ${Prompts.SERVICE_ADD_HELP}`
 
+  public static readonly RENAME_ENV = (currentEnvName: string, newEnvName: string): string =>
+    `Renamed environment - ${currentEnvName} -> ${newEnvName}`
+
   public static readonly ISOLATED_MODE_FOR_NEW_ENV_RECOMMENDATION = 'The current fetch command is running for the first time for this environment.'
     + ' It is recommended to perform first fetch of an environment in isolated mode.'
 

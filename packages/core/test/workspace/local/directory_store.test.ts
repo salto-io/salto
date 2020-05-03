@@ -16,7 +16,7 @@
 import * as path from 'path'
 import readdirp from 'readdirp'
 import {
-  stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
+  stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory, rename,
 } from '@salto-io/file'
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 
@@ -30,6 +30,7 @@ jest.mock('@salto-io/file', () => ({
   replaceContents: jest.fn(),
   mkdirp: jest.fn(),
   rm: jest.fn(),
+  rename: jest.fn(),
   isEmptyDir: jest.fn(),
   isSubDirectory: jest.fn(),
 }))
@@ -46,6 +47,7 @@ describe('localDirectoryStore', () => {
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
   const mockRm = rm as jest.Mock
+  const mockRename = rename as jest.Mock
   const mockEmptyDir = isEmptyDir as jest.Mock
   const mockIsSubFolder = isSubDirectory as jest.Mock
 
@@ -138,19 +140,10 @@ describe('localDirectoryStore', () => {
     const naclFilePath = path.join(naclFileDir, naclFileName)
     const naclFileStore = localDirectoryStore(baseDir)
 
-    it('delete the Nacl file', async () => {
-      mockEmptyDir.mockResolvedValueOnce(false)
-      mockFileExists.mockResolvedValueOnce(true)
-      await naclFileStore.delete(naclFilePath)
-      await naclFileStore.flush()
-      expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith(naclFilePath)
-    })
-
-    it('delete an empty directory', async () => {
+    it('delete the Nacl file and its empty directory', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-      mockIsSubFolder.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
-      mockFileExists.mockResolvedValueOnce(true).mockResolvedValueOnce(true)
+      mockIsSubFolder.mockResolvedValue(true)
+      mockFileExists.mockResolvedValue(true)
       await naclFileStore.delete(naclFilePath)
       await naclFileStore.flush()
       expect(mockRm).toHaveBeenCalledTimes(2)
@@ -163,12 +156,56 @@ describe('localDirectoryStore', () => {
     const baseDir = '/base'
     const naclFileStore = localDirectoryStore(baseDir)
 
-    it('should delete the directory', async () => {
+    it('should delete the all the files', async () => {
+      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      mockIsSubFolder.mockResolvedValue(true)
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValueOnce([
+        { fullPath: path.join(baseDir, 'test1') },
+        { fullPath: path.join(baseDir, 'test2') },
+      ]).mockResolvedValueOnce([])
+      await naclFileStore.clear()
+      expect(mockRm).toHaveBeenCalledTimes(3)
+      expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'test1'))
+      expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'test2'))
+      expect(mockRm).toHaveBeenCalledWith(baseDir)
+    })
+
+    it('should delete empty directories', async () => {
       mockEmptyDir.mockResolvedValueOnce(true)
       mockIsSubFolder.mockResolvedValueOnce(true)
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          { fullPath: path.join(baseDir, 'emptyDir') },
+        ])
       await naclFileStore.clear()
       expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith(baseDir)
+      expect(mockRm).toHaveBeenCalledWith(path.join(baseDir, 'emptyDir'))
+    })
+  })
+
+  describe('rename', () => {
+    const baseDir = '/base'
+    const naclFileStore = localDirectoryStore(baseDir)
+
+    it('should rename the all files', async () => {
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValue([{ fullPath: path.join(baseDir, 'test1') }])
+      await naclFileStore.rename('new')
+      expect(mockRename).toHaveBeenCalledTimes(1)
+      expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'test1'), path.join('/new', 'test1'))
+    })
+  })
+
+  describe('renameFile', () => {
+    const baseDir = '/base'
+    const naclFileStore = localDirectoryStore(baseDir)
+
+    it('should rename the file', async () => {
+      await naclFileStore.renameFile('old', 'new')
+      expect(mockRename).toHaveBeenCalledTimes(1)
+      expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
     })
   })
 })

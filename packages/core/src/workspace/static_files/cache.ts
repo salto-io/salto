@@ -20,5 +20,6 @@ export type StaticFilesCache = {
   put(item: StaticFileMetaData): Promise<void>
   flush(): Promise<void>
   clear(): Promise<void>
+  rename(name: string): Promise<void>
   clone(): StaticFilesCache
 }

@@ -237,6 +237,10 @@ const buildMultiEnvSource = (
       await series([primarySource(), commonSource(), ...Object.values(secondarySources())]
         .map(f => () => f.clear()))
     },
+    rename: async (name: string): Promise<void> => {
+      await series([primarySource(), commonSource(), ...Object.values(secondarySources())]
+        .map(f => () => f.rename(name)))
+    },
     clone: () => buildMultiEnvSource(
       _.mapValues(sources, source => source.clone()),
       primarySourceName,

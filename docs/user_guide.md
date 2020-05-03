@@ -269,13 +269,14 @@ Manage your environments' services
 
 * `--env, -e` : The name of the environment to use
 
-### **salto env <command> [name]**
+### **salto env <command> [<name>] [<new-name>]**
 
 Manage your workspace environments
 
 **Arguments:**
-* `command` : The environment management command [string] [required] [choices: "create", "set", "list", "current"]
-* `name` : The name of the environment (required for create & set) [string]
+* `command` : The environment management command [string] [required] [choices: "create", "set", "list", "current", "delete", "rename"]
+* `name` : The name of the environment (required for create, set, delete & rename) [string]
+* `new-name` : The new name of the environment (required for rename) [string]
 
 ### Generic Flags
 

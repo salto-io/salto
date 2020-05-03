@@ -18,7 +18,9 @@ import { Workspace, loadLocalWorkspace } from '@salto-io/core'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'
-import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv } from '../formatter'
+import { formatEnvListItem, formatCurrentEnv, formatCreateEnv, formatSetEnv, formatDeleteEnv, formatRenameEnv } from '../formatter'
+
+const NEW_ENV_NAME = 'new-name'
 
 const outputLine = ({ stdout }: CliOutput, text: string): void => stdout.write(`${text}\n`)
 
@@ -53,6 +55,17 @@ const deleteEnvironment = async (
   return CliExitCode.Success
 }
 
+const renameEnvironment = async (
+  envName: string,
+  newEnvName: string,
+  output: CliOutput,
+  workspace: Workspace,
+): Promise<CliExitCode> => {
+  await workspace.renameEnvironment(envName, newEnvName)
+  outputLine(output, formatRenameEnv(envName, newEnvName))
+  return CliExitCode.Success
+}
+
 const getCurrentEnv = (
   output: CliOutput,
   workspace: Workspace,
@@ -70,17 +83,24 @@ const listEnvs = (
   return CliExitCode.Success
 }
 
-const nameRequiredCommands = ['create', 'set', 'delete']
+const namesRequiredCommands = ['rename']
+const nameRequiredCommands = ['create', 'set', 'delete', ...namesRequiredCommands]
 export const command = (
   workspaceDir: string,
   commandName: string,
   output: CliOutput,
   envName?: string,
+  newEnvName?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
+    if (namesRequiredCommands.includes(commandName)
+      && (_.isEmpty(envName) || _.isEmpty(newEnvName))) {
+      throw new Error('Missing required argument\n\n'
+        + `Example usage: salto env ${commandName} <name> <new-name>`)
+    }
     if (_.isEmpty(envName) && nameRequiredCommands.includes(commandName)) {
       throw new Error('Missing required argument: name\n\n'
-        + `Example usage: salto env ${commandName} <envName>`)
+        + `Example usage: salto env ${commandName} <name>`)
     }
     if (!_.isEmpty(envName) && !nameRequiredCommands.includes(commandName)) {
       throw new Error(`Unknown argument: ${envName}\n\n`
@@ -99,6 +119,8 @@ export const command = (
         return listEnvs(output, workspace)
       case 'current':
         return getCurrentEnv(output, workspace)
+      case 'rename':
+        return renameEnvironment(envName as string, newEnvName as string, output, workspace)
       default:
         throw new Error('Unknown environment management command')
     }
@@ -108,28 +130,33 @@ export const command = (
 interface EnvsArgs {
   command: string
   name: string
+  [NEW_ENV_NAME]: string
 }
 
 type EnvsParsedCliInput = ParsedCliInput<EnvsArgs>
 
 const envsBuilder = createCommandBuilder({
   options: {
-    command: 'env <command> [name]',
+    command: 'env <command> [<name>] [<new-name>]',
     description: 'Manage your workspace environments',
     positional: {
       command: {
         type: 'string',
-        choices: ['create', 'set', 'list', 'current', 'delete'],
+        choices: ['create', 'set', 'list', 'current', 'delete', 'rename'],
         description: 'The environment management command',
       },
       name: {
         type: 'string',
-        desc: 'The name of the environment (required for create & set)',
+        desc: 'The name of the environment (required for create, set and delete)',
+      },
+      [NEW_ENV_NAME]: {
+        type: 'string',
+        desc: 'The new name of the environment (required for rename)',
       },
     },
   },
   async build(input: EnvsParsedCliInput, output: CliOutput) {
-    return command('.', input.args.command, output, input.args.name)
+    return command('.', input.args.command, output, input.args.name, input.args[NEW_ENV_NAME])
   },
 })
 

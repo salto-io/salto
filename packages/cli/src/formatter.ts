@@ -576,6 +576,9 @@ export const formatCreateEnv = (envName: string): string => Prompts.CREATED_ENV(
 
 export const formatDeleteEnv = (envName: string): string => Prompts.DELETED_ENV(envName)
 
+export const formatRenameEnv = (currentEnvName: string, newEnvName: string): string =>
+  Prompts.RENAME_ENV(currentEnvName, newEnvName)
+
 export const formatFinishedLoading = (envName?: string): string => (
   envName
     ? [Prompts.FINISHED_LOADING_FOR_ENV, envName].join(' ')

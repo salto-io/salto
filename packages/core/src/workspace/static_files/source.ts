@@ -31,6 +31,7 @@ export type StaticFilesSource = {
   getStaticFile: (metadata: StaticFileMetaData) => Promise<StaticFile| undefined>
   flush: () => Promise<void>
   clear: () => Promise<void>
+  rename: (name: string) => Promise<void>
   clone: () => StaticFilesSource
 }
 
@@ -89,6 +90,10 @@ export const buildStaticFilesSource = (
     clear: async () => {
       await staticFilesDirStore.clear()
       await staticFilesCache.clear()
+    },
+    rename: async (name: string) => {
+      await staticFilesDirStore.rename(name)
+      await staticFilesCache.rename(name)
     },
     clone: (): StaticFilesSource => buildStaticFilesSource(
       staticFilesDirStore.clone(),

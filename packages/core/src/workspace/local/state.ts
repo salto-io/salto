@@ -18,7 +18,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, ElemID, ElementMap, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, replaceContents, mkdirp, rm } from '@salto-io/file'
+import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
 import { serialize, deserialize } from '../../serializer/elements'
@@ -27,6 +27,8 @@ import State from '../state'
 const { makeArray } = collections.array
 
 const log = logger(module)
+
+export const STATE_EXTENSION = '.jsonl'
 
 type StateData = {
   elements: ElementMap
@@ -37,9 +39,10 @@ type StateData = {
 export const localState = (filePath: string): State => {
   let innerStateData: Promise<StateData>
   let dirty = false
+  let currentFilePath = filePath
 
   const loadFromFile = async (): Promise<StateData> => {
-    const text = await exists(filePath) ? await readTextFile(filePath) : undefined
+    const text = await exists(currentFilePath) ? await readTextFile(currentFilePath) : undefined
     if (text === undefined) {
       return { elements: {}, servicesUpdateDate: {} }
     }
@@ -77,6 +80,11 @@ export const localState = (filePath: string): State => {
       })
       dirty = true
     },
+    rename: async (name: string): Promise<void> => {
+      const newFilePath = path.join(path.dirname(currentFilePath), `${name}${STATE_EXTENSION}`)
+      await rename(currentFilePath, newFilePath)
+      currentFilePath = newFilePath
+    },
     override: async (element: Element | Element[]): Promise<void> => {
       const elements = makeArray(element)
       const newServices = _(elements).map(e => e.elemID.adapter)
@@ -104,8 +112,8 @@ export const localState = (filePath: string): State => {
       const elementsString = serialize(Object.values(elements))
       const dateString = JSON.stringify(servicesUpdateDate)
       const stateText = [elementsString, dateString].join(EOL)
-      await mkdirp(path.dirname(filePath))
-      await replaceContents(filePath, stateText)
+      await mkdirp(path.dirname(currentFilePath))
+      await replaceContents(currentFilePath, stateText)
       log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
     },
     clear: async (): Promise<void> => {

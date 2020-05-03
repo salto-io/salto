@@ -34,6 +34,7 @@ describe('workspace local config', () => {
     flush: jest.fn(),
     list: jest.fn(),
     delete: jest.fn(),
+    renameFile: jest.fn(),
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
     clone: jest.fn(),
@@ -98,6 +99,13 @@ describe('workspace local config', () => {
 
   it('should delete env', async () => {
     await configSource.delete('env')
-    expect((prefDirStore.delete as jest.Mock).mock.calls).toHaveLength(1)
+    expect(prefDirStore.delete as jest.Mock).toHaveBeenCalledTimes(1)
+    expect(prefDirStore.delete as jest.Mock).toHaveBeenCalledWith('env')
+  })
+
+  it('should rename env', async () => {
+    await configSource.rename('old', 'new')
+    expect(prefDirStore.renameFile as jest.Mock).toHaveBeenCalledTimes(1)
+    expect(prefDirStore.renameFile as jest.Mock).toHaveBeenCalledWith('old', 'new')
   })
 })

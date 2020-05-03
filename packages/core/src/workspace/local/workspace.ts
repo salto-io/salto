@@ -22,7 +22,7 @@ import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../../app_config'
 import { NaclFilesSource, FILE_EXTENSION, naclFilesSource } from '../nacl_files/nacl_files_source'
 import { parseResultCache } from '../cache'
-import { localState } from './state'
+import { localState, STATE_EXTENSION } from './state'
 import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspace_config'
 import { configSource, ConfigSource } from '../config_source'
 import { buildLocalStaticFilesCache } from './static_files_cache'
@@ -91,7 +91,7 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
             path.resolve(baseDir, ENVS_PREFIX, env),
             path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env)
           ),
-          state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}.jsonl`)),
+          state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}${STATE_EXTENSION}`)),
         },
       ])),
     [COMMON_ENV_PREFIX]: {

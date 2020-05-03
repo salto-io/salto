@@ -17,7 +17,7 @@ import {
   CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
-  transformElement, TransformPrimitiveFunc,
+  transformElement, TransformFunc,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
@@ -33,19 +33,16 @@ export const addHiddenValues = (
   return workspaceElements.map(elem => {
     const stateElement = stateElementsMap[elem.elemID.getFullName()]
     if (isInstanceElement(elem) && stateElement !== undefined) {
-      const createHiddenMapCallback: TransformPrimitiveFunc = (val, _pathID, field) => {
+      const createHiddenMapCallback: TransformFunc = ({ value, field }) => {
         if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-          return val
+          return value
         }
         return undefined
       }
 
       const hiddenValuesInstance = transformElement({
         element: stateElement,
-        transformPrimitives: createHiddenMapCallback,
-        // This leads to reference values not being supported for hidden values
-        // if we want to add support we need to implement transformReference differently
-        transformReferences: () => undefined,
+        transformFunc: createHiddenMapCallback,
         strict: true,
       }) as InstanceElement
 
@@ -58,16 +55,16 @@ export const addHiddenValues = (
 export const removeHiddenValues = (elem: Element):
   Element => {
   if (isInstanceElement(elem)) {
-    const removeHiddenValue: TransformPrimitiveFunc = (val, _pathID, field) => {
+    const removeHiddenValue: TransformFunc = ({ value, field }) => {
       if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
         return undefined
       }
-      return val
+      return value
     }
 
     return transformElement({
       element: elem,
-      transformPrimitives: removeHiddenValue,
+      transformFunc: removeHiddenValue,
       strict: false,
     }) || {}
   }

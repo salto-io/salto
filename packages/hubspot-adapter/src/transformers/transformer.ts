@@ -21,7 +21,7 @@ import {
   TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction,
 } from '@salto-io/adapter-api'
 import {
-  TransformPrimitiveFunc, naclCase, transformValues,
+  TransformFunc, naclCase, transformValues,
 } from '@salto-io/adapter-utils'
 import { isFormInstance } from '../filters/form_field'
 import {
@@ -1864,15 +1864,19 @@ export const createInstanceName = (
   name: string
 ): string => naclCase(name.trim())
 
-export const transformPrimitive: TransformPrimitiveFunc = (val, _pathID, field) => {
+export const transformPrimitive: TransformFunc = ({ value, field }) => {
+  const fieldType = field?.type
+  if (!isPrimitiveType(fieldType)) {
+    return value
+  }
   // remove values that are just an empty string or null
-  if (val === '' || val === null) {
+  if (value === '' || value === null) {
     return undefined
   }
-  if (field?.type.isEqual(BuiltinTypes.JSON)) {
-    return JSON.stringify(val)
+  if (fieldType.isEqual(BuiltinTypes.JSON)) {
+    return JSON.stringify(value)
   }
-  return val
+  return value
 }
 
 export const transformAfterUpdateOrAdd = async (
@@ -1899,7 +1903,7 @@ export const transformAfterUpdateOrAdd = async (
     {
       values: mergedValues,
       type: instance.type,
-      transformPrimitives: transformPrimitive,
+      transformFunc: transformPrimitive,
     }
   ) || {}
   return clonedInstance

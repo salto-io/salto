@@ -26,7 +26,6 @@ import {
   isInstanceElement,
   InstanceElement,
   isPrimitiveType,
-  PrimitiveValue,
   TypeMap,
   isField,
   isReferenceExpression,
@@ -34,7 +33,9 @@ import {
   Field, InstanceAnnotationTypes, isType, isObjectType, isListType, FieldMap,
   isStaticFile,
 } from '@salto-io/adapter-api'
-import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
+import { promises } from '@salto-io/lowerdash'
+
+const { mapValuesAsync } = promises.object
 
 const log = logger(module)
 
@@ -45,44 +46,35 @@ export const naclCase = (name?: string): string => (
   name ? _.unescape(name).replace(/((%[0-9A-F]{2})|[^\w\d])+/g, '_') : ''
 )
 
-type PrimitiveField = Field & {type: PrimitiveType}
-
-export type TransformPrimitiveFunc = (
-  val: PrimitiveValue, pathID?: ElemID, type?: PrimitiveField)
-  => PrimitiveValue | ReferenceExpression | undefined
-
-export type TransformReferenceFunc = (
-  val: ReferenceExpression, pathID?: ElemID
-) => Value | ReferenceExpression
+export type TransformFuncArgs = {
+  value: Value
+  path?: ElemID
+  field?: Field
+}
+export type TransformFunc = (args: TransformFuncArgs) => Value | undefined
 
 export const transformValues = (
   {
     values,
     type,
-    transformPrimitives = v => v,
-    transformReferences = v => v,
+    transformFunc,
     strict = true,
     pathID = undefined,
   }: {
     values: Value
     type: ObjectType | TypeMap
-    transformPrimitives?: TransformPrimitiveFunc
-    transformReferences?: TransformReferenceFunc
+    transformFunc: TransformFunc
     strict?: boolean
     pathID?: ElemID
   }
 ): Values | undefined => {
   const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): Value => {
     if (field === undefined) {
-      return strict ? undefined : value
+      return strict ? undefined : transformFunc({ value, path: keyPathID })
     }
 
     if (isReferenceExpression(value)) {
-      return transformReferences(value, keyPathID)
-    }
-
-    if (isStaticFile(value)) {
-      return value
+      return transformFunc({ value, path: keyPathID, field })
     }
 
     const fieldType = field.type
@@ -121,16 +113,12 @@ export const transformValues = (
       return transformed.length === 0 ? undefined : transformed
     }
 
-    if (isPrimitiveType(fieldType)) {
-      return transformPrimitives(value, keyPathID, field as PrimitiveField)
-    }
     if (isObjectType(fieldType)) {
       const transformed = _.omitBy(
         transformValues({
           values: value,
           type: fieldType,
-          transformPrimitives,
-          transformReferences,
+          transformFunc,
           strict,
           pathID: keyPathID,
         }),
@@ -138,7 +126,7 @@ export const transformValues = (
       )
       return _.isEmpty(transformed) ? undefined : transformed
     }
-    return undefined
+    return transformFunc({ value, path: keyPathID, field })
   }
 
   const fieldMap = isObjectType(type)
@@ -155,13 +143,11 @@ export const transformValues = (
 export const transformElement = <T extends Element>(
   {
     element,
-    transformPrimitives,
-    transformReferences,
+    transformFunc,
     strict,
   }: {
     element: T
-    transformPrimitives?: TransformPrimitiveFunc
-    transformReferences?: TransformReferenceFunc
+    transformFunc: TransformFunc
     strict?: boolean
   }
 ): T => {
@@ -182,8 +168,7 @@ export const transformElement = <T extends Element>(
   const transformedAnnotations = transformValues({
     values: element.annotations,
     type: elementAnnotationTypes(),
-    transformPrimitives,
-    transformReferences,
+    transformFunc,
     strict,
     pathID: isType(element) ? element.elemID.createNestedID('attr') : element.elemID,
   }) || {}
@@ -192,8 +177,7 @@ export const transformElement = <T extends Element>(
     const transformedValues = transformValues({
       values: element.value,
       type: element.type,
-      transformPrimitives,
-      transformReferences,
+      transformFunc,
       strict,
       pathID: element.elemID,
     }) || {}
@@ -214,8 +198,7 @@ export const transformElement = <T extends Element>(
       field => transformElement(
         {
           element: field,
-          transformPrimitives,
-          transformReferences,
+          transformFunc,
           strict,
         }
       )
@@ -262,11 +245,16 @@ export const resolveReferences = <T extends Element>(
   element: T,
   getLookUpName: (v: Value) => Value
 ): T => {
-  const referenceReplacer: TransformReferenceFunc = ref => getLookUpName(ref.value)
+  const referenceReplacer: TransformFunc = ({ value }) => {
+    if (isReferenceExpression(value)) {
+      return getLookUpName(value.value)
+    }
+    return value
+  }
 
   return transformElement({
     element,
-    transformReferences: referenceReplacer,
+    transformFunc: referenceReplacer,
     strict: false,
   })
 }
@@ -277,36 +265,36 @@ export const restoreReferences = <T extends Element>(
   getLookUpName: (v: Value) => Value
 ): T => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
-  const createPathMapCallback: TransformReferenceFunc = (val, pathID) => {
-    if (pathID) {
-      allReferencesPaths.set(pathID.getFullName(), val)
+  const createPathMapCallback: TransformFunc = ({ value, path }) => {
+    if (path && isReferenceExpression(value)) {
+      allReferencesPaths.set(path.getFullName(), value)
     }
-    return val
+    return value
   }
 
   transformElement({
     element: source,
-    transformReferences: createPathMapCallback,
+    transformFunc: createPathMapCallback,
     strict: false,
   })
 
-  const restoreReferencesFunc: TransformPrimitiveFunc = (val, pathID) => {
-    if (pathID === undefined) {
-      return val
+  const restoreReferencesFunc: TransformFunc = ({ value, path }) => {
+    if (path === undefined) {
+      return value
     }
 
-    const ref = allReferencesPaths.get(pathID.getFullName())
+    const ref = allReferencesPaths.get(path.getFullName())
     if (ref !== undefined
-      && _.isEqual(getLookUpName(ref.value), val)) {
+      && _.isEqual(getLookUpName(ref.value), value)) {
       return ref
     }
 
-    return val
+    return value
   }
 
   return transformElement({
     element: targetElement,
-    transformPrimitives: restoreReferencesFunc,
+    transformFunc: restoreReferencesFunc,
     strict: false,
   })
 }

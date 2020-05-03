@@ -247,6 +247,7 @@ describe('Transformer', () => {
         stringArray: string
         objField: UserIdentityMetadata
         listOfObjField: UserIdentityMetadata[]
+        listOfListOfObjField: UserIdentityMetadata[][]
       }
       let userIdentityInstanceValues: Values
       let mockUseridentityInstance: InstanceElement
@@ -279,6 +280,38 @@ describe('Transformer', () => {
               stringList: ['c@d.com', 'e@f.com', 'a@b.com'],
               stringArray: ['c@d.com', 'e@f.com', 'a@b.com'],
             },
+          ],
+          listOfListOfObjField: [
+            [
+              {
+                str: 'a@b.com',
+                simple: 'a@b.com',
+                simpleNum: '101',
+                stringList: ['a@b.com', 'c@d.com', 'e@f.com', 'no@owner.com'],
+                stringArray: ['a@b.com', 'c@d.com', 'e@f.com'],
+              },
+              {
+                str: 'c@d.com',
+                simple: 'c@d.com',
+                stringList: ['c@d.com', 'e@f.com', 'a@b.com'],
+                stringArray: ['c@d.com', 'e@f.com', 'a@b.com'],
+              },
+            ],
+            [
+              {
+                str: 'c@d.com',
+                simple: 'c@d.com',
+                stringList: ['c@d.com', 'e@f.com', 'a@b.com'],
+                stringArray: ['c@d.com', 'e@f.com', 'a@b.com'],
+              },
+              {
+                str: 'a@b.com',
+                simple: 'a@b.com',
+                simpleNum: '101',
+                stringList: ['a@b.com', 'c@d.com', 'e@f.com', 'no@owner.com'],
+                stringArray: ['a@b.com', 'c@d.com', 'e@f.com'],
+              },
+            ],
           ],
         } as Values
         mockUseridentityInstance = new InstanceElement(
@@ -338,6 +371,23 @@ describe('Transformer', () => {
 
       it('should convert array to string list inside array of obj', () => {
         expect(metadataResult.listOfObjField[0].stringList).toEqual('12,34,56,no@owner.com')
+      })
+
+      it('should not change non-useridentity values inside list of list of obj', () => {
+        expect(metadataResult.listOfListOfObjField[0][0].str)
+          .toEqual(userIdentityInstanceValues.listOfObjField[0].str)
+      })
+
+      it('should convert simple email to id inside list of list of obj', () => {
+        expect(metadataResult.listOfListOfObjField[0][0].simple).toEqual(12)
+      })
+
+      it('should convert useridentifier string number to number inside list of list of obj', () => {
+        expect(metadataResult.listOfListOfObjField[0][0].simpleNum).toEqual(101)
+      })
+
+      it('should convert array to string list inside list of list of obj', () => {
+        expect(metadataResult.listOfListOfObjField[0][0].stringList).toEqual('12,34,56,no@owner.com')
       })
     })
 

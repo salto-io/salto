@@ -248,6 +248,7 @@ describe('Transformer', () => {
         objField: UserIdentityMetadata
         listOfObjField: UserIdentityMetadata[]
         listOfListOfObjField: UserIdentityMetadata[][]
+        listOfListOfListOfObjField: UserIdentityMetadata[][][]
       }
       let userIdentityInstanceValues: Values
       let mockUseridentityInstance: InstanceElement
@@ -313,6 +314,25 @@ describe('Transformer', () => {
               },
             ],
           ],
+          listOfListOfListOfObjField: [
+            [
+              [
+                {
+                  str: 'a@b.com',
+                  simple: 'a@b.com',
+                  simpleNum: '101',
+                  stringList: ['a@b.com', 'c@d.com', 'e@f.com', 'no@owner.com'],
+                  stringArray: ['a@b.com', 'c@d.com', 'e@f.com'],
+                },
+                {
+                  str: 'c@d.com',
+                  simple: 'c@d.com',
+                  stringList: ['c@d.com', 'e@f.com', 'a@b.com'],
+                  stringArray: ['c@d.com', 'e@f.com', 'a@b.com'],
+                },
+              ],
+            ],
+          ],
         } as Values
         mockUseridentityInstance = new InstanceElement(
           'mockUseridentityInstance',
@@ -324,70 +344,98 @@ describe('Transformer', () => {
           hsClient
         ) as UserIdentityMetadata
       })
-      it('should not change non-useridentity values at top level', () => {
-        expect(metadataResult.str).toEqual(userIdentityInstanceValues.str)
+
+      describe('should convert at top level', () => {
+        it('should not change non-useridentity values at top level', () => {
+          expect(metadataResult.str).toEqual(userIdentityInstanceValues.str)
+        })
+
+        it('should convert simple email to id at top level', () => {
+          expect(metadataResult.simple).toEqual(12)
+        })
+
+        it('should convert useridentifier string number to number at top level', () => {
+          expect(metadataResult.simpleNum).toEqual(101)
+        })
+
+        it('should convert array to string list at top level', () => {
+          expect(metadataResult.stringList).toEqual('12,34,56,no@owner.com')
+        })
       })
 
-      it('should convert simple email to id at top level', () => {
-        expect(metadataResult.simple).toEqual(12)
+      describe('should convert inside obj', () => {
+        it('should not change non-useridentity values inside obj', () => {
+          expect(metadataResult.objField.str).toEqual(userIdentityInstanceValues.objField.str)
+        })
+
+        it('should convert simple email to id inside obj', () => {
+          expect(metadataResult.objField.simple).toEqual(12)
+        })
+
+        it('should convert useridentifier string number to number inside obj', () => {
+          expect(metadataResult.objField.simpleNum).toEqual(101)
+        })
+
+        it('should convert array to string list inside obj', () => {
+          expect(metadataResult.objField.stringList).toEqual('12,34,56,no@owner.com')
+        })
       })
 
-      it('should convert useridentifier string number to number at top level', () => {
-        expect(metadataResult.simpleNum).toEqual(101)
+      describe('should convert inside list of obj', () => {
+        it('should not change non-useridentity values inside list of obj', () => {
+          expect(metadataResult.listOfObjField[0].str)
+            .toEqual(userIdentityInstanceValues.listOfObjField[0].str)
+        })
+
+        it('should convert simple email to id inside list of obj', () => {
+          expect(metadataResult.listOfObjField[0].simple).toEqual(12)
+        })
+
+        it('should convert useridentifier string number to number inside list of obj', () => {
+          expect(metadataResult.listOfObjField[0].simpleNum).toEqual(101)
+        })
+
+        it('should convert array to string list inside list of obj', () => {
+          expect(metadataResult.listOfObjField[0].stringList).toEqual('12,34,56,no@owner.com')
+        })
       })
 
-      it('should convert array to string list at top level', () => {
-        expect(metadataResult.stringList).toEqual('12,34,56,no@owner.com')
+      describe('should convert inside list of list of obj', () => {
+        it('should not change non-useridentity values inside list of list of obj', () => {
+          expect(metadataResult.listOfListOfObjField[0][0].str)
+            .toEqual(userIdentityInstanceValues.listOfObjField[0].str)
+        })
+
+        it('should convert simple email to id inside list of list of obj', () => {
+          expect(metadataResult.listOfListOfObjField[0][0].simple).toEqual(12)
+        })
+
+        it('should convert useridentifier string number to number inside list of list of obj', () => {
+          expect(metadataResult.listOfListOfObjField[0][0].simpleNum).toEqual(101)
+        })
+
+        it('should convert array to string list inside list of list of obj', () => {
+          expect(metadataResult.listOfListOfObjField[0][0].stringList).toEqual('12,34,56,no@owner.com')
+        })
       })
 
-      it('should not change non-useridentity values inside obj', () => {
-        expect(metadataResult.objField.str).toEqual(userIdentityInstanceValues.objField.str)
-      })
+      describe('should convert inside list of list of list of obj', () => {
+        it('should not change non-useridentity values inside list of list of list of obj', () => {
+          expect(metadataResult.listOfListOfListOfObjField[0][0][0].str)
+            .toEqual(userIdentityInstanceValues.listOfObjField[0].str)
+        })
 
-      it('should convert simple email to id inside obj', () => {
-        expect(metadataResult.objField.simple).toEqual(12)
-      })
+        it('should convert simple email to id inside list of list of list of obj', () => {
+          expect(metadataResult.listOfListOfListOfObjField[0][0][0].simple).toEqual(12)
+        })
 
-      it('should convert useridentifier string number to number inside obj', () => {
-        expect(metadataResult.objField.simpleNum).toEqual(101)
-      })
+        it('should convert useridentifier string number to number inside list of list of list of obj', () => {
+          expect(metadataResult.listOfListOfListOfObjField[0][0][0].simpleNum).toEqual(101)
+        })
 
-      it('should convert array to string list inside obj', () => {
-        expect(metadataResult.objField.stringList).toEqual('12,34,56,no@owner.com')
-      })
-
-      it('should not change non-useridentity values inside array of obj', () => {
-        expect(metadataResult.listOfObjField[0].str)
-          .toEqual(userIdentityInstanceValues.listOfObjField[0].str)
-      })
-
-      it('should convert simple email to id inside array of obj', () => {
-        expect(metadataResult.listOfObjField[0].simple).toEqual(12)
-      })
-
-      it('should convert useridentifier string number to number inside array of obj', () => {
-        expect(metadataResult.listOfObjField[0].simpleNum).toEqual(101)
-      })
-
-      it('should convert array to string list inside array of obj', () => {
-        expect(metadataResult.listOfObjField[0].stringList).toEqual('12,34,56,no@owner.com')
-      })
-
-      it('should not change non-useridentity values inside list of list of obj', () => {
-        expect(metadataResult.listOfListOfObjField[0][0].str)
-          .toEqual(userIdentityInstanceValues.listOfObjField[0].str)
-      })
-
-      it('should convert simple email to id inside list of list of obj', () => {
-        expect(metadataResult.listOfListOfObjField[0][0].simple).toEqual(12)
-      })
-
-      it('should convert useridentifier string number to number inside list of list of obj', () => {
-        expect(metadataResult.listOfListOfObjField[0][0].simpleNum).toEqual(101)
-      })
-
-      it('should convert array to string list inside list of list of obj', () => {
-        expect(metadataResult.listOfListOfObjField[0][0].stringList).toEqual('12,34,56,no@owner.com')
+        it('should convert array to string list inside list of list of list of obj', () => {
+          expect(metadataResult.listOfListOfListOfObjField[0][0][0].stringList).toEqual('12,34,56,no@owner.com')
+        })
       })
     })
 

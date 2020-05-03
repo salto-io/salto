@@ -137,83 +137,93 @@ describe('useridentifier filter test', () => {
     filter.onFetch([objectInstance])
   })
 
-  it('should not effect non-useridentifier field values', () => {
-    expect(objectInstance.value.str).toEqual(instanceValues.str)
+  describe('should convert on top level', () => {
+    it('should not effect non-useridentifier field values', () => {
+      expect(objectInstance.value.str).toEqual(instanceValues.str)
+    })
+
+    it('should convert identifier at base level of object', () => {
+      expect(objectInstance.value.simple).toEqual('a@b.com')
+    })
+
+    it('should convert unknown-identifier to string at base level of object', () => {
+      expect(objectInstance.value.simpleNum).toEqual('101')
+    })
+
+    it('should convert to user identifier list when value is string', () => {
+      expect(objectInstance.value.stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
+    })
   })
 
-  it('should convert identifier at base level of object', () => {
-    expect(objectInstance.value.simple).toEqual('a@b.com')
+  describe('should convert inside an object', () => {
+    it('should not effect non-useridentifier field values inside an object field', () => {
+      expect(objectInstance.value.objField.str).toEqual('12')
+    })
+
+    it('should convert identifier at base level of object inside an object field', () => {
+      expect(objectInstance.value.objField.simple).toEqual('a@b.com')
+    })
+
+    it('should convert unknown-identifier to string inside an object field', () => {
+      expect(objectInstance.value.objField.simpleNum).toEqual('101')
+    })
+
+    it('should convert to user identifier list when value is string inside an object field', () => {
+      expect(objectInstance.value.objField.stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
+    })
   })
 
-  it('should convert unknown-identifier to string at base level of object', () => {
-    expect(objectInstance.value.simpleNum).toEqual('101')
+  describe('should convert inside a list of object fields', () => {
+    it('should not effect non-useridentifier field values inside a list of object fields', () => {
+      expect(objectInstance.value.listOfObjField[0].str).toEqual('12')
+    })
+
+    it('should convert identifier at base level of object inside a list of object fields', () => {
+      expect(objectInstance.value.listOfObjField[0].simple).toEqual('a@b.com')
+    })
+
+    it('should convert unknown-identifier to string inside a list of object fields', () => {
+      expect(objectInstance.value.listOfObjField[0].simpleNum).toEqual('101')
+    })
+
+    it('should convert to user identifier list when value is string inside a list of object fields', () => {
+      expect(objectInstance.value.listOfObjField[0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
+    })
   })
 
-  it('should convert to user identifier list when value is string', () => {
-    expect(objectInstance.value.stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
+  describe('should convert inside list of list of object fields', () => {
+    it('should not effect non-useridentifier field values inside a list of list of object fields', () => {
+      expect(objectInstance.value.listOfListOfObjField[0][0].str).toEqual('12')
+    })
+
+    it('should convert identifier at base level of object inside a list of list of object fields', () => {
+      expect(objectInstance.value.listOfListOfObjField[0][0].simple).toEqual('a@b.com')
+    })
+
+    it('should convert unknown-identifier to string inside a list of list of object fields', () => {
+      expect(objectInstance.value.listOfListOfObjField[0][0].simpleNum).toEqual('101')
+    })
+
+    it('should convert to user identifier list when value is string inside a list of list of object fields', () => {
+      expect(objectInstance.value.listOfListOfObjField[0][0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
+    })
   })
 
-  it('should not effect non-useridentifier field values inside an object field', () => {
-    expect(objectInstance.value.objField.str).toEqual('12')
-  })
+  describe('should convert inside list of list of list of object fields', () => {
+    it('should not effect non-useridentifier field values inside a list of list of list of object fields', () => {
+      expect(objectInstance.value.listOfListOfListOfObjField[0][0][0].str).toEqual('12')
+    })
 
-  it('should convert identifier at base level of object inside an object field', () => {
-    expect(objectInstance.value.objField.simple).toEqual('a@b.com')
-  })
+    it('should convert identifier at base level of object inside a list of list of list of object fields', () => {
+      expect(objectInstance.value.listOfListOfListOfObjField[0][0][0].simple).toEqual('a@b.com')
+    })
 
-  it('should convert unknown-identifier to string inside an object field', () => {
-    expect(objectInstance.value.objField.simpleNum).toEqual('101')
-  })
+    it('should convert unknown-identifier to string inside a list of list of of list object fields', () => {
+      expect(objectInstance.value.listOfListOfListOfObjField[0][0][0].simpleNum).toEqual('101')
+    })
 
-  it('should convert to user identifier list when value is string inside an object field', () => {
-    expect(objectInstance.value.objField.stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
-  })
-
-  it('should not effect non-useridentifier field values inside a list of object fields', () => {
-    expect(objectInstance.value.listOfObjField[0].str).toEqual('12')
-  })
-
-  it('should convert identifier at base level of object inside a list of object fields', () => {
-    expect(objectInstance.value.listOfObjField[0].simple).toEqual('a@b.com')
-  })
-
-  it('should convert unknown-identifier to string inside a list of object fields', () => {
-    expect(objectInstance.value.listOfObjField[0].simpleNum).toEqual('101')
-  })
-
-  it('should convert to user identifier list when value is string inside a list of object fields', () => {
-    expect(objectInstance.value.listOfObjField[0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
-  })
-
-  it('should not effect non-useridentifier field values inside a list of list of object fields', () => {
-    expect(objectInstance.value.listOfListOfObjField[0][0].str).toEqual('12')
-  })
-
-  it('should convert identifier at base level of object inside a list of list of object fields', () => {
-    expect(objectInstance.value.listOfListOfObjField[0][0].simple).toEqual('a@b.com')
-  })
-
-  it('should convert unknown-identifier to string inside a list of list of object fields', () => {
-    expect(objectInstance.value.listOfListOfObjField[0][0].simpleNum).toEqual('101')
-  })
-
-  it('should convert to user identifier list when value is string inside a list of list of object fields', () => {
-    expect(objectInstance.value.listOfListOfObjField[0][0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
-  })
-
-  it('should not effect non-useridentifier field values inside a list of list of list of object fields', () => {
-    expect(objectInstance.value.listOfListOfListOfObjField[0][0][0].str).toEqual('12')
-  })
-
-  it('should convert identifier at base level of object inside a list of list of list of object fields', () => {
-    expect(objectInstance.value.listOfListOfListOfObjField[0][0][0].simple).toEqual('a@b.com')
-  })
-
-  it('should convert unknown-identifier to string inside a list of list of of list object fields', () => {
-    expect(objectInstance.value.listOfListOfListOfObjField[0][0][0].simpleNum).toEqual('101')
-  })
-
-  it('should convert to user identifier list when value is string inside a list of list of list of object fields', () => {
-    expect(objectInstance.value.listOfListOfListOfObjField[0][0][0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
+    it('should convert to user identifier list when value is string inside a list of list of list of object fields', () => {
+      expect(objectInstance.value.listOfListOfListOfObjField[0][0][0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
+    })
   })
 })

@@ -167,7 +167,7 @@ const buildLocalDirectoryStore = (
       }
       await withLimitedConcurrency(allFiles.map(f => () => renameFile(f)), RENAME_CONCURRENCY)
       await deleteAllEmptyDirectories()
-      removeDirIfEmpty(currentBaseDir)
+      await removeDirIfEmpty(currentBaseDir)
       currentBaseDir = newBaseDir
     },
 

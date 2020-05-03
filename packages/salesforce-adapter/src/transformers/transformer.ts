@@ -837,24 +837,34 @@ export const toCustomField = (
     field.annotations[FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS],
     field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO],
     field.name.split(SALESFORCE_CUSTOM_SUFFIX)[0],
-    field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION]
+    field.annotations[FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION],
+    field.annotations[FIELD_ANNOTATIONS.LENGTH],
   )
 
   // Skip the assignment of the following annotations that are defined as annotationType
-  const skiplistedAnnotations: string[] = [
+  const annotationsHandledInCtor = [
+    FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION,
+    FIELD_ANNOTATIONS.VALUE_SET,
+    FIELD_ANNOTATIONS.RESTRICTED,
+    VALUE_SET_DEFINITION_FIELDS.SORTED,
+    VALUE_SET_FIELDS.VALUE_SET_NAME,
+    DEFAULT_VALUE_FORMULA,
+    FIELD_ANNOTATIONS.LENGTH,
+    FIELD_ANNOTATIONS.DEFAULT_VALUE,
+    CORE_ANNOTATIONS.REQUIRED,
+    FIELD_ANNOTATIONS.RELATIONSHIP_NAME,
+    FIELD_ANNOTATIONS.REFERENCE_TO,
+    FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS,
+  ]
+  const annotationsToSkip = [
+    ...annotationsHandledInCtor,
     API_NAME, // used to mark the SERVICE_ID but does not exist in the CustomObject
-    FIELD_ANNOTATIONS.ALLOW_LOOKUP_RECORD_DELETION, // handled in the CustomField constructor
-    FIELD_ANNOTATIONS.VALUE_SET, // handled in the CustomField constructor
-    FIELD_ANNOTATIONS.RESTRICTED, // handled in the CustomField constructor
-    VALUE_SET_DEFINITION_FIELDS.SORTED, // handled in the CustomField constructor
-    VALUE_SET_FIELDS.VALUE_SET_NAME, // handled in the CustomField constructor
-    DEFAULT_VALUE_FORMULA, // handled in the CustomField constructor
     FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter
     FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
   ]
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(field.type.annotationTypes).includes(annotationName)
-    && !skiplistedAnnotations.includes(annotationName)
+    && !annotationsToSkip.includes(annotationName)
     // Cannot specify label on standard field
     && (annotationName !== LABEL || isCustom(newField.fullName))
   )
@@ -880,7 +890,7 @@ export const toCustomObject = (
       : undefined
   )
   // Skip the assignment of the following annotations that are defined as annotationType
-  const skiplistedAnnotations: string[] = [
+  const annotationsToSkip: string[] = [
     API_NAME, // we use it as fullName
     METADATA_TYPE, // internal annotation
     LABEL, // we send it in CustomObject constructor to enable default for pluralLabels
@@ -888,7 +898,7 @@ export const toCustomObject = (
 
   const isAllowed = (annotationName: string): boolean => (
     Object.keys(element.annotationTypes).includes(annotationName)
-    && !skiplistedAnnotations.includes(annotationName)
+    && !annotationsToSkip.includes(annotationName)
   )
 
   _.assign(

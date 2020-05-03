@@ -269,7 +269,7 @@ Manage your environments' services
 
 * `--env, -e` : The name of the environment to use
 
-### **salto env <command> [\<name\>] [\<new-name\>]**
+### **salto env \<command\> [\<name\>] [\<new-name\>]**
 
 Manage your workspace environments
 

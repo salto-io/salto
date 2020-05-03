@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field as TypeField, TypeMap, ListType, isField, createRestriction,
+  Field as TypeField, TypeMap, ListType, isField, createRestriction, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -949,6 +949,9 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 }
 
 export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
+  if (isReferenceExpression(value)) {
+    return value
+  }
   const fieldType = field?.type
   if (!isPrimitiveType(fieldType)) {
     return value

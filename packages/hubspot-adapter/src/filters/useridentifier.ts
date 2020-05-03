@@ -72,16 +72,16 @@ const convertUserIdentifiers = (
         }
         if (isObjectType(deepInnerType)) {
           const currentLevelInnerType = fieldType.innerType
-          if (isListType(currentLevelInnerType)) {
-            const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
-            valuesArray.forEach(val => {
-              convertListTypeOfObjectType(currentLevelInnerType, val)
-            })
-          }
           if (isObjectType(currentLevelInnerType)) {
             const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
             valuesArray.forEach(val => {
               convertUserIdentifiers(currentLevelInnerType, val, ownersMap)
+            })
+          }
+          if (isListType(currentLevelInnerType)) {
+            const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
+            valuesArray.forEach(val => {
+              convertListTypeOfObjectType(currentLevelInnerType, val)
             })
           }
         }

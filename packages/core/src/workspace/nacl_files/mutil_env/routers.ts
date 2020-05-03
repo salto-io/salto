@@ -231,10 +231,10 @@ export const routeNewEnv = async (
   const addCommonProjectionToCurrentChanges = modifyWithCommonProj
     ? _.flatten(
       await Promise.all(
-        (await projectChange(
+        await projectChange(
           createAddChange(commonChangeProjection, change.id, pathHint),
           primarySource
-        )).map(projectedChange => seperateChangeByFiles(projectedChange, commonSource))
+        )
       )
     )
     : []

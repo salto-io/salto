@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import cliMain from './cli'
+import { SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs } from '@salto-io/e2e-credentials-store'
+import { logger } from '@salto-io/logging'
 
-export { default as creds, CredsSpec, CredsLease } from './jest-environment/creds'
+const log = logger(module)
 
-export { default as createEnvUtils } from './process_env'
-export { SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs } from './jest-environment/index'
-export { default as IntervalScheduler } from './jest-environment/interval_scheduler'
-export * from './types'
-export const cli = { main: cliMain }
+export default class CliE2EJestEnvironment extends SaltoE2EJestEnvironment {
+  constructor(...args: JestEnvironmentConstructorArgs) {
+    super({ logBaseName: log.namespace }, ...args)
+  }
+}

@@ -32,7 +32,7 @@ export type JestEnvironmentConstructorArgs = ConstructorParameters<typeof NodeEn
 export class SaltoE2EJestEnvironment extends NodeEnvironment {
   protected readonly log: Logger
 
-  public static runningTasksPrinter: IntervalScheduler
+  protected readonly runningTasksPrinter: IntervalScheduler
 
   constructor(
     { logBaseName }: CredsNodeEnvironmentOpts,
@@ -40,7 +40,7 @@ export class SaltoE2EJestEnvironment extends NodeEnvironment {
   ) {
     super(...args)
     this.log = logger([logBaseName, process.env.JEST_WORKER_ID].filter(x => x).join('/'))
-    SaltoE2EJestEnvironment.runningTasksPrinter = new IntervalScheduler(
+    this.runningTasksPrinter = new IntervalScheduler(
       (id, startTime) => {
         const duration = humanizeDuration(Date.now() - startTime.getTime(), { round: true })
         this.log.warn('Still running (%s): %s', duration, id)
@@ -57,9 +57,9 @@ export class SaltoE2EJestEnvironment extends NodeEnvironment {
     this.log.log(status === 'failure' ? 'error' : 'info', '%s %s: %s', type, status, id)
 
     if (status === 'start') {
-      SaltoE2EJestEnvironment.runningTasksPrinter.schedule(id)
+      this.runningTasksPrinter.schedule(id)
     } else {
-      SaltoE2EJestEnvironment.runningTasksPrinter.unschedule(id)
+      this.runningTasksPrinter.unschedule(id)
     }
   }
 }

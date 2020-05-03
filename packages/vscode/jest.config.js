@@ -38,10 +38,7 @@ module.exports = deepMerge(
         lines: 42.72,
         statements: 41.55,
       },
-    },
-    testEnvironment: process.env.RUN_E2E_TESTS	
-      ? '@salto-io/e2e-credentials-store/dist/src/jest-environment/index'
-      : undefined,
+    }
   }
 )
 

@@ -17,12 +17,18 @@ import {
   createEnvUtils,
   CredsSpec,
   SuspendCredentialsError,
+  SaltoE2EJestEnvironment,
+  JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
+import { logger } from '@salto-io/logging'
 import {
   Credentials,
   validateCredentials,
   ApiLimitsTooLowError,
 } from '../src/client/client'
+
+
+const log = logger(module)
 
 const MIN_API_REQUESTS_NEEDED = 500
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
@@ -58,5 +64,11 @@ export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
     },
     typeName: 'salesforce',
     globalProp: envName ? `salesforce_${envName}` : 'salseforce',
+  }
+}
+
+export default class SalesforceE2EJestEnvironment extends SaltoE2EJestEnvironment {
+  constructor(...args: JestEnvironmentConstructorArgs) {
+    super({ logBaseName: log.namespace }, ...args)
   }
 }

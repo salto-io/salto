@@ -20,15 +20,18 @@ import {
   ElemID, InstanceAnnotationTypes, isListType, ListType,
   BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile,
   isPrimitiveType,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 
 import {
-  transformValues, resolvePath, TransformPrimitiveFunc,
-  TransformReferenceFunc, restoreReferences, resolveReferences,
+  transformValues, resolvePath, TransformFunc, restoreReferences, resolveReferences,
   naclCase, findElement, findElements, findObjectType,
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
   flatValues,
 } from '../src/utils'
+
+const mockFunction = <T extends (...args: never[]) => unknown>():
+jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 
 describe('Test utils.ts', () => {
   const mockStrType = new PrimitiveType({
@@ -161,17 +164,19 @@ describe('Test utils.ts', () => {
 
     describe('with empty values', () => {
       it('should return undefined', () => {
-        expect(transformValues({ values: {}, type: mockType })).toBeUndefined()
+        expect(transformValues({
+          values: {},
+          transformFunc: () => undefined,
+          type: mockType,
+        })).toBeUndefined()
       })
     })
 
-    describe('with empty transformPrimitives func', () => {
-      let transformPrimitiveFunc: jest.Mock
-      let transformReferenceFunc: jest.Mock
+    describe('with empty transform func', () => {
+      let transformFunc: jest.Mock
 
       beforeEach(() => {
-        transformPrimitiveFunc = jest.fn().mockImplementation(val => val)
-        transformReferenceFunc = jest.fn().mockImplementation(val => val)
+        transformFunc = mockFunction<TransformFunc>().mockImplementation(({ value }) => value)
       })
 
       describe('when called with objectType as type parameter', () => {
@@ -179,8 +184,7 @@ describe('Test utils.ts', () => {
           const result = transformValues({
             values: mockInstance.value,
             type: mockType,
-            transformPrimitives: transformPrimitiveFunc,
-            transformReferences: transformReferenceFunc,
+            transformFunc,
           })
 
           expect(result).toBeDefined()
@@ -194,33 +198,37 @@ describe('Test utils.ts', () => {
         it('should call transform on top level primitive values', () => {
           const primitiveFieldNames = ['str', 'bool', 'num']
           primitiveFieldNames.forEach(field => {
-            expect(transformPrimitiveFunc).toHaveBeenCalledWith(
-              mockInstance.value[field], undefined, mockType.fields[field],
-            )
+            expect(transformFunc).toHaveBeenCalledWith({
+              value: mockInstance.value[field],
+              path: undefined,
+              field: mockType.fields[field],
+            })
           })
         })
 
         it('should call transform on top level references values', () => {
           const referenceFieldNames = ['ref']
           referenceFieldNames.forEach(field => {
-            expect(transformReferenceFunc).toHaveBeenCalledWith(
-              mockInstance.value[field], undefined,
-            )
+            expect(transformFunc).toHaveBeenCalledWith({
+              value: mockInstance.value[field],
+              path: undefined,
+              field: mockType.fields[field],
+            })
           })
         })
 
         it('should call transform on non-list types even for list types', () => {
           expect(isListType(mockType.fields.strArray.type)).toBeTruthy()
-          expect(transformPrimitiveFunc).toHaveBeenCalledWith(
-            mockInstance.value.strArray,
-            undefined,
-            new Field(
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: mockInstance.value.strArray,
+            path: undefined,
+            field: new Field(
               mockType.fields.strArray.elemID.createParentID(),
               mockType.fields.strArray.name,
               (mockType.fields.strArray.type as ListType).innerType,
               mockType.fields.strArray.annotations,
-            )
-          )
+            ),
+          })
         })
 
         it('should call transform on array elements', () => {
@@ -228,16 +236,16 @@ describe('Test utils.ts', () => {
           expect(isListType(numArrayFieldType)).toBeTruthy()
           const numArrayValues = (mockInstance.value.numArray as string[])
           numArrayValues.forEach(
-            val => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
-              val,
-              undefined,
-              new Field(
+            value => expect(transformFunc).toHaveBeenCalledWith({
+              value,
+              path: undefined,
+              field: new Field(
                 mockType.fields.numArray.elemID.createParentID(),
                 mockType.fields.numArray.name,
                 (numArrayFieldType as ListType).innerType,
                 mockType.fields.numArray.annotations,
-              )
-            )
+              ),
+            })
           )
         })
 
@@ -258,9 +266,11 @@ describe('Test utils.ts', () => {
             ['obj', 0, 'innerObj', 'magical', 'deepName'],
           ]
           nestedPrimitivePaths.forEach(
-            path => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
-              _.get(mockInstance.value, path), undefined, getField(mockType, path),
-            )
+            path => expect(transformFunc).toHaveBeenCalledWith({
+              value: _.get(mockInstance.value, path),
+              path: undefined,
+              field: getField(mockType, path),
+            })
           )
         })
 
@@ -293,8 +303,7 @@ describe('Test utils.ts', () => {
           const result = transformValues({
             values: mockInstance.annotations,
             type: InstanceAnnotationTypes,
-            transformPrimitives: transformPrimitiveFunc,
-            transformReferences: transformReferenceFunc,
+            transformFunc,
           })
           expect(result).toEqual(mockInstance.annotations)
         })
@@ -303,9 +312,11 @@ describe('Test utils.ts', () => {
         it('should call transform on instance annotation references values', () => {
           const referenceAnnotationNames = [INSTANCE_ANNOTATIONS.DEPENDS_ON]
           referenceAnnotationNames.forEach(annotation => {
-            expect(transformReferenceFunc).toHaveBeenCalledWith(
-              mockInstance.annotations[annotation], undefined,
-            )
+            expect(transformFunc).toHaveBeenCalledWith({
+              value: mockInstance.annotations[annotation],
+              path: undefined,
+              field: new Field(new ElemID(''), annotation, InstanceAnnotationTypes[annotation]),
+            })
           })
         })
       })
@@ -322,14 +333,11 @@ describe('Test utils.ts', () => {
             bool: BuiltinTypes.BOOLEAN,
             nums: new ListType(BuiltinTypes.NUMBER),
           }
-          const result = transformValues(
-            {
-              values: origValue,
-              type: typeMap,
-              transformPrimitives: transformPrimitiveFunc,
-              transformReferences: transformReferenceFunc,
-            }
-          )
+          const result = transformValues({
+            values: origValue,
+            type: typeMap,
+            transformFunc,
+          })
 
           expect(result).toBeDefined()
           resp = result as Values
@@ -337,18 +345,18 @@ describe('Test utils.ts', () => {
         it('should call transform func on all defined types', () => {
           const primitiveTypes = ['str', 'num', 'bool']
           primitiveTypes.forEach(
-            name => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
-              origValue[name],
-              undefined,
-              new Field(new ElemID(''), name, typeMap[name])
-            )
+            name => expect(transformFunc).toHaveBeenCalledWith({
+              value: origValue[name],
+              path: undefined,
+              field: new Field(new ElemID(''), name, typeMap[name]),
+            })
           )
           origValue.nums.forEach(
-            (val: string) => expect(transformPrimitiveFunc).toHaveBeenCalledWith(
-              val,
-              undefined,
-              new Field(new ElemID(''), 'nums', BuiltinTypes.NUMBER)
-            )
+            (value: string) => expect(transformFunc).toHaveBeenCalledWith({
+              value,
+              path: undefined,
+              field: new Field(new ElemID(''), 'nums', BuiltinTypes.NUMBER),
+            })
           )
         })
         it('should omit undefined fields values', () => {
@@ -360,27 +368,25 @@ describe('Test utils.ts', () => {
       })
     })
 
-    const transformPrimitiveTest: TransformPrimitiveFunc = (val, _pathID, field) => {
+    const transformTest: TransformFunc = ({ value, field }) => {
+      if (isReferenceExpression(value)) {
+        return value.value
+      }
       const fieldType = field?.type
       if (!isPrimitiveType(fieldType)) {
-        return val
+        return value
       }
       switch (fieldType.primitive) {
         case PrimitiveTypes.NUMBER:
-          return Number(val)
+          return Number(value)
         case PrimitiveTypes.BOOLEAN:
-          return val.toString().toLowerCase() === 'true'
+          return value.toString().toLowerCase() === 'true'
         case PrimitiveTypes.STRING:
-          return val.toString().length === 0 ? undefined : val.toString()
+          return value.toString().length === 0 ? undefined : value.toString()
         default:
-          return val
+          return value
       }
     }
-
-
-    const transformReferenceTest: TransformReferenceFunc = val =>
-      val.value
-
 
     describe('when transformPrimitives and transformReference was received', () => {
       describe('when called with instance values', () => {
@@ -388,8 +394,7 @@ describe('Test utils.ts', () => {
           const result = transformValues({
             values: mockInstance.value,
             type: mockType,
-            transformPrimitives: transformPrimitiveTest,
-            transformReferences: transformReferenceTest,
+            transformFunc: transformTest,
           })
           expect(result).toBeDefined()
           resp = result as Values
@@ -417,8 +422,7 @@ describe('Test utils.ts', () => {
           {
             values: mockInstance.value,
             type: mockType,
-            transformPrimitives: transformPrimitiveTest,
-            transformReferences: transformReferenceTest,
+            transformFunc: transformTest,
             strict: false,
           }
         )

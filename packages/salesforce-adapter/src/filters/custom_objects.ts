@@ -282,7 +282,7 @@ export const transformFieldAnnotations = (
     {
       values: annotations,
       type: annotationsType,
-      transformPrimitives: transformPrimitive,
+      transformFunc: transformPrimitive,
     }
   ) || {}
 }
@@ -295,7 +295,7 @@ const transformObjectAnnotationValues = (instance: InstanceElement,
     {
       values: instance.value,
       type: annotationsObject,
-      transformPrimitives: transformPrimitive,
+      transformFunc: transformPrimitive,
     }
   )
 }

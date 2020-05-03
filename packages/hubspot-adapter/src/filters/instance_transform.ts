@@ -36,7 +36,7 @@ const filterCreator: FilterCreator = () => ({
           {
             values: instance.value,
             type: instance.type as ObjectType,
-            transformPrimitives: transformPrimitive,
+            transformFunc: transformPrimitive,
           }
         ) || {}
       })

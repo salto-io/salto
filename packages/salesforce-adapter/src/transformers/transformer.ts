@@ -23,11 +23,11 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field as TypeField, TypeMap, ListType, isField, createRestriction,
+  Field as TypeField, TypeMap, ListType, isField, createRestriction, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
-  naclCase, TransformPrimitiveFunc,
+  naclCase, TransformFunc,
 } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField } from '../client/types'
 import {
@@ -948,32 +948,39 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
   'xsd:long': Number,
 }
 
-export const transformPrimitive: TransformPrimitiveFunc = (val, pathID, field) => {
+export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
+  if (isReferenceExpression(value)) {
+    return value
+  }
+  const fieldType = field?.type
+  if (!isPrimitiveType(fieldType)) {
+    return value
+  }
   // We sometimes get empty strings that we want to filter out
-  if (val === '') {
+  if (value === '') {
     return undefined
   }
   // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
-  if ((_.isObject(val) && _.get(val, ['$', 'xsi:nil']) === 'true')) {
+  if ((_.isObject(value) && _.get(value, ['$', 'xsi:nil']) === 'true')) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
     return undefined
   }
   // (Salto-394) Salesforce returns objects like:
   // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
-  if (_.isObject(val) && Object.keys(val).includes('_')) {
-    const convertFunc = convertXsdTypeFuncMap[_.get(val, ['$', 'xsi:type'])] || (v => v)
-    return transformPrimitive(convertFunc(_.get(val, '_')), pathID, field)
+  if (_.isObject(value) && Object.keys(value).includes('_')) {
+    const convertFunc = convertXsdTypeFuncMap[_.get(value, ['$', 'xsi:type'])] || (v => v)
+    return transformPrimitive({ value: convertFunc(_.get(value, '_')), path, field })
   }
-  switch (field?.type.primitive) {
+  switch (fieldType.primitive) {
     case PrimitiveTypes.NUMBER:
-      return Number(val)
+      return Number(value)
     case PrimitiveTypes.BOOLEAN:
-      return val.toString().toLowerCase() === 'true'
+      return value.toString().toLowerCase() === 'true'
     case PrimitiveTypes.STRING:
-      return val.toString().length === 0 ? undefined : val.toString()
+      return value.toString().length === 0 ? undefined : value.toString()
     default:
-      return val
+      return value
   }
 }
 

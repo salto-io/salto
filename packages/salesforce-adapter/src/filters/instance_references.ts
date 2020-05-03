@@ -18,7 +18,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
-  TransformPrimitiveFunc, transformValues,
+  TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
@@ -97,15 +97,15 @@ const replaceReferenceValues = (
     return _.isString(val) ? new ReferenceExpression(elemID) : val
   }
 
-  const transformPrimitive: TransformPrimitiveFunc = (val, _pathID, field) => (
-    !_.isUndefined(field) && shouldReplace(field) ? replacePrimitive(val, field) : val
+  const transformPrimitive: TransformFunc = ({ value, field }) => (
+    !_.isUndefined(field) && shouldReplace(field) ? replacePrimitive(value, field) : value
   )
 
   return transformValues(
     {
       values,
       type: refElement,
-      transformPrimitives: transformPrimitive,
+      transformFunc: transformPrimitive,
       strict: false,
     }
   ) || values

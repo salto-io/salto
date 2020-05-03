@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
+import SalesforceAdapter, {
   SalesforceClient,
   testHelpers as salesforceTestHelpers,
   testTypes as salesforceTestTypes,
@@ -21,8 +21,9 @@ import {
   Credentials,
 } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
-import { InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, Element } from '@salto-io/adapter-api'
 
+export const naclNameToSFName = (objName: string): string => `${objName}__c`
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
   missingFields: string[] = []): Promise<boolean> => {
   const result = (
@@ -68,4 +69,21 @@ export const getSalesforceCredsInstance = (creds: Credentials): InstanceElement 
     credentialsType,
     configValues,
   )
+}
+
+export const addElements = async (
+  client: SalesforceClient,
+  elements: Element[]
+): Promise<Element[]> => {
+  const adapter = new SalesforceAdapter({ client, config: {} })
+  const updatedElements = await Promise.all(elements.map(element => adapter.add(element)))
+  return updatedElements
+}
+
+export const removeElements = async (
+  client: SalesforceClient,
+  elements: Element[]
+): Promise<void> => {
+  const adapter = new SalesforceAdapter({ client, config: {} })
+  await Promise.all(elements.map(element => adapter.remove(element)))
 }

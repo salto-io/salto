@@ -46,6 +46,7 @@
     "@salto-io/salesforce-adapter": "0.1.14",
     "chalk": "^2.4.2",
     "figlet": "^1.2.4",
+    "glob": "^7.1.6",
     "inquirer": "^7.0.0",
     "lodash": "^4.17.15",
     "mkdirp": "^0.5.1",

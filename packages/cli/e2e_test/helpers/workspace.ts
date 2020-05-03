@@ -16,6 +16,7 @@
 import { Plan, Workspace, telemetrySender } from '@salto-io/core'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
+import glob from 'glob'
 import {
   ActionName, Change, ElemID, getChangeElement, InstanceElement, ObjectType, Values,
   Element, TypeMap,
@@ -26,12 +27,15 @@ import {
 import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
-import { CliOutput, CliExitCode } from '../../src/types'
+import { CliOutput, CliExitCode, CliTelemetry } from '../../src/types'
 import { loadWorkspace } from '../../src/workspace/workspace'
 import { DeployCommand } from '../../src/commands/deploy'
 import { command as preview } from '../../src/commands/preview'
 import { command as servicesCommand } from '../../src/commands/services'
+import { command as initCommand } from '../../src/commands/init'
+import { command as envCommand } from '../../src/commands/env'
 import { getCliTelemetry } from '../../src/telemetry'
+import * as formatterImpl from '../../src/formatter'
 
 export type ReplacementPair = [string | RegExp, string]
 
@@ -40,10 +44,36 @@ const services = ['salesforce']
 const mockCliOutput = (): CliOutput =>
   ({ stdout: new MockWriteStream(), stderr: new MockWriteStream() })
 
+const mockCliTelementy: CliTelemetry = {
+  start: () => jest.fn(),
+  failure: () => jest.fn(),
+  success: () => jest.fn(),
+  mergeErrors: () => jest.fn(),
+  changes: () => jest.fn(),
+  changesToApply: () => jest.fn(),
+  errors: () => jest.fn(),
+  failedRows: () => jest.fn(),
+  actionsSuccess: () => jest.fn(),
+  actionsFailure: () => jest.fn(),
+  stacktrace: () => jest.fn(),
+}
+
 const mockTelemetry = telemetrySender(
   { url: 'http://0.0.0.0', token: '1234', enabled: false },
   { installationID: 'abcd', app: 'test' },
 )
+
+export const runAddSalesforceService = async (
+  workspaceDir: string, credentials: InstanceElement
+): Promise<void> => {
+  await servicesCommand(
+    workspaceDir,
+    'add',
+    mockCliOutput(),
+    () => Promise.resolve(credentials),
+    'salesforce'
+  ).execute()
+}
 
 export const runSalesforceLogin = async (
   workspaceDir: string,
@@ -67,7 +97,38 @@ export const editNaclFile = async (filename: string, replacements: ReplacementPa
   await writeFile(filename, fileAsString)
 }
 
-export const runFetch = async (fetchOutputDir: string): Promise<void> => {
+export const runInit = async (
+  workspaceName: string,
+  defaultEnvName: string,
+  baseDir?: string
+): Promise<void> => {
+  const origDir = process.cwd()
+  if (baseDir) {
+    process.chdir(baseDir)
+  }
+  await initCommand(
+    workspaceName,
+    mockCliTelementy,
+    mockCliOutput(),
+    jest.fn().mockResolvedValue(defaultEnvName)
+  ).execute()
+  if (baseDir) {
+    process.chdir(origDir)
+  }
+}
+
+export const runCreateEnv = async (workspaceDir: string, envName: string): Promise<void> => {
+  await envCommand(workspaceDir, 'create', mockCliOutput(), envName).execute()
+}
+
+export const runSetEnv = async (workspaceDir: string, envName: string): Promise<void> => {
+  await envCommand(workspaceDir, 'set', mockCliOutput(), envName).execute()
+}
+
+export const runFetch = async (
+  fetchOutputDir: string,
+  isolated = false
+): Promise<void> => {
   await fetch(
     fetchOutputDir,
     true,
@@ -75,14 +136,14 @@ export const runFetch = async (fetchOutputDir: string): Promise<void> => {
     mockTelemetry,
     mockCliOutput(),
     mockSpinnerCreator([]),
-    false,
+    isolated,
     services,
-  )
-    .execute()
+  ).execute()
 }
 
 export const runDeploy = async (
   lastPlan: Plan | undefined, fetchOutputDir: string, force = false,
+  allowErrors = false
 ): Promise<void> => {
   if (lastPlan) {
     lastPlan.clear()
@@ -98,8 +159,12 @@ export const runDeploy = async (
   ).execute()
   const errs = (output.stderr as MockWriteStream).content
   // This assert is before result assert so will see the error
-  expect(errs).toHaveLength(0)
-  expect(result).toBe(CliExitCode.Success)
+  // This is not a mistake, we will have errors on some deployments
+  // with delete changes, and its expected.
+  if (!allowErrors) {
+    expect(errs).toHaveLength(0)
+    expect(result).toBe(CliExitCode.Success)
+  }
 }
 
 export const runPreview = async (fetchOutputDir: string): Promise<CliExitCode> => (
@@ -110,6 +175,22 @@ export const runPreview = async (fetchOutputDir: string): Promise<CliExitCode> =
     true,
   ).execute()
 )
+
+export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan | undefined> => {
+  let plan: Plan | undefined
+  jest.spyOn(formatterImpl, 'formatExecutionPlan')
+    .mockImplementationOnce((p: Plan, _planErrors): string => {
+      plan = p
+      return 'plan'
+    })
+  await preview(
+    fetchOutputDir, getCliTelemetry(mockTelemetry, 'preview'),
+    mockCliOutput(), mockSpinnerCreator([]),
+    services,
+    true,
+  ).execute()
+  return plan
+}
 
 export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {
   if (lastPlan) {
@@ -162,3 +243,11 @@ export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, 
   })
   return object
 }
+
+export const ensureFilesExist = (filePathes: string[]): boolean => (
+  _.every(filePathes.map(filename => !_.isEmpty(glob.sync(filename))))
+)
+
+export const ensureFilesDontExist = (filePathes: string[]): boolean => (
+  _.every(filePathes.map(filename => _.isEmpty(glob.sync(filename))))
+)

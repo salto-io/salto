@@ -2030,7 +2030,7 @@ export const createHubspotMetadataFromInstanceElement = async (
       if (isListType(fieldType) && _.isArray(val)) {
         const fieldInnerType = fieldType.innerType
         if (isUserIdentifierType(fieldInnerType)) {
-          // Currently all array are reesented as a string in HubSpot
+          // Currently all array are repesented as a string in HubSpot
           // If there will be "real" array ones we need to support it
           return val.map(v => ownersMap.get(v) || v).join(',')
         }

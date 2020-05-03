@@ -56,13 +56,11 @@ describe('useridentifier filter test', () => {
       simple: '12',
       simpleNum: '101',
       stringList: '12,34,56,non@owner.com',
-      stringArray: ['12', '34', '56'],
       objField: {
         str: '12',
         simple: '12',
         simpleNum: '101',
         stringList: '12,34,56,non@owner.com',
-        stringArray: ['12', '34', '56'],
       },
       listOfObjField: [
         {
@@ -70,15 +68,29 @@ describe('useridentifier filter test', () => {
           simple: '12',
           simpleNum: '101',
           stringList: '12,34,56,non@owner.com',
-          stringArray: ['12', '34', '56'],
         },
         {
           str: '34',
           simple: '34',
           simpleNum: '101',
           stringList: '34,56,12',
-          stringArray: ['34', '56', '12'],
         },
+      ],
+      listOfListOfObjField: [
+        [
+          {
+            str: '12',
+            simple: '12',
+            simpleNum: '101',
+            stringList: '12,34,56,non@owner.com',
+          },
+          {
+            str: '34',
+            simple: '34',
+            simpleNum: '101',
+            stringList: '34,56,12',
+          },
+        ],
       ],
     } as Values
     objectInstance = new InstanceElement(
@@ -105,10 +117,6 @@ describe('useridentifier filter test', () => {
     expect(objectInstance.value.simpleNum).toEqual('101')
   })
 
-  it('should convert to user identifier list when value is an array', () => {
-    expect(objectInstance.value.stringArray).toEqual(['a@b.com', 'c@d.com', 'e@f.com'])
-  })
-
   it('should convert to user identifier list when value is string', () => {
     expect(objectInstance.value.stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
   })
@@ -123,10 +131,6 @@ describe('useridentifier filter test', () => {
 
   it('should convert unknown-identifier to string inside an object field', () => {
     expect(objectInstance.value.objField.simpleNum).toEqual('101')
-  })
-
-  it('should convert to user identifier list when value is an array inside an object field', () => {
-    expect(objectInstance.value.objField.stringArray).toEqual(['a@b.com', 'c@d.com', 'e@f.com'])
   })
 
   it('should convert to user identifier list when value is string inside an object field', () => {
@@ -145,11 +149,15 @@ describe('useridentifier filter test', () => {
     expect(objectInstance.value.listOfObjField[0].simpleNum).toEqual('101')
   })
 
-  it('should convert to user identifier list when value is an array inside a list of object fields', () => {
-    expect(objectInstance.value.listOfObjField[0].stringArray).toEqual(['a@b.com', 'c@d.com', 'e@f.com'])
-  })
-
   it('should convert to user identifier list when value is string inside a list of object fields', () => {
     expect(objectInstance.value.listOfObjField[0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
+  })
+
+  it('should convert unknown-identifier to string inside a list of list of object fields', () => {
+    expect(objectInstance.value.listOfListOfObjField[0][0].simpleNum).toEqual('101')
+  })
+
+  it('should convert to user identifier list when value is string inside a list of list of object fields', () => {
+    expect(objectInstance.value.listOfListOfObjField[0][0].stringList).toEqual(['a@b.com', 'c@d.com', 'e@f.com', 'non@owner.com'])
   })
 })

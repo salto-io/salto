@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, isObjectType, Values, ObjectType, isListType } from '@salto-io/adapter-api'
+import {
+  Element, isInstanceElement, isObjectType, Values, ObjectType,
+  isListType, getDeepInnerType, Value, ListType,
+} from '@salto-io/adapter-api'
 import { Owner } from 'src/client/types'
 import { isUserIdentifierType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
@@ -24,48 +27,63 @@ const convertUserIdentifiers = (
   values: Values,
   ownersMap: Map<number, string>
 ): void => {
+  const convertListTypeOfObjectType = (
+    listType: ListType,
+    listValue: Values,
+  ): void => {
+    const currentLevelInnerType = listType.innerType
+    if (isListType(currentLevelInnerType)) {
+      const valuesArray = _.isArray(listValue) ? listValue : [listValue]
+      valuesArray.forEach(val => {
+        convertListTypeOfObjectType(currentLevelInnerType, val)
+      })
+    }
+    if (isObjectType(currentLevelInnerType)) {
+      const valuesArray = _.isArray(listValue) ? listValue : [listValue]
+      valuesArray.forEach(val => {
+        convertUserIdentifiers(currentLevelInnerType, val, ownersMap)
+      })
+    }
+  }
   _.values(objectType.fields)
     .forEach(field => {
-      const fieldType = field.type
       const currentValue = values[field.name]
       if (_.isUndefined(currentValue)) {
         return
       }
+      const fieldType = field.type
       if (isUserIdentifierType(fieldType)) {
         const numVal = Number(currentValue)
         if (!Number.isNaN(numVal)) {
           values[field.name] = ownersMap.get(numVal) || numVal.toString()
-          return
         }
       }
       if (isObjectType(fieldType)) {
         convertUserIdentifiers(fieldType, currentValue, ownersMap)
-        return
       }
       if (isListType(fieldType)) {
-        const objectInnerType = fieldType.innerType
-        if (isUserIdentifierType(objectInnerType)) {
-          let valuesArray: string[]
-          if (_.isArray(currentValue)) {
-            valuesArray = currentValue
-          } else if (_.isString(currentValue)) {
-            valuesArray = currentValue.split(',').map(vals => vals.trim())
-          } else {
-            valuesArray = []
-          }
-          values[field.name] = valuesArray.map(val => {
-            if (Number.isNaN(Number(val)) || val === '') {
-              return val
-            }
-            return ownersMap.get(Number(val)) || val
-          })
-          return
+        const deepInnerType = getDeepInnerType(fieldType)
+        if (isUserIdentifierType(deepInnerType)) {
+          // Currently all array are repesented as a string in HubSpot
+          // If there will be "real" array ones we need to support it
+          values[field.name] = _.cloneDeepWith(currentValue, (val: Value): string[] | undefined =>
+            (_.isString(val) ? val.split(',').map(vals => vals.trim())
+              .map(v => ownersMap.get(Number(v)) || v) : undefined))
         }
-        if (isObjectType(objectInnerType)) {
-          const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
-          valuesArray.forEach(val => {
-            convertUserIdentifiers(objectInnerType, val, ownersMap)
-          })
+        if (isObjectType(deepInnerType)) {
+          const currentLevelInnerType = fieldType.innerType
+          if (isListType(currentLevelInnerType)) {
+            const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
+            valuesArray.forEach(val => {
+              convertListTypeOfObjectType(currentLevelInnerType, val)
+            })
+          }
+          if (isObjectType(currentLevelInnerType)) {
+            const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
+            valuesArray.forEach(val => {
+              convertUserIdentifiers(currentLevelInnerType, val, ownersMap)
+            })
+          }
         }
       }
     })

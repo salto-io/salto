@@ -245,12 +245,9 @@ export const resolveReferences = <T extends Element>(
   element: T,
   getLookUpName: (v: Value) => Value
 ): T => {
-  const referenceReplacer: TransformFunc = ({ value }) => {
-    if (isReferenceExpression(value)) {
-      return getLookUpName(value.value)
-    }
-    return value
-  }
+  const referenceReplacer: TransformFunc = ({ value }) => (
+    isReferenceExpression(value) ? getLookUpName(value.value) : value
+  )
 
   return transformElement({
     element,

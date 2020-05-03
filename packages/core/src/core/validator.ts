@@ -18,7 +18,8 @@ import { types, collections } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
-  ReferenceExpression, Values, isElement, isListType, getRestriction,
+  ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { InvalidStaticFile, StaticFileMetaData } from '../workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -80,7 +81,7 @@ export class InvalidValueValidationError extends ValidationError {
   ) {
     super({
       elemID,
-      error: `Value "${value}" is not valid for field ${fieldName}`
+      error: `Value ${JSON.stringify(value)} is not valid for field ${fieldName}`
         + ` expected ${InvalidValueValidationError.formatExpectedValue(expectedValue)}`,
       severity: 'Warning',
     })
@@ -280,11 +281,7 @@ export class InvalidValueTypeValidationError extends ValidationError {
   }
 }
 
-const validateValue = (elemID: ElemID, value: Value,
-  type: TypeElement, isAnnotations = false): ValidationError[] => {
-  if (value instanceof ReferenceExpression) {
-    return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
-  }
+const createReferenceValidationErrors = (elemID: ElemID, value: Value): ValidationError[] => {
   if (value instanceof UnresolvedReference) {
     return [new UnresolvedReferenceValidationError({ elemID, target: value.target })]
   }
@@ -293,6 +290,19 @@ const validateValue = (elemID: ElemID, value: Value,
   }
   if (value instanceof CircularReference) {
     return [new CircularReferenceValidationError({ elemID, ref: value.ref })]
+  }
+  return []
+}
+
+const validateValue = (elemID: ElemID, value: Value,
+  type: TypeElement, isAnnotations = false): ValidationError[] => {
+  if (isReferenceExpression(value)) {
+    return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
+  }
+
+  const referenceValidationErrors = createReferenceValidationErrors(elemID, value)
+  if (!_.isEmpty(referenceValidationErrors)) {
+    return referenceValidationErrors
   }
 
   if (value instanceof StaticFileMetaData) {
@@ -304,7 +314,7 @@ const validateValue = (elemID: ElemID, value: Value,
   }
 
   // NOTE: this area should be deleted as soon as
-  //  we complete the implementation of SALTO-228 (Support annotationTypes list) is implemented
+  //  we complete the implementation of SALTO-228 (Support annotationTypes list)
   if (isAnnotations && !isListType(type) && _.isArray(value)) {
     return _.flatten(value.map((val: Value) => validateValue(elemID, val, type, isAnnotations)))
   }
@@ -315,10 +325,19 @@ const validateValue = (elemID: ElemID, value: Value,
     }
   }
 
+  if (isVariable(value)) {
+    return [new InvalidValueValidationError({
+      elemID,
+      value,
+      fieldName: elemID.name,
+      expectedValue: 'not a variable',
+    })]
+  }
+
   if (isObjectType(type)) {
     if (!_.isObjectLike(value)) {
       // NOTE: this area should be deleted as soon as
-      //  we complete the implementation of SALTO-228 (Support annotationTypes list) is implemented
+      //  we complete the implementation of SALTO-228 (Support annotationTypes list)
       return [new InvalidValueTypeValidationError({ elemID, value, type })]
     }
     if (_.isArray(value)) {
@@ -392,9 +411,41 @@ const instanceElementValidators = [
 const validateInstanceElements = (element: InstanceElement): ValidationError[] =>
   _.flatten(instanceElementValidators.map(v => v(element.elemID, element.value, element.type)))
 
+const validateVariableValue = (elemID: ElemID, value: Value): ValidationError[] => {
+  if (isReferenceExpression(value)) {
+    return validateVariableValue(elemID, value.value)
+  }
+  const referenceValidationErrors = createReferenceValidationErrors(elemID, value)
+  if (!_.isEmpty(referenceValidationErrors)) {
+    return referenceValidationErrors
+  }
+
+  if (!_.some(Object.values(primitiveValidators), validator => validator(value))) {
+    return [new InvalidValueValidationError({
+      elemID,
+      value,
+      fieldName: elemID.name,
+      expectedValue: 'a primitive or a reference to a primitive',
+    })]
+  }
+  return []
+}
+
+const validateVariable = (element: Variable): ValidationError[] => validateVariableValue(
+  element.elemID, element.value
+)
+
 export const validateElements = (elements: ReadonlyArray<Element>): ValidationError[] => (
   _(resolve(elements))
-    .map(e => (isInstanceElement(e) ? validateInstanceElements(e) : validateType(e as TypeElement)))
+    .map(e => {
+      if (isInstanceElement(e)) {
+        return validateInstanceElements(e)
+      }
+      if (isVariable(e)) {
+        return validateVariable(e)
+      }
+      return validateType(e as TypeElement)
+    })
     .flatten()
     .value()
 )

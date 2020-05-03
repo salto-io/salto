@@ -68,6 +68,18 @@ export class ReferenceExpression {
 }
 
 export class VariableExpression extends ReferenceExpression {
+  constructor(
+    public readonly elemId: ElemID, resValue?: Value
+  ) {
+    super(elemId, resValue)
+    // This is to prevent programing errors since the parser will always create
+    // VariableExpressions with idType === 'var'
+    if (elemId.idType !== 'var') {
+      throw new Error(`A variable expression must point to a variable, but ${elemId.getFullName()
+      } is a ${elemId.idType}`)
+    }
+  }
+
   static get serializedTypeName(): string { return 'VariableExpression' }
 }
 

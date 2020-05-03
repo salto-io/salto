@@ -36,6 +36,19 @@ describe('Values', () => {
     })
   })
 
+  describe('VariableExpression', () => {
+    it('should not allow referencing anything but a variable', () => {
+      expect((() => new VariableExpression(
+        new ElemID('salesforce', 'someType')
+      ))).toThrow('A variable expression must point to a variable')
+    })
+    it('should allow referencing a variable', () => {
+      expect((() => new VariableExpression(
+        new ElemID(ElemID.VARIABLES_NAMESPACE, 'someVar')
+      ))).not.toThrow()
+    })
+  })
+
   describe('StaticFile', () => {
     describe('equality (direct)', () => {
       it('equals', () => {

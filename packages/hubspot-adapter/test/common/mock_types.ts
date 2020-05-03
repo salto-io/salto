@@ -83,6 +83,13 @@ export const useridentifierObjectType = new ObjectType(
           _readOnly: false,
         },
       ),
+      listOfListOfObjField: new Field(
+        objectElemID, 'listOfListOfObjField',
+        new ListType(new ListType(innerObject)), {
+          name: 'listOfListOfObjField',
+          _readOnly: false,
+        }
+      ),
     },
   }
 )

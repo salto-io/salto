@@ -34,7 +34,7 @@ import {
   editNaclFile, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
   verifyObject, runEmptyPreview, runSalesforceLogin, runPreview,
 } from './helpers/workspace'
-import { instanceExists, objectExists, getSalesfoceCredsInstance } from './helpers/salesforce'
+import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
 
 let lastPlan: Plan
@@ -121,7 +121,7 @@ describe('cli e2e', () => {
     if (await instanceExists(client, ROLE, newInstanceFullName)) {
       await client.delete(ROLE, newInstanceFullName)
     }
-    await runSalesforceLogin(fetchOutputDir, getSalesfoceCredsInstance(credsLease.value))
+    await runSalesforceLogin(fetchOutputDir, getSalesforceCredsInstance(credsLease.value))
     await runFetch(fetchOutputDir)
   })
 

@@ -20,9 +20,9 @@ import {
   Pool, dynamoDbRepo, RenewedLease, Lease,
 } from '@salto-io/persistent-pool'
 import humanizeDuration from 'humanize-duration'
-import REPO_PARAMS from './repo_params'
-import createEnvUtils from './process_env'
-import { SuspendCredentialsError } from './types'
+import REPO_PARAMS from '../repo_params'
+import createEnvUtils from '../process_env'
+import { SuspendCredentialsError } from '../types'
 import IntervalScheduler from './interval_scheduler'
 
 const { retryStrategies } = retry

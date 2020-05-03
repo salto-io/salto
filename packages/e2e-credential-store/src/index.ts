@@ -15,7 +15,7 @@
 */
 import cliMain from './cli'
 
-export { default as creds, CredsSpec, CredsLease } from './creds'
+export { default as creds, CredsSpec, CredsLease } from './jest-environment/creds'
 
 export { default as createEnvUtils } from './process_env'
 

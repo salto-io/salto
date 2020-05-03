@@ -54,7 +54,7 @@ export const instanceExists = async (client: SalesforceClient, type: string, nam
   return true
 }
 
-export const getSalesfoceCredsInstance = (creds: Credentials): InstanceElement => {
+export const getSalesforceCredsInstance = (creds: Credentials): InstanceElement => {
   const configValues = {
     username: creds.username,
     password: creds.password,

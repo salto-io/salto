@@ -52,7 +52,7 @@ describe('configs', () => {
   } as unknown as DirectoryStore
 
   beforeEach(async () => {
-    dumpedConfig = { filename: `${adapter}.nacl`, buffer: await dumpElements([config]) }
+    dumpedConfig = { filename: `${adapter}.nacl`, buffer: await dumpElements([config], {}) }
     jest.resetAllMocks()
   })
 

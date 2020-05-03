@@ -142,7 +142,6 @@ describe('Salto parser', () => {
           2,
           false
         ], 321)
-        contentWithFile                         = file("some/path.ext")
         contentWithNestedFunction               = {
           nestalicous                           = funcush("yeah")
         }
@@ -466,11 +465,6 @@ describe('Salto parser', () => {
 
       beforeAll(() => {
         instanceWithFunctions = elements[12] as InstanceElement
-      })
-
-      describe('file', () => {
-        it('should have filepath', () =>
-          expect(instanceWithFunctions.value.contentWithFile).toHaveProperty('filepath', 'some/path.ext'))
       })
 
       describe('parameters', () => {

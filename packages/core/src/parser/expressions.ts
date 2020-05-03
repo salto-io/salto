@@ -31,26 +31,26 @@ export class IllegalReference {
 
 const evaluate = async (
   expression: HclExpression,
+  functions: Functions,
   baseId?: ElemID,
   sourceMap?: SourceMap,
-  functions?: Functions,
 ): Promise<Value> => {
   const evalSubExpression = (exp: HclExpression, key: string): Promise<Value> =>
-    evaluate(exp, baseId && baseId.createNestedID(key), sourceMap, functions)
+    evaluate(exp, functions, baseId && baseId.createNestedID(key), sourceMap)
 
   const evaluators: Record<ExpressionType, ExpEvaluator> = {
     list: exp => Promise.all(exp.expressions.map((e, idx) => evalSubExpression(e, idx.toString()))),
     template: async exp => (
       exp.expressions.filter(e => e.type !== 'literal').length === 0
-        ? (await Promise.all(exp.expressions.map(e => evaluate(e, undefined, undefined, functions)))).join('')
+        ? (await Promise.all(exp.expressions.map(e => evaluate(e, functions)))).join('')
         : new TemplateExpression(
-          { parts: await Promise.all(exp.expressions.map(e => evaluate(e))) }
+          { parts: await Promise.all(exp.expressions.map(e => evaluate(e, functions))) }
         )
     ),
     map: async exp => _.fromPairs(await Promise.all(_(exp.expressions)
       .chunk(2)
       .map(async ([keyExp, valExp]) => {
-        const key = await evaluate(keyExp, undefined, undefined, functions)
+        const key = await evaluate(keyExp, functions)
         // Change source start to include the key expression as well
         const updatedValExp = {
           ...valExp,
@@ -77,7 +77,7 @@ const evaluate = async (
       const params: Value[] = (parameters.type && parameters.type === 'list')
         ? await evaluators[parameters.type as ExpressionType](parameters)
         : await Promise.all(
-          parameters.map((x: HclExpression) => evaluate(x, baseId, sourceMap, functions))
+          parameters.map((x: HclExpression) => evaluate(x, functions, baseId, sourceMap))
         )
       return evaluateFunction(
         {

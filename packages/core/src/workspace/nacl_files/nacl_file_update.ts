@@ -24,6 +24,7 @@ import { SourceMap, SourceRange } from '../../parser/parse'
 import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../parser/dump'
+import { Functions } from '../../parser/functions'
 
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
@@ -161,7 +162,8 @@ export const groupAnnotationTypeChanges = (fileChanges: DetailedChangeWithSource
 
 export const updateNaclFileData = async (
   currentData: string,
-  changes: DetailedChangeWithSource[]
+  changes: DetailedChangeWithSource[],
+  functions: Functions,
 ): Promise<string> => {
   type BufferChange = {
     newData: string
@@ -182,12 +184,12 @@ export const updateNaclFileData = async (
           newData = dumpAnnotationTypes(elem)
         }
       } else if (isElement(elem)) {
-        newData = await dumpElements([elem])
+        newData = await dumpElements([elem], functions)
       } else if (isListElement) {
-        newData = await dumpValues(elem)
+        newData = await dumpValues(elem, functions)
       } else {
         // When dumping values (attributes) we need to dump the key as well
-        newData = await dumpValues({ [changeKey]: elem })
+        newData = await dumpValues({ [changeKey]: elem }, functions)
       }
       if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
         // Trim trailing newline (the original value already has one)
@@ -206,6 +208,7 @@ export const updateNaclFileData = async (
   )
 
   const bufferChanges = await Promise.all(changes.map(toBufferChange))
+
   // We want to replace buffers from last to first, that way we won't have to re-calculate
   // the source locations after every change
   const sortedChanges = _.sortBy(bufferChanges, change => change.start).reverse()

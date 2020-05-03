@@ -15,17 +15,16 @@
 */
 
 import {
-  Value,
-  SaltoError,
-  SaltoErrorSeverity,
+  Value, SaltoError, SaltoErrorSeverity,
 } from '@salto-io/adapter-api'
-import { StaticFileNaclValue } from '../workspace/static_files/common'
 import { HclExpression } from './internal/types'
 import { FunctionExpression } from './internal/functions'
 
+export { FunctionExpression } from './internal/functions'
+
 export type FunctionImplementation = {
- toValue(funcExp: HclExpression): Promise<Value>
- fromValue(val: Value): Promise<FunctionExpression>
+ parse(funcExp: HclExpression): Promise<Value>
+ dump(val: Value): Promise<FunctionExpression>
  isSerializedAsFunction(val: Value): boolean
 }
 
@@ -44,24 +43,9 @@ export class MissingFunctionError implements SaltoError {
   }
 }
 
-export const getSystemFunctions = (): Functions => ({
-  file: {
-    toValue: (funcExp: HclExpression): Promise<StaticFileNaclValue> => {
-      const [filepath] = funcExp.value.parameters
-
-      return Promise.resolve(new StaticFileNaclValue(filepath))
-    },
-    fromValue: (val: Value): Promise<FunctionExpression> => Promise.resolve(new FunctionExpression(
-      'file',
-      [val.filepath],
-    )),
-    isSerializedAsFunction: (val: Value) => val instanceof StaticFileNaclValue,
-  },
-})
-
 export const evaluateFunction = (
   funcExp: HclExpression,
-  functions: Functions = getSystemFunctions(),
+  functions: Functions,
 ): Promise<Value | MissingFunctionError> => {
   const { funcName } = funcExp.value
 
@@ -70,15 +54,15 @@ export const evaluateFunction = (
     return Promise.resolve(new MissingFunctionError(funcName))
   }
 
-  return func.toValue(funcExp)
+  return func.parse(funcExp)
 }
 
 export const getFunctionExpression = (
   val: Value,
-  functions: Functions = getSystemFunctions(),
+  functions: Functions,
 ): Promise<FunctionExpression | undefined> => {
   const [funcPerhaps] = Object.values(functions)
     .filter(maybeRelevantFuncObj => maybeRelevantFuncObj.isSerializedAsFunction(val))
-    .map(funcObj => funcObj.fromValue(val))
+    .map(funcObj => funcObj.dump(val))
   return funcPerhaps
 }

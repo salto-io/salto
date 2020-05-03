@@ -14,25 +14,22 @@
 * limitations under the License.
 */
 import { DirectoryStore } from '../../../src/workspace/dir_store'
+import { buildStaticFilesSource } from '../../../src/workspace/static_files/source'
 
 import {
-  StaticFilesSource, buildStaticFilesSource,
-  STATIC_RESOURCES_FOLDER,
-} from '../../../src/workspace/static_files/source'
-
-import {
-  InvalidStaticFile, StaticFileNaclValue,
+  InvalidStaticFile, StaticFilesSource,
 } from '../../../src/workspace/static_files/common'
-
 
 import {
   StaticFilesCache,
 } from '../../../src/workspace/static_files/cache'
 
+import {
+  hashedContent, exampleStaticFileWithHash,
+  exampleStaticFileWithContent, defaultBuffer,
+} from './common.test'
 
 describe('Static Files Source', () => {
-  const hashZOMG = '4dc55a74daa147a028360ee5687389d7'
-
   let staticFilesSource: StaticFilesSource
   let mockDirStore: DirectoryStore
   let mockCacheStore: StaticFilesCache
@@ -67,7 +64,7 @@ describe('Static Files Source', () => {
   describe('Get By Value', () => {
     describe('file finding logic', () => {
       it('not find when no matching', () =>
-        expect(staticFilesSource.getMetaData(new StaticFileNaclValue('aa')))
+        expect(staticFilesSource.getStaticFile('aa'))
           .resolves.toBeInstanceOf(InvalidStaticFile))
       it('find when matching', async () => {
         const filepathFromCache = 'filepathfromcache'
@@ -87,12 +84,10 @@ describe('Static Files Source', () => {
           modified: 100,
           hash: 'aaa',
         })
-        const result = await staticFilesSource.getMetaData(
-          new StaticFileNaclValue(filepathFromCache)
-        )
+        const result = await staticFilesSource.getStaticFile(filepathFromCache)
 
-        expect(mockDirStore.mtimestamp).toHaveBeenCalledWith(`${STATIC_RESOURCES_FOLDER}/${filepathFromCache}`)
-        return expect(result).toHaveProperty('hash', hashZOMG)
+        expect(mockDirStore.mtimestamp).toHaveBeenCalledWith(filepathFromCache)
+        return expect(result).toHaveProperty('hash', hashedContent)
       })
     })
     describe('hashing', () => {
@@ -112,7 +107,7 @@ describe('Static Files Source', () => {
           modified: 1000,
           hash: 'aaa',
         })
-        const result = await staticFilesSource.getMetaData(new StaticFileNaclValue('bb'))
+        const result = await staticFilesSource.getStaticFile('bb')
         expect(mockDirStore.get).toHaveBeenCalledTimes(0)
         return expect(result).toHaveProperty('hash', 'aaa')
       })
@@ -134,9 +129,9 @@ describe('Static Files Source', () => {
           modified: 100,
           hash: 'aaa',
         })
-        const result = await staticFilesSource.getMetaData(new StaticFileNaclValue('bb'))
+        const result = await staticFilesSource.getStaticFile('bb')
         expect(mockDirStore.get).toHaveBeenCalledTimes(1)
-        return expect(result).toHaveProperty('hash', hashZOMG)
+        return expect(result).toHaveProperty('hash', hashedContent)
       })
       it('should hash if not cache', async () => {
         mockDirStore.get = jest.fn().mockResolvedValue({
@@ -151,9 +146,9 @@ describe('Static Files Source', () => {
             )
         )
         mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
-        const result = await staticFilesSource.getMetaData(new StaticFileNaclValue('bb'))
+        const result = await staticFilesSource.getStaticFile('bb')
         expect(mockDirStore.get).toHaveBeenCalledTimes(1)
-        return expect(result).toHaveProperty('hash', hashZOMG)
+        return expect(result).toHaveProperty('hash', hashedContent)
       })
       it('should return undefined if not able to read file for hash', async () => {
         mockDirStore.get = jest.fn().mockResolvedValue(undefined)
@@ -161,26 +156,22 @@ describe('Static Files Source', () => {
           .mockResolvedValue(Promise.resolve(42))
         mockCacheStore.get = jest.fn().mockResolvedValue(undefined)
 
-        const result = await staticFilesSource.getMetaData(new StaticFileNaclValue('bb'))
+        const result = await staticFilesSource.getStaticFile('bb')
         return expect(result).toBeInstanceOf(InvalidStaticFile)
       })
     })
   })
   describe('Get Static File For Adapter', () => {
-    it('should not find if not in cache', () =>
-      expect(staticFilesSource.getStaticFile({ filepath: 'bla', hash: 'aaa' })).resolves.toBeUndefined())
-    it('should find if in cache', async () => {
-      mockCacheStore.get = jest.fn().mockResolvedValue({
-        filepath: 'bbb',
-        modified: 100,
-        hash: 'aaa',
-      })
+    it('should find buffer if in dir store', async () => {
       mockDirStore.get = jest.fn().mockResolvedValue({
         buffer: 'ZOMG',
       })
-      return expect(staticFilesSource.getStaticFile({ filepath: 'bla', hash: 'aaa' }))
-        .resolves.toHaveProperty('filepath', 'bla')
+      return expect(staticFilesSource.getContent(exampleStaticFileWithHash.filepath))
+        .resolves.toEqual(defaultBuffer)
     })
+    it('should fail if not found in dirstore', () =>
+      staticFilesSource.getContent(exampleStaticFileWithHash.filepath)
+        .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
   })
   describe('Flush', () => {
     it('should flush all directory stores', async () => {
@@ -223,13 +214,29 @@ describe('Static Files Source', () => {
         buffer: 'ZOMG',
       })
 
-      await expect(staticFilesSource.getStaticFile({ filepath: 'bla', hash: 'aaa' }))
-        .resolves.toHaveProperty('filepath', 'bla')
+      await expect(staticFilesSource.getContent(exampleStaticFileWithHash.filepath))
+        .resolves.toEqual(defaultBuffer)
 
-      const clonedStaticFileSource = staticFilesSource.clone()
+      const clonedStaticFilesSource = staticFilesSource.clone()
 
-      return expect(clonedStaticFileSource.getStaticFile({ filepath: 'bla', hash: 'aaa' }))
-        .resolves.toHaveProperty('filepath', 'bla')
+      return expect(clonedStaticFilesSource.getContent(exampleStaticFileWithHash.filepath))
+        .resolves.toEqual(defaultBuffer)
+    })
+  })
+  describe('Persist Static Files', () => {
+    beforeEach(() => {
+      mockDirStore.set = jest.fn().mockResolvedValue(Promise.resolve())
+    })
+    it('should fail if trying to persist for a static file metadata without content', () =>
+      staticFilesSource.persistStaticFile(exampleStaticFileWithHash)
+        .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
+
+    it('should fail if trying to persist for a static file without content', () =>
+      staticFilesSource.persistStaticFile(exampleStaticFileWithHash)
+        .catch(e => expect(e.message).toEqual('Missing content on static file: path')))
+    it('should persist valid static file with content', async () => {
+      await staticFilesSource.persistStaticFile(exampleStaticFileWithContent)
+      expect(mockDirStore.set).toHaveBeenCalledTimes(1)
     })
   })
 })

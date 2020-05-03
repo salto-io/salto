@@ -86,7 +86,7 @@ describe('HCL parse', () => {
     expect(config.type).toEqual('salesforce')
     expect(config.attrs).toHaveProperty('user')
     expect(config.attrs.user).toHaveProperty('expressions')
-    expectExpressionsMatch(config.attrs.user.expressions[0], await devaluate('me'))
+    expectExpressionsMatch(config.attrs.user.expressions[0], await devaluate('me', functions))
   })
 
   it('parses type definition block', async () => {
@@ -112,14 +112,16 @@ describe('HCL parse', () => {
 
     expect(typeBlock.blocks[0].type).toEqual('string')
     expect(typeBlock.blocks[0].labels).toEqual(['name'])
-    expectExpressionsMatch(typeBlock.blocks[0].attrs.label.expressions[0], await devaluate('Name'))
+    expectExpressionsMatch(typeBlock.blocks[0].attrs.label.expressions[0], await devaluate('Name', functions))
     expectSourceLocation(typeBlock.blocks[0], 2, 9, 5, 10)
     expectSourceLocation(typeBlock.blocks[0].attrs.label, 4, 11, 4, 25)
 
     expect(typeBlock.blocks[1].type).toEqual('number')
     expect(typeBlock.blocks[1].labels).toEqual(['num'])
     // eslint-disable-next-line no-underscore-dangle
-    expectExpressionsMatch(typeBlock.blocks[1].attrs._default.expressions[0], await devaluate(35))
+    expectExpressionsMatch(typeBlock.blocks[1].attrs._default.expressions[0], await devaluate(
+      35, functions,
+    ))
     expectSourceLocation(typeBlock.blocks[1], 8, 9, 10, 10)
     // eslint-disable-next-line no-underscore-dangle
     expectSourceLocation(typeBlock.blocks[1].attrs._default, 9, 11, 9, 24)
@@ -139,11 +141,11 @@ describe('HCL parse', () => {
     expect(instBlock.type).toEqual('salto_employee')
     expect(instBlock.labels).toEqual(['me'])
     expect(instBlock.attrs).toHaveProperty('name')
-    expectExpressionsMatch(instBlock.attrs.name.expressions[0], await devaluate('person'))
+    expectExpressionsMatch(instBlock.attrs.name.expressions[0], await devaluate('person', functions))
     expect(instBlock.attrs).toHaveProperty('nicknames')
     expect(instBlock.attrs.nicknames.expressions).toBeDefined()
     const nicknamesExpr = instBlock.attrs.nicknames.expressions[0]
-    expectExpressionsMatch(nicknamesExpr, await devaluate(['a', 's', 'd']))
+    expectExpressionsMatch(nicknamesExpr, await devaluate(['a', 's', 'd'], functions))
   })
 
   it('parses multiline strings basic', async () => {
@@ -252,7 +254,7 @@ describe('HCL parse', () => {
     const { body } = parse(Buffer.from(blockDef), 'none')
     expect(body.blocks.length).toEqual(1)
     expect(body.blocks[0].attrs).toHaveProperty('thing')
-    expect(await evaluate(body.blocks[0].attrs.thing.expressions[0])).toHaveLength(5)
+    expect(await evaluate(body.blocks[0].attrs.thing.expressions[0], functions)).toHaveLength(5)
   })
 
   describe('parse error', () => {
@@ -344,7 +346,7 @@ describe('HCL parse', () => {
       const block = body.blocks[0]
       expect(_.keys(block.attrs)).toEqual(['novalue', 'hasvalue'])
       expect(block.attrs.hasvalue.expressions).toHaveLength(1)
-      expect(await evaluate(block.attrs.hasvalue.expressions[0])).toEqual('value')
+      expect(await evaluate(block.attrs.hasvalue.expressions[0], functions)).toEqual('value')
     })
 
     it('should have proper ranges for the rest of the elements', () => {
@@ -492,8 +494,6 @@ describe('HCL dump', () => {
         if (key === 'attrs') {
           return mapValuesAsync(val as Record<string, HclAttribute>, v => evaluate(
             v.expressions[0],
-            undefined,
-            undefined,
             functions,
           ))
         }

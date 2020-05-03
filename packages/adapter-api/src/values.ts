@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types } from '@salto-io/lowerdash'
+import { hash as hashUtils, types } from '@salto-io/lowerdash'
+
 import { ElemID } from './element_id'
 
 export type PrimitiveValue = string | boolean | number
@@ -26,16 +27,29 @@ export interface Values {
   [key: string]: Value
 }
 
+export const calculateStaticFileHash = (content: Buffer): string =>
+  hashUtils.toMD5(content)
+
 export class StaticFile {
+  public readonly hash: string
+  public readonly content?: Buffer
   constructor(
     public readonly filepath: string,
-    public readonly content: Buffer,
-  ) { }
+    contentOrHash: Buffer | string
+  ) {
+    if (contentOrHash instanceof Buffer) {
+      this.content = contentOrHash
+      this.hash = calculateStaticFileHash(this.content)
+    } else {
+      this.hash = contentOrHash
+    }
+  }
 
   public isEqual(other: StaticFile): boolean {
-    return this.filepath === other.filepath
-      && this.content.equals(other.content)
+    return this.hash === other.hash
   }
+
+  static get serializedTypeName(): string { return 'StaticFile' }
 }
 
 export class ReferenceExpression {
@@ -127,4 +141,9 @@ export const isTemplateExpression = (value: any): value is TemplateExpression =>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isExpression = (value: any): value is Expression => (
   isReferenceExpression(value) || isTemplateExpression(value)
+)
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isStaticFile = (value: any): value is StaticFile => (
+  value instanceof StaticFile
 )

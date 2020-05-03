@@ -16,7 +16,7 @@
 
 import { ElemID } from '../src/element_id'
 import { StaticFile, isEqualValues, VariableExpression,
-  ReferenceExpression } from '../src/values'
+  ReferenceExpression, isStaticFile, calculateStaticFileHash } from '../src/values'
 
 describe('Values', () => {
   describe('ReferenceExpression.createWithValue', () => {
@@ -50,6 +50,9 @@ describe('Values', () => {
   })
 
   describe('StaticFile', () => {
+    it('should have correct static serializedTypeName', () =>
+      expect(StaticFile.serializedTypeName).toEqual('StaticFile'))
+
     describe('equality (direct)', () => {
       it('equals', () => {
         const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
@@ -74,5 +77,13 @@ describe('Values', () => {
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
       })
     })
+    it('calculate hash', () => {
+      const zOMGBuffer = Buffer.from('ZOMG')
+      const hash = '4dc55a74daa147a028360ee5687389d7'
+      const zOMGResult = calculateStaticFileHash(zOMGBuffer)
+      expect(zOMGResult).toEqual(hash)
+    })
+    it('isStaticFile when static file', () => expect(isStaticFile(new StaticFile('aa', 'bb'))).toBeTruthy())
+    it('isStaticFile when not static file', () => expect(isStaticFile('ZOMG')).toBeFalsy())
   })
 })

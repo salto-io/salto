@@ -27,6 +27,7 @@ import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspac
 import { configSource, ConfigSource } from '../config_source'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 import { buildStaticFilesSource } from '../static_files/source'
+import { STATIC_RESOURCES_FOLDER } from '../static_files/common'
 
 export const COMMON_ENV_PREFIX = ''
 export const ENVS_PREFIX = 'envs'
@@ -65,7 +66,7 @@ const loadNaclFileSource = (
     dirPathToIgnore,
   )
   const naclStaticFilesStore = localDirectoryStore(
-    sourceBaseDir,
+    path.join(sourceBaseDir, STATIC_RESOURCES_FOLDER),
     undefined,
     dirPathToIgnore,
   )
@@ -76,7 +77,11 @@ const loadNaclFileSource = (
     buildLocalStaticFilesCache(cacheDir),
   )
 
-  return naclFilesSource(naclFilesStore, parseResultCache(cacheStore), staticFilesSource)
+  return naclFilesSource(
+    naclFilesStore,
+    parseResultCache(cacheStore, staticFilesSource),
+    staticFilesSource,
+  )
 }
 
 export const loadLocalElementsSources = (baseDir: string, localStorage: string,

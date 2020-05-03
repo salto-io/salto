@@ -35,11 +35,15 @@ const deserializeParseErrors = (data: string): ParseError[] =>
 const deserializeSourceMap = (data: string): SourceMap =>
   new Map(JSON.parse(data))
 
-export const deserialize = (data: string): ParseResult => {
+export const deserialize = async (
+  data: string,
+  staticFileReviver?: elementSerializer.StaticFileReviver,
+): Promise<ParseResult> => {
   const [elementsData, errorsData, sourceMapData] = data.split(EOL)
+  const elements = await elementSerializer.deserialize(elementsData, staticFileReviver)
   return {
-    elements: elementSerializer.deserialize(elementsData),
     errors: deserializeParseErrors(errorsData),
+    elements,
     sourceMap: deserializeSourceMap(sourceMapData),
   }
 }

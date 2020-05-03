@@ -56,7 +56,7 @@ const buildMockWorkspace = async (
   const filename = naclFile ? path.relative(baseDir, naclFile) : 'default.nacl'
   let parseResult: ParseResult
   if (buffer) {
-    parseResult = await parse(Buffer.from(buffer), filename)
+    parseResult = await parse(Buffer.from(buffer), filename, {})
   } else {
     parseResult = { elements: [], errors: [] as ParseError[], sourceMap: new Map() as SourceMap }
   }

@@ -41,7 +41,8 @@ describe('Static Files Cache', () => {
   }
 
   const expectedResult = {
-    ...baseMetaData,
+    filepath: baseMetaData.filepath,
+    hash: baseMetaData.hash,
     modified: 123,
   }
 

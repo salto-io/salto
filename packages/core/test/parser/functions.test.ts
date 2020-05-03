@@ -13,23 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import {
-  Value,
-} from '@salto-io/adapter-api'
+import { Value } from '@salto-io/adapter-api'
 import {
   evaluateFunction,
   Functions,
-  getSystemFunctions,
   FunctionImplementation,
   MissingFunctionError,
-} from '../../src/parser/functions'
-import {
   FunctionExpression,
-} from '../../src/parser/internal/functions'
+} from '../../src/parser/functions'
 import { HclExpression, SourcePos } from '../../src/parser/internal/types'
-
-import { StaticFileNaclValue } from '../../src/workspace/static_files/common'
 
 export class TestFuncImpl {
   constructor(
@@ -57,16 +49,16 @@ const registerFunction = (
 export const registerTestFunction = (
   funcName: string,
   aliases: string[] = [],
-  functions: Functions = getSystemFunctions(),
+  functions: Functions = {}
 ): Functions =>
   registerFunction(
     funcName,
     {
-      toValue: (funcExp: HclExpression) => Promise.resolve(new TestFuncImpl(
+      parse: (funcExp: HclExpression) => Promise.resolve(new TestFuncImpl(
         funcExp.value.funcName,
         funcExp.value.parameters,
       )),
-      fromValue: (val: Value) => Promise.resolve(new FunctionExpression(
+      dump: (val: Value) => Promise.resolve(new FunctionExpression(
         funcName,
         val.parameters,
       )),
@@ -82,7 +74,7 @@ const sourcePos: SourcePos = {
   byte: 42,
 }
 
-const getHclFunc = (funcName: string, parameters: string[]): HclExpression => ({
+export const getHclFunc = (funcName: string, parameters: string[]): HclExpression => ({
   type: 'func',
   expressions: [],
   value: {
@@ -96,12 +88,7 @@ const getHclFunc = (funcName: string, parameters: string[]): HclExpression => ({
   },
 })
 
-let functions: Functions
-
 describe('Functions', () => {
-  beforeEach(() => {
-    functions = getSystemFunctions()
-  })
   describe('MissingFunctionError', () => {
     it('should show correct message and severity', () => {
       const missus = new MissingFunctionError('ZOMG')
@@ -111,29 +98,13 @@ describe('Functions', () => {
     })
   })
   describe('Factory', () => {
-    it('should initiate file function with default parameters', async () => {
-      const hclFunc = getHclFunc('file', ['some/path.ext'])
-
-      const fileFunc = await evaluateFunction(hclFunc)
-
-      expect(fileFunc instanceof StaticFileNaclValue).toEqual(true)
-      expect(fileFunc).toHaveProperty('filepath', 'some/path.ext')
-    })
-    it('should initiate file function with explicit parameters', async () => {
-      const hclFunc = getHclFunc('file', ['some/path.ext'])
-
-      const fileFunc = await evaluateFunction(hclFunc, functions)
-
-      expect(fileFunc instanceof StaticFileNaclValue).toEqual(true)
-      expect(fileFunc).toHaveProperty('filepath', 'some/path.ext')
-    })
     it('should fail if missing function with default parameters', async () => {
       const hclFunc = getHclFunc('ZOMG', ['arg', 'us'])
-      expect(await evaluateFunction(hclFunc)).toEqual(new MissingFunctionError('ZOMG'))
+      expect(await evaluateFunction(hclFunc, {})).toEqual(new MissingFunctionError('ZOMG'))
     })
     it('should fail if missing function with explicit parameters', async () => {
       const hclFunc = getHclFunc('ZOMG', ['arg', 'us'])
-      expect(await evaluateFunction(hclFunc, functions)).toEqual(new MissingFunctionError('ZOMG'))
+      expect(await evaluateFunction(hclFunc, {})).toEqual(new MissingFunctionError('ZOMG'))
     })
   })
 })

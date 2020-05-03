@@ -15,25 +15,18 @@
 */
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { StaticFilesSource } from '../../../src/workspace/static_files/source'
-
 import { naclFilesSource } from '../../../src/workspace/nacl_files/nacl_files_source'
+import { StaticFilesSource } from '../../../src/workspace/static_files/common'
 import { ParseResultCache } from '../../../src/workspace/cache'
+
+import { mockStaticFilesSource } from '../static_files/common.test'
 
 
 describe('Nacl Files Source', () => {
-  let mockStaticFilesSource: StaticFilesSource
   let mockDirStore: DirectoryStore
   let mockCache: ParseResultCache
+  let mockedStaticFilesSource: StaticFilesSource
   beforeEach(() => {
-    mockStaticFilesSource = {
-      getMetaData: jest.fn().mockResolvedValue(undefined),
-      getStaticFile: jest.fn().mockResolvedValue(undefined),
-      flush: () => Promise.resolve(),
-      clear: () => Promise.resolve(),
-      rename: () => Promise.resolve(),
-      clone: () => mockStaticFilesSource,
-    }
     mockCache = {
       get: jest.fn().mockResolvedValue(undefined),
       put: jest.fn().mockResolvedValue(undefined),
@@ -55,17 +48,18 @@ describe('Nacl Files Source', () => {
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
       clone: () => mockDirStore,
     }
+    mockedStaticFilesSource = mockStaticFilesSource()
   })
 
   describe('clear', () => {
     it('should delete everything', async () => {
       mockDirStore.clear = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.clear = jest.fn().mockResolvedValue(Promise.resolve())
-      mockStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
-      await naclFilesSource(mockDirStore, mockCache, mockStaticFilesSource).clear()
-      expect(mockDirStore.clear).toHaveBeenCalledTimes(1)
+      mockedStaticFilesSource.clear = jest.fn().mockResolvedValue(Promise.resolve())
+      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).clear()
+      expect(mockDirStore.clear as jest.Mock).toHaveBeenCalledTimes(1)
       expect(mockCache.clear).toHaveBeenCalledTimes(1)
-      expect(mockStaticFilesSource.clear).toHaveBeenCalledTimes(1)
+      expect(mockedStaticFilesSource.clear).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -74,14 +68,14 @@ describe('Nacl Files Source', () => {
       const newName = 'new'
       mockDirStore.rename = jest.fn().mockResolvedValue(Promise.resolve())
       mockCache.rename = jest.fn().mockResolvedValue(Promise.resolve())
-      mockStaticFilesSource.rename = jest.fn().mockResolvedValue(Promise.resolve())
-      await naclFilesSource(mockDirStore, mockCache, mockStaticFilesSource).rename(newName)
+      mockedStaticFilesSource.rename = jest.fn().mockResolvedValue(Promise.resolve())
+      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource).rename(newName)
       expect(mockDirStore.rename).toHaveBeenCalledTimes(1)
       expect(mockDirStore.rename).toHaveBeenCalledWith(newName)
       expect(mockCache.rename).toHaveBeenCalledTimes(1)
       expect(mockCache.rename).toHaveBeenCalledWith(newName)
-      expect(mockStaticFilesSource.rename).toHaveBeenCalledTimes(1)
-      expect(mockStaticFilesSource.rename).toHaveBeenCalledWith(newName)
+      expect(mockedStaticFilesSource.rename).toHaveBeenCalledTimes(1)
+      expect(mockedStaticFilesSource.rename).toHaveBeenCalledWith(newName)
     })
   })
 })

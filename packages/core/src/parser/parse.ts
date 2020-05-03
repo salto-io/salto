@@ -89,7 +89,7 @@ export type ParseResult = {
 export const parse = async (
   naclFile: Buffer,
   filename: string,
-  functions?: Functions,
+  functions: Functions = {},
 ): Promise<ParseResult> => {
   const { body, errors: parseErrors } = hclParse(naclFile, filename)
   const sourceMap = new SourceMapImpl()
@@ -116,9 +116,9 @@ export const parse = async (
     // Use attribute source as expression source so it includes the key as well
     return evaluate(
       { ...exp, source: attr.source },
+      functions,
       elemID,
       sourceMap,
-      functions
     )
   }
 

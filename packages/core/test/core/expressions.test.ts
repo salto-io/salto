@@ -17,12 +17,11 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
   ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
-  isVariableExpression, isReferenceExpression,
+  isVariableExpression, isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
 } from '../parser/functions.test'
-import { StaticFileNaclValue } from '../../src/workspace/static_files/common'
 import { resolve, UnresolvedReference, CircularReference } from '../../src/core/expressions'
 
 describe('Test Salto Expressions', () => {
@@ -128,7 +127,7 @@ describe('Test Salto Expressions', () => {
       several: new TestFuncImpl('several', [false, 123]),
       list: new TestFuncImpl('list', [['aaa', true, 123]]),
       mixed: new TestFuncImpl('mixed', ['aaa', [1, 2, 'aa']]),
-      file: new StaticFileNaclValue('some/path.ext'),
+      file: new StaticFile('some/path.ext', 'hash'),
     })
 
     const elements = [

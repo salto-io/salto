@@ -19,9 +19,9 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression,
+  isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
-import { InvalidStaticFile, StaticFileMetaData } from '../workspace/static_files/common'
+import { InvalidStaticFile } from '../workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from '../parser/expressions'
 
@@ -305,12 +305,12 @@ const validateValue = (elemID: ElemID, value: Value,
     return referenceValidationErrors
   }
 
-  if (value instanceof StaticFileMetaData) {
-    return []
-  }
-
   if (value instanceof InvalidStaticFile) {
     return [new MissingStaticFileError({ elemID, value })]
+  }
+
+  if (value instanceof StaticFile) {
+    return []
   }
 
   // NOTE: this area should be deleted as soon as

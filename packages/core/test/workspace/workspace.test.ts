@@ -28,7 +28,7 @@ import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files
 import State from '../../src/workspace/state'
 import mockState from '../common/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
-import { mockStaticFileSource } from './static_files/merger.test'
+import { mockStaticFilesSource } from './static_files/common.test'
 import { DirectoryStore } from '../../src/workspace/dir_store'
 import {
   Workspace,
@@ -43,7 +43,7 @@ import {
 } from '../../src/workspace/workspace'
 import { DetailedChange } from '../../src/core/plan'
 
-import { StaticFilesSource } from '../../src/workspace/static_files/source'
+import { StaticFilesSource } from '../../src/workspace/static_files/common'
 
 import * as dump from '../../src/parser/dump'
 
@@ -109,7 +109,7 @@ const createWorkspace = async (
         '': {
           naclFiles: naclFilesSource(
             dirStore || mockDirStore(), mockParseCache(),
-            staticFilesSource || mockStaticFileSource(),
+            staticFilesSource || mockStaticFilesSource(),
           ),
         },
         default: {

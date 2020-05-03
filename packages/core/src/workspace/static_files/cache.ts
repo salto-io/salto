@@ -13,11 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFileMetaData } from './common'
+export type StaticFilesCacheResult = {
+  modified: number
+  hash: string
+  filepath: string
+}
 
 export type StaticFilesCache = {
-  get(filepath: string): Promise<StaticFileMetaData | undefined>
-  put(item: StaticFileMetaData): Promise<void>
+  get(filepath: string): Promise<StaticFilesCacheResult | undefined>
+  put(item: StaticFilesCacheResult): Promise<void>
   flush(): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>

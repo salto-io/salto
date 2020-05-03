@@ -17,12 +17,11 @@ import _ from 'lodash'
 import {
   PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
-  VariableExpression,
+  VariableExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
 } from '../parser/functions.test'
-import { StaticFileNaclValue } from '../../src/workspace/static_files/common'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 import { resolve } from '../../src/core/expressions'
@@ -52,6 +51,7 @@ describe('State serialization', () => {
     elemID: new ElemID('salesforce', 'test'),
   })
   model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
+  model.fields.file = new Field(model.elemID, 'file', strType, { label: 'File' })
   model.fields.num = new Field(model.elemID, 'num', numType)
   model.fields.list = new Field(model.elemID, 'list', strListType, {})
 
@@ -100,12 +100,12 @@ describe('State serialization', () => {
     'also_me_function',
     model,
     {
+      file: new StaticFile('some/path.ext', 'hash'),
       singleparam: new TestFuncImpl('funcadelic', ['aaa']),
       multipleparams: new TestFuncImpl('george', [false, 321]),
       withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
       withobject: new TestFuncImpl('maggot', [{ aa: '312' }]),
       mixed: new TestFuncImpl('brain', [1, [1, { aa: '312' }], false, 'aaa']),
-      file: new StaticFileNaclValue('some/path.ext'),
       nested: {
         WAT: new TestFuncImpl('nestalicous', ['a']),
       },
@@ -121,18 +121,18 @@ describe('State serialization', () => {
   const elements = [strType, numType, boolType, model, strListType, variable,
     instance, refInstance, templateRefInstance, functionRefInstance, config]
 
-  it('should serialize and deserialize all element types', () => {
+  it('should serialize and deserialize all element types', async () => {
     const serialized = serialize(elements)
-    const deserialized = deserialize(serialized)
+    const deserialized = await deserialize(serialized)
     const sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
     expect(deserialized).toEqual(sortedElements)
   })
 
-  it('should not serialize resolved values', () => {
+  it('should not serialize resolved values', async () => {
     // TemplateExpressions are discarded
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
     const serialized = serialize(resolve(elementsToSerialize))
-    const deserialized = deserialize(serialized)
+    const deserialized = await deserialize(serialized)
     const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
     expect(deserialized).toEqual(sortedElements)
   })
@@ -156,10 +156,10 @@ describe('State serialization', () => {
   describe('functions', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let funcElement: InstanceElement
-    beforeAll(() => {
+    beforeAll(async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')
       const serialized = serialize(elementsToSerialize)
-      funcElement = deserialize(serialized)[0] as InstanceElement
+      funcElement = (await deserialize(serialized))[0] as InstanceElement
     })
 
     it('single parameter', () => {
@@ -181,7 +181,8 @@ describe('State serialization', () => {
       })
     })
     it('file', () => {
-      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext' })
+      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'hash' })
+      expect(funcElement.value.file).toBeInstanceOf(StaticFile)
     })
     it('nested parameter', () => {
       expect(funcElement.value).toHaveProperty('nested', {
@@ -192,11 +193,24 @@ describe('State serialization', () => {
       })
     })
   })
+  describe('with custom static files reviver', () => {
+    it('should alter static files', async () => {
+      const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')
+      const serialized = serialize(elementsToSerialize)
+      const funcElement = (await deserialize(
+        serialized,
+        x => Promise.resolve(new StaticFile(x.filepath, 'ZOMGZOMGZOMG'))
+      ))[0] as InstanceElement
+
+      expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'ZOMGZOMGZOMG' })
+      expect(funcElement.value.file).toBeInstanceOf(StaticFile)
+    })
+  })
   describe('when a field collides with the hidden class name attribute', () => {
     let deserialized: InstanceElement
-    beforeEach(() => {
+    beforeEach(async () => {
       const classNameInst = new InstanceElement('ClsName', model, { [SALTO_CLASS_FIELD]: 'bla' })
-      deserialized = deserialize(serialize([classNameInst]))[0] as InstanceElement
+      deserialized = (await deserialize(serialize([classNameInst])))[0] as InstanceElement
     })
     it('should keep deserialize the instance', () => {
       expect(isInstanceElement(deserialized)).toBeTruthy()

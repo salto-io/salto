@@ -18,10 +18,8 @@ import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType,
   ObjectType, InstanceElement, isType, isElement, isExpression,
   ReferenceExpression, TemplateExpression, Expression, VariableExpression,
-  isInstanceElement, isReferenceExpression, Variable, isListType,
+  isInstanceElement, isReferenceExpression, Variable, isListType, StaticFile, isStaticFile,
 } from '@salto-io/adapter-api'
-
-import { StaticFileNaclValue } from '../workspace/static_files/common'
 
 // There are two issues with naive json stringification:
 //
@@ -56,6 +54,11 @@ export const serialize = (elements: Element[]): string => {
       o[SALTO_CLASS_FIELD] = e.constructor.name
       return o
     }
+    if (isStaticFile(e)) {
+      const o = e as typeof e & ClassName
+      o[SALTO_CLASS_FIELD] = e.constructor.name
+      return _.omit(o, 'content')
+    }
     // We need to sort objects so that the state file won't change for the same data.
     if (_.isPlainObject(e)) {
       return _(e).toPairs().sortBy().fromPairs()
@@ -73,15 +76,23 @@ export const serialize = (elements: Element[]): string => {
   return JSON.stringify(sortedElements, elementReplacer)
 }
 
-export const deserialize = (data: string): Element[] => {
+export type StaticFileReviver =
+  (staticFile: StaticFile) => Promise<StaticFile>
+
+export const deserialize = async (
+  data: string,
+  staticFileReviver?: StaticFileReviver,
+): Promise<Element[]> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const reviveElemID = (v: {[key: string]: any}): ElemID => (
     new ElemID(v.adapter, v.typeName, v.idType, ...v.nameParts)
   )
 
+  let staticFiles: Record<string, StaticFile> = {}
+
   const revivers: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: (v: {[key: string]: any}) => Element|Expression|StaticFileNaclValue
+    [key: string]: (v: {[key: string]: any}) => Element|Expression|StaticFile
   } = {
     [InstanceElement.serializedTypeName]: v => new InstanceElement(
       reviveElemID(v.elemID).name,
@@ -115,7 +126,11 @@ export const deserialize = (data: string): Element[] => {
     [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
     [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
     [VariableExpression.serializedTypeName]: v => new VariableExpression(reviveElemID(v.elemId)),
-    [StaticFileNaclValue.serializedTypeName]: v => new StaticFileNaclValue(v.filepath),
+    [StaticFile.serializedTypeName]: v => {
+      const staticFile = new StaticFile(v.filepath, v.hash)
+      staticFiles[staticFile.filepath] = staticFile
+      return staticFile
+    },
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,14 +147,31 @@ export const deserialize = (data: string): Element[] => {
   }
 
   const elements = JSON.parse(data, elementReviver) as Element[]
+
+  if (staticFileReviver) {
+    staticFiles = _.fromPairs(
+      (await Promise.all(
+        _.entries(staticFiles).map(async ([key, val]) => ([key, await staticFileReviver(val)]))
+      ))
+    )
+  }
   const elementsMap = _.keyBy(elements.filter(isType), e => e.elemID.getFullName())
   const builtinMap = _(BuiltinTypes).values().keyBy(b => b.elemID.getFullName()).value()
   const typeMap = _.merge({}, elementsMap, builtinMap)
   elements.forEach(element => {
     _.keys(element).forEach(k => {
-      _.set(element, k, _.cloneDeepWith(_.get(element, k), v =>
-        (isType(v) ? typeMap[v.elemID.getFullName()] : undefined)))
+      _.set(element, k, _.cloneDeepWith(_.get(element, k), v => {
+        if (isType(v)) {
+          return typeMap[v.elemID.getFullName()]
+        }
+        if (isStaticFile(v)) {
+          return staticFiles[v.filepath]
+        }
+        return undefined
+      }))
     })
   })
-  return elements
+
+
+  return Promise.resolve(elements)
 }

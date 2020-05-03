@@ -19,6 +19,7 @@ import { stat, mkdirp, replaceContents, readTextFile, exists } from '@salto-io/f
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 import { parseResultCache } from '../../../src/workspace/cache'
 import { SourceMap } from '../../../src/parser/internal/types'
+import { mockStaticFilesSource } from '../static_files/common.test'
 
 
 jest.mock('@salto-io/file', () => ({
@@ -39,8 +40,8 @@ describe('localParseResultCache', () => {
   const mockReadFile = readTextFile as unknown as jest.Mock
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
-
-  const cache = parseResultCache(localDirectoryStore(mockBaseDirPath))
+  const mockedStaticFilesSource = mockStaticFilesSource()
+  const cache = parseResultCache(localDirectoryStore(mockBaseDirPath), mockedStaticFilesSource)
   const sourceMap = new SourceMap()
   const dummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
   sourceMap.push(new ElemID('salesforce', 'dummy'), {
@@ -131,6 +132,12 @@ describe('localParseResultCache', () => {
       expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(mockMalformedCacheLoc)
       expect(readTextFile).toHaveBeenCalledWith(mockMalformedCacheLoc)
       expect(parseResultFromCache).toBeUndefined()
+    })
+  })
+  describe('clone', () => {
+    it('should static files store', () => {
+      cache.clone()
+      expect(mockedStaticFilesSource.clone).toHaveBeenCalledTimes(1)
     })
   })
 })

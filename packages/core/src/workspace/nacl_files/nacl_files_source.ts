@@ -32,8 +32,8 @@ import { ParseResultCache } from '../cache'
 import { DetailedChange } from '../../core/plan'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
-import { StaticFilesSource } from '../static_files/source'
-import { updateStaticFilesValuesForElements } from '../static_files/merger'
+import { StaticFilesSource } from '../static_files/common'
+import { getStaticFilesFunctions } from '../static_files/functions'
 
 const { withLimitedConcurrency } = promises.array
 
@@ -96,7 +96,10 @@ const buildNaclFilesSource = (
     const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
     let parseResult = await cache.get(key)
     if (parseResult === undefined) {
-      parseResult = await parse(Buffer.from(naclFile.buffer), naclFile.filename)
+      parseResult = await parse(
+        Buffer.from(naclFile.buffer), naclFile.filename,
+        getStaticFilesFunctions(staticFileSource),
+      )
       await cache.put(key, parseResult)
     }
     return parseResult
@@ -135,10 +138,7 @@ const buildNaclFilesSource = (
       }))
 
     const mergeResult = mergeElements(
-      await updateStaticFilesValuesForElements(
-        staticFileSource,
-        _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
-      )
+      _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
     )
 
     log.info('workspace has %d elements and %d parsed NaCl files',
@@ -221,7 +221,7 @@ const buildNaclFilesSource = (
             const updatedFileChanges = groupAnnotationTypeChanges(fileChanges,
               changedFileToSourceMap[filename])
             const buffer = await updateNaclFileData(await getNaclFileData(filename),
-              updatedFileChanges)
+              updatedFileChanges, getStaticFilesFunctions(staticFileSource))
             return { filename, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s with %o changes due to: %o',
@@ -255,6 +255,7 @@ const buildNaclFilesSource = (
     flush: async (): Promise<void> => {
       await naclFilesStore.flush()
       await cache.flush()
+      await staticFileSource.flush()
     },
 
     getErrors: async (): Promise<Errors> => {

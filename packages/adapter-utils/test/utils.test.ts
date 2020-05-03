@@ -18,7 +18,7 @@ import {
   Field, InstanceElement, ObjectType, PrimitiveTypes, PrimitiveType, TypeMap,
   ReferenceExpression, Values, TemplateExpression, Value,
   ElemID, InstanceAnnotationTypes, isListType, ListType,
-  BuiltinTypes, INSTANCE_ANNOTATIONS,
+  BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile,
   isPrimitiveType,
 } from '@salto-io/adapter-api'
 
@@ -27,6 +27,7 @@ import {
   TransformReferenceFunc, restoreReferences, resolveReferences,
   naclCase, findElement, findElements, findObjectType,
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
+  flatValues,
 } from '../src/utils'
 
 describe('Test utils.ts', () => {
@@ -50,6 +51,7 @@ describe('Test utils.ts', () => {
       str: new Field(mockElem, 'str', BuiltinTypes.STRING, {
         testAnno: 'TEST FIELD ANNO',
       }),
+      file: new Field(mockElem, 'str', BuiltinTypes.STRING),
       bool: new Field(mockElem, 'bool', BuiltinTypes.BOOLEAN),
       num: new Field(mockElem, 'num', BuiltinTypes.NUMBER),
       numArray: new Field(mockElem, 'numArray', new ListType(BuiltinTypes.NUMBER), {}),
@@ -94,6 +96,7 @@ describe('Test utils.ts', () => {
       strArray: 'should be list',
       notExist: 'notExist',
       notExistArray: ['', ''],
+      file: new StaticFile('aa', 'bb'),
       obj: [
         {
           field: 'firstField',
@@ -182,6 +185,10 @@ describe('Test utils.ts', () => {
 
           expect(result).toBeDefined()
           resp = result as Values
+        })
+
+        it('should preserve static files', () => {
+          expect(resp.file).toBeInstanceOf(StaticFile)
         })
 
         it('should call transform on top level primitive values', () => {
@@ -1007,6 +1014,12 @@ describe('Test utils.ts', () => {
         )
       )
       expect(withoutObj?.value).toEqual({ list: inst.value.list })
+    })
+  })
+  describe('Flat Values', () => {
+    it('should not transform static files', () => {
+      const staticFile = new StaticFile('aa', 'aaa')
+      expect(flatValues(staticFile)).toEqual(staticFile)
     })
   })
 })

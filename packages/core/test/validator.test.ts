@@ -17,16 +17,14 @@
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
-  ListType, getRestriction, createRestriction, VariableExpression, Variable,
+  ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
 } from '@salto-io/adapter-api'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
   UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
 } from '../src/core/validator'
-import {
-  InvalidStaticFile, StaticFileMetaData,
-} from '../src/workspace/static_files/common'
+import { InvalidStaticFile } from '../src/workspace/static_files/common'
 
 import { IllegalReference } from '../src/parser/expressions'
 
@@ -614,7 +612,7 @@ describe('Elements validation', () => {
             },
           }),
           {
-            someFile: new StaticFileMetaData('bla', 'bbb'),
+            someFile: new StaticFile('path', 'hash'),
           },
         )
 

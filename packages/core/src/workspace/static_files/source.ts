@@ -13,75 +13,76 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { join, basename } from 'path'
-
 import { StaticFile } from '@salto-io/adapter-api'
-import { hash as hashUtils } from '@salto-io/lowerdash'
 
 import { DirectoryStore } from '../dir_store'
 import { StaticFilesCache } from './cache'
-import { StaticFileMetaData, StaticFileNaclValue, InvalidStaticFile } from './common'
 
-export const STATIC_RESOURCES_FOLDER = 'static-resources'
-
-
-export type StaticFilesSource = {
-  getMetaData: (staticFile: StaticFileNaclValue) =>
-    Promise<StaticFileMetaData | InvalidStaticFile>
-  getStaticFile: (metadata: StaticFileMetaData) => Promise<StaticFile| undefined>
-  flush: () => Promise<void>
-  clear: () => Promise<void>
-  rename: (name: string) => Promise<void>
-  clone: () => StaticFilesSource
-}
+import {
+  InvalidStaticFile, StaticFilesSource,
+} from './common'
 
 export const buildStaticFilesSource = (
   staticFilesDirStore: DirectoryStore,
   staticFilesCache: StaticFilesCache,
 ): StaticFilesSource => {
-  const getMetaData = async (
-    staticFile: StaticFileNaclValue,
-  ): Promise<StaticFileMetaData | InvalidStaticFile> => {
-    const cachedResult = await staticFilesCache.get(staticFile.filepath)
-    const filepath = join(STATIC_RESOURCES_FOLDER, staticFile.filepath)
-    const modified = await staticFilesDirStore.mtimestamp(filepath)
-    if (modified === undefined) {
-      return new InvalidStaticFile(staticFile.filepath)
-    }
+  const staticFilesSource: StaticFilesSource = {
+    getStaticFile: async (
+      filepath: string,
+    ): Promise<StaticFile | InvalidStaticFile> => {
+      const cachedResult = await staticFilesCache.get(filepath)
+      const modified = await staticFilesDirStore.mtimestamp(filepath)
+      if (modified === undefined) {
+        return new InvalidStaticFile(filepath)
+      }
 
-    const hashModified = cachedResult ? cachedResult.modified : undefined
+      const hashModified = cachedResult ? cachedResult.modified : undefined
 
-    if (hashModified === undefined
-      || modified > hashModified
-      || cachedResult === undefined) {
+      if (hashModified === undefined
+        || modified > hashModified
+        || cachedResult === undefined) {
+        const file = await staticFilesDirStore.get(filepath)
+        if (file === undefined) {
+          return new InvalidStaticFile(filepath)
+        }
+
+        const staticFileBuffer = Buffer.from(file.buffer)
+        const staticFileWithHashAndContent = new StaticFile(
+          filepath,
+          staticFileBuffer,
+        )
+        await staticFilesCache.put({
+          hash: staticFileWithHashAndContent.hash,
+          modified,
+          filepath,
+        })
+        return staticFileWithHashAndContent
+      }
+
+      return new StaticFile(
+        filepath,
+        cachedResult.hash,
+      )
+    },
+    getContent: async (
+      filepath: string
+    ): Promise<Buffer> => {
       const file = await staticFilesDirStore.get(filepath)
       if (file === undefined) {
-        return new InvalidStaticFile(staticFile.filepath)
+        throw new Error(`Missing content on static file: ${filepath}`)
       }
-
-      const hash = hashUtils.toMD5(Buffer.from(file.buffer))
-      const staticFileMetaDataWithHash = new StaticFileMetaData(
-        staticFile.filepath,
-        hash,
-        modified,
-      )
-      await staticFilesCache.put(staticFileMetaDataWithHash)
-      return staticFileMetaDataWithHash
-    }
-
-    return cachedResult
-  }
-
-  return {
-    getMetaData,
-    getStaticFile: async (
-      metadata: StaticFileMetaData
-    ): Promise<StaticFile | undefined> => {
-      const file = await staticFilesDirStore.get(metadata.filepath)
-      if (file === undefined) {
-        return undefined
+      return Buffer.from(file.buffer)
+    },
+    persistStaticFile: async (
+      staticFile: StaticFile,
+    ): Promise<void> => {
+      if (staticFile.content === undefined) {
+        throw new Error(`Missing content on static file: ${staticFile.filepath}`)
       }
-      return new StaticFile(basename(metadata.filepath), Buffer.from(file.buffer))
+      return staticFilesDirStore.set({
+        filename: staticFile.filepath,
+        buffer: staticFile.content.toString(),
+      })
     },
     flush: async () => {
       await staticFilesDirStore.flush()
@@ -99,5 +100,6 @@ export const buildStaticFilesSource = (
       staticFilesDirStore.clone(),
       staticFilesCache.clone(),
     ),
-  } as StaticFilesSource
+  }
+  return staticFilesSource
 }

@@ -32,6 +32,7 @@ import {
   isReferenceExpression,
   ReferenceExpression,
   Field, InstanceAnnotationTypes, isType, isObjectType, isListType, FieldMap,
+  isStaticFile,
 } from '@salto-io/adapter-api'
 import { mapValuesAsync } from '@salto-io/lowerdash/dist/src/promises/object'
 
@@ -78,6 +79,10 @@ export const transformValues = (
 
     if (isReferenceExpression(value)) {
       return transformReferences(value, keyPathID)
+    }
+
+    if (isStaticFile(value)) {
+      return value
     }
 
     const fieldType = field.type
@@ -370,6 +375,9 @@ export const flatValues = (values: Value): Value => {
   }
   if (_.isArray(values)) {
     return values.map(flatValues)
+  }
+  if (isStaticFile(values)) {
+    return values
   }
   if (_.isPlainObject(values)) {
     return _.reduce(_.keys(values), (acc, k) => {

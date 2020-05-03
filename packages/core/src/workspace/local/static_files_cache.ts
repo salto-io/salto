@@ -15,12 +15,11 @@
 */
 import path from 'path'
 import { readTextFile, exists, mkdirp, replaceContents, rm, rename } from '@salto-io/file'
-import { StaticFileMetaData } from '../static_files/common'
-import { StaticFilesCache } from '../static_files/cache'
+import { StaticFilesCache, StaticFilesCacheResult } from '../static_files/cache'
 
 export const CACHE_FILENAME = 'static-file-cache'
 
-export type StaticFilesCacheState = Record<string, StaticFileMetaData>
+export type StaticFilesCacheState = Record<string, StaticFilesCacheResult>
 
 export const buildLocalStaticFilesCache = (
   cacheDir: string,
@@ -34,16 +33,11 @@ export const buildLocalStaticFilesCache = (
   const cache: Promise<StaticFilesCacheState> = initCacheState || initCache()
 
   return {
-    get: async (filepath: string): Promise<StaticFileMetaData> => (
+    get: async (filepath: string): Promise<StaticFilesCacheResult> => (
       (await cache)[filepath]
     ),
-    put: async (item: StaticFileMetaData): Promise<void> => {
-      (await cache)[item.filepath] = {
-        ...item,
-        ...{
-          modified: item.modified || new Date().getTime(),
-        },
-      }
+    put: async (item: StaticFilesCacheResult): Promise<void> => {
+      (await cache)[item.filepath] = item
     },
     flush: async () => {
       if (!await exists(cacheDir)) {

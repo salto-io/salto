@@ -18,7 +18,7 @@ import {
   ReferenceExpression, TemplateExpression,
 } from '@salto-io/adapter-api'
 import { SourceRange, HclExpression } from '../../../src/parser/internal/types'
-import { getFunctionExpression } from '../../../src/parser/functions'
+import { getFunctionExpression, Functions } from '../../../src/parser/functions'
 import { FunctionExpression } from '../../../src/parser/internal/functions'
 
 const source: SourceRange = {
@@ -28,7 +28,7 @@ const source: SourceRange = {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const devaluate = async (value: any): Promise<HclExpression> => {
+const devaluate = async (value: any, functions: Functions): Promise<HclExpression> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const devaluateValue = (v: any): HclExpression => ({
     type: 'literal',
@@ -47,14 +47,14 @@ const devaluate = async (value: any): Promise<HclExpression> => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const devaluateArray = async (arr: any[]): Promise<HclExpression> => ({
     type: 'list',
-    expressions: await Promise.all(arr.map(e => devaluate(e))),
+    expressions: await Promise.all(arr.map(e => devaluate(e, functions))),
     source,
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const devaluateObject = async (obj: Record<string, any>): Promise<HclExpression> => ({
     type: 'map',
-    expressions: await Promise.all(_(obj).entries().flatten().map(e => devaluate(e))
+    expressions: await Promise.all(_(obj).entries().flatten().map(e => devaluate(e, functions))
       .value()),
     source,
   })
@@ -79,7 +79,7 @@ const devaluate = async (value: any): Promise<HclExpression> => {
     expressions: [],
     value: {
       funcName: funcExp.funcName,
-      parameters: await Promise.all(funcExp.parameters.map(devaluate)),
+      parameters: await Promise.all(funcExp.parameters.map(x => devaluate(x, functions))),
     },
     source,
   })
@@ -102,7 +102,7 @@ const devaluate = async (value: any): Promise<HclExpression> => {
     return Promise.resolve(devaluateTemplateExpression(value))
   }
 
-  const funcValue = await getFunctionExpression(value)
+  const funcValue = await getFunctionExpression(value, functions)
 
   return funcValue === undefined
     ? Promise.resolve(devaluateValue(value))

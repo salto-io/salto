@@ -27,8 +27,8 @@ import { Keywords } from './language'
 import {
   getFunctionExpression,
   Functions,
+  FunctionExpression,
 } from './functions'
-import { FunctionExpression } from './internal/functions'
 
 const { object: { mapValuesAsync } } = promises
 
@@ -61,7 +61,7 @@ export const dumpElemID = (type: TypeElement): string => {
     .join(Keywords.NAMESPACE_SEPARATOR)
 }
 
-const dumpAttributes = async (value: Value, functions?: Functions): Promise<Value> => {
+const dumpAttributes = async (value: Value, functions: Functions): Promise<Value> => {
   const funcVal = await getFunctionExpression(value, functions)
   if (funcVal) {
     return funcVal
@@ -82,7 +82,7 @@ const dumpAttributes = async (value: Value, functions?: Functions): Promise<Valu
   return mapValuesAsync(value, async val => dumpAttributes(val, functions))
 }
 
-const dumpFieldBlock = async (field: Field, functions?: Functions): Promise<DumpedHclBlock> => ({
+const dumpFieldBlock = async (field: Field, functions: Functions): Promise<DumpedHclBlock> => ({
   type: dumpElemID(field.type),
   labels: [field.elemID.name],
   attrs: await dumpAttributes(field.annotations, functions),
@@ -105,9 +105,9 @@ const dumpAnnotationTypesBlock = (annotationTypes: TypeMap): DumpedHclBlock[] =>
       .map(([key, type]) => dumpAnnotationTypeBlock(key, type)),
   }])
 
-let dumpBlock: (value: Element | Values, functions?: Functions) => Promise<DumpedHclBlock>
+let dumpBlock: (value: Element | Values, functions: Functions) => Promise<DumpedHclBlock>
 
-const dumpElementBlock = async (elem: Element, functions?: Functions): Promise<DumpedHclBlock> => {
+const dumpElementBlock = async (elem: Element, functions: Functions): Promise<DumpedHclBlock> => {
   if (isObjectType(elem)) {
     return {
       type: elem.isSettings ? Keywords.SETTINGS_DEFINITION : Keywords.TYPE_DEFINITION,
@@ -148,7 +148,7 @@ const dumpElementBlock = async (elem: Element, functions?: Functions): Promise<D
   throw new Error('Unsupported element type')
 }
 
-dumpBlock = async (value: Element | Values, functions?: Functions): Promise<DumpedHclBlock> => {
+dumpBlock = async (value: Element | Values, functions: Functions): Promise<DumpedHclBlock> => {
   if (isField(value)) {
     return dumpFieldBlock(value, functions)
   }
@@ -179,7 +179,9 @@ const primitiveSerializers: Record<string, PrimitiveSerializer> = {
   boolean: val => (val ? 'true' : 'false'),
 }
 
-export const dumpElements = async (elements: Element[], functions?: Functions): Promise<string> =>
+export const dumpElements = async (
+  elements: Element[], functions: Functions = {}
+): Promise<string> =>
   hclDump(wrapBlocks(await Promise.all(elements.map(e => dumpBlock(e, functions)))))
 
 export const dumpSingleAnnotationType = (name: string, type: TypeElement): string =>
@@ -188,7 +190,7 @@ export const dumpSingleAnnotationType = (name: string, type: TypeElement): strin
 export const dumpAnnotationTypes = (annotationTypes: TypeMap): string =>
   hclDump(wrapBlocks(dumpAnnotationTypesBlock(annotationTypes)))
 
-export const dumpValues = async (value: Value, functions?: Functions): Promise<string> => {
+export const dumpValues = async (value: Value, functions: Functions): Promise<string> => {
   if (_.isArray(value)) {
     // We got a Value array, we need to serialize it "manually" because our HCL implementation
     // accepts only blocks

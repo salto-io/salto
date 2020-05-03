@@ -47,7 +47,7 @@ export const localState = (filePath: string): State => {
       return { elements: {}, servicesUpdateDate: {} }
     }
     const [elementsData, updateDateData] = text.split(EOL)
-    const deserializedElements = deserialize(elementsData).map(flattenElementStr)
+    const deserializedElements = (await deserialize(elementsData)).map(flattenElementStr)
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
     const servicesUpdateDate = updateDateData
       ? _.mapValues(JSON.parse(updateDateData), dateStr => new Date(dateStr))

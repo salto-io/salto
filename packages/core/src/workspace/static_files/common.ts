@@ -13,28 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export class StaticFileNaclValue {
-  constructor(
-    public readonly filepath: string,
-  ) {}
+import { StaticFile, Value } from '@salto-io/adapter-api'
 
-  static get serializedTypeName(): string { return 'StaticFileNaclValue' }
+export const STATIC_RESOURCES_FOLDER = 'static-resources'
+
+export type StaticFilesSource = {
+  getStaticFile: (filepath: string) =>
+    Promise<StaticFile | InvalidStaticFile>
+  getContent: (filepath: string) => Promise<Buffer>
+  persistStaticFile: (staticFile: StaticFile) => Promise<void>
+  flush: () => Promise<void>
+  clear: () => Promise<void>
+  rename: (name: string) => Promise<void>
+  clone: () => StaticFilesSource
 }
 
-export class StaticFileMetaData extends StaticFileNaclValue {
-  constructor(
-    filepath: string,
-    public readonly hash: string,
-    public readonly modified?: number,
-  ) {
-    super(filepath)
-  }
-}
-
-export class InvalidStaticFile extends StaticFileNaclValue {
+export class InvalidStaticFile extends StaticFile {
   constructor(
     public readonly filepath: string
   ) {
-    super(filepath)
+    super(filepath, 'missing-file')
   }
 }
+
+export const isInvalidStaticFile = (val: Value): boolean => val instanceof InvalidStaticFile

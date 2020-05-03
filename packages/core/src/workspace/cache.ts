@@ -18,6 +18,7 @@ import { logger } from '@salto-io/logging'
 import { ParseResult } from '../parser/parse'
 import * as parseResultSerializer from '../serializer/parse_result'
 import { DirectoryStore } from './dir_store'
+import { StaticFilesSource } from './static_files/common'
 
 const log = logger(module)
 
@@ -40,7 +41,9 @@ export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> & {
   rename: (name: string) => Promise<void>
 }
 
-export const parseResultCache = (dirStore: DirectoryStore): ParseResultCache => {
+export const parseResultCache = (
+  dirStore: DirectoryStore, staticFilesSource: StaticFilesSource
+): ParseResultCache => {
   const resolveCacheFileName = (key: ParseResultKey): string =>
     _.replace(key.filename, /.nacl$/, CACHE_EXTENSION)
 
@@ -59,7 +62,10 @@ export const parseResultCache = (dirStore: DirectoryStore): ParseResultCache => 
         try {
           return _.isUndefined(fileContent)
             ? Promise.resolve(undefined)
-            : parseResultSerializer.deserialize(fileContent)
+            : await parseResultSerializer.deserialize(
+              fileContent,
+              val => staticFilesSource.getStaticFile(val.filepath)
+            )
         } catch (err) {
           log.debug('Failed to handle cache file "%o": %o', cacheFileName, err)
         }
@@ -69,6 +75,6 @@ export const parseResultCache = (dirStore: DirectoryStore): ParseResultCache => 
     clear: dirStore.clear,
     rename: dirStore.rename,
     flush: dirStore.flush,
-    clone: (): ParseResultCache => parseResultCache(dirStore.clone()),
+    clone: (): ParseResultCache => parseResultCache(dirStore.clone(), staticFilesSource.clone()),
   }
 }

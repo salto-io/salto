@@ -41,6 +41,7 @@
     "@salto-io/lowerdash": "0.1.14",
     "@types/requestretry": "^1.12.5",
     "fast-xml-parser": "^3.15.0",
+    "humanize-duration": "^3.22.0",
     "jsforce": "https://github.com/salto-io/jsforce.git",
     "jsforce-types": "https://github.com/salto-io/jsforce-types.git",
     "jszip": "^3.2.2",

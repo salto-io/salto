@@ -13,74 +13,62 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto-io/logging'
 import {
-  CredsJestEnvironment,
   createEnvUtils,
   CredsSpec,
   SuspendCredentialsError,
+  SaltoE2EJestEnvironment,
   JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
+import { logger } from '@salto-io/logging'
 import {
   Credentials,
   validateCredentials,
-  getRemainingDailyRequests,
   ApiLimitsTooLowError,
 } from '../src/client/client'
+
+
+const log = logger(module)
 
 const MIN_API_REQUESTS_NEEDED = 500
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
-const log = logger(module)
-
-export const credsSpec: CredsSpec<Credentials> = {
-  envHasCreds: env => 'SF_USER' in env,
-  fromEnv: env => {
-    const envUtils = createEnvUtils(env)
-    return {
-      username: envUtils.required('SF_USER'),
-      password: envUtils.required('SF_PASSWORD'),
-      apiToken: env.SF_TOKEN ?? '',
-      isSandbox: envUtils.bool('SF_SANDBOX'),
-    }
-  },
-  validate: async (creds: Credentials): Promise<void> => {
-    try {
-      await validateCredentials(creds, MIN_API_REQUESTS_NEEDED)
-    } catch (e) {
-      if (e instanceof ApiLimitsTooLowError) {
-        throw new SuspendCredentialsError(e, NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT)
+export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
+  const addEnvName = (varName: string): string => (envName === undefined
+    ? varName
+    : [varName, envName].join('_'))
+  const userEnvVarName = addEnvName('SF_USER')
+  const passwordEnvVarName = addEnvName('SF_PASSWORD')
+  const tokenEnvVarName = addEnvName('SF_TOKEN')
+  const sandboxEnvVarName = addEnvName('SF_SANDBOX')
+  return {
+    envHasCreds: env => userEnvVarName in env,
+    fromEnv: env => {
+      const envUtils = createEnvUtils(env)
+      return {
+        username: envUtils.required(userEnvVarName),
+        password: envUtils.required(passwordEnvVarName),
+        apiToken: env[tokenEnvVarName] ?? '',
+        isSandbox: envUtils.bool(sandboxEnvVarName),
       }
-      throw e
-    }
-  },
-  typeName: 'salesforce',
-  globalProp: 'salesforceCredentials',
+    },
+    validate: async (creds: Credentials): Promise<void> => {
+      try {
+        await validateCredentials(creds, MIN_API_REQUESTS_NEEDED)
+      } catch (e) {
+        if (e instanceof ApiLimitsTooLowError) {
+          throw new SuspendCredentialsError(e, NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT)
+        }
+        throw e
+      }
+    },
+    typeName: 'salesforce',
+    globalProp: envName ? `salesforce_${envName}` : 'salseforce',
+  }
 }
 
-export default class SalesforceCredsEnvironment extends CredsJestEnvironment<Credentials> {
-  dailyRequestsRemainingOnSetup: number | undefined
-
+export default class SalesforceE2EJestEnvironment extends SaltoE2EJestEnvironment {
   constructor(...args: JestEnvironmentConstructorArgs) {
-    super({ logBaseName: log.namespace, credsSpec }, ...args)
-  }
-
-  async setup(): Promise<void> {
-    await super.setup()
-    if (this.credsLease) {
-      this.dailyRequestsRemainingOnSetup = await getRemainingDailyRequests(this.credsLease.value)
-      this.log.warn('remaining daily requests on creds %o: %o', this.credsLease.id, this.dailyRequestsRemainingOnSetup)
-    }
-  }
-
-  async teardown(): Promise<void> {
-    if (this.credsLease && this.dailyRequestsRemainingOnSetup !== undefined) {
-      const dailyRequestsRemainingOnTeardown = await getRemainingDailyRequests(
-        this.credsLease.value,
-      )
-      const usedRequests = this.dailyRequestsRemainingOnSetup - dailyRequestsRemainingOnTeardown
-      this.log.warn('this run used %o of daily requests quota', usedRequests)
-    }
-    await super.teardown()
+    super({ logBaseName: log.namespace }, ...args)
   }
 }

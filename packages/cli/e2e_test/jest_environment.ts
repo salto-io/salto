@@ -13,17 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { format } from 'util'
-import { Credentials } from '../src/client/client'
-import { credsSpec } from './jest_environment'
+import { SaltoE2EJestEnvironment, JestEnvironmentConstructorArgs } from '@salto-io/e2e-credentials-store'
+import { logger } from '@salto-io/logging'
 
-export default (): Credentials => {
-  const { globalProp } = credsSpec
-  const credentials = global[globalProp as keyof typeof global]
-  if (!credentials) {
-    throw new Error(
-      `global[${format(globalProp)}] not set. Is the Jest testEnvironment setup correctly?`
-    )
+const log = logger(module)
+
+export default class CliE2EJestEnvironment extends SaltoE2EJestEnvironment {
+  constructor(...args: JestEnvironmentConstructorArgs) {
+    super({ logBaseName: log.namespace }, ...args)
   }
-  return credentials
 }

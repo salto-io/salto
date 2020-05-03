@@ -22,8 +22,10 @@ import {
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce-types'
+import { CredsLease } from '@salto-io/e2e-credentials-store'
+import { testHelpers } from '../index'
 import realAdapter from './adapter'
-import SalesforceClient from '../src/client/client'
+import SalesforceClient, { Credentials } from '../src/client/client'
 import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
   WORKFLOW_FIELD_TO_TYPE,
@@ -45,9 +47,18 @@ describe('workflow filter', () => {
   let client: SalesforceClient
   let adapter: SalesforceAdapter
   let fetchResult: Element[]
+  let credLease: CredsLease<Credentials>
+  beforeAll(async () => {
+    credLease = await testHelpers().credentials()
+    const adapterParams = realAdapter({ credentials: credLease.value })
+    adapter = adapterParams.adapter
+    client = adapterParams.client
+  })
 
-  beforeAll(() => {
-    ({ adapter, client } = realAdapter())
+  afterAll(async () => {
+    if (credLease.return) {
+      await credLease.return()
+    }
   })
   const baseCustomObject = 'Lead'
 

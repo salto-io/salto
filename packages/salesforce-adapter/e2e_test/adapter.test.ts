@@ -25,6 +25,8 @@ import {
 } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { collections } from '@salto-io/lowerdash'
+import { CredsLease } from '@salto-io/e2e-credentials-store'
+import { testHelpers } from '../index'
 import * as constants from '../src/constants'
 import {
   INSTANCE_TYPE_FIELD, NESTED_INSTANCE_TYPE_NAME,
@@ -41,7 +43,7 @@ import {
 } from '../src/transformers/transformer'
 import realAdapter from './adapter'
 import { findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject } from '../test/utils'
-import SalesforceClient, { API_VERSION } from '../src/client/client'
+import SalesforceClient, { API_VERSION, Credentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
@@ -55,9 +57,18 @@ const ADMIN = 'Admin'
 describe('Salesforce adapter E2E with real account', () => {
   let client: SalesforceClient
   let adapter: SalesforceAdapter
+  let credLease: CredsLease<Credentials>
+  beforeAll(async () => {
+    credLease = await testHelpers().credentials()
+    const adapterAttr = realAdapter({ credentials: credLease.value })
+    adapter = adapterAttr.adapter
+    client = adapterAttr.client
+  })
 
-  beforeAll(() => {
-    ({ adapter, client } = realAdapter())
+  afterAll(async () => {
+    if (credLease.return) {
+      await credLease.return()
+    }
   })
 
   // Set long timeout as we communicate with salesforce API

@@ -5754,7 +5754,7 @@ hubspot@^2.3.8:
     request "^2.88.0"
     request-promise "^4.2.5"
 
-humanize-duration@^3.21.0:
+humanize-duration@^3.21.0, humanize-duration@^3.22.0:
   version "3.22.0"
   resolved "https://registry.yarnpkg.com/humanize-duration/-/humanize-duration-3.22.0.tgz#b0b577e2071f231e69b71bfae25e1bb342ffb915"
   integrity sha512-kq2Ncl1E8I7LJtjWhraQS8/LCsdt6fTQ+fwrGJ8dLSNFITW5YQpGWAgPgzjfIErAID7QHv0PA+HZBPfAf6f7IA==

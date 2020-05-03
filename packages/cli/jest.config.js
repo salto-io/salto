@@ -27,8 +27,8 @@ module.exports = deepMerge(
       '!<rootDir>/package_native.js',
       '!<rootDir>/dist/bundle.js'
     ],
-    testEnvironment: process.env.RUN_E2E_TESTS
-      ? '@salto-io/salesforce-adapter/dist/e2e_test/jest_environment'
+    testEnvironment: process.env.RUN_E2E_TESTS	
+      ? '@salto-io/cli/dist/e2e_test/jest_environment'
       : undefined,
     coverageThreshold: {
       // Slowly start increasing here, never decrease!

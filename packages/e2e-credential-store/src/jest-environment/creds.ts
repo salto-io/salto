@@ -20,8 +20,9 @@ import {
   Pool, dynamoDbRepo, RenewedLease, Lease,
 } from '@salto-io/persistent-pool'
 import REPO_PARAMS from '../repo_params'
-import createEnvUtils from './process_env'
+import createEnvUtils from '../process_env'
 import { SuspendCredentialsError } from '../types'
+import IntervalScheduler from './interval_scheduler'
 
 const { retryStrategies } = retry
 
@@ -37,6 +38,8 @@ export type CredsLease<TCreds extends {}> = Lease<TCreds> & {
   return?: () => Promise<void>
 }
 
+const CREDS_INTERVAL_ID = 'waiting for creds'
+
 const LEASE_TIMEOUT = 1000 * 60 * 5
 const LEASE_UPDATE_MARGIN = 1000 * 60
 
@@ -49,6 +52,7 @@ export default <TCreds extends {}>(
   spec: CredsSpec<TCreds>,
   env: NodeJS.ProcessEnv,
   logger: Logger,
+  runningTasksPrinter: IntervalScheduler
 ): Promise<CredsLease<TCreds>> => {
   const clientId = [
     env.JEST_WORKER_ID,
@@ -77,13 +81,18 @@ export default <TCreds extends {}>(
         throw e
       }
     }
-
-    return new RenewedLease<TCreds>({
-      poolOrFactory: pool,
-      lease: await tryLease(),
-      timeout: LEASE_TIMEOUT,
-      renewMargin: LEASE_UPDATE_MARGIN,
-    })
+    try {
+      runningTasksPrinter.schedule(CREDS_INTERVAL_ID)
+      const lease = new RenewedLease<TCreds>({
+        poolOrFactory: pool,
+        lease: await tryLease(),
+        timeout: LEASE_TIMEOUT,
+        renewMargin: LEASE_UPDATE_MARGIN,
+      })
+      return lease
+    } finally {
+      runningTasksPrinter.unschedule(CREDS_INTERVAL_ID)
+    }
   }
 
   const fromEnv = async (): Promise<CredsLease<TCreds>> => {

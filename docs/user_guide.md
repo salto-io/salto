@@ -257,7 +257,7 @@ Deploys the current NaCl files config to the target services
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
 
-### **salto services \<command\> [name]**
+### **salto services \<command> [name]**
 
 Manage your environments' services
 
@@ -269,7 +269,7 @@ Manage your environments' services
 
 * `--env, -e` : The name of the environment to use
 
-### **salto env \<command\> [\<name\>] [\<new-name\>]**
+### **salto env \<command> [\<name>] [\<new-name>]**
 
 Manage your workspace environments
 

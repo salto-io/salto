@@ -70,7 +70,9 @@ export const configType = new ObjectType({
       INSTANCES_REGEX_SKIPPED_LIST,
       new ListType(BuiltinTypes.STRING),
       {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
+        [CORE_ANNOTATIONS.DEFAULT]: [
+          '^EmailTemplate.MarketoEmailTemplates',
+        ],
       },
     ),
     [MAX_CONCURRENT_RETRIEVE_REQUESTS]: new Field(

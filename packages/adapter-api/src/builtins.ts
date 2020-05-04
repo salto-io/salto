@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID } from './element_id'
-import { Element, TypeMap, ObjectType, Field, PrimitiveType, PrimitiveTypes } from './elements'
+import { Element, TypeMap, ObjectType, Field, PrimitiveType, PrimitiveTypes, ListType } from './elements'
 
 export const GLOBAL_ADAPTER = ''
 
@@ -54,8 +54,8 @@ export const INSTANCE_ANNOTATIONS = {
 }
 
 export const InstanceAnnotationTypes: TypeMap = {
-  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: BuiltinTypes.STRING,
-  [INSTANCE_ANNOTATIONS.PARENT]: BuiltinTypes.STRING,
+  [INSTANCE_ANNOTATIONS.DEPENDS_ON]: new ListType(BuiltinTypes.STRING),
+  [INSTANCE_ANNOTATIONS.PARENT]: new ListType(BuiltinTypes.STRING),
 }
 
 const RESTRICTION_ANNOTATIONS_FIELDS = {

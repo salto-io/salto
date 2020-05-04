@@ -15,6 +15,7 @@
 */
 import {
   ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
+  BuiltinTypes, Field,
 } from '@salto-io/adapter-api'
 import {
   naclCase,
@@ -23,6 +24,7 @@ import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { STANDARD_FIELD_PATH, CUSTOM_FIELD_PATH } from '../../src/filters/utils'
 
 describe('Test layout filter', () => {
   const { client } = mockClient()
@@ -49,10 +51,32 @@ describe('Test layout filter', () => {
         new ObjectType({
           elemID: LAYOUT_TYPE_ID,
         }),
-        { [constants.INSTANCE_FULL_NAME_FIELD]: fullName },
+        { [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
+          layoutSections: {
+            layoutColumns: {
+              layoutItems: [{
+                field: 'foo',
+              }, {
+                field: 'bar',
+              }, {
+                field: 'moo',
+              }],
+            },
+          } },
         [constants.RECORDS_PATH, 'Layout', instName]
       )
-      const elements = [testSObj, testLayout]
+      const standardFieldObj = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, testSObj.elemID.name),
+        path: [constants.SALESFORCE, `${STANDARD_FIELD_PATH}`],
+        fields: { foo: new Field(LAYOUT_TYPE_ID, 'foo', BuiltinTypes.STRING) },
+      })
+      const customFieldObj = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, testSObj.elemID.name),
+        path: [constants.SALESFORCE, `${CUSTOM_FIELD_PATH}`],
+        fields: { bar: new Field(LAYOUT_TYPE_ID, 'bar', BuiltinTypes.STRING) },
+      })
+
+      const elements = [testSObj, testLayout, standardFieldObj, customFieldObj]
 
       await filter.onFetch(elements)
 
@@ -63,6 +87,13 @@ describe('Test layout filter', () => {
       expect(instance.annotations[INSTANCE_ANNOTATIONS.PARENT]).toContainEqual(
         new ReferenceExpression(testSObj.elemID)
       )
+      const { layoutItems } = instance.value.layoutSections.layoutColumns
+      const fooField = layoutItems[0].field as ReferenceExpression
+      const barField = layoutItems[1].field as ReferenceExpression
+      const mooField = layoutItems[2].field
+      expect(fooField.elemId).toEqual(standardFieldObj.fields.foo.elemID)
+      expect(barField.elemId).toEqual(customFieldObj.fields.bar.elemID)
+      expect(mooField).toEqual('moo')
     }
 
     it('should add relation between layout to related sobject', async () => {

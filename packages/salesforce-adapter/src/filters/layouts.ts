@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, InstanceElement, ObjectType,
+  Element, ElemID, InstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import {
   findInstances, naclCase,
@@ -25,7 +25,7 @@ import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import {
-  addObjectParentReference, generateApiNameToCustomObject, id,
+  addObjectParentReference, generateApiNameToCustomObject, id, generateCustomObjectToFields,
 } from './utils'
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'Layout')
@@ -77,12 +77,70 @@ const fixLayoutPath = (
   layout.path = [...objectPath.slice(0, -1), layout.elemID.typeName, layout.elemID.name]
 }
 
+type LayoutItem = {
+  field: string | ReferenceExpression
+}
+
+type LayoutColumn = {
+  layoutItems: LayoutItem[]
+}
+
+type LayoutSection = {
+  layoutColumns: LayoutColumn[]
+}
+
+const fixLayoutItemField = (
+  layoutItem: LayoutItem, layoutObj: ObjectType, layoutObjStandardFields?: ObjectType,
+  layoutObjCustomFields?: ObjectType
+): void => {
+  const reference = _.get(layoutObj.fields, layoutItem.field as string)
+    ?? _.get(layoutObjStandardFields?.fields, layoutItem.field as string)
+    ?? _.get(layoutObjCustomFields?.fields, layoutItem.field as string)
+  if (!reference) {
+    log.debug(`Could not find field ${layoutItem.field} for layout ${layoutObj.elemID.name}`)
+    return
+  }
+
+  layoutItem.field = new ReferenceExpression(
+    reference.elemID
+  )
+}
+
+const fixLayoutColumnItems = (
+  layout: InstanceElement,
+  layoutObj: ObjectType,
+  layoutObjStandardFields?: ObjectType,
+  layoutObjCustomFields?: ObjectType
+): void => {
+  const fixToArray = (obj: unknown): unknown => (_.isArray(obj) ? obj : [obj])
+
+  if (!_.has(layout.value, 'layoutSections')) return
+  const layoutSections = fixToArray(layout.value.layoutSections) as LayoutSection[]
+
+  layoutSections.forEach((layoutSection: LayoutSection) => {
+    if (!_.has(layoutSection, 'layoutColumns')) return
+    const layoutColumns = fixToArray(layoutSection.layoutColumns) as LayoutColumn[]
+
+    layoutColumns.forEach((layoutColumn: LayoutColumn) => {
+      if (!_.has(layoutColumn, 'layoutItems')) return
+      const layoutItems = fixToArray(layoutColumn.layoutItems) as LayoutItem[]
+
+      layoutItems.forEach((layoutItem: LayoutItem) => fixLayoutItemField(
+        layoutItem, layoutObj, layoutObjStandardFields, layoutObjCustomFields
+      ))
+    })
+  })
+}
+
+
 /**
 * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
+* Fixes references in layout items.
 */
 const filterCreator: FilterCreator = () => ({
   /**
    * Upon fetch, shorten layout ID and add reference to layout sobjects.
+   * Fixes references in layout items.
    *
    * @param elements the already fetched elements
    */
@@ -91,6 +149,8 @@ const filterCreator: FilterCreator = () => ({
     fixNames(layouts)
 
     const apiNameToCustomObject = generateApiNameToCustomObject(elements)
+    const customObjectToStandardFields = generateCustomObjectToFields(elements, true)
+    const customObjectToCustomFields = generateCustomObjectToFields(elements, false)
 
     layouts.forEach(layout => {
       const [layoutObjName, layoutName] = layoutObjAndName(layout)
@@ -99,8 +159,11 @@ const filterCreator: FilterCreator = () => ({
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }
+      const layoutObjStandardFields = customObjectToStandardFields.get(layoutObj)
+      const layoutObjCustomFields = customObjectToCustomFields.get(layoutObj)
       addObjectParentReference(layout, layoutObj)
       fixLayoutPath(layout, layoutObj)
+      fixLayoutColumnItems(layout, layoutObj, layoutObjStandardFields, layoutObjCustomFields)
     })
   },
 })

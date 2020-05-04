@@ -45,7 +45,7 @@ import {
 import {
   id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue,
   buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference, apiNameParts,
-  parentApiName, ANNOTATION_PATH, STANDARD_FIELD_PATH, CUSTOM_FIELD_PATH,
+  parentApiName,
 } from './utils'
 import { convertList } from './convert_lists'
 import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
@@ -117,9 +117,9 @@ const getFieldName = (annotations: Values): string =>
 const getFieldType = (type: string): TypeElement =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
 
-export const annotationsFileName = (objectName: string): string => `${objectName}${ANNOTATION_PATH}`
-export const standardFieldsFileName = (objectName: string): string => `${objectName}${STANDARD_FIELD_PATH}`
-export const customFieldsFileName = (objectName: string): string => `${objectName}${CUSTOM_FIELD_PATH}`
+export const annotationsFileName = (objectName: string): string => `${objectName}Annotations`
+export const standardFieldsFileName = (objectName: string): string => `${objectName}StandardFields`
+export const customFieldsFileName = (objectName: string): string => `${objectName}CustomFields`
 
 const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
   if (namespace) {

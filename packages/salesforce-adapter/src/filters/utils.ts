@@ -31,10 +31,6 @@ import { isCustomObject, metadataType, apiName, defaultApiName } from '../transf
 const log = logger(module)
 const { makeArray } = collections.array
 
-export const STANDARD_FIELD_PATH = 'StandardFields'
-export const CUSTOM_FIELD_PATH = 'CustomFields'
-export const ANNOTATION_PATH = 'Annotations'
-
 export const id = (elem: Element): string => elem.elemID.getFullName()
 
 export const boolValue = (val: JSONBool):
@@ -135,29 +131,6 @@ export const allCustomObjectFields = (elements: Element[], elemID: ElemID): Iter
     .filter(isObjectType)
     .map(elem => Object.values(elem.fields))
     .flatten()
-
-export const generateCustomObjectToFields = (
-  elements: Element[], isStandard: boolean
-): Map<ObjectType, ObjectType> => {
-  const customObjectFieldPath = isStandard ? STANDARD_FIELD_PATH : CUSTOM_FIELD_PATH
-  const customObjects = getCustomObjects(elements)
-  const customObjectToFields = new Map()
-
-  customObjects.forEach(customObject => {
-    const filteredElements = elements.filter(element => {
-      if (element.path?.some(directoryFragment => directoryFragment.includes(customObjectFieldPath)
-    && element.elemID.typeName === customObject.elemID.name)) return true
-      return false
-    })
-
-    if (_.isEmpty(filteredElements)) {
-      log.debug(`Couldn't find fields for custom object ${customObject.elemID.name}`)
-      return
-    }
-    customObjectToFields.set(customObject, filteredElements[0])
-  })
-  return customObjectToFields
-}
 
 export const apiNameParts = (instance: InstanceElement): string[] =>
   apiName(instance).split(/\.|-/g)

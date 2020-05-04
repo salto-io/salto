@@ -24,7 +24,6 @@ import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
-import { STANDARD_FIELD_PATH, CUSTOM_FIELD_PATH } from '../../src/filters/utils'
 
 describe('Test layout filter', () => {
   const { client } = mockClient()
@@ -67,12 +66,12 @@ describe('Test layout filter', () => {
       )
       const standardFieldObj = new ObjectType({
         elemID: testSObj.elemID,
-        path: [constants.SALESFORCE, `${STANDARD_FIELD_PATH}`],
+        path: [constants.SALESFORCE],
         fields: { foo: new Field(LAYOUT_TYPE_ID, 'foo', BuiltinTypes.STRING) },
       })
       const customFieldObj = new ObjectType({
         elemID: testSObj.elemID,
-        path: [constants.SALESFORCE, `${CUSTOM_FIELD_PATH}`],
+        path: [constants.SALESFORCE],
         fields: { bar: new Field(LAYOUT_TYPE_ID, 'bar', BuiltinTypes.STRING) },
       })
 

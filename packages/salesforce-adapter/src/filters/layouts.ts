@@ -21,7 +21,6 @@ import {
 import {
   findInstances, naclCase,
 } from '@salto-io/adapter-utils'
-import wu from 'wu'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -93,8 +92,9 @@ type LayoutSection = {
 const fixLayoutItemField = (
   layoutItem: LayoutItem, layoutObj: ObjectType, layoutObjFields: Field[]
 ): void => {
+  if (!layoutItem) return
   const findField = (fieldName: string, fields: Field[]): Field | undefined =>
-    fields.find(field => field.name === fieldName)
+    fields.find(field => field.elemID.name === fieldName)
   const reference = findField(layoutItem.field as string, layoutObjFields)
   if (!reference) {
     log.debug(`Could not find field ${layoutItem.field} for layout ${layoutObj.elemID.name}`)
@@ -113,22 +113,14 @@ const fixLayoutColumnItems = (
 ): void => {
   const fixToArray = (obj: unknown): unknown => (_.isArray(obj) ? obj : [obj])
 
-  if (!_.has(layout.value, 'layoutSections')) return
-  const layoutSections = fixToArray(layout.value.layoutSections) as LayoutSection[]
-
-  layoutSections.forEach((layoutSection: LayoutSection) => {
-    if (!_.has(layoutSection, 'layoutColumns')) return
-    const layoutColumns = fixToArray(layoutSection.layoutColumns) as LayoutColumn[]
-
-    layoutColumns.forEach((layoutColumn: LayoutColumn) => {
-      if (!_.has(layoutColumn, 'layoutItems')) return
-      const layoutItems = fixToArray(layoutColumn.layoutItems) as LayoutItem[]
-
-      layoutItems.forEach((layoutItem: LayoutItem) => fixLayoutItemField(
-        layoutItem, layoutObj, layoutObjFields
-      ))
-    })
-  })
+  const layoutItems = _(fixToArray(layout.value.layoutSections) as LayoutSection[])
+    .map(layoutSection => fixToArray(layoutSection.layoutColumns) as LayoutColumn[])
+    .flatten()
+    .map(layoutColumn => fixToArray(layoutColumn.layoutItems as LayoutItem[]))
+    .flatten()
+  layoutItems.forEach(layoutItem => fixLayoutItemField(
+    layoutItem as LayoutItem, layoutObj, layoutObjFields
+  ))
 }
 
 
@@ -156,7 +148,7 @@ const filterCreator: FilterCreator = () => ({
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }
-      const layoutObjFields = wu(allCustomObjectFields(elements, layoutObj?.elemID)).toArray()
+      const layoutObjFields = [...allCustomObjectFields(elements, layoutObj?.elemID)]
 
       addObjectParentReference(layout, layoutObj)
       fixLayoutPath(layout, layoutObj)

@@ -167,7 +167,7 @@ describe('HCL parse', () => {
     const blockDef = `type label {
           thing = a.b
           that = '''
-          omg \${a.b}
+          omg \${a.b} omg
           asd
           '''
       }`
@@ -185,7 +185,7 @@ describe('HCL parse', () => {
     expect(thatExpressions[0].type).toEqual('literal')
     expect(thatExpressions[1].value).toEqual(['a', 'b'])
     expect(thatExpressions[1].type).toEqual('reference')
-    expect(thatExpressions[2].value).toEqual('\n')
+    expect(thatExpressions[2].value).toEqual(' omg\n')
     expect(thatExpressions[2].type).toEqual('literal')
     expect(thatExpressions[3].value).toEqual('          asd')
     expect(thatExpressions[3].type).toEqual('literal')

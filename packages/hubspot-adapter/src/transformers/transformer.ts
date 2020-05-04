@@ -1809,11 +1809,11 @@ export class Types {
           },
         ),
         [CONTACT_PROPERTY_FIELDS.CREATEDAT]: new Field(
-          // TODO: Move to state only
           contactPropertyElemID, CONTACT_PROPERTY_FIELDS.CREATEDAT, BuiltinTypes.NUMBER, {
             name: CONTACT_PROPERTY_FIELDS.CREATEDAT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         ),
         [CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS]: new Field(

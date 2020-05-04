@@ -87,7 +87,7 @@ const fixLayoutItemField = (
 ): void => {
   if (!layoutItem) return
   const findField = (fieldName: string, fields: Field[]): Field | undefined =>
-    fields.find(field => field.elemID.name === fieldName)
+    fields.find(field => apiName(field, true) === fieldName)
   const reference = findField(layoutItem.field as string, layoutObjFields)
   if (!reference) {
     log.debug(`Could not find field ${layoutItem.field} for layout ${layoutObj.elemID.name}`)
@@ -139,7 +139,7 @@ const filterCreator: FilterCreator = () => ({
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }
-      const layoutObjFields = [...allCustomObjectFields(elements, layoutObj?.elemID)]
+      const layoutObjFields = [...allCustomObjectFields(elements, layoutObj.elemID)]
 
       addObjectParentReference(layout, layoutObj)
       fixLayoutPath(layout, layoutObj)

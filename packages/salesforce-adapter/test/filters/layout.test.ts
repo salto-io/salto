@@ -67,12 +67,12 @@ describe('Test layout filter', () => {
       const standardFieldObj = new ObjectType({
         elemID: testSObj.elemID,
         path: [constants.SALESFORCE],
-        fields: { foo: new Field(LAYOUT_TYPE_ID, 'foo', BuiltinTypes.STRING) },
+        fields: { foo: new Field(LAYOUT_TYPE_ID, 'foo', BuiltinTypes.STRING, { apiName: 'foo' }) },
       })
       const customFieldObj = new ObjectType({
         elemID: testSObj.elemID,
         path: [constants.SALESFORCE],
-        fields: { bar: new Field(LAYOUT_TYPE_ID, 'bar', BuiltinTypes.STRING) },
+        fields: { bar: new Field(LAYOUT_TYPE_ID, 'bar', BuiltinTypes.STRING, { apiName: 'bar' }) },
       })
 
       const elements = [testSObj, testLayout, standardFieldObj, customFieldObj]

@@ -42,14 +42,14 @@ export const rules: Record<string, moo.Rules> = {
     wildcard: WILDCARD,
     reference: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     dq: { match: '"', pop: 1 },
-    content: { match: /[^\\](?=")|.+?[^\\](?=\$\{|"|\n)/, lineBreaks: false },
+    content: { match: /[^\\](?=")|[^\r\n]+?[^\\](?=\$\{|"|\n)/s, lineBreaks: false },
     invalidSyntax: { match: /[^ ]+/, error: true },
   },
   multilineString: {
     wildcard: WILDCARD,
     reference: { match: /\$\{[ \t]*[\d\w.]+[ \t]*\}/, value: s => s.slice(2, -1).trim() },
     mlEnd: { match: /^[ \t]*'''/, pop: 1 },
-    content: { match: /.*?(?=\$\{)|^.*[(\r\n)(\n)]|[(\r\n)(\n)]/, lineBreaks: true },
+    content: { match: /[^\r\n]*?(?=\$\{)|^[^\r\n]*[(\r\n)(\n)]|[(\r\n)(\n)]/, lineBreaks: true },
     invalidSyntax: { match: /[^ ]+/, error: true },
   },
 }

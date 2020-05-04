@@ -21,6 +21,7 @@ import {
 import {
   findInstances, naclCase,
 } from '@salto-io/adapter-utils'
+import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
@@ -81,14 +82,6 @@ type LayoutItem = {
   field: string | ReferenceExpression
 }
 
-type LayoutColumn = {
-  layoutItems: LayoutItem[]
-}
-
-type LayoutSection = {
-  layoutColumns: LayoutColumn[]
-}
-
 const fixLayoutItemField = (
   layoutItem: LayoutItem, layoutObj: ObjectType, layoutObjFields: Field[]
 ): void => {
@@ -111,12 +104,10 @@ const fixLayoutColumnItems = (
   layoutObj: ObjectType,
   layoutObjFields: Field[]
 ): void => {
-  const fixToArray = (obj: unknown): unknown => (_.isArray(obj) ? obj : [obj])
-
-  const layoutItems = _(fixToArray(layout.value.layoutSections) as LayoutSection[])
-    .map(layoutSection => fixToArray(layoutSection.layoutColumns) as LayoutColumn[])
+  const layoutItems = _(makeArray(layout.value.layoutSections))
+    .map(layoutSection => makeArray(layoutSection.layoutColumns))
     .flatten()
-    .map(layoutColumn => fixToArray(layoutColumn.layoutItems as LayoutItem[]))
+    .map(layoutColumn => makeArray(layoutColumn.layoutItems))
     .flatten()
   layoutItems.forEach(layoutItem => fixLayoutItemField(
     layoutItem as LayoutItem, layoutObj, layoutObjFields

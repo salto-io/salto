@@ -21,6 +21,8 @@ import {
   isReferenceExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import wu from 'wu'
+import { findElements } from '@salto-io/adapter-utils'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
   METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { JSONBool } from '../client/types'
@@ -127,6 +129,12 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
 
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>
   new Map(getCustomObjects(elements).map(obj => [apiName(obj), obj]))
+
+export const allCustomObjectFields = (elements: Element[], elemID: ElemID): Iterable<Field> =>
+  wu(findElements(elements, elemID))
+    .filter(isObjectType)
+    .map(elem => Object.values(elem.fields))
+    .flatten()
 
 export const generateCustomObjectToFields = (
   elements: Element[], isStandard: boolean

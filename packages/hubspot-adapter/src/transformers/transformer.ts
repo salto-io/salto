@@ -1100,11 +1100,12 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.AUTHORAT]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.AUTHORAT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORAT, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.AUTHORAT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: new Field(
@@ -1112,6 +1113,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.AUTHOREMAIL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.AUTHORNAME]: new Field(
@@ -1119,6 +1121,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.AUTHORNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new Field( // TODO: Replace with user's email
@@ -1182,11 +1185,11 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.CREATED]: new Field(
-          // TODO: Move to state only
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.CREATED, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.CREATED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: new Field(
@@ -1263,11 +1266,12 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.FREEZEDATE]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.FREEZEDATE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.FREEZEDATE, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.FREEZEDATE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.FROMNAME]: new Field(
@@ -1289,6 +1293,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.ID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED]: new Field(
@@ -1309,7 +1314,7 @@ export class Types {
         [MARKETING_EMAIL_FIELDS.ISPUBLISHED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.ISPUBLISHED, BuiltinTypes.BOOLEAN, {
             name: MARKETING_EMAIL_FIELDS.ISPUBLISHED,
-            _readOnly: false,
+            _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
@@ -1374,11 +1379,12 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE]: new Field( // TODO: Decide if state or not
+        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID]: new Field(
@@ -1386,6 +1392,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.PAGEREDIRECTED]: new Field(
@@ -1402,7 +1409,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS,
             _readOnly: false,
@@ -1415,32 +1422,35 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.PUBLISHDATE]: new Field(
-          // TODO: Human readable + decide if state
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHDATE, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHDATE,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHEDAT]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDAT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDAT, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDAT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDBYID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME, BuiltinTypes.STRING, {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY]: new Field(
@@ -1622,25 +1632,28 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.UPDATED]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.UPDATED]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATED, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.UPDATED,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: new Field( // TODO: Move to state only
+        [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATEDBYID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.UPDATEDBYID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.URL]: new Field(

@@ -801,11 +801,12 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
-        [FORM_FIELDS.CREATEDAT]: new Field( // TODO: format milli -> readable date
+        [FORM_FIELDS.CREATEDAT]: new Field(
           formElemID, FORM_FIELDS.CREATEDAT, BuiltinTypes.NUMBER, {
             name: FORM_FIELDS.CREATEDAT,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         ),
         [FORM_FIELDS.CLONEABLE]: new Field(

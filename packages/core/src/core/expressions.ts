@@ -134,7 +134,12 @@ export const resolveElement = (
   return element
 }
 
-export const resolve = (elements: readonly Element[]): Element[] => {
-  const contextElements = _.groupBy(elements, e => e.elemID.getFullName())
+export const resolve = (elements: readonly Element[],
+  additionalContext: ReadonlyArray<Element> = []): Element[] => {
+  const additionalContextElements = _.groupBy(additionalContext, e => e.elemID.getFullName())
+  const contextElements = {
+    ...additionalContextElements,
+    ..._.groupBy(elements, e => e.elemID.getFullName()),
+  }
   return elements.map(e => resolveElement(e, contextElements))
 }

@@ -218,6 +218,7 @@ export const verifyChanges = (plan: Plan,
   expectedChanges: { action: ActionName; element: string }[]): void => {
   expect(plan.size).toBe(expectedChanges.length)
   const changes = wu(plan.itemsByEvalOrder()).map(item => item.parent() as Change).toArray()
+
   expect(changes.every(change =>
     expectedChanges.some(expectedChange =>
       change.action === expectedChange.action

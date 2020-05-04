@@ -18,3 +18,15 @@ salesforce.Role NewInstanceName {
   description = "To Be Modified"
   name = "New Role Instance"
 }
+
+salesforce.Role NewInstance2Name {
+  description = var.desc
+  name = "Another new Role Instance"
+  mayForecastManagerShare = var.isStaging
+}
+
+vars {
+  desc = salesforce.Role.instance.NewInstanceName.description
+  isStaging = false
+  age = 60
+}

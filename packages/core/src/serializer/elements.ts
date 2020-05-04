@@ -40,31 +40,52 @@ import {
 
 export const SALTO_CLASS_FIELD = '_salto_class'
 interface ClassName {[SALTO_CLASS_FIELD]: string}
-export const serialize = (elements: Element[]): string => {
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const nonReferenceReplacer = (e: any): any => {
+  if (isElement(e) || isExpression(e)) {
+    const o = e as Element & ClassName
+    o[SALTO_CLASS_FIELD] = e.constructor.name
+    return o
+  }
+  if (isStaticFile(e)) {
+    const o = e as typeof e & ClassName
+    o[SALTO_CLASS_FIELD] = e.constructor.name
+    return _.omit(o, 'content')
+  }
+  // We need to sort objects so that the state file won't change for the same data.
+  if (_.isPlainObject(e)) {
+    return _(e).toPairs().sortBy().fromPairs()
+      .value()
+  }
+  return e
+}
+
+export const serialize = (elements: Element[], mode: 'state' | 'cache' = 'state'): string => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReplacer = (_k: string, e: any): any => {
     if (isReferenceExpression(e)) {
-      // Add property SALTO_CLASS_FIELD to o
-      const o = e.createWithValue(undefined) as typeof e & ClassName
-      o[SALTO_CLASS_FIELD] = e.constructor.name
-      return o
+      // When serializing for cache files, keep it a reference expression
+      // since the idea is to reflect the nacl files.
+      if (e.value === undefined || mode === 'cache') {
+        const serialized = e.createWithValue(undefined)
+        // Add property SALTO_CLASS_FIELD to serialized
+        const o = serialized as typeof serialized & ClassName
+        o[SALTO_CLASS_FIELD] = serialized.constructor.name
+        return o
+      }
+      // When serializing for the state file, the result should be the same after
+      // a fetch and a deploy.
+      if (isElement(e.value)) {
+        const serialized = new ReferenceExpression(e.value.elemID)
+        // Add property SALTO_CLASS_FIELD to serialized
+        const o = serialized as typeof serialized & ClassName
+        o[SALTO_CLASS_FIELD] = serialized.constructor.name
+        return o
+      }
+      return nonReferenceReplacer(e.value)
     }
-    if (isElement(e) || isExpression(e)) {
-      const o = e as Element & ClassName
-      o[SALTO_CLASS_FIELD] = e.constructor.name
-      return o
-    }
-    if (isStaticFile(e)) {
-      const o = e as typeof e & ClassName
-      o[SALTO_CLASS_FIELD] = e.constructor.name
-      return _.omit(o, 'content')
-    }
-    // We need to sort objects so that the state file won't change for the same data.
-    if (_.isPlainObject(e)) {
-      return _(e).toPairs().sortBy().fromPairs()
-        .value()
-    }
-    return e
+    return nonReferenceReplacer(e)
   }
 
   const weakElements = elements.map(element => _.cloneDeepWith(

@@ -65,8 +65,8 @@ const addElements = (
   // Add top level elements to the graph
   elements.filter(isTopLevelElement).forEach(addElemToOutputGraph)
 
-  // We add fields to the graph seperately from their object types to allow for better granularity
-  // of cycle aviodance
+  // We add fields to the graph separately from their object types to allow for better granularity
+  // of cycle avoidance
   _(elements)
     .filter(isObjectType)
     .map(obj => Object.values(obj.fields))
@@ -166,10 +166,11 @@ export const getPlan = async (
   afterElements: readonly Element[],
   changeValidators: Record<string, ChangeValidator> = {},
   dependencyChangers: ReadonlyArray<DependencyChanger> = defaultDependencyChangers,
+  additionalResolveContext?: ReadonlyArray<Element>,
 ): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
-  const resolvedBefore = resolve(beforeElements)
-  const resolvedAfter = resolve(afterElements)
+  const resolvedBefore = resolve(beforeElements, additionalResolveContext)
+  const resolvedAfter = resolve(afterElements, additionalResolveContext)
 
   const diffGraph = await buildDiffGraph(
     addElements(resolvedBefore, 'remove'),

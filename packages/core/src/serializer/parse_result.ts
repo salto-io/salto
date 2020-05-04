@@ -24,7 +24,7 @@ const serializeSourceMap = (sourceMap: SourceMap): string =>
   JSON.stringify(Array.from(sourceMap.entries()))
 
 export const serialize = (parseResult: ParseResult): string => [
-  elementSerializer.serialize(parseResult.elements),
+  elementSerializer.serialize(parseResult.elements, 'cache'),
   serializeErrors(parseResult.errors),
   serializeSourceMap(parseResult.sourceMap),
 ].join(EOL)

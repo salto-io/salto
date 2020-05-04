@@ -20,6 +20,7 @@ import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 import { parseResultCache } from '../../../src/workspace/cache'
 import { SourceMap } from '../../../src/parser/internal/types'
 import { mockStaticFilesSource } from '../static_files/common.test'
+import * as elementsModule from '../../../src/serializer/elements'
 
 
 jest.mock('@salto-io/file', () => ({
@@ -89,6 +90,17 @@ describe('localParseResultCache', () => {
       expect(replaceContents).toHaveBeenLastCalledWith(
         path.resolve(mockBaseDirPath, 'blabla/blurprint.jsonl'), mockSerializedCacheFile
       )
+    })
+
+    it('serializes with cache mode', async () => {
+      jest.spyOn(elementsModule, 'serialize')
+      await cache.put({
+        filename: 'blabla/blurprint.nacl',
+        lastModified: 0,
+      }, parseResult)
+      const mockSerialize = elementsModule.serialize as jest.Mock
+      expect(mockSerialize.mock.calls.length).toBe(1)
+      expect(mockSerialize.mock.calls[0][1]).toEqual('cache')
     })
   })
   describe('get', () => {

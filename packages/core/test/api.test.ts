@@ -24,6 +24,7 @@ import {
   ObjectType,
   PrimitiveType,
   PrimitiveTypes,
+  Variable,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
 import * as workspace from '../src/workspace/workspace'
@@ -173,13 +174,14 @@ describe('api.ts', () => {
         regField: 'regValue',
       }
     )
-    const stateElements = [stateInstance, typeWithHiddenField]
+    const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), 8)
+    const stateElements = [stateInstance, typeWithHiddenField, variable]
 
     // workspace elements should not contains hidden values
     const workspaceInstance = stateInstance.clone()
     workspaceInstance.value = { regField: 'regValue' }
 
-    const workspaceElements = [workspaceInstance, typeWithHiddenField]
+    const workspaceElements = [workspaceInstance, typeWithHiddenField, variable]
     const ws = mockWorkspace(workspaceElements)
     const mockFlush = ws.flush as jest.Mock
     const mockedState = { ...mockState(), getAll: jest.fn().mockResolvedValue(stateElements) }
@@ -191,7 +193,7 @@ describe('api.ts', () => {
     it('should call getPlan with the correct elements', async () => {
       expect(mockedGetPlan).toHaveBeenCalledTimes(1)
 
-      // checking that we call get plan after adding hidden values to workspace elements
+      // check that we call get plan after adding hidden values and variables to workspace elements
       expect(mockedGetPlan).toHaveBeenCalledWith(
         stateElements,
         stateElements,
@@ -261,8 +263,9 @@ describe('api.ts', () => {
       it('should deploy changes', async () => {
         expect(mockedDeployActions).toHaveBeenCalledTimes(1)
       })
-      it('should get detailed changes', async () => {
+      it('should get detailed changes with resolve context', async () => {
         expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(1)
+        expect(mockedGetDetailedChanges.mock.calls[0].length).toBe(3)
       })
 
       it('should return fetch changes', async () => {

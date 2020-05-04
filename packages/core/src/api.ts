@@ -19,6 +19,7 @@ import {
   Element,
   InstanceElement,
   ObjectType,
+  ElemID,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -69,7 +70,12 @@ export const updateLoginConfig = async (
 const filterElementsByServices = (
   elements: Element[] | readonly Element[],
   services: ReadonlyArray<string>
-): Element[] => elements.filter(e => services.includes(e.elemID.adapter))
+): Element[] => {
+  const filtered = elements.filter(e => services.includes(e.elemID.adapter)
+  // Variables belong to all of the services
+  || e.elemID.adapter === ElemID.VARIABLES_NAMESPACE)
+  return filtered
+}
 
 export const preview = async (
   workspace: Workspace,
@@ -119,10 +125,15 @@ export const deploy = async (
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
     // Clone the elements because getDetailedChanges can change its input
     const clonedElements = changedElements.map(e => e.clone())
-    const relevantWorkspaceElements = (await workspace.elements())
+    const workspaceElements = await workspace.elements()
+    const relevantWorkspaceElements = workspaceElements
       .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)
 
-    const changes = wu(await getDetailedChanges(relevantWorkspaceElements, clonedElements))
+    // Add workspace elements as an additional context for resolve so that we can resolve
+    // variable expressions. Adding only variables is not enough for the case of a variable
+    // with the value of a reference.
+    const changes = wu(await getDetailedChanges(relevantWorkspaceElements, clonedElements,
+      workspaceElements))
       .map(change => ({ change, serviceChange: change }))
       .map(toChangesWithPath(name => changedElementMap[name] || []))
       .flatten()

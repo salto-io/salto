@@ -71,8 +71,9 @@ export type MergeErrorWithElements = {
 export const getDetailedChanges = async (
   before: ReadonlyArray<Element>,
   after: ReadonlyArray<Element>,
+  additionalResolveContext?: ReadonlyArray<Element>,
 ): Promise<Iterable<DetailedChange>> =>
-  wu((await getPlan(before, after, {}, [])).itemsByEvalOrder())
+  wu((await getPlan(before, after, {}, [], additionalResolveContext)).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
 

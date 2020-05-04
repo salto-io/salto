@@ -521,6 +521,7 @@ export class Types {
               name: ACTION_FIELDS.ACTIONID,
               _readOnly: true,
               [CORE_ANNOTATIONS.REQUIRED]: false,
+              [CORE_ANNOTATIONS.HIDDEN]: true,
             },
           ),
           [ACTION_FIELDS.DELAYMILLS]: new Field(
@@ -535,6 +536,7 @@ export class Types {
               name: ACTION_FIELDS.STEPID,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
+              [CORE_ANNOTATIONS.HIDDEN]: true,
             },
           ),
           [ACTION_FIELDS.ANCHORSETTING]: new Field(
@@ -549,6 +551,7 @@ export class Types {
               name: ACTION_FIELDS.FILTERSLISTID,
               _readOnly: false,
               [CORE_ANNOTATIONS.REQUIRED]: false,
+              [CORE_ANNOTATIONS.HIDDEN]: true,
             },
           ),
           [ACTION_FIELDS.FILTERS]: new Field(
@@ -848,6 +851,7 @@ export class Types {
             name: WORKFLOWS_FIELDS.ID,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         ),
         [WORKFLOWS_FIELDS.NAME]: new Field(
@@ -896,6 +900,7 @@ export class Types {
             name: WORKFLOWS_FIELDS.INSERTEDAT,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         ),
         [WORKFLOWS_FIELDS.UPDATEDAT]: new Field(
@@ -903,6 +908,7 @@ export class Types {
             name: WORKFLOWS_FIELDS.UPDATEDAT,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         ),
         [WORKFLOWS_FIELDS.CONTACTLISTIDS]: new Field(

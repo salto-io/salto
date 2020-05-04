@@ -147,3 +147,7 @@ export const isExpression = (value: any): value is Expression => (
 export const isStaticFile = (value: any): value is StaticFile => (
   value instanceof StaticFile
 )
+
+export const isPrimitiveValue = (value: Value): value is PrimitiveValue => (
+  value === undefined || value === null || ['string', 'number', 'boolean'].includes(typeof value)
+)

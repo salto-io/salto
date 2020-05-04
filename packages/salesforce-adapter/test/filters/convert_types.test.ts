@@ -17,6 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
   createRestriction,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
@@ -50,6 +51,7 @@ describe('convert types filter', () => {
         {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['a', 'b', 'c'] }),
         }),
+      refToStr: new Field(mockObjId, 'ref', BuiltinTypes.STRING),
     },
   })
   type XsdValueType = { _: string; $: { 'xsi:type': string }}
@@ -90,6 +92,7 @@ describe('convert types filter', () => {
       }],
       numArray: ['12', '13', '14'],
       picklist: '0',
+      refToStr: new ReferenceExpression(new ElemID(constants.SALESFORCE, 'dummy')),
     },
   )
 
@@ -164,6 +167,10 @@ describe('convert types filter', () => {
       it('should not change settings', () => {
         const settingsInst = testElements[2] as InstanceElement
         expect(settingsInst).toEqual(mockSettings)
+      })
+
+      it('should not change references', () => {
+        expect(inst.value.refToStr).toBe(mockInstance.value.refToStr)
       })
     })
   })

@@ -16,7 +16,7 @@
 
 import { ElemID } from '../src/element_id'
 import { StaticFile, isEqualValues, VariableExpression,
-  ReferenceExpression, isStaticFile, calculateStaticFileHash } from '../src/values'
+  ReferenceExpression, isStaticFile, calculateStaticFileHash, isPrimitiveValue, TemplateExpression } from '../src/values'
 
 describe('Values', () => {
   describe('ReferenceExpression.createWithValue', () => {
@@ -85,5 +85,27 @@ describe('Values', () => {
     })
     it('isStaticFile when static file', () => expect(isStaticFile(new StaticFile('aa', 'bb'))).toBeTruthy())
     it('isStaticFile when not static file', () => expect(isStaticFile('ZOMG')).toBeFalsy())
+  })
+
+  describe('isPrimitiveValue', () => {
+    describe('with primitive values', () => {
+      const primitiveValues = ['asd', 123, false, undefined, null]
+      it('should return true', () => {
+        primitiveValues.forEach(val => expect(isPrimitiveValue(val)).toBeTruthy())
+      })
+    })
+    describe('with non primitive values', () => {
+      const nonPrimitiveValues = [
+        new ReferenceExpression(new ElemID('')),
+        new TemplateExpression({ parts: [] }),
+        new VariableExpression(new ElemID('var', 'a')),
+        new StaticFile('dummy', 'dummy'),
+        { a: 1 },
+        [1, 2, 3],
+      ]
+      it('should return false', () => {
+        nonPrimitiveValues.forEach(val => expect(isPrimitiveValue(val)).toBeFalsy())
+      })
+    })
   })
 })

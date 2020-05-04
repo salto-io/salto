@@ -21,6 +21,7 @@ import {
   BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile,
   isPrimitiveType,
   isReferenceExpression,
+  isPrimitiveValue,
 } from '@salto-io/adapter-api'
 
 import {
@@ -373,7 +374,7 @@ describe('Test utils.ts', () => {
         return value.value
       }
       const fieldType = field?.type
-      if (!isPrimitiveType(fieldType)) {
+      if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
         return value
       }
       switch (fieldType.primitive) {
@@ -439,10 +440,13 @@ describe('Test utils.ts', () => {
 
       it('should transform inner object', () => {
         expect(resp.obj[0]).not.toEqual(mockInstance.value.obj[0])
-        expect(resp.obj[0].value.anotherVal).toBeUndefined()
         expect(resp.obj[1].innerObj.magical.deepNumber).toBeUndefined()
         expect(resp.obj[1].innerObj.magical.notExist2).toEqual('false')
         expect(resp.obj[2]).not.toEqual(mockInstance.value.obj[2])
+      })
+
+      it('should not change non primitive values in primitive fields', () => {
+        expect(resp.obj[0].value).toEqual(mockInstance.value.obj[0].value)
       })
     })
   })

@@ -205,6 +205,24 @@ describe('HCL parse', () => {
     expect(body.blocks[0].attrs.that.expressions[0].type).toEqual('template')
     expect(body.blocks[0].attrs.that.expressions[0].expressions.length).toEqual(3)
   })
+  it('Doesnt parse escaped references', async () => {
+    const blockDef = `type label {
+        thing = a.b
+        that = ">>>\\\${a.b}<<<"
+      }`
+
+    const { body } = parse(Buffer.from(blockDef), 'none')
+    expect(body.blocks.length).toEqual(1)
+    expect(body.blocks[0].attrs).toHaveProperty('thing')
+    expect(body.blocks[0].attrs.thing.expressions[0].type).toEqual('reference')
+    expect(body.blocks[0].attrs.thing.expressions[0].value).toEqual(['a', 'b'])
+    expect(body.blocks[0].attrs.that.expressions[0].type).toEqual('template')
+    expect(body.blocks[0].attrs.that.expressions[0].expressions.length).toEqual(1)
+    expect(body.blocks[0].attrs.that.expressions[0].expressions[0].value).toEqual(
+      // eslint-disable-next-line no-template-curly-in-string
+      '>>>${a.b}<<<'
+    )
+  })
 
   it('parses all numbers notation', () => {
     const blockDef = `type label {

@@ -61,14 +61,20 @@ const separateByCommas = (items: string[][]): string[][] => {
 
 const isMultilineString = (prim: string): boolean => _.isString(prim) && prim.includes('\n')
 
-const escapeMultilineString = (prim: string): string => prim.replace(/\$\{/gi, '\\${')
+const escapeString = (prim: string): string => prim.replace(/\$\{/gi, '\\${')
+
+// Double escaping happens when we stringify after escaping.
+const fixDoubleEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')
 
 const dumpMultilineString = (prim: string): string =>
-  [MULTILINE_STRING_PREFIX, escapeMultilineString(prim), MULTILINE_STRING_SUFFIX].join('')
+  [MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
 
-const dumpPrimitive = (prim: Value): string =>
-  (isMultilineString(prim)
-    ? dumpMultilineString(prim) : JSON.stringify(prim))
+const dumpString = (prim: string): string => {
+  if (isMultilineString(prim)) return dumpMultilineString(prim)
+  return fixDoubleEscaping(JSON.stringify(prim))
+}
+
+const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
 
 const dumpObject = (obj: Value): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
@@ -92,10 +98,10 @@ const dumpExpression = (exp: Value): string[] => {
   if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
   const { parts } = exp as TemplateExpression
   return [
-    dumpPrimitive(parts
+    dumpString(parts
       .map(part => (isExpression(part)
         ? `\${ ${dumpExpression(part).join('\n')} }`
-        : part)).join('')),
+        : escapeString(part))).join('')),
   ]
 }
 
@@ -114,6 +120,7 @@ const dumpValue = (value: Value): string[] => {
 
   if (_.isPlainObject(value)) return dumpObject(value)
   if (isExpression(value)) return dumpExpression(value)
+  if (_.isString(value)) return [dumpString(escapeString(value))]
 
   return [dumpPrimitive(value)]
 }

@@ -164,6 +164,9 @@ export const convertReference = (reference: LexerToken): HclExpression => ({
   source: createSourceRange(reference, reference),
 })
 
+const removeStringEscaping = (text: string): string =>
+  text.replace(/\\\$\{/gi, '${',)
+
 export const convertString = (
   oq: LexerToken,
   contentTokens: LexerToken[],
@@ -174,15 +177,12 @@ export const convertString = (
     ? convertReference(t)
     : {
       type: 'literal',
-      value: t && t.text ? JSON.parse(`"${t.text}"`) : '',
+      value: t && t.text ? JSON.parse(`"${removeStringEscaping(t.text)}"`) : '',
       expressions: [],
       source: createSourceRange(t, t),
     })),
   source: createSourceRange(oq, cq),
 })
-
-const removeMultilineEscaping = (text: string): string =>
-  text.replace(/\\\$\{/gi, '${',)
 
 export const convertMultilineString = (
   mlStart: LexerToken,
@@ -191,7 +191,7 @@ export const convertMultilineString = (
 ): HclExpression => ({
   type: 'template',
   expressions: contentTokens.map((t, index) => {
-    const withoutEscaping = removeMultilineEscaping(t.text)
+    const withoutEscaping = removeStringEscaping(t.text)
     const value = index === contentTokens.length - 1
       ? withoutEscaping.slice(0, withoutEscaping.length - 1) // Remove the last \n
       : withoutEscaping

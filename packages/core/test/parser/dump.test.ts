@@ -91,6 +91,8 @@ describe('Salto Dump', () => {
     },
     // eslint-disable-next-line no-template-curly-in-string
     multiLineString: 'This\nis\nmultilinestring\n${foo} needs Escaping',
+    // eslint-disable-next-line no-template-curly-in-string
+    stringNeedsEscaping: 'This string ${needs} escaping',
   })
 
   const instance = new InstanceElement(
@@ -196,6 +198,11 @@ describe('Salto Dump', () => {
       it('has multiline string', () => {
         expect(body).toMatch(
           /multiLineString = '''\n\s*This\s*\nis\s*\nmultilinestring\s*\n\s*\\\$\{foo\} needs Escaping\s*\n'''/m,
+        )
+      })
+      it('Has escaped string', () => {
+        expect(body).toMatch(
+          /stringNeedsEscaping = "This string \\\$\{needs\} escaping"/m,
         )
       })
       it('has fields', () => {

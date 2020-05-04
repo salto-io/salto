@@ -181,6 +181,9 @@ export const convertString = (
   source: createSourceRange(oq, cq),
 })
 
+const removeMultilineEscaping = (text: string): string =>
+  text.replace(/\\\$\{/gi, '${',)
+
 export const convertMultilineString = (
   mlStart: LexerToken,
   contentTokens: LexerToken[],
@@ -188,9 +191,10 @@ export const convertMultilineString = (
 ): HclExpression => ({
   type: 'template',
   expressions: contentTokens.map((t, index) => {
+    const withoutEscaping = removeMultilineEscaping(t.text)
     const value = index === contentTokens.length - 1
-      ? t.text.slice(0, t.text.length - 1) // Remove the last \n
-      : t.text
+      ? withoutEscaping.slice(0, withoutEscaping.length - 1) // Remove the last \n
+      : withoutEscaping
     return t.type === 'reference'
       ? convertReference(t)
       : {

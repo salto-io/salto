@@ -61,8 +61,10 @@ const separateByCommas = (items: string[][]): string[][] => {
 
 const isMultilineString = (prim: string): boolean => _.isString(prim) && prim.includes('\n')
 
+const escapeMultilineString = (prim: string): string => prim.replace(/\$\{/gi, '\\${')
+
 const dumpMultilineString = (prim: string): string =>
-  [MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
+  [MULTILINE_STRING_PREFIX, escapeMultilineString(prim), MULTILINE_STRING_SUFFIX].join('')
 
 const dumpPrimitive = (prim: Value): string =>
   (isMultilineString(prim)

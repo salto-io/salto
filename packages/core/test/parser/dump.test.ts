@@ -89,7 +89,8 @@ describe('Salto Dump', () => {
         },
       ],
     },
-    multiLineString: 'This\nis\nmultilinestring',
+    // eslint-disable-next-line no-template-curly-in-string
+    multiLineString: 'This\nis\nmultilinestring\n${foo} needs Escaping',
   })
 
   const instance = new InstanceElement(
@@ -194,7 +195,7 @@ describe('Salto Dump', () => {
       })
       it('has multiline string', () => {
         expect(body).toMatch(
-          /multiLineString = '''\n\s*This\s*\nis\s*\nmultilinestring\s*\n'''/,
+          /multiLineString = '''\n\s*This\s*\nis\s*\nmultilinestring\s*\n\s*\\\$\{foo\} needs Escaping\s*\n'''/m,
         )
       })
       it('has fields', () => {
@@ -212,7 +213,6 @@ describe('Salto Dump', () => {
     it('dumped instance with name that starts with number', () => {
       expect(body).toMatch(/salesforce.test "3me"/)
     })
-
     it('can be parsed back', async () => {
       const result = await parse(Buffer.from(body), 'none', functions)
       const { elements, errors } = result

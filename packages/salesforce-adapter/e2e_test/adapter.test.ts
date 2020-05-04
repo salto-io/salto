@@ -145,7 +145,6 @@ describe('Salesforce adapter E2E with real account', () => {
     }
 
     const addCustomObjectWithVariousFields = async (): Promise<void> => {
-      await removeCustomObjectsWithVariousFields()
       const objectToAdd = {
         deploymentStatus: 'Deployed',
         fields: [

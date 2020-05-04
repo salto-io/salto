@@ -16,16 +16,17 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, InstanceElement, ObjectType,
+  Element, ElemID, InstanceElement, ObjectType, ReferenceExpression, Field,
 } from '@salto-io/adapter-api'
 import {
   findInstances, naclCase,
 } from '@salto-io/adapter-utils'
+import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import {
-  addObjectParentReference, generateApiNameToCustomObject, id,
+  addObjectParentReference, generateApiNameToCustomObject, id, allCustomObjectFields,
 } from './utils'
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, 'Layout')
@@ -77,12 +78,51 @@ const fixLayoutPath = (
   layout.path = [...objectPath.slice(0, -1), layout.elemID.typeName, layout.elemID.name]
 }
 
+type LayoutItem = {
+  field: string | ReferenceExpression
+}
+
+const fixLayoutItemField = (
+  layoutItem: LayoutItem, layoutObj: ObjectType, layoutObjFields: Field[]
+): void => {
+  if (!layoutItem) return
+  const findField = (fieldName: string, fields: Field[]): Field | undefined =>
+    fields.find(field => apiName(field, true) === fieldName)
+  const reference = findField(layoutItem.field as string, layoutObjFields)
+  if (!reference) {
+    log.debug(`Could not find field ${layoutItem.field} for layout ${layoutObj.elemID.name}`)
+    return
+  }
+
+  layoutItem.field = new ReferenceExpression(
+    reference.elemID
+  )
+}
+
+const fixLayoutColumnItems = (
+  layout: InstanceElement,
+  layoutObj: ObjectType,
+  layoutObjFields: Field[]
+): void => {
+  const layoutItems = _(makeArray(layout.value.layoutSections))
+    .map(layoutSection => makeArray(layoutSection.layoutColumns))
+    .flatten()
+    .map(layoutColumn => makeArray(layoutColumn.layoutItems))
+    .flatten()
+  layoutItems.forEach(layoutItem => fixLayoutItemField(
+    layoutItem as LayoutItem, layoutObj, layoutObjFields
+  ))
+}
+
+
 /**
 * Declare the layout filter, this filter adds reference from the sobject to it's layouts.
+* Fixes references in layout items.
 */
 const filterCreator: FilterCreator = () => ({
   /**
    * Upon fetch, shorten layout ID and add reference to layout sobjects.
+   * Fixes references in layout items.
    *
    * @param elements the already fetched elements
    */
@@ -99,8 +139,11 @@ const filterCreator: FilterCreator = () => ({
         log.debug('Could not find object %s for layout %s', layoutObjName, layoutName)
         return
       }
+      const layoutObjFields = [...allCustomObjectFields(elements, layoutObj.elemID)]
+
       addObjectParentReference(layout, layoutObj)
       fixLayoutPath(layout, layoutObj)
+      fixLayoutColumnItems(layout, layoutObj, layoutObjFields)
     })
   },
 })

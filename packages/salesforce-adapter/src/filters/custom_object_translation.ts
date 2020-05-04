@@ -14,16 +14,14 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import {
-  Element, ElemID, ReferenceExpression, Field, isObjectType,
-} from '@salto-io/adapter-api'
-import { findInstances, findElements } from '@salto-io/adapter-utils'
+import { Element, ElemID, ReferenceExpression } from '@salto-io/adapter-api'
+import { findInstances } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { apiName } from '../transformers/transformer'
 import { FilterWith } from '../filter'
-import { relativeApiName, instanceParent, parentApiNameToMetadataTypeInstances } from './utils'
+import { relativeApiName, instanceParent, parentApiNameToMetadataTypeInstances, allCustomObjectFields } from './utils'
 import { SALESFORCE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, VALIDATION_RULES_METADATA_TYPE } from '../constants'
 
 const log = logger(module)
@@ -40,12 +38,6 @@ const VALIDATION_RULES = 'validationRules'
 */
 const filterCreator = (): FilterWith<'onFetch'> => ({
   onFetch: async (elements: Element[]) => {
-    const allCustomObjectFields = (elemID: ElemID): Iterable<Field> =>
-      wu(findElements(elements, elemID))
-        .filter(isObjectType)
-        .map(elem => Object.values(elem.fields))
-        .flatten()
-
     const customToRule = parentApiNameToMetadataTypeInstances(
       elements, VALIDATION_RULES_METADATA_TYPE
     )
@@ -61,7 +53,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
 
         // Change fields to reference
         const customFields = new Map(
-          wu(allCustomObjectFields(customObjectElemId))
+          wu(allCustomObjectFields(elements, customObjectElemId))
             .map(f => [apiName(f, true), f])
         )
         makeArray(customTranslation.value[FIELDS]).forEach(field => {

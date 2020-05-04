@@ -18,7 +18,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS,
-  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, isReferenceExpression,
+  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, isPrimitiveValue,
 } from '@salto-io/adapter-api'
 import {
   TransformFunc, naclCase, transformValues,
@@ -1866,7 +1866,7 @@ export const createInstanceName = (
 
 export const transformPrimitive: TransformFunc = ({ value, field }) => {
   const fieldType = field?.type
-  if (!isPrimitiveType(fieldType) || isReferenceExpression(value)) {
+  if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
     return value
   }
   // remove values that are just an empty string or null

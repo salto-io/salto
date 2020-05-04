@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field as TypeField, TypeMap, ListType, isField, createRestriction, isReferenceExpression,
+  Field as TypeField, TypeMap, ListType, isField, createRestriction, isPrimitiveValue,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -949,13 +949,6 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 }
 
 export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
-  if (isReferenceExpression(value)) {
-    return value
-  }
-  const fieldType = field?.type
-  if (!isPrimitiveType(fieldType)) {
-    return value
-  }
   // We sometimes get empty strings that we want to filter out
   if (value === '') {
     return undefined
@@ -971,6 +964,10 @@ export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
   if (_.isObject(value) && Object.keys(value).includes('_')) {
     const convertFunc = convertXsdTypeFuncMap[_.get(value, ['$', 'xsi:type'])] || (v => v)
     return transformPrimitive({ value: convertFunc(_.get(value, '_')), path, field })
+  }
+  const fieldType = field?.type
+  if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
+    return value
   }
   switch (fieldType.primitive) {
     case PrimitiveTypes.NUMBER:

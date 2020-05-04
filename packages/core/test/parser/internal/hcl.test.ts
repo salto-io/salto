@@ -257,6 +257,20 @@ describe('HCL parse', () => {
     expect(await evaluate(body.blocks[0].attrs.thing.expressions[0], functions)).toHaveLength(5)
   })
 
+  // If this  fails you probably used the . operator in a regex in the lexer. It does not
+  // catch the \u2028 and \u2029 operators so the regex breaks
+  it('Should not fail when parsing a string with \\u2028/9 in it.', async () => {
+    const strContent = 'Hello\u2028Do you want to\u2029know a secret?'
+    const blockDef = `type voodoo {
+      thing = "${strContent}"
+    }`
+    const { body } = parse(Buffer.from(blockDef), 'none')
+    expect(body.blocks.length).toEqual(1)
+    expect(body.blocks[0].attrs).toHaveProperty('thing')
+    expect(await evaluate(body.blocks[0].attrs.thing.expressions[0], functions))
+      .toEqual(strContent)
+  })
+
   describe('parse error', () => {
     const blockDef = 'type some:thing {}'
     let errors: HclParseError[]

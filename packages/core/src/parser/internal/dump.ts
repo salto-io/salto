@@ -61,17 +61,17 @@ const separateByCommas = (items: string[][]): string[][] => {
 
 const isMultilineString = (prim: string): boolean => _.isString(prim) && prim.includes('\n')
 
-const escapeString = (prim: string): string => prim.replace(/\$\{/gi, '\\${')
+const escapeTemplateMarker = (prim: string): string => prim.replace(/\$\{/gi, '\\${')
 
 // Double escaping happens when we stringify after escaping.
-const fixDoubleEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')
+const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')
 
 const dumpMultilineString = (prim: string): string =>
   [MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
 
 const dumpString = (prim: string): string => {
   if (isMultilineString(prim)) return dumpMultilineString(prim)
-  return fixDoubleEscaping(JSON.stringify(prim))
+  return fixDoubleTemplateMarkerEscaping(JSON.stringify(prim))
 }
 
 const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
@@ -101,7 +101,7 @@ const dumpExpression = (exp: Value): string[] => {
     dumpString(parts
       .map(part => (isExpression(part)
         ? `\${ ${dumpExpression(part).join('\n')} }`
-        : escapeString(part))).join('')),
+        : escapeTemplateMarker(part))).join('')),
   ]
 }
 
@@ -120,7 +120,7 @@ const dumpValue = (value: Value): string[] => {
 
   if (_.isPlainObject(value)) return dumpObject(value)
   if (isExpression(value)) return dumpExpression(value)
-  if (_.isString(value)) return [dumpString(escapeString(value))]
+  if (_.isString(value)) return [dumpString(escapeTemplateMarker(value))]
 
   return [dumpPrimitive(value)]
 }

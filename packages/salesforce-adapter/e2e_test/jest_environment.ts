@@ -30,7 +30,7 @@ import {
 
 const log = logger(module)
 
-const MIN_API_REQUESTS_NEEDED = 500
+const MIN_API_REQUESTS_NEEDED = 1000
 const NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT = 1000 * 60 * 60
 
 export const credsSpec = (envName?: string): CredsSpec<Credentials> => {

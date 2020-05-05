@@ -64,7 +64,7 @@ const convertUserIdentifiers = (
       if (isListType(fieldType)) {
         const deepInnerType = getDeepInnerType(fieldType)
         if (isUserIdentifierType(deepInnerType)) {
-          // Currently all array are repesented as a string in HubSpot
+          // Currently all array are represented as a string in HubSpot
           // If there will be "real" array ones we need to support it
           values[field.name] = _.cloneDeepWith(currentValue, (val: Value): string[] | undefined =>
             (_.isString(val) ? val.split(',').map(vals => vals.trim())
@@ -74,13 +74,13 @@ const convertUserIdentifiers = (
           const currentLevelInnerType = fieldType.innerType
           if (isObjectType(currentLevelInnerType)) {
             const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
-            valuesArray.forEach(val => {
+            valuesArray.forEach((val: Values): void => {
               convertUserIdentifiers(currentLevelInnerType, val, ownersMap)
             })
           }
           if (isListType(currentLevelInnerType)) {
             const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
-            valuesArray.forEach(val => {
+            valuesArray.forEach((val: Values): void => {
               convertListTypeOfObjectType(currentLevelInnerType, val)
             })
           }

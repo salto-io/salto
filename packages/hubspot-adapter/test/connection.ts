@@ -33,9 +33,9 @@ const mockMadKu: () => Connection = () => ({
   } as Form,
   owners: {
     get: jest.fn().mockImplementation((): RequestPromise =>
-      ([] as unknown as RequestPromise)),
+      (Promise.resolve([]) as unknown as RequestPromise)),
     getById: jest.fn().mockImplementation((): RequestPromise =>
-      (undefined as unknown as RequestPromise)),
+      (Promise.resolve(undefined) as unknown as RequestPromise)),
   },
   workflows: {
     getAll: jest.fn().mockImplementation((): RequestPromise =>

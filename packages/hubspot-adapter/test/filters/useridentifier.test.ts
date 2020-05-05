@@ -35,7 +35,7 @@ describe('useridentifier filter test', () => {
     }
   }
 
-  const getOwners = async (): Promise<RequestPromise> => [
+  const getOwners = async (): Promise<RequestPromise> => Promise.resolve([
     {
       activeUserId: 12,
       email: 'a@b.com',
@@ -47,7 +47,7 @@ describe('useridentifier filter test', () => {
     {
       activeUserId: 56,
       email: 'e@f.com',
-    }] as unknown as RequestPromise
+    }]) as unknown as RequestPromise
   let objectInstance: InstanceElement
   let instanceValues: Values
   beforeEach(() => {

@@ -213,7 +213,7 @@ describe('Transformer', () => {
     beforeEach(() => {
       const { client } = mockClient()
       hsClient = client
-      const getOwners = async (): Promise<RequestPromise> => [
+      const getOwners = async (): Promise<RequestPromise> => Promise.resolve([
         {
           activeUserId: 12,
           email: 'a@b.com',
@@ -225,7 +225,7 @@ describe('Transformer', () => {
         {
           activeUserId: 56,
           email: 'e@f.com',
-        }] as unknown as RequestPromise
+        }]) as unknown as RequestPromise
       hsClient.getOwners = jest.fn().mockImplementation(getOwners)
     })
 

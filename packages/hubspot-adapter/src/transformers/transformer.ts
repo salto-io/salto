@@ -1133,7 +1133,7 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new Field(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORUSERID, BuiltinTypes.Number, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORUSERID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.AUTHORUSERID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1990,7 +1990,7 @@ const createOwnersMap = async (client: HubspotClient): Promise<Map<string, numbe
 }
 
 export const isUserIdentifierType = (type: TypeElement): boolean =>
-  type?.elemID.isEqual(Types.userIdentifierType.elemID)
+  type.elemID.isEqual(Types.userIdentifierType.elemID)
 
 const doesObjectIncludeUserIdentifier = (
   objectType: Readonly<ObjectType>,
@@ -2055,7 +2055,7 @@ export const createHubspotMetadataFromInstanceElement = async (
         if (isUserIdentifierType(fieldDeepInnerType)) {
           return _.cloneDeepWith(val, v =>
             (_.every(v, _.isString)
-              // Currently all array are repesented as a string in HubSpot
+              // Currently all array are represented as a string in HubSpot
               // If there will be "real" array ones we need to support it
               ? val.map(strVal => ownersMap.get(strVal) || strVal).join(',')
               : undefined))

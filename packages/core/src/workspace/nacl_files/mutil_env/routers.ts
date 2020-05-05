@@ -165,9 +165,16 @@ export const routeFetch = async (
       _.values(secondarySources)
         .map(src => projectElementOrValueToEnv(getChangeElement(change), change.id, src))
     )
-    return _.some(secondaryProjections)
-      ? { primarySource: [change] }
-      : { commonSource: [change] }
+    if (_.some(secondaryProjections)) {
+      return { primarySource: [change] }
+    }
+    if (change.id.isTopLevel()) {
+      return { commonSource: [change] }
+    }
+    // This is a new value / field / annotation addition. In this case, we will want to
+    // add it to common *unless* the entire element is env specific
+    const commonTopLevelElement = await commonSource.get(change.id.createTopLevelParentID().parent)
+    return commonTopLevelElement ? { commonSource: [change] } : { primarySource: [change] }
   }
   // We add to the current defining source.
   const currentChanges = await projectChange(change, primarySource)

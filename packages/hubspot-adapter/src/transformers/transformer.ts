@@ -1903,8 +1903,8 @@ export const transformPrimitive: TransformFunc = ({ value, field }) => {
   if (value === '' || value === null) {
     return undefined
   }
-  if (fieldType.isEqual(BuiltinTypes.JSON)) {
-    return JSON.stringify(value)
+  if (fieldType.isEqual(BuiltinTypes.JSON) && _.isPlainObject(value)) {
+    return JSON.stringify(value, null, 2)
   }
   return value
 }

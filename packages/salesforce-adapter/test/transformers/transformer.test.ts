@@ -1143,6 +1143,26 @@ describe('transformer', () => {
       expect(restored.annotations.changeToRef).toEqual(instanceRef)
     })
   })
+  describe('lookup function tests', () => {
+    const layoutElementObj = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'Lead'),
+      annotations: { apiName: 'foo.Lead' },
+    })
+    const layoutElemId = new ElemID(SALESFORCE, 'Layout')
+    const otherElemId = new ElemID(SALESFORCE, 'Other')
+    const otherElementObj = new ObjectType({
+      elemID: new ElemID(SALESFORCE, 'other'),
+      annotations: { apiName: 'foo.other' },
+    })
+    it('gives relative for layout', () => {
+      const apiName = getLookUpName(layoutElementObj, layoutElemId)
+      expect(apiName).toEqual('Lead')
+    })
+    it('gives complete for other', () => {
+      const apiName = getLookUpName(otherElementObj, otherElemId)
+      expect(apiName).toEqual('foo.other')
+    })
+  })
   describe('Renaming metadatatype tests', () => {
     it('Verify renaming function', () => {
       METADATA_TYPES_TO_RENAME.forEach((_value, key) => {

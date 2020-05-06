@@ -1271,10 +1271,15 @@ export const createMetadataTypeElements = async (
 
   return _.flatten([element, ...embeddedTypes])
 }
+const lookUpRelative = (path?: ElemID): boolean => {
+  const lookUpRelativeTypes = ['Layout']
+  return path !== undefined && lookUpRelativeTypes.includes(path.typeName)
+}
 
-export const getLookUpName = (refValue: Value): Value => {
+export const getLookUpName = (refValue: Value, path?: ElemID): Value => {
+  const isRelative = lookUpRelative(path)
   if (isElement(refValue)) {
-    return apiName(refValue)
+    return apiName(refValue, isRelative)
   }
   return refValue
 }

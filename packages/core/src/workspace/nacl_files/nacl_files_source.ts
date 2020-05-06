@@ -210,21 +210,25 @@ const buildNaclFilesSource = (
     )
 
     const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
+    const updatedFileChanges = groupAnnotationTypeChanges(changesToUpdate,
+      mergedSourceMap)
+    console.log(updatedFileChanges)
     const updatedNaclFiles = (await withLimitedConcurrency(
-      _(changesToUpdate)
+      _(updatedFileChanges)
         .map(change => getChangeLocations(change, mergedSourceMap))
         .flatten()
         .groupBy(change => change.location.filename)
         .entries()
         .map(([filename, fileChanges]) => async () => {
           try {
-            const updatedFileChanges = groupAnnotationTypeChanges(fileChanges,
-              changedFileToSourceMap[filename])
+            console.log("OKOKOKOKOKOK")
             const buffer = await updateNaclFileData(await getNaclFileData(filename),
-              updatedFileChanges, getStaticFilesFunctions(staticFileSource))
+            fileChanges, getStaticFilesFunctions(staticFileSource))
             return { filename, buffer }
           } catch (e) {
-            log.error('failed to update NaCl file %s with %o changes due to: %o',
+            console.log("SHIIIIITTTT")
+            console.log(e)
+            console.log('failed to update NaCl file %s with %o changes due to: %o',
               filename, fileChanges, e)
             return undefined
           }

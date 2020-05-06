@@ -419,7 +419,9 @@ describe('multi env tests', () => {
     const commonNaclFileInstName = `CommonInstNacl${tempID}`
     const env1NaclFileInstName = `Env1InstNacl${tempID}`
     const env2NaclFileInstName = `Env2InstNacl${tempID}`
-
+    const commonNaclFileName = path.join(baseDir, 'salesforce', 'common.nacl')
+    const env1NaclFileName = path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'env1.nacl')
+    const env2NaclFileName = path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'env2.nacl')
 
     describe('handle nacl based add change', () => {
       beforeAll(async () => {
@@ -456,9 +458,9 @@ describe('multi env tests', () => {
             description: 'Env2 from Nacl',
           }),
         ])
-        await writeFile(path.join(baseDir, 'salesforce', 'common.nacl'), commonNaclFile)
-        await writeFile(path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'env1.nacl'), env1NaclFile)
-        await writeFile(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'env2.nacl'), env2NaclFile)
+        await writeFile(commonNaclFileName, commonNaclFile)
+        await writeFile(env1NaclFileName, env1NaclFile)
+        await writeFile(env2NaclFileName, env2NaclFile)
         await runSetEnv(baseDir, ENV1_NAME)
         await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV2_NAME)
@@ -505,9 +507,9 @@ describe('multi env tests', () => {
 
       it('should update the attributes added in the deploy in the proper file', async () => {
         await Promise.all([
-          env1NaclFileObjectName,
-          env2NaclFileObjectName,
-          commonNaclFileObjectName,
+          env1NaclFileName,
+          env2NaclFileName,
+          commonNaclFileName,
         ].map(async filename => {
           const element = (await getNaclFileElements(filename))[0]
           expect(isObjectType(element)).toBeTruthy()
@@ -521,9 +523,9 @@ describe('multi env tests', () => {
 
     describe('handle nacl file delete changes', () => {
       beforeAll(async () => {
-        await rm(path.join(baseDir, 'salesforce', 'common.nacl'))
-        await rm(path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'env1.nacl'))
-        await rm(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'env2.nacl'))
+        await rm(commonNaclFileName)
+        await rm(env1NaclFileName)
+        await rm(env2NaclFileName)
         await rm(env2ObjFilePath())
         await rm(env2InstFilePath())
         await runSetEnv(baseDir, ENV1_NAME)

@@ -260,21 +260,22 @@ const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition =>
 
 const parentElementExistsInPath = (
   dc: DetailedChange,
-  elementsIndex: Record<string, string[]>
+  sourceMap: SourceMap
 ): boolean => {
   const { parent } = dc.id.createTopLevelParentID()
-  return (elementsIndex[parent.getFullName()] || [])
-    .includes(createFileNameFromPath(dc.path))
+  return !_.isEmpty(sourceMap.get(parent.getFullName())?.filter(
+    range => range.filename.includes(createFileNameFromPath(dc.path))
+  ))
 }
 export const getChangesToUpdate = (
   changes: DetailedChange[],
-  elementsIndex: Record<string, string[]>
+  sourceMap: SourceMap
 ): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
     && dc.action === 'add'
     && dc.id.idType !== 'instance'
     && dc.id.nestingLevel === (dc.id.idType === 'annotation' ? 2 : 1)
-    && !parentElementExistsInPath(dc, elementsIndex)
+    && !parentElementExistsInPath(dc, sourceMap)
 
   const [nestedAdditionsWithPath, otherChanges] = _.partition(
     changes,
@@ -287,5 +288,5 @@ export const getChangesToUpdate = (
     .map(wrapAdditions)
     .value()
 
-  return _.concat(otherChanges, wrappedNestedAdditions)
+  return groupAnnotationTypeChanges(_.concat(otherChanges, wrappedNestedAdditions), sourceMap)
 }

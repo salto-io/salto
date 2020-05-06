@@ -1990,7 +1990,7 @@ const createOwnersMap = async (client: HubspotClient): Promise<Map<string, numbe
 }
 
 export const isUserIdentifierType = (type: TypeElement): boolean =>
-  type.elemID.isEqual(Types.userIdentifierType.elemID)
+  isPrimitiveType(type) && type.elemID.isEqual(Types.userIdentifierType.elemID)
 
 const doesObjectIncludeUserIdentifier = (
   objectType: Readonly<ObjectType>,

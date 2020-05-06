@@ -22,6 +22,9 @@ import { Owner } from 'src/client/types'
 import { isUserIdentifierType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 
+const getValueAsArray = (value: Values): Values[] =>
+  (_.isArray(value) ? value : [value])
+
 const convertUserIdentifiers = (
   objectType: ObjectType,
   values: Values,
@@ -33,14 +36,12 @@ const convertUserIdentifiers = (
   ): void => {
     const currentLevelInnerType = listType.innerType
     if (isListType(currentLevelInnerType)) {
-      const valuesArray = _.isArray(listValue) ? listValue : [listValue]
-      valuesArray.forEach(val => {
+      getValueAsArray(listValue).forEach((val: Values): void => {
         convertListTypeOfObjectType(currentLevelInnerType, val)
       })
     }
     if (isObjectType(currentLevelInnerType)) {
-      const valuesArray = _.isArray(listValue) ? listValue : [listValue]
-      valuesArray.forEach(val => {
+      getValueAsArray(listValue).forEach((val: Values): void => {
         convertUserIdentifiers(currentLevelInnerType, val, ownersMap)
       })
     }
@@ -73,14 +74,12 @@ const convertUserIdentifiers = (
         if (isObjectType(deepInnerType)) {
           const currentLevelInnerType = fieldType.innerType
           if (isObjectType(currentLevelInnerType)) {
-            const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
-            valuesArray.forEach((val: Values): void => {
+            getValueAsArray(currentValue).forEach((val: Values): void => {
               convertUserIdentifiers(currentLevelInnerType, val, ownersMap)
             })
           }
           if (isListType(currentLevelInnerType)) {
-            const valuesArray = _.isArray(currentValue) ? currentValue : [currentValue]
-            valuesArray.forEach((val: Values): void => {
+            getValueAsArray(currentValue).forEach((val: Values): void => {
               convertListTypeOfObjectType(currentLevelInnerType, val)
             })
           }

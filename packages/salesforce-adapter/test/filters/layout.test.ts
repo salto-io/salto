@@ -20,10 +20,11 @@ import {
 import {
   naclCase,
 } from '@salto-io/adapter-utils'
-import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
+import makeFilter from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
+import { LAYOUT_TYPE_ID } from '../../src/types'
 
 describe('Test layout filter', () => {
   const { client } = mockClient()

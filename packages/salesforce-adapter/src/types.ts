@@ -95,3 +95,6 @@ export const configType = new ObjectType({
     ),
   },
 })
+
+export const LAYOUT_TYPE_ID = new ElemID(constants.SALESFORCE, 'Layout')
+export const LAYOUT_ITEM_FIELD = 'LayoutItem'

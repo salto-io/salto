@@ -16,7 +16,7 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import {
-  ValueTypeField, Field, MetadataInfo, DefaultValueWithType, PicklistEntry,
+  ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field,
 } from 'jsforce'
 import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
@@ -44,6 +44,7 @@ import {
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
+import { LAYOUT_TYPE_ID, LAYOUT_ITEM_FIELD } from '../types'
 
 const { makeArray } = collections.array
 
@@ -1271,14 +1272,18 @@ export const createMetadataTypeElements = async (
 
   return _.flatten([element, ...embeddedTypes])
 }
-const lookUpRelative = (path?: ElemID): boolean => {
-  const lookUpRelativeTypes = ['Layout']
-  return path !== undefined && lookUpRelativeTypes.includes(path.typeName)
+const lookUpRelative = (field?: TypeField, path?: ElemID): boolean => {
+  const lookUpRelativeTypes = new Map<string, string>(
+    [[LAYOUT_TYPE_ID.typeName, LAYOUT_ITEM_FIELD]]
+  )
+  return field !== undefined && path !== undefined
+  && [...lookUpRelativeTypes.keys()].includes(path?.typeName)
+  && lookUpRelativeTypes.get(path.typeName) === field.elemID.typeName
 }
 
-export const getLookUpName = (refValue: Value, path?: ElemID): Value => {
-  const isRelative = lookUpRelative(path)
+export const getLookUpName = (refValue: Value, field?: TypeField, path?: ElemID): Value => {
   if (isElement(refValue)) {
+    const isRelative = lookUpRelative(field, path)
     return apiName(refValue, isRelative)
   }
   return refValue

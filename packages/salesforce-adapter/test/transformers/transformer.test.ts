@@ -23,6 +23,7 @@ import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   restoreReferences, resolveReferences,
 } from '@salto-io/adapter-utils'
+import { LAYOUT_TYPE_ID, LAYOUT_ITEM_FIELD } from '../../src/types'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, createMetadataTypeElements, getLookUpName,
@@ -1148,18 +1149,19 @@ describe('transformer', () => {
       elemID: new ElemID(SALESFORCE, 'Lead'),
       annotations: { apiName: 'foo.Lead' },
     })
-    const layoutElemId = new ElemID(SALESFORCE, 'Layout')
     const otherElemId = new ElemID(SALESFORCE, 'Other')
+    const layoutField = new Field(new ElemID(SALESFORCE, LAYOUT_ITEM_FIELD), 'foo', BuiltinTypes.STRING)
     const otherElementObj = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'other'),
       annotations: { apiName: 'foo.other' },
     })
+    const otherField = new Field(new ElemID(SALESFORCE, 'bar'), 'bar', BuiltinTypes.STRING)
     it('gives relative for layout', () => {
-      const apiName = getLookUpName(layoutElementObj, layoutElemId)
+      const apiName = getLookUpName(layoutElementObj, layoutField, LAYOUT_TYPE_ID,)
       expect(apiName).toEqual('Lead')
     })
     it('gives complete for other', () => {
-      const apiName = getLookUpName(otherElementObj, otherElemId)
+      const apiName = getLookUpName(otherElementObj, otherField, otherElemId)
       expect(apiName).toEqual('foo.other')
     })
   })

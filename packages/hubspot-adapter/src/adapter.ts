@@ -30,6 +30,7 @@ import {
 } from './transformers/transformer'
 import { FilterCreator } from './filter'
 import formFieldFilter from './filters/form_field'
+import useridentifierFilter from './filters/useridentifier'
 import instanceTransformFilter from './filters/instance_transform'
 
 const validateFormGuid = (
@@ -58,6 +59,7 @@ export default class HubspotAdapter {
   public constructor({
     client,
     filtersCreators = [
+      useridentifierFilter,
       formFieldFilter,
       instanceTransformFilter,
     ],
@@ -109,7 +111,7 @@ export default class HubspotAdapter {
     const resolved = resolveReferences(instance, getLookUpName)
     const resp = await this.client.createInstance(
       resolved.type.elemID.name,
-      createHubspotMetadataFromInstanceElement(resolved.clone())
+      await createHubspotMetadataFromInstanceElement(resolved.clone(), this.client)
     )
     return restoreReferences(
       instance,
@@ -146,7 +148,7 @@ export default class HubspotAdapter {
     validateFormGuid(resolvedBefore, resolvedAfter)
     const resp = await this.client.updateInstance(
       resolvedAfter.type.elemID.name,
-      createHubspotMetadataFromInstanceElement(resolvedAfter.clone())
+      await createHubspotMetadataFromInstanceElement(resolvedAfter.clone(), this.client)
     )
     return restoreReferences(
       after,
@@ -157,7 +159,7 @@ export default class HubspotAdapter {
 
   private async runFiltersOnFetch(elements: Element[]): Promise<void> {
     // Fetch filters order is important so they should run one after the other
-    return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
+    return this.filtersCreators.map(filterCreator => filterCreator({ client: this.client })).reduce(
       (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
       Promise.resolve(),
     )

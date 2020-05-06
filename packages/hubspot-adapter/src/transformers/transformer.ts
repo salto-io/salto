@@ -16,8 +16,8 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field,
-  BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS,
+  ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType,
+  BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType,
   TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, isPrimitiveValue,
 } from '@salto-io/adapter-api'
 import {
@@ -28,7 +28,7 @@ import {
   FIELD_TYPES, FORM_FIELDS, HUBSPOT, OBJECTS_NAMES, FORM_PROPERTY_FIELDS,
   NURTURETIMERANGE_FIELDS, ANCHOR_SETTING_FIELDS, FORM_PROPERTY_INNER_FIELDS,
   EVENTANCHOR_FIELDS, ACTION_FIELDS, FORM_PROPERTY_GROUP_FIELDS, OPTIONS_FIELDS,
-  CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS,
+  CONTACT_PROPERTY_FIELDS, CONTACTLISTIDS_FIELDS, RSSTOEMAILTIMING_FIELDS, userIdentifierElemID,
   DEPENDENT_FIELD_FILTER_FIELDS, FIELD_FILTER_FIELDS, WORKFLOWS_FIELDS, optionsElemID,
   MARKETING_EMAIL_FIELDS, RICHTEXT_FIELDS, formElemID, workflowsElemID, CRITERIA_FIELDS,
   propertyGroupElemID, propertyElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS, rssToEmailTimingElemID,
@@ -41,6 +41,7 @@ import {
 import {
   HubspotMetadata,
 } from '../client/types'
+import HubspotClient from '../client/client'
 
 export class Types {
   private static fieldTypes: TypeMap = {
@@ -80,7 +81,13 @@ export class Types {
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.BOOLEANCHECKBOX),
       primitive: PrimitiveTypes.NUMBER,
     }),
+    [FIELD_TYPES.USERIDENTIFIER]: new PrimitiveType({
+      elemID: userIdentifierElemID,
+      primitive: PrimitiveTypes.STRING,
+    }),
   }
+
+  public static userIdentifierType = Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER]
 
   private static optionsType: ObjectType =
     new ObjectType({
@@ -763,7 +770,8 @@ export class Types {
           },
         ),
         [FORM_FIELDS.NOTIFYRECIPIENTS]: new Field(
-          formElemID, FORM_FIELDS.NOTIFYRECIPIENTS, BuiltinTypes.STRING, {
+          formElemID, FORM_FIELDS.NOTIFYRECIPIENTS,
+          new ListType(Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER]), {
             name: FORM_FIELDS.NOTIFYRECIPIENTS,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1124,11 +1132,12 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
-        [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new Field( // TODO: Replace with user's email
+        [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: new Field(
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.AUTHORUSERID, BuiltinTypes.NUMBER, {
             name: MARKETING_EMAIL_FIELDS.AUTHORUSERID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: new Field(
@@ -1649,7 +1658,8 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: new Field(
-          marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATEDBYID, BuiltinTypes.NUMBER, {
+          marketingEmailElemID, MARKETING_EMAIL_FIELDS.UPDATEDBYID,
+          Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER], {
             name: MARKETING_EMAIL_FIELDS.UPDATEDBYID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1972,27 +1982,99 @@ const mergeFormFieldAndContactProperty = (field: Value): Value => {
   return relevantFormPropertyValues
 }
 
-export const createHubspotMetadataFromInstanceElement = (element: Readonly<InstanceElement>):
-  HubspotMetadata =>
-  (_.mapValues(element.value, (val, key) => {
-    const fieldType = element.type.fields[key]?.type
-    if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
-      return JSON.parse(val)
+const createOwnersMap = async (client: HubspotClient): Promise<Map<string, number>> => {
+  const ownersRes = await client.getOwners()
+  return new Map(ownersRes.map(
+    (ownerRes): [string, number] => [ownerRes.email, ownerRes.activeUserId]
+  ))
+}
+
+export const isUserIdentifierType = (type: TypeElement): boolean =>
+  isPrimitiveType(type) && type.elemID.isEqual(Types.userIdentifierType.elemID)
+
+const doesObjectIncludeUserIdentifier = (
+  objectType: Readonly<ObjectType>,
+  checkedTypes: TypeElement[] = []
+): boolean => {
+  const doesTypeIncludeUserIdentifier = (type: TypeElement): boolean => {
+    if (isObjectType(type)) {
+      return doesObjectIncludeUserIdentifier(type, checkedTypes)
     }
-    if (isFormInstance(element) && key === FORM_FIELDS.FORMFIELDGROUPS) {
-      return val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
-        (formFieldGroupVal, formFieldGroupKey) => {
-          if (!(formFieldGroupKey === FORM_PROPERTY_GROUP_FIELDS.FIELDS)) {
-            return formFieldGroupVal
-          }
-          return formFieldGroupVal.map(
-            (innerField: Value) => mergeFormFieldAndContactProperty(innerField)
-          )
-        })
-      ))
+    if (isListType(type)) {
+      return doesTypeIncludeUserIdentifier(type.innerType)
     }
-    return val
-  }) as HubspotMetadata)
+    return isUserIdentifierType(type)
+  }
+  return _.some(_.values(objectType.fields), (field: Field): boolean => {
+    const fieldType = field.type
+    if (!_.isUndefined(_.find(checkedTypes, (type: TypeElement): boolean =>
+      type.elemID.isEqual(fieldType.elemID)))) {
+      return false
+    }
+    checkedTypes.push(fieldType)
+    return doesTypeIncludeUserIdentifier(fieldType)
+  })
+}
+
+export const createHubspotMetadataFromInstanceElement = async (
+  element: Readonly<InstanceElement>,
+  client: HubspotClient
+):
+  Promise<HubspotMetadata> => {
+  let ownersMap: Map<string, number>
+  if (doesObjectIncludeUserIdentifier(element.type)) {
+    ownersMap = await createOwnersMap(client)
+  }
+  const createMetadataValueFromObject = (objectType: ObjectType, values: Values): Values =>
+    (_.mapValues(values, (val, key) => {
+      const fieldType = objectType.fields[key]?.type
+      if (_.isUndefined(fieldType) || _.isUndefined(val)) {
+        return val
+      }
+      if (isFormInstance(element) && key === FORM_FIELDS.FORMFIELDGROUPS) {
+        return val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
+          (formFieldGroupVal, formFieldGroupKey) => {
+            if (!(formFieldGroupKey === FORM_PROPERTY_GROUP_FIELDS.FIELDS)) {
+              return formFieldGroupVal
+            }
+            return formFieldGroupVal.map(
+              (innerField: Value) => mergeFormFieldAndContactProperty(innerField)
+            )
+          })
+        ))
+      }
+      if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
+        return JSON.parse(val)
+      }
+      if (isUserIdentifierType(fieldType)) {
+        const numVal = !Number.isNaN(Number(val)) ? Number(val) : null
+        return ownersMap.get(val) || numVal
+      }
+      if (isListType(fieldType) && _.isArray(val)) {
+        const fieldDeepInnerType = getDeepInnerType(fieldType)
+        if (isUserIdentifierType(fieldDeepInnerType)) {
+          return _.cloneDeepWith(val, v =>
+            (_.every(v, _.isString)
+              // Currently all array are represented as a string in HubSpot
+              // If there will be "real" array ones we need to support it
+              ? val.map(strVal => ownersMap.get(strVal) || strVal).join(',')
+              : undefined))
+        }
+        if (isObjectType(fieldDeepInnerType)) {
+          return _.cloneDeepWith(val, v =>
+            (!_.every(v, _.isArray)
+              ? v.map((objVal: Values) =>
+                createMetadataValueFromObject(fieldDeepInnerType, objVal))
+              : undefined))
+        }
+      }
+      if (isObjectType(fieldType)) {
+        return createMetadataValueFromObject(fieldType, val)
+      }
+      return val
+    }))
+  return createMetadataValueFromObject(element.type, element.value) as HubspotMetadata
+}
 
 /**
  * Creating all the instance for specific type

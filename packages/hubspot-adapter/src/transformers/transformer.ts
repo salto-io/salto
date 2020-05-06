@@ -2017,12 +2017,12 @@ const doesObjectIncludeUserIdentifier = (
 }
 
 export const createHubspotMetadataFromInstanceElement = async (
-  element: Readonly<InstanceElement>,
+  instance: Readonly<InstanceElement>,
   client: HubspotClient
 ):
   Promise<HubspotMetadata> => {
   let ownersMap: Map<string, number>
-  if (doesObjectIncludeUserIdentifier(element.type)) {
+  if (doesObjectIncludeUserIdentifier(instance.type)) {
     ownersMap = await createOwnersMap(client)
   }
   const createMetadataValueFromObject = (objectType: ObjectType, values: Values): Values =>
@@ -2031,7 +2031,7 @@ export const createHubspotMetadataFromInstanceElement = async (
       if (_.isUndefined(fieldType) || _.isUndefined(val)) {
         return val
       }
-      if (isFormInstance(element) && key === FORM_FIELDS.FORMFIELDGROUPS) {
+      if (isFormInstance(instance) && key === FORM_FIELDS.FORMFIELDGROUPS) {
         return val.map((formFieldGroup: Value) => (_.mapValues(formFieldGroup,
           (formFieldGroupVal, formFieldGroupKey) => {
             if (!(formFieldGroupKey === FORM_PROPERTY_GROUP_FIELDS.FIELDS)) {
@@ -2073,7 +2073,7 @@ export const createHubspotMetadataFromInstanceElement = async (
       }
       return val
     }))
-  return createMetadataValueFromObject(element.type, element.value) as HubspotMetadata
+  return createMetadataValueFromObject(instance.type, instance.value) as HubspotMetadata
 }
 
 /**

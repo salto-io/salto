@@ -23,7 +23,6 @@ import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
   restoreReferences, resolveReferences,
 } from '@salto-io/adapter-utils'
-import { LAYOUT_TYPE_ID, LAYOUT_ITEM_FIELD } from '../../src/types'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject,
   getValueTypeFieldElement, createMetadataTypeElements, getLookUpName,
@@ -42,12 +41,13 @@ import {
   CUSTOM_OBJECT,
   VALUE_SET_FIELDS,
   SUBTYPES_PATH,
-  INSTANCE_FULL_NAME_FIELD, DESCRIPTION, TYPES_PATH, SALESFORCE,
+  INSTANCE_FULL_NAME_FIELD, DESCRIPTION, TYPES_PATH, SALESFORCE, LAYOUT_ITEM_METADATA_TYPE,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import mockClient from '../client'
 import { createValueSetEntry } from '../utils'
+import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 
 
 const { makeArray } = collections.array
@@ -1150,14 +1150,14 @@ describe('transformer', () => {
       annotations: { apiName: 'foo.Lead' },
     })
     const otherElemId = new ElemID(SALESFORCE, 'Other')
-    const layoutField = new Field(new ElemID(SALESFORCE, LAYOUT_ITEM_FIELD), 'foo', BuiltinTypes.STRING)
+    const layoutField = new Field(new ElemID(SALESFORCE, LAYOUT_ITEM_METADATA_TYPE), 'foo', BuiltinTypes.STRING)
     const otherElementObj = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'other'),
       annotations: { apiName: 'foo.other' },
     })
     const otherField = new Field(new ElemID(SALESFORCE, 'bar'), 'bar', BuiltinTypes.STRING)
     it('gives relative for layout', () => {
-      const apiName = getLookUpName(layoutElementObj, layoutField, LAYOUT_TYPE_ID,)
+      const apiName = getLookUpName(layoutElementObj, layoutField, LAYOUT_TYPE_ID)
       expect(apiName).toEqual('Lead')
     })
     it('gives complete for other', () => {

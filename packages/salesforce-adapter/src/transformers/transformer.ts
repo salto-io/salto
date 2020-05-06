@@ -40,11 +40,11 @@ import {
   CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD,
+  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
+  LAYOUT_ITEM_METADATA_TYPE,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
-import { LAYOUT_TYPE_ID, LAYOUT_ITEM_FIELD } from '../types'
 
 const { makeArray } = collections.array
 
@@ -1274,10 +1274,9 @@ export const createMetadataTypeElements = async (
 }
 const lookUpRelative = (field?: TypeField, path?: ElemID): boolean => {
   const lookUpRelativeTypes = new Map<string, string>(
-    [[LAYOUT_TYPE_ID.typeName, LAYOUT_ITEM_FIELD]]
+    [[LAYOUT_TYPE_ID_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE]]
   )
   return field !== undefined && path !== undefined
-  && [...lookUpRelativeTypes.keys()].includes(path?.typeName)
   && lookUpRelativeTypes.get(path.typeName) === field.elemID.typeName
 }
 

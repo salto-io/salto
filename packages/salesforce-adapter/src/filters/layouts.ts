@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, InstanceElement, ObjectType, ReferenceExpression, Field,
+  Element, InstanceElement, ObjectType, ReferenceExpression, Field, ElemID,
 } from '@salto-io/adapter-api'
 import {
   findInstances, naclCase,
@@ -27,11 +27,12 @@ import { FilterCreator } from '../filter'
 import {
   addObjectParentReference, generateApiNameToCustomObject, id, allCustomObjectFields,
 } from './utils'
-import { LAYOUT_TYPE_ID } from '../types'
+import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE } from '../constants'
 
 
 const log = logger(module)
 
+export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
 const MIN_NAME_LENGTH = 4
 
 export const specialLayoutObjects = new Map([

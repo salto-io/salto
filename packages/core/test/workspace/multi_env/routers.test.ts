@@ -136,7 +136,13 @@ const commonSource = createMockNaclFileSource(
     'test/inst2.nacl': [splitInstance2],
   }
 )
-const envSource = createMockNaclFileSource([envObj, envField])
+const envOnlyID = new ElemID('salto', 'envOnly')
+const envOnlyObj = new ObjectType({
+  elemID: envOnlyID,
+  fields: {
+  },
+})
+const envSource = createMockNaclFileSource([envObj, envField, envOnlyObj])
 const secEnv = createMockNaclFileSource([envObj, envField])
 
 describe('normal fetch routing', () => {
@@ -239,6 +245,45 @@ describe('normal fetch routing', () => {
         && (routedChanges.primarySource[0] as RemovalDiff<ObjectType>).data.before
     expect(commonChangeElement).toEqual(commonObj)
     expect(envChangeElement).toEqual(envObj)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+  it('should route add changes of values of env specific elements to the env', async () => {
+    const newField = new Field(envOnlyObj.elemID, 'dreams', BuiltinTypes.STRING)
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: newField },
+      id: newField.elemID,
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
+    expect(routedChanges.primarySource).toHaveLength(1)
+    expect(routedChanges.commonSource).toHaveLength(0)
+    expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+  it('should route add changes of values of common elements to the common', async () => {
+    const newField = new Field(commonObj.elemID, 'dreams', BuiltinTypes.STRING)
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: newField },
+      id: newField.elemID,
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
+    expect(routedChanges.commonSource).toHaveLength(1)
+    expect(routedChanges.primarySource).toHaveLength(0)
+    expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
+    expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
+  })
+  it('should route add changes of values of split elements to the common', async () => {
+    const newField = new Field(splitObjectID, 'dreams', BuiltinTypes.STRING)
+    const change: DetailedChange = {
+      action: 'add',
+      data: { after: newField },
+      id: newField.elemID,
+    }
+    const routedChanges = await routeChanges([change], envSource, commonSource, {})
+    expect(routedChanges.commonSource).toHaveLength(1)
+    expect(routedChanges.primarySource).toHaveLength(0)
+    expect(routedChanges.commonSource && routedChanges.commonSource[0]).toEqual(change)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
 })

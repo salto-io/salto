@@ -19,10 +19,10 @@ import { Plan, dumpElements } from '@salto-io/core'
 import { strings } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
-import { Element } from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store/dist/src/jest-environment/creds'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
-import { ensureFilesExist, runInit, runSetEnv, runFetch, runPreviewGetPlan, runAddSalesforceService, runCreateEnv, runDeploy, ensureFilesDontExist } from './helpers/workspace'
+import { ensureFilesExist, runInit, runSetEnv, runFetch, runPreviewGetPlan, runAddSalesforceService, runCreateEnv, runDeploy, ensureFilesDontExist, getNaclFileElements } from './helpers/workspace'
 import * as templates from './helpers/templates'
 
 describe('multi env tests', () => {
@@ -419,7 +419,21 @@ describe('multi env tests', () => {
     const commonNaclFileInstName = `CommonInstNacl${tempID}`
     const env1NaclFileInstName = `Env1InstNacl${tempID}`
     const env2NaclFileInstName = `Env2InstNacl${tempID}`
-
+    const commonNaclFileName = (): string => path.join(baseDir, 'salesforce', 'common.nacl')
+    const env1NaclFileName = (): string => path.join(
+      baseDir,
+      'envs',
+      ENV1_NAME,
+      'salesforce',
+      'env1.nacl'
+    )
+    const env2NaclFileName = (): string => path.join(
+      baseDir,
+      'envs',
+      ENV2_NAME,
+      'salesforce',
+      'env2.nacl'
+    )
 
     describe('handle nacl based add change', () => {
       beforeAll(async () => {
@@ -456,9 +470,9 @@ describe('multi env tests', () => {
             description: 'Env2 from Nacl',
           }),
         ])
-        await writeFile(path.join(baseDir, 'salesforce', 'common.nacl'), commonNaclFile)
-        await writeFile(path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'env1.nacl'), env1NaclFile)
-        await writeFile(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'env2.nacl'), env2NaclFile)
+        await writeFile(commonNaclFileName(), commonNaclFile)
+        await writeFile(env1NaclFileName(), env1NaclFile)
+        await writeFile(env2NaclFileName(), env2NaclFile)
         await runSetEnv(baseDir, ENV1_NAME)
         await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV2_NAME)
@@ -501,13 +515,29 @@ describe('multi env tests', () => {
         expect(await instanceExists(env1Client, 'Role', env2NaclFileInstName)).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', env1NaclFileInstName)).toBeFalsy()
       })
+
+
+      it('should update the attributes added in the deploy in the proper file', async () => {
+        await Promise.all([
+          env1NaclFileName(),
+          env2NaclFileName(),
+          commonNaclFileName(),
+        ].map(async filename => {
+          const element = (await getNaclFileElements(filename))[0]
+          expect(isObjectType(element)).toBeTruthy()
+          const obj = element as ObjectType
+          expect(obj.fields.alpha.annotations.apiName).toBeDefined()
+          expect(obj.fields.alpha.annotations.apiName).toBeDefined()
+          expect(obj.annotations.metadataType).toBeDefined()
+        }))
+      })
     })
 
     describe('handle nacl file delete changes', () => {
       beforeAll(async () => {
-        await rm(path.join(baseDir, 'salesforce', 'common.nacl'))
-        await rm(path.join(baseDir, 'envs', ENV1_NAME, 'salesforce', 'env1.nacl'))
-        await rm(path.join(baseDir, 'envs', ENV2_NAME, 'salesforce', 'env2.nacl'))
+        await rm(commonNaclFileName())
+        await rm(env1NaclFileName())
+        await rm(env2NaclFileName())
         await rm(env2ObjFilePath())
         await rm(env2InstFilePath())
         await runSetEnv(baseDir, ENV1_NAME)

@@ -57,9 +57,7 @@ export const getChangeLocations = (
   }
 
   const findLocations = (): SourceRange[] => {
-    const debug = change.id.idType === 'annotation'
     if (change.action !== 'add') {
-      if (debug) console.log('OOPS')
       // We want to get the location of the existing element
       const possibleLocations = sourceMap.get(change.id.getFullName()) || []
       if (change.action === 'remove') {
@@ -70,13 +68,10 @@ export const getChangeLocations = (
         return [possibleLocations[0]]
       }
     } else if (!change.id.isTopLevel()) {
-      if (debug) console.log('In proper place. ID is', change.id.getFullName())
       // We add new values / elements as the last part of a parent scope unless the parent scope
       // is a config element
       const parentID = change.id.createParentID()
-      if (debug) console.log('Parent ID', parentID)
       const possibleLocations = sourceMap.get(parentID.getFullName()) || []
-      if (debug) console.log('POS LOCATIONS:', possibleLocations)
       if (possibleLocations.length > 0) {
         const foundInPath = possibleLocations.find(sr =>
           sr.filename === createFileNameFromPath(change.path))
@@ -84,7 +79,6 @@ export const getChangeLocations = (
         return [lastNestedLocation(foundInPath || possibleLocations[0])]
       }
     }
-    if (debug) console.log('WHY ARE WE HEEREEE')
     // Fallback to using the path from the element itself
     const naclFilePath = change.path || getChangeElement(change).path
     return [{

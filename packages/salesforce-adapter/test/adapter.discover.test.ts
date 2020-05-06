@@ -530,7 +530,7 @@ describe('SalesforceAdapter fetch', () => {
         .toEqual([constants.SALESFORCE, constants.RECORDS_PATH, 'EmailTemplate', 'MyFolder_MyEmailTemplate'])
       expect(testInst.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyFolder/MyEmailTemplate')
       expect(testInst.value.name).toEqual('My Email Template')
-      expect(testInst.value.content).toEqual('Email Body')
+      expect(testInst.value.content.content.toString()).toEqual('Email Body')
     })
 
     it('should fetch metadata instances using retrieve in chunks', async () => {
@@ -591,8 +591,8 @@ describe('SalesforceAdapter fetch', () => {
       const [second] = findElements(result, 'ApexClass', 'MyApexClass2') as InstanceElement[]
       expect(first.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyApexClass')
       expect(second.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('MyApexClass2')
-      expect(first.value.content.includes('Instance1')).toBeTruthy()
-      expect(second.value.content.includes('Instance2')).toBeTruthy()
+      expect(first.value.content.content.toString().includes('Instance1')).toBeTruthy()
+      expect(second.value.content.content.toString().includes('Instance2')).toBeTruthy()
     })
 
     it('should fetch metadata instances folders using retrieve', async () => {

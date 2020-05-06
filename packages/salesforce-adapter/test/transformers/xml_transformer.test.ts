@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 import jszip from 'jszip'
-import { BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, ListType } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes, ElemID, Field, InstanceElement,
+  ObjectType, ListType, StaticFile,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import { fromRetrieveResult, toMetadataPackageZip } from '../../src/transformers/xml_transformer'
@@ -102,12 +105,35 @@ describe('XML Transformer', () => {
         {
           [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
           [apiVersion]: 47.0,
-          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
+          content: new StaticFile(
+            'MyApexClass.cls',
+            Buffer.from(
+              'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'
+            )
+          ),
+        },
+      )
+
+      const apexClassWithHiddenContentInstance = new InstanceElement(
+        'instance',
+        apexClassType,
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
+          [apiVersion]: 47.0,
+          content: '(hidden)',
         },
       )
 
       const zip = toMetadataPackageZip(apiName(apexClassInstance), metadataType(apexClassInstance),
         apexClassInstance.value, false)
+        .then(buf => jszip.loadAsync(buf as Buffer))
+
+      const zipWithHidden = toMetadataPackageZip(
+        apiName(apexClassWithHiddenContentInstance),
+        metadataType(apexClassWithHiddenContentInstance),
+        apexClassWithHiddenContentInstance.value,
+        false,
+      )
         .then(buf => jszip.loadAsync(buf as Buffer))
 
       it('should contain package xml', async () => {
@@ -119,6 +145,13 @@ describe('XML Transformer', () => {
            <types><members>MyApexClass</members><name>ApexClass</name></types>
          </Package>`.replace(/>\s+</gs, '><')
         )
+      })
+
+      it('should not fail on hidden content', async () => {
+        const instanceXml = (await zipWithHidden).files[`${PACKAGE}/classes/MyApexClass.cls`]
+        expect(instanceXml).toBeDefined()
+        expect(await instanceXml.async('text'))
+          .toMatch('(hidden)')
       })
 
       it('should contain metadata xml', async () => {
@@ -207,7 +240,12 @@ describe('XML Transformer', () => {
         {
           [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
           [apiVersion]: 47.0,
-          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
+          content: new StaticFile(
+            'MyApexClass.cls',
+            Buffer.from(
+              'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'
+            )
+          ),
         },
       )
 
@@ -323,8 +361,49 @@ describe('XML Transformer', () => {
         expect(metadataInfo.fullName).toEqual('MyApexClass')
         expect(_.get(metadataInfo, 'apiVersion')).toEqual(47)
         expect(_.get(metadataInfo, 'status')).toEqual('Active')
-        expect(_.get(metadataInfo, 'content'))
+        expect(_.get(metadataInfo, 'content.content').toString())
           .toEqual('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')
+      })
+    })
+
+    describe('apex class with hidden content', () => {
+      let retrieveResult: RetrieveResult
+      beforeAll(async () => {
+        retrieveResult = {
+          fileProperties:
+            [{
+              createdById: '0054J000002KGspQAG',
+              createdByName: 'createdBy',
+              createdDate: '2019-12-01T14:31:36.000Z',
+              fileName: 'classes/MyApexClass.cls',
+              fullName: 'MyApexClass',
+              id: '01p4J00000JcCoFQAV',
+              lastModifiedById: '0054J000002KGspQAG',
+              lastModifiedByName: 'modifiedBy',
+              lastModifiedDate: '2019-12-01T14:31:36.000Z',
+              manageableState: 'unmanaged',
+              type: 'ApexClass',
+            }],
+          id: '09S4J000001dSRcUAM',
+          messages: [],
+          zipFile: await createEncodedZipContent([{ path: 'unpackaged/classes/MyApexClass.cls-meta.xml',
+            content: '<?xml version="1.0" encoding="UTF-8"?>\n'
+              + '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+              + '    <apiVersion>47.0</apiVersion>\n'
+              + '    <status>Active</status>\n'
+              + '</ApexClass>\n' }, { path: 'unpackaged/classes/MyApexClass.cls',
+            content: '(hidden)' }]),
+        }
+      })
+
+      it('should transform zip to MetadataInfo', async () => {
+        const typeNameToInstanceInfos = await fromRetrieveResult(retrieveResult, ['ApexClass'])
+        const [metadataInfo] = typeNameToInstanceInfos.ApexClass
+        expect(metadataInfo.fullName).toEqual('MyApexClass')
+        expect(_.get(metadataInfo, 'apiVersion')).toEqual(47)
+        expect(_.get(metadataInfo, 'status')).toEqual('Active')
+        expect(_.get(metadataInfo, 'content').toString())
+          .toEqual('(hidden)')
       })
     })
 
@@ -410,7 +489,7 @@ describe('XML Transformer', () => {
         const [metadataInfo] = typeNameToInstanceInfos.EmailTemplate
         expect(metadataInfo.fullName).toEqual('MyFolder/MyEmailTemplate')
         expect(_.get(metadataInfo, 'name')).toEqual('My Email Template')
-        expect(_.get(metadataInfo, 'content')).toEqual('Email Body')
+        expect(_.get(metadataInfo, 'content.content').toString()).toEqual('Email Body')
       })
     })
   })

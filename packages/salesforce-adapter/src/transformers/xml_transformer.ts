@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Value, Values } from '@salto-io/adapter-api'
+import { Value, Values, StaticFile } from '@salto-io/adapter-api'
+import { basename } from 'path'
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
 import JSZip, { JSZipObject } from 'jszip'
@@ -22,10 +23,12 @@ import { logger } from '@salto-io/logging'
 import { API_VERSION, METADATA_NAMESPACE } from '../client/client'
 import { toMetadataInfo } from './transformer'
 import { MetadataWithContent } from '../client/types'
+import { MetadataInfoWithStaticFile } from '../types'
 
 const log = logger(module)
 
 const PACKAGE = 'unpackaged'
+const HIDDEN_CONTENT_VALUE = '(hidden)'
 const METADATA_XML_SUFFIX = '-meta.xml'
 
 type ZipProps = {
@@ -149,10 +152,26 @@ export const fromRetrieveResult = async (retrieveResult: RetrieveResult,
       Promise<MetadataInfo> => {
       const metadataXmlContent = await decodeContent(`${file.name}${METADATA_XML_SUFFIX}`)
       const parsedResult = parser.parse(metadataXmlContent)[xmlMetadataType]
-      const metadataInfo: MetadataWithContent = parsedResult === '' ? {} : parsedResult
+      const metadataInfo: MetadataInfo = parsedResult === '' ? {} : parsedResult
       metadataInfo.fullName = getFullName(file)
-      metadataInfo.content = await decodeContent(file.name)
-      return metadataInfo
+      const content = await decodeContent(file.name)
+      if (content === HIDDEN_CONTENT_VALUE) {
+        return {
+          ...metadataInfo,
+          ...{
+            content,
+          },
+        } as MetadataWithContent
+      }
+      return {
+        ...metadataInfo,
+        ...{
+          content: new StaticFile(
+            `salesforce/${zipProps.dirName}/${basename(file.name)}`,
+            Buffer.from(content),
+          ),
+        },
+      } as MetadataInfoWithStaticFile
     }
 
     const decodeFile = async (file: JSZipObject):
@@ -235,7 +254,12 @@ const addInstanceFiles = (zip: JSZip, instanceName: string, zipProps: ZipProps,
     zip.file(`${PACKAGE}/${zipProps.dirName}/${instanceName}${zipProps.fileSuffix}${METADATA_XML_SUFFIX}`,
       toMetadataXmlContent())
     // Add instance content
-    zip.file(instanceContentPath, values.content)
+    zip.file(
+      instanceContentPath,
+      _.isString(values.content) && values.content === HIDDEN_CONTENT_VALUE
+        ? values.content
+        : (values.content.content as Buffer).toString(),
+    )
   } else {
     // Add instance content
     zip.file(instanceContentPath, toMetadataXml(type, toMetadataInfo(instanceName, values)))

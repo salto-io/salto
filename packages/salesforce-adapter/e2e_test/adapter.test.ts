@@ -17,7 +17,7 @@ import _ from 'lodash'
 import {
   ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
   isInstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
-  TypeElement, isObjectType, getRestriction,
+  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -875,7 +875,7 @@ describe('Salesforce adapter E2E with real account', () => {
         'ApexClass',
         {
           apiVersion: API_VERSION,
-          content: "public class ApexClassForProfile {\n    public void printLog() {\n        System.debug('Created');\n    }\n}",
+          content: new StaticFile('ApexClassForProfile.cls', Buffer.from("public class ApexClassForProfile {\n    public void printLog() {\n        System.debug('Created');\n    }\n}")),
           fullName: 'ApexClassForProfile',
         },
         false,
@@ -886,7 +886,7 @@ describe('Salesforce adapter E2E with real account', () => {
         'ApexPage',
         {
           apiVersion: API_VERSION,
-          content: '<apex:page>Created by e2e test for profile test!</apex:page>',
+          content: new StaticFile('ApexPageForProfile.page', Buffer.from('<apex:page>Created by e2e test for profile test!</apex:page>')),
           fullName: 'ApexPageForProfile',
           label: 'ApexPageForProfile',
         },
@@ -3452,20 +3452,27 @@ describe('Salesforce adapter E2E with real account', () => {
           }
         }
 
+        const getContentFromStaticFileOrString = (content: string | StaticFile): string => (
+          isStaticFile(content) ? (content.content as Buffer).toString() : content)
+
         const verifyCreateInstance = async (instance: InstanceElement): Promise<void> => {
           await adapter.add(instance)
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
-          expect(_.get(instanceInfo, 'content').includes('Created')).toBeTruthy()
+          const content = getContentFromStaticFileOrString(_.get(instanceInfo, 'content'))
+          expect(content.includes('Created')).toBeTruthy()
         }
 
         const verifyUpdateInstance = async (instance: InstanceElement): Promise<void> => {
           const after = instance.clone()
-          after.value.content = after.value.content.replace('Created', 'Updated')
+          const contentString = getContentFromStaticFileOrString(after.value.content).replace('Created', 'Updated')
+          after.value.content = isStaticFile(after.value.content)
+            ? new StaticFile(after.value.content.filepath, Buffer.from(contentString))
+            : contentString
           await adapter.update(instance, after, [])
           const instanceInfo = await findInstance(instance)
           expect(instanceInfo).toBeDefined()
-          expect(_.get(instanceInfo, 'content').includes('Updated')).toBeTruthy()
+          expect(getContentFromStaticFileOrString(_.get(instanceInfo, 'content')).includes('Updated')).toBeTruthy()
         }
 
         const verifyRemoveInstance = async (instance: InstanceElement): Promise<void> => {
@@ -3474,7 +3481,7 @@ describe('Salesforce adapter E2E with real account', () => {
           expect(instanceInfo).toBeUndefined()
         }
 
-        const createInstanceElement = (fullName: string, typeName: string, content: string):
+        const createInstanceElement = (fullName: string, typeName: string, content: string | Value):
           InstanceElement => {
           const objectType = new ObjectType({
             elemID: new ElemID(constants.SALESFORCE, _.snakeCase(typeName)),
@@ -3495,7 +3502,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex class manipulation', () => {
           const apexClassInstance = createInstanceElement('MyApexClass', 'ApexClass',
-            'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')
+            new StaticFile('ApexClass.cls', Buffer.from('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')))
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexClassInstance)
@@ -3522,7 +3529,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex trigger manipulation', () => {
           const apexTriggerInstance = createInstanceElement('MyApexTrigger', 'ApexTrigger',
-            'trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}')
+            new StaticFile('MyApexTrigger.trigger', Buffer.from('trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}')))
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexTriggerInstance)
@@ -3549,7 +3556,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex page manipulation', () => {
           const apexPageInstance = createInstanceElement('MyApexPage', 'ApexPage',
-            '<apex:page>Created by e2e test!</apex:page>')
+            new StaticFile('ApexPage.page', Buffer.from('<apex:page>Created by e2e test!</apex:page>')))
           apexPageInstance.value.label = 'MyApexPage'
 
           beforeAll(async () => {
@@ -3577,7 +3584,7 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex component manipulation', () => {
           const apexComponentInstance = createInstanceElement('MyApexComponent', 'ApexComponent',
-            '<apex:component >Created by e2e test!</apex:component>')
+            new StaticFile('MyApexComponent.component', Buffer.from('<apex:component >Created by e2e test!</apex:component>')))
           apexComponentInstance.value.label = 'MyApexComponent'
 
           beforeAll(async () => {
@@ -3653,7 +3660,7 @@ describe('Salesforce adapter E2E with real account', () => {
               encodingKey: 'UTF-8',
               type: 'text',
               description: 'My Email Template Description',
-              content: 'My Email Template Body',
+              content: new StaticFile('MyEmailTemplate.email', Buffer.from('My Email Template Body')),
             }, 'EmailTemplate')
             await removeElementIfAlreadyExists(client, emailTemplateInstance)
           })

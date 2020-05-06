@@ -22,19 +22,6 @@ import filterCreator from '../../src/filters/useridentifier'
 
 describe('useridentifier filter test', () => {
   let filter: OnFetchFilter
-  const getOwnerById = async (id: number | string): Promise<RequestPromise> => {
-    switch (id) {
-      case '12':
-        return 'a@b.com' as unknown as RequestPromise
-      case '34':
-        return 'c@d.com' as unknown as RequestPromise
-      case '56':
-        return 'e@f.com' as unknown as RequestPromise
-      default:
-        return '' as unknown as RequestPromise
-    }
-  }
-
   const getOwners = async (): Promise<RequestPromise> => Promise.resolve([
     {
       activeUserId: 12,
@@ -131,7 +118,6 @@ describe('useridentifier filter test', () => {
       instanceValues,
     )
     const { client } = mockClient()
-    client.getOwnerById = jest.fn().mockImplementation(getOwnerById)
     client.getOwners = jest.fn().mockImplementation(getOwners)
     filter = filterCreator({ client })
     filter.onFetch([objectInstance])

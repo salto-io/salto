@@ -128,12 +128,6 @@ export default class HubspotClient {
     return resp
   }
 
-  async getOwnerById(id: string | number): Promise<RequestPromise> {
-    const resp = this.conn.owners.getById(id)
-    await validateResponse(resp)
-    return resp
-  }
-
   getAllContacts(): RequestPromise {
     return this.conn.contacts.get()
   }

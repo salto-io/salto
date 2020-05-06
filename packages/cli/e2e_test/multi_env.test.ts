@@ -19,10 +19,10 @@ import { Plan, dumpElements } from '@salto-io/core'
 import { strings } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
-import { Element } from '@salto-io/adapter-api'
+import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store/dist/src/jest-environment/creds'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
-import { ensureFilesExist, runInit, runSetEnv, runFetch, runPreviewGetPlan, runAddSalesforceService, runCreateEnv, runDeploy, ensureFilesDontExist } from './helpers/workspace'
+import { ensureFilesExist, runInit, runSetEnv, runFetch, runPreviewGetPlan, runAddSalesforceService, runCreateEnv, runDeploy, ensureFilesDontExist, getNaclFileElements } from './helpers/workspace'
 import * as templates from './helpers/templates'
 
 describe('multi env tests', () => {
@@ -500,6 +500,22 @@ describe('multi env tests', () => {
         expect(await objectExists(env2Client, naclNameToSFName(env1NaclFileObjectName))).toBeFalsy()
         expect(await instanceExists(env1Client, 'Role', env2NaclFileInstName)).toBeFalsy()
         expect(await instanceExists(env2Client, 'Role', env1NaclFileInstName)).toBeFalsy()
+      })
+
+
+      it('should update the attributes added in the deploy in the proper file', async () => {
+        await Promise.all([
+          env1NaclFileObjectName,
+          env2NaclFileObjectName,
+          commonNaclFileObjectName,
+        ].map(async filename => {
+          const element = (await getNaclFileElements(filename))[0]
+          expect(isObjectType(element)).toBeTruthy()
+          const obj = element as ObjectType
+          expect(obj.fields.alpha.annotations.apiName).toBeDefined()
+          expect(obj.fields.alpha.annotations.apiName).toBeDefined()
+          expect(obj.annotations.metadataType).toBeDefined()
+        }))
       })
     })
 

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Plan, Workspace, telemetrySender } from '@salto-io/core'
+import { Plan, Workspace, telemetrySender, parse } from '@salto-io/core'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
 import glob from 'glob'
@@ -95,6 +95,12 @@ export const editNaclFile = async (filename: string, replacements: ReplacementPa
     fileAsString = fileAsString.replace(pair[0], pair[1])
   })
   await writeFile(filename, fileAsString)
+}
+
+export const getNaclFileElements = async (filename: string):
+  Promise<Element[]> => {
+  const fileAsString = await readTextFile(filename)
+  return (await parse(Buffer.from(fileAsString), filename)).elements
 }
 
 export const runInit = async (

@@ -276,7 +276,7 @@ describe('multi env tests', () => {
   })
 
   // eslint-disable-next-line jest/no-disabled-tests
-  describe.skip('handle changes that originated in the service', () => {
+  describe('handle changes that originated in the service', () => {
     const objToSyncFromServiceName = `TestSyncFromServiceObj${tempID}`
     const instToSyncFromServiceName = `TestSyncFromServiceInst${tempID}`
     let fromSyncToRemove: Element[]

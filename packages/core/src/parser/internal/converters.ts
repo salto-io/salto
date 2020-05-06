@@ -164,6 +164,9 @@ export const convertReference = (reference: LexerToken): HclExpression => ({
   source: createSourceRange(reference, reference),
 })
 
+const unescapeTemplateMarker = (text: string): string =>
+  text.replace(/\\\$\{/gi, '${',)
+
 export const convertString = (
   oq: LexerToken,
   contentTokens: LexerToken[],
@@ -174,7 +177,7 @@ export const convertString = (
     ? convertReference(t)
     : {
       type: 'literal',
-      value: t && t.text ? JSON.parse(`"${t.text}"`) : '',
+      value: t && t.text ? JSON.parse(`"${unescapeTemplateMarker(t.text)}"`) : '',
       expressions: [],
       source: createSourceRange(t, t),
     })),
@@ -188,9 +191,10 @@ export const convertMultilineString = (
 ): HclExpression => ({
   type: 'template',
   expressions: contentTokens.map((t, index) => {
+    const withoutEscaping = unescapeTemplateMarker(t.text)
     const value = index === contentTokens.length - 1
-      ? t.text.slice(0, t.text.length - 1) // Remove the last \n
-      : t.text
+      ? withoutEscaping.slice(0, withoutEscaping.length - 1) // Remove the last \n
+      : withoutEscaping
     return t.type === 'reference'
       ? convertReference(t)
       : {

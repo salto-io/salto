@@ -25,6 +25,7 @@ export const rules: Record<string, moo.Rules> = {
     number: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
     boolean: /true|false/,
     word: /[a-zA-Z_][\w.]*(?!\*\*\*\*dynamic\*\*\*\*)/s,
+    spec: /[[\](){},=]/,
     lparen: '(',
     rparen: ')',
     arrOpen: '[',
@@ -33,9 +34,9 @@ export const rules: Record<string, moo.Rules> = {
     cCurly: '}',
     oCurly: '{',
     eq: '=',
+    newline: { match: /(?:(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*(?:[\r\n]+)(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*)+/, lineBreaks: true },
     ws: /[ \t]+/,
     comment: /\/\/[^\r\n]*/,
-    newline: { match: /[\r\n]+/, lineBreaks: true },
     invalidSyntax: { match: /[^ ]+/, error: true },
   },
   string: {

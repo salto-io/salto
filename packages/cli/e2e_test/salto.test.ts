@@ -69,6 +69,7 @@ describe('cli e2e', () => {
   const configFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`
   const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
+  const NEW_INSTANCE2_BASE_ELEM_NAME = 'NewInstance2Name'
   const NEW_OBJECT_BASE_ELEM_NAME = 'NewObjectName'
 
   let homePath: string
@@ -79,7 +80,9 @@ describe('cli e2e', () => {
   let randomString: string
   let tmpNaclFileRelativePath: string
   let newInstanceElemName: string
+  let newInstance2ElemName: string
   let newInstanceFullName: string
+  let newInstance2FullName: string
   let newObjectElemName: string
   let newObjectApiName: string
   let newObjectStandardFieldRelativePath: string
@@ -99,7 +102,9 @@ describe('cli e2e', () => {
     statePath = `${fetchOutputDir}/salto.config/states/default.jsonl`
     randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
+    newInstance2ElemName = NEW_INSTANCE2_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`
+    newInstance2FullName = `${NEW_INSTANCE2_BASE_ELEM_NAME}${randomString}`
     newObjectElemName = NEW_OBJECT_BASE_ELEM_NAME + randomString
     newObjectApiName = `${newObjectElemName}${SALESFORCE_CUSTOM_SUFFIX}`
     newObjectStandardFieldRelativePath = `${SALESFORCE}/${OBJECTS_PATH}/${newObjectElemName}/${newObjectElemName}StandardFields.nacl`
@@ -121,6 +126,9 @@ describe('cli e2e', () => {
     if (await instanceExists(client, ROLE, newInstanceFullName)) {
       await client.delete(ROLE, newInstanceFullName)
     }
+    if (await instanceExists(client, ROLE, newInstance2FullName)) {
+      await client.delete(ROLE, newInstance2FullName)
+    }
     await runSalesforceLogin(fetchOutputDir, getSalesforceCredsInstance(credsLease.value))
     await runFetch(fetchOutputDir)
   })
@@ -131,6 +139,9 @@ describe('cli e2e', () => {
     }
     if (await instanceExists(client, ROLE, newInstanceFullName)) {
       await client.delete(ROLE, newInstanceFullName)
+    }
+    if (await instanceExists(client, ROLE, newInstance2FullName)) {
+      await client.delete(ROLE, newInstance2FullName)
     }
     await rm(homePath)
     if (credsLease.return) {
@@ -165,20 +176,23 @@ describe('cli e2e', () => {
     })
   })
 
-  describe('deploy with a new object and instance', () => {
+  describe('deploy with a new object, instance, and instance with variable expressions', () => {
     let workspace: Workspace
     beforeAll(async () => {
       await copyFile(addModelNaclFile, fullPath(tmpNaclFileRelativePath))
       await editNaclFile(fullPath(tmpNaclFileRelativePath), [
-        [NEW_OBJECT_BASE_ELEM_NAME, newObjectElemName],
-        [NEW_INSTANCE_BASE_ELEM_NAME, newInstanceElemName],
+        // Replace all occurrences
+        [new RegExp(NEW_OBJECT_BASE_ELEM_NAME, 'g'), newObjectElemName],
+        [new RegExp(NEW_INSTANCE_BASE_ELEM_NAME, 'g'), newInstanceElemName],
+        [new RegExp(NEW_INSTANCE2_BASE_ELEM_NAME, 'g'), newInstance2ElemName],
       ])
       await runDeploy(lastPlan, fetchOutputDir)
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should have "add" changes', async () => {
       verifyChanges(lastPlan, [{ action: 'add', element: newObjectElemName },
-        { action: 'add', element: newInstanceElemName }])
+        { action: 'add', element: newInstanceElemName },
+        { action: 'add', element: newInstance2ElemName }])
     })
     it('should create the object in salesforce', async () => {
       expect(await objectExists(client, newObjectApiName, ['Alpha__c', 'Beta__c'])).toBe(true)
@@ -217,7 +231,10 @@ describe('cli e2e', () => {
     })
     it('should have "modify" changes', async () => {
       verifyChanges(lastPlan, [{ action: 'modify', element: newObjectElemName },
-        { action: 'modify', element: newInstanceElemName }])
+        { action: 'modify', element: newInstanceElemName },
+        // This instance is modified because its description is a variable
+        // with the value of a reference to the description of the previous instance.
+        { action: 'modify', element: newInstance2ElemName }])
     })
     it('should update the object in salesforce', async () => {
       expect(await objectExists(client, newObjectApiName, ['Alpha__c', 'Modified__c']))
@@ -292,6 +309,7 @@ describe('cli e2e', () => {
       verifyChanges(lastPlan, [
         { action: 'remove', element: newObjectElemName },
         { action: 'remove', element: newInstanceElemName },
+        { action: 'remove', element: newInstance2ElemName },
       ])
     })
     it('should remove the object in salesforce', async () => {

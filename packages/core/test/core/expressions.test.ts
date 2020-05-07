@@ -281,6 +281,48 @@ describe('Test Salto Expressions', () => {
       expect(res.value.test.value).toBeInstanceOf(UnresolvedReference)
       expect(res.value.test.value.target).toEqual(target)
     })
+
+    it('should use additional context', () => {
+      const context = new InstanceElement('second', simpleRefType, {})
+      const firstRef = new InstanceElement(
+        'first',
+        simpleRefType,
+        { test: refTo(context) },
+      )
+      const bad = [firstRef]
+      const res = resolve(bad, [context])[0] as InstanceElement
+      const noContextRes = resolve(bad)[0] as InstanceElement
+      expect(noContextRes.value.test.value).toBeInstanceOf(UnresolvedReference)
+      expect(res.value.test.value).toBeInstanceOf(InstanceElement)
+      expect(res.value.test.value).toEqual(context)
+    })
+
+    it('should not resolve additional context', () => {
+      const inst = new InstanceElement('second', simpleRefType, {})
+      const refToInst = new ReferenceExpression(inst.elemID)
+      const context = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'),
+        refToInst)
+      const refInst = new InstanceElement(
+        'first',
+        simpleRefType,
+        { test: new VariableExpression(context.elemID) },
+      )
+      const res = resolve([refInst], [context, inst])
+      expect(res).toHaveLength(1)
+      expect((res[0] as InstanceElement).value.test.value).toEqual(inst)
+    })
+
+    it('should use elements over additional context', () => {
+      const context = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), 'a')
+      const inputElem = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'name'), 'b')
+      const refInst = new InstanceElement(
+        'first',
+        simpleRefType,
+        { test: new VariableExpression(context.elemID) },
+      )
+      const res = resolve([refInst, inputElem], [context])
+      expect((res[0] as InstanceElement).value.test.value).toEqual('b')
+    })
   })
 
   describe('Template Expression', () => {

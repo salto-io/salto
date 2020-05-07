@@ -152,9 +152,34 @@ For example, if we want to define that the value of a certain field will referen
 valueSet = salesforce.StandardValueSet.instance.LeadSource.standardValue
 ```
 
->In the case you need to reference a specific element in a list, you should use the index as an additional key, e.g. `salesforce.Lead.field.MyField__c.valueSet.2.fullName` would access the fullName attribute of the 2nd element in the list valueSet under the custom field MyField__c which is part of salesforce.Lead
+>In the case you need to reference a specific element in a list, you should use the index as an additional key, e.g. `salesforce.Lead.field.MyField__c.valueSet.2.fullName` would access the fullName attribute of the 3rd element in the list valueSet under the custom field MyField__c which is part of salesforce.Lead
 
 >A reference implies a creation dependency between a source and a target element. Meaning that when element A references element B it also implies that Salto will make sure to create element B before element A is created.
+
+### Variables
+
+Variables let you define a primitive value, give it a name, and then use it multiple times. Variables are defined using a `vars` block:
+
+```hcl
+vars {
+    secondsPerDay = 86400
+    daysPerYear = 365
+    firstMonth = "January"
+}
+```
+
+Variables can be defined anywhere in the NaCl files, and there can be many `vars` blocks. The scope of a variable is always global, so any variable can be referenced from any NaCl file.
+
+A variable is referenced using the following schema: `var.<name>`. For example, we can set:
+
+```hcl
+salesforce.CompanySettings {
+    fiscalYear = {
+        fiscalYearNameBasedOn = "endingMonth"
+        startMonth = var.firstMonth
+    }
+}
+```
 
 ### Multiple Environments
 

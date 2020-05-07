@@ -624,7 +624,7 @@ describe('fetch', () => {
         changes.forEach(c => expect(c.pendingChange).toBeUndefined())
       })
 
-      it('shouldn remove hidden values from changes', () => {
+      it('shouldn\'t remove hidden values from changes', () => {
         const fetchedInst = getChangeElement(changes[1].change)
         expect(fetchedInst.value.hidden).toBeUndefined()
         expect(fetchedInst.value.notHidden).toEqual('notHidden')

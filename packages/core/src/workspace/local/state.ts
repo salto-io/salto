@@ -52,7 +52,7 @@ export const localState = (filePath: string): State => {
     const servicesUpdateDate = updateDateData
       ? _.mapValues(JSON.parse(updateDateData), dateStr => new Date(dateStr))
       : {}
-    log.debug(`loaded state [#elements=${elements.length}]`)
+    log.debug(`loaded state [#elements=${_.size(elements)}]`)
     return { elements, servicesUpdateDate }
   }
 

@@ -26,7 +26,7 @@ import {
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
 import { resolve } from '../../src/core/expressions'
 
-describe('State serialization', () => {
+describe('State/cache serialization', () => {
   const strType = new PrimitiveType({
     elemID: new ElemID('salesforce', 'string'),
     primitive: PrimitiveTypes.STRING,
@@ -83,6 +83,22 @@ describe('State serialization', () => {
     }
   )
 
+  const refInstance2 = new InstanceElement(
+    'another',
+    model,
+    {
+      name: new ReferenceExpression(instance.elemID),
+    }
+  )
+
+  const refInstance3 = new InstanceElement(
+    'another3',
+    model,
+    {
+      name: new ReferenceExpression(refInstance2.elemID.createNestedID('name')),
+    }
+  )
+
   const templateRefInstance = new InstanceElement(
     'also_me_template',
     model,
@@ -118,8 +134,8 @@ describe('State serialization', () => {
     { name: 'other', num: 5 },
   )
 
-  const elements = [strType, numType, boolType, model, strListType, variable,
-    instance, refInstance, templateRefInstance, functionRefInstance, config]
+  const elements = [strType, numType, boolType, model, strListType, variable, instance,
+    refInstance, refInstance2, refInstance3, templateRefInstance, functionRefInstance, config]
 
   it('should serialize and deserialize all element types', async () => {
     const serialized = serialize(elements)
@@ -131,16 +147,41 @@ describe('State serialization', () => {
   it('should not serialize resolved values', async () => {
     // TemplateExpressions are discarded
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
-    const serialized = serialize(resolve(elementsToSerialize))
+    const serialized = serialize(resolve(elementsToSerialize), 'keepRef')
     const deserialized = await deserialize(serialized)
     const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
+
     expect(deserialized).toEqual(sortedElements)
   })
+
+  // Serializing our nacls to the state file should be the same as serializing the result of fetch
+  it('should serialize resolved values to state', async () => {
+    const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
+    const serialized = serialize(resolve(elementsToSerialize))
+    const deserialized = await deserialize(serialized)
+    const refInst = deserialized.find(
+      e => e.elemID.getFullName() === refInstance.elemID.getFullName()
+    ) as InstanceElement
+    const refInst2 = deserialized.find(
+      e => e.elemID.getFullName() === refInstance2.elemID.getFullName()
+    ) as InstanceElement
+    const refInst3 = deserialized.find(
+      e => e.elemID.getFullName() === refInstance3.elemID.getFullName()
+    ) as InstanceElement
+    expect(refInst.value.name).toEqual('I am a var')
+    expect(refInst.value.num).toEqual(7)
+    expect(refInst2.value.name).toBeInstanceOf(ReferenceExpression)
+    expect(refInst2.value.name.elemId.getFullName()).toEqual(instance.elemID.getFullName())
+    expect(refInst3.value.name).toBeInstanceOf(ReferenceExpression)
+    expect(refInst3.value.name.elemId.getFullName()).toEqual(instance.elemID.getFullName())
+  })
+
   it('should create the same result for the same input regardless of elements order', () => {
     const serialized = serialize(elements)
     const shuffledSer = serialize(_.shuffle(elements))
     expect(serialized).toEqual(shuffledSer)
   })
+
   it('should create the same result for the same input regardless of values order', () => {
     const serialized = serialize(elements)
     const shuffledConfig = _.last(elements) as InstanceElement
@@ -153,6 +194,7 @@ describe('State serialization', () => {
     ])
     expect(serialized).toEqual(shuffledSer)
   })
+
   describe('functions', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let funcElement: InstanceElement

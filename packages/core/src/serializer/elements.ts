@@ -40,24 +40,42 @@ import {
 
 export const SALTO_CLASS_FIELD = '_salto_class'
 interface ClassName {[SALTO_CLASS_FIELD]: string}
-export const serialize = (elements: Element[]): string => {
+
+
+export const serialize = (elements: Element[],
+  referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'): string => {
+  const saltoClassReplacer = <T extends object>(e: T): T & ClassName => {
+    // Add property SALTO_CLASS_FIELD
+    const o = e as T & ClassName
+    o[SALTO_CLASS_FIELD] = e.constructor.name
+    return o
+  }
+  const staticFileReplacer = (e: StaticFile): Omit<StaticFile & ClassName, 'content'> => (
+    _.omit(saltoClassReplacer(e), 'content')
+  )
+  const referenceExpressionReplacer = (e: ReferenceExpression): ReferenceExpression & ClassName => {
+    if (e.value === undefined || referenceSerializerMode === 'keepRef') {
+      return saltoClassReplacer(e.createWithValue(undefined))
+    }
+    // Replace ref with value in order to keep the result from changing between
+    // a fetch and a deploy.
+    if (isElement(e.value)) {
+      return saltoClassReplacer(new ReferenceExpression(e.value.elemID))
+    }
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    return generalReplacer(e.value)
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const elementReplacer = (_k: string, e: any): any => {
+  const generalReplacer = (e: any): any => {
     if (isReferenceExpression(e)) {
-      // Add property SALTO_CLASS_FIELD to o
-      const o = e.createWithValue(undefined) as typeof e & ClassName
-      o[SALTO_CLASS_FIELD] = e.constructor.name
-      return o
+      return referenceExpressionReplacer(e)
     }
     if (isElement(e) || isExpression(e)) {
-      const o = e as Element & ClassName
-      o[SALTO_CLASS_FIELD] = e.constructor.name
-      return o
+      return saltoClassReplacer(e)
     }
     if (isStaticFile(e)) {
-      const o = e as typeof e & ClassName
-      o[SALTO_CLASS_FIELD] = e.constructor.name
-      return _.omit(o, 'content')
+      return staticFileReplacer(e)
     }
     // We need to sort objects so that the state file won't change for the same data.
     if (_.isPlainObject(e)) {
@@ -73,7 +91,7 @@ export const serialize = (elements: Element[]): string => {
       ? new ObjectType({ elemID: v.elemID }) : undefined)
   ))
   const sortedElements = _.sortBy(weakElements, e => e.elemID.getFullName())
-  return JSON.stringify(sortedElements, elementReplacer)
+  return JSON.stringify(sortedElements, (_k, e) => generalReplacer(e))
 }
 
 export type StaticFileReviver =

@@ -26,9 +26,9 @@ import { createEncodedZipContent, findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
-import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import { INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST,
   MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 describe('SalesforceAdapter fetch', () => {
   let connection: Connection

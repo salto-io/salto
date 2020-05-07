@@ -46,8 +46,8 @@ import { findElements, findStandardFieldsObject, findAnnotationsObject, findCust
 import SalesforceClient, { API_VERSION, Credentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
-import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import { objectExists, getMetadata, getMetadataFromElement, createInstance, removeElementAndVerify, removeElementIfAlreadyExists, createElementAndVerify } from './utils'
+import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 const { makeArray } = collections.array
 const { PROFILE_METADATA_TYPE } = constants

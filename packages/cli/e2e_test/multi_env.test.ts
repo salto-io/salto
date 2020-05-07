@@ -276,7 +276,7 @@ describe('multi env tests', () => {
   })
 
   // eslint-disable-next-line jest/no-disabled-tests
-  describe.skip('handle changes that originated in the service', () => {
+  describe('handle changes that originated in the service', () => {
     const objToSyncFromServiceName = `TestSyncFromServiceObj${tempID}`
     const instToSyncFromServiceName = `TestSyncFromServiceInst${tempID}`
     let fromSyncToRemove: Element[]
@@ -322,14 +322,14 @@ describe('multi env tests', () => {
       })
     })
 
-    describe('apply the add chnage to the target env', () => {
+    describe('apply the add change to the target env', () => {
       let afterOtherEnvFetchPlan: Plan | undefined
       beforeAll(async () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV2_NAME)
         afterOtherEnvFetchPlan = await runPreviewGetPlan(baseDir)
         // Just a safety check to avoid deploying changes if something
-        // went etong.
+        // went wrong.
         if (afterOtherEnvFetchPlan && afterOtherEnvFetchPlan.size > 10) {
           throw new Error('To many unexpected changes. Aborting')
         }

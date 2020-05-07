@@ -243,10 +243,10 @@ export const transformElement = <T extends Element>(
 
 export const resolveReferences = <T extends Element>(
   element: T,
-  getLookUpName: (v: Value) => Value
+  getLookUpName: (v: Value, field?: Field, path?: ElemID) => Value
 ): T => {
-  const referenceReplacer: TransformFunc = ({ value }) => (
-    isReferenceExpression(value) ? getLookUpName(value.value) : value
+  const referenceReplacer: TransformFunc = ({ value, field, path }) => (
+    isReferenceExpression(value) ? getLookUpName(value.value, field, path) : value
   )
 
   return transformElement({

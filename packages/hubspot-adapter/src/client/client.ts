@@ -23,7 +23,7 @@ import {
   Form, HubspotMetadata, MarketingEmail, Workflows, ContactProperty, Owner,
 } from './types'
 import Connection, { HubspotObjectAPI, Workflow } from './madku'
-
+import { OBJECTS_NAMES } from '../constants'
 
 export type Credentials = {
   apiKey: string
@@ -63,22 +63,23 @@ const extractInstanceId = (hubspotMetadata: HubspotMetadata, typeName: string): 
   const isForm = (
     formMetadata: HubspotMetadata
   ): formMetadata is Form => (formMetadata as Form).guid !== undefined
-    && typeName === 'form'
+    && typeName === OBJECTS_NAMES.FORM
 
   const isMarketingEmail = (
     marketingMetadata: HubspotMetadata
   ): marketingMetadata is MarketingEmail => (marketingMetadata as MarketingEmail).id !== undefined
-    && typeName === 'marketingEmail'
+    && typeName === OBJECTS_NAMES.MARKETINGEMAIL
 
   const isWorkflow = (
     workflowMetadata: HubspotMetadata
   ): workflowMetadata is Workflows => (workflowMetadata as Workflows).id !== undefined
-    && typeName === 'workflows'
+    && typeName === OBJECTS_NAMES.WORKFLOW
 
   const isContactProperty = (
     contactPropertyMetadata: HubspotMetadata
   ): contactPropertyMetadata is ContactProperty =>
-    (contactPropertyMetadata as ContactProperty).name !== undefined && typeName === 'contactProperty'
+    (contactPropertyMetadata as ContactProperty).name !== undefined
+    && typeName === OBJECTS_NAMES.CONTACT_PROPERTY
 
   if (isForm(hubspotMetadata)) {
     return hubspotMetadata.guid
@@ -115,10 +116,10 @@ export default class HubspotClient {
       || new Hubspot(apiKeyOptions)
 
     this.hubspotObjectAPI = {
-      form: this.conn.forms,
-      workflows: this.conn.workflows,
-      marketingEmail: this.conn.marketingEmail,
-      contactProperty: this.conn.contacts.properties,
+      [OBJECTS_NAMES.FORM]: this.conn.forms,
+      [OBJECTS_NAMES.WORKFLOW]: this.conn.workflows,
+      [OBJECTS_NAMES.MARKETINGEMAIL]: this.conn.marketingEmail,
+      [OBJECTS_NAMES.CONTACT_PROPERTY]: this.conn.contacts.properties,
     }
   }
 
@@ -149,7 +150,7 @@ export default class HubspotClient {
 
   async getAllInstances(typeName: string): Promise<HubspotMetadata[]> {
     const getWorkflowsFromValue = async (basicWorkflows: Workflows[]): Promise<Workflows[]> => {
-      const workflowsAPI = this.hubspotObjectAPI.workflows as Workflow
+      const workflowsAPI = this.hubspotObjectAPI[OBJECTS_NAMES.WORKFLOW] as Workflow
       const workflowsResp = basicWorkflows.map(async (basicWorkflow: Workflows):
         Promise<Workflows> => {
         const workflowResp = workflowsAPI.get(basicWorkflow.id)
@@ -172,9 +173,9 @@ export default class HubspotClient {
       return responseValue
     }
     switch (typeName) {
-      case 'workflows':
+      case OBJECTS_NAMES.WORKFLOW:
         return getWorkflowsFromValue(responseValue.workflows as Workflows[])
-      case 'marketingEmail':
+      case OBJECTS_NAMES.MARKETINGEMAIL:
         return responseValue.objects
       default:
         return responseValue

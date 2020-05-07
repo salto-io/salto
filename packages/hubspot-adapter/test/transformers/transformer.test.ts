@@ -19,7 +19,7 @@ import {
 import { RequestPromise } from 'requestretry'
 import HubspotClient from '../../src/client/client'
 import mockClient from '../client'
-import { HUBSPOT } from '../../src/constants'
+import { HUBSPOT, OBJECTS_NAMES } from '../../src/constants'
 import {
   createInstanceName, transformAfterUpdateOrAdd, createHubspotMetadataFromInstanceElement,
   Types, getLookUpName,
@@ -441,7 +441,7 @@ describe('Transformer', () => {
 
     const formInstance = new InstanceElement(
       'mockFormInstance',
-      Types.hubspotObjects.form,
+      Types.hubspotObjects[OBJECTS_NAMES.FORM],
       afterFormInstanceValuesMock
     )
 

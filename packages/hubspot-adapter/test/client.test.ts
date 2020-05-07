@@ -99,7 +99,7 @@ describe('Test HubSpot client', () => {
         })
 
         it('should return empty list', async () => {
-          expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)).toHaveLength(0)
+          expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOW)).toHaveLength(0)
         })
       })
 
@@ -144,7 +144,7 @@ describe('Test HubSpot client', () => {
 
         it('should success', async () => {
           expect(await client.getAllInstances(OBJECTS_NAMES.FORM)).toHaveLength(2)
-          expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOWS)).toHaveLength(3)
+          expect(await client.getAllInstances(OBJECTS_NAMES.WORKFLOW)).toHaveLength(3)
           expect(await client.getAllInstances(OBJECTS_NAMES.MARKETINGEMAIL)).toHaveLength(4)
           expect(await client.getAllInstances(OBJECTS_NAMES.CONTACT_PROPERTY)).toHaveLength(3)
         })
@@ -205,7 +205,7 @@ describe('Test HubSpot client', () => {
         })
 
         it('should return error (WORKFLOWS type)', async () => {
-          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOWS, workflowsMetadata)).rejects
+          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOW, workflowsMetadata)).rejects
             .toThrow(apiKeyDoesntExistErrStr)
           expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(workflowsMetadata)
         })
@@ -243,7 +243,7 @@ describe('Test HubSpot client', () => {
         })
 
         it('should return error (WORKFLOWS type)', async () => {
-          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOWS, workflowsMetadata)).rejects
+          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOW, workflowsMetadata)).rejects
             .toThrow(permissionsErrStr)
           expect(mockCreateInstance.mock.calls[0][0]).toMatchObject(workflowsMetadata)
         })
@@ -306,7 +306,7 @@ describe('Test HubSpot client', () => {
 
           it('should return the new Workflow instance', async () => {
             const resp = await client.createInstance(
-              OBJECTS_NAMES.WORKFLOWS,
+              OBJECTS_NAMES.WORKFLOW,
               workflowsMetadata
             ) as Workflows
 
@@ -441,7 +441,7 @@ describe('Test HubSpot client', () => {
         })
 
         it('should return error 409 (WORKFLOWS type)', async () => {
-          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOWS, workflowsMetadata)).rejects
+          await expect(client.createInstance(OBJECTS_NAMES.WORKFLOW, workflowsMetadata)).rejects
             .toThrow(formAlreadyExiststErrStr)
         })
 
@@ -576,7 +576,7 @@ describe('Test HubSpot client', () => {
 
         it('should return 204 response', async () => {
           const resp = await client.deleteInstance(
-            OBJECTS_NAMES.WORKFLOWS,
+            OBJECTS_NAMES.WORKFLOW,
             workflowsMetadata as HubspotMetadata
           )
           expect(resp).toBeUndefined()
@@ -646,8 +646,8 @@ describe('Test HubSpot client', () => {
 
     describe('Unsupported type', () => {
       it('should return Unsupported type error', async () => {
-        await expect(client.updateInstance(OBJECTS_NAMES.WORKFLOWS, {} as HubspotMetadata)).rejects
-          .toThrow("workflows can't updated via API")
+        await expect(client.updateInstance(OBJECTS_NAMES.WORKFLOW, {} as HubspotMetadata)).rejects
+          .toThrow("Workflow can't updated via API")
       })
     })
 

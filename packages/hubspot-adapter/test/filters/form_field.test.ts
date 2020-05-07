@@ -20,6 +20,7 @@ import mockClient from '../client'
 import filterCreator from '../../src/filters/form_field'
 import { Types } from '../../src/transformers/transformer'
 import { valuePropInstance, datePropInstance, g1PropInstance } from '../common/mock_elements'
+import { OBJECTS_NAMES } from '../../src/constants'
 
 describe('form_field filter', () => {
   let filter: OnFetchFilter
@@ -129,7 +130,7 @@ describe('form_field filter', () => {
   } as Values
   const formInstance = new InstanceElement(
     'mockForm',
-    Types.hubspotObjects.form,
+    Types.hubspotObjects[OBJECTS_NAMES.FORM],
     formValues
   )
 

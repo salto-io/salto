@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { HUBSPOT } from '../../src/constants'
+import { HUBSPOT, OBJECTS_NAMES } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
 const firstFormMock = {
@@ -51,7 +51,7 @@ export const formsMockArray = [
 
 export const g1PropInstance = new InstanceElement(
   'g1',
-  Types.hubspotObjects.contactProperty,
+  Types.hubspotObjects[OBJECTS_NAMES.CONTACT_PROPERTY],
   {
     name: 'g1',
     label: 'g1',
@@ -61,7 +61,7 @@ export const g1PropInstance = new InstanceElement(
     hidden: false,
     displayOrder: 1,
   },
-  [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'g1'],
+  [HUBSPOT, 'records', Types.hubspotObjects[OBJECTS_NAMES.CONTACT_PROPERTY].elemID.name, 'g1'],
 )
 
 const g1PropReference = new ReferenceExpression(
@@ -71,7 +71,7 @@ const g1PropReference = new ReferenceExpression(
 
 export const datePropInstance = new InstanceElement(
   'date_of_birth',
-  Types.hubspotObjects.contactProperty,
+  Types.hubspotObjects[OBJECTS_NAMES.CONTACT_PROPERTY],
   {
     name: 'date_of_birth',
     label: 'Date of birth',
@@ -81,7 +81,7 @@ export const datePropInstance = new InstanceElement(
     hidden: false,
     displayOrder: 1,
   },
-  [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'date_of_birth'],
+  [HUBSPOT, 'records', Types.hubspotObjects[OBJECTS_NAMES.CONTACT_PROPERTY].elemID.name, 'date_of_birth'],
 )
 
 const datePropReference = new ReferenceExpression(
@@ -91,7 +91,7 @@ const datePropReference = new ReferenceExpression(
 
 export const valuePropInstance = new InstanceElement(
   'value',
-  Types.hubspotObjects.contactProperty,
+  Types.hubspotObjects[OBJECTS_NAMES.CONTACT_PROPERTY],
   {
     name: 'value',
     label: 'Value',
@@ -109,7 +109,7 @@ export const valuePropInstance = new InstanceElement(
     ],
     displayOrder: 1,
   },
-  [HUBSPOT, 'records', Types.hubspotObjects.contactProperty.elemID.name, 'value'],
+  [HUBSPOT, 'records', Types.hubspotObjects[OBJECTS_NAMES.CONTACT_PROPERTY].elemID.name, 'value'],
 )
 
 const valuePropReference = new ReferenceExpression(

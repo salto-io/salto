@@ -17,6 +17,7 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import { afterFormInstanceValuesMock } from '../common/mock_elements'
 import formFieldValidator from '../../src/change_validators/form_field'
+import { OBJECTS_NAMES } from '../../src/constants'
 
 describe('form field change validator', () => {
   let formInstance: InstanceElement
@@ -25,7 +26,7 @@ describe('form field change validator', () => {
   beforeEach(() => {
     formInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects.form,
+      Types.hubspotObjects[OBJECTS_NAMES.FORM],
       afterFormInstanceValuesMock,
     )
   })

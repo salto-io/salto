@@ -46,6 +46,9 @@ type salesforce.WithAnnotationsBlock {
   }
 }
 
+type salesforce.WithoutAnnotationsBlock {
+}
+
 type multi.loc { a = 1 }
 type one.liner { a = 1 }`,
   'subdir/file.nacl': `

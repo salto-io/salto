@@ -24,7 +24,7 @@ import {
 import { promises } from '@salto-io/lowerdash'
 import { mergeElements, MergeError } from '../../core/merger'
 import {
-  getChangeLocations, updateNaclFileData, getChangesToUpdate, groupAnnotationTypeChanges,
+  getChangeLocations, updateNaclFileData, getChangesToUpdate,
 } from './nacl_file_update'
 import { mergeSourceMaps, SourceMap, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
@@ -196,8 +196,7 @@ const buildNaclFilesSource = (
       return naclFile ? naclFile.buffer : ''
     }
 
-    const changesToUpdate = getChangesToUpdate(changes, (await getState()).elementsIndex)
-    const naclFiles = _(await Promise.all(changesToUpdate
+    const naclFiles = _(await Promise.all(changes
       .map(change => change.id)
       .map(elemID => getElementNaclFiles(elemID))))
       .flatten().uniq().value()
@@ -208,8 +207,8 @@ const buildNaclFilesSource = (
           await getSourceMap(ParsedNaclFiles[naclFile].filename)]),
       CACHE_READ_CONCURRENCY)
     )
-
     const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
+    const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))
@@ -218,10 +217,8 @@ const buildNaclFilesSource = (
         .entries()
         .map(([filename, fileChanges]) => async () => {
           try {
-            const updatedFileChanges = groupAnnotationTypeChanges(fileChanges,
-              changedFileToSourceMap[filename])
             const buffer = await updateNaclFileData(await getNaclFileData(filename),
-              updatedFileChanges, getStaticFilesFunctions(staticFileSource))
+              fileChanges, getStaticFilesFunctions(staticFileSource))
             return { filename, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s with %o changes due to: %o',

@@ -421,6 +421,16 @@ describe('workspace', () => {
         action: 'add',
         data: { after: BuiltinTypes.NUMBER },
       },
+      { // new annotation type to a type with no annotation types block without path
+        id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'annotation', 'newAnnoType1'),
+        action: 'add',
+        data: { after: BuiltinTypes.STRING },
+      },
+      { // new annotation type to a type with no annotation types block without path
+        id: new ElemID('salesforce', 'WithoutAnnotationsBlock', 'annotation', 'newAnnoType2'),
+        action: 'add',
+        data: { after: BuiltinTypes.NUMBER },
+      },
     ]
 
     let lead: ObjectType
@@ -466,12 +476,19 @@ describe('workspace', () => {
       expect(lead.annotationTypes).toHaveProperty('newAnnoType2')
       expect(lead.annotationTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
     })
-    it('should add annotation type to the existing annotations block', () => {
+    it('should add annotation type to the existing annotations block with path hint', () => {
       const objWithAnnotationsBlock = elemMap['salesforce.WithAnnotationsBlock'] as ObjectType
       expect(objWithAnnotationsBlock.annotationTypes).toHaveProperty('firstAnnotation')
       expect(objWithAnnotationsBlock.annotationTypes.firstAnnotation).toEqual(BuiltinTypes.STRING)
       expect(objWithAnnotationsBlock.annotationTypes).toHaveProperty('secondAnnotation')
       expect(objWithAnnotationsBlock.annotationTypes.secondAnnotation).toEqual(BuiltinTypes.NUMBER)
+    })
+    it('should add annotation type to the existing annotations block without path hint', () => {
+      const objWithoutAnnoBlock = elemMap['salesforce.WithoutAnnotationsBlock'] as ObjectType
+      expect(objWithoutAnnoBlock.annotationTypes).toHaveProperty('newAnnoType1')
+      expect(objWithoutAnnoBlock.annotationTypes.newAnnoType1).toEqual(BuiltinTypes.STRING)
+      expect(objWithoutAnnoBlock.annotationTypes).toHaveProperty('newAnnoType2')
+      expect(objWithoutAnnoBlock.annotationTypes.newAnnoType2).toEqual(BuiltinTypes.NUMBER)
     })
     it('should remove all definitions in remove', () => {
       expect(Object.keys(elemMap)).not.toContain('multi.loc')

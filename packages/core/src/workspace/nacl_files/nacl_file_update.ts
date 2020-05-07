@@ -117,9 +117,9 @@ const indent = (data: string, indentLevel: number, newValue: boolean): string =>
   ].join('\n')
 }
 
-export const groupAnnotationTypeChanges = (fileChanges: DetailedChangeWithSource[],
-  existingFileSourceMap?: SourceMap): DetailedChangeWithSource[] => {
-  const isAnnotationTypeAddChange = (change: DetailedChangeWithSource): boolean =>
+export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
+  existingFileSourceMap?: SourceMap): DetailedChange[] => {
+  const isAnnotationTypeAddChange = (change: DetailedChange): boolean =>
     change.id.idType === 'annotation' && isAdditionDiff(change)
 
   const objectHasAnnotationTypesBlock = (topLevelIdFullName: string): boolean =>
@@ -128,9 +128,9 @@ export const groupAnnotationTypeChanges = (fileChanges: DetailedChangeWithSource
       .has(ElemID.fromFullName(topLevelIdFullName).createNestedID('annotation').getFullName())
 
   const createGroupedAddAnnotationTypesChange = (annotationTypesAddChanges:
-    DetailedChangeWithSource[]): DetailedChangeWithSource => {
+    DetailedChange[]): DetailedChange => {
     const change = annotationTypesAddChanges[0]
-    const groupedChange: DetailedChange = {
+    return {
       id: new ElemID(change.id.adapter, change.id.typeName, 'annotation'),
       action: 'add',
       data: { after: _(annotationTypesAddChanges as DetailedAddition[])
@@ -138,9 +138,6 @@ export const groupAnnotationTypeChanges = (fileChanges: DetailedChangeWithSource
         .fromPairs()
         .value() },
     }
-    // we should find a new location for the grouped change
-    return getChangeLocations(groupedChange, existingFileSourceMap
-      ?? {} as ReadonlyMap<string, SourceRange[]>)[0]
   }
 
   const [annotationTypesAddChanges, otherChanges] = _.partition(fileChanges,
@@ -261,21 +258,22 @@ const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition =>
 
 const parentElementExistsInPath = (
   dc: DetailedChange,
-  elementsIndex: Record<string, string[]>
+  sourceMap: SourceMap
 ): boolean => {
   const { parent } = dc.id.createTopLevelParentID()
-  return (elementsIndex[parent.getFullName()] || [])
-    .includes(createFileNameFromPath(dc.path))
+  return _.some(sourceMap.get(parent.getFullName())?.map(
+    range => range.filename === createFileNameFromPath(dc.path)
+  ))
 }
 export const getChangesToUpdate = (
   changes: DetailedChange[],
-  elementsIndex: Record<string, string[]>
+  sourceMap: SourceMap
 ): DetailedChange[] => {
   const isNestedAddition = (dc: DetailedChange): boolean => (dc.path || false)
     && dc.action === 'add'
     && dc.id.idType !== 'instance'
     && dc.id.nestingLevel === (dc.id.idType === 'annotation' ? 2 : 1)
-    && !parentElementExistsInPath(dc, elementsIndex)
+    && !parentElementExistsInPath(dc, sourceMap)
 
   const [nestedAdditionsWithPath, otherChanges] = _.partition(
     changes,
@@ -288,5 +286,5 @@ export const getChangesToUpdate = (
     .map(wrapAdditions)
     .value()
 
-  return _.concat(otherChanges, wrappedNestedAdditions)
+  return groupAnnotationTypeChanges(_.concat(otherChanges, wrappedNestedAdditions), sourceMap)
 }

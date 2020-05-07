@@ -130,7 +130,7 @@ export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
   const createGroupedAddAnnotationTypesChange = (annotationTypesAddChanges:
     DetailedChange[]): DetailedChange => {
     const change = annotationTypesAddChanges[0]
-    const groupedChange: DetailedChange = {
+    return {
       id: new ElemID(change.id.adapter, change.id.typeName, 'annotation'),
       action: 'add',
       data: { after: _(annotationTypesAddChanges as DetailedAddition[])
@@ -138,8 +138,6 @@ export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
         .fromPairs()
         .value() },
     }
-    // we should find a new location for the grouped change
-    return groupedChange
   }
 
   const [annotationTypesAddChanges, otherChanges] = _.partition(fileChanges,
@@ -263,8 +261,8 @@ const parentElementExistsInPath = (
   sourceMap: SourceMap
 ): boolean => {
   const { parent } = dc.id.createTopLevelParentID()
-  return !_.isEmpty(sourceMap.get(parent.getFullName())?.filter(
-    range => range.filename.includes(createFileNameFromPath(dc.path))
+  return _.some(sourceMap.get(parent.getFullName())?.map(
+    range => range.filename === createFileNameFromPath(dc.path)
   ))
 }
 export const getChangesToUpdate = (

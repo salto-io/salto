@@ -17,7 +17,6 @@ import {
   InstanceElement,
 } from '@salto-io/adapter-api'
 import HubspotAdapter from '../src/adapter'
-
 import mockAdapter from './mock'
 import {
   formsMockArray, workflowsMockArray, marketingEmailMockArray, workflowsCreateResponse,
@@ -35,7 +34,6 @@ import {
 } from '../src/constants'
 import instanceTransformFilter from '../src/filters/instance_transform'
 
-
 describe('Hubspot Adapter Operations', () => {
   let adapter: HubspotAdapter
   let client: HubspotClient
@@ -45,19 +43,19 @@ describe('Hubspot Adapter Operations', () => {
 
   const marketingEmailInstance = new InstanceElement(
     'marketingEmailInstance',
-    Types.hubspotObjects.marketingEmail,
+    Types.hubspotObjects[OBJECTS_NAMES.MARKETINGEMAIL],
     marketingEmailMock
   )
 
   const workflowsInstance = new InstanceElement(
     'workflowInstance',
-    Types.hubspotObjects.workflows,
+    Types.hubspotObjects[OBJECTS_NAMES.WORKFLOW],
     workflowsMock
   )
 
   const contactPropertyInstance = new InstanceElement(
     'contactPropertyInstance',
-    Types.hubspotObjects.contactProperty,
+    Types.hubspotObjects[OBJECTS_NAMES.CONTACT_PROPERTY],
     contactPropertyMock
   )
 
@@ -74,7 +72,7 @@ describe('Hubspot Adapter Operations', () => {
 
     beforeEach(async () => {
       const getAllResult = (type: string): Promise<HubspotMetadata[]> => {
-        if (type === OBJECTS_NAMES.WORKFLOWS) {
+        if (type === OBJECTS_NAMES.WORKFLOW) {
           return workflowsMockArray as unknown as Promise<Workflows[]>
         }
         if (type === OBJECTS_NAMES.FORM) {
@@ -103,7 +101,7 @@ describe('Hubspot Adapter Operations', () => {
   describe('Add operation', () => {
     const formInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects.form,
+      Types.hubspotObjects[OBJECTS_NAMES.FORM],
       {
         name: 'formInstanceTest',
         method: 'POST',
@@ -340,7 +338,7 @@ describe('Hubspot Adapter Operations', () => {
   describe('Remove operation', () => {
     const formInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects.form,
+      Types.hubspotObjects[OBJECTS_NAMES.FORM],
       {
         name: 'formInstanceTest',
         guid: 'guid',
@@ -399,13 +397,13 @@ describe('Hubspot Adapter Operations', () => {
 
     const beforeUpdateInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects.form,
+      Types.hubspotObjects[OBJECTS_NAMES.FORM],
       beforeFormInstanceValuesMock,
     )
 
     const afterUpdateInstance = new InstanceElement(
       'formInstance',
-      Types.hubspotObjects.form,
+      Types.hubspotObjects[OBJECTS_NAMES.FORM],
       afterFormInstanceValuesMock,
     )
 

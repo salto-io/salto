@@ -26,9 +26,10 @@ const DISPLAYORDER = 'displayOrder'
 const CREATEDAT = 'createdAt'
 
 export const OBJECTS_NAMES = {
-  FORM: 'form',
-  MARKETINGEMAIL: 'marketingEmail',
-  WORKFLOWS: 'workflows',
+  FORM: 'Form',
+  MARKETINGEMAIL: 'Email',
+  WORKFLOW: 'Workflow',
+  CONTACT_PROPERTY: 'ContactProperty',
 
   // Subtypes
   PROPERTYGROUP: 'propertyGroup',
@@ -42,7 +43,6 @@ export const OBJECTS_NAMES = {
   CRITERIA: 'criteria',
   EVENTANCHOR: 'eventAnchor',
   CONDITIONACTION: 'conditionAction',
-  CONTACT_PROPERTY: 'contactProperty',
   DEPENDENT_FIELD_FILTERS: 'dependentFieldFilters',
   FIELD_FILTER: 'fieldFilter',
   DEPENDEE_FORM_PROPERTY: 'dependeeFormProperty',
@@ -359,7 +359,7 @@ export const contactPropertyFieldTypeValues = ['textarea', 'text', 'date', 'file
 
 // ElemIDs
 export const formElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.FORM)
-export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOWS)
+export const workflowsElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.WORKFLOW)
 export const criteriaElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.CRITERIA)
 export const propertyGroupElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTYGROUP)
 export const propertyElemID = new ElemID(HUBSPOT, OBJECTS_NAMES.PROPERTY)

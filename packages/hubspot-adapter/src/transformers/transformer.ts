@@ -851,7 +851,7 @@ export class Types {
       },
       path: [HUBSPOT, TYPES_PATH, formElemID.name],
     }),
-    [OBJECTS_NAMES.WORKFLOWS]: new ObjectType({
+    [OBJECTS_NAMES.WORKFLOW]: new ObjectType({
       elemID: workflowsElemID,
       fields: {
         [WORKFLOWS_FIELDS.ID]: new Field(

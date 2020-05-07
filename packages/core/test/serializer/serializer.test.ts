@@ -147,7 +147,7 @@ describe('State/cache serialization', () => {
   it('should not serialize resolved values', async () => {
     // TemplateExpressions are discarded
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
-    const serialized = serialize(resolve(elementsToSerialize), 'cache')
+    const serialized = serialize(resolve(elementsToSerialize), 'keepRef')
     const deserialized = await deserialize(serialized)
     const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
 

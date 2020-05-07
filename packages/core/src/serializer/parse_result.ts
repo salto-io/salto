@@ -24,7 +24,9 @@ const serializeSourceMap = (sourceMap: SourceMap): string =>
   JSON.stringify(Array.from(sourceMap.entries()))
 
 export const serialize = (parseResult: ParseResult): string => [
-  elementSerializer.serialize(parseResult.elements, 'cache'),
+  // When serializing for the cache, keep reference expressions
+  // since the idea is to reflect the nacl files, not the state file.
+  elementSerializer.serialize(parseResult.elements, 'keepRef'),
   serializeErrors(parseResult.errors),
   serializeSourceMap(parseResult.sourceMap),
 ].join(EOL)

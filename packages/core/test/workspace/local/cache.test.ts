@@ -100,7 +100,7 @@ describe('localParseResultCache', () => {
       }, parseResult)
       const mockSerialize = elementsModule.serialize as jest.Mock
       expect(mockSerialize.mock.calls.length).toBe(1)
-      expect(mockSerialize.mock.calls[0][1]).toEqual('cache')
+      expect(mockSerialize.mock.calls[0][1]).toEqual('keepRef')
     })
   })
   describe('get', () => {

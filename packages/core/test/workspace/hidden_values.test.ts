@@ -31,6 +31,12 @@ describe('hidden_values.ts', () => {
       fields: {
         num: new Field(innerObjectElemID, 'num', BuiltinTypes.NUMBER),
         stringList: new Field(innerObjectElemID, 'stringList', new ListType(BuiltinTypes.STRING)),
+        hiddenStr: new Field(
+          innerObjectElemID,
+          'hiddenStr',
+          BuiltinTypes.STRING,
+          { [CORE_ANNOTATIONS.HIDDEN]: true }
+        ),
       },
     }
   )
@@ -39,7 +45,12 @@ describe('hidden_values.ts', () => {
     elemID: anotherTypeID,
     fields: {
       reg: new Field(anotherTypeID, 'reg', BuiltinTypes.STRING),
-      listOfObjects: new Field(anotherTypeID, 'listOfObjects', new ListType(innerObject)),
+      listOfObjects: new Field(
+        anotherTypeID,
+        'listOfObjects',
+        new ListType(innerObject),
+        { [CORE_ANNOTATIONS.HIDDEN]: true }
+      ),
       notHidden: new Field(
         anotherTypeID,
         'notHidden',
@@ -52,6 +63,12 @@ describe('hidden_values.ts', () => {
         BuiltinTypes.STRING,
         { [CORE_ANNOTATIONS.HIDDEN]: true }
       ),
+      objField: new Field(
+        anotherTypeID,
+        'objField',
+        innerObject,
+        { [CORE_ANNOTATIONS.HIDDEN]: true }
+      ),
     },
     path: ['records', 'hidden'],
   })
@@ -62,6 +79,7 @@ describe('hidden_values.ts', () => {
       {
         num: 1239,
         stringList: 'test,test2,123',
+        hiddenStr: 'testing',
       },
       {
         num: 23,
@@ -79,6 +97,11 @@ describe('hidden_values.ts', () => {
     notHidden: 'notHidden',
     hidden: 'Hidden',
     val: 'val',
+    objField: {
+      num: 1212,
+      stringList: 'test1,tes2,3',
+      hiddenStr: 'hiddenString',
+    },
   })
 
 
@@ -100,6 +123,8 @@ describe('hidden_values.ts', () => {
     describe('instance', () => {
       const instanceAfterHiddenRemoved = hiddenInstance.clone()
       delete instanceAfterHiddenRemoved.value.hidden
+      delete instanceAfterHiddenRemoved.value.listOfObjects[0].hiddenStr
+      delete instanceAfterHiddenRemoved.value.objField.hiddenStr
 
       const clonedHiddenInstance = hiddenInstance.clone()
 

@@ -152,7 +152,7 @@ describe('Test HubSpot client', () => {
 
       afterEach(() => {
         expect(mockGetAllInstances.mock.calls).toHaveLength(1)
-        expect(mockGetAllInstances.mock.calls[0]).toHaveLength(0)
+        expect(mockGetAllInstances.mock.calls[0]).toHaveLength(1)
       })
     })
   })

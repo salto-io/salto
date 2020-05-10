@@ -161,7 +161,8 @@ export default class HubspotClient {
     }
 
     const objectAPI = await this.extractHubspotObjectAPI(typeName)
-    const responsePromise = objectAPI.getAll()
+    // Use a high limit to avoid issues with endpoints with low defaults (doesn't effect max limits)
+    const responsePromise = objectAPI.getAll({ limit: 10000 })
     const responseValue = await responsePromise.catch((reason: StatusCodeError) => {
       if (reason.statusCode === 403) {
         return []

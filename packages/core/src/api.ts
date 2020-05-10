@@ -53,16 +53,22 @@ import {
 
 const log = logger(module)
 
-export const updateLoginConfig = async (
+export const verifyCredentials = async (
+  loginConfig: Readonly<InstanceElement>
+): Promise<void> => {
+  const adapterCreator = adapterCreators[loginConfig.elemID.adapter]
+  if (adapterCreator) {
+    await adapterCreator.validateConfig(loginConfig)
+  } else {
+    throw new Error(`unknown adapter: ${loginConfig.elemID.adapter}`)
+  }
+}
+
+export const updateCredentials = async (
   workspace: Workspace,
   newConfig: Readonly<InstanceElement>
 ): Promise<void> => {
-  const adapterCreator = adapterCreators[newConfig.elemID.adapter]
-  if (adapterCreator) {
-    await adapterCreator.validateConfig(newConfig)
-  } else {
-    throw new Error(`unknown adapter: ${newConfig.elemID.adapter}`)
-  }
+  verifyCredentials(newConfig)
   await workspace.updateServiceCredentials(newConfig.elemID.adapter, newConfig)
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }

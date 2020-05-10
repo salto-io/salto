@@ -23,7 +23,11 @@ describe('NetsuiteAdapter creator', () => {
   const credentials = new InstanceElement(
     ElemID.CONFIG_NAME,
     creator.credentialsType,
-    {} // todo fill dummy credentials
+    {
+      accountId: 'foo',
+      tokenId: 'bar',
+      tokenSecret: 'secret',
+    },
   )
   describe('validateConfig', () => {
     beforeEach(() => {

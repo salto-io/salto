@@ -19,7 +19,7 @@ import {
   addAdapter,
   getLoginStatuses,
   LoginStatus,
-  updateLoginConfig,
+  updateCredentials,
   Workspace,
   loadLocalWorkspace,
 } from '@salto-io/core'
@@ -45,7 +45,7 @@ const getLoginInputFlow = async (
 ): Promise<void> => {
   stdout.write(formatCredentialsHeader(configType.elemID.adapter))
   const newConfig = await getLoginInput(configType)
-  await updateLoginConfig(workspace, newConfig)
+  await updateCredentials(workspace, newConfig)
   stdout.write(EOL)
   stdout.write(formatLoginUpdated)
 }

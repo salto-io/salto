@@ -63,7 +63,7 @@ export const verifyCredentials = async (
   }
 }
 
-export const updateLoginConfig = async (
+export const updateCredentials = async (
   workspace: Workspace,
   newConfig: Readonly<InstanceElement>
 ): Promise<void> => {

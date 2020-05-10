@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { LoginStatus, updateLoginConfig, Workspace, loadLocalWorkspace, addAdapter } from '@salto-io/core'
+import { LoginStatus, updateCredentials, Workspace, loadLocalWorkspace, addAdapter } from '@salto-io/core'
 import { ObjectType } from '@salto-io/adapter-api'
 import { command } from '../../src/commands/services'
 import * as mocks from '../mocks'
@@ -29,7 +29,7 @@ jest.mock('@salto-io/core', () => ({
     }
     return Promise.resolve(mocks.mockConfigType(adapterName))
   }),
-  updateLoginConfig: jest.fn().mockResolvedValue(true),
+  updateCredentials: jest.fn().mockResolvedValue(true),
   getLoginStatuses: jest.fn().mockImplementation((
     _workspace: Workspace,
     serviceNames: string[]
@@ -192,11 +192,11 @@ describe('services command', () => {
 
         describe('when called with invalid credentials', () => {
           beforeEach(async () => {
-            (updateLoginConfig as jest.Mock).mockRejectedValue('Rejected!')
+            (updateCredentials as jest.Mock).mockRejectedValue('Rejected!')
             await command('', 'add', cliOutput, mockGetCredentialsFromUser, 'newAdapter').execute()
           })
           afterEach(() => {
-            (updateLoginConfig as jest.Mock).mockResolvedValue(true)
+            (updateCredentials as jest.Mock).mockResolvedValue(true)
           })
 
           it('should print login error', async () => {
@@ -251,7 +251,7 @@ describe('services command', () => {
         })
 
         it('should call update config', () => {
-          expect(updateLoginConfig).toHaveBeenCalled()
+          expect(updateCredentials).toHaveBeenCalled()
         })
 
         it('should print logged in', () => {
@@ -278,7 +278,7 @@ describe('services command', () => {
         })
 
         it('should call update config', async () => {
-          expect(updateLoginConfig).toHaveBeenCalled()
+          expect(updateCredentials).toHaveBeenCalled()
         })
 
         it('should print it logged in', async () => {
@@ -286,15 +286,15 @@ describe('services command', () => {
         })
       })
       describe('Environment flag', () => {
-        const mockUpdateLoginConfig = updateLoginConfig as jest.Mock
+        const mockupdateCredentials = updateCredentials as jest.Mock
         beforeEach(async () => {
           mockLoadWorkspace.mockClear()
-          mockUpdateLoginConfig.mockClear()
+          mockupdateCredentials.mockClear()
         })
         it('should use current env when env is not provided', async () => {
           await command('', 'login', cliOutput, mockGetCredentialsFromUser, 'salesforce').execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect((mockUpdateLoginConfig.mock.calls[0][0] as Workspace).currentEnv())
+          expect((mockupdateCredentials.mock.calls[0][0] as Workspace).currentEnv())
             .toEqual(currentEnv)
         })
         it('should use provided env', async () => {
@@ -307,7 +307,7 @@ describe('services command', () => {
             'injected'
           ).execute()
           expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-          expect((mockUpdateLoginConfig.mock.calls[0][0] as Workspace).currentEnv())
+          expect((mockupdateCredentials.mock.calls[0][0] as Workspace).currentEnv())
             .toEqual('injected')
         })
       })

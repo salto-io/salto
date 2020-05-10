@@ -294,18 +294,18 @@ describe('api.ts', () => {
     beforeEach(() => {
       jest.clearAllMocks()
     })
-    describe('updateLoginConfig', () => {
+    describe('updateCredentials', () => {
       it('Should update workspace credentials', async () => {
         const newConf = mockConfigInstance.clone()
         newConf.value.password = 'bla'
-        await api.updateLoginConfig(ws, newConf)
+        await api.updateCredentials(ws, newConf)
         expect(ws.updateServiceCredentials).toHaveBeenCalledTimes(1)
       })
       it('should call validateCredentials', async () => {
         const newConf = mockConfigInstance.clone()
         newConf.value.password = 'bla'
 
-        await api.updateLoginConfig(ws, newConf)
+        await api.updateCredentials(ws, newConf)
 
         const adapterCreator = adapterCreators.salesforce
         expect(adapterCreator.validateConfig).toHaveBeenCalledTimes(1)
@@ -350,7 +350,7 @@ describe('api.ts', () => {
     it('should persist a new config', async () => {
       const newConf = mockConfigInstance.clone()
       newConf.value.password = 'bla'
-      await api.updateLoginConfig(ws, newConf)
+      await api.updateCredentials(ws, newConf)
       expect((ws.updateServiceConfig as jest.Mock).call).toHaveLength(1)
     })
   })

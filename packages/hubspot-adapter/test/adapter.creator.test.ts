@@ -40,17 +40,6 @@ describe('HubspotAdapter creator', () => {
       expect(HubspotClient.validateCredentials).toHaveBeenCalledWith(credentials)
     })
   })
-  describe('when validateCredentials is called', () => {
-    const credentials = { apiKey: 'mykey' }
-
-    beforeEach(() => {
-      creator.validateCredentials(credentials)
-    })
-
-    it('should call validateCredentials with the correct credentials', () => {
-      expect(HubspotClient.validateCredentials).toHaveBeenCalledWith(credentials)
-    })
-  })
 
   describe('when passed a config element', () => {
     const credentials = new InstanceElement(

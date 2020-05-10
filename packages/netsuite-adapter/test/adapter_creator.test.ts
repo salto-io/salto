@@ -20,39 +20,30 @@ import NetsuiteClient from '../src/client/client'
 jest.mock('../src/client/client')
 
 describe('NetsuiteAdapter creator', () => {
-  const credentials = {
-    accountId: 'foo',
-    tokenId: 'bar',
-    tokenSecret: 'secret',
-  }
-  const credentialsConfig = new InstanceElement(
+  const credentials = new InstanceElement(
     ElemID.CONFIG_NAME,
     creator.credentialsType,
-    credentials,
+    {
+      accountId: 'foo',
+      tokenId: 'bar',
+      tokenSecret: 'secret',
+    },
   )
   describe('validateConfig', () => {
     beforeEach(() => {
-      creator.validateConfig(credentialsConfig)
+      creator.validateConfig(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', async () => {
-      expect(NetsuiteClient.validateCredentials).toHaveBeenCalledWith(credentials)
-    })
-  })
-  describe('validateCredentials', () => {
-    beforeEach(() => {
-      creator.validateCredentials(credentials)
-    })
-    it('should call validateCredentials with the correct credentials', async () => {
-      expect(NetsuiteClient.validateCredentials).toHaveBeenCalledWith(credentials)
+      expect(NetsuiteClient.validateCredentials).toHaveBeenCalledWith(credentials.value)
     })
   })
 
   describe('client creation', () => {
     it('should create the client correctly', () => {
-      creator.create({ credentials: credentialsConfig })
+      creator.create({ credentials })
       expect(NetsuiteClient).toHaveBeenCalledWith({
-        credentials: credentialsConfig.value,
+        credentials: credentials.value,
       })
     })
   })

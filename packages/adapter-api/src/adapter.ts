@@ -20,7 +20,6 @@ import { ElemID } from './element_id'
 import { Change } from './change'
 import { ChangeValidator } from './change_validators'
 import { DependencyChanger } from './dependency_changer'
-import { Value } from './values'
 
 export interface FetchResult {
   elements: Element[]
@@ -50,7 +49,6 @@ export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: s
 export type AdapterCreator = {
   create: (opts: AdapterCreatorOpts) => Adapter
   validateConfig: (config: Readonly<InstanceElement>) => Promise<void>
-  validateCredentials: (credentials: Readonly<Value>) => Promise<void>
   credentialsType: ObjectType
   configType?: ObjectType
   changeValidator?: ChangeValidator

@@ -50,9 +50,6 @@ export const creator: AdapterCreator = {
     const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)
   },
-  validateCredentials: credentials => NetsuiteClient.validateCredentials(
-    credentials as Credentials
-  ),
   credentialsType,
   changeValidator,
 }

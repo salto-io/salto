@@ -291,18 +291,28 @@ describe('api.ts', () => {
       }),
     ]
     const ws = mockWorkspace(elements)
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+    describe('updateLoginConfig', () => {
+      it('Should update workspace credentials', async () => {
+        const newConf = mockConfigInstance.clone()
+        newConf.value.password = 'bla'
+        await api.updateLoginConfig(ws, newConf)
+        expect(ws.updateServiceCredentials).toHaveBeenCalledTimes(1)
+      })
+      it('should call validateCredentials', async () => {
+        const newConf = mockConfigInstance.clone()
+        newConf.value.password = 'bla'
 
-    it('should call validateConfig', async () => {
-      const newConf = mockConfigInstance.clone()
-      newConf.value.password = 'bla'
+        await api.updateLoginConfig(ws, newConf)
 
-      await api.updateLoginConfig(ws, newConf)
-
-      const adapterCreator = adapterCreators.salesforce
-      expect(adapterCreator.validateConfig).toHaveBeenCalledTimes(1)
+        const adapterCreator = adapterCreators.salesforce
+        expect(adapterCreator.validateConfig).toHaveBeenCalledTimes(1)
+      })
     })
 
-    describe('validateConfig', () => {
+    describe('validateCredentials', () => {
       it('should throw if passed unknown adapter name', () => {
         const newConfType = new ObjectType({
           elemID: new ElemID('unknownService'),
@@ -310,8 +320,17 @@ describe('api.ts', () => {
         })
         const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType,
           mockConfigInstance.value)
-        return expect(api.updateLoginConfig(ws, newConf)).rejects
+        return expect(api.verifyCredentials(newConf)).rejects
           .toThrow('unknown adapter: unknownService')
+      })
+      it('should call validateConfig of adapterCreator', async () => {
+        const newConf = mockConfigInstance.clone()
+        newConf.value.password = 'bla'
+
+        await api.verifyCredentials(newConf)
+
+        const adapterCreator = adapterCreators.salesforce
+        expect(adapterCreator.validateConfig).toHaveBeenCalledTimes(1)
       })
     })
 

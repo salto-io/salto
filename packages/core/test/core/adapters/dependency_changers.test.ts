@@ -33,7 +33,6 @@ describe('getAdapterDependencyChangers', () => {
       update: jest.fn(),
     }),
     validateConfig: jest.fn(),
-    validateCredentials: jest.fn(),
     dependencyChanger,
   })
 

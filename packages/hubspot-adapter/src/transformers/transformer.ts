@@ -1077,6 +1077,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.ABSOLUTEURL,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: new Field(
@@ -1092,6 +1093,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.ARCHIVED]: new Field(
@@ -1106,6 +1108,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.AUTHOR,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.AUTHORAT]: new Field(
@@ -1177,6 +1180,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID,
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.CLONEDFROM]: new Field(
@@ -1347,6 +1351,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.LIVEDOMAIN,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED]: new Field(
@@ -1489,6 +1494,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE]: new Field(
@@ -1671,6 +1677,7 @@ export class Types {
             name: MARKETING_EMAIL_FIELDS.URL,
             _readOnly: true,
             [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           }
         ),
         [MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT]: new Field(

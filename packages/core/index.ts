@@ -22,6 +22,7 @@ export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
+export { default as adapterCreators } from './src/core/adapters/creators'
 export {
   Workspace, WorkspaceError, SourceFragment, StateRecency, loadWorkspace, EnvironmentsSources,
 } from './src/workspace/workspace'

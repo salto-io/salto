@@ -48,6 +48,21 @@ describe('SalesforceAdapter creator', () => {
       expect(validateCredentials).toHaveBeenCalledWith(credentials)
     })
   })
+  describe('When validateCredentials is called', () => {
+    const credentials = {
+      username: 'myUser',
+      password: 'myPassword',
+      token: 'myToken',
+      sandbox: false,
+    }
+
+    beforeEach(() => {
+      creator.validateCredentials(credentials)
+    })
+    it('should call validate credentials with the correct credentials', () => {
+      expect(validateCredentials).toHaveBeenCalledWith(credentials)
+    })
+  })
   describe('when passed config elements', () => {
     const credentials = new InstanceElement(
       ElemID.CONFIG_NAME,

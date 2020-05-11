@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/cli",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "license": "Apache-2.0",
   "description": "cli on top of salto core",
   "repository": {
@@ -35,15 +35,15 @@
     "package": "node ./package_native.js"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.14",
-    "@salto-io/adapter-utils": "0.1.14",
-    "@salto-io/core": "0.1.14",
-    "@salto-io/dag": "0.1.14",
-    "@salto-io/e2e-credentials-store": "^0.1.14",
-    "@salto-io/file": "0.1.14",
-    "@salto-io/logging": "0.1.14",
-    "@salto-io/lowerdash": "0.1.14",
-    "@salto-io/salesforce-adapter": "0.1.14",
+    "@salto-io/adapter-api": "0.1.15",
+    "@salto-io/adapter-utils": "0.1.15",
+    "@salto-io/core": "0.1.15",
+    "@salto-io/dag": "0.1.15",
+    "@salto-io/e2e-credentials-store": "0.1.15",
+    "@salto-io/file": "0.1.15",
+    "@salto-io/logging": "0.1.15",
+    "@salto-io/lowerdash": "0.1.15",
+    "@salto-io/salesforce-adapter": "0.1.15",
     "chalk": "^2.4.2",
     "figlet": "^1.2.4",
     "glob": "^7.1.6",

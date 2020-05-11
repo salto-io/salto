@@ -15,6 +15,7 @@
 */
 import {
   InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { RequestPromise } from 'requestretry'
 import HubspotClient from '../../src/client/client'
@@ -190,12 +191,21 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+        jsonTypeFileValue: new Field(
+          mockTypeWithJSONElemID, 'jsonTypeFileValue', BuiltinTypes.JSON, {
+            name: 'jsonTypeFileValue',
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
       },
     })
     const jsonString = '{ "a": "b", "c": [ "1", "2", "3"] }'
+    const jsonFile = new StaticFile('path', Buffer.from(jsonString))
     const mockValuesWithJSON = {
       name: 'jsonName',
       jsonType: jsonString,
+      jsonTypeFileValue: jsonFile,
     } as Values
     const instanceWithJson = new InstanceElement(
       'mockInstanceWithJSON',
@@ -204,6 +214,7 @@ describe('Transformer', () => {
     )
     interface JSONMetadata extends HubspotMetadata {
       jsonType: JSONType
+      jsonTypeFileValue: JSONType
     }
     interface JSONType {
       a: string
@@ -229,13 +240,24 @@ describe('Transformer', () => {
       hsClient.getOwners = jest.fn().mockImplementation(getOwners)
     })
 
-    it('should parse JSON values', async () => {
-      const metadataResult = await createHubspotMetadataFromInstanceElement(
-        instanceWithJson,
-        hsClient
-      ) as JSONMetadata
-      expect(metadataResult.jsonType).toBeDefined()
-      expect(metadataResult.jsonType).toEqual(JSON.parse(jsonString))
+    describe('handle JSON values', () => {
+      let metadataResult: JSONMetadata
+      beforeAll(async () => {
+        metadataResult = await createHubspotMetadataFromInstanceElement(
+          instanceWithJson,
+          hsClient
+        ) as JSONMetadata
+      })
+
+      it('from string value', async () => {
+        expect(metadataResult.jsonType).toBeDefined()
+        expect(metadataResult.jsonType).toEqual(JSON.parse(jsonString))
+      })
+
+      it('from file with json content', async () => {
+        expect(metadataResult.jsonTypeFileValue).toBeDefined()
+        expect(metadataResult.jsonTypeFileValue).toEqual(JSON.parse(jsonString))
+      })
     })
 
     describe('handle useridentity', () => {

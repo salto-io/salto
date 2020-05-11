@@ -11,6 +11,7 @@
 @lexer lexer
 
 main -> _nl blockItems _nl {% d => d[1] %}
+	| _nl {%d => [] %}
 block -> blockLabels __ oObj _nl blockItems _nl cObj {% d => converters.convertBlock(d[0], d[4], d[6]) %}
 	| blockLabels __ oObj _nl cObj {% d => converters.convertBlock(d[0], [], d[4]) %}
 blockItems ->
@@ -82,7 +83,3 @@ _ ->
 	null {% () => null %}
 	| %ws {% () => null %}
 __ -> %ws {% () => null %}
-# _nl  -> (%ws | %newline | %comment ):* {% () => null %}
-# __nl -> (%ws | %newline | %comment ):+ {% () => null %}
-# _ -> (%ws | %comment ):* {% () => null %}
-# __ -> (%ws | %comment ):+ {% () => null %}

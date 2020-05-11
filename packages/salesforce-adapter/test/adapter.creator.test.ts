@@ -15,61 +15,63 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { creator } from '../src/adapter_creator'
-import SalesforceClient, { validateCredentials } from '../src/client/client'
+import SalesforceClient, { validateCredentials, getOrganizationId } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
 
 describe('SalesforceAdapter creator', () => {
+  const credentials = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    creator.credentialsType,
+    {
+      username: 'myUser',
+      password: 'myPassword',
+      token: 'myToken',
+      sandbox: false,
+    }
+  )
+  const config = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    creator.configType as ObjectType,
+    {
+      metadataTypesSkippedList: ['test1'],
+      instancesRegexSkippedList: ['test3', 'test2'],
+      notExist: ['not exist'],
+    }
+  )
   describe('when validateConfig is called', () => {
-    const config = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      creator.credentialsType,
-      {
-        username: 'myUser',
-        password: 'myPassword',
-        token: 'myToken',
-        sandbox: false,
-      }
-    )
-
     beforeEach(() => {
-      creator.validateConfig(config)
+      creator.validateConfig(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', () => {
-      const credentials = {
+      expect(validateCredentials).toHaveBeenCalledWith({
         username: 'myUser',
         password: 'myPassword',
         apiToken: 'myToken',
         isSandbox: false,
-      }
-      expect(validateCredentials).toHaveBeenCalledWith(credentials)
+      })
     })
   })
-  describe('when passed config elements', () => {
-    const credentials = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      creator.credentialsType,
-      {
+
+  describe('when getOrganizationId is called', () => {
+    beforeEach(() => {
+      creator.getOrganizationId(credentials)
+    })
+
+    it('should call getOrganizationId with the correct credentials', () => {
+      expect(getOrganizationId).toHaveBeenCalledWith({
         username: 'myUser',
         password: 'myPassword',
-        token: 'myToken',
-        sandbox: false,
-      }
-    )
+        apiToken: 'myToken',
+        isSandbox: false,
+      })
+    })
+  })
 
-    const config = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      creator.configType as ObjectType,
-      {
-        metadataTypesSkippedList: ['test1'],
-        instancesRegexSkippedList: ['test3', 'test2'],
-        notExist: ['not exist'],
-      }
-    )
-
+  describe('when passed config elements', () => {
     beforeAll(() => {
       creator.create({ credentials, config })
     })

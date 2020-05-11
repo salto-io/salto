@@ -20,7 +20,7 @@ import { collections, decorators } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, DeployResult,
-  RetrieveRequest, RetrieveResult, ListMetadataQuery, UpsertResult,
+  RetrieveRequest, RetrieveResult, ListMetadataQuery, UpsertResult, UserInfo,
 } from 'jsforce'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -178,6 +178,21 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
+}
+
+let recentOrgId = ''
+const saveOrgId = (_err: Error, userInfo: UserInfo): void => {
+  // Note that this returns the 18 char organization ID and not the 15 you see in the website.
+  recentOrgId = userInfo.organizationId
+}
+
+export const getOrganizationId = async (creds: Credentials): Promise<string> => {
+  const conn = realConnection(creds.isSandbox, {
+    maxAttempts: 2,
+    retryStrategy: RetryStrategies.HTTPOrNetworkError,
+  })
+  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''), saveOrgId)
+  return recentOrgId
 }
 
 type SendChunkedArgs<TIn, TOut> = {

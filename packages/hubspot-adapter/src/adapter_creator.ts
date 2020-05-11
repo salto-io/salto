@@ -45,6 +45,7 @@ export const creator: AdapterCreator = {
     client: clientFromCredentials(opts.credentials),
   }),
   validateConfig: config => HubspotClient.validateCredentials(credentialsFromConfig(config)),
+  getOrganizationId: config => HubspotClient.getOrganizationId(credentialsFromConfig(config)),
   credentialsType,
   changeValidator,
 }

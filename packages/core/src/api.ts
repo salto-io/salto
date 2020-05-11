@@ -73,6 +73,16 @@ export const updateCredentials = async (
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }
 
+export const getOrganizationId = async (
+  config: Readonly<InstanceElement>
+): Promise<string> => {
+  const adapterCreator = adapterCreators[config.elemID.adapter]
+  if (adapterCreator) {
+    return adapterCreator.getOrganizationId(config)
+  }
+  throw new Error(`unknown adapter: ${config.elemID.adapter}`)
+}
+
 const filterElementsByServices = (
   elements: Element[] | readonly Element[],
   services: ReadonlyArray<string>

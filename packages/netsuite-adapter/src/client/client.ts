@@ -78,6 +78,10 @@ export default class NetsuiteClient {
     await netsuiteClient.setupAccount()
   }
 
+  static getOrganizationId(_credentials: Credentials): Promise<string> {
+    return Promise.resolve('') // TODO: research netsuite OrgId
+  }
+
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
     const commandsMetadataService = new CommandsMetadataService(rootCLIPath)
     commandsMetadataService.initializeCommandsMetadata()

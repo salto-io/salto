@@ -18,7 +18,7 @@ import {
   MetadataObject, ValueTypeField, MetadataInfo, SaveResult, UpsertResult,
   ListMetadataQuery, FileProperties, DescribeSObjectResult,
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator, DeployResult,
-  RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator,
+  RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo,
 } from 'jsforce'
 
 // This class is the interfaces we use from jsforce library
@@ -62,7 +62,9 @@ export type Limits = {
 }
 
 export default interface Connection {
-  login(user: string, password: string): Promise<unknown>
+  login(
+    user: string, password: string, callback?: (err: Error, res: UserInfo) => void
+  ): Promise<unknown>
   metadata: Metadata
   soap: Soap
   describeGlobal(): Promise<Global>

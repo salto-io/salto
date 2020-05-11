@@ -108,6 +108,10 @@ export default class HubspotClient {
       .then(result => result) // convert to regular promise
   }
 
+  static getOrganizationId(_credentials: Credentials): Promise<string> {
+    return Promise.resolve('') // TODO: Research hubspot orgID
+  }
+
   constructor(
     { credentials, connection }: HubspotClientOpts
   ) {

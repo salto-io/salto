@@ -203,7 +203,8 @@ export const parseBuffer = (
       const [finalFixedBuffer, blockItems, errors] = parseBuffer(
         fixedBuffer,
         filename,
-        [...prevErrors, parserError]
+        [...prevErrors, parserError],
+        true
       )
       if (!errorRecoveryMode) {
         log.debug('Finished parsing: %s (%d bytes)', filename, errors.length)

@@ -73,13 +73,10 @@ export default class NetsuiteClient {
     this.authId = hash.toMD5(this.credentials.tokenId)
   }
 
-  static async validateCredentials(credentials: Credentials): Promise<void> {
+  static async validateCredentials(credentials: Credentials): Promise<string> {
     const netsuiteClient = new NetsuiteClient({ credentials })
     await netsuiteClient.setupAccount()
-  }
-
-  static getOrganizationId(_credentials: Credentials): Promise<string> {
-    return Promise.resolve('') // TODO: research netsuite OrgId
+    return Promise.resolve('') // TODO: Find unique identifier for netsuite.
   }
 
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {

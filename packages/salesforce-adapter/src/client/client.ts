@@ -158,12 +158,18 @@ export const realConnection = (
 
 export class ApiLimitsTooLowError extends Error {}
 
-export const getRemainingDailyRequests = async (creds: Credentials): Promise<number> => {
+let recentOrgId = ''
+const saveOrgId = (_err: Error, userInfo: UserInfo): void => {
+  // Note that this returns the 18 char organization ID and not the 15 you see in the website.
+  recentOrgId = userInfo.organizationId
+}
+
+const getRemainingDailyRequests = async (creds: Credentials): Promise<number> => {
   const conn = realConnection(creds.isSandbox, {
     maxAttempts: 2,
     retryStrategy: RetryStrategies.HTTPOrNetworkError,
   })
-  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
+  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''), saveOrgId)
   const limits = await conn.limits()
   return limits.DailyApiRequests.Remaining
 }
@@ -171,27 +177,13 @@ export const getRemainingDailyRequests = async (creds: Credentials): Promise<num
 export const validateCredentials = async (
   creds: Credentials,
   minApiRequestsRemaining = 0,
-): Promise<void> => {
+): Promise<string> => {
   const remainingDailyRequests = await getRemainingDailyRequests(creds)
   if (remainingDailyRequests < minApiRequestsRemaining) {
     throw new ApiLimitsTooLowError(
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
-}
-
-let recentOrgId = ''
-const saveOrgId = (_err: Error, userInfo: UserInfo): void => {
-  // Note that this returns the 18 char organization ID and not the 15 you see in the website.
-  recentOrgId = userInfo.organizationId
-}
-
-export const getOrganizationId = async (creds: Credentials): Promise<string> => {
-  const conn = realConnection(creds.isSandbox, {
-    maxAttempts: 2,
-    retryStrategy: RetryStrategies.HTTPOrNetworkError,
-  })
-  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''), saveOrgId)
   return recentOrgId
 }
 

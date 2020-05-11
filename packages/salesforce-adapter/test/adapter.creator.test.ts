@@ -15,7 +15,7 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { creator } from '../src/adapter_creator'
-import SalesforceClient, { validateCredentials, getOrganizationId } from '../src/client/client'
+import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 
 jest.mock('../src/client/client')
@@ -41,28 +41,13 @@ describe('SalesforceAdapter creator', () => {
       notExist: ['not exist'],
     }
   )
-  describe('when validateConfig is called', () => {
+  describe('when validateCredentials is called', () => {
     beforeEach(() => {
-      creator.validateConfig(credentials)
+      creator.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', () => {
       expect(validateCredentials).toHaveBeenCalledWith({
-        username: 'myUser',
-        password: 'myPassword',
-        apiToken: 'myToken',
-        isSandbox: false,
-      })
-    })
-  })
-
-  describe('when getOrganizationId is called', () => {
-    beforeEach(() => {
-      creator.getOrganizationId(credentials)
-    })
-
-    it('should call getOrganizationId with the correct credentials', () => {
-      expect(getOrganizationId).toHaveBeenCalledWith({
         username: 'myUser',
         password: 'myPassword',
         apiToken: 'myToken',

@@ -48,11 +48,8 @@ export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: s
 
 export type AdapterCreator = {
   create: (opts: AdapterCreatorOpts) => Adapter
-  validateConfig: (config: Readonly<InstanceElement>) => Promise<void>
-  /* Org Id is a unique identifier for adapter workspace. If 3 sets of credentials point
-   * to the same adapter workspace, all credentials should have the same org id.
-   */
-  getOrganizationId: (config: Readonly<InstanceElement>) => Promise<string>
+  // Return a unique identifier for the environment which the credentials point to.
+  validateCredentials: (config: Readonly<InstanceElement>) => Promise<string>
   credentialsType: ObjectType
   configType?: ObjectType
   changeValidator?: ChangeValidator

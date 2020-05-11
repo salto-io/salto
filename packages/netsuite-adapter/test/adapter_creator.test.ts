@@ -29,9 +29,9 @@ describe('NetsuiteAdapter creator', () => {
       tokenSecret: 'secret',
     },
   )
-  describe('validateConfig', () => {
+  describe('validateCredentials', () => {
     beforeEach(() => {
-      creator.validateConfig(credentials)
+      creator.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', async () => {

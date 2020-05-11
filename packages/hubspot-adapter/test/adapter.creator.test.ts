@@ -20,7 +20,7 @@ import HubspotClient from '../src/client/client'
 jest.mock('../src/client/client')
 
 describe('HubspotAdapter creator', () => {
-  describe('when validateConfig is called', () => {
+  describe('when validateCredentials is called', () => {
     const config = new InstanceElement(
       ElemID.CONFIG_NAME,
       creator.credentialsType,
@@ -30,7 +30,7 @@ describe('HubspotAdapter creator', () => {
     )
 
     beforeEach(() => {
-      creator.validateConfig(config)
+      creator.validateCredentials(config)
     })
 
     it('should call validateCredentials with the correct credentials', () => {

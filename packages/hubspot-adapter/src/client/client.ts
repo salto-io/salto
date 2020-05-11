@@ -100,16 +100,12 @@ export default class HubspotClient {
   private conn: Connection
   private readonly hubspotObjectAPI: Record<string, HubspotObjectAPI>
 
-  static validateCredentials(credentials: Credentials): Promise<void> {
+  static validateCredentials(credentials: Credentials): Promise<string> {
     const { apiKey } = credentials
     const connection = new Hubspot({ apiKey })
 
     return connection.integrations.getAccountDetails()
       .then(result => result) // convert to regular promise
-  }
-
-  static getOrganizationId(_credentials: Credentials): Promise<string> {
-    return Promise.resolve('') // TODO: Research hubspot orgID
   }
 
   constructor(

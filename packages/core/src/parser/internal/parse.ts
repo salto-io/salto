@@ -15,6 +15,8 @@
 */
 import * as nearley from 'nearley'
 import _ from 'lodash'
+
+import { logger } from '@salto-io/logging'
 import { startParse, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
 import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression, SourceRange } from './types'
 import { WILDCARD } from './lexer'
@@ -22,6 +24,7 @@ import { WILDCARD } from './lexer'
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
 
+const log = logger(module)
 const SURROUNDING_LINE_CONTEXT = 2
 const MAX_FILE_ERRORS = 20
 // This value was set for the longest minimal length of an empty non-literal
@@ -169,8 +172,12 @@ const hasFatalError = (src: string): boolean => src.includes(
 export const parseBuffer = (
   src: string,
   filename: string,
-  prevErrors: HclParseError[] = []
+  prevErrors: HclParseError[] = [],
+  errorRecoveryMode = false
 ): [string, HclExpression[], HclParseError[]] => {
+  if (!errorRecoveryMode) {
+    log.debug('Started parsing: %s (%d bytes)', filename, src.length)
+  }
   const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
   try {
     hclParser.feed(src)
@@ -196,12 +203,19 @@ export const parseBuffer = (
       const [finalFixedBuffer, blockItems, errors] = parseBuffer(
         fixedBuffer,
         filename,
-        [...prevErrors, parserError]
+        [...prevErrors, parserError],
+        true
       )
+      if (!errorRecoveryMode) {
+        log.debug('Finished parsing: %s (%d bytes)', filename, errors.length)
+      }
       return [finalFixedBuffer,
         restoreOrigBlockRanges(blockItems, parserError.subject.start), errors]
     }
     return [src, [], [...prevErrors, parserError]]
+  }
+  if (!errorRecoveryMode) {
+    log.debug('Finished parsing: %s', filename)
   }
   const blockItems = hclParser.finish()[0]
   return [src, blockItems, prevErrors]

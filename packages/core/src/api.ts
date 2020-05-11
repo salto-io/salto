@@ -68,7 +68,7 @@ export const updateCredentials = async (
   workspace: Workspace,
   newConfig: Readonly<InstanceElement>
 ): Promise<void> => {
-  verifyCredentials(newConfig)
+  await verifyCredentials(newConfig)
   await workspace.updateServiceCredentials(newConfig.elemID.adapter, newConfig)
   log.debug(`persisted new configs for adapter: ${newConfig.elemID.adapter}`)
 }

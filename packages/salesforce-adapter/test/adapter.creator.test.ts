@@ -15,7 +15,7 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { creator } from '../src/adapter_creator'
-import SalesforceClient from '../src/client/client'
+import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 
 jest.mock('../src/client/client')
@@ -47,7 +47,7 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('should call validateCredentials with the correct credentials', () => {
-      expect(SalesforceClient.validateCredentials).toHaveBeenCalledWith({
+      expect(validateCredentials).toHaveBeenCalledWith({
         username: 'myUser',
         password: 'myPassword',
         apiToken: 'myToken',

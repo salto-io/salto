@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Adapter } from '@salto-io/e2e-credentials-store'
-import SalesforceClient, { Credentials } from '../../src/client/client'
+import { Credentials, validateCredentials } from '../../src/client/client'
 
 type Args = {
   username: string
@@ -49,9 +49,7 @@ const adapter: Adapter<Args, Credentials> = {
     apiToken: args['api-token'],
     isSandbox: args.sandbox,
   }),
-  validateCredentials: config => SalesforceClient.validateCredentials(
-    config
-  ) as unknown as Promise<void>,
+  validateCredentials: config => validateCredentials(config) as unknown as Promise<void>,
 }
 
 export default adapter

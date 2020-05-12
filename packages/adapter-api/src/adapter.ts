@@ -45,11 +45,12 @@ export type ServiceIds = Record<string, string>
 export const toServiceIdsString = (serviceIds: ServiceIds): string =>
   Object.entries(serviceIds).sort().toString()
 export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
+export type AccountId = string
 
 export type AdapterCreator = {
   create: (opts: AdapterCreatorOpts) => Adapter
-  // Return a unique identifier for the environment which the credentials point to.
-  validateCredentials: (config: Readonly<InstanceElement>) => Promise<string>
+  // Return a unique identifier for the account which the credentials point to.
+  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
   credentialsType: ObjectType
   configType?: ObjectType
   changeValidator?: ChangeValidator

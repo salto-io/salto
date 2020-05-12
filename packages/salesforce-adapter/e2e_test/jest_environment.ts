@@ -21,9 +21,10 @@ import {
   JestEnvironmentConstructorArgs,
 } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import SalesforceClient, {
+import {
   Credentials,
   ApiLimitsTooLowError,
+  validateCredentials,
 } from '../src/client/client'
 
 
@@ -53,7 +54,7 @@ export const credsSpec = (envName?: string): CredsSpec<Credentials> => {
     },
     validate: async (creds: Credentials): Promise<void> => {
       try {
-        await SalesforceClient.validateCredentials(creds, MIN_API_REQUESTS_NEEDED)
+        await validateCredentials(creds, MIN_API_REQUESTS_NEEDED)
       } catch (e) {
         if (e instanceof ApiLimitsTooLowError) {
           throw new SuspendCredentialsError(e, NOT_ENOUGH_API_REQUESTS_SUSPENSION_TIMEOUT)

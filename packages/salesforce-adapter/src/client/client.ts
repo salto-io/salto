@@ -156,8 +156,6 @@ export const realConnection = (
   return connection
 }
 
-export class ApiLimitsTooLowError extends Error {}
-
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]
   sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>
@@ -214,6 +212,38 @@ const sendChunked = async <TIn, TOut>({
   }
 }
 
+export class ApiLimitsTooLowError extends Error {}
+
+export const getConnectionDetails = async (creds: Credentials, connection? : Connection): Promise<{
+  remainingDailyRequests: number
+  orgId: string
+}> => {
+  const conn = connection || realConnection(creds.isSandbox, {
+    maxAttempts: 2,
+    retryStrategy: RetryStrategies.HTTPOrNetworkError,
+  })
+  const userInfo = await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
+  const limits = await conn.limits()
+  return {
+    remainingDailyRequests: limits.DailyApiRequests.Remaining,
+    orgId: userInfo.organizationId,
+  }
+}
+
+export const validateCredentials = async (
+  creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
+): Promise<string> => {
+  const { remainingDailyRequests, orgId } = await getConnectionDetails(
+    creds, connection
+  )
+  if (remainingDailyRequests < minApiRequestsRemaining) {
+    throw new ApiLimitsTooLowError(
+      `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
+    )
+  }
+  return orgId
+}
+
 export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
@@ -225,36 +255,6 @@ export default class SalesforceClient {
     this.credentials = credentials
     this.conn = connection
       || realConnection(credentials.isSandbox, retryOptions || DEFAULT_RETRY_OPTS)
-  }
-
-  public static async getConnectionDetails(creds: Credentials): Promise<{
-    remainingDailyRequests: number
-    orgId: string
-  }> {
-    const conn = realConnection(creds.isSandbox, {
-      maxAttempts: 2,
-      retryStrategy: RetryStrategies.HTTPOrNetworkError,
-    })
-    const userInfo = await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
-    const limits = await conn.limits()
-    return {
-      remainingDailyRequests: limits.DailyApiRequests.Remaining,
-      orgId: userInfo.organizationId,
-    }
-  }
-
-  public static async validateCredentials(
-    creds: Credentials, minApiRequestsRemaining = 0
-  ): Promise<string> {
-    const { remainingDailyRequests, orgId } = await SalesforceClient.getConnectionDetails(
-      creds
-    )
-    if (remainingDailyRequests < minApiRequestsRemaining) {
-      throw new ApiLimitsTooLowError(
-        `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
-      )
-    }
-    return orgId
   }
 
   private async ensureLoggedIn(): Promise<void> {

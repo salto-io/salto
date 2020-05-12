@@ -17,7 +17,10 @@ import Connection, { Metadata, Soap } from '../src/client/jsforce'
 import { createEncodedZipContent } from './utils'
 
 const mockJsforce: () => Connection = () => ({
-  login: () => Promise.resolve({ id: '', organizationId: '', url: '' }),
+  login: jest.fn().mockImplementation(
+    (_user: string, _password: string) =>
+      Promise.resolve({ id: '', organizationId: '', url: '' })
+  ),
   metadata: {
     describe: jest.fn().mockImplementation(() => Promise.resolve({ metadataObjects: [] })),
     describeValueType: jest.fn().mockImplementation(() => Promise.resolve([])),

@@ -19,7 +19,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, ElemIdGetter,
+  ADAPTER, ElemIdGetter, CORE_ANNOTATIONS, isType,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -265,7 +265,9 @@ const fetchAndProcessMergeErrors = async (
 }
 
 const removeElementsHiddenValues = (serviceElements: ReadonlyArray<Element>):
-  Element[] => serviceElements.map(elem => removeHiddenValues(elem))
+  Element[] => serviceElements
+  .filter(e => !isType(e) || !(e.annotations[CORE_ANNOTATIONS.HIDDEN] === true))
+  .map(elem => removeHiddenValues(elem))
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all service elements should be consider as "add" changes.
@@ -327,7 +329,9 @@ export const fetchChanges = async (
   const isFirstFetch = _.isEmpty(workspaceElements.concat(stateElements)
     .filter(e => !e.elemID.isConfig()))
   const changes = isFirstFetch
-    ? serviceElements.map(toAddFetchChange)
+    ? serviceElements
+      .filter(e => !isType(e) || !(e.annotations[CORE_ANNOTATIONS.HIDDEN] === true))
+      .map(toAddFetchChange)
     : await calcFetchChanges(
       serviceElements,
       processErrorsResult.keptElements,

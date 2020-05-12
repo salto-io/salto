@@ -30,7 +30,12 @@ export const addHiddenValues = (
 ): Element[] => {
   const stateElementsMap = createElementsMap(stateElements)
 
-  return workspaceElements.map(elem => {
+  // Types (hidden) from state
+  const hiddenTypes = stateElements.filter(e => !isInstanceElement(e))
+    .filter(e => e.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
+
+  // Workspace instances after addition of hidden values from state
+  const instancesWithHiddenValues = workspaceElements.map(elem => {
     const stateElement = stateElementsMap[elem.elemID.getFullName()]
     if (isInstanceElement(elem) && stateElement !== undefined) {
       const createHiddenMapCallback: TransformFunc = ({ value, field }) => {
@@ -50,6 +55,8 @@ export const addHiddenValues = (
     }
     return elem
   })
+
+  return instancesWithHiddenValues.concat(hiddenTypes)
 }
 
 export const removeHiddenValues = (elem: Element):

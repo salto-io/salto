@@ -12,14 +12,14 @@
 
 main -> _nl blockItems _nl {% d => d[1] %}
 	| _nl {%d => [] %}
-block -> blockLabels __ oObj _nl blockItems _nl cObj {% d => converters.convertBlock(d[0], d[4], d[6]) %}
-	| blockLabels __ oObj _nl cObj {% d => converters.convertBlock(d[0], [], d[4]) %}
+block -> blockLabels %ws oObj _nl blockItems _nl cObj {% d => converters.convertBlock(d[0], d[4], d[6]) %}
+	| blockLabels %ws oObj _nl cObj {% d => converters.convertBlock(d[0], [], d[4]) %}
 blockItems ->
 	  blockItem {% d => d %}
 	| blockItems __nl blockItem {% d => d[0].concat(d[2]) %}
 blockLabels ->
 	label {% d => d %}
-	| blockLabels __ label {% d => d[0].concat(d[2]) %}
+	| blockLabels %ws label {% d => d[0].concat(d[2]) %}
 label ->
 	  %word {% id %}
 	| string {% id %}
@@ -64,7 +64,6 @@ multilineString -> %mlStart (reference {% id %} | content {% id %}):* %mlEnd {% 
 stringEnd -> "\"" {% id %} | %wildcard {% id %}
 content -> %content {% id %} | %wildcard {% id %}
 reference -> %reference {% id %} | %wildcard {% id %}
-word -> %word {% id %} | %wildcard {% id %}
 oArr -> "[" {% id %} | %wildcard {% id %}
 cArr -> "]" {% id %} | %wildcard {% id %}
 oObj -> "{" {% id %} | %wildcard {% id %}
@@ -82,4 +81,3 @@ __nl ->
 _ ->
 	null {% () => null %}
 	| %ws {% () => null %}
-__ -> %ws {% () => null %}

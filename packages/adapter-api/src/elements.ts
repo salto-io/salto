@@ -138,12 +138,12 @@ export class ListType extends Element {
  */
 export class Field extends Element {
   public constructor(
-    public parentID: ElemID,
+    public parent: ObjectType,
     public name: string,
     public type: TypeElement,
     annotations: Values = {},
   ) {
-    super({ elemID: parentID.createNestedID('field', name), annotations })
+    super({ elemID: parent.elemID.createNestedID('field', name), annotations })
   }
 
   isEqual(other: Field): boolean {
@@ -159,7 +159,7 @@ export class Field extends Element {
    */
   clone(annotations?: Values): Field {
     return new Field(
-      this.parentID,
+      this.parent,
       this.name,
       this.type,
       annotations === undefined ? _.cloneDeep(this.annotations) : annotations,
@@ -211,6 +211,11 @@ export class PrimitiveType extends Element {
   }
 }
 
+export type FieldDefinition = {
+  name: string
+  type: TypeElement
+  annotations?: Values
+}
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
@@ -220,21 +225,26 @@ export class ObjectType extends Element {
 
   constructor({
     elemID,
-    fields = {},
+    fields = [],
     annotationTypes = {},
     annotations = {},
     isSettings = false,
     path = undefined,
   }: {
     elemID: ElemID
-    fields?: FieldMap
+    fields?: ReadonlyArray<FieldDefinition>
     annotationTypes?: TypeMap
     annotations?: Values
     isSettings?: boolean
     path?: ReadonlyArray<string>
   }) {
     super({ elemID, annotationTypes, annotations, path })
-    this.fields = fields
+    this.fields = Object.assign(
+      {},
+      ...fields.map(({ name, type, annotations: fieldAnnotations }) => (
+        { [name]: new Field(this, name, type, fieldAnnotations) }
+      ))
+    )
     this.isSettings = isSettings
   }
 
@@ -268,7 +278,7 @@ export class ObjectType extends Element {
 
     const res: ObjectType = new ObjectType({
       elemID: this.elemID,
-      fields: clonedFields,
+      fields: Object.values(clonedFields),
       annotationTypes: clonedAnnotationTypes,
       annotations: clonedAnnotations,
       isSettings,

@@ -49,7 +49,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2]
     // Adding new field
-    saltoOffice.fields.new = new Field(saltoOffice.elemID, 'new', BuiltinTypes.STRING)
+    saltoOffice.fields.new = new Field(saltoOffice, 'new', BuiltinTypes.STRING)
     // Sub element change
     saltoOffice.fields.location.annotations.label = 'new label'
     const plan = await getPlan(allElements, afterElements)
@@ -103,7 +103,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
   planWithSplitElem: async isAdd => {
     const afterElements = mock.getAllElements()
     const [,, saltoOffice, saltoEmployee] = afterElements
-    saltoOffice.fields.test = new Field(saltoOffice.elemID, 'test', BuiltinTypes.STRING)
+    saltoOffice.fields.test = new Field(saltoOffice, 'test', BuiltinTypes.STRING)
     const depChanger: DependencyChanger = async changes => {
       const changeByElem = new Map(
         wu(changes).map(([id, change]) => [getChangeElement(change).elemID.getFullName(), id]),

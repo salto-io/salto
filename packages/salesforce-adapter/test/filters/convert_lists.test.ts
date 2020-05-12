@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, Value,
+  ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, Value,
   isListType, isObjectType, ListType,
 } from '@salto-io/adapter-api'
 import { makeFilter, UnorderedList } from '../../src/filters/convert_lists'
@@ -29,64 +29,61 @@ describe('convert lists filter', () => {
   const mockObjNoInstancesId = new ElemID(constants.SALESFORCE, 'noInstances')
   const mockTypeNoInstances = new ObjectType({
     elemID: mockObjNoInstancesId,
-    fields: {
-      single: new Field(mockObjNoInstancesId, 'single', BuiltinTypes.STRING),
-    },
+    fields: [
+      { name: 'single', type: BuiltinTypes.STRING },
+    ],
   })
 
-  const mockInnerInnerObjId = new ElemID(constants.SALESFORCE, 'innerInner')
+  const innerFields = [
+    { name: 'key', type: BuiltinTypes.STRING },
+    { name: 'list', type: BuiltinTypes.STRING },
+  ]
+
   const mockInnerFieldType = new ObjectType({
-    elemID: mockInnerInnerObjId,
-    fields: {
-      key: new Field(mockInnerInnerObjId, 'key', BuiltinTypes.STRING),
-      list: new Field(mockInnerInnerObjId, 'list', BuiltinTypes.STRING),
-    },
+    elemID: new ElemID(constants.SALESFORCE, 'innerInner'),
+    fields: innerFields,
   })
 
-  const mockInnerObjId = new ElemID(constants.SALESFORCE, 'inner')
+  const fieldTypeFields = [
+    { name: 'key', type: BuiltinTypes.STRING },
+    { name: 'value', type: BuiltinTypes.STRING },
+    { name: 'list', type: BuiltinTypes.STRING },
+  ]
+
   const mockFieldType = new ObjectType({
-    elemID: mockInnerObjId,
-    fields: {
-      key: new Field(mockInnerObjId, 'key', BuiltinTypes.STRING),
-      value: new Field(mockInnerObjId, 'value', BuiltinTypes.STRING),
-      list: new Field(mockInnerObjId, 'list', BuiltinTypes.STRING),
-      listOfObj: new Field(mockInnerObjId, 'innerOfObj', mockInnerFieldType),
-    },
+    elemID: new ElemID(constants.SALESFORCE, 'inner'),
+    fields: [
+      ...fieldTypeFields,
+      { name: 'listOfObj', type: mockInnerFieldType },
+    ],
   })
-  const mockInnerInnerObjIdB = new ElemID(constants.SALESFORCE, 'innerInnerB')
   const mockInnerFieldTypeB = new ObjectType({
-    elemID: mockInnerInnerObjIdB,
-    fields: {
-      key: new Field(mockInnerInnerObjIdB, 'key', BuiltinTypes.STRING),
-      list: new Field(mockInnerInnerObjIdB, 'list', BuiltinTypes.STRING),
-    },
+    elemID: new ElemID(constants.SALESFORCE, 'innerInnerB'),
+    fields: innerFields,
   })
-  const mockInnerObjIdB = new ElemID(constants.SALESFORCE, 'innerB')
   const mockFieldTypeB = new ObjectType({
-    elemID: mockInnerObjIdB,
-    fields: {
-      key: new Field(mockInnerObjIdB, 'keyB', BuiltinTypes.STRING),
-      value: new Field(mockInnerObjIdB, 'valueB', BuiltinTypes.STRING),
-      list: new Field(mockInnerObjIdB, 'listB', BuiltinTypes.STRING),
-      listOfObj: new Field(mockInnerObjIdB, 'innerOfObjB', mockInnerFieldTypeB),
-    },
+    elemID: new ElemID(constants.SALESFORCE, 'innerB'),
+    fields: [
+      ...fieldTypeFields,
+      { name: 'listOfObj', type: mockInnerFieldTypeB },
+    ],
   })
 
   const mockObjToSortId = new ElemID(constants.SALESFORCE, 'objToSort')
   const mockTypeToSort = new ObjectType({
     elemID: mockObjToSortId,
-    fields: {
-      sortByMe: new Field(mockObjToSortId, 'sortByMe', BuiltinTypes.STRING),
-      other: new Field(mockObjToSortId, 'other', BuiltinTypes.STRING),
-    },
+    fields: [
+      { name: 'sortByMe', type: BuiltinTypes.STRING },
+      { name: 'other', type: BuiltinTypes.STRING },
+    ],
   })
 
   const nestedMockObjToSortId = new ElemID(constants.SALESFORCE, 'nestedObjToSort')
   const nestedMockTypeToSort = new ObjectType({
     elemID: nestedMockObjToSortId,
-    fields: {
-      nestedAnnoToSort: new Field(nestedMockObjToSortId, 'nestedAnnoToSort', mockTypeToSort),
-    },
+    fields: [
+      { name: 'nestedAnnoToSort', type: mockTypeToSort },
+    ],
   })
 
   const mockObjWithAnnotationsId = new ElemID(constants.SALESFORCE, 'objWithAnnotations')
@@ -102,23 +99,26 @@ describe('convert lists filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
-    fields: {
-      lst: new Field(mockObjId, 'lst', BuiltinTypes.STRING),
-      single: new Field(mockObjId, 'single', BuiltinTypes.STRING),
-      ordered: new Field(mockObjId, 'ordered', mockFieldType),
-      unordered: new Field(mockObjId, 'unordered', mockFieldType),
-      singleHardcoded: new Field(mockObjId, 'singleHardcoded', BuiltinTypes.STRING),
-      singleObjHardcoded: new Field(mockObjId, 'singleObjHardcoded', mockFieldTypeB),
-      emptyHardcoded: new Field(mockObjId, 'emptyHardcoded', BuiltinTypes.STRING),
-      fieldWithAnnotations: new Field(mockObjId, 'fieldWithAnnotations',
-        mockFieldTypeWithAnnotations, {
+    fields: [
+      { name: 'lst', type: BuiltinTypes.STRING },
+      { name: 'single', type: BuiltinTypes.STRING },
+      { name: 'ordered', type: mockFieldType },
+      { name: 'unordered', type: mockFieldType },
+      { name: 'singleHardcoded', type: BuiltinTypes.STRING },
+      { name: 'singleObjHardcoded', type: mockFieldTypeB },
+      { name: 'emptyHardcoded', type: BuiltinTypes.STRING },
+      {
+        name: 'fieldWithAnnotations',
+        type: mockFieldTypeWithAnnotations,
+        annotations: {
           annotationToSort: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
           otherAnnotation: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
           nestedAnnoToSort: {
             nested: [{ sortByMe: 'B', other: 'A' }, { sortByMe: 'A', other: 'B' }],
           },
-        }),
-    },
+        },
+      },
+    ],
     annotationTypes: {
       objAnnotationToSort: mockTypeToSort,
       otherObjAnnotation: mockTypeToSort,

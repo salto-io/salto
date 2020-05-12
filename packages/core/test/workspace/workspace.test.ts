@@ -298,8 +298,9 @@ describe('workspace', () => {
       elemID: newElemID,
       path: ['test', 'new'],
     })
+    const fieldsParent = new ObjectType({ elemID: new ElemID('salesforce', 'lead') })
     const oldField = new Field(
-      new ElemID('salesforce', 'lead'),
+      fieldsParent,
       'not_a_list_yet_field',
       BuiltinTypes.NUMBER,
       {},
@@ -307,7 +308,7 @@ describe('workspace', () => {
     const newField = oldField.clone()
     newField.type = new ListType(newField.type)
     const anotherNewField = new Field(
-      new ElemID('salesforce', 'lead'),
+      fieldsParent,
       'lala',
       new ListType(BuiltinTypes.NUMBER),
       {},

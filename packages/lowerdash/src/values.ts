@@ -13,30 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as collections from './collections'
-import * as promises from './promises'
-import * as types from './types'
-import * as decorators from './decorators'
-import * as streams from './streams'
-import * as strings from './strings'
-import * as functions from './functions'
-import * as retry from './retry'
-import * as validators from './validators'
-import * as stack from './stack'
-import * as hash from './hash'
-import * as values from './values'
-
-export {
-  collections,
-  promises,
-  types,
-  decorators,
-  streams,
-  strings,
-  functions,
-  retry,
-  validators,
-  stack,
-  hash,
-  values,
-}
+export const isDefined = <T>(val: T | undefined): val is T => val !== undefined

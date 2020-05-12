@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  ObjectType, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction,
 } from '@salto-io/adapter-api'
 import {
@@ -28,20 +28,26 @@ import { FilterWith } from '../../src/filter'
 describe('animation rules filter', () => {
   const animationRuleType = new ObjectType({
     elemID: ANIMATION_RULE_TYPE_ID,
-    fields: {
-      [ANIMATION_FREQUENCY]: new Field(ANIMATION_RULE_TYPE_ID, ANIMATION_FREQUENCY,
-        BuiltinTypes.STRING, {
+    fields: [
+      {
+        name: ANIMATION_FREQUENCY,
+        type: BuiltinTypes.STRING,
+        annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['always', 'often', 'rarely', 'sometimes'],
           }),
-        }),
-      [RECORD_TYPE_CONTEXT]: new Field(ANIMATION_RULE_TYPE_ID, RECORD_TYPE_CONTEXT,
-        BuiltinTypes.STRING, {
+        },
+      },
+      {
+        name: RECORD_TYPE_CONTEXT,
+        type: BuiltinTypes.STRING,
+        annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['All', 'Custom', 'Master'],
           }),
-        }),
-    },
+        },
+      },
+    ],
   })
 
   const mockAnimationRuleInstance = new InstanceElement('object_type', animationRuleType,

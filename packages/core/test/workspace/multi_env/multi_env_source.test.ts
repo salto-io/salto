@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { ElemID, Field, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -28,34 +28,22 @@ import { DetailedChange } from '../../../src/core/plan'
 jest.spyOn(utils, 'applyInstancesDefaults')
 
 const objectElemID = new ElemID('salto', 'object')
-const commonField = new Field(objectElemID, 'commonField', BuiltinTypes.STRING)
-const envField = new Field(objectElemID, 'envField', BuiltinTypes.STRING)
-const inactiveField = new Field(objectElemID, 'inactiveField', BuiltinTypes.STRING)
 const commonFragment = new ObjectType({
   elemID: objectElemID,
-  fields: {
-    commonField,
-  },
+  fields: [{ name: 'commonField', type: BuiltinTypes.STRING }],
 })
 const envFragment = new ObjectType({
   elemID: objectElemID,
-  fields: {
-    envField,
-  },
+  fields: [{ name: 'envField', type: BuiltinTypes.STRING }],
 })
-
 const inactiveFragment = new ObjectType({
   elemID: objectElemID,
-  fields: {
-    inactiveField,
-  },
+  fields: [{ name: 'inactiveField', type: BuiltinTypes.STRING }],
 })
 const commonElemID = new ElemID('salto', 'common')
 const commonObject = new ObjectType({
   elemID: commonElemID,
-  fields: {
-    field: new Field(commonElemID, 'field', BuiltinTypes.STRING),
-  },
+  fields: [{ name: 'field', type: BuiltinTypes.STRING }],
 })
 const commonNaclFiles = {
   'common.nacl': [commonObject],
@@ -82,9 +70,7 @@ const commonErrors = new Errors({
 const envElemID = new ElemID('salto', 'env')
 const envObject = new ObjectType({
   elemID: envElemID,
-  fields: {
-    field: new Field(envElemID, 'field', BuiltinTypes.STRING),
-  },
+  fields: [{ name: 'field', type: BuiltinTypes.STRING }],
 })
 const envSourceRange = {
   start: { col: 0, line: 0, byte: 0 },
@@ -110,9 +96,7 @@ const envNaclFiles = {
 const inactiveElemID = new ElemID('salto', 'inactive')
 const inactiveObject = new ObjectType({
   elemID: inactiveElemID,
-  fields: {
-    field: new Field(inactiveElemID, 'field', BuiltinTypes.STRING),
-  },
+  fields: [{ name: 'field', type: BuiltinTypes.STRING }],
 })
 const inactiveNaclFiles = {
   'inenv.nacl': [inactiveObject],
@@ -225,10 +209,10 @@ describe('multi env source', () => {
   describe('get', () => {
     it('should return the merged element', async () => {
       const elem = (await source.get(objectElemID)) as ObjectType
-      expect(elem.fields).toEqual({
-        commonField,
-        envField,
-      })
+      expect(Object.keys(elem.fields).sort()).toEqual([
+        'commonField',
+        'envField',
+      ])
     })
     it('should not return the elements from inactive envs', async () => {
       expect(await source.get(inactiveElemID)).not.toBeDefined()
@@ -244,10 +228,10 @@ describe('multi env source', () => {
       )
       expect(elements).not.toContain(inactiveObject)
       const obj = elements.find(e => _.isEqual(e.elemID, objectElemID)) as ObjectType
-      expect(obj.fields).toEqual({
-        commonField,
-        envField,
-      })
+      expect(Object.keys(obj.fields).sort()).toEqual([
+        'commonField',
+        'envField',
+      ])
     })
   })
   describe('getTotalSize', () => {

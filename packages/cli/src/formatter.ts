@@ -17,12 +17,12 @@ import _ from 'lodash'
 import chalk from 'chalk'
 import wu from 'wu'
 import {
-  isType, Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
+  Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
   ActionName, ChangeError, SaltoError, isElement, TypeMap,
 } from '@salto-io/adapter-api'
 import {
-  Plan, PlanItem, FoundSearchResult, SearchResult, DetailedChange, WorkspaceError,
+  Plan, PlanItem, DetailedChange, WorkspaceError,
   SourceFragment, FetchChange, FetchResult, SourceRange,
 } from '@salto-io/core'
 import Prompts from './prompts'
@@ -230,13 +230,6 @@ export const formatDetailedChanges = (
     .join('\n\n')
 }
 
-const formatElementDescription = (element: Element): string => {
-  if (isType(element) && element.annotations.description) {
-    return [emptyLine(), element.annotations.description].join('\n')
-  }
-  return emptyLine()
-}
-
 const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
@@ -302,30 +295,6 @@ export const formatExecutionPlan = (
     emptyLine(),
     emptyLine(),
   ].join('\n')
-}
-
-export const formatSearchResults = (result: SearchResult): string => {
-  const notifyDescribeNoMatch = (): string => warn(Prompts.DESCRIBE_NOT_FOUND)
-  const notifyDescribeNearMatch = (searchResult: FoundSearchResult): string => [
-    header(Prompts.DESCRIBE_NEAR_MATCH),
-    emptyLine(),
-    subHeader(`\t${Prompts.DID_YOU_MEAN} ${chalk.bold(searchResult.key)}?`),
-    emptyLine(),
-  ].join('\n')
-
-  if (!(result && result.element)) {
-    return notifyDescribeNoMatch()
-  }
-  if (result.isGuess) {
-    return notifyDescribeNearMatch(result)
-  }
-  const { element } = result
-  const elementName = element.elemID.getFullName()
-  const title = header(`=== ${elementName} ===`)
-  const description = subHeader(formatElementDescription(element))
-  // TODO - Change to dump HCL
-  const elementHcl = body(JSON.stringify(element, null, 2))
-  return [title, description, elementHcl].join('\n')
 }
 
 const deployPhaseIndent = 2

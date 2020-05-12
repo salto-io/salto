@@ -16,7 +16,7 @@
 import wu from 'wu'
 import { GroupedNodeMap } from '@salto-io/dag'
 import {
-  BuiltinTypes, Change, Element, ElemID, Field, getChangeElement, InstanceElement,
+  BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -145,28 +145,27 @@ export const elements = (): Element[] => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
-    fields: {
-      country: new Field(addrElemID, 'country', BuiltinTypes.STRING),
-      city: new Field(addrElemID, 'city', BuiltinTypes.STRING),
-    },
+    fields: [
+      { name: 'country', type: BuiltinTypes.STRING },
+      { name: 'city', type: BuiltinTypes.STRING },
+    ],
   })
   saltoAddr.annotationTypes.label = BuiltinTypes.STRING
 
   const officeElemID = new ElemID('salto', 'office')
   const saltoOffice = new ObjectType({
     elemID: officeElemID,
-    fields: {
-      name: new Field(officeElemID, 'name', BuiltinTypes.STRING),
-      location: new Field(
-        officeElemID,
-        'location',
-        saltoAddr,
-        {
+    fields: [
+      { name: 'name', type: BuiltinTypes.STRING },
+      {
+        name: 'location',
+        type: saltoAddr,
+        annotations: {
           label: 'Office Location',
           description: 'A location of an office',
         },
-      ),
-    },
+      },
+    ],
     annotations: {
       description: 'Office type in salto',
     },
@@ -176,37 +175,31 @@ export const elements = (): Element[] => {
   const employeeElemID = new ElemID('salto', 'employee')
   const saltoEmployee = new ObjectType({
     elemID: employeeElemID,
-    fields: {
-      name: new Field(
-        employeeElemID,
-        'name',
-        BuiltinTypes.STRING,
-        { _required: true },
-      ),
-      nicknames: new Field(
-        employeeElemID,
-        'nicknames',
-        new ListType(BuiltinTypes.STRING),
-        {},
-      ),
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      employee_resident: new Field(
-        employeeElemID,
-        'employee_resident',
-        saltoAddr,
-        { label: 'Employee Resident' }
-      ),
-      company: new Field(
-        employeeElemID,
-        'company',
-        BuiltinTypes.STRING,
-        { _default: 'salto' },
-      ),
-      office: new Field(
-        employeeElemID,
-        'office',
-        saltoOffice,
-        {
+    fields: [
+      {
+        name: 'name',
+        type: BuiltinTypes.STRING,
+        annotations: { _required: true },
+      },
+      {
+        name: 'nicknames',
+        type: new ListType(BuiltinTypes.STRING),
+        annotations: {},
+      },
+      {
+        name: 'employee_resident',
+        type: saltoAddr,
+        annotations: { label: 'Employee Resident' },
+      },
+      {
+        name: 'company',
+        type: BuiltinTypes.STRING,
+        annotations: { _default: 'salto' },
+      },
+      {
+        name: 'office',
+        type: saltoOffice,
+        annotations: {
           label: 'Based In',
           name: {
             [CORE_ANNOTATIONS.DEFAULT]: 'HQ',
@@ -220,8 +213,8 @@ export const elements = (): Element[] => {
             },
           },
         },
-      ),
-    },
+      },
+    ],
   })
 
   const saltoEmployeeInstance = new InstanceElement(
@@ -304,12 +297,12 @@ export const mockConfigType = (adapterName: string): ObjectType => {
   const configID = new ElemID(adapterName)
   return new ObjectType({
     elemID: configID,
-    fields: {
-      username: new Field(configID, 'username', BuiltinTypes.STRING),
-      password: new Field(configID, 'password', BuiltinTypes.STRING),
-      token: new Field(configID, 'token', BuiltinTypes.STRING),
-      sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
-    },
+    fields: [
+      { name: 'username', type: BuiltinTypes.STRING },
+      { name: 'password', type: BuiltinTypes.STRING },
+      { name: 'token', type: BuiltinTypes.STRING },
+      { name: 'sandbox', type: BuiltinTypes.BOOLEAN },
+    ],
     annotationTypes: {},
     annotations: {},
   })
@@ -369,9 +362,7 @@ export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement
   const configElemID = new ElemID('salesforce')
   const configType = new ObjectType({
     elemID: configElemID,
-    fields: {
-      test: new Field(configElemID, 'test', new ListType(BuiltinTypes.STRING)),
-    },
+    fields: [{ name: 'test', type: new ListType(BuiltinTypes.STRING) }],
   })
   const configInstance = new InstanceElement(ElemID.CONFIG_NAME, configType, { test: [] })
   const updatedConfig = configInstance.clone()

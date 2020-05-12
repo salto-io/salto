@@ -1218,8 +1218,6 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const instance = new InstanceElement(instanceElementName, new ObjectType({
         elemID: mockElemID,
-        fields: {
-        },
         annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
@@ -1288,12 +1286,12 @@ describe('Salesforce adapter E2E with real account', () => {
           deploymentStatus: BuiltinTypes.STRING,
           enableHistory: BuiltinTypes.BOOLEAN,
           nameField: new ObjectType({ elemID: nameFieldElemID,
-            fields: {
-              [constants.LABEL]: new Field(nameFieldElemID, constants.LABEL, BuiltinTypes.STRING),
-              type: new Field(nameFieldElemID, 'type', BuiltinTypes.STRING),
-              displayFormat: new Field(nameFieldElemID, 'displayFormat', BuiltinTypes.STRING),
-              startingNumber: new Field(nameFieldElemID, 'startingNumber', BuiltinTypes.NUMBER),
-            } }),
+            fields: [
+              { name: constants.LABEL, type: BuiltinTypes.STRING },
+              { name: 'type', type: BuiltinTypes.STRING },
+              { name: 'displayFormat', type: BuiltinTypes.STRING },
+              { name: 'startingNumber', type: BuiltinTypes.NUMBER },
+            ] }),
         },
         annotations: {
           [constants.API_NAME]: customObjectName,
@@ -1307,27 +1305,25 @@ describe('Salesforce adapter E2E with real account', () => {
             startingNumber: 123,
           },
         },
-        fields: {
-          description: new Field(
-            mockElemID,
-            'description',
-            stringType,
-            {
+        fields: [
+          {
+            name: 'description',
+            type: stringType,
+            annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
               [constants.LABEL]: 'description label',
             },
-          ),
-          formula: new Field(
-            mockElemID,
-            'formula',
-            stringType,
-            {
+          },
+          {
+            name: 'formula',
+            type: stringType,
+            annotations: {
               [constants.LABEL]: 'Test formula',
               [constants.FORMULA]: '"some text"',
             },
-          ),
-        },
+          },
+        ],
       })
 
       await removeElementIfAlreadyExists(client, element)
@@ -1370,18 +1366,17 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.API_NAME]: customObjectName,
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
-        fields: {
-          description: new Field(
-            mockElemID,
-            'description',
-            stringType,
-            {
+        fields: [
+          {
+            name: 'description',
+            type: stringType,
+            annotations: {
               [constants.LABEL]: 'test label',
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.DEFAULT_VALUE_FORMULA]: '"test"',
             },
-          ),
-        },
+          },
+        ],
       })
       // Setup
       await createElementAndVerify(adapter, client, element)
@@ -1394,24 +1389,22 @@ describe('Salesforce adapter E2E with real account', () => {
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify fields')
       const oldElement = new ObjectType({
         elemID: mockElemID,
-        fields: {
-          address: new Field(
-            mockElemID,
-            'address',
-            stringType,
-            {
+        fields: [
+          {
+            name: 'address',
+            type: stringType,
+            annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
             },
-          ),
-          banana: new Field(
-            mockElemID,
-            'banana',
-            stringType,
-            {
+          },
+          {
+            name: 'banana',
+            type: stringType,
+            annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
-          ),
-        },
+          },
+        ],
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test',
@@ -1429,21 +1422,19 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const newElement = new ObjectType({
         elemID: mockElemID,
-        fields: {
-          banana: new Field(
-            mockElemID,
-            'banana',
-            stringType,
-            {
+        fields: [
+          {
+            name: 'banana',
+            type: stringType,
+            annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
             },
-          ),
-          description: new Field(
-            mockElemID,
-            'description',
-            stringType,
-          ),
-        },
+          },
+          {
+            name: 'description',
+            type: stringType,
+          },
+        ],
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
@@ -1470,8 +1461,6 @@ describe('Salesforce adapter E2E with real account', () => {
       const mockElemID = new ElemID(constants.SALESFORCE, 'test')
       const oldInstance = new InstanceElement(instanceElementName, new ObjectType({
         elemID: mockElemID,
-        fields: {
-        },
         annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
@@ -1544,8 +1533,6 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const newInstance = new InstanceElement(instanceElementName, new ObjectType({
         elemID: mockElemID,
-        fields: {
-        },
         annotationTypes: {},
         annotations: {
           [constants.METADATA_TYPE]: PROFILE_METADATA_TYPE,
@@ -1688,41 +1675,40 @@ describe('Salesforce adapter E2E with real account', () => {
 
     it("should modify an object's annotations", async () => {
       const customObjectName = 'TestModifyCustomAnnotations__c'
-      const mockElemID = new ElemID(constants.SALESFORCE, 'test modify annotations')
-      const nameFieldElemID = new ElemID(constants.SALESFORCE, 'NameField')
+      const nameFieldType = new ObjectType({
+        elemID: new ElemID(constants.SALESFORCE, 'NameField'),
+        fields: [
+          { name: constants.LABEL, type: BuiltinTypes.STRING },
+          { name: 'type', type: BuiltinTypes.STRING },
+          { name: 'displayFormat', type: BuiltinTypes.STRING },
+          { name: 'startingNumber', type: BuiltinTypes.NUMBER },
+        ],
+      })
       const oldElement = new ObjectType({
-        elemID: mockElemID,
-        fields: {
-          address: new Field(
-            mockElemID,
-            'address',
-            stringType,
-            {
+        elemID: new ElemID(constants.SALESFORCE, 'test modify annotations'),
+        fields: [
+          {
+            name: 'address',
+            type: stringType,
+            annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Address',
             },
-          ),
-          banana: new Field(
-            mockElemID,
-            'banana',
-            stringType,
-            {
+          },
+          {
+            name: 'banana',
+            type: stringType,
+            annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
               [constants.LABEL]: 'Banana',
               [constants.BUSINESS_STATUS]: 'Active',
               [constants.SECURITY_CLASSIFICATION]: 'Public',
             },
-          ),
-        },
+          },
+        ],
         annotationTypes: {
           deploymentStatus: BuiltinTypes.STRING,
-          nameField: new ObjectType({ elemID: nameFieldElemID,
-            fields: {
-              [constants.LABEL]: new Field(nameFieldElemID, constants.LABEL, BuiltinTypes.STRING),
-              type: new Field(nameFieldElemID, 'type', BuiltinTypes.STRING),
-              displayFormat: new Field(nameFieldElemID, 'displayFormat', BuiltinTypes.STRING),
-              startingNumber: new Field(nameFieldElemID, 'startingNumber', BuiltinTypes.NUMBER),
-            } }),
+          nameField: nameFieldType,
         },
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1743,53 +1729,30 @@ describe('Salesforce adapter E2E with real account', () => {
       await removeElementIfAlreadyExists(client, oldElement)
       await createElementAndVerify(adapter, client, oldElement)
 
-      const newElement = new ObjectType({
-        elemID: mockElemID,
-        fields: {
-          address: new Field(
-            mockElemID,
-            'address',
-            stringType,
-            {
-              [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
-              [constants.LABEL]: 'Address',
-            },
-          ),
-          banana: new Field(
-            mockElemID,
-            'banana',
-            stringType,
-            {
-              [constants.API_NAME]: apiNameAnno(customObjectName, 'Banana__c'),
-              [constants.LABEL]: 'Banana Split',
-              [constants.BUSINESS_STATUS]: 'Hidden',
-              [constants.SECURITY_CLASSIFICATION]: 'Restricted',
-              [constants.COMPLIANCE_GROUP]: 'GDPR',
-            },
-          ),
-        },
-        annotationTypes: {
-          deploymentStatus: BuiltinTypes.STRING,
-          nameField: new ObjectType({ elemID: nameFieldElemID,
-            fields: {
-              [constants.LABEL]: new Field(nameFieldElemID, constants.LABEL, BuiltinTypes.STRING),
-              type: new Field(nameFieldElemID, 'type', BuiltinTypes.STRING),
-              displayFormat: new Field(nameFieldElemID, 'displayFormat', BuiltinTypes.STRING),
-              startingNumber: new Field(nameFieldElemID, 'startingNumber', BuiltinTypes.NUMBER),
-            } }),
-        },
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
+      const newElement = oldElement.clone()
+      // Change field annotations
+      Object.assign(
+        newElement.fields.banana.annotations,
+        {
+          [constants.LABEL]: 'Banana Split',
+          [constants.BUSINESS_STATUS]: 'Hidden',
+          [constants.SECURITY_CLASSIFICATION]: 'Restricted',
+          [constants.COMPLIANCE_GROUP]: 'GDPR',
+        }
+      )
+      // Change type annotations
+      Object.assign(
+        newElement.annotations,
+        {
           [constants.DEFAULT_VALUE_FORMULA]: 'test2',
           [constants.LABEL]: 'test label 2',
-          [constants.API_NAME]: customObjectName,
           deploymentStatus: 'Deployed',
           nameField: {
             [constants.LABEL]: customObjectName,
             type: 'Text',
           },
-        },
-      })
+        }
+      )
 
       // Test
       const modificationResult = await adapter.update(oldElement, newElement,
@@ -1830,17 +1793,16 @@ describe('Salesforce adapter E2E with real account', () => {
       const mockElemID = new ElemID(constants.SALESFORCE, 'test modify field and annotation')
       const oldElement = new ObjectType({
         elemID: mockElemID,
-        fields: {
-          address: new Field(
-            mockElemID,
-            'address',
-            stringType,
-            {
+        fields: [
+          {
+            name: 'address',
+            type: stringType,
+            annotations: {
               [constants.API_NAME]: apiNameAnno(customObjectName, 'Address__c'),
               [constants.LABEL]: 'Field Label',
             },
-          ),
-        },
+          },
+        ],
         annotations: {
           [constants.LABEL]: 'Object Label',
           [constants.API_NAME]: customObjectName,
@@ -2342,25 +2304,20 @@ describe('Salesforce adapter E2E with real account', () => {
           customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
           const newCustomObject = new ObjectType({
             elemID: mockElemID,
-            fields: _(Object.values(customFieldsObject.fields))
+            fields: Object.values(customFieldsObject.fields)
               .map(field => {
                 const name = [
                   masterDetailFieldName,
                   lookupFieldName,
                 ].includes(field.name) ? `${testAddFieldPrefix}${field.name}` : field.name
-                const newField = field.clone()
-                newField.annotations[constants.API_NAME] = `${customObjectAddFieldsName}.${name}`
+                const annotations = _.cloneDeep(field.annotations)
+                annotations[constants.API_NAME] = `${customObjectAddFieldsName}.${name}`
 
                 if (name === multiSelectPicklistFieldName) {
-                  newField.annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
+                  annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
                 }
-                return [
-                  name,
-                  new Field(mockElemID, name, newField.type, newField.annotations),
-                ]
-              })
-              .fromPairs()
-              .value(),
+                return { name, type: field.type, annotations }
+              }),
             annotations: {
               [constants.API_NAME]: customObjectAddFieldsName,
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
@@ -2614,7 +2571,7 @@ describe('Salesforce adapter E2E with real account', () => {
             const addRollupSummaryField = async (): Promise<ObjectType> => {
               const caseAfterFieldAddition = origCase.clone()
               caseAfterFieldAddition.fields[rollupSummaryFieldName] = new Field(
-                caseAfterFieldAddition.elemID,
+                caseAfterFieldAddition,
                 rollupSummaryFieldName,
                 Types.primitiveDataTypes.Summary,
                 {
@@ -3143,7 +3100,15 @@ describe('Salesforce adapter E2E with real account', () => {
       ].join(constants.API_NAME_SEPERATOR)
       const oldElement = new ObjectType({
         elemID: mockElemID,
-        fields: {},
+        fields: [{
+          name: fieldName,
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [constants.API_NAME]: lookupFieldApiFullName,
+            [constants.LABEL]: fieldName,
+            [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
+          },
+        }],
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
@@ -3152,16 +3117,6 @@ describe('Salesforce adapter E2E with real account', () => {
         },
       })
 
-      oldElement.fields[fieldName] = new Field(
-        mockElemID,
-        fieldName,
-        Types.primitiveDataTypes.Lookup,
-        {
-          [constants.API_NAME]: lookupFieldApiFullName,
-          [constants.LABEL]: fieldName,
-          [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
-        },
-      )
       if (await objectExists(client, constants.CUSTOM_OBJECT, customObjectName)) {
         await adapter.remove(oldElement)
       }
@@ -3173,6 +3128,25 @@ describe('Salesforce adapter E2E with real account', () => {
 
       const newElement = new ObjectType({
         elemID: mockElemID,
+        fields: [{
+          name: fieldName,
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [constants.API_NAME]: lookupFieldApiFullName,
+            [constants.LABEL]: fieldName,
+            [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
+            [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
+              [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
+              [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Info message',
+              [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: true,
+              [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [
+                { [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+                  [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+                  [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id' },
+              ],
+            },
+          },
+        }],
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
@@ -3180,27 +3154,6 @@ describe('Salesforce adapter E2E with real account', () => {
           [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
         },
       })
-
-      newElement.fields[fieldName] = new Field(
-        mockElemID,
-        fieldName,
-        Types.primitiveDataTypes.Lookup,
-        {
-          [constants.API_NAME]: lookupFieldApiFullName,
-          [constants.LABEL]: fieldName,
-          [constants.FIELD_ANNOTATIONS.REFERENCE_TO]: ['Case'],
-          [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
-            [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
-            [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'Info message',
-            [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: true,
-            [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [
-              { [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
-                [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-                [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id' },
-            ],
-          },
-        },
-      )
 
       // Test
       const modificationResult = await adapter.update(oldElement, newElement,
@@ -3226,7 +3179,6 @@ describe('Salesforce adapter E2E with real account', () => {
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add default topic for objects')
       const element = new ObjectType({
         elemID: mockElemID,
-        fields: {},
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
@@ -3249,7 +3201,6 @@ describe('Salesforce adapter E2E with real account', () => {
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add element topic for objects')
       const element = new ObjectType({
         elemID: mockElemID,
-        fields: {},
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',
@@ -3280,7 +3231,6 @@ describe('Salesforce adapter E2E with real account', () => {
       const mockElemID = new ElemID(constants.SALESFORCE, 'test add topic for objects')
       const oldElement = new ObjectType({
         elemID: mockElemID,
-        fields: {},
         annotations: {
           [CORE_ANNOTATIONS.REQUIRED]: false,
           [constants.LABEL]: 'test label',

@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  Field, BuiltinTypes, INSTANCE_ANNOTATIONS, ListType,
+  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser/parse'
@@ -66,18 +66,24 @@ describe('Salto Dump', () => {
 
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
+    fields: [
+      { name: 'name', type: strType, annotations: { label: 'Name' } },
+      { name: 'num', type: numType },
+      { name: 'list', type: new ListType(strType) },
+      {
+        name: 'field',
+        type: fieldType,
+        annotations: {
+          alice: 1,
+          bob: 2,
+          tom: true,
+          jerry: 'mouse',
+        },
+      },
+    ],
     annotationTypes: {
       ServiceId: BuiltinTypes.SERVICE_ID,
     },
-  })
-  model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
-  model.fields.num = new Field(model.elemID, 'num', numType)
-  model.fields.list = new Field(model.elemID, 'list', new ListType(strType), {})
-  model.fields.field = new Field(model.elemID, 'field', fieldType, {
-    alice: 1,
-    bob: 2,
-    tom: true,
-    jerry: 'mouse',
   })
 
   model.annotate({

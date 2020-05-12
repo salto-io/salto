@@ -13,90 +13,54 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ListType, ElemID, Field, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
+import { ListType, ElemID, ObjectType, BuiltinTypes, TypeElement, FieldDefinition } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import { HUBSPOT } from '../../src/constants'
 
 const objectElemID = new ElemID(HUBSPOT, 'object')
 const innerObjectElemID = new ElemID(HUBSPOT, 'innerObject')
-const simpleField = (name: string, parentElemID: ElemID): Field =>
-  new Field(
-    parentElemID, name,
-    Types.userIdentifierType, {
-      name,
-      _readOnly: false,
-    },
-  )
-const stringListField = (parentElemID: ElemID): Field =>
-  new Field(
-    parentElemID, 'stringList',
-    new ListType(Types.userIdentifierType), {
-      name: 'stringList',
-      _readOnly: false,
-    },
-  )
-const stringArrayField = (parentElemID: ElemID): Field =>
-  new Field(
-    parentElemID, 'stringArray',
-    new ListType(Types.userIdentifierType), {
-      name: 'stringArray',
-      _readOnly: false,
-    },
-  )
-const strField = (parentElemID: ElemID): Field =>
-  new Field(
-    parentElemID, 'str', BuiltinTypes.STRING, {
-      name: 'str',
-    }
-  )
+const simpleField = (
+  name: string, type: TypeElement = Types.userIdentifierType,
+): FieldDefinition => (
+  { name, type, annotations: { name, _readOnly: false } }
+)
+
+const stringListField = (name: string): ReturnType<typeof simpleField> =>
+  simpleField(name, new ListType(Types.userIdentifierType))
+
+const strField = {
+  name: 'str',
+  type: BuiltinTypes.STRING,
+  annotations: {
+    name: 'str',
+  },
+}
+
 const innerObject = new ObjectType(
   {
     elemID: innerObjectElemID,
-    fields: {
-      str: strField(innerObjectElemID),
-      simple: simpleField('simple', innerObjectElemID),
-      simpleNum: simpleField('simpleNum', innerObjectElemID),
-      stringList: stringListField(innerObjectElemID),
-      stringArray: stringArrayField(innerObjectElemID),
-    },
+    fields: [
+      strField,
+      simpleField('simple'),
+      simpleField('simpleNum'),
+      stringListField('stringList'),
+      stringListField('stringArray'),
+    ],
   }
 )
 export const useridentifierObjectType = new ObjectType(
   {
     elemID: objectElemID,
-    fields: {
-      str: strField(objectElemID),
-      simple: simpleField('simple', objectElemID),
-      simpleNum: simpleField('simpleNum', objectElemID),
-      stringList: stringListField(objectElemID),
-      stringArray: stringArrayField(objectElemID),
-      objField: new Field(
-        objectElemID, 'objField', innerObject, {
-          name: 'objField',
-          _readOnly: false,
-        },
-      ),
-      listOfObjField: new Field(
-        objectElemID, 'listOfObjField',
-        new ListType(innerObject), {
-          name: 'listOfObjField',
-          _readOnly: false,
-        },
-      ),
-      listOfListOfObjField: new Field(
-        objectElemID, 'listOfListOfObjField',
-        new ListType(new ListType(innerObject)), {
-          name: 'listOfListOfObjField',
-          _readOnly: false,
-        }
-      ),
-      listOfListOfListOfObjField: new Field(
-        objectElemID, 'listOfListOfListOfObjField',
-        new ListType(new ListType(new ListType(innerObject))), {
-          name: 'listOfListOfListOfObjField',
-          _readOnly: false,
-        }
-      ),
-    },
+    fields: [
+      strField,
+      simpleField('simple'),
+      simpleField('simpleNum'),
+      stringListField('stringList'),
+      stringListField('stringArray'),
+      simpleField('objField', innerObject),
+      simpleField('listOfObjField', new ListType(innerObject)),
+      simpleField('listOfListOfObjField', new ListType(new ListType(innerObject))),
+      simpleField('listOfListOfListOfObjField', new ListType(new ListType(new ListType(innerObject)))),
+    ],
   }
 )

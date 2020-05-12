@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import {
-  Element, ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
+  ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
   PrimitiveTypes, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { WorkspaceError, FetchChange } from '@salto-io/core'
-import { formatSearchResults, formatExecutionPlan, formatChange,
+import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
   formatChangeErrors, formatConfigChangeNeeded } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
@@ -55,54 +55,6 @@ describe('formatter', () => {
     sourceFragments: [],
     severity: 'Error',
   }
-  describe('formatSearchResults', () => {
-    const find = (name: string): Element =>
-      elements().find(e => e.elemID.getFullName() === name) as Element
-
-    it('should formatSearchResults for unknown element', async () => {
-      expect(formatSearchResults(null)).toMatch('Unknown element type.')
-    })
-
-    it('should formatSearchResults when proper desc is provided', async () => {
-      const output = formatSearchResults({
-        key: 'salto.office',
-        element: find('salto.office'),
-        isGuess: false,
-      })
-      expect(output).toMatch('=== salto.office ===')
-      expect(output).toMatch('Office Location')
-      expect(output).toMatch('address')
-    })
-
-    it('should output proper value when proper desc is provided for list', async () => {
-      const output = formatSearchResults({
-        key: 'salto.employee.nicknames',
-        element: (find('salto.employee') as ObjectType).fields.nicknames.type,
-        isGuess: false,
-      })
-      expect(output).toMatch('=== list<string> ===')
-    })
-
-    it('should output proper value when proper desc is provided for inner fields', async () => {
-      const output = formatSearchResults({
-        key: 'salto.office.location',
-        element: (find('salto.office') as ObjectType).fields.location.type,
-        isGuess: false,
-      })
-      expect(output).toMatch('=== salto.address ===')
-    })
-
-    it('should suggest proper value when proper desc is provided start path', async () => {
-      const output = formatSearchResults({
-        key: 'salto.office.location.city',
-        element: ((find('salto.office') as ObjectType).fields.location.type as ObjectType)
-          .fields.city.type,
-        isGuess: true,
-      })
-      expect(output).toMatch('Could not find what you were looking for.')
-      expect(output).toMatch('salto.office.location.city')
-    })
-  })
 
   describe('createPlanOutput', () => {
     const plan = preview()

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, ObjectType, ElemID, BuiltinTypes, Field, ReferenceExpression, ListType } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, ListType } from '@salto-io/adapter-api'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, METADATA_TYPE, CUSTOM_OBJECT, API_NAME, CUSTOM_FIELD } from '../../src/constants'
 import { replaceInstances, groupByAPIName } from '../../src/filters/instance_references'
 
@@ -27,23 +27,21 @@ describe('instance_reference filter', () => {
   const objTypeID = new ElemID(SALESFORCE, 'obj')
   const nestedType = new ObjectType({
     elemID: nestedId,
-    fields: {
-      parentObj: new Field(objTypeID, parentObjFieldName, BuiltinTypes.STRING),
-      otherRefObj: new Field(objTypeID, otherRefObjName, BuiltinTypes.STRING),
-    },
+    fields: [
+      { name: parentObjFieldName, type: BuiltinTypes.STRING },
+      { name: otherRefObjName, type: BuiltinTypes.STRING },
+    ],
   })
   const objType = new ObjectType({
     annotations: { [METADATA_TYPE]: 'obj' },
     elemID: objTypeID,
-    fields: {
-      reg: new Field(objTypeID, 'reg', BuiltinTypes.STRING),
-      parentObj: new Field(objTypeID, parentObjFieldName, BuiltinTypes.STRING),
-      otherRefObj: new Field(objTypeID, otherRefObjName, BuiltinTypes.STRING),
-      parentObjNested: new Field(objTypeID, 'parentObjNested', nestedType, {}),
-      parentObjArr: new Field(
-        objTypeID, parentObjFieldName, new ListType(BuiltinTypes.STRING), {},
-      ),
-    },
+    fields: [
+      { name: 'reg', type: BuiltinTypes.STRING },
+      { name: parentObjFieldName, type: BuiltinTypes.STRING },
+      { name: otherRefObjName, type: BuiltinTypes.STRING },
+      { name: 'parentObjNested', type: nestedType },
+      { name: 'parentObjArr', type: new ListType(BuiltinTypes.STRING) },
+    ],
   })
 
   // Instances
@@ -81,13 +79,15 @@ describe('instance_reference filter', () => {
 
   const fieldToTypeMap = new Map<string, string>(
     [
-      [new ElemID(SALESFORCE, objTypeID.typeName, 'field', parentObjFieldName).getFullName(), objTypeID.typeName],
-      [new ElemID(SALESFORCE, objTypeID.typeName, 'field', otherRefObjName).getFullName(), 'nonExistingType'],
+      [objType.fields.parentObj.elemID.getFullName(), objTypeID.typeName],
+      [objType.fields.parentObjArr.elemID.getFullName(), objTypeID.typeName],
+      [nestedType.fields.parentObj.elemID.getFullName(), objTypeID.typeName],
+      [objType.fields.otherRefObj.elemID.getFullName(), 'nonExistingType'],
     ]
   )
 
   // Run the filter
-  const elementsToFilter = _.cloneDeep(elements)
+  const elementsToFilter = elements.map(elem => elem.clone())
   replaceInstances(elementsToFilter, fieldToTypeMap)
   const parentInstanceFiltered = elementsToFilter[0]
   const referrerInstanceFiltered = elementsToFilter[1]
@@ -154,10 +154,9 @@ describe('instance_reference filter', () => {
         [API_NAME]: 'Target',
       },
       elemID: targetElemID,
-      fields: {
-        [fieldName]: new Field(targetElemID, fieldName, BuiltinTypes.STRING,
-          { [API_NAME]: 'Target.Field' }),
-      },
+      fields: [{
+        name: fieldName, type: BuiltinTypes.STRING, annotations: { [API_NAME]: 'Target.Field' },
+      }],
     })
 
     const srcId = new ElemID(SALESFORCE, 'src')
@@ -166,10 +165,10 @@ describe('instance_reference filter', () => {
     const srcType = new ObjectType({
       annotations: { [METADATA_TYPE]: 'src' },
       elemID: srcId,
-      fields: {
-        [srcObj]: new Field(srcId, srcObj, BuiltinTypes.STRING),
-        [srcField]: new Field(srcId, srcField, BuiltinTypes.STRING),
-      },
+      fields: [
+        { name: srcObj, type: BuiltinTypes.STRING },
+        { name: srcField, type: BuiltinTypes.STRING },
+      ],
     })
 
     const srcInstance = new InstanceElement('srcInstace', srcType, {

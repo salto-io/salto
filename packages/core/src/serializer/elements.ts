@@ -163,7 +163,7 @@ export const deserialize = async (
     ),
     ObjectType: v => new ObjectType({
       elemID: reviveElemID(v.elemID),
-      fields: v.fields,
+      fields: Object.values(v.fields),
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
@@ -180,7 +180,7 @@ export const deserialize = async (
       v.innerType
     ),
     Field: v => new Field(
-      reviveElemID(v.parentID),
+      new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
       v.name,
       v.type,
       v.annotations,

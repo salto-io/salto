@@ -19,7 +19,6 @@ import {
   CORE_ANNOTATIONS,
   Element,
   ElemID,
-  Field,
   InstanceElement,
   ObjectType,
   PrimitiveType,
@@ -45,12 +44,12 @@ const SERVICES = ['salesforce']
 const configID = new ElemID(SERVICES[0])
 const mockConfigType = new ObjectType({
   elemID: configID,
-  fields: {
-    username: new Field(configID, 'username', BuiltinTypes.STRING),
-    password: new Field(configID, 'password', BuiltinTypes.STRING),
-    token: new Field(configID, 'token', BuiltinTypes.STRING),
-    sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
-  },
+  fields: [
+    { name: 'username', type: BuiltinTypes.STRING },
+    { name: 'password', type: BuiltinTypes.STRING },
+    { name: 'token', type: BuiltinTypes.STRING },
+    { name: 'sandbox', type: BuiltinTypes.BOOLEAN },
+  ],
 })
 const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
   username: 'test@test',
@@ -99,20 +98,18 @@ describe('api.ts', () => {
 
   const typeWithHiddenField = new ObjectType({
     elemID: new ElemID(SERVICES[0], 'dummyHidden'),
-    fields: {
-      hidden: new Field(
-        new ElemID(SERVICES[0], 'dummyHidden'),
-        'hidden',
-        BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.HIDDEN]: true }
-      ),
-      regField: new Field(
-        new ElemID(SERVICES[0], 'dummyHidden'),
-        'regField',
-        BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.HIDDEN]: false }
-      ),
-    },
+    fields: [
+      {
+        name: 'hidden',
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      },
+      {
+        name: 'regField',
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+      },
+    ],
   })
 
   describe('fetch', () => {
@@ -319,7 +316,7 @@ describe('api.ts', () => {
       it('should throw if passed unknown adapter name', () => {
         const newConfType = new ObjectType({
           elemID: new ElemID('unknownService'),
-          fields: mockConfigType.fields,
+          fields: Object.values(mockConfigType.fields),
         })
         const newConf = new InstanceElement(ElemID.CONFIG_NAME, newConfType,
           mockConfigInstance.value)

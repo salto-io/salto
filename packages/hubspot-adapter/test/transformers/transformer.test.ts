@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
+  InstanceElement, ElemID, Values, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import { RequestPromise } from 'requestretry'
 import HubspotClient from '../../src/client/client'
@@ -71,70 +71,86 @@ describe('Transformer', () => {
 
     const mockSubType = new ObjectType({
       elemID: mockSubTypeElemID,
-      fields: {
-        subSame: new Field(
-          mockSubTypeElemID, 'subSame', BuiltinTypes.STRING, {
+      fields: [
+        {
+          name: 'subSame',
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'subSame',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        subAutoGen: new Field(
-          mockSubTypeElemID, 'subAutoGen', BuiltinTypes.STRING, {
+        },
+        {
+          name: 'subAutoGen',
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'subAutoGen',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-      },
+        },
+      ],
     })
 
     const mockObject = new ObjectType({
       elemID: mockTypeElemID,
-      fields: {
-        name: new Field(
-          mockTypeElemID, 'name', BuiltinTypes.STRING, {
+      fields: [
+        {
+          name: 'name',
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'name',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        autoGen: new Field(
-          mockTypeElemID, 'autoGen', BuiltinTypes.STRING, {
+        },
+        {
+          name: 'autoGen',
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'autoGen',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        subType: new Field(
-          mockTypeElemID, 'subType', mockSubType, {
+        },
+        {
+          name: 'subType',
+          type: mockSubType,
+          annotations: {
             name: 'subType',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        listSubType: new Field(
-          mockTypeElemID, 'listSubType', new ListType(mockSubType), {
+        },
+        {
+          name: 'listSubType',
+          type: new ListType(mockSubType),
+          annotations: {
             name: 'listSubType',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        list: new Field(
-          mockTypeElemID, 'list', new ListType(BuiltinTypes.STRING), {
+        },
+        {
+          name: 'list',
+          type: new ListType(BuiltinTypes.STRING),
+          annotations: {
             name: 'list',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        diff: new Field(
-          mockTypeElemID, 'diff', BuiltinTypes.STRING, {
+        },
+        {
+          name: 'diff',
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'diff',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-      },
+        },
+      ],
     })
 
     const instance = new InstanceElement(
@@ -182,22 +198,26 @@ describe('Transformer', () => {
     const mockTypeWithJSONElemID = new ElemID(HUBSPOT, 'mockType')
     const mockObjectWithJSON = new ObjectType({
       elemID: mockTypeWithJSONElemID,
-      fields: {
-        jsonType: new Field(
-          mockTypeWithJSONElemID, 'jsonType', BuiltinTypes.JSON, {
+      fields: [
+        {
+          name: 'jsonType',
+          type: BuiltinTypes.JSON,
+          annotations: {
             name: 'jsonType',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        jsonTypeFileValue: new Field(
-          mockTypeWithJSONElemID, 'jsonTypeFileValue', BuiltinTypes.JSON, {
+        },
+        {
+          name: 'jsonTypeFileValue',
+          type: BuiltinTypes.JSON,
+          annotations: {
             name: 'jsonTypeFileValue',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-      },
+        },
+      ],
     })
     const jsonString = '{ "a": "b", "c": [ "1", "2", "3"] }'
     const mockValuesWithJSON = {

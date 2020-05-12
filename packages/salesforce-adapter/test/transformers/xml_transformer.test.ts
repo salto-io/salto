@@ -15,7 +15,7 @@
 */
 import jszip from 'jszip'
 import {
-  BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, ListType,
+  BuiltinTypes, ElemID, InstanceElement, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
@@ -39,11 +39,11 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'AssignmentRules',
         },
-        fields: {
-          str: new Field(ASSIGNMENT_RULES_TYPE_ID, 'str', BuiltinTypes.STRING),
-          lst: new Field(ASSIGNMENT_RULES_TYPE_ID, 'lst', new ListType(BuiltinTypes.NUMBER), {}),
-          bool: new Field(ASSIGNMENT_RULES_TYPE_ID, 'bool', BuiltinTypes.BOOLEAN),
-        },
+        fields: [
+          { name: 'str', type: BuiltinTypes.STRING },
+          { name: 'lst', type: new ListType(BuiltinTypes.NUMBER) },
+          { name: 'bool', type: BuiltinTypes.BOOLEAN },
+        ],
       })
       const assignmentRuleInstance = new InstanceElement(
         'instance',
@@ -93,10 +93,10 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'ApexClass',
         },
-        fields: {
-          [apiVersion]: new Field(apexTypeElemID, apiVersion, BuiltinTypes.NUMBER),
-          content: new Field(apexTypeElemID, 'content', BuiltinTypes.STRING),
-        },
+        fields: [
+          { name: apiVersion, type: BuiltinTypes.NUMBER },
+          { name: 'content', type: BuiltinTypes.STRING },
+        ],
       })
       const apexClassInstance = new InstanceElement(
         'instance',
@@ -173,9 +173,9 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'EmailFolder',
         },
-        fields: {
-          name: new Field(emailFolderElemID, 'name', BuiltinTypes.STRING),
-        },
+        fields: [
+          { name: 'name', type: BuiltinTypes.STRING },
+        ],
       })
       const emailFolderInstance = new InstanceElement(
         'instance',
@@ -222,11 +222,11 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'ApexClass',
         },
-        fields: {
+        fields: [
           // eslint-disable-next-line @typescript-eslint/camelcase
-          [apiVersion]: new Field(apexTypeElemID, apiVersion, BuiltinTypes.NUMBER),
-          content: new Field(apexTypeElemID, 'content', BuiltinTypes.STRING),
-        },
+          { name: apiVersion, type: BuiltinTypes.NUMBER },
+          { name: 'content', type: BuiltinTypes.STRING },
+        ],
       })
       const apexClassInstance = new InstanceElement(
         'instance',
@@ -270,9 +270,9 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'EmailFolder',
         },
-        fields: {
-          name: new Field(emailFolderElemID, 'name', BuiltinTypes.STRING),
-        },
+        fields: [
+          { name: 'name', type: BuiltinTypes.STRING },
+        ],
       })
       const emailFolderInstance = new InstanceElement(
         'instance',

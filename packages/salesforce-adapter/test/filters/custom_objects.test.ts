@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import {
   ElemID, ObjectType, ServiceIds, BuiltinTypes, Element, InstanceElement, isObjectType,
-  CORE_ANNOTATIONS, Value, FieldMap, Field, isInstanceElement, INSTANCE_ANNOTATIONS,
-  ReferenceExpression, isListType,
+  CORE_ANNOTATIONS, Value, isInstanceElement, INSTANCE_ANNOTATIONS,
+  ReferenceExpression, isListType, FieldDefinition,
 } from '@salto-io/adapter-api'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -52,63 +52,60 @@ describe('Custom Objects filter', () => {
   let result: Element[]
 
   const generateCustomObjectType = (): ObjectType => {
-    const generateInnerMetadataTypeFields = (name: string, elemID: ElemID): FieldMap => {
+    const generateInnerMetadataTypeFields = (name: string): FieldDefinition[] => {
       if (name === NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS) {
         const listViewFilterElemId = new ElemID(SALESFORCE, 'ListViewFilter')
-        return {
-          [INSTANCE_FULL_NAME_FIELD]: new Field(elemID, INSTANCE_FULL_NAME_FIELD,
-            BuiltinTypes.STRING),
-          columns: new Field(elemID, 'columns', BuiltinTypes.STRING),
-          filters: new Field(elemID, 'filters', new ObjectType({
-            elemID: listViewFilterElemId,
-            fields: {
-              field: new Field(listViewFilterElemId, 'field', BuiltinTypes.STRING),
-              value: new Field(listViewFilterElemId, 'value', BuiltinTypes.STRING),
-            },
-          })),
-        }
+        return [
+          { name: INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.STRING },
+          { name: 'columns', type: BuiltinTypes.STRING },
+          {
+            name: 'filters',
+            type: new ObjectType({
+              elemID: listViewFilterElemId,
+              fields: [
+                { name: 'field', type: BuiltinTypes.STRING },
+                { name: 'value', type: BuiltinTypes.STRING },
+              ],
+            }),
+          },
+        ]
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.FIELD_SETS) {
-        return {
-          availableFields: new Field(elemID, 'availableFields', BuiltinTypes.STRING),
-          displayedFields: new Field(elemID, 'displayedFields', BuiltinTypes.STRING),
-          [INSTANCE_FULL_NAME_FIELD]: new Field(elemID, INSTANCE_FULL_NAME_FIELD,
-            BuiltinTypes.STRING),
-
-        }
+        return [
+          { name: 'availableFields', type: BuiltinTypes.STRING },
+          { name: 'displayedFields', type: BuiltinTypes.STRING },
+          { name: INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.STRING },
+        ]
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS) {
-        return {
-          fields: new Field(elemID, 'fields', BuiltinTypes.STRING),
-          [INSTANCE_FULL_NAME_FIELD]: new Field(elemID, INSTANCE_FULL_NAME_FIELD,
-            BuiltinTypes.STRING),
-        }
+        return [
+          { name: 'fields', type: BuiltinTypes.STRING },
+          { name: INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.STRING },
+        ]
       }
-      return {}
+      return []
     }
 
-    const innerMetadataTypesFromInstance = _(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)
-      .entries()
-      .map(([annotationName, typeName]) => {
-        const elemID = new ElemID(SALESFORCE, typeName)
-        return [annotationName, new Field(CUSTOM_OBJECT_TYPE_ID, annotationName, new ObjectType({
-          elemID, fields: generateInnerMetadataTypeFields(annotationName, elemID),
-        }))]
-      })
-      .fromPairs()
-      .value()
+    const innerMetadataTypesFromInstance = Object.entries(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)
+      .map(([annotationName, typeName]) => ({
+        name: annotationName,
+        type: new ObjectType({
+          elemID: new ElemID(SALESFORCE, typeName),
+          fields: generateInnerMetadataTypeFields(annotationName),
+        }),
+      }))
 
-    return new ObjectType({ elemID: CUSTOM_OBJECT_TYPE_ID,
-      fields: {
+    return new ObjectType({
+      elemID: CUSTOM_OBJECT_TYPE_ID,
+      fields: [
         ...innerMetadataTypesFromInstance,
-        [INSTANCE_FULL_NAME_FIELD]: new Field(CUSTOM_OBJECT_TYPE_ID, INSTANCE_FULL_NAME_FIELD,
-          BuiltinTypes.STRING),
-        pluralLabel: new Field(CUSTOM_OBJECT_TYPE_ID, 'pluralLabel', BuiltinTypes.STRING),
-        enableFeeds: new Field(CUSTOM_OBJECT_TYPE_ID, 'enableFeeds', BuiltinTypes.BOOLEAN),
-      } })
+        { name: INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.STRING },
+        { name: 'pluralLabel', type: BuiltinTypes.STRING },
+        { name: 'enableFeeds', type: BuiltinTypes.BOOLEAN },
+      ],
+    })
   }
 
-  const origCustomObjectType = generateCustomObjectType()
   let customObjectType: ObjectType
   beforeEach(() => {
     ({ connection, client } = mockAdapter({
@@ -116,7 +113,7 @@ describe('Custom Objects filter', () => {
         getElemIdFunc: mockGetElemIdFunc,
       },
     }))
-    customObjectType = origCustomObjectType.clone()
+    customObjectType = generateCustomObjectType()
     result = [customObjectType]
   })
 

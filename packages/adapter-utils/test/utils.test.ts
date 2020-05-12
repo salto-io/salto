@@ -21,7 +21,7 @@ import {
   BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile,
   isPrimitiveType,
   isReferenceExpression,
-  isPrimitiveValue, CORE_ANNOTATIONS,
+  isPrimitiveValue, CORE_ANNOTATIONS, FieldMap,
 } from '@salto-io/adapter-api'
 
 import {
@@ -50,38 +50,45 @@ describe('Test utils.ts', () => {
     annotations: {
       testAnno: 'TEST ANNO',
     },
-    fields: {
-      ref: new Field(mockElem, 'ref', BuiltinTypes.STRING),
-      str: new Field(mockElem, 'str', BuiltinTypes.STRING, {
-        testAnno: 'TEST FIELD ANNO',
-      }),
-      file: new Field(mockElem, 'str', BuiltinTypes.STRING),
-      bool: new Field(mockElem, 'bool', BuiltinTypes.BOOLEAN),
-      num: new Field(mockElem, 'num', BuiltinTypes.NUMBER),
-      numArray: new Field(mockElem, 'numArray', new ListType(BuiltinTypes.NUMBER), {}),
-      strArray: new Field(mockElem, 'strArray', new ListType(BuiltinTypes.STRING), {}),
-      obj: new Field(mockElem, 'obj', new ListType(new ObjectType({
-        elemID: mockElem,
-        fields: {
-          field: new Field(mockElem, 'field', BuiltinTypes.STRING),
-          value: new Field(mockElem, 'value', BuiltinTypes.STRING),
-          innerObj: new Field(mockElem, 'innerObj', new ObjectType({
-            elemID: mockElem,
-            fields: {
-              name: new Field(mockElem, 'name', BuiltinTypes.STRING),
-              listOfNames: new Field(mockElem, 'listOfNames', new ListType(BuiltinTypes.STRING), {}),
-              magical: new Field(mockElem, 'magical', new ObjectType({
+    fields: [
+      { name: 'ref', type: BuiltinTypes.STRING },
+      { name: 'str', type: BuiltinTypes.STRING, annotations: { testAnno: 'TEST FIELD ANNO' } },
+      { name: 'file', type: BuiltinTypes.STRING },
+      { name: 'bool', type: BuiltinTypes.BOOLEAN },
+      { name: 'num', type: BuiltinTypes.NUMBER },
+      { name: 'numArray', type: new ListType(BuiltinTypes.NUMBER) },
+      { name: 'strArray', type: new ListType(BuiltinTypes.STRING) },
+      {
+        name: 'obj',
+        type: new ListType(new ObjectType({
+          elemID: mockElem,
+          fields: [
+            { name: 'field', type: BuiltinTypes.STRING },
+            { name: 'value', type: BuiltinTypes.STRING },
+            {
+              name: 'innerObj',
+              type: new ObjectType({
                 elemID: mockElem,
-                fields: {
-                  deepNumber: new Field(mockElem, 'deepNumber', BuiltinTypes.NUMBER),
-                  deepName: new Field(mockElem, 'deepName', BuiltinTypes.STRING),
-                },
-              })),
+                fields: [
+                  { name: 'name', type: BuiltinTypes.STRING },
+                  { name: 'listOfNames', type: new ListType(BuiltinTypes.STRING) },
+                  {
+                    name: 'magical',
+                    type: new ObjectType({
+                      elemID: mockElem,
+                      fields: [
+                        { name: 'deepNumber', type: BuiltinTypes.NUMBER },
+                        { name: 'deepName', type: BuiltinTypes.STRING },
+                      ],
+                    }),
+                  },
+                ],
+              }),
             },
-          })),
-        },
-      })), {}),
-    },
+          ],
+        })),
+      },
+    ],
     path: ['this', 'is', 'happening'],
   })
 
@@ -171,6 +178,8 @@ describe('Test utils.ts', () => {
   describe('transformValues func', () => {
     let resp: Values
 
+    const defaultFieldParent = new ObjectType({ elemID: new ElemID('') })
+
     describe('with empty values', () => {
       it('should return undefined', () => {
         expect(transformValues({
@@ -232,7 +241,7 @@ describe('Test utils.ts', () => {
             value: mockInstance.value.strArray,
             path: undefined,
             field: new Field(
-              mockType.fields.strArray.elemID.createParentID(),
+              mockType.fields.strArray.parent,
               mockType.fields.strArray.name,
               (mockType.fields.strArray.type as ListType).innerType,
               mockType.fields.strArray.annotations,
@@ -249,7 +258,7 @@ describe('Test utils.ts', () => {
               value,
               path: undefined,
               field: new Field(
-                mockType.fields.numArray.elemID.createParentID(),
+                mockType.fields.numArray.parent,
                 mockType.fields.numArray.name,
                 (numArrayFieldType as ListType).innerType,
                 mockType.fields.numArray.annotations,
@@ -324,7 +333,7 @@ describe('Test utils.ts', () => {
             expect(transformFunc).toHaveBeenCalledWith({
               value: mockInstance.annotations[annotation],
               path: undefined,
-              field: new Field(new ElemID(''), annotation, InstanceAnnotationTypes[annotation]),
+              field: new Field(defaultFieldParent, annotation, InstanceAnnotationTypes[annotation]),
             })
           })
         })
@@ -357,14 +366,14 @@ describe('Test utils.ts', () => {
             name => expect(transformFunc).toHaveBeenCalledWith({
               value: origValue[name],
               path: undefined,
-              field: new Field(new ElemID(''), name, typeMap[name]),
+              field: new Field(defaultFieldParent, name, typeMap[name]),
             })
           )
           origValue.nums.forEach(
             (value: string) => expect(transformFunc).toHaveBeenCalledWith({
               value,
               path: undefined,
-              field: new Field(new ElemID(''), 'nums', BuiltinTypes.NUMBER),
+              field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
             })
           )
         })
@@ -503,11 +512,11 @@ describe('Test utils.ts', () => {
           elementID.createNestedID('annotation', 'name'), objectName
         ),
       },
-      fields: {
-        refValue: new Field(mockElem, 'refValue', BuiltinTypes.STRING),
-        arrayValues: new Field(mockElem, 'refValue', new ListType(BuiltinTypes.STRING), {}),
-        fileValue: new Field(mockElem, 'fileValue', BuiltinTypes.STRING),
-      },
+      fields: [
+        { name: 'refValue', type: BuiltinTypes.STRING },
+        { name: 'arrayValues', type: new ListType(BuiltinTypes.STRING) },
+        { name: 'fileValue', type: BuiltinTypes.STRING },
+      ],
     })
 
     const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
@@ -563,12 +572,16 @@ describe('Test utils.ts', () => {
         refValue: valueRef,
         reg: regValue,
       },
-      fields: {
-        field: new Field(elemID, 'field', element, {
-          reg: regValue,
-          refValue: valueRef,
-        }),
-      },
+      fields: [
+        {
+          name: 'field',
+          type: element,
+          annotations: {
+            reg: regValue,
+            refValue: valueRef,
+          },
+        },
+      ],
     })
 
     const getName = (refValue: Value): Value =>
@@ -694,7 +707,9 @@ describe('Test utils.ts', () => {
         },
       })
 
-      const field = new Field(elemID, 'field', FieldType, {
+      const fieldParent = new ObjectType({ elemID })
+
+      const field = new Field(fieldParent, 'field', FieldType, {
         testAnno: 'TEST ANNO TYPE',
         testNumAnno: 34,
         refAnno: valueRef,
@@ -714,7 +729,7 @@ describe('Test utils.ts', () => {
         expect(resolvedField.name).toEqual(field.name)
         expect(resolvedField.elemID).toEqual(field.elemID)
         expect(resolvedField.path).toEqual(field.path)
-        expect(resolvedField.parentID).toEqual(field.parentID)
+        expect(resolvedField.parent).toBe(field.parent)
 
         expect(resolvedField.annotations).not.toEqual(field.annotations)
         expect(resolvedField.annotations.refAnno).toEqual(regValue)
@@ -803,12 +818,10 @@ describe('Test utils.ts', () => {
     const otID = new ElemID('test', 'obj')
     const ot = new ObjectType({
       elemID: otID,
-      fields: {
-        /* eslint-disable-next-line @typescript-eslint/camelcase */
-        num_field: new Field(otID, 'num_field', primNum),
-        /* eslint-disable-next-line @typescript-eslint/camelcase */
-        str_field: new Field(otID, 'str_field', primStr),
-      },
+      fields: [
+        { name: 'num_field', type: primNum },
+        { name: 'str_field', type: primStr },
+      ],
       annotationTypes: {},
       annotations: {},
     })
@@ -916,10 +929,10 @@ describe('Test utils.ts', () => {
     const annoTypeID = new ElemID('salto', 'annoType')
     const annoType = new ObjectType({
       elemID: annoTypeID,
-      fields: {
-        str: new Field(annoTypeID, 'str', BuiltinTypes.STRING),
-        num: new Field(annoTypeID, 'str', BuiltinTypes.NUMBER),
-      },
+      fields: [
+        { name: 'str', type: BuiltinTypes.STRING },
+        { name: 'num', type: BuiltinTypes.NUMBER },
+      ],
     })
     const objElemID = new ElemID('salto', 'obj')
     const obj = new ObjectType({
@@ -935,12 +948,10 @@ describe('Test utils.ts', () => {
         },
         list: ['I', 'do', 'not', 'write', 'jokes', 'in', 'base 13'],
       },
-      fields: {
-        obj: new Field(objElemID, 'obj', annoType, {
-          label: 'LABEL',
-        }),
-        list: new Field(objElemID, 'list', new ListType(BuiltinTypes.STRING)),
-      },
+      fields: [
+        { name: 'obj', type: annoType, annotations: { label: 'LABEL' } },
+        { name: 'list', type: new ListType(BuiltinTypes.STRING) },
+      ],
     })
     const inst = new InstanceElement('inst', obj, {
       obj: { str: 'Well I do', num: 42 },
@@ -960,13 +971,21 @@ describe('Test utils.ts', () => {
       primitive: PrimitiveTypes.STRING,
     })
     it('should filter object type', async () => {
+      const expectEqualFields = (actual: FieldMap | undefined, expected: FieldMap): void => {
+        expect(actual).toBeDefined()
+        expect(Object.keys(actual ?? {})).toEqual(Object.keys(expected))
+        Object.entries(expected).forEach(
+          ([name, field]) => expect(actual?.[name]?.isEqual(field)).toBeTruthy()
+        )
+      }
+
       const onlyFields = await filterByID(
         objElemID,
         obj,
         id => Promise.resolve(id.idType === 'type' || id.idType === 'field')
       )
       expect(onlyFields).toBeDefined()
-      expect(onlyFields?.fields).toEqual(obj.fields)
+      expectEqualFields(onlyFields?.fields, obj.fields)
       expect(onlyFields?.annotations).toEqual({})
       expect(onlyFields?.annotationTypes).toEqual({})
       const onlyAnno = await filterByID(
@@ -995,7 +1014,7 @@ describe('Test utils.ts', () => {
         id => Promise.resolve(!id.getFullNameParts().includes('str'))
       )
       expect(withoutAnnoObjStr).toBeDefined()
-      expect(withoutAnnoObjStr?.fields).toEqual(obj.fields)
+      expectEqualFields(withoutAnnoObjStr?.fields, obj.fields)
       expect(withoutAnnoObjStr?.annotations.obj).toEqual({ num: 42 })
       expect(withoutAnnoObjStr?.annotations.list).toEqual(obj.annotations.list)
       expect(withoutAnnoObjStr?.annotationTypes).toEqual(obj.annotationTypes)
@@ -1020,7 +1039,7 @@ describe('Test utils.ts', () => {
         )
       )
       expect(onlyI).toBeDefined()
-      expect(onlyI?.fields).toEqual(obj.fields)
+      expectEqualFields(onlyI?.fields, obj.fields)
       expect(onlyI?.annotations.obj).toEqual(obj.annotations.obj)
       expect(onlyI?.annotations.list).toEqual(['I'])
       expect(onlyI?.annotationTypes).toEqual(obj.annotationTypes)
@@ -1110,12 +1129,12 @@ describe('Test utils.ts', () => {
     const baseElemID = new ElemID('salto', 'base')
     const base = new ObjectType({
       elemID: baseElemID,
-      fields: {
-        field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base' }),
-        field2: new Field(baseElemID, 'field2', BuiltinTypes.STRING, { label: 'base' }),
-      },
+      fields: [
+        { name: 'field1', type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+        { name: 'field2', type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+      ],
       annotations: {
-        _default: {
+        [CORE_ANNOTATIONS.DEFAULT]: {
           field1: 'base1',
           field2: 'base2',
         },
@@ -1125,16 +1144,16 @@ describe('Test utils.ts', () => {
     const strType = new PrimitiveType({
       elemID: new ElemID('salto', 'string'),
       primitive: PrimitiveTypes.STRING,
-      annotations: { _default: 'type' },
+      annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'type' },
     })
     const nestedElemID = new ElemID('salto', 'nested')
     const nested = new ObjectType({
       elemID: nestedElemID,
-      fields: {
-        field1: new Field(nestedElemID, 'field1', strType, { _default: 'field1' }),
-        field2: new Field(nestedElemID, 'field2', strType),
-        base: new Field(nestedElemID, 'field2', base),
-      },
+      fields: [
+        { name: 'field1', type: strType, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'field1' } },
+        { name: 'field2', type: strType },
+        { name: 'base', type: base },
+      ],
     })
     const ins1 = new InstanceElement(
       'ins',
@@ -1196,10 +1215,10 @@ describe('Test utils.ts', () => {
       const typeWithNestedDefaultsElemID = new ElemID('salto', 'typeWithNestedDefaults')
       const typeWithNestedDefaults = new ObjectType({
         elemID: typeWithNestedDefaultsElemID,
-        fields: {
-          withDefault: new Field(typeWithNestedDefaultsElemID, 'withDefault', strType, { _default: 'default val' }),
-          nestedTypeHasDefaults: new Field(typeWithNestedDefaultsElemID, 'nestedTypeHasDefaults', nested),
-        },
+        fields: [
+          { name: 'withDefault', type: strType, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'default val' } },
+          { name: 'nestedTypeHasDefaults', type: nested },
+        ],
       })
 
       const instanceWithNoValues = new InstanceElement(
@@ -1220,16 +1239,13 @@ describe('Test utils.ts', () => {
       const mockElemID = new ElemID('test')
       const configType = new ObjectType({
         elemID: mockElemID,
-        fields: {
-          val1: new Field(
-            mockElemID,
-            'val1',
-            BuiltinTypes.STRING,
-            {
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
-            }
-          ),
-        },
+        fields: [
+          {
+            name: 'val1',
+            type: BuiltinTypes.STRING,
+            annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'test' },
+          },
+        ],
       })
       expect(createDefaultInstanceFromType('test', configType))
         .toEqual(new InstanceElement('test', configType, { val1: 'test' }))

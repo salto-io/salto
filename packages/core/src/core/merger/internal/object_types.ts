@@ -99,13 +99,11 @@ const mergeObjectDefinitions = (
   { elemID }: { elemID: ElemID },
   objects: ObjectType[],
 ): MergeResult<ObjectType> => {
-  const fieldDefs: Record<string, Field[]> = {}
-  objects.forEach(obj => {
-    Object.keys(obj.fields).forEach(name => {
-      const field = obj.fields[name]
-      fieldDefs[name] = fieldDefs[name] ? [...fieldDefs[name], field] : [field]
-    })
-  })
+  const fieldDefs = _(objects)
+    .map(obj => Object.values(obj.fields))
+    .flatten()
+    .groupBy(field => field.name)
+    .value()
 
   const fieldsMergeResults = _.mapValues(
     fieldDefs,
@@ -135,7 +133,7 @@ const mergeObjectDefinitions = (
   return {
     merged: new ObjectType({
       elemID,
-      fields: _.mapValues(fieldsMergeResults, r => r.merged),
+      fields: Object.values(fieldsMergeResults).map(r => r.merged),
       annotationTypes: annotationTypesMergeResults.merged,
       annotations: annotationsMergeResults.merged,
     }),

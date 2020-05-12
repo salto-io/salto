@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, InstanceElement, ObjectType, Field, CORE_ANNOTATIONS,
+  ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/value_set'
 import { FilterWith } from '../../src/filter'
@@ -31,7 +31,6 @@ describe('lookup filters filter', () => {
       const createGlobalValueSetInstanceElement = (values: string[]): InstanceElement =>
         new InstanceElement('global_value_set_test', new ObjectType({
           elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
-          fields: {},
           annotationTypes: {},
           annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
         }),
@@ -99,38 +98,36 @@ describe('lookup filters filter', () => {
       const customObjectName = 'PicklistTest'
       const fieldName = 'picklist_field'
       const mockElemID = new ElemID(constants.SALESFORCE, customObjectName)
-      const createObjectWithPicklistField = (picklistField: Field): ObjectType =>
+      const createObjectWithPicklistField = (values?: string[], restricted = true): ObjectType =>
         new ObjectType({
           elemID: mockElemID,
-          fields: { [fieldName]: picklistField },
+          fields: [{
+            name: fieldName,
+            type: Types.primitiveDataTypes.Picklist,
+            annotations: {
+              [constants.API_NAME]: `${customObjectName}.${fieldName}`,
+              [constants.LABEL]: 'label',
+              [CORE_ANNOTATIONS.REQUIRED]: false,
+              [constants.FIELD_ANNOTATIONS.RESTRICTED]: restricted,
+              ...values === undefined
+                ? {}
+                : { [constants.FIELD_ANNOTATIONS.VALUE_SET]: values.map(v => ({
+                  [constants.CUSTOM_VALUE.FULL_NAME]: v,
+                  [constants.CUSTOM_VALUE.DEFAULT]: false,
+                  [constants.CUSTOM_VALUE.LABEL]: v,
+                  [constants.CUSTOM_VALUE.IS_ACTIVE]: true,
+                })) },
+            },
+          }],
           annotations: {
             [constants.API_NAME]: customObjectName,
             [constants.LABEL]: 'object label',
           },
         })
-      const createPicklistField = (values: string[], restricted = true): Field =>
-        new Field(
-          mockElemID,
-          fieldName,
-          Types.primitiveDataTypes.Picklist,
-          {
-            [constants.API_NAME]: `${customObjectName}.${fieldName}`,
-            [constants.LABEL]: 'label',
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-            [constants.FIELD_ANNOTATIONS.RESTRICTED]: restricted,
-            [constants.FIELD_ANNOTATIONS.VALUE_SET]: values.map(v => (
-              {
-                [constants.CUSTOM_VALUE.FULL_NAME]: v,
-                [constants.CUSTOM_VALUE.DEFAULT]: false,
-                [constants.CUSTOM_VALUE.LABEL]: v,
-                [constants.CUSTOM_VALUE.IS_ACTIVE]: true,
-              })),
-          }
-        )
 
       it('should add inactive values to custom picklist', () => {
-        const beforeObject = createObjectWithPicklistField(createPicklistField(['val1']))
-        const afterObject = createObjectWithPicklistField(createPicklistField(['val2']))
+        const beforeObject = createObjectWithPicklistField(['val1'])
+        const afterObject = createObjectWithPicklistField(['val2'])
 
         filter.onUpdate(
           beforeObject,
@@ -157,8 +154,8 @@ describe('lookup filters filter', () => {
       })
 
       it('should not add inactive values to non restricted custom picklist', () => {
-        const beforeObject = createObjectWithPicklistField(createPicklistField(['val1'], false))
-        const afterObject = createObjectWithPicklistField(createPicklistField(['val2'], false))
+        const beforeObject = createObjectWithPicklistField(['val1'], false)
+        const afterObject = createObjectWithPicklistField(['val2'], false)
 
         filter.onUpdate(
           beforeObject,
@@ -180,8 +177,8 @@ describe('lookup filters filter', () => {
       })
 
       it('should not add inactive values to custom picklist when there were no deletions', () => {
-        const beforeObject = createObjectWithPicklistField(createPicklistField(['val1']))
-        const afterObject = createObjectWithPicklistField(createPicklistField(['val1', 'val2']))
+        const beforeObject = createObjectWithPicklistField(['val1'])
+        const afterObject = createObjectWithPicklistField(['val1', 'val2'])
 
         filter.onUpdate(
           beforeObject,
@@ -209,10 +206,8 @@ describe('lookup filters filter', () => {
       })
 
       it('should not add values to global picklist field in custom object', () => {
-        const beforeObject = createObjectWithPicklistField(createPicklistField(['val1']))
-        const picklistFieldWithNoValueSet = createPicklistField([])
-        delete picklistFieldWithNoValueSet.annotations[constants.FIELD_ANNOTATIONS.VALUE_SET]
-        const afterObject = createObjectWithPicklistField(picklistFieldWithNoValueSet)
+        const beforeObject = createObjectWithPicklistField(['val1'])
+        const afterObject = createObjectWithPicklistField()
 
         filter.onUpdate(
           beforeObject,

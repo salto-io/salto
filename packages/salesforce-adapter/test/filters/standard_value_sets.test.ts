@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, Element, InstanceElement, Field, ReferenceExpression, CORE_ANNOTATIONS,
+  ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
 import * as constants from '../../src/constants'
@@ -47,24 +47,22 @@ const createPicklistObjectType = (
   isMultiPicklist = false
 ): ObjectType => new ObjectType({
   elemID: mockElemID,
-  fields: {
-    state: new Field(
-      mockElemID,
-      'simps',
-      isMultiPicklist
-        ? Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
-        : Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST], {
-        [CORE_ANNOTATIONS.REQUIRED]: false,
-        [constants.API_NAME]: apiName,
-        label: 'test label',
-        [constants.FIELD_ANNOTATIONS.VALUE_SET]: pickListValues.map(val => ({
-          [constants.CUSTOM_VALUE.FULL_NAME]: val,
-          [constants.CUSTOM_VALUE.LABEL]: val,
-          [constants.CUSTOM_VALUE.DEFAULT]: val === 'Bart',
-        })),
-      }
-    ),
-  },
+  fields: [{
+    name: 'state',
+    type: isMultiPicklist
+      ? Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
+      : Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
+    annotations: {
+      [CORE_ANNOTATIONS.REQUIRED]: false,
+      [constants.API_NAME]: apiName,
+      label: 'test label',
+      [constants.FIELD_ANNOTATIONS.VALUE_SET]: pickListValues.map(val => ({
+        [constants.CUSTOM_VALUE.FULL_NAME]: val,
+        [constants.CUSTOM_VALUE.LABEL]: val,
+        [constants.CUSTOM_VALUE.DEFAULT]: val === 'Bart',
+      })),
+    },
+  }],
   annotations: {
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
   },

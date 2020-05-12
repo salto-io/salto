@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { DataNodeMap, GroupedNodeMap, NodeId, buildGroupedGraph, Group } from '@salto-io/dag'
-import { Change, getChangeElement, isField, ElementMap, ChangeDataType } from '@salto-io/adapter-api'
+import { Change, getChangeElement, ElementMap, ChangeDataType } from '@salto-io/adapter-api'
 import wu from 'wu'
 
 export const findGroupLevelChange = (group: Group<Change>): Change | undefined =>
@@ -48,7 +48,7 @@ export const buildGroupedGraphFromDiffGraph = (
   const groupKey = (nodeId: NodeId): string => {
     const diffNode = diffGraph.getData(nodeId)
     const element = getChangeElement(diffNode)
-    const elemId = isField(element) ? element.parentID : element.elemID
+    const elemId = element.elemID.createTopLevelParentID().parent
     return elemId.getFullName()
   }
 

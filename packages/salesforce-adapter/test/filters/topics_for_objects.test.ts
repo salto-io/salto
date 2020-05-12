@@ -14,8 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, Field,
-  InstanceElement, isObjectType, BuiltinTypes,
+  ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { metadataType } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
@@ -43,12 +42,11 @@ describe('Field Permissions filter', () => {
 
   const mockTopic = new ObjectType({
     elemID: mockTopicElemID,
-    fields: {
-      [ENABLE_TOPICS]: new Field(mockTopicElemID, ENABLE_TOPICS, BuiltinTypes.BOOLEAN),
-      [ENTITY_API_NAME]: new Field(mockTopicElemID, ENTITY_API_NAME, BuiltinTypes.STRING),
-      [constants.INSTANCE_FULL_NAME_FIELD]:
-        new Field(mockTopicElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
-    },
+    fields: [
+      { name: ENABLE_TOPICS, type: BuiltinTypes.BOOLEAN },
+      { name: ENTITY_API_NAME, type: BuiltinTypes.STRING },
+      { name: constants.INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.SERVICE_ID },
+    ],
     annotationTypes: {},
     annotations: {
       [constants.METADATA_TYPE]: TOPICS_FOR_OBJECTS_METADATA_TYPE,

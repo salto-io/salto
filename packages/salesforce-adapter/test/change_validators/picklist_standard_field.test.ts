@@ -33,7 +33,7 @@ describe('picklist standard field change validator', () => {
     })
 
     const createField = (fieldType: PrimitiveType, fieldApiName: string): Field => {
-      const newField = new Field(obj.elemID, 'field', fieldType, {
+      const newField = new Field(obj, 'field', fieldType, {
         [API_NAME]: fieldApiName,
         modifyMe: 'modifyMe',
       })

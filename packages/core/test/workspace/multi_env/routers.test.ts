@@ -21,8 +21,8 @@ import { DetailedChange } from '../../../src/core/plan'
 import { routeChanges } from '../../../src/workspace/nacl_files/mutil_env/routers'
 
 const objectElemID = new ElemID('salto', 'object')
-const commonField = new Field(objectElemID, 'commonField', BuiltinTypes.STRING)
-const envField = new Field(objectElemID, 'envField', BuiltinTypes.STRING)
+const commonField = { name: 'commonField', type: BuiltinTypes.STRING }
+const envField = { name: 'envField', type: BuiltinTypes.STRING }
 const simpleObjID = new ElemID('salto', 'simple')
 const simpleObj = new ObjectType({
   elemID: simpleObjID,
@@ -31,7 +31,7 @@ const simpleObj = new ObjectType({
     str2: BuiltinTypes.STRING,
   },
 })
-const listField = new Field(objectElemID, 'listField', new ListType(simpleObj))
+const listField = { name: 'listField', type: new ListType(simpleObj) }
 const commonObj = new ObjectType({
   elemID: objectElemID,
   annotationTypes: {
@@ -40,16 +40,16 @@ const commonObj = new ObjectType({
   annotations: {
     boolean: false,
   },
-  fields: {
+  fields: [
     commonField,
     listField,
-  },
+  ],
 })
 const envObj = new ObjectType({
   elemID: objectElemID,
-  fields: {
+  fields: [
     envField,
-  },
+  ],
 })
 const sharedObject = new ObjectType({
   elemID: objectElemID,
@@ -59,18 +59,14 @@ const sharedObject = new ObjectType({
   annotations: {
     boolean: false,
   },
-  fields: {
+  fields: [
     envField,
     commonField,
     listField,
-  },
+  ],
 })
 
-const newObj = new ObjectType({
-  elemID: new ElemID('salto', 'new'),
-  fields: {
-  },
-})
+const newObj = new ObjectType({ elemID: new ElemID('salto', 'new') })
 
 const commonInstance = new InstanceElement('commonInst', commonObj, {
   commonField: 'commonField',
@@ -81,12 +77,7 @@ const commonInstance = new InstanceElement('commonInst', commonObj, {
 const splitObjectID = new ElemID('salto', 'split')
 const splitObjectFields = new ObjectType({
   elemID: splitObjectID,
-  fields: _.mapValues(commonObj.fields, field => new Field(
-    splitObjectID,
-    field.name,
-    field.type,
-    field.annotations
-  )),
+  fields: Object.values(commonObj.fields),
 })
 const splitObjectAnnotations = new ObjectType({
   elemID: splitObjectID,
@@ -98,7 +89,7 @@ const splitObjectAnnotationTypes = new ObjectType({
 })
 const splitObjJoined = new ObjectType({
   elemID: splitObjectID,
-  fields: splitObjectFields.fields,
+  fields: Object.values(splitObjectFields.fields),
   annotationTypes: splitObjectAnnotationTypes.annotationTypes,
   annotations: splitObjectAnnotations.annotations,
 })
@@ -126,7 +117,7 @@ const splitInstanceJoined = new InstanceElement(
   }
 )
 const commonSource = createMockNaclFileSource(
-  [commonObj, commonField, commonInstance, splitObjJoined, splitInstanceJoined],
+  [commonObj, commonInstance, splitObjJoined, splitInstanceJoined],
   {
     'test/path.nacl': [commonObj, commonInstance],
     'test/anno.nacl': [splitObjectAnnotations],
@@ -137,13 +128,9 @@ const commonSource = createMockNaclFileSource(
   }
 )
 const envOnlyID = new ElemID('salto', 'envOnly')
-const envOnlyObj = new ObjectType({
-  elemID: envOnlyID,
-  fields: {
-  },
-})
-const envSource = createMockNaclFileSource([envObj, envField, envOnlyObj])
-const secEnv = createMockNaclFileSource([envObj, envField])
+const envOnlyObj = new ObjectType({ elemID: envOnlyID })
+const envSource = createMockNaclFileSource([envObj, envOnlyObj])
+const secEnv = createMockNaclFileSource([envObj])
 
 describe('normal fetch routing', () => {
   it('should route add changes to common', async () => {
@@ -248,7 +235,7 @@ describe('normal fetch routing', () => {
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
   it('should route add changes of values of env specific elements to the env', async () => {
-    const newField = new Field(envOnlyObj.elemID, 'dreams', BuiltinTypes.STRING)
+    const newField = new Field(envOnlyObj, 'dreams', BuiltinTypes.STRING)
     const change: DetailedChange = {
       action: 'add',
       data: { after: newField },
@@ -261,7 +248,7 @@ describe('normal fetch routing', () => {
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
   it('should route add changes of values of common elements to the common', async () => {
-    const newField = new Field(commonObj.elemID, 'dreams', BuiltinTypes.STRING)
+    const newField = new Field(commonObj, 'dreams', BuiltinTypes.STRING)
     const change: DetailedChange = {
       action: 'add',
       data: { after: newField },
@@ -274,7 +261,7 @@ describe('normal fetch routing', () => {
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
   it('should route add changes of values of split elements to the common', async () => {
-    const newField = new Field(splitObjectID, 'dreams', BuiltinTypes.STRING)
+    const newField = new Field(splitObjJoined, 'dreams', BuiltinTypes.STRING)
     const change: DetailedChange = {
       action: 'add',
       data: { after: newField },

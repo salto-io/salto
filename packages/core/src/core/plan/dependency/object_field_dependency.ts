@@ -27,7 +27,7 @@ export const addFieldToObjectDependency: DependencyChanger = async changes => {
   )
 
   const addObjectDependency = ([id, change]: ChangeEntry<Field>): DependencyChange[] => (
-    (objectChanges.get(getChangeElement(change).parentID.getFullName()) ?? [])
+    (objectChanges.get(getChangeElement(change).parent.elemID.getFullName()) ?? [])
       .filter(([_id, objectChange]) => isDependentAction(change.action, objectChange.action))
       .map(([objectChangeId]) => addParentDependency(id, objectChangeId))
   )

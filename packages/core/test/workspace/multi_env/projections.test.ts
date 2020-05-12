@@ -26,10 +26,10 @@ describe('projections', () => {
   const nestedElemID = new ElemID('salto', 'nested')
   const nestedObj = new ObjectType({
     elemID: nestedElemID,
-    fields: {
-      simple1: new Field(nestedElemID, 'simple1', BuiltinTypes.STRING),
-      simple2: new Field(nestedElemID, 'simple2', BuiltinTypes.STRING),
-    },
+    fields: [
+      { name: 'simple1', type: BuiltinTypes.STRING },
+      { name: 'simple2', type: BuiltinTypes.STRING },
+    ],
   })
   const annotationsObject = {
     simple1: BuiltinTypes.STRING,
@@ -76,29 +76,32 @@ describe('projections', () => {
         simple2: 'OBJECT_NESTED_2',
       },
     },
-    fields: _.mapValues(annotationsObject, (v, k) => new Field(
-      objectTypeElemID, k, k.includes('list') ? new ListType(v) : v, {}
-    )),
+    fields: Object.entries(annotationsObject).map(([name, type]) => ({
+      name, type: name.includes('list') ? new ListType(type) : type,
+    })),
   })
-  const field = new Field(
-    new ElemID('salto', 'parent'),
-    'field',
-    objectType,
-    {
-      simple1: 'FIELD_1',
-      list1: ['FIELD_LIST_1'],
-      nested1: {
-        simple1: 'FIELD_NESTED_1',
-        simple2: 'FIELD_NESTED_2',
+  const fieldParent = new ObjectType({
+    elemID: new ElemID('salto', 'parent'),
+    fields: [{
+      name: 'field',
+      type: objectType,
+      annotations: {
+        simple1: 'FIELD_1',
+        list1: ['FIELD_LIST_1'],
+        nested1: {
+          simple1: 'FIELD_NESTED_1',
+          simple2: 'FIELD_NESTED_2',
+        },
+        simple2: 'FIELD_1',
+        list2: ['FIELD_LIST_1'],
+        nested2: {
+          simple1: 'FIELD_NESTED_1',
+          simple2: 'FIELD_NESTED_2',
+        },
       },
-      simple2: 'FIELD_1',
-      list2: ['FIELD_LIST_1'],
-      nested2: {
-        simple1: 'FIELD_NESTED_1',
-        simple2: 'FIELD_NESTED_2',
-      },
-    }
-  )
+    }],
+  })
+  const { field } = fieldParent.fields
   const instance = new InstanceElement(
     'instance',
     objectType,
@@ -140,29 +143,27 @@ describe('projections', () => {
         simple1: 'OBJECT_NESTED_1',
       },
     },
-    fields: _.mapValues(annotationsObject, (v, k) => new Field(
-      objectTypeElemID, k, k.includes('list') ? new ListType(v) : v, {}
-    )),
+    fields: Object.entries(annotationsObject).map(([name, type]) => ({
+      name, type: name.includes('list') ? new ListType(type) : type,
+    })),
   })
-  const partialFieldOBjectId = new ElemID('salto', 'parent')
-  const partialField = new Field(
-    partialFieldOBjectId,
-    'field',
-    objectType,
-    {
-      simple1: 'FIELD_1',
-      list1: ['FIELD_LIST_1'],
-      nested1: {
-        simple1: 'FIELD_NESTED_1',
-      },
-    }
-  )
   const partialFieldObject = new ObjectType({
-    elemID: partialFieldOBjectId,
-    fields: {
-      field: partialField,
-    },
+    elemID: new ElemID('salto', 'parent'),
+    fields: [
+      {
+        name: 'field',
+        type: objectType,
+        annotations: {
+          simple1: 'FIELD_1',
+          list1: ['FIELD_LIST_1'],
+          nested1: {
+            simple1: 'FIELD_NESTED_1',
+          },
+        },
+      },
+    ],
   })
+  const partialField = partialFieldObject.fields.field
   const partialInstance = new InstanceElement(
     'instance',
     objectType,
@@ -281,12 +282,12 @@ describe('projections', () => {
       elemID: new ElemID('salto', 'new_object'),
       annotationTypes: _.clone(objectType.annotationTypes),
       annotations: _.clone(objectType.annotations),
-      fields: {},
     })
 
     const newPartialObject = new ObjectType({
       elemID: objectType.elemID,
-      fields: _.omit(objectType.fields, _.keys(partialObjectType.fields)),
+      fields: Object.values(objectType.fields)
+        .filter(f => !Object.keys(partialObjectType.fields).includes(f.name)),
       annotations: _.omit(objectType.annotations, _.keys(partialObjectType.annotations)),
       annotationTypes: _.omit(
         objectType.annotationTypes,
@@ -296,7 +297,7 @@ describe('projections', () => {
 
     const modifiedObject = new ObjectType({
       elemID: objectType.elemID,
-      fields: objectType.fields,
+      fields: Object.values(objectType.fields),
       annotations: _.cloneDeepWith(
         objectType.annotations,
         v => (_.isString(v) ? 'MODIFIED' : undefined)
@@ -465,22 +466,23 @@ describe('projections', () => {
   })
   describe('project fields', () => {
     describe('project fields', () => {
+      const parentObj = new ObjectType({ elemID: new ElemID('salto', 'new_parent') })
       const newField = new Field(
-        new ElemID('salto', 'new_parent'),
+        parentObj,
         'new_field',
         field.type,
         _.clone(field.annotations),
       )
 
       const newPartialField = new Field(
-        field.elemID,
-        field.name,
+        field.parent,
+        'newName',
         field.type,
         _.omit(field.annotations, _.keys(partialField.annotations)),
       )
 
       const modifiedField = new Field(
-        field.parentID,
+        field.parent,
         field.name,
         field.type,
         _.cloneDeepWith(field.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),

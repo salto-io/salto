@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, Field, StaticFile, ChangeError } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, StaticFile, ChangeError } from '@salto-io/adapter-api'
 import jsonTypeValidator from '../../src/change_validators/json_type'
 
 const invalidJSON = '{'
@@ -28,15 +28,15 @@ describe('json type change validator', () => {
   beforeEach(() => {
     object = new ObjectType({
       elemID: new ElemID('hubspot', 'obj'),
-      fields: {
-        f: new Field(
-          new ElemID('hubspot, f'), 'f', BuiltinTypes.JSON, {
-            name: 'f',
-            _readOnly: false,
-            [CORE_ANNOTATIONS.REQUIRED]: false,
-          }
-        ),
-      },
+      fields: [{
+        name: 'f',
+        type: BuiltinTypes.JSON,
+        annotations: {
+          name: 'f',
+          _readOnly: false,
+          [CORE_ANNOTATIONS.REQUIRED]: false,
+        },
+      }],
     })
     instance = new InstanceElement('instance', object, {})
   })

@@ -99,15 +99,12 @@ export const addMetadataType = (elem: ObjectType, metadataTypeValue = CUSTOM_OBJ
   }
 }
 
-export const hasNamespace = (customElement: Field | ObjectType): boolean => (
-  apiName(customElement) !== undefined
-  && apiName(customElement, true).split(NAMESPACE_SEPARATOR).length === 3
-)
+export const getNamespaceFromString = (name: string): string | undefined => {
+  const nameParts = name.split(NAMESPACE_SEPARATOR)
+  return nameParts.length === 3 ? nameParts[0] : undefined
+}
 
-export const getNamespaceFromString = (name: string): string =>
-  name.split(NAMESPACE_SEPARATOR)[0]
-
-export const getNamespace = (customElement: Field | ObjectType): string =>
+export const getNamespace = (customElement: Field | ObjectType): string | undefined =>
   getNamespaceFromString(apiName(customElement, true))
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
@@ -118,9 +115,9 @@ export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIEL
 export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType => {
   const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
   return new ObjectType({ elemID: annotationTypesElemID,
-    fields: Object.assign({}, ...Object.entries(annotationTypes)
+    fields: Object.entries(annotationTypes)
       .concat(Object.entries(CoreAnnotationTypes))
-      .map(([k, v]) => ({ [k]: new Field(annotationTypesElemID, k, v) }))) })
+      .map(([name, type]) => ({ name, type })) })
 }
 
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>

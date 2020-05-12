@@ -15,8 +15,8 @@
 */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
-  ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
+  ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
+  ReferenceExpression, PrimitiveType, PrimitiveTypes,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
 } from '@salto-io/adapter-api'
 import {
@@ -33,13 +33,17 @@ describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')
   const simpleType = new ObjectType({
     elemID: baseElemID,
-    fields: {
-      str: new Field(baseElemID, 'str', BuiltinTypes.STRING, {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['str'] }),
-      }),
-      num: new Field(baseElemID, 'num', BuiltinTypes.NUMBER),
-      bool: new Field(baseElemID, 'bool', BuiltinTypes.BOOLEAN, { _required: true }),
-    },
+    fields: [
+      {
+        name: 'str',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['str'] }),
+        },
+      },
+      { name: 'num', type: BuiltinTypes.NUMBER },
+      { name: 'bool', type: BuiltinTypes.BOOLEAN, annotations: { _required: true } },
+    ],
     annotationTypes: {
       annostr: BuiltinTypes.STRING,
       annonum: BuiltinTypes.NUMBER,
@@ -98,38 +102,53 @@ describe('Elements validation', () => {
   const nestedElemID = new ElemID('salto', 'nested')
   const nestedType = new ObjectType({
     elemID: nestedElemID,
-    fields: {
-      nested: new Field(nestedElemID, 'nested', simpleType, {
-        annonum: 1,
-        annoboolean: true,
-      }),
-      flatstr: new Field(nestedElemID, 'flatstr', BuiltinTypes.STRING),
-      flatnum: new Field(nestedElemID, 'flatnum', BuiltinTypes.NUMBER),
-      flatbool: new Field(nestedElemID, 'flatbool', BuiltinTypes.BOOLEAN),
-      list: new Field(nestedElemID, 'list', new ListType(BuiltinTypes.STRING), {}),
-      listOfList: new Field(nestedElemID, 'listOfList', new ListType(new ListType(BuiltinTypes.STRING))),
-      listOfObject: new Field(nestedElemID, 'listOfObject', new ListType(simpleType)),
-      reqStr: new Field(nestedElemID, 'reqStr', BuiltinTypes.STRING),
-      restrictStr: new Field(nestedElemID, 'restrictStr', BuiltinTypes.STRING, {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          values: ['restriction1', 'restriction2'],
-        }),
-      }),
-      restrictNumber: new Field(nestedElemID, 'restrictNumber', BuiltinTypes.NUMBER, {
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-          min: 1,
-          max: 10,
-        }),
-      }),
-      restrictedAnnotation: new Field(nestedElemID, 'restrictedAnnotation', restrictedAnnotation, {
-        temp: 'val1',
-        range: 5,
-        rangeNoMin: 5,
-        rangeNoMax: 5,
-      }),
-      reqNested: new Field(nestedElemID, 'reqNested', simpleType, {
-      }),
-    },
+    fields: [
+      {
+        name: 'nested',
+        type: simpleType,
+        annotations: {
+          annonum: 1,
+          annoboolean: true,
+        },
+      },
+      { name: 'flatstr', type: BuiltinTypes.STRING },
+      { name: 'flatnum', type: BuiltinTypes.NUMBER },
+      { name: 'flatbool', type: BuiltinTypes.BOOLEAN },
+      { name: 'list', type: new ListType(BuiltinTypes.STRING) },
+      { name: 'listOfList', type: new ListType(new ListType(BuiltinTypes.STRING)) },
+      { name: 'listOfObject', type: new ListType(simpleType) },
+      { name: 'reqStr', type: BuiltinTypes.STRING },
+      {
+        name: 'restrictStr',
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            values: ['restriction1', 'restriction2'],
+          }),
+        },
+      },
+      {
+        name: 'restrictNumber',
+        type: BuiltinTypes.NUMBER,
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            min: 1,
+            max: 10,
+          }),
+        },
+      },
+      {
+        name: 'restrictedAnnotation',
+        type: restrictedAnnotation,
+        annotations: {
+          temp: 'val1',
+          range: 5,
+          rangeNoMin: 5,
+          rangeNoMax: 5,
+        },
+      },
+      { name: 'reqNested', type: simpleType },
+    ],
     annotationTypes: {
       nested: simpleType,
       restrictedPrimitive: restrictedType,
@@ -142,9 +161,9 @@ describe('Elements validation', () => {
   })
   const noRestrictionsType = new ObjectType({
     elemID: noResElemID,
-    fields: {
-      someVal: new Field(noResElemID, 'someVal', emptyType),
-    },
+    fields: [
+      { name: 'someVal', type: emptyType },
+    ],
   })
 
   describe('validate types', () => {
@@ -208,13 +227,11 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        fields: {
-        },
         annotationTypes: {
-          notList: new ObjectType({ elemID,
-            fields: {
-              simple: new TypeField(elemID, 'simple', BuiltinTypes.STRING),
-            } }),
+          notList: new ObjectType({
+            elemID,
+            fields: [{ name: 'simple', type: BuiltinTypes.STRING }],
+          }),
         },
         annotations: {
           notList: [{ simple: 'str1' }, { simple: 'str2' }],
@@ -228,8 +245,6 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        fields: {
-        },
         annotationTypes: {
           notList: BuiltinTypes.STRING,
         },
@@ -245,13 +260,11 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        fields: {
-        },
         annotationTypes: {
-          notList: new ObjectType({ elemID,
-            fields: {
-              simple: new TypeField(elemID, 'simple', BuiltinTypes.STRING),
-            } }),
+          notList: new ObjectType({
+            elemID,
+            fields: [{ name: 'simple', type: BuiltinTypes.STRING }],
+          }),
         },
         annotations: {
           notList: ['str1', 'str2'],
@@ -265,8 +278,8 @@ describe('Elements validation', () => {
       const elemID = new ElemID('salto', 'simple')
       const objWithListAnnotation = new ObjectType({
         elemID,
-        fields: {
-        },
+        fields: [
+        ],
         annotationTypes: {
           notList: BuiltinTypes.STRING,
         },
@@ -601,16 +614,15 @@ describe('Elements validation', () => {
             annotationTypes: {
               ServiceId: BuiltinTypes.SERVICE_ID,
             },
-            fields: {
-              someFile: new Field(
-                new ElemID('salesforce', 'test'),
-                'someFile',
-                new PrimitiveType({
+            fields: [
+              {
+                name: 'someFile',
+                type: new PrimitiveType({
                   elemID: new ElemID('salesforce', 'string'),
                   primitive: PrimitiveTypes.STRING,
                 }),
-              ),
-            },
+              },
+            ],
           }),
           {
             someFile: new StaticFile('path', 'hash'),
@@ -629,16 +641,15 @@ describe('Elements validation', () => {
             annotationTypes: {
               ServiceId: BuiltinTypes.SERVICE_ID,
             },
-            fields: {
-              someFile: new Field(
-                new ElemID('salesforce', 'test'),
-                'someFile',
-                new PrimitiveType({
+            fields: [
+              {
+                name: 'someFile',
+                type: new PrimitiveType({
                   elemID: new ElemID('salesforce', 'string'),
                   primitive: PrimitiveTypes.STRING,
                 }),
-              ),
-            },
+              },
+            ],
           }),
           {
             someFile: new MissingStaticFile('aa'),

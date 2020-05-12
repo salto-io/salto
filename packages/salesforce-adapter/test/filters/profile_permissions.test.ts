@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, Field, PrimitiveType, PrimitiveTypes, CORE_ANNOTATIONS,
+  ObjectType, ElemID, Field, PrimitiveType, PrimitiveTypes, CORE_ANNOTATIONS, FieldMap,
 } from '@salto-io/adapter-api'
 import { ProfileInfo } from '../../src/client/types'
 import filterCreator from '../../src/filters/profile_permissions'
@@ -38,11 +38,13 @@ describe('Object Permissions filter', () => {
       [constants.API_NAME]: 'Test__c',
       [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
     },
-    fields: {
-      [descriptionFieldName]:
-        new Field(mockElemID, descriptionFieldName, stringType,
-          { [constants.API_NAME]: `Test__c.${descriptionFieldName}` }),
-    },
+    fields: [
+      {
+        name: descriptionFieldName,
+        type: stringType,
+        annotations: { [constants.API_NAME]: `Test__c.${descriptionFieldName}` },
+      },
+    ],
   })
 
   let mockUpdate: jest.Mock
@@ -86,24 +88,27 @@ describe('Object Permissions filter', () => {
   })
 
   it('should only update new fields upon update', async () => {
+    const createField = (obj: ObjectType, name: string): FieldMap => ({
+      [name]: new Field(obj, name, stringType, { [constants.API_NAME]: `Test__c.${name}` }),
+    })
     const addressFieldName = 'address__c'
     const bananaFieldName = 'banana__c'
     const appleFieldName = 'apple__c'
-    const address = new Field(mockElemID, addressFieldName, stringType,
-      { [constants.API_NAME]: `Test__c.${addressFieldName}` })
-    const banana = new Field(mockElemID, bananaFieldName, stringType,
-      { [constants.API_NAME]: `Test__c.${bananaFieldName}` })
-    const apple = new Field(mockElemID, appleFieldName, stringType,
-      { [constants.API_NAME]: `Test__c.${appleFieldName}` })
-
     const before = mockObject.clone()
-    before.fields = { ...before.fields, [addressFieldName]: address, [bananaFieldName]: banana }
+    Object.assign(
+      before.fields,
+      createField(before, addressFieldName),
+      createField(before, bananaFieldName),
+    )
 
     const after = before.clone()
-    after.fields = { ...after.fields, [appleFieldName]: apple }
+    Object.assign(
+      after.fields,
+      createField(after, appleFieldName),
+    )
     await filter().onUpdate(before, after,
       [
-        { action: 'add', data: { after: apple } },
+        { action: 'add', data: { after: after.fields[appleFieldName] } },
         { action: 'modify',
           data: {
             before: before.fields[descriptionFieldName],

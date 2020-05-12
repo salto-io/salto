@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, Field, InstanceElement,
+  CORE_ANNOTATIONS, BuiltinTypes, ElemID, ObjectType, InstanceElement,
   PrimitiveType, ListType,
 } from '@salto-io/adapter-api'
 
@@ -24,29 +24,28 @@ export const getAllElements = (): AllElementsTypes => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
-    fields: {
-      country: new Field(addrElemID, 'country', BuiltinTypes.STRING),
-      city: new Field(addrElemID, 'city', BuiltinTypes.STRING),
-    },
+    fields: [
+      { name: 'country', type: BuiltinTypes.STRING },
+      { name: 'city', type: BuiltinTypes.STRING },
+    ],
     annotationTypes: { label: BuiltinTypes.STRING },
   })
 
   const officeElemID = new ElemID('salto', 'office')
   const saltoOffice = new ObjectType({
     elemID: officeElemID,
-    fields: {
-      name: new Field(officeElemID, 'name', BuiltinTypes.STRING),
-      location: new Field(
-        officeElemID,
-        'location',
-        saltoAddr,
-        {
+    fields: [
+      { name: 'name', type: BuiltinTypes.STRING },
+      {
+        name: 'location',
+        type: saltoAddr,
+        annotations: {
           label: 'Office Location',
           description: 'A location of an office',
         },
-      ),
-      rooms: new Field(officeElemID, 'room', new ListType(BuiltinTypes.STRING)),
-    },
+      },
+      { name: 'rooms', type: new ListType(BuiltinTypes.STRING) },
+    ],
     // eslint-disable-next-line @typescript-eslint/camelcase,max-len
     annotationTypes: { label: BuiltinTypes.STRING, old: BuiltinTypes.STRING, case_sensitive: BuiltinTypes.BOOLEAN },
   })
@@ -55,37 +54,31 @@ export const getAllElements = (): AllElementsTypes => {
   const stringListType = new ListType(BuiltinTypes.STRING)
   const saltoEmployee = new ObjectType({
     elemID: employeeElemID,
-    fields: {
-      name: new Field(
-        employeeElemID,
-        'name',
-        BuiltinTypes.STRING,
-        { _required: true },
-      ),
-      nicknames: new Field(
-        employeeElemID,
-        'nicknames',
-        stringListType,
-        {},
-      ),
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      employee_resident: new Field(
-        employeeElemID,
-        'employee_resident',
-        saltoAddr,
-        { label: 'Employee Resident' }
-      ),
-      company: new Field(
-        employeeElemID,
-        'company',
-        BuiltinTypes.STRING,
-        { _default: 'salto' },
-      ),
-      office: new Field(
-        employeeElemID,
-        'office',
-        saltoOffice,
-        {
+    fields: [
+      {
+        name: 'name',
+        type: BuiltinTypes.STRING,
+        annotations: { _required: true },
+      },
+      {
+        name: 'nicknames',
+        type: stringListType,
+        annotations: {},
+      },
+      {
+        name: 'employee_resident',
+        type: saltoAddr,
+        annotations: { label: 'Employee Resident' },
+      },
+      {
+        name: 'company',
+        type: BuiltinTypes.STRING,
+        annotations: { _default: 'salto' },
+      },
+      {
+        name: 'office',
+        type: saltoOffice,
+        annotations: {
           label: 'Based In',
           name: {
             [CORE_ANNOTATIONS.DEFAULT]: 'HQ',
@@ -99,8 +92,8 @@ export const getAllElements = (): AllElementsTypes => {
             },
           },
         },
-      ),
-    },
+      },
+    ],
   })
 
   const saltoEmployeeInstance = new InstanceElement(

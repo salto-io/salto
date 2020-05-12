@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, Field, BuiltinTypes, ListType,
+  ObjectType, ElemID, BuiltinTypes, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -25,9 +25,7 @@ describe('missing fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
-    fields: {
-      existing: new Field(mockObjId, 'existing', BuiltinTypes.STRING),
-    },
+    fields: [{ name: 'existing', type: BuiltinTypes.STRING }],
   })
   const complexType = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'complex_type'),
@@ -82,7 +80,7 @@ describe('missing fields filter', () => {
 
     it('should keep existing fields unchanged', () => {
       const [testType] = testElements
-      expect(testType.fields.existing).toEqual(mockType.fields.existing)
+      expect(testType.fields.existing.isEqual(mockType.fields.existing)).toBeTruthy()
     })
 
     it('should quietly omit fields with missing types', () => {

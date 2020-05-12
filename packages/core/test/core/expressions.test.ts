@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
+  ElemID, ObjectType, BuiltinTypes, InstanceElement, Element,
   ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
   isVariableExpression, isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
@@ -41,16 +41,17 @@ describe('Test Salto Expressions', () => {
     const objElemID = new ElemID('salto', 'obj')
     const base = new ObjectType({
       elemID: baseElemID,
-      fields: {
-        simple: new Field(baseElemID, 'simple', BuiltinTypes.STRING, { anno: 'field_anno' }),
-        obj: new Field(baseElemID, 'simple', new ObjectType({
-          elemID: objElemID,
-          fields: {
-            value: new Field(objElemID, 'objField', BuiltinTypes.STRING),
-          },
-        })),
-        arr: new Field(baseElemID, 'arr', new ListType(BuiltinTypes.STRING), {}),
-      },
+      fields: [
+        { name: 'simple', type: BuiltinTypes.STRING, annotations: { anno: 'field_anno' } },
+        {
+          name: 'obj',
+          type: new ObjectType({
+            elemID: objElemID,
+            fields: [{ name: 'value', type: BuiltinTypes.STRING }],
+          }),
+        },
+        { name: 'arr', type: new ListType(BuiltinTypes.STRING) },
+      ],
       annotations: {
         anno: 'base_anno',
       },
@@ -112,11 +113,13 @@ describe('Test Salto Expressions', () => {
     const objectRefID = new ElemID('salto', 'objref')
     const objectRef = new ObjectType({
       elemID: objectRefID,
-      fields: {
-        ref: new Field(baseElemID, 'simple', BuiltinTypes.STRING, {
-          anno: refTo(base, 'attr', 'anno'),
-        }),
-      },
+      fields: [
+        {
+          name: 'ref',
+          type: BuiltinTypes.STRING,
+          annotations: { anno: refTo(base, 'attr', 'anno') },
+        },
+      ],
       annotations: {
         anno: refTo(base, 'attr', 'anno'),
       },

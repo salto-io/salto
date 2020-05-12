@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, InstanceElement, Field, BuiltinTypes, ElemID, ReferenceExpression,
+  ObjectType, InstanceElement, BuiltinTypes, ElemID, ReferenceExpression,
   INSTANCE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/custom_object_translation'
@@ -41,19 +41,25 @@ describe('custom object translation filter', () => {
   const customObjectField = new ObjectType(
     {
       elemID: customObjElemID,
-      fields: {
-        [customFieldName]: new Field(customObjElemID, customFieldName, BuiltinTypes.STRING,
-          { [API_NAME]: `${customObjName}.${customFieldName}` }),
-      },
+      fields: [
+        {
+          name: customFieldName,
+          type: BuiltinTypes.STRING,
+          annotations: { [API_NAME]: `${customObjName}.${customFieldName}` },
+        },
+      ],
     }
   )
   const customObjectAdditionalField = new ObjectType(
     {
       elemID: customObjElemID,
-      fields: {
-        additional: new Field(customObjElemID, 'additional', BuiltinTypes.STRING,
-          { [API_NAME]: `${customObjName}.additional` }),
-      },
+      fields: [
+        {
+          name: 'additional',
+          type: BuiltinTypes.STRING,
+          annotations: { [API_NAME]: `${customObjName}.additional` },
+        },
+      ],
     }
   )
   const validationRuleName = 'Last_price_must_for_recently_sold'

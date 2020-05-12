@@ -20,6 +20,7 @@ import {
   InstanceElement,
   ObjectType,
   ElemID,
+  AccountId,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -55,7 +56,7 @@ const log = logger(module)
 
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>
-): Promise<string> => {
+): Promise<AccountId> => {
   const adapterCreator = adapterCreators[loginConfig.elemID.adapter]
   if (adapterCreator) {
     return adapterCreator.validateCredentials(loginConfig)

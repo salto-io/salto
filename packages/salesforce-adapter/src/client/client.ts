@@ -25,6 +25,7 @@ import {
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
+import { AccountId } from '@salto-io/adapter-api'
 import { CompleteSaveResult, SfError } from './types'
 import Connection from './jsforce'
 
@@ -232,7 +233,7 @@ export const getConnectionDetails = async (creds: Credentials, connection? : Con
 
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
-): Promise<string> => {
+): Promise<AccountId> => {
   const { remainingDailyRequests, orgId } = await getConnectionDetails(
     creds, connection
   )

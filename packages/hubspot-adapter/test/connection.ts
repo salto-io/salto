@@ -17,7 +17,7 @@ import {
   RequestPromise,
 } from 'requestretry'
 import Connection, {
-  Contact, Form, Workflow, MarketingEmail,
+  Contact, Form, Workflow, MarketingEmail, Integrations,
 } from '../src/client/madku'
 
 const mockMadKu: () => Connection = () => ({
@@ -81,6 +81,14 @@ const mockMadKu: () => Connection = () => ({
         ({} as unknown as RequestPromise)),
     },
   } as Contact,
+  integrations: {
+    getAccountDetails: jest.fn().mockImplementation((): RequestPromise =>
+      ({ then: () => '' } as unknown as RequestPromise)),
+    properties: {
+      getAccountDetails: jest.fn().mockImplementation((): RequestPromise =>
+        ({ then: () => '' } as unknown as RequestPromise)),
+    },
+  } as Integrations,
 })
 
 export default mockMadKu

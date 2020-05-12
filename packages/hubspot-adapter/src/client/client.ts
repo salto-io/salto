@@ -100,11 +100,11 @@ export default class HubspotClient {
   private conn: Connection
   private readonly hubspotObjectAPI: Record<string, HubspotObjectAPI>
 
-  static validateCredentials(credentials: Credentials): Promise<string> {
+  static validateCredentials(credentials: Credentials, connection?: Connection): Promise<string> {
     const { apiKey } = credentials
-    const connection = new Hubspot({ apiKey })
+    const conn = connection || new Hubspot({ apiKey })
 
-    return connection.integrations.getAccountDetails()
+    return conn.integrations.getAccountDetails()
       .then(result => result) // convert to regular promise
   }
 

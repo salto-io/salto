@@ -33,13 +33,13 @@ export const rules: Record<string, moo.Rules> = {
     cCurly: '}',
     oCurly: '{',
     eq: '=',
-    // This regex below defines a token which is compesed of a serious new line charecters, each 
-    // possibly padded by empty spaces and comments: 
+    // This regex below defines a token which is compesed of a serious new line charecters, each
+    // possibly padded by empty spaces and comments:
     // (?:[ \t]+) -> white spaces
     // (?:\/\/[^\r\n]*) -> comments
     // (?:(?:[ \t]+)|(?:\/\/[^\r\n]*))* -> a series of white spaces and comments
-    // (?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*(?:[\r\n]+)(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))* -> a new line 
-    // padded by spaces and comments           
+    // (?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*(?:[\r\n]+)(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))* -> a new line
+    // padded by spaces and comments
     newline: { match: /(?:(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*(?:[\r\n]+)(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*)+/, lineBreaks: true },
     ws: /[ \t]+/,
     comment: /\/\/[^\r\n]*/,

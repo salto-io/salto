@@ -191,7 +191,7 @@ describe('workspace', () => {
 
       const errors = await erroredWorkspace.errors()
       expect(errors.hasErrors()).toBeTruthy()
-      const err = 'Expected {, word or \" token but found instead: }.'
+      const err = 'Expected {, word or " token but found instead: }.'
       expect(errors.strings()[0]).toMatch(err)
       expect(errors.parse[0].detail).toMatch(err)
 

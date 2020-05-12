@@ -32,9 +32,13 @@ const MAX_FILE_ERRORS = 20
 const MAX_ALLOWED_DYNAMIC_TOKEN = 3
 const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
   const symbol = state.rule.symbols[state.dot]
-  return (typeof symbol === 'object' && symbol.type && symbol.type !== 'wildcard')
-    ? symbol.type
-    : undefined
+  if (typeof symbol === 'object' && symbol.type && symbol.type !== 'wildcard') {
+    return symbol.type
+  }
+  if (typeof symbol === 'object' && symbol.literal) {
+    return symbol.literal
+  }
+  return undefined
 }
 
 const lineToOffset = (src: string, line: number, untilEol = false): number => {

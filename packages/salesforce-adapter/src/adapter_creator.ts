@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import {
   InstanceElement, AdapterCreator,
 } from '@salto-io/adapter-api'
-import SalesforceClient, { Credentials, validateCredentials } from './client/client'
+import SalesforceClient, { Credentials } from './client/client'
 import changeValidator from './change_validator'
 import { dependencyChanger } from './dependency_changer'
 import SalesforceAdapter from './adapter'
@@ -57,7 +57,9 @@ export const creator: AdapterCreator = {
     config: adapterConfigFromConfig(opts.config),
     getElemIdFunc: opts.getElemIdFunc,
   }),
-  validateCredentials: config => validateCredentials(credentialsFromConfig(config)),
+  validateCredentials: config => SalesforceClient.validateCredentials(
+    credentialsFromConfig(config)
+  ),
   credentialsType,
   configType,
   changeValidator,

@@ -15,7 +15,7 @@
 */
 import nock from 'nock'
 import { RetryStrategies } from 'requestretry'
-import SalesforceClient from '../src/client/client'
+import SalesforceClient, { ApiLimitsTooLowError } from '../src/client/client'
 
 
 describe('salesforce client', () => {
@@ -198,6 +198,25 @@ describe('salesforce client', () => {
       const { result } = await client.readMetadata('QuickAction', ['SendEmail', 'LogACall'])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
+
+  describe('validateCredentials', () => {
+    const credentials = {
+      username: 'myUser',
+      password: 'myPass',
+      apiToken: 'myToken',
+      isSandbox: false,
+    }
+    it('should throw ApiLimitsTooLowError exception', async () => {
+      SalesforceClient.getRemainingDailyRequests = jest.fn(() => Promise.resolve(-1))
+      await expect(
+        SalesforceClient.validateCredentials(credentials)
+      ).rejects.toThrow(ApiLimitsTooLowError)
+    })
+    it('should return empty string', async () => {
+      SalesforceClient.getRemainingDailyRequests = jest.fn(() => Promise.resolve(1))
+      expect(await SalesforceClient.validateCredentials(credentials)).toEqual('')
     })
   })
 })

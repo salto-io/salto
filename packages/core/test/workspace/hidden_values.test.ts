@@ -198,8 +198,8 @@ describe('hidden_values.ts', () => {
           .toEqual(instanceAfterHiddenAddition.value.reg)
         expect(workspaceInstance.value.listOfObjects[0].num)
           .toEqual(instanceAfterHiddenAddition.value.listOfObjects[0].num)
-        expect(instanceAfterHiddenAddition.value.listOfObjects)
-          .toHaveLength(stateInstance.value.listOfObjects.length)
+        expect(workspaceInstance.value.listOfObjects)
+          .toHaveLength(instanceAfterHiddenAddition.value.listOfObjects.length)
       })
 
       it('should not done in-place', () => {

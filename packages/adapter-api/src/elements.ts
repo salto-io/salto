@@ -161,12 +161,12 @@ export class Field extends Element {
    * Note that the cloned field still has the same element ID so it cannot be used in a different
    * object
    */
-  clone(): Field {
+  clone(annotations?: Values): Field {
     return new Field(
       this.parentID,
       this.name,
       this.type,
-      _.cloneDeep(this.annotations),
+      annotations === undefined ? _.cloneDeep(this.annotations) : annotations,
     )
   }
 }

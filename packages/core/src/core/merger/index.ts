@@ -29,7 +29,7 @@ export { MergeError, DuplicateAnnotationError } from './internal/common'
 export type MergeResult = InternalMergeResult<Element[]>
 
 export {
-  FieldDefinitionMergeError, NoBaseDefinitionMergeError, MultipleBaseDefinitionsMergeError,
+  FieldDefinitionMergeError, ConflictingFieldTypesError,
   DuplicateAnnotationFieldDefinitionError, DuplicateAnnotationTypeError,
 } from './internal/object_types'
 

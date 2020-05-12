@@ -20,7 +20,7 @@ import { collections, decorators } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, DeployResult,
-  RetrieveRequest, RetrieveResult, ListMetadataQuery, UpsertResult, UserInfo,
+  RetrieveRequest, RetrieveResult, ListMetadataQuery, UpsertResult,
 } from 'jsforce'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -235,15 +235,11 @@ export default class SalesforceClient {
       maxAttempts: 2,
       retryStrategy: RetryStrategies.HTTPOrNetworkError,
     })
-    let orgId = ''
-    const saveOrgId = (_err: Error, userInfo: UserInfo): void => {
-      orgId = userInfo.organizationId
-    }
-    await conn.login(creds.username, creds.password + (creds.apiToken ?? ''), saveOrgId)
+    const userInfo = await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
     const limits = await conn.limits()
     return {
       remainingDailyRequests: limits.DailyApiRequests.Remaining,
-      orgId,
+      orgId: userInfo.organizationId,
     }
   }
 

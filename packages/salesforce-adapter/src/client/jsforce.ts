@@ -62,9 +62,7 @@ export type Limits = {
 }
 
 export default interface Connection {
-  login(
-    user: string, password: string, callback?: (err: Error, res: UserInfo) => void
-  ): Promise<unknown>
+  login(user: string, password: string): Promise<UserInfo>
   metadata: Metadata
   soap: Soap
   describeGlobal(): Promise<Global>

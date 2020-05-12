@@ -33,6 +33,7 @@ import {
   contactPropertyCreateResponse,
   contactPropertyMock,
 } from './common/mock_elements'
+import HubspotClient from '../src/client/client'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createTestStatusCodeError = (statusCode: number, body: any): StatusCodeError =>
@@ -794,6 +795,11 @@ describe('Test HubSpot client', () => {
         expect(mockUpdateForm.mock.calls[0][0]).toEqual('guidToUpdate')
         expect(mockUpdateForm.mock.calls[0][1]).toMatchObject(formToUpdate)
       })
+    })
+  })
+  describe('Test validateCredentials Func', () => {
+    it('should return', async () => {
+      expect(HubspotClient.validateCredentials({ apiKey: '' }, connection)).toEqual('')
     })
   })
 })

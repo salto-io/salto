@@ -19,7 +19,7 @@ import {
   OperationResult,
 } from '@salto-io/suitecloud-cli'
 import { decorators, hash } from '@salto-io/lowerdash'
-import { Values } from '@salto-io/adapter-api'
+import { Values, AccountId } from '@salto-io/adapter-api'
 import { readDir, readFile, writeFile } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import xmlConverter, { Element as XmlElement } from 'xml-js'
@@ -73,9 +73,10 @@ export default class NetsuiteClient {
     this.authId = hash.toMD5(this.credentials.tokenId)
   }
 
-  static async validateCredentials(credentials: Credentials): Promise<void> {
+  static async validateCredentials(credentials: Credentials): Promise<AccountId> {
     const netsuiteClient = new NetsuiteClient({ credentials })
     await netsuiteClient.setupAccount()
+    return Promise.resolve('') // TODO: Find unique identifier for netsuite.
   }
 
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {

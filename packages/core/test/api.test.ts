@@ -311,7 +311,7 @@ describe('api.ts', () => {
         await api.updateCredentials(ws, newConf)
 
         const adapterCreator = adapterCreators.salesforce
-        expect(adapterCreator.validateConfig).toHaveBeenCalledTimes(1)
+        expect(adapterCreator.validateCredentials).toHaveBeenCalledTimes(1)
       })
     })
 
@@ -333,7 +333,7 @@ describe('api.ts', () => {
         await api.verifyCredentials(newConf)
 
         const adapterCreator = adapterCreators.salesforce
-        expect(adapterCreator.validateConfig).toHaveBeenCalledTimes(1)
+        expect(adapterCreator.validateCredentials).toHaveBeenCalledTimes(1)
       })
     })
 

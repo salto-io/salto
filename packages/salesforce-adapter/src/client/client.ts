@@ -25,6 +25,7 @@ import {
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
+import { AccountId } from '@salto-io/adapter-api'
 import { CompleteSaveResult, SfError } from './types'
 import Connection from './jsforce'
 
@@ -156,30 +157,6 @@ export const realConnection = (
   return connection
 }
 
-export class ApiLimitsTooLowError extends Error {}
-
-export const getRemainingDailyRequests = async (creds: Credentials): Promise<number> => {
-  const conn = realConnection(creds.isSandbox, {
-    maxAttempts: 2,
-    retryStrategy: RetryStrategies.HTTPOrNetworkError,
-  })
-  await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
-  const limits = await conn.limits()
-  return limits.DailyApiRequests.Remaining
-}
-
-export const validateCredentials = async (
-  creds: Credentials,
-  minApiRequestsRemaining = 0,
-): Promise<void> => {
-  const remainingDailyRequests = await getRemainingDailyRequests(creds)
-  if (remainingDailyRequests < minApiRequestsRemaining) {
-    throw new ApiLimitsTooLowError(
-      `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
-    )
-  }
-}
-
 type SendChunkedArgs<TIn, TOut> = {
   input: TIn | TIn[]
   sendChunk: (chunk: TIn[]) => Promise<TOut | TOut[]>
@@ -234,6 +211,38 @@ const sendChunked = async <TIn, TOut>({
     result: _.flatten(result.map(e => e.result)),
     errors: _.flatten(result.map(e => e.errors)),
   }
+}
+
+export class ApiLimitsTooLowError extends Error {}
+
+export const getConnectionDetails = async (creds: Credentials, connection? : Connection): Promise<{
+  remainingDailyRequests: number
+  orgId: string
+}> => {
+  const conn = connection || realConnection(creds.isSandbox, {
+    maxAttempts: 2,
+    retryStrategy: RetryStrategies.HTTPOrNetworkError,
+  })
+  const userInfo = await conn.login(creds.username, creds.password + (creds.apiToken ?? ''))
+  const limits = await conn.limits()
+  return {
+    remainingDailyRequests: limits.DailyApiRequests.Remaining,
+    orgId: userInfo.organizationId,
+  }
+}
+
+export const validateCredentials = async (
+  creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
+): Promise<AccountId> => {
+  const { remainingDailyRequests, orgId } = await getConnectionDetails(
+    creds, connection
+  )
+  if (remainingDailyRequests < minApiRequestsRemaining) {
+    throw new ApiLimitsTooLowError(
+      `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
+    )
+  }
+  return orgId
 }
 
 export default class SalesforceClient {

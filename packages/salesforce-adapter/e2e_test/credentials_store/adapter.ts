@@ -49,7 +49,7 @@ const adapter: Adapter<Args, Credentials> = {
     apiToken: args['api-token'],
     isSandbox: args.sandbox,
   }),
-  validateCredentials,
+  validateCredentials: config => validateCredentials(config) as unknown as Promise<void>,
 }
 
 export default adapter

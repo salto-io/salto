@@ -22,54 +22,41 @@ jest.mock('../src/client/client')
 jest.mock('../src/adapter')
 
 describe('SalesforceAdapter creator', () => {
-  describe('when validateConfig is called', () => {
-    const config = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      creator.credentialsType,
-      {
-        username: 'myUser',
-        password: 'myPassword',
-        token: 'myToken',
-        sandbox: false,
-      }
-    )
-
+  const credentials = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    creator.credentialsType,
+    {
+      username: 'myUser',
+      password: 'myPassword',
+      token: 'myToken',
+      sandbox: false,
+    }
+  )
+  const config = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    creator.configType as ObjectType,
+    {
+      metadataTypesSkippedList: ['test1'],
+      instancesRegexSkippedList: ['test3', 'test2'],
+      notExist: ['not exist'],
+    }
+  )
+  describe('when validateCredentials is called', () => {
     beforeEach(() => {
-      creator.validateConfig(config)
+      creator.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', () => {
-      const credentials = {
+      expect(validateCredentials).toHaveBeenCalledWith({
         username: 'myUser',
         password: 'myPassword',
         apiToken: 'myToken',
         isSandbox: false,
-      }
-      expect(validateCredentials).toHaveBeenCalledWith(credentials)
+      })
     })
   })
+
   describe('when passed config elements', () => {
-    const credentials = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      creator.credentialsType,
-      {
-        username: 'myUser',
-        password: 'myPassword',
-        token: 'myToken',
-        sandbox: false,
-      }
-    )
-
-    const config = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      creator.configType as ObjectType,
-      {
-        metadataTypesSkippedList: ['test1'],
-        instancesRegexSkippedList: ['test3', 'test2'],
-        notExist: ['not exist'],
-      }
-    )
-
     beforeAll(() => {
       creator.create({ credentials, config })
     })

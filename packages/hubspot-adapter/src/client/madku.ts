@@ -45,6 +45,10 @@ export interface Contact extends HubspotObjectAPI {
   properties: ContactProperty
 }
 
+export interface Integrations {
+  getAccountDetails(): RequestPromise
+}
+
 export interface HubspotObjectAPI {
   getAll(opts?: {}): RequestPromise
   create(data: {}): RequestPromise
@@ -58,4 +62,5 @@ export default interface Connection {
   marketingEmail: MarketingEmail
   contacts: Contact
   owners: Owner
+  integrations: Integrations
 }

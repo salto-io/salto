@@ -19,6 +19,7 @@ import { StatusCodeError } from 'request-promise/errors'
 import {
   RequestPromise,
 } from 'requestretry'
+import { AccountId } from '@salto-io/adapter-api'
 import {
   Form, HubspotMetadata, MarketingEmail, Workflows, ContactProperty, Owner,
 } from './types'
@@ -100,11 +101,13 @@ export default class HubspotClient {
   private conn: Connection
   private readonly hubspotObjectAPI: Record<string, HubspotObjectAPI>
 
-  static validateCredentials(credentials: Credentials): Promise<void> {
+  static validateCredentials(
+    credentials: Credentials, connection?: Connection
+  ): Promise<AccountId> {
     const { apiKey } = credentials
-    const connection = new Hubspot({ apiKey })
+    const conn = connection || new Hubspot({ apiKey })
 
-    return connection.integrations.getAccountDetails()
+    return conn.integrations.getAccountDetails()
       .then(result => result) // convert to regular promise
   }
 

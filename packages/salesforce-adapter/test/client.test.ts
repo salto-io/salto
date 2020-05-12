@@ -15,8 +15,8 @@
 */
 import nock from 'nock'
 import { RetryStrategies } from 'requestretry'
-import SalesforceClient from '../src/client/client'
-
+import SalesforceClient, { ApiLimitsTooLowError, getConnectionDetails, validateCredentials } from '../src/client/client'
+import mockClient from './client'
 
 describe('salesforce client', () => {
   beforeEach(() => {
@@ -26,6 +26,13 @@ describe('salesforce client', () => {
       .post(/.*/)
       .reply(200, '<serverUrl>http://dodo22</serverUrl>/')
   })
+  const credentials = {
+    username: 'myUser',
+    password: 'myPass',
+    apiToken: 'myToken',
+    isSandbox: false,
+  }
+  const { connection } = mockClient()
   const client = new SalesforceClient({ credentials: {
     isSandbox: true,
     username: '',
@@ -198,6 +205,25 @@ describe('salesforce client', () => {
       const { result } = await client.readMetadata('QuickAction', ['SendEmail', 'LogACall'])
       expect(result).toHaveLength(1)
       expect(dodoScope.isDone()).toBeTruthy()
+    })
+  })
+
+  describe('getConnectionDetails', () => {
+    it('should return empty orgId', async () => {
+      const { orgId, remainingDailyRequests } = await getConnectionDetails(credentials, connection)
+      expect(orgId).toEqual('')
+      expect(remainingDailyRequests).toEqual(10000)
+    })
+  })
+
+  describe('validateCredentials', () => {
+    it('should throw ApiLimitsTooLowError exception', async () => {
+      await expect(
+        validateCredentials(credentials, 100000, connection)
+      ).rejects.toThrow(ApiLimitsTooLowError)
+    })
+    it('should return empty string', async () => {
+      expect(await validateCredentials(credentials, 3, connection)).toEqual('')
     })
   })
 })

@@ -57,7 +57,9 @@ export const creator: AdapterCreator = {
     config: adapterConfigFromConfig(opts.config),
     getElemIdFunc: opts.getElemIdFunc,
   }),
-  validateConfig: config => validateCredentials(credentialsFromConfig(config)),
+  validateCredentials: config => validateCredentials(
+    credentialsFromConfig(config)
+  ),
   credentialsType,
   configType,
   changeValidator,

@@ -46,7 +46,7 @@ export const creator: AdapterCreator = {
   create: opts => new NetsuiteAdapter({
     client: clientFromCredentials(opts.credentials),
   }),
-  validateConfig: config => {
+  validateCredentials: config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)
   },

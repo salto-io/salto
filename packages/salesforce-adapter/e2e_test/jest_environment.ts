@@ -23,8 +23,8 @@ import {
 import { logger } from '@salto-io/logging'
 import {
   Credentials,
-  validateCredentials,
   ApiLimitsTooLowError,
+  validateCredentials,
 } from '../src/client/client'
 
 

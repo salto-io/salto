@@ -20,6 +20,7 @@ import {
   InstanceElement,
   ObjectType,
   ElemID,
+  AccountId,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -55,13 +56,12 @@ const log = logger(module)
 
 export const verifyCredentials = async (
   loginConfig: Readonly<InstanceElement>
-): Promise<void> => {
+): Promise<AccountId> => {
   const adapterCreator = adapterCreators[loginConfig.elemID.adapter]
   if (adapterCreator) {
-    await adapterCreator.validateConfig(loginConfig)
-  } else {
-    throw new Error(`unknown adapter: ${loginConfig.elemID.adapter}`)
+    return adapterCreator.validateCredentials(loginConfig)
   }
+  throw new Error(`unknown adapter: ${loginConfig.elemID.adapter}`)
 }
 
 export const updateCredentials = async (

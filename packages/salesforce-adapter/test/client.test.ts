@@ -209,13 +209,19 @@ describe('salesforce client', () => {
       isSandbox: false,
     }
     it('should throw ApiLimitsTooLowError exception', async () => {
-      SalesforceClient.getRemainingDailyRequests = jest.fn(() => Promise.resolve(-1))
+      SalesforceClient.getConnectionDetails = jest.fn(() => Promise.resolve({
+        remainingDailyRequests: -1,
+        orgId: '',
+      }))
       await expect(
         SalesforceClient.validateCredentials(credentials)
       ).rejects.toThrow(ApiLimitsTooLowError)
     })
     it('should return empty string', async () => {
-      SalesforceClient.getRemainingDailyRequests = jest.fn(() => Promise.resolve(1))
+      SalesforceClient.getConnectionDetails = jest.fn(() => Promise.resolve({
+        remainingDailyRequests: 1,
+        orgId: '',
+      }))
       expect(await SalesforceClient.validateCredentials(credentials)).toEqual('')
     })
   })

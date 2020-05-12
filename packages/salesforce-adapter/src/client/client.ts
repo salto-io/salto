@@ -218,7 +218,6 @@ export default class SalesforceClient {
   private readonly conn: Connection
   private isLoggedIn = false
   private readonly credentials: Credentials
-  private static recentOrgId = ''
 
   constructor(
     { credentials, connection, retryOptions }: SalesforceClientOpts
@@ -228,31 +227,38 @@ export default class SalesforceClient {
       || realConnection(credentials.isSandbox, retryOptions || DEFAULT_RETRY_OPTS)
   }
 
-  private static saveOrgId(_err: Error, userInfo: UserInfo): void {
-  // Note that this returns the 18 char organization ID and not the 15 you see in the website.
-    SalesforceClient.recentOrgId = userInfo.organizationId
-  }
-
-  public static async getRemainingDailyRequests(creds: Credentials): Promise<number> {
+  public static async getConnectionDetails(creds: Credentials): Promise<{
+    remainingDailyRequests: number
+    orgId: string
+  }> {
     const conn = realConnection(creds.isSandbox, {
       maxAttempts: 2,
       retryStrategy: RetryStrategies.HTTPOrNetworkError,
     })
-    await conn.login(creds.username, creds.password + (creds.apiToken ?? ''), SalesforceClient.saveOrgId)
+    let orgId = ''
+    const saveOrgId = (_err: Error, userInfo: UserInfo): void => {
+      orgId = userInfo.organizationId
+    }
+    await conn.login(creds.username, creds.password + (creds.apiToken ?? ''), saveOrgId)
     const limits = await conn.limits()
-    return limits.DailyApiRequests.Remaining
+    return {
+      remainingDailyRequests: limits.DailyApiRequests.Remaining,
+      orgId,
+    }
   }
 
   public static async validateCredentials(
     creds: Credentials, minApiRequestsRemaining = 0
   ): Promise<string> {
-    const remainingDailyRequests = await SalesforceClient.getRemainingDailyRequests(creds)
+    const { remainingDailyRequests, orgId } = await SalesforceClient.getConnectionDetails(
+      creds
+    )
     if (remainingDailyRequests < minApiRequestsRemaining) {
       throw new ApiLimitsTooLowError(
         `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
       )
     }
-    return SalesforceClient.recentOrgId
+    return orgId
   }
 
   private async ensureLoggedIn(): Promise<void> {

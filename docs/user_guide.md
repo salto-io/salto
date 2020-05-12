@@ -37,7 +37,7 @@ For example, on Mac (using bash) one could do:
 mkdir ~/salto
 curl -L https://github.com/salto-io/salto/releases/latest/download/salto-macos.tar.gz --output ~/salto/salto.tar.gz
 tar -xzf ~/salto/salto.tar.gz
-rm ~/salto.tar.gz
+rm ~/salto/salto.tar.gz
 echo "export PATH=$PATH:~/salto" >> ~/.bash_profile
 chmod +x ~/salto/salto
 ```

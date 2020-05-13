@@ -1,8 +1,9 @@
 name: Attribution NOTICES file
 
 on:
-  push:
-    branches: [ master ]
+  schedule:
+    # every saturday on 3 am
+    - cron: '0 3 * * 6'
 
 jobs:
   build:

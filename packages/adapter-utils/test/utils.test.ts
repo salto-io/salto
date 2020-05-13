@@ -87,6 +87,8 @@ describe('Test utils.ts', () => {
 
   const regValue = 'regValue'
   const valueRef = new ReferenceExpression(mockElem, regValue)
+  const fileContent = 'bb'
+  const valueFile = new StaticFile('aa', Buffer.from(fileContent))
 
   const mockInstance = new InstanceElement(
     'mockInstance',
@@ -100,7 +102,7 @@ describe('Test utils.ts', () => {
       strArray: 'should be list',
       notExist: 'notExist',
       notExistArray: ['', ''],
-      file: new StaticFile('aa', 'bb'),
+      file: valueFile,
       obj: [
         {
           field: 'firstField',
@@ -472,6 +474,7 @@ describe('Test utils.ts', () => {
       fields: {
         refValue: new Field(mockElem, 'refValue', BuiltinTypes.STRING),
         arrayValues: new Field(mockElem, 'refValue', new ListType(BuiltinTypes.STRING), {}),
+        fileValue: new Field(mockElem, 'fileValue', BuiltinTypes.STRING),
       },
     })
 
@@ -494,6 +497,7 @@ describe('Test utils.ts', () => {
     )
     const instance = new InstanceElement('instance', element, {
       name: instanceName,
+      fileValue: valueFile,
       refValue: valueRef,
       into: new TemplateExpression({
         parts: [
@@ -598,6 +602,7 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.value.arrayValues).toHaveLength(2)
         expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
         expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
+        expect(resolvedInstance.value.fileValue).toEqual(fileContent)
 
         expect(resolvedInstance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toEqual(regValue)
       })
@@ -1039,7 +1044,7 @@ describe('Test utils.ts', () => {
   })
   describe('Flat Values', () => {
     it('should not transform static files', () => {
-      const staticFile = new StaticFile('aa', 'aaa')
+      const staticFile = valueFile
       expect(flatValues(staticFile)).toEqual(staticFile)
     })
   })

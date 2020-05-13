@@ -251,7 +251,7 @@ export const resolveValues = <T extends Element>(
       return getLookUpName(value.value, field, path)
     }
     if (isStaticFile(value)) {
-      return (value.content as Buffer).toString()
+      return value.content?.toString()
     }
     return value
   }

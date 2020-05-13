@@ -19,7 +19,7 @@ import {
   Change, getChangeElement, isField, isElement, ElemIdGetter, Values, FetchResult,
 } from '@salto-io/adapter-api'
 import {
-  resolveReferences, restoreReferences,
+  resolveValues, restoreValues,
 } from '@salto-io/adapter-utils'
 import {
   SaveResult, MetadataInfo, FileProperties, ListMetadataQuery,
@@ -354,7 +354,7 @@ export default class SalesforceAdapter {
    */
   public async add(element: Element): Promise<Element> {
     let post: Element
-    const resolved = resolveReferences(element, getLookUpName)
+    const resolved = resolveValues(element, getLookUpName)
     if (isObjectType(resolved)) {
       post = await this.addObject(resolved)
     } else {
@@ -362,7 +362,7 @@ export default class SalesforceAdapter {
     }
 
     await this.filtersRunner.onAdd(post)
-    return restoreReferences(element, post, getLookUpName)
+    return restoreValues(element, post, getLookUpName)
   }
 
   /**
@@ -422,7 +422,7 @@ export default class SalesforceAdapter {
    */
   @logDuration()
   public async remove(element: Element): Promise<void> {
-    const resolved = resolveReferences(element, getLookUpName)
+    const resolved = resolveValues(element, getLookUpName)
     const type = metadataType(resolved)
     if (isInstanceElement(resolved)
       && this.isMetadataTypeToRetrieveAndDeploy(type)) {
@@ -443,11 +443,11 @@ export default class SalesforceAdapter {
   @logDuration()
   public async update(before: Element, after: Element,
     changes: ReadonlyArray<Change>): Promise<Element> {
-    const resBefore = resolveReferences(before, getLookUpName)
-    const resAfter = resolveReferences(after, getLookUpName)
+    const resBefore = resolveValues(before, getLookUpName)
+    const resAfter = resolveValues(after, getLookUpName)
     const resChanges = changes.map(c => ({
       action: c.action,
-      data: _.mapValues(c.data, (x => resolveReferences(x, getLookUpName))),
+      data: _.mapValues(c.data, (x => resolveValues(x, getLookUpName))),
     })) as ReadonlyArray<Change<Field | ObjectType>>
     let result = resAfter
     if (isObjectType(resBefore) && isObjectType(resAfter)) {
@@ -464,7 +464,7 @@ export default class SalesforceAdapter {
 
     // Aspects should be updated once all object related properties updates are over
     await this.filtersRunner.onUpdate(resBefore, result, resChanges)
-    return restoreReferences(after, result, getLookUpName)
+    return restoreValues(after, result, getLookUpName)
   }
 
   /**

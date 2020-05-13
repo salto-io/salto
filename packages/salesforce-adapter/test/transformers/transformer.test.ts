@@ -21,7 +21,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { Field as SalesforceField, ValueTypeField } from 'jsforce'
 import {
-  restoreReferences, resolveReferences,
+  restoreValues, resolveValues,
 } from '@salto-io/adapter-utils'
 import {
   getSObjectFieldElement, Types, toCustomField, toCustomObject,
@@ -1095,7 +1095,7 @@ describe('transformer', () => {
       },
     })
     const origCopy = _.cloneDeep(orig)
-    const modified = resolveReferences(orig, getLookUpName)
+    const modified = resolveValues(orig, getLookUpName)
 
     it('should not modify the original element', () => {
       expect(orig).toEqual(origCopy)
@@ -1124,7 +1124,7 @@ describe('transformer', () => {
     })
 
     it('should transform back to orig value', () => {
-      expect(restoreReferences(orig, modified, getLookUpName)).toEqual(orig)
+      expect(restoreValues(orig, modified, getLookUpName)).toEqual(orig)
     })
 
     it('should maintain new values when transforming back to orig value', () => {
@@ -1135,7 +1135,7 @@ describe('transformer', () => {
       after.fields.field.annotations.regValue = newValue
       after.fields.field.annotations.changeToRef = instanceRef
       after.annotations.changeToRef = instanceRef
-      const restored = restoreReferences(orig, after, getLookUpName)
+      const restored = restoreValues(orig, after, getLookUpName)
       expect(restored.annotations.new).toEqual(newValue)
       expect(restored.fields.field.annotations.new).toEqual(newValue)
       expect(restored.annotations.regValue).toEqual(newValue)

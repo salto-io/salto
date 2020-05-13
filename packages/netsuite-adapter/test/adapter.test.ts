@@ -17,10 +17,10 @@
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
-import { Types } from '../src/types'
+import { customTypes, getAllTypes } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, NETSUITE, SCRIPT_ID } from '../src/constants'
-import { createInstanceElement, createXmlElement } from '../src/transformer'
-import { convertToSingleXmlElement } from '../src/client/client'
+import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
+import { convertToCustomizationInfo } from '../src/client/client'
 
 describe('Adapter', () => {
   const client = createClient()
@@ -31,39 +31,40 @@ describe('Adapter', () => {
       const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
         + '  <label>elementName</label>'
         + '</entitycustomfield>'
-      const rootXmlElement = convertToSingleXmlElement(xmlContent)
-      client.listCustomObjects = jest.fn().mockImplementation(async () => [rootXmlElement])
+      const customizationInfo = convertToCustomizationInfo(xmlContent)
+      client.listCustomObjects = jest.fn().mockImplementation(async () => [customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
-      expect(elements).toHaveLength(Types.getAllTypes().length + 1)
-      const customFieldType = Types.customTypes[ENTITY_CUSTOM_FIELD.toLowerCase()]
+      expect(elements).toHaveLength(getAllTypes().length + 1)
+      const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
-      expect(elements).toContainEqual(createInstanceElement(rootXmlElement, customFieldType))
+      expect(elements)
+        .toContainEqual(createInstanceElement(customizationInfo.values, customFieldType))
     })
 
     it('should handle exceptions during listCustomObjects', async () => {
       const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
         + '  <label>elementName</label>'
         + '</entitycustomfield>'
-      convertToSingleXmlElement(xmlContent)
+      convertToCustomizationInfo(xmlContent)
       client.listCustomObjects = jest.fn().mockImplementation(async () => Promise.reject())
       const { elements } = await netsuiteAdapter.fetch()
-      expect(elements).toHaveLength(Types.getAllTypes().length)
+      expect(elements).toHaveLength(getAllTypes().length)
     })
 
     it('should ignore instances of unknown type', async () => {
       const xmlContent = '<unknowntype>\n'
         + '  <label>elementName</label>'
         + '</unknowntype>'
-      const rootXmlElement = convertToSingleXmlElement(xmlContent)
-      client.listCustomObjects = jest.fn().mockImplementation(async () => [rootXmlElement])
+      const customizationInfo = convertToCustomizationInfo(xmlContent)
+      client.listCustomObjects = jest.fn().mockImplementation(async () => [customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
-      expect(elements).toHaveLength(Types.getAllTypes().length)
+      expect(elements).toHaveLength(getAllTypes().length)
     })
   })
 
   describe('add & update', () => {
     const origInstance = new InstanceElement('elementName',
-      Types.customTypes[ENTITY_CUSTOM_FIELD.toLowerCase()], {
+      customTypes[ENTITY_CUSTOM_FIELD], {
         label: 'elementName',
         [SCRIPT_ID]: 'custentity_my_script_id',
       })
@@ -77,7 +78,7 @@ describe('Adapter', () => {
       it('should add instance', async () => {
         const post = await netsuiteAdapter.add(instance)
         expect(client.deployCustomObject)
-          .toHaveBeenCalledWith('custentity_my_script_id', createXmlElement(instance))
+          .toHaveBeenCalledWith('custentity_my_script_id', toCustomizationInfo(instance))
         expect(post).toEqual(instance)
       })
 
@@ -86,7 +87,7 @@ describe('Adapter', () => {
         const post = await netsuiteAdapter.add(instance)
         expect(post.value[SCRIPT_ID]).toEqual('custentity_elementname')
         expect(client.deployCustomObject)
-          .toHaveBeenCalledWith('custentity_elementname', createXmlElement(instance))
+          .toHaveBeenCalledWith('custentity_elementname', toCustomizationInfo(instance))
       })
 
       it('should throw error when trying to add a non custom type instance', async () => {
@@ -100,7 +101,7 @@ describe('Adapter', () => {
       it('should update instance', async () => {
         const post = await netsuiteAdapter.update(instance, instance.clone())
         expect(client.deployCustomObject)
-          .toHaveBeenCalledWith('custentity_my_script_id', createXmlElement(instance))
+          .toHaveBeenCalledWith('custentity_my_script_id', toCustomizationInfo(instance))
         expect(post).toEqual(instance)
       })
 

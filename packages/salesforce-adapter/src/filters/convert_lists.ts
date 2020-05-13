@@ -18,7 +18,7 @@ import {
   ElemID, Element, isObjectType, Field, Values, Value, ObjectType, isInstanceElement,
   isListType, ListType, isElement,
 } from '@salto-io/adapter-api'
-import { resolvePath } from '@salto-io/adapter-utils'
+import { applyRecursive, resolvePath } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 import hardcodedListsData from './hardcoded_lists.json'
@@ -78,27 +78,6 @@ const annotationsToSort: ReadonlyArray<UnorderedList> = [
     orderBy: 'fullName',
   },
 ]
-
-// This method iterate on types and corresponding values and run innerChange
-// on every "node".
-const applyRecursive = (type: ObjectType, value: Values,
-  innerChange: (field: Field, value: Value) => Value): void => {
-  if (!value) return
-  Object.keys(type.fields).forEach(key => {
-    if (value[key] === undefined) return
-    value[key] = innerChange(type.fields[key], value[key])
-    const fieldType = type.fields[key].type
-    if (!isListType(fieldType) && !isObjectType(fieldType)) return
-    const actualFieldType = isListType(fieldType) ? fieldType.innerType : fieldType
-    if (isObjectType(actualFieldType)) {
-      if (_.isArray(value[key])) {
-        value[key].forEach((val: Values) => applyRecursive(actualFieldType, val, innerChange))
-      } else {
-        applyRecursive(actualFieldType, value[key], innerChange)
-      }
-    }
-  })
-}
 
 const markListRecursively = (
   type: ObjectType,

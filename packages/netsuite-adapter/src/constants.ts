@@ -19,14 +19,15 @@ export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
 
 // Type names
-export const ENTITY_CUSTOM_FIELD = 'EntityCustomField'
+export const ENTITY_CUSTOM_FIELD = 'entitycustomfield'
 
 // Type Annotations
 export const SCRIPT_ID_PREFIX = 'scriptIdPrefix'
 
 // Fields
-export const SCRIPT_ID = 'scriptId'
+export const SCRIPT_ID = 'scriptid'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'
 export const IS_NAME = 'isName'
+export const ADDITIONAL_FILE_SUFFIX = 'additionalFileSuffix'

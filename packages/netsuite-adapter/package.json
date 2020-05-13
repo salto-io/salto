@@ -35,7 +35,7 @@
     "@salto-io/suitecloud-cli": "^1.0.2-salto-3",
     "lodash": "^4.17.11",
     "wu": "^2.1.0",
-    "xml-js": "^1.6.11"
+    "fast-xml-parser": "^3.15.0"
   },
   "devDependencies": {
     "@types/jest": "^24.0.0",

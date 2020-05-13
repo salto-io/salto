@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { readFile, readDir, writeFile } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
-import NetsuiteClient, { COMMANDS } from '../../src/client/client'
+import NetsuiteClient, { COMMANDS, CustomizationInfo } from '../../src/client/client'
 
 
 jest.mock('@salto-io/file', () => ({
@@ -211,7 +211,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await client.deployCustomObject('elementName', {})
+      await client.deployCustomObject('elementName', {} as CustomizationInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(1)
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
@@ -222,7 +222,7 @@ describe('netsuite client', () => {
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      await client.deployCustomObject('elementName', {})
+      await client.deployCustomObject('elementName', {} as CustomizationInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(1)
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)

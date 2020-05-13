@@ -14,38 +14,38 @@
 * limitations under the License.
 */
 import { InstanceElement } from '@salto-io/adapter-api'
-import { createInstanceElement, createXmlElement } from '../src/transformer'
+import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { ENTITY_CUSTOM_FIELD, SCRIPT_ID } from '../src/constants'
-import { Types } from '../src/types'
-import { convertToSingleXmlElement, convertToXmlString } from '../src/client/client'
+import { customTypes } from '../src/types'
+import { convertToCustomizationInfo, convertToXmlContent } from '../src/client/client'
 
 describe('Transformer', () => {
   const XML_TEMPLATES = {
     WITH_LABEL: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_ATTRIBUTE: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <label>elementName</label>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_UNKNOWN_ATTRIBUTE: '<entitycustomfield unknownattr="val">\n'
       + '  <label>elementName</label>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_TRUE_FIELD: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
       + '  <checkspelling>T</checkspelling>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_FALSE_FIELD: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
       + '  <checkspelling>F</checkspelling>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_NUMBER_FIELD: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
       + '  <displayheight>123</displayheight>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_UNDEFINED_PRIMITIVE_FIELD: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
       + '  <description></description>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_LIST_OF_OBJECTS: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
       + '  <roleaccesses>\n'
@@ -60,11 +60,24 @@ describe('Transformer', () => {
       + '      <searchlevel>1</searchlevel>\n'
       + '    </roleaccess>\n'
       + '  </roleaccesses>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
+    WITH_LIST_OF_SINGLE_OBJECT: '<entitycustomfield>\n'
+      + '  <label>elementName</label>\n'
+      + '  <roleaccesses>\n'
+      + '    <roleaccess>\n'
+      + '      <accesslevel>1</accesslevel>\n'
+      + '      <role>BOOKKEEPER</role>\n'
+      + '      <searchlevel>2</searchlevel>\n'
+      + '    </roleaccess>\n'
+      + '  </roleaccesses>\n'
+      + '</entitycustomfield>\n',
     WITH_UNDEFINED_LIST_FIELD: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
-      + '  <roleaccesses></roleaccesses>\n'
-      + '</entitycustomfield>',
+      + '  <roleaccesses>\n'
+      + '    <roleaccess>\n'
+      + '    </roleaccess>\n'
+      + '  </roleaccesses>\n'
+      + '</entitycustomfield>\n',
     WITH_UNDEFINED_OBJECT_INNER_FIELDS: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
       + '  <roleaccesses>\n'
@@ -74,28 +87,37 @@ describe('Transformer', () => {
       + '      <searchlevel></searchlevel>\n'
       + '    </roleaccess>\n'
       + '  </roleaccesses>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_UNDEFINED_OBJECT_FIELD: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
       + '  <roleaccesses>\n'
-      + '    <roleaccess></roleaccess>\n'
       + '  </roleaccesses>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
     WITH_UNKNOWN_FIELD: '<entitycustomfield>\n'
       + '  <label>elementName</label>\n'
       + '  <unknownfield>unknownVal</unknownfield>\n'
-      + '</entitycustomfield>',
+      + '</entitycustomfield>\n',
   }
 
   describe('createInstanceElement', () => {
-    const transformCustomFieldRecord = (xmlInput: string): InstanceElement => {
-      const customFieldType = Types.customTypes[ENTITY_CUSTOM_FIELD.toLowerCase()]
-      return createInstanceElement(convertToSingleXmlElement(xmlInput), customFieldType)
+    const transformCustomFieldRecord = (xmlContent: string): InstanceElement => {
+      const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
+      return createInstanceElement(convertToCustomizationInfo(xmlContent).values, customFieldType)
     }
 
     it('should create instance name correctly', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LABEL)
       expect(result.elemID.name).toEqual('elementName')
+    })
+
+    it('should create instance name correctly when name field is an attribute', () => {
+      const savedSearchXmlContent = '<savedsearch scriptid="customsearch_my_search_script_id">\n'
+      + '  <definition>BLA</definition>\n'
+      + '</savedsearch>\n'
+      const savedSearchType = customTypes.savedsearch
+      const result = createInstanceElement(convertToCustomizationInfo(savedSearchXmlContent).values,
+        savedSearchType)
+      expect(result.elemID.name).toEqual('customsearch_my_search_script_id')
     })
 
     it('should transform attributes', () => {
@@ -110,17 +132,17 @@ describe('Transformer', () => {
 
     it('should transform boolean primitive field when is true', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_TRUE_FIELD)
-      expect(result.value.checkSpelling).toEqual(true)
+      expect(result.value.checkspelling).toEqual(true)
     })
 
     it('should transform boolean primitive field when is false', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_FALSE_FIELD)
-      expect(result.value.checkSpelling).toEqual(false)
+      expect(result.value.checkspelling).toEqual(false)
     })
 
     it('should transform number primitive field', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_NUMBER_FIELD)
-      expect(result.value.displayHeight).toEqual(123)
+      expect(result.value.displayheight).toEqual(123)
     })
 
     it('should transform string primitive field', () => {
@@ -135,33 +157,44 @@ describe('Transformer', () => {
 
     it('should transform list field', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LIST_OF_OBJECTS)
-      expect(result.value.roleAccesses).toEqual(
+      expect(result.value.roleaccesses.roleaccess).toEqual(
         [{
-          accessLevel: '1',
+          accesslevel: '1',
           role: 'BOOKKEEPER',
-          searchLevel: '2',
+          searchlevel: '2',
         },
         {
-          accessLevel: '0',
+          accesslevel: '0',
           role: 'BUYER',
-          searchLevel: '1',
+          searchlevel: '1',
+        }]
+      )
+    })
+
+    it('should transform list field that contains a single object', () => {
+      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LIST_OF_SINGLE_OBJECT)
+      expect(result.value.roleaccesses.roleaccess).toEqual(
+        [{
+          accesslevel: '1',
+          role: 'BOOKKEEPER',
+          searchlevel: '2',
         }]
       )
     })
 
     it('should ignore undefined list field', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_LIST_FIELD)
-      expect(result.value.roleAccesses).toBeUndefined()
+      expect(result.value.roleaccesses).toBeUndefined()
     })
 
     it('should ignore undefined object type field', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_OBJECT_FIELD)
-      expect(result.value.roleAccesses).toBeUndefined()
+      expect(result.value.roleaccesses).toBeUndefined()
     })
 
     it('should ignore undefined object type inner fields', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNDEFINED_OBJECT_INNER_FIELDS)
-      expect(result.value.roleAccesses).toBeUndefined()
+      expect(result.value.roleaccesses).toBeUndefined()
     })
 
     it('should ignore unknown fields', () => {
@@ -170,9 +203,9 @@ describe('Transformer', () => {
     })
   })
 
-  describe('createXmlElement', () => {
+  describe('toCustomizationInfo', () => {
     const origInstance = new InstanceElement('elementName',
-      Types.customTypes[ENTITY_CUSTOM_FIELD.toLowerCase()], {
+      customTypes[ENTITY_CUSTOM_FIELD], {
         label: 'elementName',
       })
     let instance: InstanceElement
@@ -181,88 +214,94 @@ describe('Transformer', () => {
     })
 
     it('should transform string primitive field', () => {
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
     })
 
     it('should transform boolean primitive field when is true', () => {
-      instance.value.checkSpelling = true
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
+      instance.value.checkspelling = true
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(XML_TEMPLATES.WITH_TRUE_FIELD)
     })
 
     it('should transform boolean primitive field when is false', () => {
-      instance.value.checkSpelling = false
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
+      instance.value.checkspelling = false
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(XML_TEMPLATES.WITH_FALSE_FIELD)
     })
 
     it('should transform number primitive field', () => {
-      instance.value.displayHeight = 123
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
+      instance.value.displayheight = 123
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(XML_TEMPLATES.WITH_NUMBER_FIELD)
     })
 
     it('should transform attribute field', () => {
       instance.value[SCRIPT_ID] = 'custentity_my_script_id'
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(XML_TEMPLATES.WITH_ATTRIBUTE)
     })
 
     it('should ignore unknown field', () => {
-      instance.value.unknownField = 'unknownValue'
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
+      instance.value.unknownfield = 'unknownValue'
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
     })
 
     it('should transform list field', () => {
-      instance.value.roleAccesses = [{
-        accessLevel: '1',
-        role: 'BOOKKEEPER',
-        searchLevel: '2',
-      },
-      {
-        accessLevel: '0',
-        role: 'BUYER',
-        searchLevel: '1',
-      }]
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
+      instance.value.roleaccesses = {
+        roleaccess: [{
+          accesslevel: '1',
+          role: 'BOOKKEEPER',
+          searchlevel: '2',
+        },
+        {
+          accesslevel: '0',
+          role: 'BUYER',
+          searchlevel: '1',
+        }],
+      }
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LIST_OF_OBJECTS)
     })
 
     it('should transform empty list field', () => {
-      instance.value.roleAccesses = []
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_UNDEFINED_LIST_FIELD)
+      instance.value.roleaccesses = {
+        roleaccess: [],
+      }
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
     })
 
     it('should transform empty object field', () => {
-      instance.value.roleAccesses = [{}]
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_UNDEFINED_OBJECT_FIELD)
+      instance.value.roleaccesses = {}
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
     })
 
     it('should ignore list field with incompatible type', () => {
-      instance.value.roleAccesses = 'not an array'
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
+      instance.value.roleaccesses = {
+        roleaccess: 'not a list',
+      }
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
     })
 
     it('should ignore object field with incompatible type', () => {
-      instance.value.roleAccesses = ['not an object']
-      const xmlElement = createXmlElement(instance)
-      const xmlContent = convertToXmlString(xmlElement)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_UNDEFINED_LIST_FIELD)
+      instance.value.roleaccesses = ['not an object']
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
     })
   })
 })

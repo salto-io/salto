@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { ChangeError, Element, isInstanceElement } from '@salto-io/adapter-api'
-import { Types } from '../types'
+import { isCustomType } from '../types'
 
 export const changeValidator = {
   onRemove: async (before: Element): Promise<ReadonlyArray<ChangeError>> => {
-    if (isInstanceElement(before) && Types.isCustomType(before.type)) {
+    if (isInstanceElement(before) && isCustomType(before.type)) {
       return [{
         elemID: before.elemID,
         severity: 'Error',

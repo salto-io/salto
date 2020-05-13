@@ -518,3 +518,45 @@ export const filterByID = async <T>(
 
   return value
 }
+
+// This method iterate on types and corresponding values and run innerChange
+// on every "node".
+// This method DOESN'T SUPPORT list of lists!
+export const applyRecursive = (type: ObjectType, value: Values,
+  innerChange: (field: Field, value: Value) => Value): void => {
+  if (!value) return
+  Object.keys(type.fields).forEach(key => {
+    if (value[key] === undefined) return
+    value[key] = innerChange(type.fields[key], value[key])
+    const fieldType = type.fields[key].type
+    if (!isListType(fieldType) && !isObjectType(fieldType)) return
+    const actualFieldType = isListType(fieldType) ? fieldType.innerType : fieldType
+    if (isObjectType(actualFieldType)) {
+      if (_.isArray(value[key])) {
+        value[key].forEach((val: Values) => applyRecursive(actualFieldType, val, innerChange))
+      } else {
+        applyRecursive(actualFieldType, value[key], innerChange)
+      }
+    }
+  })
+}
+
+type MapKeysRecursiveArgs = {
+  key: string
+  pathID?: ElemID
+}
+
+export type MapKeyFunc = (args: MapKeysRecursiveArgs) => string
+
+export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID): Values => {
+  if (_.isArray(obj)) {
+    return obj.map((val, idx) => mapKeysRecursive(val, func, pathID?.createNestedID(String(idx))))
+  }
+  if (_.isPlainObject(obj)) {
+    return _(obj)
+      .mapKeys((_val, key) => func({ key, pathID: pathID?.createNestedID(String(key)) }))
+      .mapValues((val, key) => mapKeysRecursive(val, func, pathID?.createNestedID(String(key))))
+      .value()
+  }
+  return obj
+}

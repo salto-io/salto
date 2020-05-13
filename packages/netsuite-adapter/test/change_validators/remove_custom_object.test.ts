@@ -15,14 +15,14 @@
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import removeCustomObjectValidator from '../../src/change_validators/remove_custom_object'
-import { Types } from '../../src/types'
+import { customTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD } from '../../src/constants'
 
 
 describe('remove custom object change validator', () => {
   describe('onRemove', () => {
     it('should have change error when removing an instance with custom object type', async () => {
-      const instance = new InstanceElement('test', Types.customTypes[ENTITY_CUSTOM_FIELD.toLowerCase()])
+      const instance = new InstanceElement('test', customTypes[ENTITY_CUSTOM_FIELD])
       const changeErrors = await removeCustomObjectValidator.onRemove(instance)
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')

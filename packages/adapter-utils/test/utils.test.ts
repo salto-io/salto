@@ -28,7 +28,7 @@ import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues,
   naclCase, findElement, findElements, findObjectType,
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
-  flatValues,
+  flatValues, mapKeysRecursive,
 } from '../src/utils'
 
 const mockFunction = <T extends (...args: never[]) => unknown>():
@@ -143,6 +143,12 @@ describe('Test utils.ts', () => {
           },
         },
       ],
+      objWithInnerObj: {
+        innerObj: {
+          listKey: [1, 2],
+          stringKey: 'val2',
+        },
+      },
     },
     ['yes', 'this', 'is', 'path'],
     {
@@ -1046,6 +1052,31 @@ describe('Test utils.ts', () => {
     it('should not transform static files', () => {
       const staticFile = valueFile
       expect(flatValues(staticFile)).toEqual(staticFile)
+    })
+  })
+
+  describe('mapKeysRecursive', () => {
+    it('should map all keys recursively', () => {
+      const result = mapKeysRecursive(mockInstance.value, ({ key }) => key.toUpperCase())
+      expect(Object.keys(result))
+        .toEqual(expect.arrayContaining(['BOOL', 'STR', 'OBJ', 'OBJWITHINNEROBJ']))
+      expect(Object.keys(result.OBJWITHINNEROBJ)).toContain('INNEROBJ')
+      expect(Object.keys(result.OBJWITHINNEROBJ.INNEROBJ))
+        .toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
+    })
+
+    it('should map keys recursively when passing the pathID', () => {
+      const result = mapKeysRecursive(mockInstance.value, ({ key, pathID }) => {
+        if (pathID?.getFullName().includes('Key')) {
+          return key.toUpperCase()
+        }
+        return key
+      }, mockInstance.elemID)
+      expect(Object.keys(result))
+        .toEqual(expect.arrayContaining(['bool', 'str', 'obj', 'objWithInnerObj']))
+      expect(Object.keys(result.objWithInnerObj)).toContain('innerObj')
+      expect(Object.keys(result.objWithInnerObj.innerObj))
+        .toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
     })
   })
 })

@@ -22,7 +22,7 @@ import { decorators, hash } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { readDir, readFile, writeFile } from '@salto-io/file'
 import { compareLogLevels, logger } from '@salto-io/logging'
-import xmlConverter, { Element as XmlElement } from 'xml-js'
+import xmlParser from 'fast-xml-parser'
 import path from 'path'
 import os from 'os'
 
@@ -46,6 +46,8 @@ export const COMMANDS = {
   ADD_PROJECT_DEPENDENCIES: 'project:adddependencies',
 }
 
+export const ATTRIBUTE_PREFIX = '@_'
+
 const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
 
@@ -53,13 +55,25 @@ const rootCLIPath = path.normalize(path.join(__dirname, ...Array(5).fill('..'), 
   '@salto-io', 'suitecloud-cli', 'src'))
 const baseExecutionPath = os.tmpdir()
 
-export const convertToSingleXmlElement = (xmlContent: string): XmlElement => {
-  const topLevelXmlElements = xmlConverter.xml2js(xmlContent)
-  return topLevelXmlElements.elements[0]
+export interface CustomizationInfo {
+  typeName: string
+  values: Values
 }
 
-export const convertToXmlString = (xmlElement: XmlElement): string =>
-  xmlConverter.js2xml(xmlElement, { spaces: 2, fullTagEmptyElement: true })
+export const convertToCustomizationInfo = (xmlContent: string): CustomizationInfo => {
+  const parsedXmlValues = xmlParser.parse(xmlContent,
+    { attributeNamePrefix: ATTRIBUTE_PREFIX, ignoreAttributes: false })
+  const typeName = Object.keys(parsedXmlValues)[0]
+  return { typeName, values: parsedXmlValues[typeName] }
+}
+
+export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
+  // eslint-disable-next-line new-cap
+  new xmlParser.j2xParser({
+    attributeNamePrefix: ATTRIBUTE_PREFIX,
+    format: true,
+    ignoreAttributes: false,
+  }).parse({ [customizationInfo.typeName]: customizationInfo.values })
 
 const setSdfLogLevel = (): void => {
   const isSaltoLogVerbose = (): boolean => {
@@ -199,7 +213,7 @@ export default class NetsuiteClient {
 
   @NetsuiteClient.logDecorator
   @NetsuiteClient.requiresSetupAccount
-  async listCustomObjects(): Promise<XmlElement[]> {
+  async listCustomObjects(): Promise<CustomizationInfo[]> {
     await this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
       destinationfolder: `${path.sep}${OBJECTS_DIR}`,
       type: 'ALL',
@@ -214,7 +228,7 @@ export default class NetsuiteClient {
     const xmlFilesInDir = dirContent.filter(filename => filename.endsWith('xml'))
     return Promise.all(xmlFilesInDir.map(async filename => {
       const xmlContent = await readFile(path.resolve(objectsDirPath, filename))
-      return convertToSingleXmlElement(xmlContent.toString())
+      return convertToCustomizationInfo(xmlContent.toString())
     }))
   }
 
@@ -228,12 +242,12 @@ export default class NetsuiteClient {
 
   @NetsuiteClient.logDecorator
   @NetsuiteClient.requiresSetupAccount
-  async deployCustomObject(filename: string, xmlElement: XmlElement): Promise<void> {
-    await this.deploy(path.resolve(this.getObjectsDirPath(), `${filename}.xml`), xmlElement)
+  async deployCustomObject(filename: string, customizationInfo: CustomizationInfo): Promise<void> {
+    await this.deploy(path.resolve(this.getObjectsDirPath(), `${filename}.xml`), customizationInfo)
   }
 
-  private async deploy(filePath: string, xmlElement: XmlElement): Promise<void> {
-    await writeFile(filePath, convertToXmlString(xmlElement))
+  private async deploy(filePath: string, customizationInfo: CustomizationInfo): Promise<void> {
+    await writeFile(filePath, convertToXmlContent(customizationInfo))
     await this.addProjectDependencies()
     await this.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {})
   }

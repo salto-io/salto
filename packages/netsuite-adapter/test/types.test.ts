@@ -14,20 +14,20 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { Types } from '../src/types'
+import { customTypes } from '../src/types'
 import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from '../src/constants'
 
 describe('Types', () => {
   describe('CustomTypes', () => {
     it('should have single name field for all custom types', () => {
-      Object.values(Types.customTypes)
+      Object.values(customTypes)
         .forEach(typeDef =>
           expect(Object.values(typeDef.fields)
             .filter(field => field.annotations[IS_NAME])).toHaveLength(1))
     })
 
     it('should have SCRIPT_ID_PREFIX defined correctly for all custom types', () => {
-      Object.values(Types.customTypes)
+      Object.values(customTypes)
         .forEach(typeDef => {
           expect(typeDef.annotations[SCRIPT_ID_PREFIX]).toBeDefined()
           expect(typeDef.annotations[SCRIPT_ID_PREFIX]).toMatch(/_$/)
@@ -35,7 +35,7 @@ describe('Types', () => {
     })
 
     it('should have a not required SCRIPT_ID field for all custom types', () => {
-      Object.values(Types.customTypes)
+      Object.values(customTypes)
         .forEach(typeDef => {
           expect(typeDef.fields[SCRIPT_ID]).toBeDefined()
           expect(typeDef.fields[SCRIPT_ID].annotations[CORE_ANNOTATIONS.REQUIRED]).toBeUndefined()

@@ -19,10 +19,9 @@ import {
 import { naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { Element as XmlElement } from 'xml-js'
-import NetsuiteClient from './client/client'
-import { createInstanceElement, createXmlElement } from './transformer'
-import { Types } from './types'
+import NetsuiteClient, { CustomizationInfo } from './client/client'
+import { createInstanceElement, toCustomizationInfo } from './transformer'
+import { customTypes, isCustomType, getAllTypes } from './types'
 import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from './constants'
 
 const log = logger(module)
@@ -67,19 +66,19 @@ export default class NetsuiteAdapter {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<FetchResult> {
-    const customObjectXmls = await this.client.listCustomObjects().catch(e => {
+    const customObjects = await this.client.listCustomObjects().catch(e => {
       log.error('failed to list custom objects reason: %o', e)
-      return [] as XmlElement[]
+      return [] as CustomizationInfo[]
     })
-    const instances = customObjectXmls.map(customObjectXml => {
-      const type = Types.customTypes[customObjectXml.name as string]
-      return type ? createInstanceElement(customObjectXml, type) : undefined
+    const instances = customObjects.map(customObject => {
+      const type = customTypes[customObject.typeName]
+      return type ? createInstanceElement(customObject.values, type) : undefined
     }).filter(isInstanceElement)
-    return { elements: [...Types.getAllTypes(), ...instances] }
+    return { elements: [...getAllTypes(), ...instances] }
   }
 
   public async add(instance: InstanceElement): Promise<InstanceElement> {
-    if (Types.isCustomType(instance.type)) {
+    if (isCustomType(instance.type)) {
       addDefaults(instance)
       await this.addOrUpdateCustomTypeInstance(instance)
       return instance
@@ -93,7 +92,7 @@ export default class NetsuiteAdapter {
   }
 
   public async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
-    if (Types.isCustomType(after.type)) {
+    if (isCustomType(after.type)) {
       validateServiceIds(before, after)
       await this.addOrUpdateCustomTypeInstance(after)
       return after
@@ -102,7 +101,7 @@ export default class NetsuiteAdapter {
   }
 
   private async addOrUpdateCustomTypeInstance(instance: InstanceElement): Promise<void> {
-    const xmlElement = createXmlElement(instance)
-    return this.client.deployCustomObject(instance.value[SCRIPT_ID], xmlElement)
+    const customizationInfo = toCustomizationInfo(instance)
+    return this.client.deployCustomObject(instance.value[SCRIPT_ID], customizationInfo)
   }
 }

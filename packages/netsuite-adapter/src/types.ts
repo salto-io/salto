@@ -13,287 +13,178 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, PrimitiveType, PrimitiveTypes,
-  ListType, TypeElement, createRestriction,
-} from '@salto-io/adapter-api'
+import { ObjectType, TypeElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import {
-  ENTITY_CUSTOM_FIELD, IS_ATTRIBUTE, IS_NAME, NETSUITE, SCRIPT_ID, SCRIPT_ID_PREFIX, SUBTYPES_PATH,
-  TYPES_PATH,
-} from './constants'
+import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
+import { advancedpdftemplate, advancedpdftemplateInnerTypes } from './types/custom_types/advancedpdftemplate'
+import { bankstatementparserplugin, bankstatementparserpluginInnerTypes } from './types/custom_types/bankstatementparserplugin'
+import { bundleinstallationscript, bundleinstallationscriptInnerTypes } from './types/custom_types/bundleinstallationscript'
+import { center, centerInnerTypes } from './types/custom_types/center'
+import { centercategory, centercategoryInnerTypes } from './types/custom_types/centercategory'
+import { centertab, centertabInnerTypes } from './types/custom_types/centertab'
+import { clientscript, clientscriptInnerTypes } from './types/custom_types/clientscript'
+import { cmscontenttype, cmscontenttypeInnerTypes } from './types/custom_types/cmscontenttype'
+import { crmcustomfield, crmcustomfieldInnerTypes } from './types/custom_types/crmcustomfield'
+import { customglplugin, customglpluginInnerTypes } from './types/custom_types/customglplugin'
+import { customlist, customlistInnerTypes } from './types/custom_types/customlist'
+import { customrecordtype, customrecordtypeInnerTypes } from './types/custom_types/customrecordtype'
+import { customsegment, customsegmentInnerTypes } from './types/custom_types/customsegment'
+import { customtransactiontype, customtransactiontypeInnerTypes } from './types/custom_types/customtransactiontype'
+import { dataset, datasetInnerTypes } from './types/custom_types/dataset'
+import { emailcaptureplugin, emailcapturepluginInnerTypes } from './types/custom_types/emailcaptureplugin'
+import { emailtemplate, emailtemplateInnerTypes } from './types/custom_types/emailtemplate'
+import { entitycustomfield, entitycustomfieldInnerTypes } from './types/custom_types/entitycustomfield'
+import { entryForm, entryFormInnerTypes } from './types/custom_types/entryForm'
+import { ficonnectivityplugin, ficonnectivitypluginInnerTypes } from './types/custom_types/ficonnectivityplugin'
+import { itemcustomfield, itemcustomfieldInnerTypes } from './types/custom_types/itemcustomfield'
+import { itemnumbercustomfield, itemnumbercustomfieldInnerTypes } from './types/custom_types/itemnumbercustomfield'
+import { itemoptioncustomfield, itemoptioncustomfieldInnerTypes } from './types/custom_types/itemoptioncustomfield'
+import { kpiscorecard, kpiscorecardInnerTypes } from './types/custom_types/kpiscorecard'
+import { mapreducescript, mapreducescriptInnerTypes } from './types/custom_types/mapreducescript'
+import { massupdatescript, massupdatescriptInnerTypes } from './types/custom_types/massupdatescript'
+import { othercustomfield, othercustomfieldInnerTypes } from './types/custom_types/othercustomfield'
+import { pluginimplementation, pluginimplementationInnerTypes } from './types/custom_types/pluginimplementation'
+import { plugintype, plugintypeInnerTypes } from './types/custom_types/plugintype'
+import { portlet, portletInnerTypes } from './types/custom_types/portlet'
+import { promotionsplugin, promotionspluginInnerTypes } from './types/custom_types/promotionsplugin'
+import { publisheddashboard, publisheddashboardInnerTypes } from './types/custom_types/publisheddashboard'
+import { restlet, restletInnerTypes } from './types/custom_types/restlet'
+import { role, roleInnerTypes } from './types/custom_types/role'
+import { savedcsvimport, savedcsvimportInnerTypes } from './types/custom_types/savedcsvimport'
+import { savedsearch, savedsearchInnerTypes } from './types/custom_types/savedsearch'
+import { scheduledscript, scheduledscriptInnerTypes } from './types/custom_types/scheduledscript'
+import { sdfinstallationscript, sdfinstallationscriptInnerTypes } from './types/custom_types/sdfinstallationscript'
+import { sspapplication, sspapplicationInnerTypes } from './types/custom_types/sspapplication'
+import { sublist, sublistInnerTypes } from './types/custom_types/sublist'
+import { subtab, subtabInnerTypes } from './types/custom_types/subtab'
+import { suitelet, suiteletInnerTypes } from './types/custom_types/suitelet'
+import { transactionForm, transactionFormInnerTypes } from './types/custom_types/transactionForm'
+import { transactionbodycustomfield, transactionbodycustomfieldInnerTypes } from './types/custom_types/transactionbodycustomfield'
+import { transactioncolumncustomfield, transactioncolumncustomfieldInnerTypes } from './types/custom_types/transactioncolumncustomfield'
+import { translationcollection, translationcollectionInnerTypes } from './types/custom_types/translationcollection'
+import { usereventscript, usereventscriptInnerTypes } from './types/custom_types/usereventscript'
+import { workbook, workbookInnerTypes } from './types/custom_types/workbook'
+import { workflow, workflowInnerTypes } from './types/custom_types/workflow'
+import { workflowactionscript, workflowactionscriptInnerTypes } from './types/custom_types/workflowactionscript'
+import { enums } from './types/enums'
 
-const entityCustomFieldElemID = new ElemID(NETSUITE, ENTITY_CUSTOM_FIELD)
-const roleAccessElemID = new ElemID(NETSUITE, 'RoleAccess')
-const accessLevelElemID = new ElemID(NETSUITE, 'AccessLevel')
-const searchLevelElemID = new ElemID(NETSUITE, 'SearchLevel')
-const onParentDeleteElemID = new ElemID(NETSUITE, 'OnParentDelete')
-const displayTypeElemID = new ElemID(NETSUITE, 'DisplayType')
-const dynamicDefaultElemID = new ElemID(NETSUITE, 'DynamicDefault')
-const customFieldFilterElemID = new ElemID(NETSUITE, 'CustomFieldFilter')
-const fieldFilterCompareTypeElemID = new ElemID(NETSUITE, 'FieldFilterCompareType')
-const fieldTypeElemID = new ElemID(NETSUITE, 'FieldType')
-
-const typesFolderPath = [NETSUITE, TYPES_PATH]
-const subtypesFolderPath = [NETSUITE, TYPES_PATH, SUBTYPES_PATH]
 
 /**
- * All supported Netsuite types.
- * This is a static creation because Netsuite API supports only instances.
- */
-export class Types {
-  private static accessLevelSubType = new PrimitiveType({
-    elemID: accessLevelElemID,
-    primitive: PrimitiveTypes.STRING,
-    annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['0', '1', '2'] }),
-    },
-    path: [...subtypesFolderPath, accessLevelElemID.name],
-  })
-
-  private static searchLevelSubType = new PrimitiveType({
-    elemID: searchLevelElemID,
-    primitive: PrimitiveTypes.STRING,
-    annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['0', '1', '2'] }),
-    },
-    path: [...subtypesFolderPath, searchLevelElemID.name],
-  })
-
-  private static onParentDeleteSubType = new PrimitiveType({
-    elemID: onParentDeleteElemID,
-    primitive: PrimitiveTypes.STRING,
-    annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['NO_ACTION', 'SET_NULL'] }),
-    },
-    path: [...subtypesFolderPath, onParentDeleteElemID.name],
-  })
-
-  private static displayTypeSubType = new PrimitiveType({
-    elemID: displayTypeElemID,
-    primitive: PrimitiveTypes.STRING,
-    annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-        values: ['HIDDEN', 'LOCKED', 'NORMAL', 'SHOWASLIST', 'STATICTEXT'],
-      }),
-    },
-    path: [...subtypesFolderPath, displayTypeElemID.name],
-  })
-
-  private static dynamicDefaultSubType = new PrimitiveType({
-    elemID: dynamicDefaultElemID,
-    primitive: PrimitiveTypes.STRING,
-    annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-        values: ['DEPARTMENT', 'LOCATION', 'ME', 'NOW', 'SUBSIDIARY', 'SUPERVISOR'],
-      }),
-    },
-    path: [...subtypesFolderPath, dynamicDefaultElemID.name],
-  })
-
-  private static fieldFilterCompareTypeSubType = new PrimitiveType({
-    elemID: fieldFilterCompareTypeElemID,
-    primitive: PrimitiveTypes.STRING,
-    annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-        values: ['EQ', 'GT', 'GTE', 'LIKE', 'LT', 'LTE', 'NE', 'NOTLIKE'],
-      }),
-    },
-    path: [...subtypesFolderPath, fieldFilterCompareTypeElemID.name],
-  })
-
-  private static customFieldFilterSubType = new ObjectType({
-    elemID: customFieldFilterElemID,
-    fields: {
-      // Todo fldFilter: should point to either standardFieldTypeSubType or reference
-      fldFilter: new Field(customFieldFilterElemID, 'fldFilter', BuiltinTypes.STRING),
-      fldFilterChecked: new Field(customFieldFilterElemID, 'fldFilterChecked',
-        BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-      fldFilterCompareType: new Field(customFieldFilterElemID, 'fldFilterCompareType',
-        Types.fieldFilterCompareTypeSubType, { [CORE_ANNOTATIONS.DEFAULT]: 'EQ' }),
-      // Todo fldFilterSel: list of references that is concated with '|' when transforming to xml
-      fldFilterSel: new Field(customFieldFilterElemID, 'fldFilterSel', BuiltinTypes.STRING),
-      fldFilterVal: new Field(customFieldFilterElemID, 'fldFilterVal', BuiltinTypes.STRING),
-      fldFilterNotNull: new Field(customFieldFilterElemID, 'fldFilterNotNull',
-        BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-      fldFilterNull: new Field(customFieldFilterElemID, 'fldFilterNull',
-        BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-      // Todo fldCompareField: should point to either standardFieldTypeSubType or reference
-      fldCompareField: new Field(customFieldFilterElemID, 'fldCompareField', BuiltinTypes.STRING),
-    },
-    path: [...subtypesFolderPath, customFieldFilterElemID.name],
-  })
-
-  private static roleAccessSubType = new ObjectType({
-    elemID: roleAccessElemID,
-    fields: {
-      // Todo role: should point to either customrecordtype_permittedrole or reference
-      role: new Field(roleAccessElemID, 'role', BuiltinTypes.STRING),
-      // Todo accessLevel: understand real values (not 0,1,2) and modify defaults
-      accessLevel: new Field(roleAccessElemID, 'accessLevel', Types.accessLevelSubType,
-        { [CORE_ANNOTATIONS.DEFAULT]: '0' }),
-      // Todo searchLevel: understand real values (not 0,1,2) and modify defaults
-      searchLevel: new Field(roleAccessElemID, 'searchLevel', Types.searchLevelSubType,
-        { [CORE_ANNOTATIONS.DEFAULT]: '0' }),
-    },
-    path: [...subtypesFolderPath, roleAccessElemID.name],
-  })
-
-  private static fieldTypeSubType = new PrimitiveType({
-    elemID: fieldTypeElemID,
-    primitive: PrimitiveTypes.STRING,
-    annotations: {
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-        values: [
-          'CHECKBOX', 'CLOBTEXT', 'CURRENCY', 'DATE', 'DATETIMETZ', 'DOCUMENT', 'EMAIL', 'FLOAT',
-          'HELP', 'IMAGE', 'INLINEHTML', 'INTEGER', 'MULTISELECT', 'PASSWORD', 'PERCENT', 'PHONE',
-          'RICHTEXT', 'SELECT', 'TEXT', 'TEXTAREA', 'TIMEOFDAY', 'URL',
-        ],
-      }),
-    },
-    path: [...subtypesFolderPath, fieldTypeElemID.name],
-  })
-
-  // Todo generic_standard_field has ~4000 options. We should consider to write it to state only.
-  // Todo standardFieldTypeSubType: add to getAllTypes array once defined.
-  private static standardFieldTypeSubType = BuiltinTypes.STRING
-
-  public static customTypes: Record<string, ObjectType> = {
-    [ENTITY_CUSTOM_FIELD.toLowerCase()]: new ObjectType({
-      elemID: entityCustomFieldElemID,
-      annotations: {
-        [SCRIPT_ID_PREFIX]: 'custentity_',
-      },
-      fields: {
-        fieldType: new Field(entityCustomFieldElemID, 'fieldType',
-          Types.fieldTypeSubType, { [CORE_ANNOTATIONS.REQUIRED]: true }),
-        [SCRIPT_ID]: new Field(entityCustomFieldElemID, SCRIPT_ID, BuiltinTypes.SERVICE_ID,
-          { [IS_ATTRIBUTE]: true }),
-        label: new Field(entityCustomFieldElemID, 'label', BuiltinTypes.STRING,
-          { [IS_NAME]: true, [CORE_ANNOTATIONS.REQUIRED]: true }),
-        selectRecordType: new Field(entityCustomFieldElemID, 'selectRecordType',
-          BuiltinTypes.STRING), // Todo: this field is a reference
-        applyFormatting: new Field(entityCustomFieldElemID, 'applyFormatting', BuiltinTypes.BOOLEAN),
-        defaultChecked: new Field(entityCustomFieldElemID, 'defaultChecked', BuiltinTypes.BOOLEAN),
-        defaultSelection: new Field(entityCustomFieldElemID, 'defaultSelection',
-          BuiltinTypes.STRING), // Todo: this field is a reference
-        defaultValue: new Field(entityCustomFieldElemID, 'defaultValue', BuiltinTypes.STRING),
-        description: new Field(entityCustomFieldElemID, 'description', BuiltinTypes.STRING),
-        displayType: new Field(entityCustomFieldElemID, 'displayType',
-          Types.displayTypeSubType, { [CORE_ANNOTATIONS.DEFAULT]: 'NORMAL' }),
-        dynamicDefault: new Field(entityCustomFieldElemID, 'dynamicDefault',
-          Types.dynamicDefaultSubType),
-        help: new Field(entityCustomFieldElemID, 'help', BuiltinTypes.STRING),
-        linkText: new Field(entityCustomFieldElemID, 'linkText', BuiltinTypes.STRING),
-        minvalue: new Field(entityCustomFieldElemID, 'minValue', BuiltinTypes.STRING),
-        maxValue: new Field(entityCustomFieldElemID, 'maxValue', BuiltinTypes.STRING),
-        storeValue: new Field(entityCustomFieldElemID, 'storeValue', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: true,
-        }),
-        // Todo accessLevel: understand real values (not 0,1,2) and modify defaults
-        accessLevel: new Field(entityCustomFieldElemID, 'accessLevel',
-          Types.accessLevelSubType, { [CORE_ANNOTATIONS.DEFAULT]: '2' }),
-        checkSpelling: new Field(entityCustomFieldElemID, 'checkSpelling', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: false,
-        }),
-        encryptAtRest: new Field(entityCustomFieldElemID, 'encryptAtRest', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: false,
-        }),
-        displayHeight: new Field(entityCustomFieldElemID, 'displayHeight', BuiltinTypes.NUMBER),
-        displayWidth: new Field(entityCustomFieldElemID, 'displayWidth', BuiltinTypes.NUMBER),
-        globalSearch: new Field(entityCustomFieldElemID, 'globalSearch', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: false,
-        }),
-        isFormula: new Field(entityCustomFieldElemID, 'isFormula', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: false,
-        }),
-        isMandatory: new Field(entityCustomFieldElemID, 'isMandatory', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: false,
-        }),
-        maxLength: new Field(entityCustomFieldElemID, 'maxLength', BuiltinTypes.STRING),
-        onParentDelete: new Field(entityCustomFieldElemID, 'onParentDelete',
-          Types.onParentDeleteSubType),
-        searchCompareField: new Field(entityCustomFieldElemID, 'searchCompareField',
-          Types.standardFieldTypeSubType),
-        searchDefault: new Field(entityCustomFieldElemID, 'searchDefault',
-          BuiltinTypes.STRING), // Todo: this field is a reference
-        // Todo searchLevel: understand real values (not 0,1,2) and modify defaults
-        searchLevel: new Field(entityCustomFieldElemID, 'searchLevel',
-          Types.searchLevelSubType, { [CORE_ANNOTATIONS.DEFAULT]: '2' }),
-        showHierarchy: new Field(entityCustomFieldElemID, 'showHierarchy', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: false,
-        }),
-        showInList: new Field(entityCustomFieldElemID, 'showInList', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: false,
-        }),
-        sourceFilterBy: new Field(entityCustomFieldElemID, 'sourceFilterBy',
-          Types.standardFieldTypeSubType),
-        sourceFrom: new Field(entityCustomFieldElemID, 'sourceFrom',
-          Types.standardFieldTypeSubType),
-        // Todo sourceList: should point to either standardFieldTypeSubType or reference
-        sourceList: new Field(entityCustomFieldElemID, 'sourceList', BuiltinTypes.STRING),
-        isParent: new Field(entityCustomFieldElemID, 'isParent', BuiltinTypes.BOOLEAN, {
-          [CORE_ANNOTATIONS.DEFAULT]: false,
-        }),
-        // Todo parentSubtab: should point to either generic_tab_parent or reference
-        parentSubtab: new Field(entityCustomFieldElemID, 'parentSubtab', BuiltinTypes.STRING),
-        // Todo subtab: should point to either generic_entity_tab or reference
-        subtab: new Field(entityCustomFieldElemID, 'subtab', BuiltinTypes.STRING),
-        appliesToContact: new Field(entityCustomFieldElemID, 'appliesToContact',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToCustomer: new Field(entityCustomFieldElemID, 'appliesToCustomer',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToEmployee: new Field(entityCustomFieldElemID, 'appliesToEmployee',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToGenericrSrc: new Field(entityCustomFieldElemID, 'appliesToGenericrSrc',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToGroup: new Field(entityCustomFieldElemID, 'appliesToGroup',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToOtherName: new Field(entityCustomFieldElemID, 'appliesToOtherName',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToPartner: new Field(entityCustomFieldElemID, 'appliesToPartner',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToPriceList: new Field(entityCustomFieldElemID, 'appliesToPriceList',
-          BuiltinTypes.BOOLEAN),
-        appliesToProject: new Field(entityCustomFieldElemID, 'appliesToProject',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToProjectTemplate: new Field(entityCustomFieldElemID, 'appliesToProjectTemplate',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToStatement: new Field(entityCustomFieldElemID, 'appliesToStatement',
-          BuiltinTypes.BOOLEAN),
-        appliesToVendor: new Field(entityCustomFieldElemID, 'appliesToVendor',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        appliesToWebSite: new Field(entityCustomFieldElemID, 'appliesToWebSite',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        availableExternally: new Field(entityCustomFieldElemID, 'availableExternally',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        availableToSso: new Field(entityCustomFieldElemID, 'availableToSso',
-          BuiltinTypes.BOOLEAN, { [CORE_ANNOTATIONS.DEFAULT]: false }),
-        customFieldFilters: new Field(entityCustomFieldElemID, 'customFieldFilters',
-          new ListType(Types.customFieldFilterSubType)),
-        roleAccesses: new Field(entityCustomFieldElemID, 'roleAccesses',
-          new ListType(Types.roleAccessSubType)),
-      },
-      path: [...typesFolderPath, entityCustomFieldElemID.name],
-    }),
-  }
-
-  public static isCustomType(type: ObjectType): boolean {
-    return !_.isUndefined(Types.customTypes[type.elemID.name.toLowerCase()])
-  }
-
-  public static getAllTypes(): TypeElement[] {
-    return [
-      ...Object.values(Types.customTypes),
-      Types.accessLevelSubType,
-      Types.searchLevelSubType,
-      Types.onParentDeleteSubType,
-      Types.displayTypeSubType,
-      Types.dynamicDefaultSubType,
-      Types.fieldFilterCompareTypeSubType,
-      Types.customFieldFilterSubType,
-      Types.roleAccessSubType,
-      Types.fieldTypeSubType,
-    ]
-  }
+* generated using types_generator.py as Netsuite don't expose a metadata API for them.
+*/
+export const customTypes: Readonly<Record<string, ObjectType>> = {
+  addressForm,
+  advancedpdftemplate,
+  bankstatementparserplugin,
+  bundleinstallationscript,
+  center,
+  centercategory,
+  centertab,
+  clientscript,
+  cmscontenttype,
+  crmcustomfield,
+  customglplugin,
+  customlist,
+  customrecordtype,
+  customsegment,
+  customtransactiontype,
+  dataset,
+  emailcaptureplugin,
+  emailtemplate,
+  entitycustomfield,
+  entryForm,
+  ficonnectivityplugin,
+  itemcustomfield,
+  itemnumbercustomfield,
+  itemoptioncustomfield,
+  kpiscorecard,
+  mapreducescript,
+  massupdatescript,
+  othercustomfield,
+  pluginimplementation,
+  plugintype,
+  portlet,
+  promotionsplugin,
+  publisheddashboard,
+  restlet,
+  role,
+  savedcsvimport,
+  savedsearch,
+  scheduledscript,
+  sdfinstallationscript,
+  sspapplication,
+  sublist,
+  subtab,
+  suitelet,
+  transactionForm,
+  transactionbodycustomfield,
+  transactioncolumncustomfield,
+  translationcollection,
+  usereventscript,
+  workbook,
+  workflow,
+  workflowactionscript,
 }
+
+const innerCustomTypes: ObjectType[] = [
+  ...addressFormInnerTypes,
+  ...advancedpdftemplateInnerTypes,
+  ...bankstatementparserpluginInnerTypes,
+  ...bundleinstallationscriptInnerTypes,
+  ...centerInnerTypes,
+  ...centercategoryInnerTypes,
+  ...centertabInnerTypes,
+  ...clientscriptInnerTypes,
+  ...cmscontenttypeInnerTypes,
+  ...crmcustomfieldInnerTypes,
+  ...customglpluginInnerTypes,
+  ...customlistInnerTypes,
+  ...customrecordtypeInnerTypes,
+  ...customsegmentInnerTypes,
+  ...customtransactiontypeInnerTypes,
+  ...datasetInnerTypes,
+  ...emailcapturepluginInnerTypes,
+  ...emailtemplateInnerTypes,
+  ...entitycustomfieldInnerTypes,
+  ...entryFormInnerTypes,
+  ...ficonnectivitypluginInnerTypes,
+  ...itemcustomfieldInnerTypes,
+  ...itemnumbercustomfieldInnerTypes,
+  ...itemoptioncustomfieldInnerTypes,
+  ...kpiscorecardInnerTypes,
+  ...mapreducescriptInnerTypes,
+  ...massupdatescriptInnerTypes,
+  ...othercustomfieldInnerTypes,
+  ...pluginimplementationInnerTypes,
+  ...plugintypeInnerTypes,
+  ...portletInnerTypes,
+  ...promotionspluginInnerTypes,
+  ...publisheddashboardInnerTypes,
+  ...restletInnerTypes,
+  ...roleInnerTypes,
+  ...savedcsvimportInnerTypes,
+  ...savedsearchInnerTypes,
+  ...scheduledscriptInnerTypes,
+  ...sdfinstallationscriptInnerTypes,
+  ...sspapplicationInnerTypes,
+  ...sublistInnerTypes,
+  ...subtabInnerTypes,
+  ...suiteletInnerTypes,
+  ...transactionFormInnerTypes,
+  ...transactionbodycustomfieldInnerTypes,
+  ...transactioncolumncustomfieldInnerTypes,
+  ...translationcollectionInnerTypes,
+  ...usereventscriptInnerTypes,
+  ...workbookInnerTypes,
+  ...workflowInnerTypes,
+  ...workflowactionscriptInnerTypes,
+]
+
+export const isCustomType = (type: ObjectType): boolean =>
+  !_.isUndefined(customTypes[type.elemID.name])
+
+export const getAllTypes = (): TypeElement[] => [
+  ...Object.values(customTypes),
+  ...innerCustomTypes,
+  ...Object.values(enums),
+]

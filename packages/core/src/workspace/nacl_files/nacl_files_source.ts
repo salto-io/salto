@@ -26,7 +26,7 @@ import { mergeElements, MergeError } from '../../core/merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate,
 } from './nacl_file_update'
-import { mergeSourceMaps, SourceMap, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
+import { mergeSourceMaps, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
 import { DetailedChange } from '../../core/plan'
@@ -34,7 +34,7 @@ import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files/common'
 import { getStaticFilesFunctions } from '../static_files/functions'
-import { Functions } from '../../parser/functions'
+import { SourceMap } from '../../parser/internal/source_map'
 
 const { withLimitedConcurrency } = promises.array
 
@@ -177,7 +177,7 @@ const buildNaclFilesSource = (
       const buffer = (await naclFilesStore.get(filename))?.buffer
       if (_.isUndefined(buffer)) {
         log.error('failed to find %s in NaCl file store', filename)
-        return new Map<string, SourceRange[]>()
+        return new SourceMap()
       }
       return (await parseNaclFile({ filename, buffer })).sourceMap
     }

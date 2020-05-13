@@ -35,7 +35,8 @@ export {
 export { ConfigSource } from './src/workspace/config_source'
 export { Errors } from './src/workspace/errors'
 export { NaclFile, FILE_EXTENSION } from './src/workspace/nacl_files/nacl_files_source'
-export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
+export { parse, SourceRange, parseElemID } from './src/parser/parse'
+export { SourceMap } from './src/parser/internal/source_map'
 export { dumpElements, dumpElemID } from './src/parser/dump'
 export { SALTO_HOME_VAR, AppConfig, configFromDisk, CommandConfig } from './src/app_config'
 export {

@@ -1,11 +1,21 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
 import _ from 'lodash'
-import { ElemID } from 'adapter-api'
+import { ElemID } from '@salto-io/adapter-api'
 import { SourceRange, isSourceRange } from './types'
-
-// interface SourceMapEntry {
-//   children: Record<string, SourceMapEntry>
-//   value: SourceRange[]
-// }
 
 const CHILDREN = 0
 const VALUE = 1
@@ -22,9 +32,7 @@ const setToPath = (
   }
   if (_.isEmpty(restOfPath)) {
     const newItem = _.isEmpty(data[CHILDREN][key][VALUE])
-    data[CHILDREN][key][VALUE] = value.map(r => {
-      return {...r, filename: r.filename? r.filename[0] : ''}
-    })
+    data[CHILDREN][key][VALUE] = value.map(r => ({ ...r, filename: r.filename ? r.filename : '' }))
     return newItem
   }
   return setToPath(data[CHILDREN][key], restOfPath, value)
@@ -44,7 +52,7 @@ const getFromPath = (
 export class SourceMap implements Map<string, SourceRange[]> {
   [Symbol.toStringTag] = 'SourceMap Map'
   private numOfEntries = 0
-  private data: SourceMapEntry = [{},[]];
+  private data: SourceMapEntry = [{}, []];
 
   private *createGenerator<T>(
     t: (entry: [string, SourceRange[]]) => T,
@@ -66,16 +74,17 @@ export class SourceMap implements Map<string, SourceRange[]> {
 
   get size(): number { return this.numOfEntries }
 
-  push(id: ElemID, source: SourceRange | { source: SourceRange }): void {
+  push(id: ElemID, ...sources: (SourceRange | { source: SourceRange })[]): void {
     const key = id.getFullName().split(ElemID.NAMESPACE_SEPARATOR)
-    const sourceRangeO = isSourceRange(source) ? source : source.source
-    const sourceRange = {... sourceRangeO, filename: sourceRangeO.filename[0]}
-    const sourceRangeList = getFromPath(this.data, key)
-    if (sourceRangeList) {
-      sourceRangeList[VALUE].push(sourceRange)
-    } else {
-      setToPath(this.data, key, [sourceRange])
-    }
+    sources.forEach(source => {
+      const sourceRange = isSourceRange(source) ? source : source.source
+      const sourceRangeList = getFromPath(this.data, key)
+      if (sourceRangeList) {
+        sourceRangeList[VALUE].push(sourceRange)
+      } else {
+        setToPath(this.data, key, [sourceRange])
+      }
+    })
   }
 
   set(id: string, source: SourceRange[]): this {
@@ -98,7 +107,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
   }
 
   clear(): void {
-    this.data = [{},[]]
+    this.data = [{}, []]
   }
 
   delete(id: string): boolean {
@@ -137,14 +146,13 @@ export class SourceMap implements Map<string, SourceRange[]> {
   }
 
   serialize(): string {
-    return JSON.stringify(this)
+    return JSON.stringify(Array.from(this.entries()))
   }
 
   static deserialize(json: string): SourceMap {
     const raw = JSON.parse(json)
     const res = new SourceMap()
-    res.data = raw.data
-    res.numOfEntries = raw.numOfEntries
+    raw.forEach(([key, value]: [string, SourceRange[]]) => res.set(key, value))
     return res
   }
 }

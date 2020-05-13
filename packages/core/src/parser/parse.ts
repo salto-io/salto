@@ -18,10 +18,10 @@ import {
   TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
   Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS, ListType, Variable, Value,
 } from '@salto-io/adapter-api'
-import { collections, promises } from '@salto-io/lowerdash'
+import { promises } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
 import {
-  SourceRange as InternalSourceRange, SourceMap as SourceMapImpl,
+  SourceRange as InternalSourceRange,
   ParsedHclBlock, HclParseError, HclAttribute,
 } from './internal/types'
 import { parse as hclParse } from './internal/parse'
@@ -30,6 +30,7 @@ import { Keywords } from './language'
 import {
   Functions,
 } from './functions'
+import { SourceMap } from './internal/source_map'
 
 const { object: { mapValuesAsync } } = promises
 
@@ -39,13 +40,11 @@ const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 export type SourceRange = InternalSourceRange
 export type ParseError = HclParseError & SaltoError
 
-export type SourceMap = ReadonlyMap<string, SourceRange[]>
-
 export const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {
-  const result = new collections.map.DefaultMap<string, SourceRange[]>(() => [])
+  const result = new SourceMap()
   sourceMaps.forEach(sourceMap => {
     sourceMap.forEach((ranges, key) => {
-      result.get(key).push(...ranges)
+      result.push(ElemID.fromFullName(key), ...ranges)
     })
   })
   return result
@@ -92,7 +91,7 @@ export const parse = async (
   functions: Functions = {},
 ): Promise<ParseResult> => {
   const { body, errors: parseErrors } = hclParse(naclFile, filename)
-  const sourceMap = new SourceMapImpl()
+  const sourceMap = new SourceMap()
   const listElements: Map<string, ListType> = new Map<string, ListType>()
 
   const annotationTypes = (block: ParsedHclBlock, annotationTypesId: ElemID):

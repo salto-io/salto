@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { Workspace, parse, Errors } from '@salto-io/core'
+import { Workspace, parse, Errors, SourceMap } from '@salto-io/core'
 import { readTextFile } from '@salto-io/file'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ParseError, ParseResult } from '@salto-io/core/dist/src/parser/parse'
 import { mergeElements } from '@salto-io/core/dist/src/core/merger'
-import { SourceMap } from '@salto-io/core/dist/src/parser/internal/types'
+
 import { ConfigSource } from '@salto-io/core/dist/src/workspace/config_source'
 
 const SERVICES = ['salesforce']
@@ -56,7 +56,7 @@ const buildMockWorkspace = async (
   if (buffer) {
     parseResult = await parse(Buffer.from(buffer), filename, {})
   } else {
-    parseResult = { elements: [], errors: [] as ParseError[], sourceMap: new Map() as SourceMap }
+    parseResult = { elements: [], errors: [] as ParseError[], sourceMap: new SourceMap() }
   }
   const merged = mergeElements(parseResult.elements)
   return {

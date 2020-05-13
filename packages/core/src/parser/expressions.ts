@@ -74,11 +74,9 @@ const evaluate = async (
     },
     func: async exp => {
       const { value: { parameters } } = exp
-      const params: Value[] = (parameters.type && parameters.type === 'list')
-        ? await evaluators[parameters.type as ExpressionType](parameters)
-        : await Promise.all(
-          parameters.map((x: HclExpression) => evaluate(x, functions, baseId, sourceMap))
-        )
+      const params: Value[] = await Promise.all(
+        parameters.map((x: HclExpression) => evaluate(x, functions))
+      )
       return evaluateFunction(
         {
           ...exp,

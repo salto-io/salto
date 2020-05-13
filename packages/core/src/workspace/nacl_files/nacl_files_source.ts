@@ -34,6 +34,7 @@ import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files/common'
 import { getStaticFilesFunctions } from '../static_files/functions'
+import { Functions } from '../../parser/functions'
 
 const { withLimitedConcurrency } = promises.array
 
@@ -92,13 +93,16 @@ const buildNaclFilesSource = (
   staticFileSource: StaticFilesSource,
   initState?: Promise<NaclFilesState>
 ): NaclFilesSource => {
+  const functions: Functions = {
+    ...getStaticFilesFunctions(staticFileSource), // add future functions here
+  }
   const parseNaclFile = async (naclFile: NaclFile): Promise<ParseResult> => {
     const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
     let parseResult = await cache.get(key)
     if (parseResult === undefined) {
       parseResult = await parse(
         Buffer.from(naclFile.buffer), naclFile.filename,
-        getStaticFilesFunctions(staticFileSource),
+        functions,
       )
       await cache.put(key, parseResult)
     }
@@ -176,6 +180,7 @@ const buildNaclFilesSource = (
       }
       return (await parseNaclFile({ filename, buffer })).sourceMap
     }
+
     return cachedParsedResult.sourceMap
   }
 
@@ -218,7 +223,7 @@ const buildNaclFilesSource = (
         .map(([filename, fileChanges]) => async () => {
           try {
             const buffer = await updateNaclFileData(await getNaclFileData(filename),
-              fileChanges, getStaticFilesFunctions(staticFileSource))
+              fileChanges, functions)
             return { filename, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s with %o changes due to: %o',

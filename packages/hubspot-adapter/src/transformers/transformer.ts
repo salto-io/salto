@@ -18,7 +18,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType,
-  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile, isStaticFile,
+  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile,
 } from '@salto-io/adapter-api'
 import {
   TransformFunc, naclCase, transformValues,
@@ -2052,8 +2052,7 @@ export const createHubspotMetadataFromInstanceElement = async (
         ))
       }
       if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
-        const jsonValue = isStaticFile(val) ? val.content : val
-        return JSON.parse(jsonValue)
+        return JSON.parse(val)
       }
       if (isUserIdentifierType(fieldType)) {
         const numVal = !Number.isNaN(Number(val)) ? Number(val) : null

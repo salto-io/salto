@@ -15,7 +15,6 @@
 */
 import {
   InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
-  StaticFile,
 } from '@salto-io/adapter-api'
 import { RequestPromise } from 'requestretry'
 import HubspotClient from '../../src/client/client'
@@ -201,11 +200,9 @@ describe('Transformer', () => {
       },
     })
     const jsonString = '{ "a": "b", "c": [ "1", "2", "3"] }'
-    const jsonFile = new StaticFile('path', Buffer.from(jsonString))
     const mockValuesWithJSON = {
       name: 'jsonName',
       jsonType: jsonString,
-      jsonTypeFileValue: jsonFile,
     } as Values
     const instanceWithJson = new InstanceElement(
       'mockInstanceWithJSON',
@@ -252,11 +249,6 @@ describe('Transformer', () => {
       it('from string value', async () => {
         expect(metadataResult.jsonType).toBeDefined()
         expect(metadataResult.jsonType).toEqual(JSON.parse(jsonString))
-      })
-
-      it('from file with json content', async () => {
-        expect(metadataResult.jsonTypeFileValue).toBeDefined()
-        expect(metadataResult.jsonTypeFileValue).toEqual(JSON.parse(jsonString))
       })
     })
 

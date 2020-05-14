@@ -181,6 +181,32 @@ salesforce.CompanySettings {
 }
 ```
 
+### Static Files
+
+Static files allows you to store content in an external file referenced in the NaCl file.
+
+This simplifies viewing and editing the content in separate files instead of a huge string block inside a NaCl file.
+
+```hcl
+salesforce.Text ApexFileForProfile {
+    content = file("salesforce/classes/ApexFileForProfile.cls")
+}
+```
+
+Those files are stored in the `static-resources` folder inside your workspace (see more at [Workspace Directory Structure](#workspace-directory-structure)).
+
+E.g. for the ApexFileForProfile class above, the content will be saved to `static-resources/salesforce/classes/ApexFileForProfile.cls`.
+
+The files are validated and hashed (MD5) for comparison to see if there are any changes.
+
+This allows you to rename the files as long as the path mentioned in the NaCl file is relative to the `static-resources` folder.
+
+For example you can create the folder `static-resources/ProfileClasses` and move the `ApexFileForProfile.cls` there, and update the NaCl file to point to `ProfileClasses/ApexFileForProfile.cls`.
+
+If the `file` function points to a non existing file, the preview / deploy operations will warn and stop.
+
+**NOTE:** If you remove the Static File usage (remove the `file(...)`), the referenced static file is not deleted.
+
 ### Multiple Environments
 
 In a typical feature development process, multiple environments are being used. E.g. a feature is developed in a development environment, gets tested in a testing environment and once approved deployed to a production environment. When doing so, it is of very high importance to keep the configuration of these environments as similar as possible in order to ensure a consistent and safe change process.
@@ -196,7 +222,7 @@ Now, let's follow a common scenario of adding two environments to salto:
 salto init
 ```
 
-Note that you've been prompted to give a name for the the first environment in the workspace. You can just accept the "env1" value, or choose the name of your liking (we'll use `prod` for this example)
+Note that you've been prompted to give a name for the first environment in the workspace. You can just accept the "env1" value, or choose the name of your liking (we'll use `prod` for this example)
 
 Next, we'll continue similarly to quick-start by adding a service and running fetch:
 
@@ -226,10 +252,13 @@ Lets stop and take a look at our workspace directory structure (for more info se
 — salto.config/ 
 - envs/                  # folder for env specific configuration
     — dev/               # folder for the dev environment specific configuration
-	    — salesforce/    # specific config for Salesforce in the dev env
+	    — salesforce/      # specific config for Salesforce in the dev env
+	    — static-resources # specific unique static resources for the dev env
     — prod/              # folder for the prod environment specific configuration
-	    — salesforce/    # specific config for Salesforce in the prod env
+	    — salesforce/      # specific config for Salesforce in the prod env
 — salesforce/            # common cross-all-envs configuration for Salesforce
+— static-resources       # common static files for all environments
+
 ```
 Now, in a normal feature development flow we would do some changes to the dev env (e.g. by changing it directly in the service and running `fetch` (normal mode)), or by changing the **common** configuration and deploying to dev. After all tests in dev are done, we can go ahead and run:
 ```shell
@@ -317,7 +346,9 @@ The workspace is structured as follows:
 
 - `salto.config` — all workspace specific internal salto files, including configuration and state files. See [Salto Configuration](salto_configuration.md) for more details.
 - Directory per adapter, named after the adapter (e.g. Salesforce, HubSpot) — NaCl definitions which are **common** across all defined environments which are configured per that adapter.
-- envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment. Each environment directory is also divided by adapter (which applies for that environment)
+- Directory for [Static Files](#static-files) (`static-resources`).
+- envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment. 
+  Each environment directory is also divided by adapter (which applies for that environment), furthermore, includes a `static-resources` folder with files **specific** for that environment.
 
 For example, a workspace with 3 environments (named dev, test and prod), each configured with both Salesforce and HubSpot would look like:
 ```shell
@@ -326,6 +357,7 @@ For example, a workspace with 3 environments (named dev, test and prod), each co
     — dev/
         — salesforce/
         — hubspot/
+        — static-resources/
     — test/
         — salesforce/
         — hubspot/
@@ -334,6 +366,7 @@ For example, a workspace with 3 environments (named dev, test and prod), each co
         — hubspot/
 — salesforce/
 — hubspot/
+— static-resources/
 ```
 
 ## Salto's configuration

@@ -16,6 +16,7 @@
 import { OperationResult } from '@salto-io/suitecloud-cli'
 import _ from 'lodash'
 import { readFile, readDir, writeFile } from '@salto-io/file'
+import { logger } from '@salto-io/logging'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, { COMMANDS } from '../../src/client/client'
 
@@ -76,11 +77,8 @@ describe('netsuite client', () => {
   const deployProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.DEPLOY_PROJECT })
 
-
-  let client: NetsuiteClient
   beforeEach(() => {
     jest.clearAllMocks()
-    client = mockClient()
   })
 
   describe('validateCredentials', () => {
@@ -122,6 +120,11 @@ describe('netsuite client', () => {
   })
 
   describe('listCustomObjects', () => {
+    let client: NetsuiteClient
+    beforeEach(() => {
+      client = mockClient()
+    })
+
     it('should fail when CREATE_PROJECT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.CREATE_PROJECT) {
@@ -196,6 +199,10 @@ describe('netsuite client', () => {
   })
 
   describe('deployCustomObject', () => {
+    let client: NetsuiteClient
+    beforeEach(() => {
+      client = mockClient()
+    })
     it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.SETUP_ACCOUNT
@@ -222,6 +229,26 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(deployProjectCommandMatcher)
+    })
+  })
+
+  describe('setSdfLogLevel', () => {
+    it('should set SDF_VERBOSE_LOG env variable to true', () => {
+      logger.configure({ minLevel: 'debug' })
+      mockClient()
+      expect(process.env.IS_SDF_VERBOSE).toEqual('true')
+    })
+
+    it('should set SDF_VERBOSE_LOG env variable to false when salto log is none', () => {
+      logger.configure({ minLevel: 'none' })
+      mockClient()
+      expect(process.env.IS_SDF_VERBOSE).toEqual('false')
+    })
+
+    it('should set SDF_VERBOSE_LOG env variable to false when salto log is lower than debug', () => {
+      logger.configure({ minLevel: 'warn' })
+      mockClient()
+      expect(process.env.IS_SDF_VERBOSE).toEqual('false')
     })
   })
 })

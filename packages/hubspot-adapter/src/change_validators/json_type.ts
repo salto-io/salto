@@ -26,7 +26,7 @@ const getJsonValidationErrorsFromAfter = async (after: Element):
     const field = after.type.fields[key]
     const fieldType = field?.type
     if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
-      const jsonValue = isStaticFile(val) ? val.content : val
+      const jsonValue = isStaticFile(val) ? val.content?.toString() : val
       try {
         JSON.parse(jsonValue)
       } catch (error) {

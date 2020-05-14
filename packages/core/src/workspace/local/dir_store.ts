@@ -23,7 +23,7 @@ import {
 import { promises } from '@salto-io/lowerdash'
 import { DirectoryStore, File } from '../dir_store'
 
-const { withLimitedConcurrency } = promises.array
+const { withLimitedConcurrency, series } = promises.array
 
 const READ_CONCURRENCY = 100
 const WRITE_CONCURRENCY = 100
@@ -125,8 +125,8 @@ const buildLocalDirectoryStore = (
   }
 
   const deleteAllEmptyDirectories = async (): Promise<void> => {
-    await withLimitedConcurrency((await listDirFiles(true))
-      .map(f => () => removeDirIfEmpty(getAbsFileName(f))), DELETE_CONCURRENCY)
+    await series((await listDirFiles(true))
+      .map(f => () => removeDirIfEmpty(getAbsFileName(f))))
   }
 
   return {

@@ -875,7 +875,7 @@ describe('Salesforce adapter E2E with real account', () => {
         'ApexClass',
         {
           apiVersion: API_VERSION,
-          content: new StaticFile('ApexClassForProfile.cls', Buffer.from("public class ApexClassForProfile {\n    public void printLog() {\n        System.debug('Created');\n    }\n}")),
+          content: "public class ApexClassForProfile {\n    public void printLog() {\n        System.debug('Created');\n    }\n}",
           fullName: 'ApexClassForProfile',
         },
         false,
@@ -886,7 +886,7 @@ describe('Salesforce adapter E2E with real account', () => {
         'ApexPage',
         {
           apiVersion: API_VERSION,
-          content: new StaticFile('ApexPageForProfile.page', Buffer.from('<apex:page>Created by e2e test for profile test!</apex:page>')),
+          content: '<apex:page>Created by e2e test for profile test!</apex:page>',
           fullName: 'ApexPageForProfile',
           label: 'ApexPageForProfile',
         },

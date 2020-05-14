@@ -25,7 +25,7 @@ import {
 } from '@salto-io/adapter-api'
 
 import {
-  transformValues, resolvePath, TransformFunc, restoreReferences, resolveReferences,
+  transformValues, resolvePath, TransformFunc, restoreValues, resolveValues,
   naclCase, findElement, findElements, findObjectType,
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
   flatValues,
@@ -87,6 +87,8 @@ describe('Test utils.ts', () => {
 
   const regValue = 'regValue'
   const valueRef = new ReferenceExpression(mockElem, regValue)
+  const fileContent = 'bb'
+  const valueFile = new StaticFile('aa', Buffer.from(fileContent))
 
   const mockInstance = new InstanceElement(
     'mockInstance',
@@ -100,7 +102,7 @@ describe('Test utils.ts', () => {
       strArray: 'should be list',
       notExist: 'notExist',
       notExistArray: ['', ''],
-      file: new StaticFile('aa', 'bb'),
+      file: valueFile,
       obj: [
         {
           field: 'firstField',
@@ -451,7 +453,7 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('resolveReferences func', () => {
+  describe('resolveValues func', () => {
     const instanceName = 'Instance'
     const objectName = 'Object'
     const newValue = 'NEW'
@@ -472,6 +474,7 @@ describe('Test utils.ts', () => {
       fields: {
         refValue: new Field(mockElem, 'refValue', BuiltinTypes.STRING),
         arrayValues: new Field(mockElem, 'refValue', new ListType(BuiltinTypes.STRING), {}),
+        fileValue: new Field(mockElem, 'fileValue', BuiltinTypes.STRING),
       },
     })
 
@@ -494,6 +497,7 @@ describe('Test utils.ts', () => {
     )
     const instance = new InstanceElement('instance', element, {
       name: instanceName,
+      fileValue: valueFile,
       refValue: valueRef,
       into: new TemplateExpression({
         parts: [
@@ -538,13 +542,13 @@ describe('Test utils.ts', () => {
     const getName = (refValue: Value): Value =>
       refValue
 
-    describe('resolveReferences on objectType', () => {
+    describe('resolveValues on objectType', () => {
       let sourceElementCopy: ObjectType
       let resolvedElement: ObjectType
 
       beforeAll(async () => {
         sourceElementCopy = sourceElement.clone()
-        resolvedElement = resolveReferences(sourceElement, getName)
+        resolvedElement = resolveValues(sourceElement, getName)
       })
 
       it('should not modify the source element', () => {
@@ -564,7 +568,7 @@ describe('Test utils.ts', () => {
       })
 
       it('should transform back to sourceElement value', () => {
-        expect(restoreReferences(sourceElement, resolvedElement, getName)).toEqual(sourceElement)
+        expect(restoreValues(sourceElement, resolvedElement, getName)).toEqual(sourceElement)
       })
 
       it('should maintain new values when transforming back to orig value', () => {
@@ -576,7 +580,7 @@ describe('Test utils.ts', () => {
         after.annotationTypes.regValue = BuiltinTypes.STRING
         after.fields.field.annotations.regValue = newValue
 
-        const restored = restoreReferences(sourceElement, after, getName)
+        const restored = restoreValues(sourceElement, after, getName)
         expect(restored.annotations.new).toEqual(newValue)
         expect(restored.annotations.regValue).toEqual(newValue)
 
@@ -585,11 +589,11 @@ describe('Test utils.ts', () => {
       })
     })
 
-    describe('resolveReferences on instance', () => {
+    describe('resolveValues on instance', () => {
       let resolvedInstance: InstanceElement
 
       beforeAll(async () => {
-        resolvedInstance = resolveReferences(instance, getName)
+        resolvedInstance = resolveValues(instance, getName)
       })
 
       it('should transform instanceElement', () => {
@@ -598,16 +602,17 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.value.arrayValues).toHaveLength(2)
         expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
         expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
+        expect(resolvedInstance.value.fileValue).toEqual(fileContent)
 
         expect(resolvedInstance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toEqual(regValue)
       })
 
       it('should transform back to instance', () => {
-        expect(restoreReferences(instance, resolvedInstance, getName)).toEqual(instance)
+        expect(restoreValues(instance, resolvedInstance, getName)).toEqual(instance)
       })
     })
 
-    describe('resolveReferences on primitive', () => {
+    describe('resolveValues on primitive', () => {
       const prim = new PrimitiveType({
         elemID: new ElemID('mockAdapter', 'str'),
         primitive: PrimitiveTypes.STRING,
@@ -626,7 +631,7 @@ describe('Test utils.ts', () => {
       let resolvedPrim: PrimitiveType
 
       beforeAll(async () => {
-        resolvedPrim = resolveReferences(prim, getName)
+        resolvedPrim = resolveValues(prim, getName)
       })
 
 
@@ -643,11 +648,11 @@ describe('Test utils.ts', () => {
       })
 
       it('should transform back to primitive', () => {
-        expect(restoreReferences(prim, resolvedPrim, getName)).toEqual(prim)
+        expect(restoreValues(prim, resolvedPrim, getName)).toEqual(prim)
       })
     })
 
-    describe('resolveReferences on field', () => {
+    describe('resolveValues on field', () => {
       const FieldType = new ObjectType({
         elemID,
         annotationTypes: {
@@ -666,7 +671,7 @@ describe('Test utils.ts', () => {
       let resolvedField: Field
 
       beforeAll(async () => {
-        resolvedField = resolveReferences(field, getName)
+        resolvedField = resolveValues(field, getName)
       })
 
 
@@ -685,7 +690,7 @@ describe('Test utils.ts', () => {
       })
 
       it('should transform back to field', () => {
-        expect(restoreReferences(field, resolvedField, getName)).toEqual(field)
+        expect(restoreValues(field, resolvedField, getName)).toEqual(field)
       })
     })
   })
@@ -1039,7 +1044,7 @@ describe('Test utils.ts', () => {
   })
   describe('Flat Values', () => {
     it('should not transform static files', () => {
-      const staticFile = new StaticFile('aa', 'aaa')
+      const staticFile = valueFile
       expect(flatValues(staticFile)).toEqual(staticFile)
     })
   })

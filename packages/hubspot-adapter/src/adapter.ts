@@ -18,7 +18,7 @@ import {
   Element, InstanceElement, ObjectType, FetchResult,
 } from '@salto-io/adapter-api'
 import {
-  resolveReferences, restoreReferences,
+  resolveValues, restoreValues,
 } from '@salto-io/adapter-utils'
 import {
   HubspotMetadata,
@@ -108,12 +108,12 @@ export default class HubspotAdapter {
    * @throws error in case of failure
    */
   public async add(instance: InstanceElement): Promise<InstanceElement> {
-    const resolved = resolveReferences(instance, getLookUpName)
+    const resolved = resolveValues(instance, getLookUpName)
     const resp = await this.client.createInstance(
       resolved.type.elemID.name,
       await createHubspotMetadataFromInstanceElement(resolved.clone(), this.client)
     )
-    return restoreReferences(
+    return restoreValues(
       instance,
       await transformAfterUpdateOrAdd(resolved, resp),
       getLookUpName
@@ -126,7 +126,7 @@ export default class HubspotAdapter {
    * @throws error in case of failure
    */
   public async remove(instance: InstanceElement): Promise<void> {
-    const resolved = resolveReferences(instance, getLookUpName)
+    const resolved = resolveValues(instance, getLookUpName)
     await this.client.deleteInstance(
       resolved.type.elemID.name,
       resolved.value as HubspotMetadata
@@ -143,14 +143,14 @@ export default class HubspotAdapter {
     before: InstanceElement,
     after: InstanceElement,
   ): Promise<InstanceElement> {
-    const resolvedBefore = resolveReferences(before, getLookUpName)
-    const resolvedAfter = resolveReferences(after, getLookUpName)
+    const resolvedBefore = resolveValues(before, getLookUpName)
+    const resolvedAfter = resolveValues(after, getLookUpName)
     validateFormGuid(resolvedBefore, resolvedAfter)
     const resp = await this.client.updateInstance(
       resolvedAfter.type.elemID.name,
       await createHubspotMetadataFromInstanceElement(resolvedAfter.clone(), this.client)
     )
-    return restoreReferences(
+    return restoreValues(
       after,
       await transformAfterUpdateOrAdd(resolvedAfter, resp),
       getLookUpName

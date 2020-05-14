@@ -32,6 +32,7 @@ import {
   ReferenceExpression,
   Field, InstanceAnnotationTypes, isType, isObjectType, isListType, FieldMap,
   isStaticFile,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 
@@ -241,30 +242,40 @@ export const transformElement = <T extends Element>(
   throw Error('received unsupported (subtype) Element')
 }
 
-export const resolveReferences = <T extends Element>(
+export const resolveValues = <T extends Element>(
   element: T,
   getLookUpName: (v: Value, field?: Field, path?: ElemID) => Value
 ): T => {
-  const referenceReplacer: TransformFunc = ({ value, field, path }) => (
-    isReferenceExpression(value) ? getLookUpName(value.value, field, path) : value
-  )
+  const valuesReplacer: TransformFunc = ({ value, field, path }) => {
+    if (isReferenceExpression(value)) {
+      return getLookUpName(value.value, field, path)
+    }
+    if (isStaticFile(value)) {
+      return value.content?.toString()
+    }
+    return value
+  }
 
   return transformElement({
     element,
-    transformFunc: referenceReplacer,
+    transformFunc: valuesReplacer,
     strict: false,
   })
 }
 
-export const restoreReferences = <T extends Element>(
+export const restoreValues = <T extends Element>(
   source: T,
   targetElement: T,
   getLookUpName: (v: Value) => Value
 ): T => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
+  const allStaticFilesPaths = new Map<string, StaticFile>()
   const createPathMapCallback: TransformFunc = ({ value, path }) => {
     if (path && isReferenceExpression(value)) {
       allReferencesPaths.set(path.getFullName(), value)
+    }
+    if (path && isStaticFile(value)) {
+      allStaticFilesPaths.set(path.getFullName(), value)
     }
     return value
   }
@@ -275,7 +286,7 @@ export const restoreReferences = <T extends Element>(
     strict: false,
   })
 
-  const restoreReferencesFunc: TransformFunc = ({ value, path }) => {
+  const restoreValuesFunc: TransformFunc = ({ value, path }) => {
     if (path === undefined) {
       return value
     }
@@ -285,13 +296,17 @@ export const restoreReferences = <T extends Element>(
       && _.isEqual(getLookUpName(ref.value), value)) {
       return ref
     }
+    const file = allStaticFilesPaths.get(path.getFullName())
+    if (!_.isUndefined(file)) {
+      return new StaticFile(file.filepath, Buffer.from(value))
+    }
 
     return value
   }
 
   return transformElement({
     element: targetElement,
-    transformFunc: restoreReferencesFunc,
+    transformFunc: restoreValuesFunc,
     strict: false,
   })
 }

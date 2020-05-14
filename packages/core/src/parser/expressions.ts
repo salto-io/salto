@@ -17,11 +17,12 @@ import _ from 'lodash'
 import {
   Value, ElemID, TemplateExpression, ReferenceExpression, VariableExpression,
 } from '@salto-io/adapter-api'
-import { HclExpression, ExpressionType, SourceMap, SourceRange } from './internal/types'
+import { HclExpression, ExpressionType, SourceRange } from './internal/types'
 import {
   evaluateFunction,
   Functions,
 } from './functions'
+import { SourceMap } from './internal/source_map'
 
 type ExpEvaluator = (expression: HclExpression) => Promise<Value>
 
@@ -93,7 +94,7 @@ const evaluate = async (
   }
 
   if (sourceMap && baseId && expression.source) {
-    sourceMap.push(baseId, expression as { source: SourceRange })
+    sourceMap.push(baseId.getFullName(), expression as { source: SourceRange })
   }
 
   return evaluators[expression.type](expression)

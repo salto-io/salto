@@ -292,8 +292,9 @@ const buildNaclFilesSource = (
     },
 
     clear: async () => {
-      await naclFilesStore.clear()
+      // The order is important
       await staticFileSource.clear()
+      await naclFilesStore.clear()
       await cache.clear()
     },
 

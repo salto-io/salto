@@ -18,7 +18,7 @@ import _ from 'lodash'
 import {
   ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, isObjectType, getDeepInnerType,
   BuiltinTypes, InstanceElement, TypeElement, CORE_ANNOTATIONS, isListType,
-  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction,
+  TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile,
 } from '@salto-io/adapter-api'
 import {
   TransformFunc, naclCase, transformValues,
@@ -1896,7 +1896,7 @@ export const createInstanceName = (
   name: string
 ): string => naclCase(name.trim())
 
-export const transformPrimitive: TransformFunc = ({ value, field }) => {
+export const transformPrimitive: TransformFunc = ({ value, field, path }) => {
   const fieldType = field?.type
   if (!isPrimitiveType(fieldType)) {
     return value
@@ -1906,7 +1906,13 @@ export const transformPrimitive: TransformFunc = ({ value, field }) => {
     return undefined
   }
   if (fieldType.isEqual(BuiltinTypes.JSON) && _.isPlainObject(value)) {
-    return JSON.stringify(value, null, 2)
+    if (_.isEmpty(value)) {
+      return undefined
+    }
+    return new StaticFile(
+      `${path?.getFullNameParts().filter((namePart: string): boolean => namePart !== 'instance').join('/')}.json`,
+      Buffer.from(JSON.stringify(value, null, 2))
+    )
   }
   return value
 }

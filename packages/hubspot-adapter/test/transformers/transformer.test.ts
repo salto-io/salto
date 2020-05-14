@@ -190,6 +190,13 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+        jsonTypeFileValue: new Field(
+          mockTypeWithJSONElemID, 'jsonTypeFileValue', BuiltinTypes.JSON, {
+            name: 'jsonTypeFileValue',
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
       },
     })
     const jsonString = '{ "a": "b", "c": [ "1", "2", "3"] }'
@@ -204,6 +211,7 @@ describe('Transformer', () => {
     )
     interface JSONMetadata extends HubspotMetadata {
       jsonType: JSONType
+      jsonTypeFileValue: JSONType
     }
     interface JSONType {
       a: string
@@ -229,13 +237,19 @@ describe('Transformer', () => {
       hsClient.getOwners = jest.fn().mockImplementation(getOwners)
     })
 
-    it('should parse JSON values', async () => {
-      const metadataResult = await createHubspotMetadataFromInstanceElement(
-        instanceWithJson,
-        hsClient
-      ) as JSONMetadata
-      expect(metadataResult.jsonType).toBeDefined()
-      expect(metadataResult.jsonType).toEqual(JSON.parse(jsonString))
+    describe('handle JSON values', () => {
+      let metadataResult: JSONMetadata
+      beforeAll(async () => {
+        metadataResult = await createHubspotMetadataFromInstanceElement(
+          instanceWithJson,
+          hsClient
+        ) as JSONMetadata
+      })
+
+      it('from string value', async () => {
+        expect(metadataResult.jsonType).toBeDefined()
+        expect(metadataResult.jsonType).toEqual(JSON.parse(jsonString))
+      })
     })
 
     describe('handle useridentity', () => {

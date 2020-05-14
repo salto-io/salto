@@ -17,22 +17,9 @@ import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  ObjectType,
-  ElemID,
-  PrimitiveType,
-  Values,
-  Value,
-  Element,
-  isInstanceElement,
-  InstanceElement,
-  isPrimitiveType,
-  TypeMap,
-  isField,
-  isReferenceExpression,
-  ReferenceExpression,
-  Field, InstanceAnnotationTypes, isType, isObjectType, isListType, FieldMap,
-  isStaticFile,
-  StaticFile,
+  ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
+  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, FieldMap,
+  ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
 } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 

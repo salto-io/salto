@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ChangeError, Change, isInstanceElement, Element,
-  BuiltinTypes, getChangeElement, isModificationDiff, InstanceElement, isPrimitiveType } from '@salto-io/adapter-api'
+  BuiltinTypes, getChangeElement, isModificationDiff, InstanceElement, isPrimitiveType, isStaticFile } from '@salto-io/adapter-api'
 
 const getJsonValidationErrorsFromAfter = async (after: Element):
   Promise<ReadonlyArray<ChangeError>> => {
@@ -26,8 +26,9 @@ const getJsonValidationErrorsFromAfter = async (after: Element):
     const field = after.type.fields[key]
     const fieldType = field?.type
     if (isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.JSON)) {
+      const jsonValue = isStaticFile(val) ? val.content?.toString() : val
       try {
-        JSON.parse(val)
+        JSON.parse(jsonValue)
       } catch (error) {
         return {
           elemID: after.elemID,

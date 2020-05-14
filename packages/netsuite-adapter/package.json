@@ -32,7 +32,7 @@
     "@salto-io/file": "0.1.15",
     "@salto-io/logging": "0.1.15",
     "@salto-io/lowerdash": "0.1.15",
-    "@salto-io/suitecloud-cli": "^1.0.2-salto-2",
+    "@salto-io/suitecloud-cli": "^1.0.2-salto-3",
     "lodash": "^4.17.11",
     "wu": "^2.1.0",
     "xml-js": "^1.6.11"

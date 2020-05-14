@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID } from '@salto-io/adapter-api'
+import { NAMESPACE_SEPARATOR } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { SourceRange, isSourceRange } from './types'
 
 const CHILDREN = 0
@@ -74,8 +75,8 @@ export class SourceMap implements Map<string, SourceRange[]> {
 
   get size(): number { return this.numOfEntries }
 
-  push(id: ElemID, ...sources: (SourceRange | { source: SourceRange })[]): void {
-    const key = id.getFullName().split(ElemID.NAMESPACE_SEPARATOR)
+  push(id: string, ...sources: (SourceRange | { source: SourceRange })[]): void {
+    const key = id.split(ElemID.NAMESPACE_SEPARATOR)
     sources.forEach(source => {
       const sourceRange = isSourceRange(source) ? source : source.source
       const sourceRangeList = getFromPath(this.data, key)
@@ -108,6 +109,10 @@ export class SourceMap implements Map<string, SourceRange[]> {
 
   clear(): void {
     this.data = [{}, []]
+  }
+
+  mount(baseId: string, otherMap: SourceMap): void {
+    otherMap.forEach((ranges, id) => this.push([baseId, id].join(NAMESPACE_SEPARATOR), ...ranges))
   }
 
   delete(id: string): boolean {

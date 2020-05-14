@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Values } from '@salto-io/adapter-api'
+import { Values } from '@salto-io/adapter-api'
 
 export type ExpressionType = 'list'|'map'|'template'|'literal'|'reference'|'dynamic'|'func'
 
@@ -78,17 +78,4 @@ export interface SourceRange {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 export function isSourceRange(v: any): v is SourceRange {
   return v && typeof v.filename === 'string' && v.start && v.end
-}
-
-export class SourceMap extends Map<string, SourceRange[]> {
-  push(id: ElemID, source: SourceRange | { source: SourceRange }): void {
-    const key = id.getFullName()
-    let sourceRangeList = this.get(key)
-    if (!sourceRangeList) {
-      sourceRangeList = []
-      this.set(key, sourceRangeList)
-    }
-    const sourceRange = isSourceRange(source) ? source : source.source
-    sourceRangeList.push(sourceRange)
-  }
 }

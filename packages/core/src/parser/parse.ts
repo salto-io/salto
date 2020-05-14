@@ -44,7 +44,7 @@ export const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {
   const result = new SourceMap()
   sourceMaps.forEach(sourceMap => {
     sourceMap.forEach((ranges, key) => {
-      result.push(ElemID.fromFullName(key), ...ranges)
+      result.push(key, ...ranges)
     })
   })
   return result
@@ -99,10 +99,10 @@ export const parse = async (
     block.blocks
       .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
       .map(annoTypesBlk => {
-        sourceMap.push(annotationTypesId, annoTypesBlk.source)
+        sourceMap.push(annotationTypesId.getFullName(), annoTypesBlk.source)
         return _(annoTypesBlk.blocks)
           .map(innerBlock => {
-            sourceMap.push(annotationTypesId.createNestedID(innerBlock.labels[0]),
+            sourceMap.push(annotationTypesId.createNestedID(innerBlock.labels[0]).getFullName(),
               innerBlock.source)
             return [innerBlock.labels[0], new ObjectType({ elemID: parseElemID(innerBlock.type) })]
           })
@@ -141,7 +141,7 @@ export const parse = async (
         isSettings,
       }
     )
-    sourceMap.push(typeObj.elemID, typeBlock.source)
+    sourceMap.push(typeObj.elemID.getFullName(), typeBlock.source)
 
     const isFieldBlock = (block: ParsedHclBlock): boolean =>
       block.labels.length === 1
@@ -173,7 +173,7 @@ export const parse = async (
           objectType,
           await attrValues(block, typeObj.elemID.createNestedID('field', fieldName)),
         )
-        sourceMap.push(field.elemID, block)
+        sourceMap.push(field.elemID.getFullName(), block)
         /* typeObj.fields[fieldName] = field */
         return [fieldName, field]
       })))
@@ -201,7 +201,7 @@ export const parse = async (
       annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
       annotations: await attrValues(typeBlock, elemID.createNestedID('attr')),
     })
-    sourceMap.push(typeObj.elemID, typeBlock)
+    sourceMap.push(typeObj.elemID.getFullName(), typeBlock)
     return typeObj
   }
 
@@ -224,7 +224,7 @@ export const parse = async (
       undefined,
       _.pick(attrs, INSTANCE_ANNOTATIONS_ATTRS),
     )
-    sourceMap.push(inst.elemID, instanceBlock)
+    sourceMap.push(inst.elemID.getFullName(), instanceBlock)
     return inst
   }
 
@@ -232,7 +232,7 @@ export const parse = async (
     const elemID = new ElemID(ElemID.VARIABLES_NAMESPACE, name)
     const value = await attrValue(varAttribute, elemID)
     const variable = new Variable(elemID, value)
-    sourceMap.push(variable.elemID, varAttribute)
+    sourceMap.push(variable.elemID.getFullName(), varAttribute)
     return variable
   }
 

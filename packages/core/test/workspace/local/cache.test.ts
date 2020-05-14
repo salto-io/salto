@@ -46,7 +46,7 @@ describe('localParseResultCache', () => {
   const cache = parseResultCache(localDirectoryStore(mockBaseDirPath), mockedStaticFilesSource)
   const sourceMap = new SourceMap()
   const dummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
-  sourceMap.push(new ElemID('salesforce', 'dummy'), {
+  sourceMap.push(new ElemID('salesforce', 'dummy').getFullName(), {
     filename: 'dummy.nacl',
     start: {
       line: 1,

@@ -16,6 +16,7 @@
 import wu from 'wu'
 import { ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { NAMESPACE_SEPARATOR } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { SourceMap } from '../../../src/parser/internal/source_map'
 import { SourceRange } from '../../../src/parser/parse'
 
@@ -95,7 +96,7 @@ describe('tree source map', () => {
     const elemID = ElemID.fromFullName(key)
     const newValue = createPos(2, 3, 4)
     const anotherNewValue = createPos(3, 4, 5)
-    sourceMap.push(elemID, newValue, anotherNewValue)
+    sourceMap.push(elemID.getFullName(), newValue, anotherNewValue)
     expect(sourceMap.get(key)).toEqual([value, newValue, anotherNewValue])
   })
 
@@ -121,7 +122,7 @@ describe('tree source map', () => {
     const newKey = 'salto.type.instance.test'
     const elemID = ElemID.fromFullName(newKey)
     const newValue = createPos(2, 3, 4)
-    sourceMap.push(elemID, newValue)
+    sourceMap.push(elemID.getFullName(), newValue)
     expect(sourceMap.get(key)).toEqual(value)
     expect(sourceMap.get(newKey)).toEqual([newValue])
   })
@@ -150,5 +151,18 @@ describe('tree source map', () => {
     sourceMap.forEach(v => v.push(createPos(0, 0, 0)))
     expect(wu(sourceMap.values()).toArray())
       .toEqual(baseEntries.map(([_k, v]) => [...v, createPos(0, 0, 0)]))
+  })
+
+  it('should allow mount operations', () => {
+    const sourceMap = new SourceMap()
+    const mountMap = new SourceMap()
+    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
+    baseEntries.forEach(([key, value]) => mountMap.set(key, value))
+    const mountKey = 'mount'
+    sourceMap.mount(mountKey, mountMap)
+    baseEntries.forEach(([key, ranges]) => {
+      expect(sourceMap.get(key)).toEqual(ranges)
+      expect(sourceMap.get([mountKey, key].join(NAMESPACE_SEPARATOR))).toEqual(ranges)
+    })
   })
 })

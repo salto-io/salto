@@ -254,12 +254,7 @@ const addInstanceFiles = (zip: JSZip, instanceName: string, zipProps: ZipProps,
     zip.file(`${PACKAGE}/${zipProps.dirName}/${instanceName}${zipProps.fileSuffix}${METADATA_XML_SUFFIX}`,
       toMetadataXmlContent())
     // Add instance content
-    zip.file(
-      instanceContentPath,
-      _.isString(values.content) && values.content === HIDDEN_CONTENT_VALUE
-        ? values.content
-        : (values.content.content as Buffer).toString(),
-    )
+    zip.file(instanceContentPath, values.content)
   } else {
     // Add instance content
     zip.file(instanceContentPath, toMetadataXml(type, toMetadataInfo(instanceName, values)))

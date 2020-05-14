@@ -15,8 +15,7 @@
 */
 import jszip from 'jszip'
 import {
-  BuiltinTypes, ElemID, Field, InstanceElement,
-  ObjectType, ListType, StaticFile,
+  BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
@@ -105,12 +104,7 @@ describe('XML Transformer', () => {
         {
           [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
           [apiVersion]: 47.0,
-          content: new StaticFile(
-            'MyApexClass.cls',
-            Buffer.from(
-              'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'
-            )
-          ),
+          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
         },
       )
 
@@ -240,12 +234,7 @@ describe('XML Transformer', () => {
         {
           [INSTANCE_FULL_NAME_FIELD]: 'MyApexClass',
           [apiVersion]: 47.0,
-          content: new StaticFile(
-            'MyApexClass.cls',
-            Buffer.from(
-              'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'
-            )
-          ),
+          content: 'public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}',
         },
       )
 

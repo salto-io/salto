@@ -239,9 +239,12 @@ export const addAdapter = async (
     throw new Error('No adapter available for this service')
   }
   await workspace.addService(adapterName)
-  const defaultConfig = getDefaultAdapterConfig(adapterName)
-  if (!_.isUndefined(defaultConfig)) {
-    await workspace.updateServiceConfig(adapterName, defaultConfig)
+
+  if (_.isUndefined((await workspace.servicesConfig([adapterName]))[adapterName])) {
+    const defaultConfig = getDefaultAdapterConfig(adapterName)
+    if (!_.isUndefined(defaultConfig)) {
+      await workspace.updateServiceConfig(adapterName, defaultConfig)
+    }
   }
   return adapterCredentials
 }

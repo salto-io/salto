@@ -21,7 +21,7 @@ import {
 import { decorators, hash } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { readDir, readFile, writeFile } from '@salto-io/file'
-import { logger } from '@salto-io/logging'
+import { compareLogLevels, logger } from '@salto-io/logging'
 import xmlConverter, { Element as XmlElement } from 'xml-js'
 import path from 'path'
 import os from 'os'
@@ -61,6 +61,14 @@ export const convertToSingleXmlElement = (xmlContent: string): XmlElement => {
 export const convertToXmlString = (xmlElement: XmlElement): string =>
   xmlConverter.js2xml(xmlElement, { spaces: 2, fullTagEmptyElement: true })
 
+const setSdfLogLevel = (): void => {
+  const isSaltoLogVerbose = (): boolean => {
+    const saltoLogLevel = logger.config.minLevel
+    return saltoLogLevel !== 'none' && compareLogLevels(saltoLogLevel, 'debug') >= 0
+  }
+  process.env.IS_SDF_VERBOSE = isSaltoLogVerbose() ? 'true' : 'false'
+}
+
 export default class NetsuiteClient {
   private projectName?: string
   private projectCommandActionExecutor?: CommandActionExecutor
@@ -71,6 +79,7 @@ export default class NetsuiteClient {
   constructor({ credentials }: NetsuiteClientOpts) {
     this.credentials = credentials
     this.authId = hash.toMD5(this.credentials.tokenId)
+    setSdfLogLevel()
   }
 
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {

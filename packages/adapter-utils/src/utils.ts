@@ -253,7 +253,7 @@ export const resolveValues = <T extends Element>(
 export const restoreValues = <T extends Element>(
   source: T,
   targetElement: T,
-  getLookUpName: (v: Value) => Value
+  getLookUpName: (v: Value, field?: Field, path?: ElemID) => Value
 ): T => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
@@ -273,14 +273,14 @@ export const restoreValues = <T extends Element>(
     strict: false,
   })
 
-  const restoreValuesFunc: TransformFunc = ({ value, path }) => {
+  const restoreValuesFunc: TransformFunc = ({ value, field, path }) => {
     if (path === undefined) {
       return value
     }
 
     const ref = allReferencesPaths.get(path.getFullName())
     if (ref !== undefined
-      && _.isEqual(getLookUpName(ref.value), value)) {
+      && _.isEqual(getLookUpName(ref.value, field, path), value)) {
       return ref
     }
     const file = allStaticFilesPaths.get(path.getFullName())

@@ -26,7 +26,6 @@ const readOnlyTypeToFields = {
   [OBJECTS_NAMES.CONTACT_PROPERTY]: [CONTACT_PROPERTY_FIELDS.NAME],
 }
 
-
 /*
 * Check that all values of ready-only fields are the same in before and after.
 * This implementation only supports top level primitive types.

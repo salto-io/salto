@@ -54,6 +54,7 @@ describe('Static Files Source', () => {
       renameFile: () => Promise.resolve(),
       flush: () => Promise.resolve(),
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
+      getTotalSize: () => Promise.resolve(0),
       clone: () => mockDirStore,
     }
     staticFilesSource = buildStaticFilesSource(

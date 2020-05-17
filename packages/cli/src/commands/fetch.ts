@@ -257,6 +257,9 @@ export const fetchCommand = async (
   const updatingWsSucceeded = await updateWorkspace(workspace, output, changesToApply, isolated)
   if (updatingWsSucceeded) {
     updatingWsEmitter.emit('completed')
+    const totalSize = await workspace.getTotalSize()
+    log.debug(`Total size of the workspace is ${totalSize}`)
+    cliTelemetry.workspaceSize(totalSize, workspaceTags)
     outputLine(formatFetchFinish())
   } else {
     updatingWsEmitter.emit('failed')

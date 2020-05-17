@@ -84,6 +84,7 @@ export type TelemetryEventNames = {
   failedRows: string
   actionsFailure: string
   actionsSuccess: string
+  workspaceSize: string
 }
 
 export type CliTelemetry = {
@@ -97,6 +98,7 @@ export type CliTelemetry = {
   failedRows(n: number, tags?: Tags): void
   actionsSuccess(n: number, tags?: Tags): void
   actionsFailure(n: number, tags?: Tags): void
+  workspaceSize(n: number, tags?: Tags): void
 
   stacktrace(err: Error, tags?: Tags): void
 }

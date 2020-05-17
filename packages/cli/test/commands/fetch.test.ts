@@ -35,6 +35,7 @@ const eventsNames = {
   failure: buildEventName(commandName, 'failure'),
   changes: buildEventName(commandName, 'changes'),
   changesToApply: buildEventName(commandName, 'changesToApply'),
+  workspaceSize: buildEventName(commandName, 'workspaceSize'),
 }
 
 jest.mock('@salto-io/core', () => ({
@@ -122,11 +123,12 @@ describe('fetch command', () => {
       })
 
       it('should send telemetry events', () => {
-        expect(mockTelemetry.getEvents()).toHaveLength(4)
+        expect(mockTelemetry.getEvents()).toHaveLength(5)
         expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
         expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
         expect(mockTelemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
         expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toHaveLength(1)
       })
     })
 
@@ -156,6 +158,7 @@ describe('fetch command', () => {
         state: (envName? : string) => ({
           existingServices: jest.fn().mockResolvedValue(existingServices[envName || currentEnv]),
         }),
+        getTotalSize: jest.fn().mockResolvedValue(0),
         isEmpty: () => (elements || []).length === 0,
         updateServiceConfig: jest.fn(),
         servicesCredentials: jest.fn().mockResolvedValue({}),
@@ -228,7 +231,7 @@ describe('fetch command', () => {
         it('should not update workspace', () => {
           const calls = findWsUpdateCalls(workspaceName)
           expect(calls[0][2]).toHaveLength(0)
-          expect(mockTelemetry.getEvents()).toHaveLength(4)
+          expect(mockTelemetry.getEvents()).toHaveLength(5)
           expect(mockTelemetry.getEventsMap()[eventsNames.changes]).not.toBeUndefined()
           expect(mockTelemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
           expect(mockTelemetry.getEventsMap()[eventsNames.changes][0].value).toEqual(0)
@@ -396,7 +399,7 @@ describe('fetch command', () => {
             it('should not update workspace', () => {
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls[0][2]).toHaveLength(0)
-              expect(mockTelemetry.getEvents()).toHaveLength(4)
+              expect(mockTelemetry.getEvents()).toHaveLength(5)
               expect(mockTelemetry.getEventsMap()[eventsNames.changes]).not.toBeUndefined()
               expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).not.toBeUndefined()
             })
@@ -427,6 +430,7 @@ describe('fetch command', () => {
               expect(calls[0][2][0]).toEqual(changes[0])
               expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).not.toBeUndefined()
               expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
+              expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toHaveLength(1)
               expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply][0].value).toEqual(1)
             })
 
@@ -506,6 +510,7 @@ describe('fetch command', () => {
               expect(calls).toHaveLength(0)
               expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
               expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+              expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toBeUndefined()
             })
           })
         })

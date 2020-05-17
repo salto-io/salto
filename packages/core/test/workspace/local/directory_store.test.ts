@@ -217,7 +217,6 @@ describe('localDirectoryStore', () => {
       expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
     })
   })
-
   describe('contained', () => {
     const baseDir = '/base'
     const fileStore = localDirectoryStore(baseDir)
@@ -233,5 +232,15 @@ describe('localDirectoryStore', () => {
       fileStore.mtimestamp('something/bla/../../../dev/null')
         .catch(err =>
           expect(err.message).toEqual('Filepath not contained in dir store base dir: something/bla/../../../dev/null')))
+  })
+  describe('getTotalSize', () => {
+    const baseDir = '/base'
+    const naclFileStore = localDirectoryStore(baseDir)
+
+    it('should rename the file', async () => {
+      await naclFileStore.getTotalSize()
+      expect(mockRename).toHaveBeenCalledTimes(1)
+      expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
+    })
   })
 })

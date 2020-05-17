@@ -107,6 +107,7 @@ export type Workspace = {
   transformError: (error: SaltoError) => Promise<WorkspaceError<SaltoError>>
   updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
   listNaclFiles: () => Promise<string[]>
+  getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   setNaclFiles: (...naclFiles: NaclFile[]) => Promise<void>
   removeNaclFiles: (...names: string[]) => Promise<void>
@@ -248,6 +249,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
     getSourceMap: naclFilesSource.getSourceMap,
     getSourceRanges: naclFilesSource.getSourceRanges,
     listNaclFiles: naclFilesSource.listNaclFiles,
+    getTotalSize: naclFilesSource.getTotalSize,
     getNaclFile: naclFilesSource.getNaclFile,
     getElements: naclFilesSource.getElements,
     transformToWorkspaceError,

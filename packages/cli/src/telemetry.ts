@@ -71,6 +71,10 @@ export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetr
     sendCount(buildEventName(command, 'actionsFailure'), numActions, tags)
   }
 
+  const workspaceSize = (size: number, tags = {}): void => {
+    sendCount(buildEventName(command, 'workspaceSize'), size, tags)
+  }
+
   const stacktrace = (err: Error, tags = {}): void => {
     sender.sendStackEvent(buildEventName(command, 'failure'), err, tags)
   }
@@ -86,6 +90,7 @@ export const getCliTelemetry = (sender: Telemetry, command: string): CliTelemetr
     failedRows,
     actionsSuccess,
     actionsFailure,
+    workspaceSize,
     stacktrace,
   }
 }

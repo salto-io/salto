@@ -39,6 +39,7 @@ export const createMockNaclFileSource = (
   flush: jest.fn().mockImplementation(() => Promise.resolve()),
   updateNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
   listNaclFiles: jest.fn().mockImplementation(() => Promise.resolve(_.keys(naclFiles))),
+  getTotalSize: jest.fn().mockImplementation(() => Promise.resolve(0)),
   getNaclFile: jest.fn().mockImplementation(
     (filename: string) => Promise.resolve(naclFiles[filename] ? { filename, buffer: '' } : undefined)
   ),

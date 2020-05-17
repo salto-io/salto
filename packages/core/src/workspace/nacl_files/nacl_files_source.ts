@@ -57,6 +57,7 @@ export type NaclFile = {
 export type NaclFilesSource = ElementsSource & {
   updateNaclFiles: (changes: DetailedChange[], mode?: RoutingMode) => Promise<void>
   listNaclFiles: () => Promise<string[]>
+  getTotalSize: () => Promise<number>
   getNaclFile: (filename: string) => Promise<NaclFile | undefined>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
   // TODO: this should be for single?
@@ -270,6 +271,9 @@ const buildNaclFilesSource = (
     },
 
     listNaclFiles: () => naclFilesStore.list(),
+
+    getTotalSize: async (): Promise<number> =>
+      (await naclFilesStore.getTotalSize()) + (await staticFileSource.getTotalSize()),
 
     getNaclFile: filename => naclFilesStore.get(filename),
 

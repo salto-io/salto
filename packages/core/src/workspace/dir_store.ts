@@ -30,5 +30,6 @@ export type DirectoryStore = {
   flush(): Promise<void>
   mtimestamp(filename: string): Promise<number | undefined>
   getFiles(filenames: string[]): Promise<(File | undefined) []>
+  getTotalSize(): Promise<number>
   clone(): DirectoryStore
 }

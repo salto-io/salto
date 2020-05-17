@@ -55,6 +55,7 @@ const mockCliTelementy: CliTelemetry = {
   failedRows: () => jest.fn(),
   actionsSuccess: () => jest.fn(),
   actionsFailure: () => jest.fn(),
+  workspaceSize: () => jest.fn(),
   stacktrace: () => jest.fn(),
 }
 

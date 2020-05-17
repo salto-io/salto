@@ -1,0 +1,73 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import _ from 'lodash'
+import {
+  ChangeError, Change, isInstanceElement, getChangeElement, isModificationDiff, InstanceElement,
+} from '@salto-io/adapter-api'
+import { OBJECTS_NAMES, FORM_FIELDS, MARKETING_EMAIL_FIELDS, CONTACT_PROPERTY_FIELDS } from '../constants'
+
+const readOnlyTypeToFields = {
+  [OBJECTS_NAMES.FORM]: [FORM_FIELDS.DELETABLE, FORM_FIELDS.CLONEABLE, FORM_FIELDS.EDITABLE],
+  [OBJECTS_NAMES.MARKETINGEMAIL]: [MARKETING_EMAIL_FIELDS.ISPUBLISHED,
+    MARKETING_EMAIL_FIELDS.PUBLISHEDURL, MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN],
+  [OBJECTS_NAMES.CONTACT_PROPERTY]: [CONTACT_PROPERTY_FIELDS.NAME],
+}
+
+
+/*
+* Check that all values of ready-only fields are the same in before and after.
+* This implementation only supports top level primitive types.
+*/
+const getReadonlyValidationError = async (before: InstanceElement, after: InstanceElement):
+  Promise<ReadonlyArray<ChangeError>> => {
+  const readonlyFieldNames = readOnlyTypeToFields[after.type.elemID.typeName]
+  if (_.isUndefined(readOnlyTypeToFields)) {
+    return []
+  }
+  const errors = Object.values(after.type.fields)
+    .filter(field => readonlyFieldNames.includes(field.name))
+    .map(field => {
+      if (after.value[field.name] !== before.value[field.name]) {
+        return {
+          elemID: before.elemID,
+          severity: 'Error',
+          message: `Unable to edit ${after.elemID.typeName}.${field.name} because it is a read-only field.`,
+          detailedMessage: `Unable to edit ${field.name} inside ${before.elemID.getFullName()} because it is a read-only field.`,
+        }
+      }
+      return undefined
+    }).filter(v => !_.isUndefined(v)) as ChangeError[]
+  return errors
+}
+
+export const changeValidator = {
+  onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> => {
+    const getChangeError = async (change: Change): Promise<ReadonlyArray<ChangeError>> => {
+      const changeElement = getChangeElement(change)
+      if (isInstanceElement(changeElement) && isModificationDiff(change)
+        && isInstanceElement(change.data.before)) {
+        return getReadonlyValidationError(
+          change.data.before as InstanceElement,
+          change.data.after as InstanceElement
+        )
+      }
+      return []
+    }
+    return _.flatten(await Promise.all(changes.map(change => getChangeError(change))))
+  },
+}
+
+export default changeValidator

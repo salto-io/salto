@@ -47,7 +47,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
           ?.find(process => relativeApiName(process) === record.value[BUSINESS_PROCESS])
         if (businessProcess) {
           record.value[BUSINESS_PROCESS] = new ReferenceExpression(businessProcess.elemID)
-        } else {
+        } else if (record.value[BUSINESS_PROCESS]) {
           log.warn('failed to find business process %s', record.value[BUSINESS_PROCESS])
         }
       })

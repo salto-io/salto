@@ -19,6 +19,7 @@ import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
+import { fieldTypes } from '../field_types'
 
 export const workbookInnerTypes: ObjectType[] = []
 
@@ -72,7 +73,7 @@ export const workbook = new ObjectType({
     definition: new Field(
       workbookElemID,
       'definition',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },

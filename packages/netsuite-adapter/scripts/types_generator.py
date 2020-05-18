@@ -7,7 +7,6 @@ import re
 import sys
 import time
 import logging
-import json
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
@@ -48,12 +47,14 @@ LICENSE_HEADER = '''/*
 list_type_import = ' ListType,'
 enums_import = '''import { enums } from '../enums'
 '''
+field_types_import = '''import { fieldTypes } from '../field_types'
+'''
 
 import_statements_for_type_def_template = '''import {{
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,{list_type_import}
 }} from '@salto-io/adapter-api'
 import * as constants from '../../constants'
-{enums_import}
+{enums_import}{field_types_import}
 '''
 
 type_inner_types_array_template = '''export const {type_name}InnerTypes: ObjectType[] = []
@@ -143,7 +144,9 @@ type_inner_types_vars_template = '''  ...{type_name}InnerTypes,
 
 types_file_template = LICENSE_HEADER + '''import {{ ObjectType, TypeElement }} from '@salto-io/adapter-api'
 import _ from 'lodash'
-{import_types_statements}
+{import_types_statements}import {{ fieldTypes }} from './types/field_types'
+import {{ enums }} from './types/enums'
+
 
 /**
 * generated using types_generator.py as Netsuite don't expose a metadata API for them.
@@ -161,6 +164,7 @@ export const getAllTypes = (): TypeElement[] => [
   ...Object.values(customTypes),
   ...innerCustomTypes,
   ...Object.values(enums),
+  ...Object.values(fieldTypes),
 ]
 '''
 
@@ -352,7 +356,6 @@ def login(username, password, secret_key_2fa):
 
 def create_types_file(type_names):
     import_types_statements = ''.join([import_type_statement_template.format(type_name = type_name) for type_name in type_names])
-    import_types_statements += "import { enums } from './types/enums'\n"
     custom_types_map_entries = ''.join([custom_types_map_entry_template.format(type_name = type_name) for type_name in type_names])
     all_inner_types_vars = ''.join([type_inner_types_vars_template.format(type_name = type_name) for type_name in type_names])
     file_content = types_file_template.format(import_types_statements = import_types_statements, custom_types_map_entries = custom_types_map_entries, all_inner_types_vars = all_inner_types_vars)
@@ -436,7 +439,8 @@ def generate_file_per_type(type_name_to_types_defs):
         file_data = type_inner_types_array_template.format(type_name = type_name) + elem_id_def + format_inner_types_defs(type_name, inner_type_name_to_def) + formatted_type_def
         import_statements = import_statements_for_type_def_template.format(
             list_type_import = list_type_import if 'new ListType(' in file_data else '',
-            enums_import = enums_import if 'enums.' in file_data else '')
+            enums_import = enums_import if 'enums.' in file_data else '',
+            field_types_import = field_types_import if 'fieldTypes.' in file_data else '')
         type_def_file_content = HEADER_FOR_DEFS + import_statements + file_data
         with open(CUSTOM_TYPES_DIR + type_name + '.ts', 'w') as file:
             file.write(type_def_file_content)
@@ -560,6 +564,37 @@ field_name_to_type_name = {
     'transactioncolumncustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'transactionForm_tabs_tab_subItems_subList_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */',
     'transactionForm_tabs_tab_subItems_subLists_subList_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */',
+    'addressForm_addressTemplate': 'fieldTypes.cdata',
+    'dataset_definition': 'fieldTypes.cdata',
+    'workbook_definition': 'fieldTypes.cdata',
+    'workflow_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_formula': 'fieldTypes.cdata',
+    'workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_formula': 'fieldTypes.cdata',
 }
 
 
@@ -584,7 +619,7 @@ main()
 # lists are not identified correctly -> should use also manual mappings (should_be_list, should_not_be_list)
 # script_ids table is not accurate and not complete -> we are calculating also from the scriptid field's description column
 # script_id is not always padded with '_'
-# we mark SCRIPT_ID_FIELD_NAME as not required so the adapter will add defaults in case it's missing
+# we mark SCRIPT_ID_FIELD_NAME as not required ONLY for top level types so the adapter will add defaults in case it's missing
 # we set the type of SCRIPT_ID_FIELD_NAME as BuiltinTypes.SERVICE_ID
 # there are fields that suppose to have a certain type but in fact they have another type, handled using field_name_to_type_name
 # every top level type has its own IS_NAME field, we set it manually using top_level_type_name_to_name_field

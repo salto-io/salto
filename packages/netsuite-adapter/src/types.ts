@@ -66,6 +66,7 @@ import { usereventscript, usereventscriptInnerTypes } from './types/custom_types
 import { workbook, workbookInnerTypes } from './types/custom_types/workbook'
 import { workflow, workflowInnerTypes } from './types/custom_types/workflow'
 import { workflowactionscript, workflowactionscriptInnerTypes } from './types/custom_types/workflowactionscript'
+import { fieldTypes } from './types/field_types'
 import { enums } from './types/enums'
 
 
@@ -187,4 +188,5 @@ export const getAllTypes = (): TypeElement[] => [
   ...Object.values(customTypes),
   ...innerCustomTypes,
   ...Object.values(enums),
+  ...Object.values(fieldTypes),
 ]

@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
+import { fieldTypes } from '../field_types'
 
 export const workflowInnerTypes: ObjectType[] = []
 
@@ -98,7 +99,7 @@ const workflow_initcondition = new ObjectType({
     formula: new Field(
       workflow_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -1037,7 +1038,7 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_init
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -1207,7 +1208,7 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction_initco
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_confirmaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -1467,7 +1468,7 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_ini
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_createlineaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -1727,7 +1728,7 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_i
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -1932,7 +1933,7 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_initcon
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_customaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -2227,7 +2228,7 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initc
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -2486,7 +2487,7 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_ini
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -2670,7 +2671,7 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -2958,7 +2959,7 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_ini
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -3106,7 +3107,7 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_i
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -3262,7 +3263,7 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -3439,7 +3440,7 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -3658,7 +3659,7 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction_init
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -3997,7 +3998,7 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -4194,7 +4195,7 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -4392,7 +4393,7 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -4589,7 +4590,7 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -4864,7 +4865,7 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction_in
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -5034,7 +5035,7 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -5314,7 +5315,7 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -6198,7 +6199,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -7533,7 +7534,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -7689,7 +7690,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -7780,7 +7781,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -7922,7 +7923,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -8212,7 +8213,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),
@@ -9032,7 +9033,7 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
     formula: new Field(
       workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initconditionElemID,
       'formula',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
       },
     ),

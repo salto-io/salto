@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
+import { fieldTypes } from '../field_types'
 
 export const addressFormInnerTypes: ObjectType[] = []
 
@@ -363,10 +364,9 @@ export const addressForm = new ObjectType({
     addressTemplate: new Field(
       addressFormElemID,
       'addressTemplate',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 3990,
       },
     ), /* Original description: This field value can be up to 3990 characters long. */
     countries: new Field(

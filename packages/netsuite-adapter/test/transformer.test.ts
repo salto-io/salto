@@ -15,9 +15,11 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import { CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID } from '../src/constants'
+import { ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID } from '../src/constants'
 import { customTypes } from '../src/types'
 import { convertToCustomizationInfo, convertToXmlContent } from '../src/client/client'
+
+const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 
 describe('Transformer', () => {
   const XML_TEMPLATES = {
@@ -226,42 +228,68 @@ describe('Transformer', () => {
     it('should transform string primitive field', () => {
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
     })
 
     it('should transform boolean primitive field when is true', () => {
       instance.value.checkspelling = true
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_TRUE_FIELD)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_TRUE_FIELD))
     })
 
     it('should transform boolean primitive field when is false', () => {
       instance.value.checkspelling = false
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_FALSE_FIELD)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_FALSE_FIELD))
     })
 
     it('should transform number primitive field', () => {
       instance.value.displayheight = 123
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_NUMBER_FIELD)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_NUMBER_FIELD))
+    })
+
+    it('should transform cdata primitive field', () => {
+      const addressFormInstance = new InstanceElement('elementName',
+        customTypes[ADDRESS_FORM], {
+          name: 'elementName',
+          addressTemplate: '<myCdata><field>whoohoo',
+        })
+      const customizationInfo = toCustomizationInfo(addressFormInstance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(removeLineBreaks('<addressForm>\n'
+        + '  <name>elementName</name>\n'
+        + '  <addressTemplate><![CDATA[<myCdata><field>whoohoo]]></addressTemplate>\n'
+        + '</addressForm>\n'))
+    })
+
+    it('should transform when cdata primitive field is undefined', () => {
+      const addressFormInstance = new InstanceElement('elementName',
+        customTypes[ADDRESS_FORM], {
+          name: 'elementName',
+        })
+      const customizationInfo = toCustomizationInfo(addressFormInstance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(removeLineBreaks('<addressForm>\n'
+        + '  <name>elementName</name>\n'
+        + '</addressForm>\n'))
     })
 
     it('should transform attribute field', () => {
       instance.value[SCRIPT_ID] = 'custentity_my_script_id'
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_ATTRIBUTE)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_ATTRIBUTE))
     })
 
     it('should ignore unknown field', () => {
       instance.value.unknownfield = 'unknownValue'
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
     })
 
     it('should transform list field', () => {
@@ -279,7 +307,7 @@ describe('Transformer', () => {
       }
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LIST_OF_OBJECTS)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LIST_OF_OBJECTS))
     })
 
     it('should transform empty list field', () => {
@@ -288,14 +316,14 @@ describe('Transformer', () => {
       }
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
     })
 
     it('should transform empty object field', () => {
       instance.value.roleaccesses = {}
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
     })
 
     it('should ignore list field with incompatible type', () => {
@@ -304,14 +332,14 @@ describe('Transformer', () => {
       }
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
     })
 
     it('should ignore object field with incompatible type', () => {
       instance.value.roleaccesses = ['not an object']
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(XML_TEMPLATES.WITH_LABEL)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
     })
   })
 })

@@ -14,7 +14,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import os from 'os'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
@@ -22,6 +21,7 @@ import {
   CORE_ANNOTATIONS, BuiltinTypes,
   Field, ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
+import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
 import { TelemetryConfig } from './telemetry'
 import { dumpElements } from './parser/dump'
@@ -90,7 +90,7 @@ export const saltoAppConfigType = new ObjectType({
   fields: {
     installationID: new Field(saltoConfigElemID, 'installationID', BuiltinTypes.STRING, requireAnno),
     telemetry: new Field(saltoConfigElemID, 'telemetry', BuiltinTypes.JSON, requireAnno),
-    command: new Field(saltoConfigElemID, 'command', BuiltinTypes.JSON),
+    command: new Field(saltoConfigElemID, 'command', BuiltinTypes.JSON, { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG }),
   },
   annotationTypes: {},
   annotations: {},
@@ -124,20 +124,14 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
   return config
 }
 
-const addDefaultsForMissingFields = (config: AppConfig): void => {
-  if (_.isUndefined(config.command)) {
-    config.command = DEFAULT_COMMAND_CONFIG
-  }
-}
-
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
   const configInstance = (await parse(buf, filepath)).elements.pop() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
+  configInstance.type = saltoAppConfigType
+  applyInstancesDefaults([configInstance])
   const saltoConfigInstance = configInstance.value as AppConfig
-
-  addDefaultsForMissingFields(saltoConfigInstance)
   return saltoConfigInstance
 }
 

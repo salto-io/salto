@@ -164,11 +164,8 @@ const buildMultiEnvSource = (
         .map(async ([prefix, source]) => (
           await source.listNaclFiles()).map(p => buidFullPath(prefix, p)))))
     ),
-    getTotalSize: async (): Promise<number> => (
-      Object.values(sources)
-        .reduce(async (res, source) => await res + await source.getTotalSize(),
-          Promise.resolve(0))
-    ),
+    getTotalSize: async (): Promise<number> =>
+      _.sum(await Promise.all(Object.values(sources).map(s => s.getTotalSize()))),
     setNaclFiles: async (...naclFiles: NaclFile[]): Promise<void> => {
       await Promise.all(Object.entries(_.groupBy(naclFiles,
         naclFile => getSourcePrefixForNaclFile(naclFile.filename)))

@@ -273,7 +273,7 @@ const buildNaclFilesSource = (
     listNaclFiles: () => naclFilesStore.list(),
 
     getTotalSize: async (): Promise<number> =>
-      (await naclFilesStore.getTotalSize()) + (await staticFileSource.getTotalSize()),
+      _.sum(await Promise.all([naclFilesStore.getTotalSize(), staticFileSource.getTotalSize()])),
 
     getNaclFile: filename => naclFilesStore.get(filename),
 

@@ -237,17 +237,6 @@ describe('localDirectoryStore', () => {
     const baseDir = '/base'
     const naclFileStore = localDirectoryStore(baseDir)
 
-    it('should rename the file', async () => {
-      await naclFileStore.getTotalSize()
-      expect(mockRename).toHaveBeenCalledTimes(1)
-      expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
-    })
-  })
-
-  describe('getTotalSize', () => {
-    const baseDir = '/base'
-    const naclFileStore = localDirectoryStore(baseDir)
-
     it('should getTotalSize the file', async () => {
       mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
       mockIsSubFolder.mockResolvedValue(true)

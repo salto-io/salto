@@ -284,8 +284,8 @@ export const command = (
   telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
-  shouldCalcTotalSize: boolean,
   inputIsolated: boolean,
+  shouldCalcTotalSize: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
 ): CliCommand => ({
@@ -365,8 +365,8 @@ const fetchBuilder = createCommandBuilder({
       input.telemetry,
       output,
       spinnerCreator,
-      input.config.shouldCalcTotalSize,
       input.args.isolated,
+      input.config.shouldCalcTotalSize,
       input.args.services,
       input.args.env,
     )

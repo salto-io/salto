@@ -40,7 +40,7 @@ describe('localDirectoryStore', () => {
     jest.clearAllMocks()
   })
 
-  const mockState = stat as unknown as jest.Mock
+  const mockStat = stat as unknown as jest.Mock
   const mockFileExists = exists as jest.Mock
   const mockReadFile = readTextFile as unknown as jest.Mock
   const mockReaddirp = readdirp.promise as jest.Mock
@@ -87,7 +87,7 @@ describe('localDirectoryStore', () => {
       const content = 'content'
       mockFileExists.mockResolvedValue(true)
       mockReadFile.mockResolvedValue(content)
-      mockState.mockResolvedValue({ mtimeMs: 7 })
+      mockStat.mockResolvedValue({ mtimeMs: 7 })
       const naclFile = await localDirectoryStore(dir).get(naclFileName)
       expect(naclFile?.buffer).toBe(content)
       expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(dir, naclFileName))
@@ -126,7 +126,7 @@ describe('localDirectoryStore', () => {
         .mockResolvedValueOnce(true)
         .mockResolvedValueOnce(true)
       mockReadFile.mockResolvedValueOnce('bla1').mockResolvedValueOnce('bla2')
-      mockState.mockResolvedValue({ mtimeMs: 7 })
+      mockStat.mockResolvedValue({ mtimeMs: 7 })
       const files = await localDirectoryStore('').getFiles(['', '', ''])
       expect(files[0]).toBeUndefined()
       expect(files[1]?.buffer).toEqual('bla1')
@@ -241,6 +241,27 @@ describe('localDirectoryStore', () => {
       await naclFileStore.getTotalSize()
       expect(mockRename).toHaveBeenCalledTimes(1)
       expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
+    })
+  })
+
+  describe('getTotalSize', () => {
+    const baseDir = '/base'
+    const naclFileStore = localDirectoryStore(baseDir)
+
+    it('should getTotalSize the file', async () => {
+      mockEmptyDir.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+      mockIsSubFolder.mockResolvedValue(true)
+      mockFileExists.mockResolvedValue(true)
+      mockReaddirp.mockResolvedValueOnce([
+        { fullPath: path.join(baseDir, 'test1') },
+        { fullPath: path.join(baseDir, 'test2') },
+      ]).mockResolvedValueOnce([])
+      mockStat
+        .mockImplementation(filePath =>
+          (filePath.endsWith('test1') ? ({ size: 5 }) : ({ size: 4 })))
+      const totalSize = await naclFileStore.getTotalSize()
+      expect(mockStat).toHaveBeenCalledTimes(2)
+      expect(totalSize).toEqual(9)
     })
   })
 })

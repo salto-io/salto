@@ -20,6 +20,7 @@ import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, FieldMap,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
+  CORE_ANNOTATIONS, TypeElement,
 } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 
@@ -559,4 +560,34 @@ export const mapKeysRecursive = (obj: Values, func: MapKeyFunc, pathID?: ElemID)
       .value()
   }
   return obj
+}
+
+const mergeWithDefaults = (type: TypeElement, values: Values): Values => {
+  const mergeWithObjectDefaults = (object: ObjectType, innerValues: Values): Values =>
+    _(object.fields).mapValues((field, name) => {
+      if (field.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && !isListType(field.type)) {
+        return field.type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined
+          ? innerValues[name]
+          : mergeWithDefaults(field.type, innerValues[name])
+      }
+      return innerValues[name] ?? field.annotations[CORE_ANNOTATIONS.DEFAULT]
+    }).pickBy(v => v !== undefined).value()
+
+  return (type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && isObjectType(type)
+    ? mergeWithObjectDefaults(type, values)
+    : (values ?? type.annotations[CORE_ANNOTATIONS.DEFAULT]))
+}
+
+export const applyInstancesDefaults = (instances: InstanceElement[]): void => {
+  instances
+    .forEach(inst => {
+      inst.value = mergeWithDefaults(inst.type, inst.value)
+    })
+}
+
+export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
+  InstanceElement => {
+  const instance = new InstanceElement(name, objectType)
+  applyInstancesDefaults([instance])
+  return instance
 }

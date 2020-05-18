@@ -15,8 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  InstanceElement, ElemID, ObjectType, TypeElement, Values, isObjectType,
-  CORE_ANNOTATIONS, isListType,
+  InstanceElement, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import {
@@ -32,27 +31,6 @@ export class DuplicateInstanceKeyError extends MergeError {
     super({ elemID, error: `duplicate key ${key}` })
     this.key = key
   }
-}
-
-const buildDefaults = (
-  type: TypeElement,
-  knownTypes: Set<string> = new Set()
-): Values | undefined => {
-  const buildObjectDefaults = (object: ObjectType): Values | undefined => {
-    const def = _(object.fields).mapValues(field =>
-      ((field.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && !isListType(field.type))
-        ? buildDefaults(field.type, knownTypes)
-        : field.annotations[CORE_ANNOTATIONS.DEFAULT])).pickBy(v => v !== undefined).value()
-    return _.isEmpty(def) ? undefined : def
-  }
-  // Handle recursive types
-  if (knownTypes.has(type.elemID.getFullName())) {
-    return undefined
-  }
-  knownTypes.add(type.elemID.getFullName())
-  return (type.annotations[CORE_ANNOTATIONS.DEFAULT] === undefined && isObjectType(type)
-    ? buildObjectDefaults(type)
-    : type.annotations[CORE_ANNOTATIONS.DEFAULT])
 }
 
 const mergeInstanceDefinitions = (
@@ -72,13 +50,9 @@ const mergeInstanceDefinitions = (
     key => new DuplicateAnnotationError({ elemID, key }),
   )
 
-  const defaults = buildDefaults(type)
-  const valueWithDefault = !_.isEmpty(defaults)
-    ? _.merge({}, defaults || {}, valueMergeResult.merged)
-    : valueMergeResult.merged
   return {
     merged: new InstanceElement(
-      elemID.name, type, valueWithDefault, undefined, annotationsMergeResults.merged,
+      elemID.name, type, valueMergeResult.merged, undefined, annotationsMergeResults.merged,
     ),
     errors: [...valueMergeResult.errors, ...annotationsMergeResults.errors],
   }
@@ -98,6 +72,3 @@ export const mergeInstances = (
     errors.length}]`)
   return { merged, errors }
 }
-
-export const createDefaultInstanceFromType = (name: string, objectType: ObjectType):
-InstanceElement => mergeInstances([new InstanceElement(name, objectType)]).merged[0]

@@ -17,8 +17,8 @@ import _ from 'lodash'
 import {
   ObjectType, Adapter, ElemIdGetter, AdapterCreatorOpts, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
+import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import adapterCreators from './creators'
-import { createDefaultInstanceFromType } from '../merger/internal/instances'
 
 export const getAdaptersCredentialsTypes = (
   names?: ReadonlyArray<string>

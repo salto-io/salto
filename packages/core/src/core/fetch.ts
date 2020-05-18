@@ -22,8 +22,7 @@ import {
   ADAPTER, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import {
-  resolvePath,
-  flattenElementStr,
+  applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
@@ -246,6 +245,7 @@ const fetchAndProcessMergeErrors = async (
       .filter(c => !_.isUndefined(c)) as UpdatedConfig[]
     log.debug(`fetched ${serviceElements.length} elements from adapters`)
     const { errors: mergeErrors, merged: elements } = mergeElements(serviceElements)
+    applyInstancesDefaults(elements.filter(isInstanceElement))
     log.debug(`got ${serviceElements.length} from merge results and elements and to ${elements.length} elements [errors=${
       mergeErrors.length}]`)
 

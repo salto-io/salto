@@ -15,14 +15,14 @@
 */
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement, CORE_ANNOTATIONS, ListType, Variable,
+  PrimitiveTypes, TypeElement, ListType, Variable,
 } from '@salto-io/adapter-api'
 import {
   mergeElements,
   MultipleBaseDefinitionsMergeError,
   NoBaseDefinitionMergeError, DuplicateAnnotationTypeError, DuplicateVariableNameError,
   DuplicateAnnotationError, DuplicateAnnotationFieldDefinitionError, DuplicateInstanceKeyError,
-  MultiplePrimitiveTypesUnsupportedError, createDefaultInstanceFromType,
+  MultiplePrimitiveTypesUnsupportedError,
 } from '../src/core/merger'
 import { Keywords } from '../src/parser/language'
 
@@ -285,15 +285,6 @@ describe('merger', () => {
     const shouldUseFieldDef = new InstanceElement('ins', nested, {
       field2: 'ins1',
     })
-    const shouldUseTypeDef = new InstanceElement('ins', nested, {
-      field1: 'ins1',
-    })
-
-    const recursiveElemID = new ElemID('salto', 'recursive')
-    const recursiveType = new ObjectType({ elemID: recursiveElemID })
-    recursiveType.fields = { field: new Field(recursiveElemID, 'field', recursiveType) }
-    const recursiveInstance = new InstanceElement('ins', recursiveType)
-
     it('should merge instances', () => {
       const elements = [ins1, ins2]
       const { merged, errors } = mergeElements(elements)
@@ -311,58 +302,6 @@ describe('merger', () => {
       expect(ins.annotations).toEqual({ anno: 1, anno2: 1 })
     })
 
-    it('should use field defaults', () => {
-      const elements = [shouldUseFieldDef, ins2]
-      const { merged, errors } = mergeElements(elements)
-      expect(errors).toHaveLength(0)
-      const ins = merged[0] as InstanceElement
-      expect(ins.value).toEqual({
-        field1: 'field1',
-        field2: 'ins1',
-        base: {
-          field1: 'ins2',
-          field2: 'ins2',
-        },
-      })
-    })
-
-    it('should use type defaults', () => {
-      const elements = [shouldUseTypeDef, ins2]
-      const { merged, errors } = mergeElements(elements)
-      expect(errors).toHaveLength(0)
-      const ins = merged[0] as InstanceElement
-      expect(ins.value).toEqual({
-        field1: 'ins1',
-        field2: 'type',
-        base: {
-          field1: 'ins2',
-          field2: 'ins2',
-        },
-      })
-    })
-
-    it('should use object defaults', () => {
-      const elements = [ins1]
-      const { merged, errors } = mergeElements(elements)
-      expect(errors).toHaveLength(0)
-      const ins = merged[0] as InstanceElement
-      expect(ins.value).toEqual({
-        field1: 'ins1',
-        field2: 'ins1',
-        base: {
-          field1: 'base1',
-          field2: 'base2',
-        },
-      })
-    })
-
-    it('should not fail with recursive types', () => {
-      const elements = [recursiveInstance]
-      const { merged, errors } = mergeElements(elements)
-      expect(errors).toHaveLength(0)
-      expect(merged).toHaveLength(1)
-    })
-
     it('should fail on multiple values for same key', () => {
       const elements = [ins1, shouldUseFieldDef]
       const { errors } = mergeElements(elements)
@@ -376,25 +315,6 @@ describe('merger', () => {
       const { errors } = mergeElements([ins1, conflicting])
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(DuplicateAnnotationError)
-    })
-
-    it('should create default instance from type', () => {
-      const mockElemID = new ElemID('test')
-      const configType = new ObjectType({
-        elemID: mockElemID,
-        fields: {
-          val1: new Field(
-            mockElemID,
-            'val1',
-            BuiltinTypes.STRING,
-            {
-              [CORE_ANNOTATIONS.DEFAULT]: 'test',
-            }
-          ),
-        },
-      })
-      expect(createDefaultInstanceFromType('test', configType))
-        .toEqual(new InstanceElement('test', configType, { val1: 'test' }))
     })
   })
 

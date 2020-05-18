@@ -20,6 +20,7 @@ import {
   isModificationDiff,
   ListType,
 } from '@salto-io/adapter-api'
+import * as utils from '@salto-io/adapter-utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
@@ -628,6 +629,22 @@ describe('fetch', () => {
         const fetchedInst = getChangeElement(changes[1].change)
         expect(fetchedInst.value.hidden).toBeUndefined()
         expect(fetchedInst.value.notHidden).toEqual('notHidden')
+      })
+    })
+
+    describe('instance defaults', () => {
+      it('should call applyInstancesDefaults', async () => {
+        jest.spyOn(utils, 'applyInstancesDefaults')
+        mockAdapters.dummy.fetch.mockResolvedValueOnce(
+          Promise.resolve({ elements: [workspaceInstance] })
+        )
+        await fetchChanges(
+          mockAdapters as unknown as Record<string, Adapter>,
+          [],
+          [],
+          [],
+        )
+        expect(utils.applyInstancesDefaults).toHaveBeenCalledWith([workspaceInstance])
       })
     })
   })

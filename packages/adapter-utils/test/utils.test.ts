@@ -21,14 +21,14 @@ import {
   BuiltinTypes, INSTANCE_ANNOTATIONS, StaticFile,
   isPrimitiveType,
   isReferenceExpression,
-  isPrimitiveValue,
+  isPrimitiveValue, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues,
   naclCase, findElement, findElements, findObjectType,
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
-  flatValues, mapKeysRecursive,
+  flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
 } from '../src/utils'
 
 const mockFunction = <T extends (...args: never[]) => unknown>():
@@ -1077,6 +1077,136 @@ describe('Test utils.ts', () => {
       expect(Object.keys(result.objWithInnerObj)).toContain('innerObj')
       expect(Object.keys(result.objWithInnerObj.innerObj))
         .toEqual(expect.arrayContaining(['LISTKEY', 'STRINGKEY']))
+    })
+  })
+
+  describe('applyInstancesDefaults', () => {
+    const baseElemID = new ElemID('salto', 'base')
+    const base = new ObjectType({
+      elemID: baseElemID,
+      fields: {
+        field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base' }),
+        field2: new Field(baseElemID, 'field2', BuiltinTypes.STRING, { label: 'base' }),
+      },
+      annotations: {
+        _default: {
+          field1: 'base1',
+          field2: 'base2',
+        },
+      },
+    })
+
+    const strType = new PrimitiveType({
+      elemID: new ElemID('salto', 'string'),
+      primitive: PrimitiveTypes.STRING,
+      annotations: { _default: 'type' },
+    })
+    const nestedElemID = new ElemID('salto', 'nested')
+    const nested = new ObjectType({
+      elemID: nestedElemID,
+      fields: {
+        field1: new Field(nestedElemID, 'field1', strType, { _default: 'field1' }),
+        field2: new Field(nestedElemID, 'field2', strType),
+        base: new Field(nestedElemID, 'field2', base),
+      },
+    })
+    const ins1 = new InstanceElement(
+      'ins',
+      nested,
+      { field1: 'ins1', field2: 'ins1' },
+      undefined,
+      { anno: 1 },
+    )
+    const shouldUseFieldDef = new InstanceElement('ins', nested, {
+      field2: 'ins1',
+      base: { field1: 'ins2', field2: 'ins2' },
+    })
+
+    it('should use field defaults', () => {
+      const elements = [shouldUseFieldDef.clone()]
+      applyInstancesDefaults(elements)
+      const ins = elements[0] as InstanceElement
+      expect(ins.value).toEqual({
+        field1: 'field1',
+        field2: 'ins1',
+        base: {
+          field1: 'ins2',
+          field2: 'ins2',
+        },
+      })
+    })
+
+    it('should use type defaults', () => {
+      const shouldUseTypeDef = new InstanceElement('ins', nested, {
+        field1: 'ins1',
+        base: { field1: 'ins2', field2: 'ins2' },
+      })
+      const elements = [shouldUseTypeDef]
+      applyInstancesDefaults(elements)
+      expect(shouldUseTypeDef.value).toEqual({
+        field1: 'ins1',
+        field2: 'type',
+        base: {
+          field1: 'ins2',
+          field2: 'ins2',
+        },
+      })
+    })
+
+    it('should use object defaults', () => {
+      const elements = [ins1.clone()]
+      applyInstancesDefaults(elements)
+      expect(elements[0].value).toEqual({
+        field1: 'ins1',
+        field2: 'ins1',
+        base: {
+          field1: 'base1',
+          field2: 'base2',
+        },
+      })
+    })
+
+    it('should not use defaults for inner fields when its value is undefined', () => {
+      const typeWithNestedDefaultsElemID = new ElemID('salto', 'typeWithNestedDefaults')
+      const typeWithNestedDefaults = new ObjectType({
+        elemID: typeWithNestedDefaultsElemID,
+        fields: {
+          withDefault: new Field(typeWithNestedDefaultsElemID, 'withDefault', strType, { _default: 'default val' }),
+          nestedTypeHasDefaults: new Field(typeWithNestedDefaultsElemID, 'nestedTypeHasDefaults', nested),
+        },
+      })
+
+      const instanceWithNoValues = new InstanceElement(
+        'instance',
+        typeWithNestedDefaults,
+      )
+
+      const elements = [instanceWithNoValues]
+      applyInstancesDefaults(elements)
+      expect(instanceWithNoValues.value).toEqual({
+        withDefault: 'default val',
+      })
+    })
+  })
+
+  describe('createDefaultInstanceFromType', () => {
+    it('should create default instance from type', () => {
+      const mockElemID = new ElemID('test')
+      const configType = new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          val1: new Field(
+            mockElemID,
+            'val1',
+            BuiltinTypes.STRING,
+            {
+              [CORE_ANNOTATIONS.DEFAULT]: 'test',
+            }
+          ),
+        },
+      })
+      expect(createDefaultInstanceFromType('test', configType))
+        .toEqual(new InstanceElement('test', configType, { val1: 'test' }))
     })
   })
 })

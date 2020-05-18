@@ -16,6 +16,7 @@
 import path from 'path'
 import { ElemID, Field, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import * as utils from '@salto-io/adapter-utils'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { multiEnvSource } from '../../../src/workspace/nacl_files/mutil_env/multi_env_source'
 import { Errors } from '../../../src/workspace/errors'
@@ -23,6 +24,8 @@ import { ValidationError } from '../../../src/core/validator'
 import { MergeError } from '../../../src/core/merger/internal/common'
 import { expectToContainAllItems } from '../../common/helpers'
 import { DetailedChange } from '../../../src/core/plan'
+
+jest.spyOn(utils, 'applyInstancesDefaults')
 
 const objectElemID = new ElemID('salto', 'object')
 const commonField = new Field(objectElemID, 'commonField', BuiltinTypes.STRING)
@@ -330,6 +333,11 @@ describe('multi env source', () => {
     it('should forward the getElements command to the common source', async () => {
       await source.getElements(path.join(commonPrefix, 'common.nacl'))
       expect(commonSource.getElements).toHaveBeenCalled()
+    })
+  })
+  describe('applyInstancesDefaults', () => {
+    it('should call applyInstancesDefaults', () => {
+      expect(utils.applyInstancesDefaults).toHaveBeenCalled()
     })
   })
 })

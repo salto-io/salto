@@ -33,7 +33,7 @@ export {
   DuplicateAnnotationFieldDefinitionError, DuplicateAnnotationTypeError,
 } from './internal/object_types'
 
-export { DuplicateInstanceKeyError, createDefaultInstanceFromType } from './internal/instances'
+export { DuplicateInstanceKeyError } from './internal/instances'
 export { MultiplePrimitiveTypesUnsupportedError } from './internal/primitives'
 export { DuplicateVariableNameError } from './internal/variables'
 

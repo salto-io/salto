@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
+import * as utils from '@salto-io/adapter-utils'
 import { creator } from '@salto-io/salesforce-adapter'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
@@ -46,6 +47,14 @@ describe('adapters.ts', () => {
       credentials = getAdaptersCredentialsTypes(services.concat('fake'))
       expect(credentials.salesforce).toEqual(credentialsType)
       expect(credentials.fake).toBeUndefined()
+    })
+  })
+
+  describe('getDefaultAdapterConfig', () => {
+    it('should call createDefaultInstanceFromType', () => {
+      jest.spyOn(utils, 'createDefaultInstanceFromType')
+      getDefaultAdapterConfig('salesforce')
+      expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
     })
   })
 

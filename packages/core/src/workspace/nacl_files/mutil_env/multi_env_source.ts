@@ -17,7 +17,8 @@ import _ from 'lodash'
 import path from 'path'
 import wu from 'wu'
 
-import { Element, ElemID, getChangeElement, Value } from '@salto-io/adapter-api'
+import { Element, ElemID, getChangeElement, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { ParseError, SourceMap, SourceRange } from 'src/parser/parse'
 import { ValidationError } from 'src/core/validator'
@@ -71,6 +72,7 @@ const buildMultiEnvSource = (
       _.values(getActiveSources()).map(s => s.getAll())
     ))
     const { errors, merged } = mergeElements(allActiveElements)
+    applyInstancesDefaults(merged.filter(isInstanceElement))
     return {
       elements: _.keyBy(merged, e => e.elemID.getFullName()),
       mergeErrors: errors,

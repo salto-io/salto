@@ -19,6 +19,7 @@ export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
 
 // Type names
+export const CUSTOM_RECORD_TYPE = 'customrecordtype'
 export const ENTITY_CUSTOM_FIELD = 'entitycustomfield'
 
 // Type Annotations

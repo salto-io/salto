@@ -21,7 +21,7 @@ import {
   applyRecursive, MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH } from './constants'
+import { IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH, SCRIPT_ID } from './constants'
 import { ATTRIBUTE_PREFIX, CustomizationInfo } from './client/client'
 
 const XML_TRUE_VALUE = 'T'
@@ -46,7 +46,9 @@ export const createInstanceElement = (values: Values, type: ObjectType):
   const getInstanceName = (transformedValues: Values): string => {
     const nameField = Object.values(type.fields)
       .find(f => f.annotations[IS_NAME]) as Field
-    return naclCase(transformedValues[nameField.name])
+    // fallback to SCRIPT_ID since sometimes the IS_NAME field is not mandatory
+    // (e.g. customrecordtype of customsegment)
+    return naclCase(transformedValues[nameField.name] ?? transformedValues[SCRIPT_ID])
   }
 
   const transformPrimitive: TransformFunc = ({ value, field }) => {

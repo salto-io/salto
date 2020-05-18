@@ -77,7 +77,7 @@ describe('fetch command', () => {
           config: { services },
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, false, services,)
+        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, true, false, services)
           .execute()
       })
 
@@ -104,6 +104,7 @@ describe('fetch command', () => {
           mockTelemetry,
           cliOutput,
           spinnerCreator,
+          true,
           false,
           services,
         ).execute()
@@ -193,6 +194,7 @@ describe('fetch command', () => {
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
+            shouldCalcTotalSize: true,
             inputServices: services,
             inputIsolated: false,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
@@ -224,6 +226,7 @@ describe('fetch command', () => {
             fetch: mockFetch,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
+            shouldCalcTotalSize: true,
             inputIsolated: false,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           })
@@ -266,6 +269,7 @@ describe('fetch command', () => {
             fetch: mockFetchWithChanges,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockShouldUpdateConfig,
+            shouldCalcTotalSize: true,
             inputIsolated: false,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           }
@@ -312,6 +316,7 @@ describe('fetch command', () => {
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
               shouldUpdateConfig: mockUpdateConfig,
+              shouldCalcTotalSize: true,
               inputIsolated: false,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
@@ -340,6 +345,7 @@ describe('fetch command', () => {
               getApprovedChanges: mockEmptyApprove,
               inputIsolated: true,
               shouldUpdateConfig: mockUpdateConfig,
+              shouldCalcTotalSize: true,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
             expect(result).toBe(CliExitCode.Success)
@@ -365,6 +371,7 @@ describe('fetch command', () => {
               fetch: mockFetchWithChanges,
               getApprovedChanges: mockEmptyApprove,
               shouldUpdateConfig: mockUpdateConfig,
+              shouldCalcTotalSize: true,
               inputIsolated: false,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
@@ -392,6 +399,7 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockEmptyApprove,
                 shouldUpdateConfig: mockUpdateConfig,
+                shouldCalcTotalSize: true,
                 inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
@@ -422,6 +430,7 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
+                shouldCalcTotalSize: true,
                 inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
@@ -452,6 +461,7 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
+                shouldCalcTotalSize: true,
                 inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
@@ -478,6 +488,7 @@ describe('fetch command', () => {
                 fetch: mockFetchWithChanges,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
+                shouldCalcTotalSize: true,
                 inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
@@ -502,6 +513,7 @@ describe('fetch command', () => {
                 fetch: mockFailedFetch,
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
+                shouldCalcTotalSize: true,
                 inputIsolated: false,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
@@ -545,6 +557,7 @@ describe('fetch command', () => {
             fetch: mockFetchWithChanges,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
+            shouldCalcTotalSize: true,
             inputIsolated: false,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           })
@@ -582,6 +595,7 @@ describe('fetch command', () => {
             fetch: mockFetchEmpty,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
+            shouldCalcTotalSize: true,
             inputServices,
             inputIsolated: isolated,
             approveIsolatedMode: mockApproveIsolatedMode,
@@ -711,6 +725,7 @@ describe('fetch command', () => {
         mockTelemetry,
         cliOutput,
         spinnerCreator,
+        true,
         false,
         services,
       ).execute()
@@ -726,6 +741,7 @@ describe('fetch command', () => {
         mockTelemetry,
         cliOutput,
         spinnerCreator,
+        true,
         false,
         services,
         mocks.withEnvironmentParam,

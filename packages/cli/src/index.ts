@@ -42,7 +42,7 @@ const main = async (): Promise<CliExitCode> => {
     }
   )
   return cli({
-    input: { args, stdin, telemetry },
+    input: { args, stdin, telemetry, config: config.config },
     output: { stdout, stderr },
     commandBuilders,
     spinnerCreator: oraSpinnerCreator,

@@ -81,6 +81,7 @@ export type FetchCommandArgs = {
   getApprovedChanges: approveChangesFunc
   shouldUpdateConfig: shouldUpdateConfigFunc
   approveIsolatedMode: approveIsolatedModeFunc
+  shouldCalcTotalSize: boolean
   inputServices?: string[]
 }
 
@@ -146,8 +147,8 @@ const getRelevantServicesAndIsolatedMode = async (
 export const fetchCommand = async (
   {
     workspace, force, interactive, inputIsolated = false,
-    getApprovedChanges, shouldUpdateConfig,
-    inputServices, cliTelemetry, output, fetch, approveIsolatedMode,
+    getApprovedChanges, shouldUpdateConfig, inputServices,
+    cliTelemetry, output, fetch, approveIsolatedMode, shouldCalcTotalSize,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
@@ -257,9 +258,11 @@ export const fetchCommand = async (
   const updatingWsSucceeded = await updateWorkspace(workspace, output, changesToApply, isolated)
   if (updatingWsSucceeded) {
     updatingWsEmitter.emit('completed')
-    const totalSize = await workspace.getTotalSize()
-    log.debug(`Total size of the workspace is ${totalSize}`)
-    cliTelemetry.workspaceSize(totalSize, workspaceTags)
+    if (shouldCalcTotalSize) {
+      const totalSize = await workspace.getTotalSize()
+      log.debug(`Total size of the workspace is ${totalSize} bytes`)
+      cliTelemetry.workspaceSize(totalSize, workspaceTags)
+    }
     outputLine(formatFetchFinish())
   } else {
     updatingWsEmitter.emit('failed')
@@ -281,6 +284,7 @@ export const command = (
   telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
+  shouldCalcTotalSize: boolean,
   inputIsolated: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
@@ -309,6 +313,7 @@ export const command = (
       approveIsolatedMode: cliApproveIsolatedMode,
       inputServices,
       inputIsolated,
+      shouldCalcTotalSize,
     })
   },
 })
@@ -360,6 +365,7 @@ const fetchBuilder = createCommandBuilder({
       input.telemetry,
       output,
       spinnerCreator,
+      input.config.shouldCalcTotalSize,
       input.args.isolated,
       input.args.services,
       input.args.env,

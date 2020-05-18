@@ -227,8 +227,7 @@ const buildLocalDirectoryStore = (
 
     getTotalSize: async (): Promise<number> => {
       const allFiles = (await list()).map(f => getAbsFileName(f))
-      return allFiles.reduce(async (res, filePath) =>
-        (await res) + (await stat(filePath)).size, Promise.resolve(0))
+      return _.sum(await Promise.all(allFiles.map(async filePath => (await stat(filePath)).size)))
     },
 
     clone: () => buildLocalDirectoryStore(

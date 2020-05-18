@@ -14,7 +14,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
+import _ from 'lodash'
 import os from 'os'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
@@ -60,6 +60,10 @@ const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
   enabled: !telemetryDisabled(),
 }
 
+const DEFAULT_GENERAL_CONFIG: GeneralConfig = {
+  shouldCalcTotalSize: true,
+}
+
 const configHomeDir = (): string => (
   path.join(getSaltoHome(), GLOBAL_CONFIG_DIR)
 )
@@ -68,9 +72,14 @@ const configFullPath = (): string => path.join(configHomeDir(), CONFIG_FILENAME)
 
 const generateInstallationID = (): string => uuidv4()
 
+export type GeneralConfig = {
+  shouldCalcTotalSize: boolean
+}
+
 export type AppConfig = {
   installationID: string
   telemetry: TelemetryConfig
+  config: GeneralConfig
 }
 
 const saltoConfigElemID = new ElemID('salto')
@@ -81,6 +90,7 @@ export const saltoAppConfigType = new ObjectType({
   fields: {
     installationID: new Field(saltoConfigElemID, 'installationID', BuiltinTypes.STRING, requireAnno),
     telemetry: new Field(saltoConfigElemID, 'telemetry', BuiltinTypes.JSON, requireAnno),
+    config: new Field(saltoConfigElemID, 'config', BuiltinTypes.JSON, requireAnno),
   },
   annotationTypes: {},
   annotations: {},
@@ -97,6 +107,9 @@ const dumpConfig = async (config: AppConfig): Promise<void> => (
         telemetry: {
           enabled: config.telemetry.enabled,
         },
+        config: {
+          shouldCalcTotalSize: config.config.shouldCalcTotalSize,
+        },
       }
     )]),
   )
@@ -110,6 +123,16 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
   }
   return config
 }
+
+const addDefaultsForMissingFields = (config: AppConfig): void => {
+  if (_.isUndefined(config.telemetry)) {
+    config.telemetry = DEFAULT_TELEMETRY_CONFIG
+  }
+  if (_.isUndefined(config.config)) {
+    config.config = DEFAULT_GENERAL_CONFIG
+  }
+}
+
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
   const configInstance = (await parse(buf, filepath)).elements.pop() as InstanceElement
@@ -117,6 +140,7 @@ const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
 
   const saltoConfigInstance = configInstance.value as AppConfig
 
+  addDefaultsForMissingFields(saltoConfigInstance)
   return saltoConfigInstance
 }
 
@@ -126,6 +150,7 @@ export const configFromDisk = async (): Promise<AppConfig> => {
     await dumpConfig({
       installationID: generateInstallationID(),
       telemetry: DEFAULT_TELEMETRY_CONFIG,
+      config: DEFAULT_GENERAL_CONFIG,
     })
   }
   const config = await configFromNaclFile(configFullPath())

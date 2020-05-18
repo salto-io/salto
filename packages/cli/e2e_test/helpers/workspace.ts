@@ -143,6 +143,7 @@ export const runFetch = async (
     mockTelemetry,
     mockCliOutput(),
     mockSpinnerCreator([]),
+    true,
     isolated,
     services,
   ).execute()

@@ -14,15 +14,16 @@
 * limitations under the License.
 */
 import {
-  ElemID, Field, InstanceElement, isListType, isPrimitiveType, ObjectType, PrimitiveTypes, Value,
-  Values,
+  ElemID, Field, InstanceElement, isListType, isPrimitiveType, ObjectType, PrimitiveType,
+  PrimitiveTypes, Value, Values,
 } from '@salto-io/adapter-api'
 import {
   applyRecursive, MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH, SCRIPT_ID } from './constants'
-import { ATTRIBUTE_PREFIX, CustomizationInfo } from './client/client'
+import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo } from './client/client'
+import { fieldTypes } from './types/field_types'
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
@@ -123,6 +124,9 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     }
     if (fieldType.primitive === PrimitiveTypes.BOOLEAN) {
       return value ? XML_TRUE_VALUE : XML_FALSE_VALUE
+    }
+    if (fieldType.isEqual(fieldTypes.cdata as PrimitiveType)) {
+      return { [CDATA_TAG_NAME]: value }
     }
     return String(value)
   }

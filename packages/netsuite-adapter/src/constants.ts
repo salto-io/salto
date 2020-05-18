@@ -17,10 +17,12 @@ export const NETSUITE = 'netsuite'
 export const RECORDS_PATH = 'Records'
 export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
+export const FIELD_TYPES_PATH = 'fieldTypes'
 
 // Type names
 export const CUSTOM_RECORD_TYPE = 'customrecordtype'
 export const ENTITY_CUSTOM_FIELD = 'entitycustomfield'
+export const ADDRESS_FORM = 'addressForm'
 
 // Type Annotations
 export const SCRIPT_ID_PREFIX = 'scriptIdPrefix'

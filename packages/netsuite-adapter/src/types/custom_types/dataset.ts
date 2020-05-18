@@ -19,6 +19,7 @@ import {
   BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
+import { fieldTypes } from '../field_types'
 
 export const datasetInnerTypes: ObjectType[] = []
 
@@ -72,7 +73,7 @@ export const dataset = new ObjectType({
     definition: new Field(
       datasetElemID,
       'definition',
-      BuiltinTypes.STRING,
+      fieldTypes.cdata,
       {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },

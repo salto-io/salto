@@ -47,6 +47,7 @@ export const COMMANDS = {
 }
 
 export const ATTRIBUTE_PREFIX = '@_'
+export const CDATA_TAG_NAME = '__cdata'
 
 const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
@@ -71,8 +72,10 @@ export const convertToXmlContent = (customizationInfo: CustomizationInfo): strin
   // eslint-disable-next-line new-cap
   new xmlParser.j2xParser({
     attributeNamePrefix: ATTRIBUTE_PREFIX,
-    format: true,
+    // We convert to an not formatted xml since the CDATA transformation is wrong when having format
+    format: false,
     ignoreAttributes: false,
+    cdataTagName: CDATA_TAG_NAME,
   }).parse({ [customizationInfo.typeName]: customizationInfo.values })
 
 const setSdfLogLevel = (): void => {

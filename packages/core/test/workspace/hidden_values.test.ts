@@ -154,57 +154,55 @@ describe('hidden_values.ts', () => {
   })
 
   describe('addHiddenValuesAndHiddenTypes func', () => {
-    describe('instances', () => {
-      const workspaceInstance = hiddenInstance.clone()
+    const workspaceInstance = hiddenInstance.clone()
 
-      // workspace elements should not contain hidden values
-      delete workspaceInstance.value.hidden
-      delete workspaceInstance.value.listOfObjects[0].hiddenStr
-      delete workspaceInstance.value.objField.hiddenStr
+    // workspace elements should not contain hidden values
+    delete workspaceInstance.value.hidden
+    delete workspaceInstance.value.listOfObjects[0].hiddenStr
+    delete workspaceInstance.value.objField.hiddenStr
 
-      // workspace changes
-      workspaceInstance.value.notHidden = 'notHiddenChanged'
-      workspaceInstance.value.addedField = 'addedField'
-      workspaceInstance.value.listOfObjects[0].num = 12345
-      workspaceInstance.value.numHidden = 11111
+    // workspace changes
+    workspaceInstance.value.notHidden = 'notHiddenChanged'
+    workspaceInstance.value.addedField = 'addedField'
+    workspaceInstance.value.listOfObjects[0].num = 12345
+    workspaceInstance.value.numHidden = 11111
 
 
-      const stateInstance = hiddenInstance.clone()
+    const stateInstance = hiddenInstance.clone()
 
-      let resp: Element[]
-      let instanceAfterHiddenAddition: InstanceElement
-      beforeAll(async () => {
-        resp = addHiddenValuesAndHiddenTypes([workspaceInstance], [stateInstance])
-        instanceAfterHiddenAddition = resp[0] as InstanceElement
-      })
+    let resp: Element[]
+    let instanceAfterHiddenAddition: InstanceElement
+    beforeAll(async () => {
+      resp = addHiddenValuesAndHiddenTypes([workspaceInstance], [stateInstance])
+      instanceAfterHiddenAddition = resp[0] as InstanceElement
+    })
 
-      it('should add hidden values from state elements', () => {
-        expect(instanceAfterHiddenAddition.value.hidden).toEqual(stateInstance.value.hidden)
-        expect(instanceAfterHiddenAddition.value.listOfObjects[0].hiddenStr)
-          .toEqual(stateInstance.value.listOfObjects[0].hiddenStr)
-        expect(instanceAfterHiddenAddition.value.objField.hiddenStr)
-          .toEqual(stateInstance.value.objField.hiddenStr)
-      })
+    it('should add hidden values from state elements', () => {
+      expect(instanceAfterHiddenAddition.value.hidden).toEqual(stateInstance.value.hidden)
+      expect(instanceAfterHiddenAddition.value.listOfObjects[0].hiddenStr)
+        .toEqual(stateInstance.value.listOfObjects[0].hiddenStr)
+      expect(instanceAfterHiddenAddition.value.objField.hiddenStr)
+        .toEqual(stateInstance.value.objField.hiddenStr)
+    })
 
-      it('should ignore hidden values from workspace element', () => {
-        expect(instanceAfterHiddenAddition.value.numHidden)
-          .toEqual(stateInstance.value.numHidden)
-      })
+    it('should ignore hidden values from workspace element', () => {
+      expect(instanceAfterHiddenAddition.value.numHidden)
+        .toEqual(stateInstance.value.numHidden)
+    })
 
-      it('should not change workspace (not hidden) element values', () => {
-        expect(workspaceInstance.value.notHidden)
-          .toEqual(instanceAfterHiddenAddition.value.notHidden)
-        expect(workspaceInstance.value.reg)
-          .toEqual(instanceAfterHiddenAddition.value.reg)
-        expect(workspaceInstance.value.listOfObjects[0].num)
-          .toEqual(instanceAfterHiddenAddition.value.listOfObjects[0].num)
-        expect(workspaceInstance.value.listOfObjects)
-          .toHaveLength(instanceAfterHiddenAddition.value.listOfObjects.length)
-      })
+    it('should not change workspace (not hidden) element values', () => {
+      expect(workspaceInstance.value.notHidden)
+        .toEqual(instanceAfterHiddenAddition.value.notHidden)
+      expect(workspaceInstance.value.reg)
+        .toEqual(instanceAfterHiddenAddition.value.reg)
+      expect(workspaceInstance.value.listOfObjects[0].num)
+        .toEqual(instanceAfterHiddenAddition.value.listOfObjects[0].num)
+      expect(workspaceInstance.value.listOfObjects)
+        .toHaveLength(instanceAfterHiddenAddition.value.listOfObjects.length)
+    })
 
-      it('should not done in-place', () => {
-        expect(stateInstance.isEqual(hiddenInstance)).toBeTruthy()
-      })
+    it('should not done in-place', () => {
+      expect(stateInstance.isEqual(hiddenInstance)).toBeTruthy()
     })
   })
 })

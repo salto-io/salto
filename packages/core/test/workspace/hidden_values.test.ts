@@ -19,8 +19,8 @@ import {
   ObjectType,
 } from '@salto-io/adapter-api'
 import {
-  addHiddenValues,
-  removeHiddenValues,
+  addHiddenValuesAndHiddenTypes,
+  removeHiddenFieldsValues,
 } from '../../src/workspace/hidden_values'
 
 describe('hidden_values.ts', () => {
@@ -114,13 +114,13 @@ describe('hidden_values.ts', () => {
   })
 
 
-  describe('removeHiddenValues func', () => {
+  describe('removeHiddenFieldsValues func', () => {
     describe('type', () => {
       const objType = new ObjectType({ elemID: new ElemID('dummyAdapter', 'dummy') })
 
       let resp: Element
       beforeAll(async () => {
-        resp = removeHiddenValues(objType)
+        resp = removeHiddenFieldsValues(objType)
       })
 
       it('should not change type (for now...)', () => {
@@ -140,7 +140,7 @@ describe('hidden_values.ts', () => {
 
       let resp: Element
       beforeAll(async () => {
-        resp = removeHiddenValues(clonedHiddenInstance)
+        resp = removeHiddenFieldsValues(clonedHiddenInstance)
       })
 
       it('should remove hidden values ', () => {
@@ -153,7 +153,7 @@ describe('hidden_values.ts', () => {
     })
   })
 
-  describe('addHiddenValues func', () => {
+  describe('addHiddenValuesAndHiddenTypes func', () => {
     describe('instances', () => {
       const workspaceInstance = hiddenInstance.clone()
 
@@ -174,7 +174,7 @@ describe('hidden_values.ts', () => {
       let resp: Element[]
       let instanceAfterHiddenAddition: InstanceElement
       beforeAll(async () => {
-        resp = addHiddenValues([workspaceInstance], [stateInstance])
+        resp = addHiddenValuesAndHiddenTypes([workspaceInstance], [stateInstance])
         instanceAfterHiddenAddition = resp[0] as InstanceElement
       })
 

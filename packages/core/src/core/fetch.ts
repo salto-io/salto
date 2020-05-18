@@ -19,7 +19,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, ElemIdGetter, CORE_ANNOTATIONS, isType,
+  ADAPTER, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -30,7 +30,7 @@ import { StepEvents } from './deploy'
 import { getPlan, DetailedChange, Plan } from './plan'
 import { mergeElements, MergeError } from './merger'
 import {
-  removeHiddenValues,
+  removeHiddenValuesAndHiddenTypes,
 } from '../workspace/hidden_values'
 
 const log = logger(module)
@@ -48,7 +48,7 @@ export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {
     id: elem.elemID,
     action: 'add',
-    data: { after: removeHiddenValues(elem) },
+    data: { after: elem },
   }
   return { change, serviceChange: change }
 }
@@ -264,11 +264,6 @@ const fetchAndProcessMergeErrors = async (
   }
 }
 
-const removeElementsHiddenValues = (serviceElements: ReadonlyArray<Element>):
-  Element[] => serviceElements
-  .filter(e => !isType(e) || !(e.annotations[CORE_ANNOTATIONS.HIDDEN] === true))
-  .map(elem => removeHiddenValues(elem))
-
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all service elements should be consider as "add" changes.
 const calcFetchChanges = async (
@@ -277,9 +272,9 @@ const calcFetchChanges = async (
   stateElements: ReadonlyArray<Element>,
   workspaceElements: ReadonlyArray<Element>
 ): Promise<Iterable<FetchChange>> => {
-  const serviceElementsHiddenRemoved = removeElementsHiddenValues(serviceElements)
-  const mergedServiceElementsHiddenRemoved = removeElementsHiddenValues(mergedServiceElements)
-  const stateElementsHiddenRemoved = removeElementsHiddenValues(stateElements)
+  const serviceElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(serviceElements)
+  const mergedServiceElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(mergedServiceElements)
+  const stateElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(stateElements)
   const serviceChanges = await log.time(() =>
     getDetailedChanges(stateElementsHiddenRemoved, mergedServiceElementsHiddenRemoved),
   'finished to calculate service-state changes')
@@ -329,8 +324,7 @@ export const fetchChanges = async (
   const isFirstFetch = _.isEmpty(workspaceElements.concat(stateElements)
     .filter(e => !e.elemID.isConfig()))
   const changes = isFirstFetch
-    ? serviceElements
-      .filter(e => !isType(e) || !(e.annotations[CORE_ANNOTATIONS.HIDDEN] === true))
+    ? removeHiddenValuesAndHiddenTypes(serviceElements)
       .map(toAddFetchChange)
     : await calcFetchChanges(
       serviceElements,

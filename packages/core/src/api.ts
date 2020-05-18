@@ -48,7 +48,8 @@ import {
 import { Workspace } from './workspace/workspace'
 import { defaultDependencyChangers } from './core/plan/plan'
 import {
-  addHiddenValues, removeHiddenValues,
+  addHiddenValuesAndHiddenTypes,
+  removeHiddenFieldsValues,
 } from './workspace/hidden_values'
 
 const log = logger(module)
@@ -76,12 +77,9 @@ export const updateCredentials = async (
 const filterElementsByServices = (
   elements: Element[] | readonly Element[],
   services: ReadonlyArray<string>
-): Element[] => {
-  const filtered = elements.filter(e => services.includes(e.elemID.adapter)
+): Element[] => elements.filter(e => services.includes(e.elemID.adapter)
   // Variables belong to all of the services
   || e.elemID.adapter === ElemID.VARIABLES_NAMESPACE)
-  return filtered
-}
 
 export const preview = async (
   workspace: Workspace,
@@ -90,7 +88,7 @@ export const preview = async (
   const stateElements = await workspace.state().getAll()
   return getPlan(
     filterElementsByServices(stateElements, services),
-    addHiddenValues(
+    addHiddenValuesAndHiddenTypes(
       filterElementsByServices(await workspace.elements(), services),
       stateElements
     ),
@@ -125,7 +123,7 @@ export const deploy = async (
       ((action === 'remove')
         ? workspace.state().remove(element.elemID)
         : workspace.state().set(element)
-          .then(() => { changedElements.push(removeHiddenValues(element)) }))
+          .then(() => { changedElements.push(removeHiddenFieldsValues(element)) }))
     const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())

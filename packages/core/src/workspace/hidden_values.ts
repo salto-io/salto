@@ -15,7 +15,7 @@
 */
 import {
   CORE_ANNOTATIONS, Element, InstanceElement,
-  isInstanceElement, isObjectType,
+  isInstanceElement, isObjectType, isType,
 } from '@salto-io/adapter-api'
 import {
   transformElement, TransformFunc,
@@ -25,7 +25,7 @@ import {
   createElementsMap,
 } from '../core/search'
 
-export const addHiddenValues = (
+export const addHiddenValuesAndHiddenTypes = (
   workspaceElements: ReadonlyArray<Element>,
   stateElements: Element[],
 ): Element[] => {
@@ -80,10 +80,10 @@ export const addHiddenValues = (
   return instancesWithHiddenValues.concat(hiddenTypes)
 }
 
-export const removeHiddenValues = (elem: Element):
+export const removeHiddenFieldsValues = (elem: Element):
   Element => {
   if (isInstanceElement(elem)) {
-    const removeHiddenValue: TransformFunc = ({ value, field }) => {
+    const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
       if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
         return undefined
       }
@@ -92,9 +92,14 @@ export const removeHiddenValues = (elem: Element):
 
     return transformElement({
       element: elem,
-      transformFunc: removeHiddenValue,
+      transformFunc: removeHiddenFieldValue,
       strict: false,
     }) || {}
   }
   return elem
 }
+
+export const removeHiddenValuesAndHiddenTypes = (elements: ReadonlyArray<Element>):
+  Element[] => elements
+  .filter(e => !isType(e) || !(e.annotations[CORE_ANNOTATIONS.HIDDEN] === true))
+  .map(elem => removeHiddenFieldsValues(elem))

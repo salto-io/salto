@@ -21,6 +21,7 @@ import {
 import {
   addHiddenValuesAndHiddenTypes,
   removeHiddenFieldsValues,
+  removeHiddenValuesAndHiddenTypes,
 } from '../../src/workspace/hidden_values'
 
 describe('hidden_values.ts', () => {
@@ -42,7 +43,7 @@ describe('hidden_values.ts', () => {
     }
   )
 
-  const typeWithHiddenField = new ObjectType({
+  const hiddenType = new ObjectType({
     elemID: anotherTypeID,
     fields: {
       reg: new Field(anotherTypeID, 'reg', BuiltinTypes.STRING),
@@ -78,10 +79,22 @@ describe('hidden_values.ts', () => {
       ),
       addedField: new Field(anotherTypeID, 'addedField', BuiltinTypes.STRING),
     },
+    annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
     path: ['records', 'hidden'],
   })
 
-  const hiddenInstance = new InstanceElement('instance_elem_id_name', typeWithHiddenField, {
+
+  const regTypeID = new ElemID('dummy', 'regType')
+  const notHiddenType = new ObjectType({
+    elemID: regTypeID,
+    fields: {
+      str: new Field(new ElemID('dummy', 'strField'), 'str', BuiltinTypes.STRING),
+      num2: new Field(new ElemID('dummy', 'numField'), 'num2', BuiltinTypes.NUMBER),
+    },
+    annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+  })
+
+  const hiddenInstance = new InstanceElement('instance_elem_id_name', hiddenType, {
     reg: 'reg',
     listOfObjects: [
       {
@@ -114,6 +127,15 @@ describe('hidden_values.ts', () => {
   })
 
 
+  const instanceWithoutHiddenValues = hiddenInstance.clone()
+
+  // removing all hidden values
+  delete instanceWithoutHiddenValues.value.hidden
+  delete instanceWithoutHiddenValues.value.listOfObjects[0].hiddenStr
+  delete instanceWithoutHiddenValues.value.objField.hiddenStr
+  delete instanceWithoutHiddenValues.value.numHidden
+
+
   describe('removeHiddenFieldsValues func', () => {
     describe('type', () => {
       const objType = new ObjectType({ elemID: new ElemID('dummyAdapter', 'dummy') })
@@ -130,11 +152,7 @@ describe('hidden_values.ts', () => {
 
 
     describe('instance', () => {
-      const instanceAfterHiddenRemoved = hiddenInstance.clone()
-      delete instanceAfterHiddenRemoved.value.hidden
-      delete instanceAfterHiddenRemoved.value.listOfObjects[0].hiddenStr
-      delete instanceAfterHiddenRemoved.value.objField.hiddenStr
-      delete instanceAfterHiddenRemoved.value.numHidden
+      const instanceAfterHiddenRemoved = instanceWithoutHiddenValues.clone()
 
       const clonedHiddenInstance = hiddenInstance.clone()
 
@@ -153,13 +171,38 @@ describe('hidden_values.ts', () => {
     })
   })
 
-  describe('addHiddenValuesAndHiddenTypes func', () => {
-    const workspaceInstance = hiddenInstance.clone()
+  describe('removeHiddenValuesAndHiddenTypes func', () => {
+    const elements = [hiddenType.clone(), notHiddenType.clone(), hiddenInstance.clone()]
+    let resp: Element[]
+    beforeAll(async () => {
+      resp = removeHiddenValuesAndHiddenTypes(elements)
+    })
 
+    it('should remove hidden type', () => {
+      expect(resp).toHaveLength(elements.length - 1)
+      expect(resp).not.toContain(hiddenType)
+    })
+
+    it('should not change notHiddenType', () => {
+      expect((resp[0] as ObjectType).isEqual(notHiddenType)).toBeTruthy()
+    })
+
+    it('should remove all hidden (fields) values in instance', () => {
+      const instanceAfterRemoveHidden = resp[1] as InstanceElement
+
+      // checking instance existence
+      expect(instanceAfterRemoveHidden.elemID.getFullName())
+        .toEqual(hiddenInstance.elemID.getFullName())
+
+      // checking hidden values removal
+      expect(instanceAfterRemoveHidden).toEqual(instanceWithoutHiddenValues)
+    })
+  })
+
+  describe('addHiddenValuesAndHiddenTypes func', () => {
     // workspace elements should not contain hidden values
-    delete workspaceInstance.value.hidden
-    delete workspaceInstance.value.listOfObjects[0].hiddenStr
-    delete workspaceInstance.value.objField.hiddenStr
+    const workspaceInstance = instanceWithoutHiddenValues.clone()
+
 
     // workspace changes
     workspaceInstance.value.notHidden = 'notHiddenChanged'
@@ -167,14 +210,44 @@ describe('hidden_values.ts', () => {
     workspaceInstance.value.listOfObjects[0].num = 12345
     workspaceInstance.value.numHidden = 11111
 
+    // When type is hidden: (workspace) instance will contain an 'empty' type (only with elemID)
+    workspaceInstance.type = new ObjectType({
+      elemID: anotherTypeID,
+    })
 
+
+    const newWorkspaceInstance = new InstanceElement('instance_elem_id_name', new ObjectType({
+      elemID: anotherTypeID,
+    }), {
+      reg: 'newReg',
+      notHidden: 'notHidden2',
+    })
+
+    const workspaceElements = [notHiddenType.clone(), workspaceInstance, newWorkspaceInstance]
+
+    // State elements
     const stateInstance = hiddenInstance.clone()
+    const stateHiddenType = hiddenType.clone()
+
+    const stateElements = [notHiddenType.clone(), stateInstance, stateHiddenType]
 
     let resp: Element[]
     let instanceAfterHiddenAddition: InstanceElement
+    let newInstanceAfterHiddenAddition: InstanceElement
+    let hiddenTypeAddition: ObjectType
+
     beforeAll(async () => {
-      resp = addHiddenValuesAndHiddenTypes([workspaceInstance], [stateInstance])
-      instanceAfterHiddenAddition = resp[0] as InstanceElement
+      resp = addHiddenValuesAndHiddenTypes(workspaceElements, stateElements)
+
+      instanceAfterHiddenAddition = resp[1] as InstanceElement
+      newInstanceAfterHiddenAddition = resp[2] as InstanceElement
+      hiddenTypeAddition = resp[3] as ObjectType
+    })
+
+    it('should add hidden type to workspace elements list', () => {
+      expect(resp).toHaveLength(workspaceElements.length + 1)
+      expect(hiddenTypeAddition.isEqual(hiddenType))
+        .toBeTruthy()
     })
 
     it('should add hidden values from state elements', () => {
@@ -201,8 +274,22 @@ describe('hidden_values.ts', () => {
         .toHaveLength(instanceAfterHiddenAddition.value.listOfObjects.length)
     })
 
-    it('should not done in-place', () => {
-      expect(stateInstance.isEqual(hiddenInstance)).toBeTruthy()
+    it('should inject the complete type into instance', () => {
+      expect(instanceAfterHiddenAddition.type.isEqual(hiddenType))
+        .toBeTruthy()
+    })
+
+    it('should inject the complete type into newInstance', () => {
+      expect(newInstanceAfterHiddenAddition.type.isEqual(hiddenType))
+        .toBeTruthy()
+    })
+
+    it('should not done in-place for state elements', () => {
+      expect(stateElements).toHaveLength(3)
+
+      expect((stateElements[0] as ObjectType).isEqual(notHiddenType)).toBeTruthy()
+      expect((stateElements[1] as InstanceElement).isEqual(hiddenInstance)).toBeTruthy()
+      expect((stateElements[2] as ObjectType).isEqual(hiddenType)).toBeTruthy()
     })
   })
 })

@@ -26,8 +26,8 @@ import {
 } from '../core/search'
 
 export const addHiddenValuesAndHiddenTypes = (
-  workspaceElements: ReadonlyArray<Element>,
-  stateElements: Element[],
+  workspaceElements: Element[],
+  stateElements: ReadonlyArray<Element>,
 ): Element[] => {
   const stateElementsMap = createElementsMap(stateElements)
 

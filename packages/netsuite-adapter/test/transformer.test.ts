@@ -15,7 +15,7 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import { ENTITY_CUSTOM_FIELD, SCRIPT_ID } from '../src/constants'
+import { CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID } from '../src/constants'
 import { customTypes } from '../src/types'
 import { convertToCustomizationInfo, convertToXmlContent } from '../src/client/client'
 
@@ -118,6 +118,16 @@ describe('Transformer', () => {
       const result = createInstanceElement(convertToCustomizationInfo(savedSearchXmlContent).values,
         savedSearchType)
       expect(result.elemID.name).toEqual('customsearch_my_search_script_id')
+    })
+
+    it('should create instance name correctly when name field is undefined', () => {
+      const customRecordTypeXmlContent = '<customrecordtype scriptid="customrecord__my_record_script_id">\n'
+      + '</customrecordtype>\n'
+      const result = createInstanceElement(
+        convertToCustomizationInfo(customRecordTypeXmlContent).values,
+        customTypes[CUSTOM_RECORD_TYPE]
+      )
+      expect(result.elemID.name).toEqual('customrecord__my_record_script_id')
     })
 
     it('should transform attributes', () => {

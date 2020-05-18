@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import {
-  CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement,
+  CORE_ANNOTATIONS, Element, InstanceElement,
+  isInstanceElement, isObjectType,
 } from '@salto-io/adapter-api'
 import {
   transformElement, TransformFunc,
@@ -30,14 +31,19 @@ export const addHiddenValues = (
 ): Element[] => {
   const stateElementsMap = createElementsMap(stateElements)
 
-  // Types (hidden) from state
-  const hiddenTypes = stateElements.filter(e => !isInstanceElement(e))
-    .filter(e => e.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
+  const injectHiddenTypeToInstance = (instance: InstanceElement): void => {
+    const stateType = stateElementsMap[instance.type.elemID.getFullName()]
+    if (stateType !== undefined
+          && stateType.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+              && isObjectType(stateType)) {
+      // Inject to instance the appropriate type
+      instance.type = stateType
+    }
+  }
 
-  // Workspace instances after addition of hidden values from state
-  const instancesWithHiddenValues = workspaceElements.map(elem => {
-    const stateElement = stateElementsMap[elem.elemID.getFullName()]
-    if (isInstanceElement(elem) && stateElement !== undefined) {
+  const addValuesForHiddenFields = (instance: InstanceElement): void => {
+    const stateElement = stateElementsMap[instance.elemID.getFullName()]
+    if (stateElement !== undefined) {
       const createHiddenMapCallback: TransformFunc = ({ value, field }) => {
         if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
           return value
@@ -51,7 +57,22 @@ export const addHiddenValues = (
         strict: true,
       }) as InstanceElement
 
-      elem.value = _.merge(elem.value, hiddenValuesInstance.value)
+      // Adding (fields) hidden values
+      instance.value = _.merge(instance.value, hiddenValuesInstance.value)
+    }
+  }
+
+  // Addition (hidden) types from state
+  const hiddenTypes = stateElements.filter(e => !isInstanceElement(e))
+    .filter(e => e.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
+
+  // Workspace instances after completing:
+  // 1. values for hidden fields. (addition)
+  // 2. hidden types. (override)
+  const instancesWithHiddenValues = workspaceElements.map(elem => {
+    if (isInstanceElement(elem)) {
+      addValuesForHiddenFields(elem)
+      injectHiddenTypeToInstance(elem)
     }
     return elem
   })

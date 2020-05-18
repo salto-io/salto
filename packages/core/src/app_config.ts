@@ -60,7 +60,7 @@ const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
   enabled: !telemetryDisabled(),
 }
 
-const DEFAULT_GENERAL_CONFIG: GeneralConfig = {
+const DEFAULT_COMMAND_CONFIG: CommandConfig = {
   shouldCalcTotalSize: true,
 }
 
@@ -72,14 +72,14 @@ const configFullPath = (): string => path.join(configHomeDir(), CONFIG_FILENAME)
 
 const generateInstallationID = (): string => uuidv4()
 
-export type GeneralConfig = {
+export type CommandConfig = {
   shouldCalcTotalSize: boolean
 }
 
 export type AppConfig = {
   installationID: string
   telemetry: TelemetryConfig
-  config: GeneralConfig
+  command: CommandConfig
 }
 
 const saltoConfigElemID = new ElemID('salto')
@@ -90,7 +90,7 @@ export const saltoAppConfigType = new ObjectType({
   fields: {
     installationID: new Field(saltoConfigElemID, 'installationID', BuiltinTypes.STRING, requireAnno),
     telemetry: new Field(saltoConfigElemID, 'telemetry', BuiltinTypes.JSON, requireAnno),
-    config: new Field(saltoConfigElemID, 'config', BuiltinTypes.JSON, requireAnno),
+    command: new Field(saltoConfigElemID, 'command', BuiltinTypes.JSON),
   },
   annotationTypes: {},
   annotations: {},
@@ -108,7 +108,7 @@ const dumpConfig = async (config: AppConfig): Promise<void> => (
           enabled: config.telemetry.enabled,
         },
         config: {
-          shouldCalcTotalSize: config.config.shouldCalcTotalSize,
+          shouldCalcTotalSize: config.command.shouldCalcTotalSize,
         },
       }
     )]),
@@ -125,11 +125,8 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
 }
 
 const addDefaultsForMissingFields = (config: AppConfig): void => {
-  if (_.isUndefined(config.telemetry)) {
-    config.telemetry = DEFAULT_TELEMETRY_CONFIG
-  }
-  if (_.isUndefined(config.config)) {
-    config.config = DEFAULT_GENERAL_CONFIG
+  if (_.isUndefined(config.command)) {
+    config.command = DEFAULT_COMMAND_CONFIG
   }
 }
 
@@ -150,7 +147,7 @@ export const configFromDisk = async (): Promise<AppConfig> => {
     await dumpConfig({
       installationID: generateInstallationID(),
       telemetry: DEFAULT_TELEMETRY_CONFIG,
-      config: DEFAULT_GENERAL_CONFIG,
+      command: DEFAULT_COMMAND_CONFIG,
     })
   }
   const config = await configFromNaclFile(configFullPath())

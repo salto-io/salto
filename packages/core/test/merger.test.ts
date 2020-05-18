@@ -15,21 +15,16 @@
 */
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, PrimitiveType,
-  PrimitiveTypes, TypeElement, ListType, Variable,
+  PrimitiveTypes, TypeElement, Variable,
 } from '@salto-io/adapter-api'
 import {
   mergeElements,
-  MultipleBaseDefinitionsMergeError,
-  NoBaseDefinitionMergeError, DuplicateAnnotationTypeError, DuplicateVariableNameError,
+  DuplicateAnnotationTypeError, DuplicateVariableNameError, ConflictingFieldTypesError,
   DuplicateAnnotationError, DuplicateAnnotationFieldDefinitionError, DuplicateInstanceKeyError,
   MultiplePrimitiveTypesUnsupportedError,
 } from '../src/core/merger'
-import { Keywords } from '../src/parser/language'
 
 describe('merger', () => {
-  const updateType = new ObjectType(
-    { elemID: new ElemID('', Keywords.UPDATE_DEFINITION) }
-  )
   const baseElemID = new ElemID('salto', 'base')
   const base = new ObjectType({
     elemID: baseElemID,
@@ -52,17 +47,38 @@ describe('merger', () => {
     },
   })
 
-  const update1 = new ObjectType({
+  const fieldAnnotationConflict = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: new Field(baseElemID, 'field1', updateType, { label: 'update1' }),
+      field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'update1' }),
     },
   })
 
-  const update2 = new ObjectType({
+  const fieldTypeConflict = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field2: new Field(baseElemID, 'field2', updateType, { label: 'update2' }),
+      field2: new Field(baseElemID, 'field2', BuiltinTypes.NUMBER),
+    },
+  })
+
+  const fieldUpdate = new ObjectType({
+    elemID: baseElemID,
+    fields: {
+      field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { a: 'update' }),
+    },
+  })
+
+  const fieldUpdate2 = new ObjectType({
+    elemID: baseElemID,
+    fields: {
+      field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { b: 'update' }),
+    },
+  })
+
+  const newField = new ObjectType({
+    elemID: baseElemID,
+    fields: {
+      field3: new Field(baseElemID, 'field3', BuiltinTypes.STRING),
     },
   })
 
@@ -98,35 +114,15 @@ describe('merger', () => {
     },
   })
 
-  const multipleUpdate1 = new ObjectType({
-    elemID: baseElemID,
-    fields: {
-      field1: new Field(baseElemID, 'field1', updateType, { label: 'update1' }),
-    },
-  })
-
-  const missingUpdate = new ObjectType({
-    elemID: baseElemID,
-    fields: {
-      field3: new Field(baseElemID, 'field3', updateType, { label: 'update3' }),
-    },
-  })
-
-  const multipleBase = new ObjectType({
-    elemID: baseElemID,
-    fields: {
-      field1: new Field(baseElemID, 'field1', new ListType(BuiltinTypes.STRING), { label: 'base' }),
-    },
-  })
-
   const instanceElement = new InstanceElement('inst', base, {})
   const instanceElement2 = new InstanceElement('inst2', unrelated, {})
 
   const mergedObject = new ObjectType({
     elemID: baseElemID,
     fields: {
-      field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'update1' }),
-      field2: new Field(baseElemID, 'field2', BuiltinTypes.STRING, { label: 'update2' }),
+      field1: new Field(baseElemID, 'field1', BuiltinTypes.STRING, { label: 'base', a: 'update', b: 'update' }),
+      field2: new Field(baseElemID, 'field2', BuiltinTypes.STRING, { label: 'base' }),
+      field3: new Field(baseElemID, 'field3', BuiltinTypes.STRING),
     },
     annotations: {
       anno1: 'updated',
@@ -148,12 +144,13 @@ describe('merger', () => {
       expect(merged).toHaveLength(2)
     })
 
-    it('merges multiple update fields blocks', () => {
+    it('merges multiple field blocks', () => {
       const elements = [
         base,
         unrelated,
-        update1,
-        update2,
+        fieldUpdate,
+        fieldUpdate2,
+        newField,
         updateAnno,
         updateAnnoValues,
       ]
@@ -165,11 +162,12 @@ describe('merger', () => {
 
     it('returns the same result regardless of the elements order', () => {
       const elements = [
-        update1,
+        fieldUpdate,
         updateAnno,
+        newField,
         base,
         unrelated,
-        update2,
+        fieldUpdate2,
         updateAnnoValues,
       ]
       const { merged, errors } = mergeElements(elements)
@@ -178,25 +176,14 @@ describe('merger', () => {
       expect(merged[0]).toEqual(mergedObject)
     })
 
-    it('returns an error when multiple updates exists for same field', () => {
+    it('returns an error when the same field annotation is defined multiple times', () => {
       const elements = [
         base,
-        update1,
-        multipleUpdate1,
+        fieldAnnotationConflict,
       ]
       const { errors } = mergeElements(elements)
       expect(errors).toHaveLength(1)
       expect(errors[0]).toBeInstanceOf(DuplicateAnnotationFieldDefinitionError)
-    })
-
-    it('returns an error when attempting to update a non existing field', () => {
-      const elements = [
-        base,
-        missingUpdate,
-      ]
-      const { errors } = mergeElements(elements)
-      expect(errors).toHaveLength(1)
-      expect(errors[0]).toBeInstanceOf(NoBaseDefinitionMergeError)
     })
 
     it('returns an error when multiple updates exists for same annotation', () => {
@@ -221,17 +208,17 @@ describe('merger', () => {
       expect(errors[0]).toBeInstanceOf(DuplicateAnnotationError)
     })
 
-    it('returns an error when multiple base field definitions', () => {
+    it('returns an error when field definitions have conflicting types', () => {
       const elements = [
         base,
-        multipleBase,
+        fieldTypeConflict,
       ]
       const { errors } = mergeElements(elements)
       expect(errors).toHaveLength(1)
-      expect(errors[0]).toBeInstanceOf(MultipleBaseDefinitionsMergeError)
-      const expectedMessage = `Error merging ${errors[0].elemID.getFullName()}: Cannot merge '${errors[0].elemID.createParentID().getFullName()}': field '${errors[0].elemID.name}' has multiple definitions`
-      expect(errors[0].message).toBe(expectedMessage)
-      expect(String(errors[0])).toBe(expectedMessage)
+      expect(errors[0]).toBeInstanceOf(ConflictingFieldTypesError)
+      expect(errors[0].message).toContain(BuiltinTypes.STRING.elemID.getFullName())
+      expect(errors[0].message).toContain(BuiltinTypes.NUMBER.elemID.getFullName())
+      expect(String(errors[0])).toEqual(errors[0].message)
     })
   })
 
@@ -240,8 +227,8 @@ describe('merger', () => {
       const elements = [
         base,
         unrelated,
-        update1,
-        update2,
+        fieldUpdate,
+        fieldUpdate2,
         updateAnno,
         updateAnnoValues,
         instanceElement,

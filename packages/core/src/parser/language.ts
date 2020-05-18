@@ -20,7 +20,6 @@ export enum Keywords {
   LIST_DEFINITION = 'list',
   TYPE_INHERITANCE_SEPARATOR = 'is',
   ANNOTATIONS_DEFINITION = 'annotations',
-  UPDATE_DEFINITION = 'update',
   NAMESPACE_SEPARATOR = '.',
 
   // Primitive types

@@ -18,7 +18,6 @@ import {
   ObjectType, ElemID, Field,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Keywords } from '../../../parser/language'
 import {
   MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
@@ -26,49 +25,34 @@ import {
 const log = logger(module)
 
 export abstract class FieldDefinitionMergeError extends MergeError {
-  readonly parentID: string
-  readonly fieldName: string
   readonly cause: string
 
-  constructor(
-    { elemID, parentID, fieldName, cause }:
-      { elemID: ElemID; parentID: string; fieldName: string; cause: string },
-  ) {
-    super({ elemID, error: `Cannot merge '${parentID}': field '${fieldName}' ${cause}` })
-    this.parentID = parentID
-    this.fieldName = fieldName
+  constructor({ elemID, cause }: { elemID: ElemID; cause: string }) {
+    super({
+      elemID,
+      error: `Cannot merge '${elemID.createParentID().getFullName()}': field '${elemID.name}' ${cause}`,
+    })
     this.cause = cause
-  }
-}
-
-export class NoBaseDefinitionMergeError extends FieldDefinitionMergeError {
-  constructor(
-    { elemID, parentID, fieldName }:
-      { elemID: ElemID; parentID: string; fieldName: string }
-  ) {
-    super({ elemID, parentID, fieldName, cause: 'has no base definition' })
-  }
-}
-
-export class MultipleBaseDefinitionsMergeError extends FieldDefinitionMergeError {
-  readonly bases: Field[]
-  constructor(
-    { elemID, parentID, fieldName, bases }:
-      { elemID: ElemID; parentID: string; fieldName: string; bases: Field[] }
-  ) {
-    super({ elemID, parentID, fieldName, cause: 'has multiple definitions' })
-    this.bases = bases
   }
 }
 
 export class DuplicateAnnotationFieldDefinitionError extends FieldDefinitionMergeError {
   readonly annotationKey: string
   constructor(
-    { elemID, parentID, fieldName, annotationKey }:
-      { elemID: ElemID; parentID: string; fieldName: string; annotationKey: string }
+    { elemID, annotationKey }:
+      { elemID: ElemID; annotationKey: string }
   ) {
-    super({ elemID, parentID, fieldName, cause: `has duplicate annotation key '${annotationKey}'` })
+    super({ elemID, cause: `has duplicate annotation key '${annotationKey}'` })
     this.annotationKey = annotationKey
+  }
+}
+
+export class ConflictingFieldTypesError extends FieldDefinitionMergeError {
+  constructor(
+    { elemID, definedTypes }:
+      { elemID: ElemID; definedTypes: Set<string> }
+  ) {
+    super({ elemID, cause: `has conflicting type definitions '${[...definedTypes.values()].join(', ')}'` })
   }
 }
 
@@ -81,76 +65,32 @@ export class DuplicateAnnotationTypeError extends MergeError {
   }
 }
 
-const isUpdate = (
-  definition: Field
-): boolean => definition.type.elemID.name === Keywords.UPDATE_DEFINITION
-
-// ensure exactly one base
-const validateFieldBasesAndUpdates = (
-  elemID: ElemID,
-  definitions: Field[],
-): { errors: MergeError[]; base: Field; updates: Field[]; fieldName: string; parentID: string } => {
-  const [updates, bases] = _.partition(definitions, isUpdate)
-
-  if (bases.length === 0) {
-    // no bases - consider the first update the base
-    const base = updates[0]
-    const parentID = base.parentID.getFullName()
-    const { name: fieldName } = base
-    const error = new NoBaseDefinitionMergeError({ elemID, parentID, fieldName })
-
-    return { errors: [error], base, updates: updates.slice(1), fieldName, parentID }
-  }
-
-  const base = bases[0]
-  const parentID = base.parentID.getFullName()
-  const { name: fieldName } = base
-
-  if (bases.length > 1) {
-    if (_.uniqBy(bases, b => b.type.elemID.getFullName()).length > 1) {
-      const error = new MultipleBaseDefinitionsMergeError({ elemID, parentID, fieldName, bases })
-      return {
-        errors: [error],
-        base,
-        updates: [...bases.slice(1), ...updates],
-        fieldName,
-        parentID,
-      }
-    }
-  }
-
-  return { errors: [], base, updates: [...bases.slice(1), ...updates], fieldName, parentID }
-}
-
 const mergeFieldDefinitions = (
   elemID: ElemID,
   definitions: Field[]
 ): MergeResult<Field> => {
-  const {
-    errors: validationErrors, fieldName, parentID, base, updates,
-  } = validateFieldBasesAndUpdates(elemID, definitions)
-
-  if (updates.length === 0) {
-    return {
-      merged: base,
-      errors: validationErrors,
-    }
+  const [base] = definitions
+  if (definitions.length === 1) {
+    return { merged: base, errors: [] }
   }
+
   // Ensure each annotation value is updated at most once.
-  const mergedUpdates = mergeNoDuplicates(
-    updates.map(u => u.annotations),
-    key => new DuplicateAnnotationFieldDefinitionError({
-      elemID, parentID, fieldName, annotationKey: key,
-    }),
+  const mergedAnnotations = mergeNoDuplicates(
+    definitions.map(u => u.annotations),
+    annotationKey => new DuplicateAnnotationFieldDefinitionError({ elemID, annotationKey }),
   )
 
-  const annotations = _.merge({}, base.annotations, mergedUpdates.merged)
+  // Ensure all types are compatible
+  const definedTypes = new Set(definitions.map(field => field.type.elemID.getFullName()))
+  const typeErrors = definedTypes.size === 1
+    ? []
+    : [new ConflictingFieldTypesError({ elemID, definedTypes })]
 
   return {
-    merged: new Field(base.parentID, base.name, base.type, annotations),
+    merged: base.clone(mergedAnnotations.merged),
     errors: [
-      ...validationErrors,
-      ...mergedUpdates.errors,
+      ...mergedAnnotations.errors,
+      ...typeErrors,
     ],
   }
 }

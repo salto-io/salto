@@ -22,7 +22,7 @@ import {
 import _ from 'lodash'
 import {
   DetailedChange, Plan, PlanItem, SearchResult, Workspace,
-  DeployResult, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors,
+  DeployResult, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, CommandConfig,
 } from '@salto-io/core'
 import { EVENT_TYPES } from '@salto-io/core/dist/src/telemetry'
 import * as workspace from '../src/workspace/workspace'
@@ -101,6 +101,10 @@ export const getMockTelemetry = (): MockTelemetry => {
   })
 }
 
+const getMockCommandConfig = (): CommandConfig => ({
+  shouldCalcTotalSize: true,
+})
+
 export const cli = async ({
   commandBuilders = builders,
   args = [],
@@ -116,6 +120,7 @@ export const cli = async ({
     args: _.isArray(args) ? args : args.split(' '),
     stdin: {},
     telemetry: getMockTelemetry(),
+    config: getMockCommandConfig(),
   }
 
   const output = {
@@ -247,6 +252,7 @@ export const mockLoadWorkspace = (name: string): Workspace =>
     hasErrors: () => jest.fn().mockResolvedValue(false),
     errors: () => jest.fn().mockResolvedValue(mockErrors([])),
     isEmpty: jest.fn().mockResolvedValue(false),
+    getTotalSize: jest.fn().mockResolvedValue(0),
     addEnvironment: jest.fn(),
     deleteEnvironment: jest.fn(),
     renameEnvironment: jest.fn(),

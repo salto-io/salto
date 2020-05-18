@@ -14,7 +14,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import os from 'os'
 import * as path from 'path'
 import uuidv4 from 'uuid/v4'
@@ -22,6 +21,7 @@ import {
   CORE_ANNOTATIONS, BuiltinTypes,
   Field, ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
+import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
 import { TelemetryConfig } from './telemetry'
 import { dumpElements } from './parser/dump'
@@ -60,6 +60,10 @@ const DEFAULT_TELEMETRY_CONFIG: TelemetryConfig = {
   enabled: !telemetryDisabled(),
 }
 
+const DEFAULT_COMMAND_CONFIG: CommandConfig = {
+  shouldCalcTotalSize: true,
+}
+
 const configHomeDir = (): string => (
   path.join(getSaltoHome(), GLOBAL_CONFIG_DIR)
 )
@@ -68,9 +72,14 @@ const configFullPath = (): string => path.join(configHomeDir(), CONFIG_FILENAME)
 
 const generateInstallationID = (): string => uuidv4()
 
+export type CommandConfig = {
+  shouldCalcTotalSize: boolean
+}
+
 export type AppConfig = {
   installationID: string
   telemetry: TelemetryConfig
+  command: CommandConfig
 }
 
 const saltoConfigElemID = new ElemID('salto')
@@ -81,6 +90,7 @@ export const saltoAppConfigType = new ObjectType({
   fields: {
     installationID: new Field(saltoConfigElemID, 'installationID', BuiltinTypes.STRING, requireAnno),
     telemetry: new Field(saltoConfigElemID, 'telemetry', BuiltinTypes.JSON, requireAnno),
+    command: new Field(saltoConfigElemID, 'command', BuiltinTypes.JSON, { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG }),
   },
   annotationTypes: {},
   annotations: {},
@@ -97,6 +107,9 @@ const dumpConfig = async (config: AppConfig): Promise<void> => (
         telemetry: {
           enabled: config.telemetry.enabled,
         },
+        config: {
+          shouldCalcTotalSize: config.command.shouldCalcTotalSize,
+        },
       }
     )]),
   )
@@ -110,13 +123,15 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
   }
   return config
 }
+
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
   const buf = await readFile(filepath)
   const configInstance = (await parse(buf, filepath)).elements.pop() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 
+  configInstance.type = saltoAppConfigType
+  applyInstancesDefaults([configInstance])
   const saltoConfigInstance = configInstance.value as AppConfig
-
   return saltoConfigInstance
 }
 
@@ -126,6 +141,7 @@ export const configFromDisk = async (): Promise<AppConfig> => {
     await dumpConfig({
       installationID: generateInstallationID(),
       telemetry: DEFAULT_TELEMETRY_CONFIG,
+      command: DEFAULT_COMMAND_CONFIG,
     })
   }
   const config = await configFromNaclFile(configFullPath())

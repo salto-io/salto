@@ -101,6 +101,7 @@ export const buildStaticFilesSource = (
       await staticFilesDirStore.rename(name)
       await staticFilesCache.rename(name)
     },
+    getTotalSize: staticFilesDirStore.getTotalSize,
     clone: (): StaticFilesSource => buildStaticFilesSource(
       staticFilesDirStore.clone(),
       staticFilesCache.clone(),

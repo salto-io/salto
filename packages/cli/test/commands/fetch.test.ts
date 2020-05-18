@@ -35,6 +35,7 @@ const eventsNames = {
   failure: buildEventName(commandName, 'failure'),
   changes: buildEventName(commandName, 'changes'),
   changesToApply: buildEventName(commandName, 'changesToApply'),
+  workspaceSize: buildEventName(commandName, 'workspaceSize'),
 }
 
 jest.mock('@salto-io/core', () => ({
@@ -76,7 +77,7 @@ describe('fetch command', () => {
           config: { services },
         } as unknown as Workspace
         mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, false, services,)
+        result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, false, true, services)
           .execute()
       })
 
@@ -104,6 +105,7 @@ describe('fetch command', () => {
           cliOutput,
           spinnerCreator,
           false,
+          true,
           services,
         ).execute()
       })
@@ -122,11 +124,12 @@ describe('fetch command', () => {
       })
 
       it('should send telemetry events', () => {
-        expect(mockTelemetry.getEvents()).toHaveLength(4)
+        expect(mockTelemetry.getEvents()).toHaveLength(5)
         expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
         expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
         expect(mockTelemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
         expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
+        expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toHaveLength(1)
       })
     })
 
@@ -156,6 +159,7 @@ describe('fetch command', () => {
         state: (envName? : string) => ({
           existingServices: jest.fn().mockResolvedValue(existingServices[envName || currentEnv]),
         }),
+        getTotalSize: jest.fn().mockResolvedValue(0),
         isEmpty: () => (elements || []).length === 0,
         updateServiceConfig: jest.fn(),
         servicesCredentials: jest.fn().mockResolvedValue({}),
@@ -190,8 +194,9 @@ describe('fetch command', () => {
             fetch: mockFetchWithEmitter,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
-            inputServices: services,
             inputIsolated: false,
+            shouldCalcTotalSize: true,
+            inputServices: services,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           })
         })
@@ -222,13 +227,14 @@ describe('fetch command', () => {
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
             inputIsolated: false,
+            shouldCalcTotalSize: true,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           })
         })
         it('should not update workspace', () => {
           const calls = findWsUpdateCalls(workspaceName)
           expect(calls[0][2]).toHaveLength(0)
-          expect(mockTelemetry.getEvents()).toHaveLength(4)
+          expect(mockTelemetry.getEvents()).toHaveLength(5)
           expect(mockTelemetry.getEventsMap()[eventsNames.changes]).not.toBeUndefined()
           expect(mockTelemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
           expect(mockTelemetry.getEventsMap()[eventsNames.changes][0].value).toEqual(0)
@@ -264,6 +270,7 @@ describe('fetch command', () => {
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockShouldUpdateConfig,
             inputIsolated: false,
+            shouldCalcTotalSize: true,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           }
         })
@@ -310,6 +317,7 @@ describe('fetch command', () => {
               getApprovedChanges: mockEmptyApprove,
               shouldUpdateConfig: mockUpdateConfig,
               inputIsolated: false,
+              shouldCalcTotalSize: true,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
             expect(result).toBe(CliExitCode.Success)
@@ -337,6 +345,7 @@ describe('fetch command', () => {
               getApprovedChanges: mockEmptyApprove,
               inputIsolated: true,
               shouldUpdateConfig: mockUpdateConfig,
+              shouldCalcTotalSize: true,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
             expect(result).toBe(CliExitCode.Success)
@@ -363,6 +372,7 @@ describe('fetch command', () => {
               getApprovedChanges: mockEmptyApprove,
               shouldUpdateConfig: mockUpdateConfig,
               inputIsolated: false,
+              shouldCalcTotalSize: true,
               approveIsolatedMode: mockApproveIsolatedModeTrue,
             })
           })
@@ -390,13 +400,14 @@ describe('fetch command', () => {
                 getApprovedChanges: mockEmptyApprove,
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
+                shouldCalcTotalSize: true,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
             })
             it('should not update workspace', () => {
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls[0][2]).toHaveLength(0)
-              expect(mockTelemetry.getEvents()).toHaveLength(4)
+              expect(mockTelemetry.getEvents()).toHaveLength(5)
               expect(mockTelemetry.getEventsMap()[eventsNames.changes]).not.toBeUndefined()
               expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).not.toBeUndefined()
             })
@@ -420,6 +431,7 @@ describe('fetch command', () => {
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
+                shouldCalcTotalSize: true,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
               const calls = findWsUpdateCalls(workspaceName)
@@ -427,6 +439,7 @@ describe('fetch command', () => {
               expect(calls[0][2][0]).toEqual(changes[0])
               expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).not.toBeUndefined()
               expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
+              expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toHaveLength(1)
               expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply][0].value).toEqual(1)
             })
 
@@ -449,6 +462,7 @@ describe('fetch command', () => {
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
+                shouldCalcTotalSize: true,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
               const calls = findWsUpdateCalls(workspaceName)
@@ -475,6 +489,7 @@ describe('fetch command', () => {
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
+                shouldCalcTotalSize: true,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
               const calls = findWsUpdateCalls(workspaceName)
@@ -499,6 +514,7 @@ describe('fetch command', () => {
                 getApprovedChanges: mockSingleChangeApprove,
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
+                shouldCalcTotalSize: true,
                 approveIsolatedMode: mockApproveIsolatedModeTrue,
               })
               expect(cliOutput.stderr.content).toContain('Error')
@@ -506,6 +522,7 @@ describe('fetch command', () => {
               expect(calls).toHaveLength(0)
               expect(mockTelemetry.getEventsMap()[eventsNames.failure]).not.toBeUndefined()
               expect(mockTelemetry.getEventsMap()[eventsNames.failure]).toHaveLength(1)
+              expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toBeUndefined()
             })
           })
         })
@@ -541,6 +558,7 @@ describe('fetch command', () => {
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
             inputIsolated: false,
+            shouldCalcTotalSize: true,
             approveIsolatedMode: mockApproveIsolatedModeTrue,
           })
         })
@@ -577,8 +595,9 @@ describe('fetch command', () => {
             fetch: mockFetchEmpty,
             getApprovedChanges: mockEmptyApprove,
             shouldUpdateConfig: mockUpdateConfig,
-            inputServices,
             inputIsolated: isolated,
+            shouldCalcTotalSize: true,
+            inputServices,
             approveIsolatedMode: mockApproveIsolatedMode,
           })
         }
@@ -707,6 +726,7 @@ describe('fetch command', () => {
         cliOutput,
         spinnerCreator,
         false,
+        true,
         services,
       ).execute()
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
@@ -722,6 +742,7 @@ describe('fetch command', () => {
         cliOutput,
         spinnerCreator,
         false,
+        true,
         services,
         mocks.withEnvironmentParam,
       ).execute()

@@ -86,6 +86,7 @@ export const mockDirStore = (exclude: string[] = ['error.nacl', 'dup.nacl']): Di
     mtimestamp: jest.fn(),
     getFiles: jest.fn().mockImplementation((filenames: string[]) =>
       Promise.resolve(filenames.map(f => naclFiles[f]))),
+    getTotalSize: jest.fn(),
     clone: () => mockDirStore(exclude),
   }
 )

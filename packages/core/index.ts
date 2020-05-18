@@ -37,7 +37,7 @@ export { Errors } from './src/workspace/errors'
 export { NaclFile, FILE_EXTENSION } from './src/workspace/nacl_files/nacl_files_source'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'
 export { dumpElements, dumpElemID } from './src/parser/dump'
-export { SALTO_HOME_VAR, AppConfig, configFromDisk } from './src/app_config'
+export { SALTO_HOME_VAR, AppConfig, configFromDisk, CommandConfig } from './src/app_config'
 export {
   telemetrySender, Telemetry, TelemetryEvent,
   CountEvent, StackEvent, Tags, isCountEvent,

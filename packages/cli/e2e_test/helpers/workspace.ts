@@ -55,6 +55,7 @@ const mockCliTelementy: CliTelemetry = {
   failedRows: () => jest.fn(),
   actionsSuccess: () => jest.fn(),
   actionsFailure: () => jest.fn(),
+  workspaceSize: () => jest.fn(),
   stacktrace: () => jest.fn(),
 }
 
@@ -143,6 +144,7 @@ export const runFetch = async (
     mockCliOutput(),
     mockSpinnerCreator([]),
     isolated,
+    true,
     services,
   ).execute()
 }

@@ -46,6 +46,7 @@ describe('Nacl Files Source', () => {
       renameFile: () => Promise.resolve(),
       flush: () => Promise.resolve(),
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
+      getTotalSize: () => Promise.resolve(0),
       clone: () => mockDirStore,
     }
     mockedStaticFilesSource = mockStaticFilesSource()
@@ -76,6 +77,18 @@ describe('Nacl Files Source', () => {
       expect(mockCache.rename).toHaveBeenCalledWith(newName)
       expect(mockedStaticFilesSource.rename).toHaveBeenCalledTimes(1)
       expect(mockedStaticFilesSource.rename).toHaveBeenCalledWith(newName)
+    })
+  })
+
+  describe('getTotalSize', () => {
+    it('should calc getTotalSize', async () => {
+      mockDirStore.getTotalSize = jest.fn().mockResolvedValue(Promise.resolve(100))
+      mockedStaticFilesSource.getTotalSize = jest.fn().mockResolvedValue(Promise.resolve(200))
+      const totalSize = await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
+        .getTotalSize()
+      expect(totalSize).toEqual(300)
+      expect(mockDirStore.getTotalSize).toHaveBeenCalledTimes(1)
+      expect(mockedStaticFilesSource.getTotalSize).toHaveBeenCalledTimes(1)
     })
   })
 })

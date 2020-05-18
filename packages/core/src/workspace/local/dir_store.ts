@@ -225,6 +225,11 @@ const buildLocalDirectoryStore = (
     getFiles: async (filenames: string[]): Promise<(File | undefined) []> =>
       withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY),
 
+    getTotalSize: async (): Promise<number> => {
+      const allFiles = (await list()).map(f => getAbsFileName(f))
+      return _.sum(await Promise.all(allFiles.map(async filePath => (await stat(filePath)).size)))
+    },
+
     clone: () => buildLocalDirectoryStore(
       currentBaseDir,
       fileFilter,

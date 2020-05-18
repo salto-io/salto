@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { streams } from '@salto-io/lowerdash'
-import { Telemetry, Tags } from '@salto-io/core'
+import { Telemetry, Tags, CommandConfig } from '@salto-io/core'
 import yargs from 'yargs'
 
 export type WriteStream = streams.MaybeTty & {
@@ -58,6 +58,7 @@ export interface CliInput {
   args: string[]
   stdin: ReadStream
   telemetry: Telemetry
+  config: CommandConfig
 
   // TODO: Also belong here:
   // env: NodeJS.ProcessEnv
@@ -84,6 +85,7 @@ export type TelemetryEventNames = {
   failedRows: string
   actionsFailure: string
   actionsSuccess: string
+  workspaceSize: string
 }
 
 export type CliTelemetry = {
@@ -97,6 +99,7 @@ export type CliTelemetry = {
   failedRows(n: number, tags?: Tags): void
   actionsSuccess(n: number, tags?: Tags): void
   actionsFailure(n: number, tags?: Tags): void
+  workspaceSize(n: number, tags?: Tags): void
 
   stacktrace(err: Error, tags?: Tags): void
 }

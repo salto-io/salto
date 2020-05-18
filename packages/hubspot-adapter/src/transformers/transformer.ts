@@ -48,42 +48,72 @@ export class Types {
     [FIELD_TYPES.TEXTAREA]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXTAREA),
       primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.TEXT]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.TEXT),
       primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.DATE]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.DATE),
       primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.FILE]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.FILE),
       primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.NUMBER]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.NUMBER),
       primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.SELECT]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.SELECT),
       primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.RADIO]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.RADIO),
       primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.CHECKBOX]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.CHECKBOX),
       primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.BOOLEANCHECKBOX]: new PrimitiveType({
       elemID: new ElemID(HUBSPOT, FIELD_TYPES.BOOLEANCHECKBOX),
       primitive: PrimitiveTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
     [FIELD_TYPES.USERIDENTIFIER]: new PrimitiveType({
       elemID: userIdentifierElemID,
       primitive: PrimitiveTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }),
   }
 
@@ -136,6 +166,9 @@ export class Types {
           },
         ),
       },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, optionsElemID.name],
     })
 
@@ -187,125 +220,134 @@ export class Types {
           },
         ),
       },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, fieldFilterElemID.name],
     })
 
-    private static contactPropertyOverridesType: ObjectType =
-      new ObjectType({
-        elemID: contactPropertyOverridesElemID,
-        fields: {
-          [CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL]: new Field(
-            contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
-            BuiltinTypes.STRING, {
-              name: CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER]: new Field(
-            contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
-            BuiltinTypes.NUMBER,
-            {
-              name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: new Field(
-            contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
-            new ListType(Types.optionsType), {
-              name: CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-        },
-        path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactPropertyOverridesElemID.name],
-      })
+  private static contactPropertyOverridesType: ObjectType =
+    new ObjectType({
+      elemID: contactPropertyOverridesElemID,
+      fields: {
+        [CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL]: new Field(
+          contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
+          BuiltinTypes.STRING, {
+            name: CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER]: new Field(
+          contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
+          BuiltinTypes.NUMBER,
+          {
+            name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: new Field(
+          contactPropertyOverridesElemID, CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
+          new ListType(Types.optionsType), {
+            name: CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactPropertyOverridesElemID.name],
+    })
 
-    private static createFormFieldType = (
-      elemID: ElemID,
-      isFatherProperty: boolean
-    ): ObjectType => {
-      const formPropertyType = new ObjectType({
-        elemID,
-        fields: {
-          [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]: new Field(
-            // TODO: This is not really a string
-            elemID, FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: true,
-            }
-          ),
-          [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES]: new Field(
-            elemID, FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
-            Types.contactPropertyOverridesType, {
-              name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [FORM_PROPERTY_FIELDS.DEFAULTVALUE]: new Field(
-            elemID, FORM_PROPERTY_FIELDS.DEFAULTVALUE, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.DEFAULTVALUE,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [FORM_PROPERTY_FIELDS.PLACEHOLDER]: new Field(
-            elemID, FORM_PROPERTY_FIELDS.PLACEHOLDER, BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_FIELDS.PLACEHOLDER,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [FORM_PROPERTY_INNER_FIELDS.HELPTEXT]: new Field(
-            elemID, FORM_PROPERTY_INNER_FIELDS.HELPTEXT,
-            BuiltinTypes.STRING, {
-              name: FORM_PROPERTY_INNER_FIELDS.HELPTEXT,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            }
-          ),
-          [FORM_PROPERTY_FIELDS.REQUIRED]: new Field(
-            elemID, FORM_PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
-              name: FORM_PROPERTY_FIELDS.REQUIRED,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: new Field(
-            elemID, FORM_PROPERTY_FIELDS.SELECTEDOPTIONS, new ListType(BuiltinTypes.STRING), {
-              name: FORM_PROPERTY_FIELDS.SELECTEDOPTIONS,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: new Field(
-            elemID, FORM_PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
-              name: FORM_PROPERTY_FIELDS.ISSMARTFIELD,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-        },
-        path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, elemID.name],
+  private static createFormFieldType = (
+    elemID: ElemID,
+    isFatherProperty: boolean
+  ): ObjectType => {
+    const formPropertyType = new ObjectType({
+      elemID,
+      fields: {
+        [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]: new Field(
+          // TODO: This is not really a string
+          elemID, FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY, BuiltinTypes.STRING, {
+            name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+          }
+        ),
+        [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES]: new Field(
+          elemID, FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
+          Types.contactPropertyOverridesType, {
+            name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_PROPERTY_FIELDS.DEFAULTVALUE]: new Field(
+          elemID, FORM_PROPERTY_FIELDS.DEFAULTVALUE, BuiltinTypes.STRING, {
+            name: FORM_PROPERTY_FIELDS.DEFAULTVALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_PROPERTY_FIELDS.PLACEHOLDER]: new Field(
+          elemID, FORM_PROPERTY_FIELDS.PLACEHOLDER, BuiltinTypes.STRING, {
+            name: FORM_PROPERTY_FIELDS.PLACEHOLDER,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_PROPERTY_INNER_FIELDS.HELPTEXT]: new Field(
+          elemID, FORM_PROPERTY_INNER_FIELDS.HELPTEXT,
+          BuiltinTypes.STRING, {
+            name: FORM_PROPERTY_INNER_FIELDS.HELPTEXT,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          }
+        ),
+        [FORM_PROPERTY_FIELDS.REQUIRED]: new Field(
+          elemID, FORM_PROPERTY_FIELDS.REQUIRED, BuiltinTypes.BOOLEAN, {
+            name: FORM_PROPERTY_FIELDS.REQUIRED,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: new Field(
+          elemID, FORM_PROPERTY_FIELDS.SELECTEDOPTIONS, new ListType(BuiltinTypes.STRING), {
+            name: FORM_PROPERTY_FIELDS.SELECTEDOPTIONS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: new Field(
+          elemID, FORM_PROPERTY_FIELDS.ISSMARTFIELD, BuiltinTypes.BOOLEAN, {
+            name: FORM_PROPERTY_FIELDS.ISSMARTFIELD,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, elemID.name],
+    })
+    if (isFatherProperty) {
+      Object.assign(formPropertyType.fields, {
+        [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]: new Field(
+          elemID, FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
+          new ListType(Types.dependentFormFieldFiltersType), {
+            name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
       })
-      if (isFatherProperty) {
-        Object.assign(formPropertyType.fields, {
-          [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]: new Field(
-            elemID, FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
-            new ListType(Types.dependentFormFieldFiltersType), {
-              name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-        })
-      }
-      return formPropertyType
     }
+    return formPropertyType
+  }
 
   private static dependeeFormFieldType = Types.createFormFieldType(
     dependeeFormPropertyElemID,
@@ -342,6 +384,9 @@ export class Types {
           }
         ),
       },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, dependentFormFieldFiltersElemID.name],
     })
 
@@ -361,6 +406,9 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, richTextElemID.name],
     })
@@ -399,6 +447,9 @@ export class Types {
           }
         ),
       },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, propertyGroupElemID.name],
     })
 
@@ -421,6 +472,9 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           }
         ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, eventAnchorElemID.name],
     })
@@ -450,6 +504,9 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, anchorSettingElemID.name],
     })
@@ -508,116 +565,122 @@ export class Types {
           },
         ),
       },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, criteriaElemID.name],
     })
 
-    // Create action type in steps cause of recursive fields
-    private static createActionType = (): ObjectType => {
-      const actionType = new ObjectType({
-        elemID: actionElemID,
-        fields: {
-          [ACTION_FIELDS.TYPE]: new Field(
-            actionElemID, ACTION_FIELDS.TYPE, BuiltinTypes.STRING, {
-              name: ACTION_FIELDS.TYPE,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [ACTION_FIELDS.ACTIONID]: new Field(
-            actionElemID, ACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
-              name: ACTION_FIELDS.ACTIONID,
-              _readOnly: true,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.HIDDEN]: true,
-            },
-          ),
-          [ACTION_FIELDS.DELAYMILLS]: new Field(
-            actionElemID, ACTION_FIELDS.DELAYMILLS, BuiltinTypes.NUMBER, {
-              name: ACTION_FIELDS.DELAYMILLS,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [ACTION_FIELDS.STEPID]: new Field(
-            actionElemID, ACTION_FIELDS.STEPID, BuiltinTypes.NUMBER, {
-              name: ACTION_FIELDS.STEPID,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.HIDDEN]: true,
-            },
-          ),
-          [ACTION_FIELDS.ANCHORSETTING]: new Field(
-            actionElemID, ACTION_FIELDS.ANCHORSETTING, Types.anchorSettingType, {
-              name: ACTION_FIELDS.ANCHORSETTING,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [ACTION_FIELDS.FILTERSLISTID]: new Field(
-            actionElemID, ACTION_FIELDS.FILTERSLISTID, BuiltinTypes.NUMBER, {
-              name: ACTION_FIELDS.FILTERSLISTID,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [CORE_ANNOTATIONS.HIDDEN]: true,
-            },
-          ),
-          [ACTION_FIELDS.FILTERS]: new Field(
-            actionElemID, ACTION_FIELDS.FILTERS, new ListType(new ListType(Types.criteriaType)), {
-              name: ACTION_FIELDS.FILTERS,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [ACTION_FIELDS.PROPERTYNAME]: new Field(
-            actionElemID, ACTION_FIELDS.PROPERTYNAME, BuiltinTypes.STRING, {
-              name: ACTION_FIELDS.PROPERTYNAME,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [ACTION_FIELDS.BODY]: new Field(
-            actionElemID, ACTION_FIELDS.BODY, BuiltinTypes.STRING, {
-              name: ACTION_FIELDS.BODY,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [ACTION_FIELDS.NEWVALUE]: new Field(
-            actionElemID, ACTION_FIELDS.NEWVALUE, BuiltinTypes.STRING, {
-              name: ACTION_FIELDS.NEWVALUE,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-          [ACTION_FIELDS.STATICTO]: new Field(
-            actionElemID, ACTION_FIELDS.STATICTO, BuiltinTypes.STRING, {
-              name: ACTION_FIELDS.STATICTO,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-            },
-          ),
-        },
-        path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, actionElemID.name],
-      })
+  // Create action type in steps cause of recursive fields
+  private static createActionType = (): ObjectType => {
+    const actionType = new ObjectType({
+      elemID: actionElemID,
+      fields: {
+        [ACTION_FIELDS.TYPE]: new Field(
+          actionElemID, ACTION_FIELDS.TYPE, BuiltinTypes.STRING, {
+            name: ACTION_FIELDS.TYPE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.ACTIONID]: new Field(
+          actionElemID, ACTION_FIELDS.ACTIONID, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.ACTIONID,
+            _readOnly: true,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
+          },
+        ),
+        [ACTION_FIELDS.DELAYMILLS]: new Field(
+          actionElemID, ACTION_FIELDS.DELAYMILLS, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.DELAYMILLS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.STEPID]: new Field(
+          actionElemID, ACTION_FIELDS.STEPID, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.STEPID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
+          },
+        ),
+        [ACTION_FIELDS.ANCHORSETTING]: new Field(
+          actionElemID, ACTION_FIELDS.ANCHORSETTING, Types.anchorSettingType, {
+            name: ACTION_FIELDS.ANCHORSETTING,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.FILTERSLISTID]: new Field(
+          actionElemID, ACTION_FIELDS.FILTERSLISTID, BuiltinTypes.NUMBER, {
+            name: ACTION_FIELDS.FILTERSLISTID,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+            [CORE_ANNOTATIONS.HIDDEN]: true,
+          },
+        ),
+        [ACTION_FIELDS.FILTERS]: new Field(
+          actionElemID, ACTION_FIELDS.FILTERS, new ListType(new ListType(Types.criteriaType)), {
+            name: ACTION_FIELDS.FILTERS,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.PROPERTYNAME]: new Field(
+          actionElemID, ACTION_FIELDS.PROPERTYNAME, BuiltinTypes.STRING, {
+            name: ACTION_FIELDS.PROPERTYNAME,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.BODY]: new Field(
+          actionElemID, ACTION_FIELDS.BODY, BuiltinTypes.STRING, {
+            name: ACTION_FIELDS.BODY,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.NEWVALUE]: new Field(
+          actionElemID, ACTION_FIELDS.NEWVALUE, BuiltinTypes.STRING, {
+            name: ACTION_FIELDS.NEWVALUE,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+        [ACTION_FIELDS.STATICTO]: new Field(
+          actionElemID, ACTION_FIELDS.STATICTO, BuiltinTypes.STRING, {
+            name: ACTION_FIELDS.STATICTO,
+            _readOnly: false,
+            [CORE_ANNOTATIONS.REQUIRED]: false,
+          },
+        ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
+      path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, actionElemID.name],
+    })
 
-      const acceptActionsField = new Field(
-        actionElemID, ACTION_FIELDS.ACCEPTACTIONS, new ListType(actionType), {
-          name: ACTION_FIELDS.ACCEPTACTIONS,
-          _readOnly: false,
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-        },
-      )
-      const rejectActionsField = new Field(
-        actionElemID, ACTION_FIELDS.REJECTACTIONS, new ListType(actionType), {
-          name: ACTION_FIELDS.REJECTACTIONS,
-          _readOnly: false,
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-        },
-      )
-      actionType.fields[ACTION_FIELDS.ACCEPTACTIONS] = acceptActionsField
-      actionType.fields[ACTION_FIELDS.REJECTACTIONS] = rejectActionsField
-      return actionType
-    }
+    const acceptActionsField = new Field(
+      actionElemID, ACTION_FIELDS.ACCEPTACTIONS, new ListType(actionType), {
+        name: ACTION_FIELDS.ACCEPTACTIONS,
+        _readOnly: false,
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+      },
+    )
+    const rejectActionsField = new Field(
+      actionElemID, ACTION_FIELDS.REJECTACTIONS, new ListType(actionType), {
+        name: ACTION_FIELDS.REJECTACTIONS,
+        _readOnly: false,
+        [CORE_ANNOTATIONS.REQUIRED]: false,
+      },
+    )
+    actionType.fields[ACTION_FIELDS.ACCEPTACTIONS] = acceptActionsField
+    actionType.fields[ACTION_FIELDS.REJECTACTIONS] = rejectActionsField
+    return actionType
+  }
 
   private static actionType: ObjectType = Types.createActionType()
 
@@ -646,6 +709,9 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, nurtureTimeRangeElemID.name],
     })
@@ -682,6 +748,9 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactListIdsElemID.name],
     })
@@ -849,6 +918,9 @@ export class Types {
           },
         ),
       },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
       path: [HUBSPOT, TYPES_PATH, formElemID.name],
     }),
     [OBJECTS_NAMES.WORKFLOW]: new ObjectType({
@@ -997,6 +1069,9 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       },
       path: [HUBSPOT, TYPES_PATH, workflowsElemID.name],
     }),
@@ -1574,7 +1649,7 @@ export class Types {
           }
         ),
         [MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS]: new Field(
-        // TODO: Understand this and convert to a list of smart fields
+          // TODO: Understand this and convert to a list of smart fields
           marketingEmailElemID, MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS, BuiltinTypes.JSON, {
             name: MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS,
             _readOnly: false,
@@ -1722,6 +1797,9 @@ export class Types {
           },
         ),
       },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
       path: [HUBSPOT, TYPES_PATH, marketingEmailElemID.name],
     }),
     [OBJECTS_NAMES.CONTACT_PROPERTY]: new ObjectType({
@@ -1860,6 +1938,9 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         ),
+      },
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
       },
       path: [HUBSPOT, TYPES_PATH, contactPropertyElemID.name],
     }),

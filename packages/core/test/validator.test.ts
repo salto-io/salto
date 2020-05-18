@@ -23,8 +23,9 @@ import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
   UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
+  InvalidStaticFileError,
 } from '../src/core/validator'
-import { InvalidStaticFile } from '../src/workspace/static_files/common'
+import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 
 import { IllegalReference } from '../src/parser/expressions'
 
@@ -640,7 +641,7 @@ describe('Elements validation', () => {
             },
           }),
           {
-            someFile: new InvalidStaticFile('aa'),
+            someFile: new MissingStaticFile('aa'),
           },
         )
 
@@ -940,5 +941,18 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(0)
       })
     })
+  })
+  describe('InvalidStaticFileError', () => {
+    const elemID = new ElemID('adapter', 'bla')
+    it('should have correct message for missing', () =>
+      expect(
+        new InvalidStaticFileError({ elemID, value: new MissingStaticFile('path') })
+          .message
+      ).toEqual('Error validating "adapter.bla": Missing static file: path'))
+    it('should have correct message for invalid', () =>
+      expect(
+        new InvalidStaticFileError({ elemID, value: new AccessDeniedStaticFile('path') })
+          .message
+      ).toEqual('Error validating "adapter.bla": Unable to access static file: path'))
   })
 })

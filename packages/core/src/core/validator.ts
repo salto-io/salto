@@ -162,11 +162,11 @@ export class CircularReferenceValidationError extends ValidationError {
   }
 }
 
-export class MissingStaticFileError extends ValidationError {
+export class InvalidStaticFileError extends ValidationError {
   constructor({ elemID, value }: { elemID: ElemID; value: InvalidStaticFile }) {
     super({
       elemID,
-      error: `Missing static file: ${value.filepath}`,
+      error: value.message,
       severity: 'Error',
     })
   }
@@ -306,7 +306,7 @@ const validateValue = (elemID: ElemID, value: Value,
   }
 
   if (value instanceof InvalidStaticFile) {
-    return [new MissingStaticFileError({ elemID, value })]
+    return [new InvalidStaticFileError({ elemID, value })]
   }
 
   if (value instanceof StaticFile) {

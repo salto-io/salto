@@ -28,11 +28,31 @@ export type StaticFilesSource = {
   clone: () => StaticFilesSource
 }
 
-export class InvalidStaticFile extends StaticFile {
+
+export abstract class InvalidStaticFile {
   constructor(
-    public readonly filepath: string
+    public readonly message: string,
   ) {
-    super(filepath, 'missing-file')
+  }
+}
+
+export class MissingStaticFile extends InvalidStaticFile {
+  constructor(
+    filepath: string,
+  ) {
+    super(
+      `Missing static file: ${filepath}`,
+    )
+  }
+}
+
+export class AccessDeniedStaticFile extends InvalidStaticFile {
+  constructor(
+    filepath: string,
+  ) {
+    super(
+      `Unable to access static file: ${filepath}`,
+    )
   }
 }
 

@@ -21,6 +21,8 @@ import {
   isInstanceElement, isReferenceExpression, Variable, isListType, StaticFile, isStaticFile,
 } from '@salto-io/adapter-api'
 
+import { InvalidStaticFile } from '../workspace/static_files/common'
+
 // There are two issues with naive json stringification:
 //
 // 1) The class type information and methods are lost
@@ -95,7 +97,7 @@ export const serialize = (elements: Element[],
 }
 
 export type StaticFileReviver =
-  (staticFile: StaticFile) => Promise<StaticFile>
+  (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
 
 export const deserialize = async (
   data: string,

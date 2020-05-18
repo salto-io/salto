@@ -39,7 +39,7 @@ const buildLocalDirectoryStore = (
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap,
-  initDeleted? : string[]
+  initDeleted? : string[],
 ): DirectoryStore => {
   let currentBaseDir = baseDir
   let updated: FileMap = initUpdated || {}
@@ -48,10 +48,19 @@ const buildLocalDirectoryStore = (
   const getAbsFileName = (filename: string, dir?: string): string =>
     path.resolve(dir ?? currentBaseDir, filename)
 
-  const getRelativeFileName = (filename: string): string => (path.isAbsolute(filename)
-    ? path.relative(currentBaseDir, filename)
-    : filename)
-
+  const getRelativeFileName = (filename: string, dir?: string): string => {
+    const base = dir || currentBaseDir
+    const isAbsolute = path.isAbsolute(filename)
+    if (
+      (isAbsolute || filename.includes('..'))
+        && path.relative(base, filename).startsWith('..')
+    ) {
+      throw new Error(`Filepath not contained in dir store base dir: ${filename}`)
+    }
+    return isAbsolute
+      ? path.relative(base, filename)
+      : filename
+  }
   const listDirFiles = async (listDirectories = false):
   Promise<string[]> => (await exists(currentBaseDir)
     ? readdirp.promise(currentBaseDir, {
@@ -59,7 +68,7 @@ const buildLocalDirectoryStore = (
       directoryFilter: e => e.basename[0] !== '.'
         && (!directoryFilter || directoryFilter(e.fullPath)),
       type: listDirectories ? 'directories' : 'files',
-    }).then(entries => entries.map(e => e.fullPath).map(getRelativeFileName))
+    }).then(entries => entries.map(e => e.fullPath).map(x => getRelativeFileName(x)))
     : [])
 
   const readFile = async (filename: string): Promise<File | undefined> => {
@@ -92,12 +101,19 @@ const buildLocalDirectoryStore = (
 
   const deleteFile = async (filename: string, shouldDeleteEmptyDir = false): Promise<void> => {
     const absFileName = getAbsFileName(filename)
+    try {
+      getRelativeFileName(absFileName)
+    } catch (err) {
+      return Promise.reject(err)
+    }
+
     if (await exists(absFileName)) {
       await rm(absFileName)
       if (shouldDeleteEmptyDir) {
         await removeDirIfEmpty(path.dirname(absFileName))
       }
     }
+    return Promise.resolve()
   }
 
   const mtimestampFile = async (filename: string): Promise<number | undefined> => (updated[filename]
@@ -105,9 +121,15 @@ const buildLocalDirectoryStore = (
     : (await stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs)
 
   const get = async (filename: string): Promise<File | undefined> => {
-    const relFilename = getRelativeFileName(filename)
+    let relFilename: string
+    try {
+      relFilename = getRelativeFileName(filename)
+    } catch (err) {
+      return Promise.reject(err)
+    }
     return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
   }
+
   const list = async (): Promise<string[]> =>
     _(await listDirFiles())
       .concat(Object.keys(updated))
@@ -134,15 +156,27 @@ const buildLocalDirectoryStore = (
     get,
 
     set: async (file: File): Promise<void> => {
-      const relFilename = getRelativeFileName(file.filename)
+      let relFilename: string
+      try {
+        relFilename = getRelativeFileName(file.filename)
+      } catch (err) {
+        return Promise.reject(err)
+      }
       file.timestamp = Date.now()
       updated[relFilename] = file
       deleted = deleted.filter(filename => filename !== relFilename)
+      return Promise.resolve()
     },
 
     delete: async (filename: string): Promise<void> => {
-      const relFilename = getRelativeFileName(filename)
+      let relFilename: string
+      try {
+        relFilename = getRelativeFileName(filename)
+      } catch (err) {
+        return Promise.reject(err)
+      }
       deleted.push(relFilename)
+      return Promise.resolve()
     },
 
     clear: async (): Promise<void> => {
@@ -171,12 +205,16 @@ const buildLocalDirectoryStore = (
       currentBaseDir = newBaseDir
     },
 
-    renameFile: async (name: string, newName: string): Promise<void> => {
-      await rename(getAbsFileName(name), getAbsFileName(newName))
-    },
+    renameFile: async (name: string, newName: string): Promise<void> =>
+      rename(getAbsFileName(name), getAbsFileName(newName)),
 
     mtimestamp: async (filename: string): Promise<undefined | number> => {
-      const relFilename = getRelativeFileName(filename)
+      let relFilename: string
+      try {
+        relFilename = getRelativeFileName(filename)
+      } catch (err) {
+        return Promise.reject(err)
+      }
       return (updated[relFilename]
         ? Promise.resolve(updated[relFilename].timestamp)
         : mtimestampFile(relFilename))
@@ -201,4 +239,6 @@ export const localDirectoryStore = (
   baseDir: string,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
-): DirectoryStore => buildLocalDirectoryStore(baseDir, fileFilter, directoryFilter)
+): DirectoryStore => buildLocalDirectoryStore(
+  baseDir, fileFilter, directoryFilter,
+)

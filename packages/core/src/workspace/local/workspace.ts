@@ -60,15 +60,17 @@ const loadNaclFileSource = (
 ): NaclFilesSource => {
   const dirPathToIgnore = (dirPath: string): boolean =>
     !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirPath)
+
   const naclFilesStore = localDirectoryStore(
     sourceBaseDir,
     `*${FILE_EXTENSION}`,
     dirPathToIgnore,
   )
+
   const naclStaticFilesStore = localDirectoryStore(
     path.join(sourceBaseDir, STATIC_RESOURCES_FOLDER),
     undefined,
-    dirPathToIgnore,
+    dirPathToIgnore
   )
 
   const cacheStore = localDirectoryStore(cacheDir)

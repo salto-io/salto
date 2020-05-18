@@ -17,7 +17,7 @@ import { DirectoryStore } from '../../../src/workspace/dir_store'
 import { buildStaticFilesSource } from '../../../src/workspace/static_files/source'
 
 import {
-  InvalidStaticFile, StaticFilesSource,
+  InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from '../../../src/workspace/static_files/common'
 
 import {
@@ -63,9 +63,17 @@ describe('Static Files Source', () => {
   })
   describe('Get By Value', () => {
     describe('file finding logic', () => {
-      it('not find when no matching', () =>
-        expect(staticFilesSource.getStaticFile('aa'))
-          .resolves.toBeInstanceOf(InvalidStaticFile))
+      it('not find when no matching', async () => {
+        const result = await staticFilesSource.getStaticFile('aa')
+        expect(result).toBeInstanceOf(InvalidStaticFile)
+        expect(result).toBeInstanceOf(MissingStaticFile)
+      })
+      it('blow up if invalid file', async () => {
+        mockDirStore.mtimestamp = jest.fn().mockRejectedValue('whatevz')
+        const result = await staticFilesSource.getStaticFile('/aa')
+        expect(result).toBeInstanceOf(InvalidStaticFile)
+        expect(result).toBeInstanceOf(AccessDeniedStaticFile)
+      })
       it('find when matching', async () => {
         const filepathFromCache = 'filepathfromcache'
         mockDirStore.get = jest.fn().mockResolvedValue({

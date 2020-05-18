@@ -15,7 +15,7 @@
 */
 import { StaticFile, calculateStaticFileHash } from '@salto-io/adapter-api'
 import {
-  StaticFilesSource, InvalidStaticFile, isInvalidStaticFile,
+  StaticFilesSource, isInvalidStaticFile, MissingStaticFile, AccessDeniedStaticFile,
 } from '../../../src/workspace/static_files/common'
 
 export const mockStaticFilesSource = (): StaticFilesSource => ({
@@ -38,6 +38,7 @@ export const exampleStaticFileWithContent = new StaticFile(defaultPath, defaultB
 
 
 describe('Static Files Common', () => {
-  it('isInvalidStaticFile for InvalidStaticFile', () => expect(isInvalidStaticFile(new InvalidStaticFile('aaa'))).toBeTruthy())
+  it('isInvalidStaticFile for MissingStaticFile', () => expect(isInvalidStaticFile(new MissingStaticFile('aaa'))).toBeTruthy())
+  it('isInvalidStaticFile for AccessDeniedStaticFile', () => expect(isInvalidStaticFile(new AccessDeniedStaticFile('aaa'))).toBeTruthy())
   it('isInvalidStaticFile for not InvalidStaticFile', () => expect(isInvalidStaticFile('ZOMG')).toBeFalsy())
 })

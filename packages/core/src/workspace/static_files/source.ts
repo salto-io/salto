@@ -19,7 +19,7 @@ import { DirectoryStore } from '../dir_store'
 import { StaticFilesCache } from './cache'
 
 import {
-  InvalidStaticFile, StaticFilesSource,
+  InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from './common'
 
 export const buildStaticFilesSource = (
@@ -31,9 +31,14 @@ export const buildStaticFilesSource = (
       filepath: string,
     ): Promise<StaticFile | InvalidStaticFile> => {
       const cachedResult = await staticFilesCache.get(filepath)
-      const modified = await staticFilesDirStore.mtimestamp(filepath)
+      let modified: number | undefined
+      try {
+        modified = await staticFilesDirStore.mtimestamp(filepath)
+      } catch (err) {
+        return new AccessDeniedStaticFile(filepath)
+      }
       if (modified === undefined) {
-        return new InvalidStaticFile(filepath)
+        return new MissingStaticFile(filepath)
       }
 
       const hashModified = cachedResult ? cachedResult.modified : undefined
@@ -43,7 +48,7 @@ export const buildStaticFilesSource = (
         || cachedResult === undefined) {
         const file = await staticFilesDirStore.get(filepath)
         if (file === undefined) {
-          return new InvalidStaticFile(filepath)
+          return new MissingStaticFile(filepath)
         }
 
         const staticFileBuffer = Buffer.from(file.buffer)

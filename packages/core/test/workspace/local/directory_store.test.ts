@@ -115,6 +115,9 @@ describe('localDirectoryStore', () => {
       await naclFileStore.flush()
       expect(mockReplaceContents).not.toHaveBeenCalled()
     })
+    it('fails to get an absolute path', () =>
+      localDirectoryStore('dir').set({ filename: '/aaaa', buffer: 'aa' })
+        .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: /aaaa')))
   })
 
   describe('getFiles', () => {
@@ -129,6 +132,9 @@ describe('localDirectoryStore', () => {
       expect(files[1]?.buffer).toEqual('bla1')
       expect(files[2]?.buffer).toEqual('bla2')
     })
+    it('fails to get an absolute path', () =>
+      localDirectoryStore('dir').getFiles(['/aaaa'])
+        .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: /aaaa')))
   })
 
   describe('rm Nacl file', () => {
@@ -150,6 +156,9 @@ describe('localDirectoryStore', () => {
       expect(mockRm).toHaveBeenNthCalledWith(1, naclFilePath)
       expect(mockRm).toHaveBeenNthCalledWith(2, naclFileDir)
     })
+    it('fails to delete an absolute path', async () =>
+      naclFileStore.delete('/aaaa')
+        .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: /aaaa')))
   })
 
   describe('clear', () => {
@@ -207,5 +216,22 @@ describe('localDirectoryStore', () => {
       expect(mockRename).toHaveBeenCalledTimes(1)
       expect(mockRename).toHaveBeenCalledWith(path.join(baseDir, 'old'), path.join(baseDir, 'new'))
     })
+  })
+
+  describe('contained', () => {
+    const baseDir = '/base'
+    const fileStore = localDirectoryStore(baseDir)
+    it('should fail for absolute paths', () =>
+      fileStore.get('/absolutely/fabulous')
+        .catch(err =>
+          expect(err.message).toEqual('Filepath not contained in dir store base dir: /absolutely/fabulous')))
+    it('should fail for relative paths outside basedir', () =>
+      fileStore.get('../../bla')
+        .catch(err =>
+          expect(err.message).toEqual('Filepath not contained in dir store base dir: ../../bla')))
+    it('should fail for relative paths outside basedir even for smart assets', () =>
+      fileStore.mtimestamp('something/bla/../../../dev/null')
+        .catch(err =>
+          expect(err.message).toEqual('Filepath not contained in dir store base dir: something/bla/../../../dev/null')))
   })
 })

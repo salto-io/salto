@@ -15,12 +15,12 @@
 */
 import { StaticFile, Value, isStaticFile } from '@salto-io/adapter-api'
 
-import { StaticFilesSource } from './common'
+import { StaticFilesSource, InvalidStaticFile } from './common'
 import { Functions, FunctionExpression } from '../../parser/functions'
 
 export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
   file: {
-    parse: (funcExp): Promise<StaticFile> => {
+    parse: (funcExp): Promise<StaticFile | InvalidStaticFile> => {
       const [filepath] = funcExp.value.parameters
       return staticFilesSource.getStaticFile(filepath)
     },

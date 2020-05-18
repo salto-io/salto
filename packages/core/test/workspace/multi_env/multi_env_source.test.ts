@@ -250,6 +250,11 @@ describe('multi env source', () => {
       })
     })
   })
+  describe('getTotalSize', () => {
+    it('should return the total size of all the sources', async () => {
+      expect(await source.getTotalSize()).toEqual(5 * (await source.getAll()).length)
+    })
+  })
   describe('listNaclFiles', () => {
     it('shoud list all Nacl files', async () => {
       const naclFiles = await source.listNaclFiles()

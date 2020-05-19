@@ -457,6 +457,32 @@ describe('Test utils.ts', () => {
         expect(resp.obj[0].value).toEqual(mockInstance.value.obj[0].value)
       })
     })
+
+    describe('when called with pathID', () => {
+      const paths = new Set<string>()
+      const createPathsSet: TransformFunc = ({ value, field, path }) => {
+        if (value && field && path) {
+          paths.add(path.getFullName())
+        }
+        return undefined
+      }
+
+      beforeAll(() => {
+        transformValues(
+          {
+            values: mockInstance.value,
+            type: mockType,
+            transformFunc: createPathsSet,
+            pathID: mockInstance.elemID,
+          }
+        )
+      })
+
+      it('should traverse list items with correct path ID', () => {
+        expect(paths)
+          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'field').getFullName())
+      })
+    })
   })
 
   describe('resolveValues func', () => {

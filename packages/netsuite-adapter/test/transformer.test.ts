@@ -29,6 +29,12 @@ describe('Transformer', () => {
     WITH_ATTRIBUTE: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <label>elementName</label>\n'
       + '</entitycustomfield>\n',
+    WITH_NESTED_ATTRIBUTE: '<customrecordtype scriptid="customrecord_my_script_id">\n'
+      + '  <customrecordcustomfields>\n'
+      + '    <customrecordcustomfield scriptid="custrecord_my_nested_script_id">\n'
+      + '    </customrecordcustomfield>\n'
+      + '  </customrecordcustomfields>\n'
+      + '</customrecordtype>\n',
     WITH_UNKNOWN_ATTRIBUTE: '<entitycustomfield unknownattr="val">\n'
       + '  <label>elementName</label>\n'
       + '</entitycustomfield>\n',
@@ -135,6 +141,20 @@ describe('Transformer', () => {
     it('should transform attributes', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_ATTRIBUTE)
       expect(result.value[SCRIPT_ID]).toEqual('custentity_my_script_id')
+    })
+
+    it('should transform nested attributes', () => {
+      const customRecordTypeXmlContent = XML_TEMPLATES.WITH_NESTED_ATTRIBUTE
+      const result = createInstanceElement(
+        convertToCustomizationInfo(customRecordTypeXmlContent).values,
+        customTypes[CUSTOM_RECORD_TYPE]
+      )
+      expect(result.value[SCRIPT_ID]).toEqual('customrecord_my_script_id')
+      const { customrecordcustomfields } = result.value
+      expect(customrecordcustomfields).toBeDefined()
+      const { customrecordcustomfield } = customrecordcustomfields
+      expect(customrecordcustomfield).toHaveLength(1)
+      expect(customrecordcustomfield[0][SCRIPT_ID]).toEqual('custrecord_my_nested_script_id')
     })
 
     it('should ignore unknown attribute', () => {
@@ -283,6 +303,21 @@ describe('Transformer', () => {
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_ATTRIBUTE))
+    })
+
+    it('should transform nested attribute field', () => {
+      const customRecordTypeInstance = new InstanceElement('elementName',
+        customTypes[CUSTOM_RECORD_TYPE], {
+          [SCRIPT_ID]: 'customrecord_my_script_id',
+          customrecordcustomfields: {
+            customrecordcustomfield: [{
+              [SCRIPT_ID]: 'custrecord_my_nested_script_id',
+            }],
+          },
+        })
+      const customizationInfo = toCustomizationInfo(customRecordTypeInstance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_NESTED_ATTRIBUTE))
     })
 
     it('should ignore unknown field', () => {

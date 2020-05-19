@@ -17,6 +17,8 @@ import _ from 'lodash'
 import {
   ChangeError, Change, isInstanceElement, getChangeElement, isModificationDiff, InstanceElement,
 } from '@salto-io/adapter-api'
+import { resolveValues } from '@salto-io/adapter-utils'
+import { getLookUpName } from '../transformers/transformer'
 import { OBJECTS_NAMES, FORM_FIELDS, MARKETING_EMAIL_FIELDS, CONTACT_PROPERTY_FIELDS } from '../constants'
 
 const readOnlyTypeToFields = {
@@ -32,14 +34,16 @@ const readOnlyTypeToFields = {
 */
 const getReadonlyValidationError = async (before: InstanceElement, after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {
-  const readonlyFieldNames = readOnlyTypeToFields[after.type.elemID.typeName]
+  const readonlyFieldNames = readOnlyTypeToFields[after.type.elemID.name]
   if (_.isUndefined(readonlyFieldNames)) {
     return []
   }
+  const afterResolved = resolveValues(after, getLookUpName)
+  const beforeResolved = resolveValues(before, getLookUpName)
   return Object.values(after.type.fields)
     .filter(field => readonlyFieldNames.includes(field.name))
     .map(field => {
-      if (after.value[field.name] !== before.value[field.name]) {
+      if (afterResolved.value[field.name] !== beforeResolved.value[field.name]) {
         return {
           elemID: before.elemID,
           severity: 'Error',

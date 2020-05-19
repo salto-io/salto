@@ -21,16 +21,13 @@ import { afterFormInstanceValuesMock } from '../common/mock_elements'
 
 describe('readonly change validator', () => {
   describe('onUpdate', () => {
-    let before: InstanceElement
-    beforeEach(() => {
-      before = new InstanceElement(
-        'formInstance',
-        Types.hubspotObjects[OBJECTS_NAMES.FORM],
-        afterFormInstanceValuesMock,
-      )
-    })
+    const before = new InstanceElement(
+      'formInstance',
+      Types.hubspotObjects[OBJECTS_NAMES.FORM],
+      afterFormInstanceValuesMock,
+    )
 
-    it('should have an error when trying to edit deleteable in Form', async () => {
+    it('should have an error when trying to edit deletable in Form', async () => {
       const after = before.clone()
       after.value.deletable = 'abc'
       const changeErrors = await readonlyValidator.onUpdate([{

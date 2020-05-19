@@ -72,7 +72,7 @@ export const transformValues = (
       const transformListInnerValue = (item: Value, index?: number): Value =>
         (transformValue(
           item,
-          index ? keyPathID?.createNestedID(String(index)) : keyPathID,
+          !_.isUndefined(index) ? keyPathID?.createNestedID(String(index)) : keyPathID,
           new Field(
             field.elemID.createParentID(),
             field.name,

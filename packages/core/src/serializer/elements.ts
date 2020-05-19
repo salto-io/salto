@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { types } from '@salto-io/lowerdash'
 import {
   PrimitiveType, ElemID, Field, Element, BuiltinTypes, ListType,
-  ObjectType, InstanceElement, isType, isElement, isExpression,
-  ReferenceExpression, TemplateExpression, Expression, VariableExpression,
+  ObjectType, InstanceElement, isType, isElement,
+  ReferenceExpression, TemplateExpression, VariableExpression,
   isInstanceElement, isReferenceExpression, Variable, isListType, StaticFile, isStaticFile,
 } from '@salto-io/adapter-api'
 
@@ -40,22 +41,65 @@ import { InvalidStaticFile } from '../workspace/static_files/common'
 // The deserialization process recover the information by creating the classes based
 // on the _salto_class field, and then replacing the placeholders using the regular merge method.
 
-export const SALTO_CLASS_FIELD = '_salto_class'
-interface ClassName {[SALTO_CLASS_FIELD]: string}
+// Do not use the class's name for serialization since it can change (e.g. by webpack)
+/* eslint-disable object-shorthand */
+const NameToType = {
+  InstanceElement: InstanceElement,
+  ObjectType: ObjectType,
+  Variable: Variable,
+  PrimitiveType: PrimitiveType,
+  ListType: ListType,
+  Field: Field,
+  TemplateExpression: TemplateExpression,
+  ReferenceExpression: ReferenceExpression,
+  VariableExpression: VariableExpression,
+  StaticFile: StaticFile,
+}
 
+type SerializableTypeNames = keyof typeof NameToType
+type SerializableTypes = InstanceType<types.ValueOf<typeof NameToType>>
+
+export const SALTO_CLASS_FIELD = '_salto_class'
+type SerializedClass = {
+  [SALTO_CLASS_FIELD]: SerializableTypeNames
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
+}
+
+const ctorNameToSerializedName: Record<string, SerializableTypeNames> = Object.assign(
+  {},
+  ...Object.entries(NameToType).map(([name, type]) => ({ [type.name]: name }))
+)
+
+type ReviverMap = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [K in SerializableTypeNames]: (v: any) => InstanceType<(typeof NameToType)[K]>
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isSaltoSerializable(value: any): value is SerializableTypes {
+  return _.some(Object.values(NameToType).map(t => value instanceof t))
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isSerializedClass(value: any): value is SerializedClass {
+  return _.isPlainObject(value) && SALTO_CLASS_FIELD in value
+    && value[SALTO_CLASS_FIELD] in NameToType
+}
 
 export const serialize = (elements: Element[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'): string => {
-  const saltoClassReplacer = <T extends object>(e: T): T & ClassName => {
+  const saltoClassReplacer = <T extends SerializableTypes>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
-    const o = e as T & ClassName
-    o[SALTO_CLASS_FIELD] = e.constructor.name
+    const o = e as T & SerializedClass
+    o[SALTO_CLASS_FIELD] = ctorNameToSerializedName[e.constructor.name]
     return o
   }
-  const staticFileReplacer = (e: StaticFile): Omit<StaticFile & ClassName, 'content'> => (
+  const staticFileReplacer = (e: StaticFile): Omit<StaticFile & SerializedClass, 'content'> => (
     _.omit(saltoClassReplacer(e), 'content')
   )
-  const referenceExpressionReplacer = (e: ReferenceExpression): ReferenceExpression & ClassName => {
+  const referenceExpressionReplacer = (e: ReferenceExpression):
+    ReferenceExpression & SerializedClass => {
     if (e.value === undefined || referenceSerializerMode === 'keepRef') {
       return saltoClassReplacer(e.createWithValue(undefined))
     }
@@ -73,11 +117,11 @@ export const serialize = (elements: Element[],
     if (isReferenceExpression(e)) {
       return referenceExpressionReplacer(e)
     }
-    if (isElement(e) || isExpression(e)) {
-      return saltoClassReplacer(e)
-    }
     if (isStaticFile(e)) {
       return staticFileReplacer(e)
+    }
+    if (isSaltoSerializable(e)) {
+      return saltoClassReplacer(e)
     }
     // We need to sort objects so that the state file won't change for the same data.
     if (_.isPlainObject(e)) {
@@ -110,43 +154,48 @@ export const deserialize = async (
 
   let staticFiles: Record<string, StaticFile> = {}
 
-  const revivers: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: (v: {[key: string]: any}) => Element|Expression|StaticFile
-  } = {
-    [InstanceElement.serializedTypeName]: v => new InstanceElement(
+  const revivers: ReviverMap = {
+    InstanceElement: v => new InstanceElement(
       reviveElemID(v.elemID).name,
       v.type,
       v.value,
       undefined,
       v.annotations,
     ),
-    [ObjectType.serializedTypeName]: v => new ObjectType({
+    ObjectType: v => new ObjectType({
       elemID: reviveElemID(v.elemID),
       fields: v.fields,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
-    [Variable.serializedTypeName]: v => new Variable(reviveElemID(v.elemID), v.value),
-    [PrimitiveType.serializedTypeName]: v => new PrimitiveType({
+    Variable: v => (
+      new Variable(reviveElemID(v.elemID), v.value)
+    ),
+    PrimitiveType: v => new PrimitiveType({
       elemID: reviveElemID(v.elemID),
       primitive: v.primitive,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),
-    [ListType.serializedTypeName]: v => new ListType(
+    ListType: v => new ListType(
       v.innerType
     ),
-    [Field.serializedTypeName]: v => new Field(
+    Field: v => new Field(
       reviveElemID(v.parentID),
       v.name,
       v.type,
       v.annotations,
     ),
-    [TemplateExpression.serializedTypeName]: v => new TemplateExpression({ parts: v.parts }),
-    [ReferenceExpression.serializedTypeName]: v => new ReferenceExpression(reviveElemID(v.elemId)),
-    [VariableExpression.serializedTypeName]: v => new VariableExpression(reviveElemID(v.elemId)),
-    [StaticFile.serializedTypeName]: v => {
+    TemplateExpression: v => (
+      new TemplateExpression({ parts: v.parts })
+    ),
+    ReferenceExpression: v => (
+      new ReferenceExpression(reviveElemID(v.elemId))
+    ),
+    VariableExpression: v => (
+      new VariableExpression(reviveElemID(v.elemId))
+    ),
+    StaticFile: v => {
       const staticFile = new StaticFile(v.filepath, v.hash)
       staticFiles[staticFile.filepath] = staticFile
       return staticFile
@@ -155,8 +204,8 @@ export const deserialize = async (
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const elementReviver = (_k: string, v: any): any => {
-    const reviver = revivers[v[SALTO_CLASS_FIELD]]
-    if (reviver) {
+    if (isSerializedClass(v)) {
+      const reviver = revivers[v[SALTO_CLASS_FIELD]]
       const e = reviver(v)
       if (isType(e) || isInstanceElement(e)) {
         e.path = v.path
@@ -191,7 +240,6 @@ export const deserialize = async (
       }))
     })
   })
-
 
   return Promise.resolve(elements)
 }

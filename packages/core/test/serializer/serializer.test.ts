@@ -74,6 +74,16 @@ describe('State/cache serialization', () => {
     { test: 'annotation' },
   )
 
+  class SubInstanceElement extends InstanceElement { }
+
+  const subInstance = new SubInstanceElement(
+    'sub_me',
+    model,
+    { name: 'me', num: 7 },
+    ['path', 'test'],
+    { test: 'annotation' },
+  )
+
   const refInstance = new InstanceElement(
     'also_me',
     model,
@@ -135,7 +145,8 @@ describe('State/cache serialization', () => {
   )
 
   const elements = [strType, numType, boolType, model, strListType, variable, instance,
-    refInstance, refInstance2, refInstance3, templateRefInstance, functionRefInstance, config]
+    subInstance, refInstance, refInstance2, refInstance3, templateRefInstance, functionRefInstance,
+    config]
 
   it('should serialize and deserialize all element types', async () => {
     const serialized = serialize(elements)
@@ -143,6 +154,12 @@ describe('State/cache serialization', () => {
     const sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
     expect(deserialized).toEqual(sortedElements)
   })
+
+  it('should serialize and deserialize without relying on the constructor name', async () => {
+    const serialized = serialize([subInstance])
+    expect(serialized).not.toMatch(subInstance.constructor.name)
+  })
+
 
   it('should not serialize resolved values', async () => {
     // TemplateExpressions are discarded

@@ -19,7 +19,7 @@ import { ElemID, ObjectType, Element, InstanceElement } from '@salto-io/adapter-
 import {
   Workspace, fetch, FetchChange,
   DetailedChange, FetchProgressEvents,
-  StepEmitter, fetchFunc,
+  StepEmitter, FetchFunc,
 } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
@@ -528,7 +528,7 @@ describe('fetch command', () => {
         })
       })
       describe('with merge errors', () => {
-        const mockFetchWithChanges = mocks.mockFunction<fetchFunc>().mockResolvedValue(
+        const mockFetchWithChanges = mocks.mockFunction<FetchFunc>().mockResolvedValue(
           {
             changes: [],
             mergeErrors: [

@@ -121,8 +121,6 @@ export class ListType extends Element {
     })
   }
 
-  static get serializedTypeName(): string { return 'ListType' }
-
   isEqual(other: ListType): boolean {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
     return super.isEqual(other) && isEqualTypes(this.innerType, other.innerType)
@@ -147,8 +145,6 @@ export class Field extends Element {
   ) {
     super({ elemID: parentID.createNestedID('field', name), annotations })
   }
-
-  static get serializedTypeName(): string { return 'Field' }
 
   isEqual(other: Field): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
@@ -193,8 +189,6 @@ export class PrimitiveType extends Element {
     super({ elemID, annotationTypes, annotations, path })
     this.primitive = primitive
   }
-
-  static get serializedTypeName(): string { return 'PrimitiveType' }
 
   isEqual(other: PrimitiveType): boolean {
     return super.isEqual(other)
@@ -243,8 +237,6 @@ export class ObjectType extends Element {
     this.fields = fields
     this.isSettings = isSettings
   }
-
-  static get serializedTypeName(): string { return 'ObjectType' }
 
   private cloneFields(): FieldMap {
     const clonedFields: FieldMap = {}
@@ -297,8 +289,6 @@ export class InstanceElement extends Element {
     super({ elemID: type.elemID.createNestedID('instance', name), annotations, path })
   }
 
-  static get serializedTypeName(): string { return 'InstanceElement' }
-
   isEqual(other: InstanceElement): boolean {
     return _.isEqual(this.type.elemID, other.type.elemID)
       && isEqualValues(this.value, other.value)
@@ -331,8 +321,6 @@ export class Variable extends Element {
     path?: ReadonlyArray<string>) {
     super({ elemID, path })
   }
-
-  static get serializedTypeName(): string { return 'Variable' }
 
   isEqual(other: Variable): boolean {
     return super.isEqual(other) && isEqualValues(this.value, other.value)

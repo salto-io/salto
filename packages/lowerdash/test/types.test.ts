@@ -14,13 +14,34 @@
 * limitations under the License.
 */
 import {
-  AtLeastOne, RequiredMember, hasMember, filterHasMember,
+  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf,
   Bean,
 } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.
 
 describe('types', () => {
+  describe('ValueOf', () => {
+    class A { constructor(public val: string) { } }
+    class B { constructor(public val: number) { } }
+    const map = {
+      a: A,
+      b: B,
+    }
+    type InstanceOfValueOfMap = InstanceType<ValueOf<typeof map>>
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function isValueOfMap(_obj: any): _obj is InstanceOfValueOfMap {
+      // Make sure the code will transpile, the return value of the type-guard should not matter
+      return false
+    }
+
+    it('should transpile', () => {
+      const c = new A('def') as unknown
+      const res = isValueOfMap(c) ? c.val : 'no'
+      expect(res).toEqual('no')
+    })
+  })
   describe('AtLeastOne, RequiredMember', () => {
     type TestType = AtLeastOne<{
       first: number

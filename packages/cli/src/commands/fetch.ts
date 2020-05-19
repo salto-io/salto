@@ -19,7 +19,7 @@ import { getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
 import {
   fetch as apiFetch,
   Workspace,
-  fetchFunc,
+  FetchFunc,
   FetchChange,
   FetchProgressEvents,
   StepEmitter,
@@ -53,18 +53,18 @@ import { EnvironmentArgs } from './env'
 const log = logger(module)
 const { series } = promises.array
 
-type approveChangesFunc = (
+type ApproveChangesFunc = (
   changes: ReadonlyArray<FetchChange>,
   interactive: boolean
 ) => Promise<ReadonlyArray<FetchChange>>
 
-type shouldUpdateConfigFunc = (
+type ShouldUpdateConfigFunc = (
   { stdout }: CliOutput,
   introMessage: string,
   change: PlanItem
 ) => Promise<boolean>
 
-type approveIsolatedModeFunc = (
+type ApproveIsolatedModeFunc = (
   newServices: string[],
   oldServices: string[],
   inputIsolated: boolean
@@ -77,10 +77,10 @@ export type FetchCommandArgs = {
   inputIsolated: boolean
   cliTelemetry: CliTelemetry
   output: CliOutput
-  fetch: fetchFunc
-  getApprovedChanges: approveChangesFunc
-  shouldUpdateConfig: shouldUpdateConfigFunc
-  approveIsolatedMode: approveIsolatedModeFunc
+  fetch: FetchFunc
+  getApprovedChanges: ApproveChangesFunc
+  shouldUpdateConfig: ShouldUpdateConfigFunc
+  approveIsolatedMode: ApproveIsolatedModeFunc
   shouldCalcTotalSize: boolean
   inputServices?: string[]
 }
@@ -103,7 +103,7 @@ const getRelevantServicesAndIsolatedMode = async (
   workspace: Workspace,
   inputIsolated: boolean,
   force: boolean,
-  approveIsolatedMode: approveIsolatedModeFunc,
+  approveIsolatedMode: ApproveIsolatedModeFunc,
   outputLine: (text: string) => void
 ): Promise<{services: string[]; isolated: boolean}> => {
   const envNames = workspace.envs()

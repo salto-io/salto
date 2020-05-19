@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -30,16 +30,15 @@ const pluginimplementation_libraries_library = new ObjectType({
   elemID: pluginimplementation_libraries_libraryElemID,
   annotations: {
   },
-  fields: {
-    scriptfile: new Field(
-      pluginimplementation_libraries_libraryElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+  fields: [
+    {
+      name: 'scriptfile',
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
-  },
+    }, /* Original description: This field must reference a .js file. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
 })
 
@@ -51,15 +50,14 @@ const pluginimplementation_libraries = new ObjectType({
   elemID: pluginimplementation_librariesElemID,
   annotations: {
   },
-  fields: {
-    library: new Field(
-      pluginimplementation_librariesElemID,
-      'library',
-      new ListType(pluginimplementation_libraries_library),
-      {
+  fields: [
+    {
+      name: 'library',
+      type: new ListType(pluginimplementation_libraries_library),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
 })
 
@@ -71,114 +69,100 @@ export const pluginimplementation = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
-  fields: {
-    scriptid: new Field(
-      pluginimplementationElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    name: new Field(
-      pluginimplementationElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
+    {
+      name: 'name',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    scriptfile: new Field(
-      pluginimplementationElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    {
+      name: 'scriptfile',
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
-    customplugintype: new Field(
-      pluginimplementationElemID,
-      'customplugintype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field must reference a .js file. */
+    {
+      name: 'customplugintype',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the plugintype custom type. */
-    status: new Field(
-      pluginimplementationElemID,
-      'status',
-      enums.plugintype_status,
-      {
+    }, /* Original description: This field accepts references to the plugintype custom type. */
+    {
+      name: 'status',
+      type: enums.plugintype_status,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
-    description: new Field(
-      pluginimplementationElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
+    {
+      name: 'description',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    isinactive: new Field(
-      pluginimplementationElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    {
+      name: 'isinactive',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyadmins: new Field(
-      pluginimplementationElemID,
-      'notifyadmins',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'notifyadmins',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyemails: new Field(
-      pluginimplementationElemID,
-      'notifyemails',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'notifyemails',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    notifygroup: new Field(
-      pluginimplementationElemID,
-      'notifygroup',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    {
+      name: 'notifygroup',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: Note Account-specific values are not supported by SDF. */
-    notifyowner: new Field(
-      pluginimplementationElemID,
-      'notifyowner',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: Note Account-specific values are not supported by SDF. */
+    {
+      name: 'notifyowner',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    notifyuser: new Field(
-      pluginimplementationElemID,
-      'notifyuser',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'notifyuser',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    loglevel: new Field(
-      pluginimplementationElemID,
-      'loglevel',
-      enums.plugintype_loglevel,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'loglevel',
+      type: enums.plugintype_loglevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
-    libraries: new Field(
-      pluginimplementationElemID,
-      'libraries',
-      pluginimplementation_libraries,
-      {
+    }, /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
+    {
+      name: 'libraries',
+      type: pluginimplementation_libraries,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
 })

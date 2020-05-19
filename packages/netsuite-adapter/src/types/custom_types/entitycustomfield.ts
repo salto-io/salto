@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -30,65 +30,57 @@ const entitycustomfield_customfieldfilters_customfieldfilter = new ObjectType({
   elemID: entitycustomfield_customfieldfilters_customfieldfilterElemID,
   annotations: {
   },
-  fields: {
-    fldfilter: new Field(
-      entitycustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilter',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'fldfilter',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    fldfilterchecked: new Field(
-      entitycustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    {
+      name: 'fldfilterchecked',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfiltercomparetype: new Field(
-      entitycustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltercomparetype',
-      enums.generic_customfield_fldfiltercomparetype,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fldfiltercomparetype',
+      type: enums.generic_customfield_fldfiltercomparetype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    fldfiltersel: new Field(
-      entitycustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltersel',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
+    {
+      name: 'fldfiltersel',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    fldfilterval: new Field(
-      entitycustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterval',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    {
+      name: 'fldfilterval',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    fldfilternotnull: new Field(
-      entitycustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternotnull',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'fldfilternotnull',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfilternull: new Field(
-      entitycustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternull',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fldfilternull',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldcomparefield: new Field(
-      entitycustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldcomparefield',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fldcomparefield',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-  },
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entitycustomfieldElemID.name],
 })
 
@@ -100,15 +92,14 @@ const entitycustomfield_customfieldfilters = new ObjectType({
   elemID: entitycustomfield_customfieldfiltersElemID,
   annotations: {
   },
-  fields: {
-    customfieldfilter: new Field(
-      entitycustomfield_customfieldfiltersElemID,
-      'customfieldfilter',
-      new ListType(entitycustomfield_customfieldfilters_customfieldfilter),
-      {
+  fields: [
+    {
+      name: 'customfieldfilter',
+      type: new ListType(entitycustomfield_customfieldfilters_customfieldfilter),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entitycustomfieldElemID.name],
 })
 
@@ -120,32 +111,29 @@ const entitycustomfield_roleaccesses_roleaccess = new ObjectType({
   elemID: entitycustomfield_roleaccesses_roleaccessElemID,
   annotations: {
   },
-  fields: {
-    role: new Field(
-      entitycustomfield_roleaccesses_roleaccessElemID,
-      'role',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'role',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    accesslevel: new Field(
-      entitycustomfield_roleaccesses_roleaccessElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
+    {
+      name: 'accesslevel',
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    searchlevel: new Field(
-      entitycustomfield_roleaccesses_roleaccessElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+    {
+      name: 'searchlevel',
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-  },
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entitycustomfieldElemID.name],
 })
 
@@ -157,15 +145,14 @@ const entitycustomfield_roleaccesses = new ObjectType({
   elemID: entitycustomfield_roleaccessesElemID,
   annotations: {
   },
-  fields: {
-    roleaccess: new Field(
-      entitycustomfield_roleaccessesElemID,
-      'roleaccess',
-      new ListType(entitycustomfield_roleaccesses_roleaccess),
-      {
+  fields: [
+    {
+      name: 'roleaccess',
+      type: new ListType(entitycustomfield_roleaccesses_roleaccess),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entitycustomfieldElemID.name],
 })
 
@@ -177,390 +164,336 @@ export const entitycustomfield = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custentity_',
   },
-  fields: {
-    scriptid: new Field(
-      entitycustomfieldElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custentity’. */
-    fieldtype: new Field(
-      entitycustomfieldElemID,
-      'fieldtype',
-      enums.generic_customfield_fieldtype,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custentity’. */
+    {
+      name: 'fieldtype',
+      type: enums.generic_customfield_fieldtype,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    label: new Field(
-      entitycustomfieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
-    selectrecordtype: new Field(
-      entitycustomfieldElemID,
-      'selectrecordtype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value can be up to 200 characters long. */
+    {
+      name: 'selectrecordtype',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    applyformatting: new Field(
-      entitycustomfieldElemID,
-      'applyformatting',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
+    {
+      name: 'applyformatting',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    defaultchecked: new Field(
-      entitycustomfieldElemID,
-      'defaultchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'defaultchecked',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    defaultselection: new Field(
-      entitycustomfieldElemID,
-      'defaultselection',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'defaultselection',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    defaultvalue: new Field(
-      entitycustomfieldElemID,
-      'defaultvalue',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    {
+      name: 'defaultvalue',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    description: new Field(
-      entitycustomfieldElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'description',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    displaytype: new Field(
-      entitycustomfieldElemID,
-      'displaytype',
-      enums.generic_customfield_displaytype,
-      {
+    },
+    {
+      name: 'displaytype',
+      type: enums.generic_customfield_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    dynamicdefault: new Field(
-      entitycustomfieldElemID,
-      'dynamicdefault',
-      enums.generic_customfield_dynamicdefault,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
+    {
+      name: 'dynamicdefault',
+      type: enums.generic_customfield_dynamicdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    help: new Field(
-      entitycustomfieldElemID,
-      'help',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
+    {
+      name: 'help',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    linktext: new Field(
-      entitycustomfieldElemID,
-      'linktext',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'linktext',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    minvalue: new Field(
-      entitycustomfieldElemID,
-      'minvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'minvalue',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    maxvalue: new Field(
-      entitycustomfieldElemID,
-      'maxvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'maxvalue',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    storevalue: new Field(
-      entitycustomfieldElemID,
-      'storevalue',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'storevalue',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    accesslevel: new Field(
-      entitycustomfieldElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'accesslevel',
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    checkspelling: new Field(
-      entitycustomfieldElemID,
-      'checkspelling',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    {
+      name: 'checkspelling',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    encryptatrest: new Field(
-      entitycustomfieldElemID,
-      'encryptatrest',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'encryptatrest',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayheight: new Field(
-      entitycustomfieldElemID,
-      'displayheight',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'displayheight',
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    displaywidth: new Field(
-      entitycustomfieldElemID,
-      'displaywidth',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    {
+      name: 'displaywidth',
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    globalsearch: new Field(
-      entitycustomfieldElemID,
-      'globalsearch',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    {
+      name: 'globalsearch',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    isformula: new Field(
-      entitycustomfieldElemID,
-      'isformula',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'isformula',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    ismandatory: new Field(
-      entitycustomfieldElemID,
-      'ismandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'ismandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    maxlength: new Field(
-      entitycustomfieldElemID,
-      'maxlength',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'maxlength',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    onparentdelete: new Field(
-      entitycustomfieldElemID,
-      'onparentdelete',
-      enums.generic_customfield_onparentdelete,
-      {
+    },
+    {
+      name: 'onparentdelete',
+      type: enums.generic_customfield_onparentdelete,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
-    searchcomparefield: new Field(
-      entitycustomfieldElemID,
-      'searchcomparefield',
-      enums.generic_standard_field,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
+    {
+      name: 'searchcomparefield',
+      type: enums.generic_standard_field,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    searchdefault: new Field(
-      entitycustomfieldElemID,
-      'searchdefault',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    {
+      name: 'searchdefault',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type. */
-    searchlevel: new Field(
-      entitycustomfieldElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type. */
+    {
+      name: 'searchlevel',
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    showhierarchy: new Field(
-      entitycustomfieldElemID,
-      'showhierarchy',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    {
+      name: 'showhierarchy',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    showinlist: new Field(
-      entitycustomfieldElemID,
-      'showinlist',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'showinlist',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    sourcefilterby: new Field(
-      entitycustomfieldElemID,
-      'sourcefilterby',
-      enums.generic_standard_field,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'sourcefilterby',
+      type: enums.generic_standard_field,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    sourcefrom: new Field(
-      entitycustomfieldElemID,
-      'sourcefrom',
-      BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    {
+      name: 'sourcefrom',
+      type: BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    sourcelist: new Field(
-      entitycustomfieldElemID,
-      'sourcelist',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    {
+      name: 'sourcelist',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see generic_standard_field. */
-    isparent: new Field(
-      entitycustomfieldElemID,
-      'isparent',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see generic_standard_field. */
+    {
+      name: 'isparent',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    parentsubtab: new Field(
-      entitycustomfieldElemID,
-      'parentsubtab',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'parentsubtab',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see generic_tab_parent. */
-    subtab: new Field(
-      entitycustomfieldElemID,
-      'subtab',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see generic_tab_parent. */
+    {
+      name: 'subtab',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the subtab custom type.   For information about other possible values, see generic_entity_tab. */
-    appliestocontact: new Field(
-      entitycustomfieldElemID,
-      'appliestocontact',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the subtab custom type.   For information about other possible values, see generic_entity_tab. */
+    {
+      name: 'appliestocontact',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestocustomer: new Field(
-      entitycustomfieldElemID,
-      'appliestocustomer',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'appliestocustomer',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestoemployee: new Field(
-      entitycustomfieldElemID,
-      'appliestoemployee',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'appliestoemployee',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestogenericrsrc: new Field(
-      entitycustomfieldElemID,
-      'appliestogenericrsrc',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'appliestogenericrsrc',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the ADVANCEDJOBS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDJOBS must be enabled for this field to appear in your account. */
-    appliestogroup: new Field(
-      entitycustomfieldElemID,
-      'appliestogroup',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ADVANCEDJOBS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDJOBS must be enabled for this field to appear in your account. */
+    {
+      name: 'appliestogroup',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestoothername: new Field(
-      entitycustomfieldElemID,
-      'appliestoothername',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'appliestoothername',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestopartner: new Field(
-      entitycustomfieldElemID,
-      'appliestopartner',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'appliestopartner',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
-    appliestopricelist: new Field(
-      entitycustomfieldElemID,
-      'appliestopricelist',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
+    {
+      name: 'appliestopricelist',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestoproject: new Field(
-      entitycustomfieldElemID,
-      'appliestoproject',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'appliestoproject',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the JOBS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. JOBS must be enabled for this field to appear in your account. */
-    appliestoprojecttemplate: new Field(
-      entitycustomfieldElemID,
-      'appliestoprojecttemplate',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the JOBS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. JOBS must be enabled for this field to appear in your account. */
+    {
+      name: 'appliestoprojecttemplate',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestostatement: new Field(
-      entitycustomfieldElemID,
-      'appliestostatement',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'appliestostatement',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestovendor: new Field(
-      entitycustomfieldElemID,
-      'appliestovendor',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'appliestovendor',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
-    appliestowebsite: new Field(
-      entitycustomfieldElemID,
-      'appliestowebsite',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
+    {
+      name: 'appliestowebsite',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSITE feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSITE must be enabled for this field to appear in your account. */
-    availableexternally: new Field(
-      entitycustomfieldElemID,
-      'availableexternally',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSITE feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSITE must be enabled for this field to appear in your account. */
+    {
+      name: 'availableexternally',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    availabletosso: new Field(
-      entitycustomfieldElemID,
-      'availabletosso',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'availabletosso',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the SUITESIGNON feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUITESIGNON must be enabled for this field to appear in your account. */
-    customfieldfilters: new Field(
-      entitycustomfieldElemID,
-      'customfieldfilters',
-      entitycustomfield_customfieldfilters,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the SUITESIGNON feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUITESIGNON must be enabled for this field to appear in your account. */
+    {
+      name: 'customfieldfilters',
+      type: entitycustomfield_customfieldfilters,
+      annotations: {
       },
-    ),
-    roleaccesses: new Field(
-      entitycustomfieldElemID,
-      'roleaccesses',
-      entitycustomfield_roleaccesses,
-      {
+    },
+    {
+      name: 'roleaccesses',
+      type: entitycustomfield_roleaccesses,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entitycustomfieldElemID.name],
 })

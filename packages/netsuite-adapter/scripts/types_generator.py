@@ -51,7 +51,7 @@ field_types_import = '''import { fieldTypes } from '../field_types'
 '''
 
 import_statements_for_type_def_template = '''import {{
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,{list_type_import}
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,{list_type_import}
 }} from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 {enums_import}{field_types_import}
@@ -113,22 +113,21 @@ type_annotations_template = '''
 type_template = '''
 {export}const {type_name} = new ObjectType({{
   elemID: {type_name}ElemID,{annotations}
-  fields: {{
+  fields: [
 {field_definitions}
-  }},
+  ],
   path: {path},
 }})
 '''
 
 type_path_template = '[constants.NETSUITE, constants.TYPES_PATH, {type_name}ElemID.name]'
 
-field_template = '''    {field_name}: new Field(
-      {type_name}ElemID,
-      '{field_name}',
-      {field_type},
-      {{{annotations}
+field_template = '''    {{
+      name: '{field_name}',
+      type: {field_type},
+      annotations: {{{annotations}
       }},
-    ),'''
+    }},'''
 
 field_annotation_template = '''
         {annotation_name}: {annotation_value},'''
@@ -407,7 +406,7 @@ def format_type_def(type_name, type_def, top_level_type_name = None):
     def format_field_def(field_def):
         formatted_field_annotations = format_field_annotations(field_def[ANNOTATIONS])
         field_type = 'new ListType({0})'.format(field_def[TYPE]) if field_def[IS_LIST] else field_def[TYPE]
-        formatted_field = field_template.format(field_name = field_def[NAME], type_name = type_name, field_type = field_type, annotations = formatted_field_annotations)
+        formatted_field = field_template.format(field_name = field_def[NAME], field_type = field_type, annotations = formatted_field_annotations)
         field_description_comment = ' /* Original description: {0} */'.format(field_def[DESCRIPTION]) if (DESCRIPTION in field_def and field_def[DESCRIPTION] != '') else ''
         return formatted_field + field_description_comment
 

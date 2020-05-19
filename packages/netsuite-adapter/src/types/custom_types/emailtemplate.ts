@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,90 +31,79 @@ export const emailtemplate = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custemailtmpl_',
     [constants.ADDITIONAL_FILE_SUFFIX]: '.template.html',
   },
-  fields: {
-    scriptid: new Field(
-      emailtemplateElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custemailtmpl’. */
-    name: new Field(
-      emailtemplateElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custemailtmpl’. */
+    {
+      name: 'name',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 60,
       },
-    ), /* Original description: This field value can be up to 60 characters long. */
-    mediaitem: new Field(
-      emailtemplateElemID,
-      'mediaitem',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    }, /* Original description: This field value can be up to 60 characters long. */
+    {
+      name: 'mediaitem',
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the usesmedia value is equal to T.   This field must reference a file with any of the following extensions: .ftl, .html, .txt */
-    description: new Field(
-      emailtemplateElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field is mandatory when the usesmedia value is equal to T.   This field must reference a file with any of the following extensions: .ftl, .html, .txt */
+    {
+      name: 'description',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
-    ), /* Original description: This field value can be up to 1000 characters long. */
-    recordtype: new Field(
-      emailtemplateElemID,
-      'recordtype',
-      enums.emailtemplate_recordtype,
-      {
+    }, /* Original description: This field value can be up to 1000 characters long. */
+    {
+      name: 'recordtype',
+      type: enums.emailtemplate_recordtype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see emailtemplate_recordtype. */
-    isinactive: new Field(
-      emailtemplateElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see emailtemplate_recordtype. */
+    {
+      name: 'isinactive',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    subject: new Field(
-      emailtemplateElemID,
-      'subject',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'subject',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 199,
       },
-    ), /* Original description: This field value can be up to 199 characters long. */
-    isprivate: new Field(
-      emailtemplateElemID,
-      'isprivate',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 199 characters long. */
+    {
+      name: 'isprivate',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    addunsubscribelink: new Field(
-      emailtemplateElemID,
-      'addunsubscribelink',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'addunsubscribelink',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    addcompanyaddress: new Field(
-      emailtemplateElemID,
-      'addcompanyaddress',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'addcompanyaddress',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    usesmedia: new Field(
-      emailtemplateElemID,
-      'usesmedia',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'usesmedia',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, emailtemplateElemID.name],
 })

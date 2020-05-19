@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -30,43 +30,38 @@ const centercategory_links_link = new ObjectType({
   elemID: centercategory_links_linkElemID,
   annotations: {
   },
-  fields: {
-    linkid: new Field(
-      centercategory_links_linkElemID,
-      'linkid',
-      enums.generic_task,
-      {
+  fields: [
+    {
+      name: 'linkid',
+      type: enums.generic_task,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the linkobject value is not defined.   For information about possible values, see generic_task. */
-    linkobject: new Field(
-      centercategory_links_linkElemID,
-      'linkobject',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field is mandatory when the linkobject value is not defined.   For information about possible values, see generic_task. */
+    {
+      name: 'linkobject',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the linkid value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customtransactiontype   customrecordtype   clientscript   centertab   bundleinstallationscript */
-    linktasktype: new Field(
-      centercategory_links_linkElemID,
-      'linktasktype',
-      enums.centercategory_tasktype,
-      {
+    }, /* Original description: This field is mandatory when the linkid value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customtransactiontype   customrecordtype   clientscript   centertab   bundleinstallationscript */
+    {
+      name: 'linktasktype',
+      type: enums.centercategory_tasktype,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the linkobject value is defined.   For information about possible values, see centercategory_tasktype. */
-    linklabel: new Field(
-      centercategory_links_linkElemID,
-      'linklabel',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field is mandatory when the linkobject value is defined.   For information about possible values, see centercategory_tasktype. */
+    {
+      name: 'linklabel',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    shortlist: new Field(
-      centercategory_links_linkElemID,
-      'shortlist',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'shortlist',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, centercategoryElemID.name],
 })
 
@@ -78,15 +73,14 @@ const centercategory_links = new ObjectType({
   elemID: centercategory_linksElemID,
   annotations: {
   },
-  fields: {
-    link: new Field(
-      centercategory_linksElemID,
-      'link',
-      new ListType(centercategory_links_link),
-      {
+  fields: [
+    {
+      name: 'link',
+      type: new ListType(centercategory_links_link),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, centercategoryElemID.name],
 })
 
@@ -98,47 +92,42 @@ export const centercategory = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custcentercategory_',
   },
-  fields: {
-    scriptid: new Field(
-      centercategoryElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentercategory’. */
-    center: new Field(
-      centercategoryElemID,
-      'center',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentercategory’. */
+    {
+      name: 'center',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */
-    centertab: new Field(
-      centercategoryElemID,
-      'centertab',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */
+    {
+      name: 'centertab',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the centertab custom type.   For information about other possible values, see generic_centertab. */
-    label: new Field(
-      centercategoryElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the centertab custom type.   For information about other possible values, see generic_centertab. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
-    ),
-    links: new Field(
-      centercategoryElemID,
-      'links',
-      centercategory_links,
-      {
+    },
+    {
+      name: 'links',
+      type: centercategory_links,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, centercategoryElemID.name],
 })

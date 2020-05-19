@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -30,37 +30,33 @@ const customsegment_permissions_permission = new ObjectType({
   elemID: customsegment_permissions_permissionElemID,
   annotations: {
   },
-  fields: {
-    role: new Field(
-      customsegment_permissions_permissionElemID,
-      'role',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'role',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    valuemgmtaccesslevel: new Field(
-      customsegment_permissions_permissionElemID,
-      'valuemgmtaccesslevel',
-      enums.generic_permission_level,
-      {
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
+    {
+      name: 'valuemgmtaccesslevel',
+      type: enums.generic_permission_level,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_permission_level.   The default value is 'NONE'. */
-    recordaccesslevel: new Field(
-      customsegment_permissions_permissionElemID,
-      'recordaccesslevel',
-      enums.customsegment_access_search_level,
-      {
+    }, /* Original description: For information about possible values, see generic_permission_level.   The default value is 'NONE'. */
+    {
+      name: 'recordaccesslevel',
+      type: enums.customsegment_access_search_level,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see customsegment_access_search_level. */
-    searchaccesslevel: new Field(
-      customsegment_permissions_permissionElemID,
-      'searchaccesslevel',
-      enums.customsegment_access_search_level,
-      {
+    }, /* Original description: For information about possible values, see customsegment_access_search_level. */
+    {
+      name: 'searchaccesslevel',
+      type: enums.customsegment_access_search_level,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see customsegment_access_search_level. */
-  },
+    }, /* Original description: For information about possible values, see customsegment_access_search_level. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -72,15 +68,14 @@ const customsegment_permissions = new ObjectType({
   elemID: customsegment_permissionsElemID,
   annotations: {
   },
-  fields: {
-    permission: new Field(
-      customsegment_permissionsElemID,
-      'permission',
-      new ListType(customsegment_permissions_permission),
-      {
+  fields: [
+    {
+      name: 'permission',
+      type: new ListType(customsegment_permissions_permission),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -92,24 +87,22 @@ const customsegment_segmentapplication_crm_applications_application = new Object
   elemID: customsegment_segmentapplication_crm_applications_applicationElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      customsegment_segmentapplication_crm_applications_applicationElemID,
-      'id',
-      enums.customsegment_crm_application_id,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: enums.customsegment_crm_application_id,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see customsegment_crm_application_id. */
-    isapplied: new Field(
-      customsegment_segmentapplication_crm_applications_applicationElemID,
-      'isapplied',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see customsegment_crm_application_id. */
+    {
+      name: 'isapplied',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -121,15 +114,14 @@ const customsegment_segmentapplication_crm_applications = new ObjectType({
   elemID: customsegment_segmentapplication_crm_applicationsElemID,
   annotations: {
   },
-  fields: {
-    application: new Field(
-      customsegment_segmentapplication_crm_applicationsElemID,
-      'application',
-      new ListType(customsegment_segmentapplication_crm_applications_application),
-      {
+  fields: [
+    {
+      name: 'application',
+      type: new ListType(customsegment_segmentapplication_crm_applications_application),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -141,22 +133,20 @@ const customsegment_segmentapplication_crm = new ObjectType({
   elemID: customsegment_segmentapplication_crmElemID,
   annotations: {
   },
-  fields: {
-    sourcelist: new Field(
-      customsegment_segmentapplication_crmElemID,
-      'sourcelist',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'sourcelist',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the crmcustomfield custom type.   For information about other possible values, see customsegment_crm_sourcelist. */
-    applications: new Field(
-      customsegment_segmentapplication_crmElemID,
-      'applications',
-      customsegment_segmentapplication_crm_applications,
-      {
+    }, /* Original description: This field accepts references to the crmcustomfield custom type.   For information about other possible values, see customsegment_crm_sourcelist. */
+    {
+      name: 'applications',
+      type: customsegment_segmentapplication_crm_applications,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -168,31 +158,28 @@ const customsegment_segmentapplication_customrecords_applications_application = 
   elemID: customsegment_segmentapplication_customrecords_applications_applicationElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      customsegment_segmentapplication_customrecords_applications_applicationElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the customrecordtype custom type. */
-    isapplied: new Field(
-      customsegment_segmentapplication_customrecords_applications_applicationElemID,
-      'isapplied',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the customrecordtype custom type. */
+    {
+      name: 'isapplied',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-    sourcelist: new Field(
-      customsegment_segmentapplication_customrecords_applications_applicationElemID,
-      'sourcelist',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'sourcelist',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is available when the isapplied value is equal to T.   This field accepts references to the customrecordcustomfield custom type. */
-  },
+    }, /* Original description: This field is available when the isapplied value is equal to T.   This field accepts references to the customrecordcustomfield custom type. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -204,15 +191,14 @@ const customsegment_segmentapplication_customrecords_applications = new ObjectTy
   elemID: customsegment_segmentapplication_customrecords_applicationsElemID,
   annotations: {
   },
-  fields: {
-    application: new Field(
-      customsegment_segmentapplication_customrecords_applicationsElemID,
-      'application',
-      new ListType(customsegment_segmentapplication_customrecords_applications_application),
-      {
+  fields: [
+    {
+      name: 'application',
+      type: new ListType(customsegment_segmentapplication_customrecords_applications_application),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -224,15 +210,14 @@ const customsegment_segmentapplication_customrecords = new ObjectType({
   elemID: customsegment_segmentapplication_customrecordsElemID,
   annotations: {
   },
-  fields: {
-    applications: new Field(
-      customsegment_segmentapplication_customrecordsElemID,
-      'applications',
-      customsegment_segmentapplication_customrecords_applications,
-      {
+  fields: [
+    {
+      name: 'applications',
+      type: customsegment_segmentapplication_customrecords_applications,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -244,24 +229,22 @@ const customsegment_segmentapplication_entities_applications_application = new O
   elemID: customsegment_segmentapplication_entities_applications_applicationElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      customsegment_segmentapplication_entities_applications_applicationElemID,
-      'id',
-      enums.customsegment_entities_application_id,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: enums.customsegment_entities_application_id,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see customsegment_entities_application_id. */
-    isapplied: new Field(
-      customsegment_segmentapplication_entities_applications_applicationElemID,
-      'isapplied',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see customsegment_entities_application_id. */
+    {
+      name: 'isapplied',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -273,15 +256,14 @@ const customsegment_segmentapplication_entities_applications = new ObjectType({
   elemID: customsegment_segmentapplication_entities_applicationsElemID,
   annotations: {
   },
-  fields: {
-    application: new Field(
-      customsegment_segmentapplication_entities_applicationsElemID,
-      'application',
-      new ListType(customsegment_segmentapplication_entities_applications_application),
-      {
+  fields: [
+    {
+      name: 'application',
+      type: new ListType(customsegment_segmentapplication_entities_applications_application),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -293,22 +275,20 @@ const customsegment_segmentapplication_entities = new ObjectType({
   elemID: customsegment_segmentapplication_entitiesElemID,
   annotations: {
   },
-  fields: {
-    sourcelist: new Field(
-      customsegment_segmentapplication_entitiesElemID,
-      'sourcelist',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'sourcelist',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see customsegment_entities_sourcelist. */
-    applications: new Field(
-      customsegment_segmentapplication_entitiesElemID,
-      'applications',
-      customsegment_segmentapplication_entities_applications,
-      {
+    }, /* Original description: This field accepts references to the entitycustomfield custom type.   For information about other possible values, see customsegment_entities_sourcelist. */
+    {
+      name: 'applications',
+      type: customsegment_segmentapplication_entities_applications,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -320,24 +300,22 @@ const customsegment_segmentapplication_items_applications_application = new Obje
   elemID: customsegment_segmentapplication_items_applications_applicationElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      customsegment_segmentapplication_items_applications_applicationElemID,
-      'id',
-      enums.customsegment_items_application_id,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: enums.customsegment_items_application_id,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see customsegment_items_application_id. */
-    isapplied: new Field(
-      customsegment_segmentapplication_items_applications_applicationElemID,
-      'isapplied',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see customsegment_items_application_id. */
+    {
+      name: 'isapplied',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -349,15 +327,14 @@ const customsegment_segmentapplication_items_applications = new ObjectType({
   elemID: customsegment_segmentapplication_items_applicationsElemID,
   annotations: {
   },
-  fields: {
-    application: new Field(
-      customsegment_segmentapplication_items_applicationsElemID,
-      'application',
-      new ListType(customsegment_segmentapplication_items_applications_application),
-      {
+  fields: [
+    {
+      name: 'application',
+      type: new ListType(customsegment_segmentapplication_items_applications_application),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -369,30 +346,27 @@ const customsegment_segmentapplication_items = new ObjectType({
   elemID: customsegment_segmentapplication_itemsElemID,
   annotations: {
   },
-  fields: {
-    subtype: new Field(
-      customsegment_segmentapplication_itemsElemID,
-      'subtype',
-      enums.customsegment_items_subtype,
-      {
+  fields: [
+    {
+      name: 'subtype',
+      type: enums.customsegment_items_subtype,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see customsegment_items_subtype.   The default value is 'BOTH'. */
-    sourcelist: new Field(
-      customsegment_segmentapplication_itemsElemID,
-      'sourcelist',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see customsegment_items_subtype.   The default value is 'BOTH'. */
+    {
+      name: 'sourcelist',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the itemcustomfield custom type.   For information about other possible values, see customsegment_items_sourcelist. */
-    applications: new Field(
-      customsegment_segmentapplication_itemsElemID,
-      'applications',
-      customsegment_segmentapplication_items_applications,
-      {
+    }, /* Original description: This field accepts references to the itemcustomfield custom type.   For information about other possible values, see customsegment_items_sourcelist. */
+    {
+      name: 'applications',
+      type: customsegment_segmentapplication_items_applications,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -404,24 +378,22 @@ const customsegment_segmentapplication_transactionbody_applications_application 
   elemID: customsegment_segmentapplication_transactionbody_applications_applicationElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      customsegment_segmentapplication_transactionbody_applications_applicationElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionbody_application_id. */
-    isapplied: new Field(
-      customsegment_segmentapplication_transactionbody_applications_applicationElemID,
-      'isapplied',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionbody_application_id. */
+    {
+      name: 'isapplied',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -433,15 +405,14 @@ const customsegment_segmentapplication_transactionbody_applications = new Object
   elemID: customsegment_segmentapplication_transactionbody_applicationsElemID,
   annotations: {
   },
-  fields: {
-    application: new Field(
-      customsegment_segmentapplication_transactionbody_applicationsElemID,
-      'application',
-      new ListType(customsegment_segmentapplication_transactionbody_applications_application),
-      {
+  fields: [
+    {
+      name: 'application',
+      type: new ListType(customsegment_segmentapplication_transactionbody_applications_application),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -453,22 +424,20 @@ const customsegment_segmentapplication_transactionbody = new ObjectType({
   elemID: customsegment_segmentapplication_transactionbodyElemID,
   annotations: {
   },
-  fields: {
-    sourcelist: new Field(
-      customsegment_segmentapplication_transactionbodyElemID,
-      'sourcelist',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'sourcelist',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the transactionbodycustomfield custom type.   For information about other possible values, see customsegment_transactionbody_sourcelist. */
-    applications: new Field(
-      customsegment_segmentapplication_transactionbodyElemID,
-      'applications',
-      customsegment_segmentapplication_transactionbody_applications,
-      {
+    }, /* Original description: This field accepts references to the transactionbodycustomfield custom type.   For information about other possible values, see customsegment_transactionbody_sourcelist. */
+    {
+      name: 'applications',
+      type: customsegment_segmentapplication_transactionbody_applications,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -480,24 +449,22 @@ const customsegment_segmentapplication_transactionline_applications_application 
   elemID: customsegment_segmentapplication_transactionline_applications_applicationElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      customsegment_segmentapplication_transactionline_applications_applicationElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionline_application_id. */
-    isapplied: new Field(
-      customsegment_segmentapplication_transactionline_applications_applicationElemID,
-      'isapplied',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the customtransactiontype custom type.   For information about other possible values, see customsegment_transactionline_application_id. */
+    {
+      name: 'isapplied',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -509,15 +476,14 @@ const customsegment_segmentapplication_transactionline_applications = new Object
   elemID: customsegment_segmentapplication_transactionline_applicationsElemID,
   annotations: {
   },
-  fields: {
-    application: new Field(
-      customsegment_segmentapplication_transactionline_applicationsElemID,
-      'application',
-      new ListType(customsegment_segmentapplication_transactionline_applications_application),
-      {
+  fields: [
+    {
+      name: 'application',
+      type: new ListType(customsegment_segmentapplication_transactionline_applications_application),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -529,22 +495,20 @@ const customsegment_segmentapplication_transactionline = new ObjectType({
   elemID: customsegment_segmentapplication_transactionlineElemID,
   annotations: {
   },
-  fields: {
-    sourcelist: new Field(
-      customsegment_segmentapplication_transactionlineElemID,
-      'sourcelist',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'sourcelist',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   For information about other possible values, see customsegment_transactionline_sourcelist. */
-    applications: new Field(
-      customsegment_segmentapplication_transactionlineElemID,
-      'applications',
-      customsegment_segmentapplication_transactionline_applications,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   For information about other possible values, see customsegment_transactionline_sourcelist. */
+    {
+      name: 'applications',
+      type: customsegment_segmentapplication_transactionline_applications,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -556,50 +520,44 @@ const customsegment_segmentapplication = new ObjectType({
   elemID: customsegment_segmentapplicationElemID,
   annotations: {
   },
-  fields: {
-    crm: new Field(
-      customsegment_segmentapplicationElemID,
-      'crm',
-      customsegment_segmentapplication_crm,
-      {
+  fields: [
+    {
+      name: 'crm',
+      type: customsegment_segmentapplication_crm,
+      annotations: {
       },
-    ),
-    customrecords: new Field(
-      customsegment_segmentapplicationElemID,
-      'customrecords',
-      customsegment_segmentapplication_customrecords,
-      {
+    },
+    {
+      name: 'customrecords',
+      type: customsegment_segmentapplication_customrecords,
+      annotations: {
       },
-    ),
-    entities: new Field(
-      customsegment_segmentapplicationElemID,
-      'entities',
-      customsegment_segmentapplication_entities,
-      {
+    },
+    {
+      name: 'entities',
+      type: customsegment_segmentapplication_entities,
+      annotations: {
       },
-    ),
-    items: new Field(
-      customsegment_segmentapplicationElemID,
-      'items',
-      customsegment_segmentapplication_items,
-      {
+    },
+    {
+      name: 'items',
+      type: customsegment_segmentapplication_items,
+      annotations: {
       },
-    ),
-    transactionbody: new Field(
-      customsegment_segmentapplicationElemID,
-      'transactionbody',
-      customsegment_segmentapplication_transactionbody,
-      {
+    },
+    {
+      name: 'transactionbody',
+      type: customsegment_segmentapplication_transactionbody,
+      annotations: {
       },
-    ),
-    transactionline: new Field(
-      customsegment_segmentapplicationElemID,
-      'transactionline',
-      customsegment_segmentapplication_transactionline,
-      {
+    },
+    {
+      name: 'transactionline',
+      type: customsegment_segmentapplication_transactionline,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })
 
@@ -611,119 +569,104 @@ export const customsegment = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'cseg_',
   },
-  fields: {
-    scriptid: new Field(
-      customsegmentElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 19 characters long.   The default value is ‘cseg’. */
-    label: new Field(
-      customsegmentElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 19 characters long.   The default value is ‘cseg’. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    recordtype: new Field(
-      customsegmentElemID,
-      'recordtype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    {
+      name: 'recordtype',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the customrecordtype custom type. */
-    filteredby: new Field(
-      customsegmentElemID,
-      'filteredby',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: This field accepts references to the customrecordtype custom type. */
+    {
+      name: 'filteredby',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the customsegment custom type.   For information about other possible values, see customsegment_parent. */
-    fieldtype: new Field(
-      customsegmentElemID,
-      'fieldtype',
-      enums.customsegment_fieldtype,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the customsegment custom type.   For information about other possible values, see customsegment_parent. */
+    {
+      name: 'fieldtype',
+      type: enums.customsegment_fieldtype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see customsegment_fieldtype. */
-    description: new Field(
-      customsegmentElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see customsegment_fieldtype. */
+    {
+      name: 'description',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    help: new Field(
-      customsegmentElemID,
-      'help',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    {
+      name: 'help',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    hasglimpact: new Field(
-      customsegmentElemID,
-      'hasglimpact',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    {
+      name: 'hasglimpact',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    ismandatory: new Field(
-      customsegmentElemID,
-      'ismandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'ismandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    defaultselection: new Field(
-      customsegmentElemID,
-      'defaultselection',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'defaultselection',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is available when the fieldtype value is not equal to MULTISELECT.   This field accepts references to the instance custom type. */
-    defaultrecordaccesslevel: new Field(
-      customsegmentElemID,
-      'defaultrecordaccesslevel',
-      enums.customsegment_access_search_level,
-      {
+    }, /* Original description: This field is available when the fieldtype value is not equal to MULTISELECT.   This field accepts references to the instance custom type. */
+    {
+      name: 'defaultrecordaccesslevel',
+      type: enums.customsegment_access_search_level,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see customsegment_access_search_level. */
-    defaultsearchaccesslevel: new Field(
-      customsegmentElemID,
-      'defaultsearchaccesslevel',
-      enums.customsegment_access_search_level,
-      {
+    }, /* Original description: For information about possible values, see customsegment_access_search_level. */
+    {
+      name: 'defaultsearchaccesslevel',
+      type: enums.customsegment_access_search_level,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see customsegment_access_search_level. */
-    valuesdisplayorder: new Field(
-      customsegmentElemID,
-      'valuesdisplayorder',
-      enums.customsegment_valuesdisplayorder,
-      {
+    }, /* Original description: For information about possible values, see customsegment_access_search_level. */
+    {
+      name: 'valuesdisplayorder',
+      type: enums.customsegment_valuesdisplayorder,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see customsegment_valuesdisplayorder. */
-    permissions: new Field(
-      customsegmentElemID,
-      'permissions',
-      customsegment_permissions,
-      {
+    }, /* Original description: For information about possible values, see customsegment_valuesdisplayorder. */
+    {
+      name: 'permissions',
+      type: customsegment_permissions,
+      annotations: {
       },
-    ),
-    segmentapplication: new Field(
-      customsegmentElemID,
-      'segmentapplication',
-      customsegment_segmentapplication,
-      {
+    },
+    {
+      name: 'segmentapplication',
+      type: customsegment_segmentapplication,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customsegmentElemID.name],
 })

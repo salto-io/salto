@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 
@@ -29,39 +29,35 @@ const customlist_customvalues_customvalue = new ObjectType({
   elemID: customlist_customvalues_customvalueElemID,
   annotations: {
   },
-  fields: {
-    scriptid: new Field(
-      customlist_customvalues_customvalueElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long. */
-    value: new Field(
-      customlist_customvalues_customvalueElemID,
-      'value',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long. */
+    {
+      name: 'value',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    abbreviation: new Field(
-      customlist_customvalues_customvalueElemID,
-      'abbreviation',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'abbreviation',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the ismatrixoption value is equal to T.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
-    isinactive: new Field(
-      customlist_customvalues_customvalueElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is mandatory when the ismatrixoption value is equal to T.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
+    {
+      name: 'isinactive',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
 })
 
@@ -73,15 +69,14 @@ const customlist_customvalues = new ObjectType({
   elemID: customlist_customvaluesElemID,
   annotations: {
   },
-  fields: {
-    customvalue: new Field(
-      customlist_customvaluesElemID,
-      'customvalue',
-      new ListType(customlist_customvalues_customvalue),
-      {
+  fields: [
+    {
+      name: 'customvalue',
+      type: new ListType(customlist_customvalues_customvalue),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
 })
 
@@ -93,60 +88,53 @@ export const customlist = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customlist_',
   },
-  fields: {
-    scriptid: new Field(
-      customlistElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘customlist’. */
-    name: new Field(
-      customlistElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘customlist’. */
+    {
+      name: 'name',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
-    ), /* Original description: This field value can be up to 30 characters long. */
-    description: new Field(
-      customlistElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 30 characters long. */
+    {
+      name: 'description',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    isinactive: new Field(
-      customlistElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'isinactive',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    ismatrixoption: new Field(
-      customlistElemID,
-      'ismatrixoption',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'ismatrixoption',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
-    isordered: new Field(
-      customlistElemID,
-      'isordered',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
+    {
+      name: 'isordered',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    customvalues: new Field(
-      customlistElemID,
-      'customvalues',
-      customlist_customvalues,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'customvalues',
+      type: customlist_customvalues,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
 })

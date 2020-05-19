@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -30,31 +30,28 @@ const entryForm_actionbar_buttons_button = new ObjectType({
   elemID: entryForm_actionbar_buttons_buttonElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_actionbar_buttons_buttonElemID,
-      'id',
-      enums.entryform_buttonid,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: enums.entryform_buttonid,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see entryform_buttonid. */
-    label: new Field(
-      entryForm_actionbar_buttons_buttonElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see entryform_buttonid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    visible: new Field(
-      entryForm_actionbar_buttons_buttonElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-  },
+    }, /* Original description: The default value is T. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -66,15 +63,14 @@ const entryForm_actionbar_buttons = new ObjectType({
   elemID: entryForm_actionbar_buttonsElemID,
   annotations: {
   },
-  fields: {
-    button: new Field(
-      entryForm_actionbar_buttonsElemID,
-      'button',
-      new ListType(entryForm_actionbar_buttons_button),
-      {
+  fields: [
+    {
+      name: 'button',
+      type: new ListType(entryForm_actionbar_buttons_button),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -86,25 +82,23 @@ const entryForm_actionbar_customButtons_customButton = new ObjectType({
   elemID: entryForm_actionbar_customButtons_customButtonElemID,
   annotations: {
   },
-  fields: {
-    label: new Field(
-      entryForm_actionbar_customButtons_customButtonElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+  fields: [
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    ), /* Original description: This field value can be up to 99 characters long. */
-    function: new Field(
-      entryForm_actionbar_customButtons_customButtonElemID,
-      'function',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 99 characters long. */
+    {
+      name: 'function',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
-  },
+    }, /* Original description: This field value can be up to 200 characters long. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -116,15 +110,14 @@ const entryForm_actionbar_customButtons = new ObjectType({
   elemID: entryForm_actionbar_customButtonsElemID,
   annotations: {
   },
-  fields: {
-    customButton: new Field(
-      entryForm_actionbar_customButtonsElemID,
-      'customButton',
-      new ListType(entryForm_actionbar_customButtons_customButton),
-      {
+  fields: [
+    {
+      name: 'customButton',
+      type: new ListType(entryForm_actionbar_customButtons_customButton),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -136,25 +129,23 @@ const entryForm_actionbar_customMenu_customMenuItem = new ObjectType({
   elemID: entryForm_actionbar_customMenu_customMenuItemElemID,
   annotations: {
   },
-  fields: {
-    label: new Field(
-      entryForm_actionbar_customMenu_customMenuItemElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+  fields: [
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    ), /* Original description: This field value can be up to 99 characters long. */
-    function: new Field(
-      entryForm_actionbar_customMenu_customMenuItemElemID,
-      'function',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 99 characters long. */
+    {
+      name: 'function',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
-  },
+    }, /* Original description: This field value can be up to 200 characters long. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -166,15 +157,14 @@ const entryForm_actionbar_customMenu = new ObjectType({
   elemID: entryForm_actionbar_customMenuElemID,
   annotations: {
   },
-  fields: {
-    customMenuItem: new Field(
-      entryForm_actionbar_customMenuElemID,
-      'customMenuItem',
-      new ListType(entryForm_actionbar_customMenu_customMenuItem),
-      {
+  fields: [
+    {
+      name: 'customMenuItem',
+      type: new ListType(entryForm_actionbar_customMenu_customMenuItem),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -186,31 +176,28 @@ const entryForm_actionbar_menu_menuitem = new ObjectType({
   elemID: entryForm_actionbar_menu_menuitemElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_actionbar_menu_menuitemElemID,
-      'id',
-      enums.entryform_buttonid,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: enums.entryform_buttonid,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see entryform_buttonid. */
-    label: new Field(
-      entryForm_actionbar_menu_menuitemElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see entryform_buttonid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    visible: new Field(
-      entryForm_actionbar_menu_menuitemElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-  },
+    }, /* Original description: The default value is T. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -222,15 +209,14 @@ const entryForm_actionbar_menu = new ObjectType({
   elemID: entryForm_actionbar_menuElemID,
   annotations: {
   },
-  fields: {
-    menuitem: new Field(
-      entryForm_actionbar_menuElemID,
-      'menuitem',
-      new ListType(entryForm_actionbar_menu_menuitem),
-      {
+  fields: [
+    {
+      name: 'menuitem',
+      type: new ListType(entryForm_actionbar_menu_menuitem),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -242,36 +228,32 @@ const entryForm_actionbar = new ObjectType({
   elemID: entryForm_actionbarElemID,
   annotations: {
   },
-  fields: {
-    buttons: new Field(
-      entryForm_actionbarElemID,
-      'buttons',
-      entryForm_actionbar_buttons,
-      {
+  fields: [
+    {
+      name: 'buttons',
+      type: entryForm_actionbar_buttons,
+      annotations: {
       },
-    ),
-    customButtons: new Field(
-      entryForm_actionbarElemID,
-      'customButtons',
-      entryForm_actionbar_customButtons,
-      {
+    },
+    {
+      name: 'customButtons',
+      type: entryForm_actionbar_customButtons,
+      annotations: {
       },
-    ),
-    customMenu: new Field(
-      entryForm_actionbarElemID,
-      'customMenu',
-      entryForm_actionbar_customMenu,
-      {
+    },
+    {
+      name: 'customMenu',
+      type: entryForm_actionbar_customMenu,
+      annotations: {
       },
-    ),
-    menu: new Field(
-      entryForm_actionbarElemID,
-      'menu',
-      entryForm_actionbar_menu,
-      {
+    },
+    {
+      name: 'menu',
+      type: entryForm_actionbar_menu,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -283,37 +265,33 @@ const entryForm_buttons_standardButtons_button = new ObjectType({
   elemID: entryForm_buttons_standardButtons_buttonElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_buttons_standardButtons_buttonElemID,
-      'id',
-      enums.entryform_buttonid,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: enums.entryform_buttonid,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see entryform_buttonid. */
-    label: new Field(
-      entryForm_buttons_standardButtons_buttonElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see entryform_buttonid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      entryForm_buttons_standardButtons_buttonElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    style: new Field(
-      entryForm_buttons_standardButtons_buttonElemID,
-      'style',
-      enums.form_buttonstyle,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'style',
+      type: enums.form_buttonstyle,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_buttonstyle.   The default value is 'BUTTON'. */
-  },
+    }, /* Original description: For information about possible values, see form_buttonstyle.   The default value is 'BUTTON'. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -325,15 +303,14 @@ const entryForm_buttons_standardButtons = new ObjectType({
   elemID: entryForm_buttons_standardButtonsElemID,
   annotations: {
   },
-  fields: {
-    button: new Field(
-      entryForm_buttons_standardButtonsElemID,
-      'button',
-      new ListType(entryForm_buttons_standardButtons_button),
-      {
+  fields: [
+    {
+      name: 'button',
+      type: new ListType(entryForm_buttons_standardButtons_button),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -345,15 +322,14 @@ const entryForm_buttons = new ObjectType({
   elemID: entryForm_buttonsElemID,
   annotations: {
   },
-  fields: {
-    standardButtons: new Field(
-      entryForm_buttonsElemID,
-      'standardButtons',
-      entryForm_buttons_standardButtons,
-      {
+  fields: [
+    {
+      name: 'standardButtons',
+      type: entryForm_buttons_standardButtons,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -365,15 +341,14 @@ const entryForm_customCode = new ObjectType({
   elemID: entryForm_customCodeElemID,
   annotations: {
   },
-  fields: {
-    scriptFile: new Field(
-      entryForm_customCodeElemID,
-      'scriptFile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+  fields: [
+    {
+      name: 'scriptFile',
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
       },
-    ), /* Original description: This field must reference a .js file. */
-  },
+    }, /* Original description: This field must reference a .js file. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -385,72 +360,63 @@ const entryForm_mainFields_defaultFieldGroup_fields_field = new ObjectType({
   elemID: entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
-    label: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'mandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'displayType',
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    {
+      name: 'columnBreak',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'spaceBefore',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'sameRowAsPrevious',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      entryForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'quickAdd',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -462,24 +428,22 @@ const entryForm_mainFields_defaultFieldGroup_fields = new ObjectType({
   elemID: entryForm_mainFields_defaultFieldGroup_fieldsElemID,
   annotations: {
   },
-  fields: {
-    position: new Field(
-      entryForm_mainFields_defaultFieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+  fields: [
+    {
+      name: 'position',
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      entryForm_mainFields_defaultFieldGroup_fieldsElemID,
-      'field',
-      new ListType(entryForm_mainFields_defaultFieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    {
+      name: 'field',
+      type: new ListType(entryForm_mainFields_defaultFieldGroup_fields_field),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -491,15 +455,14 @@ const entryForm_mainFields_defaultFieldGroup = new ObjectType({
   elemID: entryForm_mainFields_defaultFieldGroupElemID,
   annotations: {
   },
-  fields: {
-    fields: new Field(
-      entryForm_mainFields_defaultFieldGroupElemID,
-      'fields',
-      entryForm_mainFields_defaultFieldGroup_fields,
-      {
+  fields: [
+    {
+      name: 'fields',
+      type: entryForm_mainFields_defaultFieldGroup_fields,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -511,72 +474,63 @@ const entryForm_mainFields_fieldGroup_fields_field = new ObjectType({
   elemID: entryForm_mainFields_fieldGroup_fields_fieldElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
-    label: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'mandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'displayType',
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    {
+      name: 'columnBreak',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'spaceBefore',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'sameRowAsPrevious',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      entryForm_mainFields_fieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'quickAdd',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -588,24 +542,22 @@ const entryForm_mainFields_fieldGroup_fields = new ObjectType({
   elemID: entryForm_mainFields_fieldGroup_fieldsElemID,
   annotations: {
   },
-  fields: {
-    position: new Field(
-      entryForm_mainFields_fieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+  fields: [
+    {
+      name: 'position',
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      entryForm_mainFields_fieldGroup_fieldsElemID,
-      'field',
-      new ListType(entryForm_mainFields_fieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    {
+      name: 'field',
+      type: new ListType(entryForm_mainFields_fieldGroup_fields_field),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -617,53 +569,47 @@ const entryForm_mainFields_fieldGroup = new ObjectType({
   elemID: entryForm_mainFields_fieldGroupElemID,
   annotations: {
   },
-  fields: {
-    scriptid: new Field(
-      entryForm_mainFields_fieldGroupElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long. */
-    label: new Field(
-      entryForm_mainFields_fieldGroupElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      entryForm_mainFields_fieldGroupElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showTitle: new Field(
-      entryForm_mainFields_fieldGroupElemID,
-      'showTitle',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'showTitle',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    singleColumn: new Field(
-      entryForm_mainFields_fieldGroupElemID,
-      'singleColumn',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'singleColumn',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fields: new Field(
-      entryForm_mainFields_fieldGroupElemID,
-      'fields',
-      entryForm_mainFields_fieldGroup_fields,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fields',
+      type: entryForm_mainFields_fieldGroup_fields,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -675,22 +621,20 @@ const entryForm_mainFields = new ObjectType({
   elemID: entryForm_mainFieldsElemID,
   annotations: {
   },
-  fields: {
-    defaultFieldGroup: new Field(
-      entryForm_mainFieldsElemID,
-      'defaultFieldGroup',
-      entryForm_mainFields_defaultFieldGroup,
-      {
+  fields: [
+    {
+      name: 'defaultFieldGroup',
+      type: entryForm_mainFields_defaultFieldGroup,
+      annotations: {
       },
-    ),
-    fieldGroup: new Field(
-      entryForm_mainFieldsElemID,
-      'fieldGroup',
-      new ListType(entryForm_mainFields_fieldGroup),
-      {
+    },
+    {
+      name: 'fieldGroup',
+      type: new ListType(entryForm_mainFields_fieldGroup),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -702,16 +646,15 @@ const entryForm_quickViewFields_field = new ObjectType({
   elemID: entryForm_quickViewFields_fieldElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_quickViewFields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
-  },
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -723,15 +666,14 @@ const entryForm_quickViewFields = new ObjectType({
   elemID: entryForm_quickViewFieldsElemID,
   annotations: {
   },
-  fields: {
-    field: new Field(
-      entryForm_quickViewFieldsElemID,
-      'field',
-      new ListType(entryForm_quickViewFields_field),
-      {
+  fields: [
+    {
+      name: 'field',
+      type: new ListType(entryForm_quickViewFields_field),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -743,72 +685,63 @@ const entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field = new Object
   elemID: entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
-    label: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'mandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'displayType',
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    {
+      name: 'columnBreak',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'spaceBefore',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'sameRowAsPrevious',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'quickAdd',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -820,24 +753,22 @@ const entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields = new ObjectType({
   elemID: entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fieldsElemID,
   annotations: {
   },
-  fields: {
-    position: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+  fields: [
+    {
+      name: 'position',
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fieldsElemID,
-      'field',
-      new ListType(entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    {
+      name: 'field',
+      type: new ListType(entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -849,15 +780,14 @@ const entryForm_tabs_tab_fieldGroups_defaultFieldGroup = new ObjectType({
   elemID: entryForm_tabs_tab_fieldGroups_defaultFieldGroupElemID,
   annotations: {
   },
-  fields: {
-    fields: new Field(
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroupElemID,
-      'fields',
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields,
-      {
+  fields: [
+    {
+      name: 'fields',
+      type: entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -869,72 +799,63 @@ const entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field = new ObjectType({
   elemID: entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
-    label: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'mandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'displayType',
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    {
+      name: 'columnBreak',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'spaceBefore',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'sameRowAsPrevious',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'quickAdd',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -946,24 +867,22 @@ const entryForm_tabs_tab_fieldGroups_fieldGroup_fields = new ObjectType({
   elemID: entryForm_tabs_tab_fieldGroups_fieldGroup_fieldsElemID,
   annotations: {
   },
-  fields: {
-    position: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+  fields: [
+    {
+      name: 'position',
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fieldsElemID,
-      'field',
-      new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    {
+      name: 'field',
+      type: new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -975,53 +894,47 @@ const entryForm_tabs_tab_fieldGroups_fieldGroup = new ObjectType({
   elemID: entryForm_tabs_tab_fieldGroups_fieldGroupElemID,
   annotations: {
   },
-  fields: {
-    scriptid: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long. */
-    label: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showTitle: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'showTitle',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'showTitle',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    singleColumn: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'singleColumn',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'singleColumn',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fields: new Field(
-      entryForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'fields',
-      entryForm_tabs_tab_fieldGroups_fieldGroup_fields,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fields',
+      type: entryForm_tabs_tab_fieldGroups_fieldGroup_fields,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1033,22 +946,20 @@ const entryForm_tabs_tab_fieldGroups = new ObjectType({
   elemID: entryForm_tabs_tab_fieldGroupsElemID,
   annotations: {
   },
-  fields: {
-    defaultFieldGroup: new Field(
-      entryForm_tabs_tab_fieldGroupsElemID,
-      'defaultFieldGroup',
-      entryForm_tabs_tab_fieldGroups_defaultFieldGroup,
-      {
+  fields: [
+    {
+      name: 'defaultFieldGroup',
+      type: entryForm_tabs_tab_fieldGroups_defaultFieldGroup,
+      annotations: {
       },
-    ),
-    fieldGroup: new Field(
-      entryForm_tabs_tab_fieldGroupsElemID,
-      'fieldGroup',
-      new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup),
-      {
+    },
+    {
+      name: 'fieldGroup',
+      type: new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1060,31 +971,28 @@ const entryForm_tabs_tab_subItems_subList = new ObjectType({
   elemID: entryForm_tabs_tab_subItems_subListElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_tabs_tab_subItems_subListElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactionbodycustomfield   itemcustomfield   entitycustomfield   recordsublist   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_sublistid. */
-    label: new Field(
-      entryForm_tabs_tab_subItems_subListElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactionbodycustomfield   itemcustomfield   entitycustomfield   recordsublist   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_sublistid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_subItems_subListElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-  },
+    }, /* Original description: The default value is T. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1096,31 +1004,28 @@ const entryForm_tabs_tab_subItems_subLists_subList = new ObjectType({
   elemID: entryForm_tabs_tab_subItems_subLists_subListElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_tabs_tab_subItems_subLists_subListElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactionbodycustomfield   itemcustomfield   entitycustomfield   recordsublist   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_sublistid. */
-    label: new Field(
-      entryForm_tabs_tab_subItems_subLists_subListElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactionbodycustomfield   itemcustomfield   entitycustomfield   recordsublist   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_sublistid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_subItems_subLists_subListElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-  },
+    }, /* Original description: The default value is T. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1132,15 +1037,14 @@ const entryForm_tabs_tab_subItems_subLists = new ObjectType({
   elemID: entryForm_tabs_tab_subItems_subListsElemID,
   annotations: {
   },
-  fields: {
-    subList: new Field(
-      entryForm_tabs_tab_subItems_subListsElemID,
-      'subList',
-      new ListType(entryForm_tabs_tab_subItems_subLists_subList),
-      {
+  fields: [
+    {
+      name: 'subList',
+      type: new ListType(entryForm_tabs_tab_subItems_subLists_subList),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1152,72 +1056,63 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fi
   elemID: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
-    label: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'mandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'displayType',
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    {
+      name: 'columnBreak',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'spaceBefore',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'sameRowAsPrevious',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'quickAdd',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1229,24 +1124,22 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields = 
   elemID: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fieldsElemID,
   annotations: {
   },
-  fields: {
-    position: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+  fields: [
+    {
+      name: 'position',
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fieldsElemID,
-      'field',
-      new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    {
+      name: 'field',
+      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1258,15 +1151,14 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup = new Obj
   elemID: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroupElemID,
   annotations: {
   },
-  fields: {
-    fields: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroupElemID,
-      'fields',
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields,
-      {
+  fields: [
+    {
+      name: 'fields',
+      type: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1278,72 +1170,63 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field = n
   elemID: entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
-    label: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see entryform_fieldid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'mandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'displayType',
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    {
+      name: 'columnBreak',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'spaceBefore',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'sameRowAsPrevious',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'quickAdd',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-  },
+    }, /* Original description: The default value is F. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1355,24 +1238,22 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields = new Obj
   elemID: entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fieldsElemID,
   annotations: {
   },
-  fields: {
-    position: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+  fields: [
+    {
+      name: 'position',
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fieldsElemID,
-      'field',
-      new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    {
+      name: 'field',
+      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1384,53 +1265,47 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup = new ObjectType
   elemID: entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
   annotations: {
   },
-  fields: {
-    scriptid: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long. */
-    label: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showTitle: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'showTitle',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'showTitle',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    singleColumn: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'singleColumn',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'singleColumn',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fields: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'fields',
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fields',
+      type: entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1442,22 +1317,20 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups = new ObjectType({
   elemID: entryForm_tabs_tab_subItems_subTab_fieldGroupsElemID,
   annotations: {
   },
-  fields: {
-    defaultFieldGroup: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroupsElemID,
-      'defaultFieldGroup',
-      entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
-      {
+  fields: [
+    {
+      name: 'defaultFieldGroup',
+      type: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
+      annotations: {
       },
-    ),
-    fieldGroup: new Field(
-      entryForm_tabs_tab_subItems_subTab_fieldGroupsElemID,
-      'fieldGroup',
-      new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
-      {
+    },
+    {
+      name: 'fieldGroup',
+      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1469,38 +1342,34 @@ const entryForm_tabs_tab_subItems_subTab = new ObjectType({
   elemID: entryForm_tabs_tab_subItems_subTabElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_tabs_tab_subItems_subTabElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see entryform_subtabid. */
-    label: new Field(
-      entryForm_tabs_tab_subItems_subTabElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see entryform_subtabid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tab_subItems_subTabElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    fieldGroups: new Field(
-      entryForm_tabs_tab_subItems_subTabElemID,
-      'fieldGroups',
-      entryForm_tabs_tab_subItems_subTab_fieldGroups,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'fieldGroups',
+      type: entryForm_tabs_tab_subItems_subTab_fieldGroups,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1512,29 +1381,26 @@ const entryForm_tabs_tab_subItems = new ObjectType({
   elemID: entryForm_tabs_tab_subItemsElemID,
   annotations: {
   },
-  fields: {
-    subList: new Field(
-      entryForm_tabs_tab_subItemsElemID,
-      'subList',
-      new ListType(entryForm_tabs_tab_subItems_subList),
-      {
+  fields: [
+    {
+      name: 'subList',
+      type: new ListType(entryForm_tabs_tab_subItems_subList),
+      annotations: {
       },
-    ),
-    subLists: new Field(
-      entryForm_tabs_tab_subItemsElemID,
-      'subLists',
-      new ListType(entryForm_tabs_tab_subItems_subLists),
-      {
+    },
+    {
+      name: 'subLists',
+      type: new ListType(entryForm_tabs_tab_subItems_subLists),
+      annotations: {
       },
-    ),
-    subTab: new Field(
-      entryForm_tabs_tab_subItemsElemID,
-      'subTab',
-      new ListType(entryForm_tabs_tab_subItems_subTab),
-      {
+    },
+    {
+      name: 'subTab',
+      type: new ListType(entryForm_tabs_tab_subItems_subTab),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1546,45 +1412,40 @@ const entryForm_tabs_tab = new ObjectType({
   elemID: entryForm_tabs_tabElemID,
   annotations: {
   },
-  fields: {
-    id: new Field(
-      entryForm_tabs_tabElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'id',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see entryform_tabid. */
-    label: new Field(
-      entryForm_tabs_tabElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see entryform_tabid. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      entryForm_tabs_tabElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'visible',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    fieldGroups: new Field(
-      entryForm_tabs_tabElemID,
-      'fieldGroups',
-      entryForm_tabs_tab_fieldGroups,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'fieldGroups',
+      type: entryForm_tabs_tab_fieldGroups,
+      annotations: {
       },
-    ),
-    subItems: new Field(
-      entryForm_tabs_tabElemID,
-      'subItems',
-      entryForm_tabs_tab_subItems,
-      {
+    },
+    {
+      name: 'subItems',
+      type: entryForm_tabs_tab_subItems,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1596,15 +1457,14 @@ const entryForm_tabs = new ObjectType({
   elemID: entryForm_tabsElemID,
   annotations: {
   },
-  fields: {
-    tab: new Field(
-      entryForm_tabsElemID,
-      'tab',
-      new ListType(entryForm_tabs_tab),
-      {
+  fields: [
+    {
+      name: 'tab',
+      type: new ListType(entryForm_tabs_tab),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })
 
@@ -1616,116 +1476,101 @@ export const entryForm = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custform_',
   },
-  fields: {
-    scriptid: new Field(
-      entryFormElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
-    standard: new Field(
-      entryFormElemID,
-      'standard',
-      enums.entryform_standard,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
+    {
+      name: 'standard',
+      type: enums.entryform_standard,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see entryform_standard. */
-    name: new Field(
-      entryFormElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see entryform_standard. */
+    {
+      name: 'name',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
-    ),
-    recordType: new Field(
-      entryFormElemID,
-      'recordType',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    },
+    {
+      name: 'recordType',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the customrecordtype custom type. */
-    inactive: new Field(
-      entryFormElemID,
-      'inactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the customrecordtype custom type. */
+    {
+      name: 'inactive',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    preferred: new Field(
-      entryFormElemID,
-      'preferred',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'preferred',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    storedWithRecord: new Field(
-      entryFormElemID,
-      'storedWithRecord',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'storedWithRecord',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    useForPopup: new Field(
-      entryFormElemID,
-      'useForPopup',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'useForPopup',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    editingInList: new Field(
-      entryFormElemID,
-      'editingInList',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'editingInList',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    actionbar: new Field(
-      entryFormElemID,
-      'actionbar',
-      entryForm_actionbar,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'actionbar',
+      type: entryForm_actionbar,
+      annotations: {
       },
-    ),
-    buttons: new Field(
-      entryFormElemID,
-      'buttons',
-      entryForm_buttons,
-      {
+    },
+    {
+      name: 'buttons',
+      type: entryForm_buttons,
+      annotations: {
       },
-    ),
-    customCode: new Field(
-      entryFormElemID,
-      'customCode',
-      entryForm_customCode,
-      {
+    },
+    {
+      name: 'customCode',
+      type: entryForm_customCode,
+      annotations: {
       },
-    ),
-    mainFields: new Field(
-      entryFormElemID,
-      'mainFields',
-      entryForm_mainFields,
-      {
+    },
+    {
+      name: 'mainFields',
+      type: entryForm_mainFields,
+      annotations: {
       },
-    ),
-    quickViewFields: new Field(
-      entryFormElemID,
-      'quickViewFields',
-      entryForm_quickViewFields,
-      {
+    },
+    {
+      name: 'quickViewFields',
+      type: entryForm_quickViewFields,
+      annotations: {
       },
-    ),
-    tabs: new Field(
-      entryFormElemID,
-      'tabs',
-      entryForm_tabs,
-      {
+    },
+    {
+      name: 'tabs',
+      type: entryForm_tabs,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })

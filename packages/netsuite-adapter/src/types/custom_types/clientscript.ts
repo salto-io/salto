@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -30,23 +30,21 @@ const clientscript_buttons_button = new ObjectType({
   elemID: clientscript_buttons_buttonElemID,
   annotations: {
   },
-  fields: {
-    buttonlabel: new Field(
-      clientscript_buttons_buttonElemID,
-      'buttonlabel',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'buttonlabel',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the string custom type. */
-    buttonfunction: new Field(
-      clientscript_buttons_buttonElemID,
-      'buttonfunction',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the string custom type. */
+    {
+      name: 'buttonfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -58,15 +56,14 @@ const clientscript_buttons = new ObjectType({
   elemID: clientscript_buttonsElemID,
   annotations: {
   },
-  fields: {
-    button: new Field(
-      clientscript_buttonsElemID,
-      'button',
-      new ListType(clientscript_buttons_button),
-      {
+  fields: [
+    {
+      name: 'button',
+      type: new ListType(clientscript_buttons_button),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -78,16 +75,15 @@ const clientscript_libraries_library = new ObjectType({
   elemID: clientscript_libraries_libraryElemID,
   annotations: {
   },
-  fields: {
-    scriptfile: new Field(
-      clientscript_libraries_libraryElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+  fields: [
+    {
+      name: 'scriptfile',
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
-  },
+    }, /* Original description: This field must reference a .js file. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -99,15 +95,14 @@ const clientscript_libraries = new ObjectType({
   elemID: clientscript_librariesElemID,
   annotations: {
   },
-  fields: {
-    library: new Field(
-      clientscript_librariesElemID,
-      'library',
-      new ListType(clientscript_libraries_library),
-      {
+  fields: [
+    {
+      name: 'library',
+      type: new ListType(clientscript_libraries_library),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -119,65 +114,57 @@ const clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_custo
   elemID: clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
   annotations: {
   },
-  fields: {
-    fldfilter: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilter',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'fldfilter',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    fldfilterchecked: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    {
+      name: 'fldfilterchecked',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfiltercomparetype: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltercomparetype',
-      enums.generic_customfield_fldfiltercomparetype,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fldfiltercomparetype',
+      type: enums.generic_customfield_fldfiltercomparetype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    fldfiltersel: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltersel',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
+    {
+      name: 'fldfiltersel',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    fldfilterval: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterval',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    {
+      name: 'fldfilterval',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    fldfilternotnull: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternotnull',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'fldfilternotnull',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfilternull: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternull',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fldfilternull',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldcomparefield: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldcomparefield',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fldcomparefield',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-  },
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -189,15 +176,14 @@ const clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters = new
   elemID: clientscript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID,
   annotations: {
   },
-  fields: {
-    customfieldfilter: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID,
-      'customfieldfilter',
-      new ListType(clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
-      {
+  fields: [
+    {
+      name: 'customfieldfilter',
+      type: new ListType(clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -209,32 +195,29 @@ const clientscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess 
   elemID: clientscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
   annotations: {
   },
-  fields: {
-    role: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'role',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+  fields: [
+    {
+      name: 'role',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    accesslevel: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
+    {
+      name: 'accesslevel',
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    searchlevel: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+    {
+      name: 'searchlevel',
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-  },
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -246,15 +229,14 @@ const clientscript_scriptcustomfields_scriptcustomfield_roleaccesses = new Objec
   elemID: clientscript_scriptcustomfields_scriptcustomfield_roleaccessesElemID,
   annotations: {
   },
-  fields: {
-    roleaccess: new Field(
-      clientscript_scriptcustomfields_scriptcustomfield_roleaccessesElemID,
-      'roleaccess',
-      new ListType(clientscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
-      {
+  fields: [
+    {
+      name: 'roleaccess',
+      type: new ListType(clientscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -266,223 +248,193 @@ const clientscript_scriptcustomfields_scriptcustomfield = new ObjectType({
   elemID: clientscript_scriptcustomfields_scriptcustomfieldElemID,
   annotations: {
   },
-  fields: {
-    scriptid: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */
-    fieldtype: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'fieldtype',
-      enums.generic_customfield_fieldtype,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */
+    {
+      name: 'fieldtype',
+      type: enums.generic_customfield_fieldtype,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    label: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
+    {
+      name: 'label',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
-    selectrecordtype: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'selectrecordtype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value can be up to 200 characters long. */
+    {
+      name: 'selectrecordtype',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    applyformatting: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'applyformatting',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
+    {
+      name: 'applyformatting',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    defaultchecked: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'defaultchecked',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    defaultselection: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultselection',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'defaultselection',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    defaultvalue: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultvalue',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    {
+      name: 'defaultvalue',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    description: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'description',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    displaytype: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'displaytype',
-      enums.generic_customfield_displaytype,
-      {
+    },
+    {
+      name: 'displaytype',
+      type: enums.generic_customfield_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    dynamicdefault: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'dynamicdefault',
-      enums.generic_customfield_dynamicdefault,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
+    {
+      name: 'dynamicdefault',
+      type: enums.generic_customfield_dynamicdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    help: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'help',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
+    {
+      name: 'help',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    linktext: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'linktext',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'linktext',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    minvalue: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'minvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'minvalue',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    maxvalue: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'maxvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'maxvalue',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    storevalue: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'storevalue',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    {
+      name: 'storevalue',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    accesslevel: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'accesslevel',
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    checkspelling: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'checkspelling',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    {
+      name: 'checkspelling',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayheight: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'displayheight',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'displayheight',
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    displaywidth: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'displaywidth',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    {
+      name: 'displaywidth',
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    isformula: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'isformula',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    {
+      name: 'isformula',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    ismandatory: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'ismandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'ismandatory',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    maxlength: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'maxlength',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'maxlength',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    onparentdelete: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'onparentdelete',
-      enums.generic_customfield_onparentdelete,
-      {
+    },
+    {
+      name: 'onparentdelete',
+      type: enums.generic_customfield_onparentdelete,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
-    searchcomparefield: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'searchcomparefield',
-      enums.generic_standard_field,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
+    {
+      name: 'searchcomparefield',
+      type: enums.generic_standard_field,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    searchdefault: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'searchdefault',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    {
+      name: 'searchdefault',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type. */
-    searchlevel: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type. */
+    {
+      name: 'searchlevel',
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    setting: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'setting',
-      enums.script_setting,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    {
+      name: 'setting',
+      type: enums.script_setting,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_setting. */
-    customfieldfilters: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'customfieldfilters',
-      clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters,
-      {
+    }, /* Original description: For information about possible values, see script_setting. */
+    {
+      name: 'customfieldfilters',
+      type: clientscript_scriptcustomfields_scriptcustomfield_customfieldfilters,
+      annotations: {
       },
-    ),
-    roleaccesses: new Field(
-      clientscript_scriptcustomfields_scriptcustomfieldElemID,
-      'roleaccesses',
-      clientscript_scriptcustomfields_scriptcustomfield_roleaccesses,
-      {
+    },
+    {
+      name: 'roleaccesses',
+      type: clientscript_scriptcustomfields_scriptcustomfield_roleaccesses,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -494,15 +446,14 @@ const clientscript_scriptcustomfields = new ObjectType({
   elemID: clientscript_scriptcustomfieldsElemID,
   annotations: {
   },
-  fields: {
-    scriptcustomfield: new Field(
-      clientscript_scriptcustomfieldsElemID,
-      'scriptcustomfield',
-      new ListType(clientscript_scriptcustomfields_scriptcustomfield),
-      {
+  fields: [
+    {
+      name: 'scriptcustomfield',
+      type: new ListType(clientscript_scriptcustomfields_scriptcustomfield),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -514,131 +465,114 @@ const clientscript_scriptdeployments_scriptdeployment = new ObjectType({
   elemID: clientscript_scriptdeployments_scriptdeploymentElemID,
   annotations: {
   },
-  fields: {
-    scriptid: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */
-    status: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'status',
-      enums.script_status,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */
+    {
+      name: 'status',
+      type: enums.script_status,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
-    recordtype: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'recordtype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
+    {
+      name: 'recordtype',
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see the following lists:   scriptdeployment_recordtype   allrecord_script_deployment_recordtype */
-    allemployees: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'allemployees',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see the following lists:   scriptdeployment_recordtype   allrecord_script_deployment_recordtype */
+    {
+      name: 'allemployees',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    allpartners: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'allpartners',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'allpartners',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
-    allroles: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'allroles',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
+    {
+      name: 'allroles',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    auddepartment: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'auddepartment',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'auddepartment',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the DEPARTMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. DEPARTMENTS must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
-    audemployee: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'audemployee',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the DEPARTMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. DEPARTMENTS must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
+    {
+      name: 'audemployee',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   Note Account-specific values are not supported by SDF. */
-    audgroup: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'audgroup',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   Note Account-specific values are not supported by SDF. */
+    {
+      name: 'audgroup',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   Note Account-specific values are not supported by SDF. */
-    audpartner: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'audpartner',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   Note Account-specific values are not supported by SDF. */
+    {
+      name: 'audpartner',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
-    audslctrole: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'audslctrole',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
+    {
+      name: 'audslctrole',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
-    audsubsidiary: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'audsubsidiary',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    {
+      name: 'audsubsidiary',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
-    eventtype: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'eventtype',
-      enums.script_eventtype,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
+    {
+      name: 'eventtype',
+      type: enums.script_eventtype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_eventtype. */
-    isdeployed: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'isdeployed',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see script_eventtype. */
+    {
+      name: 'isdeployed',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    loglevel: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'loglevel',
-      enums.script_loglevel,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'loglevel',
+      type: enums.script_loglevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
-    executioncontext: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'executioncontext',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
+    {
+      name: 'executioncontext',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    localizationcontext: new Field(
-      clientscript_scriptdeployments_scriptdeploymentElemID,
-      'localizationcontext',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
+    {
+      name: 'localizationcontext',
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can filter your script to run based on the localization context of your users. For information about using localization context in NetSuite, see Record Localization Context.   This field is available when the alllocalizationcontexts value is equal to F.   You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see countries. */
-  },
+    }, /* Original description: You can filter your script to run based on the localization context of your users. For information about using localization context in NetSuite, see Record Localization Context.   This field is available when the alllocalizationcontexts value is equal to F.   You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see countries. */
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -650,15 +584,14 @@ const clientscript_scriptdeployments = new ObjectType({
   elemID: clientscript_scriptdeploymentsElemID,
   annotations: {
   },
-  fields: {
-    scriptdeployment: new Field(
-      clientscript_scriptdeploymentsElemID,
-      'scriptdeployment',
-      new ListType(clientscript_scriptdeployments_scriptdeployment),
-      {
+  fields: [
+    {
+      name: 'scriptdeployment',
+      type: new ListType(clientscript_scriptdeployments_scriptdeployment),
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })
 
@@ -670,182 +603,158 @@ export const clientscript = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
-  fields: {
-    scriptid: new Field(
-      clientscriptElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+  fields: [
+    {
+      name: 'scriptid',
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    name: new Field(
-      clientscriptElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
+    {
+      name: 'name',
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    scriptfile: new Field(
-      clientscriptElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    {
+      name: 'scriptfile',
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
-    description: new Field(
-      clientscriptElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field must reference a .js file. */
+    {
+      name: 'description',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    isinactive: new Field(
-      clientscriptElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    {
+      name: 'isinactive',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyadmins: new Field(
-      clientscriptElemID,
-      'notifyadmins',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'notifyadmins',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyemails: new Field(
-      clientscriptElemID,
-      'notifyemails',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'notifyemails',
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    notifygroup: new Field(
-      clientscriptElemID,
-      'notifygroup',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    {
+      name: 'notifygroup',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: Note Account-specific values are not supported by SDF. */
-    notifyowner: new Field(
-      clientscriptElemID,
-      'notifyowner',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: Note Account-specific values are not supported by SDF. */
+    {
+      name: 'notifyowner',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    notifyuser: new Field(
-      clientscriptElemID,
-      'notifyuser',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    {
+      name: 'notifyuser',
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fieldchangedfunction: new Field(
-      clientscriptElemID,
-      'fieldchangedfunction',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    {
+      name: 'fieldchangedfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    lineinitfunction: new Field(
-      clientscriptElemID,
-      'lineinitfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'lineinitfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    pageinitfunction: new Field(
-      clientscriptElemID,
-      'pageinitfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'pageinitfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    postsourcingfunction: new Field(
-      clientscriptElemID,
-      'postsourcingfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'postsourcingfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    recalcfunction: new Field(
-      clientscriptElemID,
-      'recalcfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'recalcfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    saverecordfunction: new Field(
-      clientscriptElemID,
-      'saverecordfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'saverecordfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    validatedeletefunction: new Field(
-      clientscriptElemID,
-      'validatedeletefunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'validatedeletefunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    validatefieldfunction: new Field(
-      clientscriptElemID,
-      'validatefieldfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'validatefieldfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    validateinsertfunction: new Field(
-      clientscriptElemID,
-      'validateinsertfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'validateinsertfunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    validatelinefunction: new Field(
-      clientscriptElemID,
-      'validatelinefunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    {
+      name: 'validatelinefunction',
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    buttons: new Field(
-      clientscriptElemID,
-      'buttons',
-      clientscript_buttons,
-      {
+    },
+    {
+      name: 'buttons',
+      type: clientscript_buttons,
+      annotations: {
       },
-    ),
-    libraries: new Field(
-      clientscriptElemID,
-      'libraries',
-      clientscript_libraries,
-      {
+    },
+    {
+      name: 'libraries',
+      type: clientscript_libraries,
+      annotations: {
       },
-    ),
-    scriptcustomfields: new Field(
-      clientscriptElemID,
-      'scriptcustomfields',
-      clientscript_scriptcustomfields,
-      {
+    },
+    {
+      name: 'scriptcustomfields',
+      type: clientscript_scriptcustomfields,
+      annotations: {
       },
-    ),
-    scriptdeployments: new Field(
-      clientscriptElemID,
-      'scriptdeployments',
-      clientscript_scriptdeployments,
-      {
+    },
+    {
+      name: 'scriptdeployments',
+      type: clientscript_scriptdeployments,
+      annotations: {
       },
-    ),
-  },
+    },
+  ],
   path: [constants.NETSUITE, constants.TYPES_PATH, clientscriptElemID.name],
 })

@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import {
-  CORE_ANNOTATIONS, Element, InstanceElement, isInstanceElement,
+  CORE_ANNOTATIONS, Element, InstanceElement,
+  isInstanceElement, isObjectType, isType, ObjectType, Values,
 } from '@salto-io/adapter-api'
 import {
   transformElement, TransformFunc,
@@ -24,15 +25,29 @@ import {
   createElementsMap,
 } from '../core/search'
 
-export const addHiddenValues = (
+const isHiddenType = (element: Element): boolean => isType(element)
+  && (element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
+
+export const addHiddenValuesAndHiddenTypes = (
   workspaceElements: ReadonlyArray<Element>,
-  stateElements: Element[],
+  stateElements: ReadonlyArray<Element>,
 ): Element[] => {
   const stateElementsMap = createElementsMap(stateElements)
 
-  return workspaceElements.map(elem => {
-    const stateElement = stateElementsMap[elem.elemID.getFullName()]
-    if (isInstanceElement(elem) && stateElement !== undefined) {
+  const returnHiddenTypeForInstance = (instance: InstanceElement): ObjectType => {
+    const stateType = stateElementsMap[instance.type.elemID.getFullName()]
+    if (stateType !== undefined
+          && isHiddenType(stateType)
+              && isObjectType(stateType)) {
+      // return the appropriate (hidden) type
+      return stateType
+    }
+    return instance.type
+  }
+
+  const generateValuesWithHiddenFields = (instance: InstanceElement): Values => {
+    const stateElement = stateElementsMap[instance.elemID.getFullName()]
+    if (stateElement !== undefined) {
       const createHiddenMapCallback: TransformFunc = ({ value, field }) => {
         if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
           return value
@@ -46,16 +61,43 @@ export const addHiddenValues = (
         strict: true,
       }) as InstanceElement
 
-      elem.value = _.merge(elem.value, hiddenValuesInstance.value)
+      // Return values after hidden fields added
+      return _.merge({}, instance.value, hiddenValuesInstance.value)
+    }
+    // Return the original values if the instance isn't part of the state
+    return instance.value
+  }
+
+  // Addition (hidden) types from state
+  const hiddenTypes = stateElements.filter(isHiddenType)
+
+  // Workspace instances after completing:
+  // 1. values for hidden fields. (addition)
+  // 2. hidden types. (override)
+  const instancesWithHiddenValues = workspaceElements.map(elem => {
+    if (isInstanceElement(elem)) {
+      const valuesAfterHiddenAdded = generateValuesWithHiddenFields(elem)
+      const type = returnHiddenTypeForInstance(elem)
+
+      // Return new instance after hidden values & types injection
+      return new InstanceElement(
+        elem.elemID.name,
+        type,
+        valuesAfterHiddenAdded,
+        elem.path,
+        elem.annotations
+      )
     }
     return elem
   })
+
+  return instancesWithHiddenValues.concat(hiddenTypes)
 }
 
-export const removeHiddenValues = (elem: Element):
+export const removeHiddenFieldsValues = (elem: Element):
   Element => {
   if (isInstanceElement(elem)) {
-    const removeHiddenValue: TransformFunc = ({ value, field }) => {
+    const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
       if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
         return undefined
       }
@@ -64,9 +106,14 @@ export const removeHiddenValues = (elem: Element):
 
     return transformElement({
       element: elem,
-      transformFunc: removeHiddenValue,
+      transformFunc: removeHiddenFieldValue,
       strict: false,
     }) || {}
   }
   return elem
 }
+
+export const removeHiddenValuesAndHiddenTypes = (elements: ReadonlyArray<Element>):
+  Element[] => elements
+  .filter(e => !isHiddenType(e))
+  .map(elem => removeHiddenFieldsValues(elem))

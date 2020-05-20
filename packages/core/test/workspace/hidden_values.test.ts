@@ -16,11 +16,12 @@
 
 import {
   BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, InstanceElement, ListType,
-  ObjectType,
+  ObjectType, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import {
-  addHiddenValues,
-  removeHiddenValues,
+  addHiddenValuesAndHiddenTypes,
+  removeHiddenFieldsValues,
+  removeHiddenValuesAndHiddenTypes,
 } from '../../src/workspace/hidden_values'
 
 describe('hidden_values.ts', () => {
@@ -42,7 +43,7 @@ describe('hidden_values.ts', () => {
     }
   )
 
-  const typeWithHiddenField = new ObjectType({
+  const hiddenType = new ObjectType({
     elemID: anotherTypeID,
     fields: {
       reg: new Field(anotherTypeID, 'reg', BuiltinTypes.STRING),
@@ -78,10 +79,33 @@ describe('hidden_values.ts', () => {
       ),
       addedField: new Field(anotherTypeID, 'addedField', BuiltinTypes.STRING),
     },
+    annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
     path: ['records', 'hidden'],
   })
 
-  const hiddenInstance = new InstanceElement('instance_elem_id_name', typeWithHiddenField, {
+
+  const regTypeID = new ElemID('dummy', 'regType')
+  const notHiddenType = new ObjectType({
+    elemID: regTypeID,
+    fields: {
+      str: new Field(new ElemID('dummy', 'strField'), 'str', BuiltinTypes.STRING),
+      num2: new Field(new ElemID('dummy', 'numField'), 'num2', BuiltinTypes.NUMBER),
+    },
+    annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+  })
+
+  const primType = new PrimitiveType({
+    elemID: new ElemID('dummy', 'PrimType'),
+    primitive: PrimitiveTypes.STRING,
+  })
+
+  const hiddenPrimType = new PrimitiveType({
+    elemID: new ElemID('dummy', 'hiddenPrimType'),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+  })
+
+  const hiddenInstance = new InstanceElement('instance_elem_id_name', hiddenType, {
     reg: 'reg',
     listOfObjects: [
       {
@@ -114,13 +138,22 @@ describe('hidden_values.ts', () => {
   })
 
 
-  describe('removeHiddenValues func', () => {
+  const instanceWithoutHiddenValues = hiddenInstance.clone()
+
+  // removing all hidden values
+  delete instanceWithoutHiddenValues.value.hidden
+  delete instanceWithoutHiddenValues.value.listOfObjects[0].hiddenStr
+  delete instanceWithoutHiddenValues.value.objField.hiddenStr
+  delete instanceWithoutHiddenValues.value.numHidden
+
+
+  describe('removeHiddenFieldsValues func', () => {
     describe('type', () => {
       const objType = new ObjectType({ elemID: new ElemID('dummyAdapter', 'dummy') })
 
       let resp: Element
       beforeAll(async () => {
-        resp = removeHiddenValues(objType)
+        resp = removeHiddenFieldsValues(objType)
       })
 
       it('should not change type (for now...)', () => {
@@ -130,17 +163,13 @@ describe('hidden_values.ts', () => {
 
 
     describe('instance', () => {
-      const instanceAfterHiddenRemoved = hiddenInstance.clone()
-      delete instanceAfterHiddenRemoved.value.hidden
-      delete instanceAfterHiddenRemoved.value.listOfObjects[0].hiddenStr
-      delete instanceAfterHiddenRemoved.value.objField.hiddenStr
-      delete instanceAfterHiddenRemoved.value.numHidden
+      const instanceAfterHiddenRemoved = instanceWithoutHiddenValues.clone()
 
       const clonedHiddenInstance = hiddenInstance.clone()
 
       let resp: Element
       beforeAll(async () => {
-        resp = removeHiddenValues(clonedHiddenInstance)
+        resp = removeHiddenFieldsValues(clonedHiddenInstance)
       })
 
       it('should remove hidden values ', () => {
@@ -153,58 +182,141 @@ describe('hidden_values.ts', () => {
     })
   })
 
-  describe('addHiddenValues func', () => {
-    describe('instances', () => {
-      const workspaceInstance = hiddenInstance.clone()
+  describe('removeHiddenValuesAndHiddenTypes func', () => {
+    const elements = [hiddenType.clone(), notHiddenType.clone(), hiddenInstance.clone()]
+    let resp: Element[]
+    beforeAll(async () => {
+      resp = removeHiddenValuesAndHiddenTypes(elements)
+    })
 
-      // workspace elements should not contain hidden values
-      delete workspaceInstance.value.hidden
-      delete workspaceInstance.value.listOfObjects[0].hiddenStr
-      delete workspaceInstance.value.objField.hiddenStr
+    it('should remove hidden type', () => {
+      expect(resp).toHaveLength(elements.length - 1)
+      expect(resp).not.toContain(hiddenType)
+    })
 
-      // workspace changes
-      workspaceInstance.value.notHidden = 'notHiddenChanged'
-      workspaceInstance.value.addedField = 'addedField'
-      workspaceInstance.value.listOfObjects[0].num = 12345
-      workspaceInstance.value.numHidden = 11111
+    it('should not change notHiddenType', () => {
+      expect((resp[0] as ObjectType).isEqual(notHiddenType)).toBeTruthy()
+    })
+
+    it('should remove all hidden (fields) values in instance', () => {
+      const instanceAfterRemoveHidden = resp[1] as InstanceElement
+
+      // checking instance existence
+      expect(instanceAfterRemoveHidden.elemID.getFullName())
+        .toEqual(hiddenInstance.elemID.getFullName())
+
+      // checking hidden values removal
+      expect(instanceAfterRemoveHidden).toEqual(instanceWithoutHiddenValues)
+    })
+  })
+
+  describe('addHiddenValuesAndHiddenTypes func', () => {
+    // workspace elements should not contain hidden values
+    const workspaceInstance = instanceWithoutHiddenValues.clone()
 
 
-      const stateInstance = hiddenInstance.clone()
+    // workspace changes
+    workspaceInstance.value.notHidden = 'notHiddenChanged'
+    workspaceInstance.value.addedField = 'addedField'
+    workspaceInstance.value.listOfObjects[0].num = 12345
+    workspaceInstance.value.numHidden = 11111
 
-      let resp: Element[]
-      let instanceAfterHiddenAddition: InstanceElement
-      beforeAll(async () => {
-        resp = addHiddenValues([workspaceInstance], [stateInstance])
-        instanceAfterHiddenAddition = resp[0] as InstanceElement
-      })
+    // When type is hidden: (workspace) instance will contain an 'empty' type (only with elemID)
+    workspaceInstance.type = new ObjectType({
+      elemID: anotherTypeID,
+    })
 
-      it('should add hidden values from state elements', () => {
-        expect(instanceAfterHiddenAddition.value.hidden).toEqual(stateInstance.value.hidden)
-        expect(instanceAfterHiddenAddition.value.listOfObjects[0].hiddenStr)
-          .toEqual(stateInstance.value.listOfObjects[0].hiddenStr)
-        expect(instanceAfterHiddenAddition.value.objField.hiddenStr)
-          .toEqual(stateInstance.value.objField.hiddenStr)
-      })
 
-      it('should ignore hidden values from workspace element', () => {
-        expect(instanceAfterHiddenAddition.value.numHidden)
-          .toEqual(stateInstance.value.numHidden)
-      })
+    const newWorkspaceInstance = new InstanceElement('instance_elem_id_name', new ObjectType({
+      elemID: anotherTypeID,
+    }), {
+      reg: 'newReg',
+      notHidden: 'notHidden2',
+    })
 
-      it('should not change workspace (not hidden) element values', () => {
-        expect(workspaceInstance.value.notHidden)
-          .toEqual(instanceAfterHiddenAddition.value.notHidden)
-        expect(workspaceInstance.value.reg)
-          .toEqual(instanceAfterHiddenAddition.value.reg)
-        expect(workspaceInstance.value.listOfObjects[0].num)
-          .toEqual(instanceAfterHiddenAddition.value.listOfObjects[0].num)
-        expect(workspaceInstance.value.listOfObjects)
-          .toHaveLength(instanceAfterHiddenAddition.value.listOfObjects.length)
-      })
+    const workspaceElements = [
+      primType.clone(),
+      notHiddenType.clone(),
+      workspaceInstance,
+      newWorkspaceInstance,
+    ]
 
-      it('should not done in-place', () => {
-        expect(stateInstance.isEqual(hiddenInstance)).toBeTruthy()
-      })
+    // State elements
+    const stateInstance = hiddenInstance.clone()
+
+    const stateElements = [
+      primType.clone(),
+      notHiddenType.clone(),
+      stateInstance,
+      hiddenType.clone(),
+      hiddenPrimType.clone(),
+    ]
+
+    let resp: Element[]
+    let instanceAfterHiddenAddition: InstanceElement
+    let newInstanceAfterHiddenAddition: InstanceElement
+    let hiddenTypeAddition: ObjectType
+    let hiddenPrimTypeAddition: PrimitiveType
+
+    beforeAll(async () => {
+      resp = addHiddenValuesAndHiddenTypes(workspaceElements, stateElements)
+
+      instanceAfterHiddenAddition = resp[2] as InstanceElement
+      newInstanceAfterHiddenAddition = resp[3] as InstanceElement
+      hiddenTypeAddition = resp[4] as ObjectType
+      hiddenPrimTypeAddition = resp[5] as PrimitiveType
+    })
+
+    it('should add hidden type to workspace elements list', () => {
+      expect(resp).toHaveLength(workspaceElements.length + 2)
+      expect(hiddenTypeAddition.isEqual(hiddenType))
+        .toBeTruthy()
+      expect(hiddenPrimTypeAddition.isEqual(hiddenPrimType))
+        .toBeTruthy()
+    })
+
+    it('should add hidden values from state elements', () => {
+      expect(instanceAfterHiddenAddition.value.hidden).toEqual(stateInstance.value.hidden)
+      expect(instanceAfterHiddenAddition.value.listOfObjects[0].hiddenStr)
+        .toEqual(stateInstance.value.listOfObjects[0].hiddenStr)
+      expect(instanceAfterHiddenAddition.value.objField.hiddenStr)
+        .toEqual(stateInstance.value.objField.hiddenStr)
+    })
+
+    it('should ignore hidden values from workspace element', () => {
+      expect(instanceAfterHiddenAddition.value.numHidden)
+        .toEqual(stateInstance.value.numHidden)
+    })
+
+    it('should not change workspace (not hidden) element values', () => {
+      expect(workspaceInstance.value.notHidden)
+        .toEqual(instanceAfterHiddenAddition.value.notHidden)
+      expect(workspaceInstance.value.reg)
+        .toEqual(instanceAfterHiddenAddition.value.reg)
+      expect(workspaceInstance.value.listOfObjects[0].num)
+        .toEqual(instanceAfterHiddenAddition.value.listOfObjects[0].num)
+      expect(workspaceInstance.value.listOfObjects)
+        .toHaveLength(instanceAfterHiddenAddition.value.listOfObjects.length)
+    })
+
+    it('should inject the complete type into instance', () => {
+      expect(instanceAfterHiddenAddition.type.isEqual(hiddenType))
+        .toBeTruthy()
+    })
+
+    it('should inject the complete type into newInstance', () => {
+      expect(newInstanceAfterHiddenAddition.type.isEqual(hiddenType))
+        .toBeTruthy()
+    })
+
+    it('should not done in-place for state elements', () => {
+      expect(stateElements).toHaveLength(5)
+
+      expect((stateElements[0] as PrimitiveType).isEqual(primType)).toBeTruthy()
+      expect((stateElements[1] as ObjectType).isEqual(notHiddenType)).toBeTruthy()
+      expect((stateElements[2] as InstanceElement).isEqual(hiddenInstance)).toBeTruthy()
+      expect((stateElements[3] as ObjectType).isEqual(hiddenType)).toBeTruthy()
+      expect((stateElements[4] as PrimitiveType).isEqual(hiddenPrimType)).toBeTruthy()
     })
   })
 })

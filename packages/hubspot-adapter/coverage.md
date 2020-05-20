@@ -20,22 +20,20 @@ This means that inside an environment you can not rename, delete or create Folde
 
 #### Forms
 
-Only “Regular forms” are supported. Including “Embedded forms” and “Full-page forms”. 
-Pop-up forms are not supported 
-Only questions connected to a Contact property are fully supported. 
-Questions that are connected to Ticket/Company and all non-Contact entities are partially supported.
-Modifying the GDPR Settings is not supported.
-Modifying the Form’s language is not supported. 
+* Only “Regular forms” are supported. Including “Embedded forms” and “Full-page forms”. Pop-up forms are not supported 
+* Only questions connected to a Contact property are fully supported. Questions that are connected to Ticket/Company and all non-Contact entities are partially supported.
+* Modifying the GDPR Settings is not supported.
+* Modifying the Form’s language is not supported. 
 
 #### Workflows
 
-Modifying is not supported.
-When creating a new Workflow there are extra validations compared to the UI. So copy pasting an existing Workflow and just changing the name might not work.
+* Modifying is not supported.
+* When creating a new Workflow there are extra validations compared to the UI. So copy pasting an existing Workflow and just changing the name might not work.
 
 #### Emails
 
-The “Smart rules” features support is limited to Subject.
-You can’t create new smart rules through Salto. Only ones that already appear in the NaCL’s can be used (in other emails).
+* The “Smart rules” features support is limited to Subject.
+* You can’t create new smart rules through Salto. Only ones that already appear in the NaCL’s can be used (in other emails).
 
 ## Multi-environment
 

@@ -25,6 +25,9 @@ import {
   createElementsMap,
 } from '../core/search'
 
+const isHiddenType = (element: Element): boolean => isType(element)
+  && (element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
+
 export const addHiddenValuesAndHiddenTypes = (
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
@@ -34,7 +37,7 @@ export const addHiddenValuesAndHiddenTypes = (
   const returnHiddenTypeForInstance = (instance: InstanceElement): ObjectType => {
     const stateType = stateElementsMap[instance.type.elemID.getFullName()]
     if (stateType !== undefined
-          && stateType.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+          && isHiddenType(stateType)
               && isObjectType(stateType)) {
       // return the appropriate (hidden) type
       return stateType
@@ -66,8 +69,7 @@ export const addHiddenValuesAndHiddenTypes = (
   }
 
   // Addition (hidden) types from state
-  const hiddenTypes = stateElements.filter(e => !isInstanceElement(e))
-    .filter(e => e.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
+  const hiddenTypes = stateElements.filter(isHiddenType)
 
   // Workspace instances after completing:
   // 1. values for hidden fields. (addition)
@@ -113,5 +115,5 @@ export const removeHiddenFieldsValues = (elem: Element):
 
 export const removeHiddenValuesAndHiddenTypes = (elements: ReadonlyArray<Element>):
   Element[] => elements
-  .filter(e => !isType(e) || !(e.annotations[CORE_ANNOTATIONS.HIDDEN] === true))
+  .filter(e => !isHiddenType(e))
   .map(elem => removeHiddenFieldsValues(elem))

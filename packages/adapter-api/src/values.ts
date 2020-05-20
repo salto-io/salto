@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { hash as hashUtils, types } from '@salto-io/lowerdash'
-
 import { ElemID } from './element_id'
 
 export type PrimitiveValue = string | boolean | number
@@ -48,8 +47,6 @@ export class StaticFile {
   public isEqual(other: StaticFile): boolean {
     return this.hash === other.hash
   }
-
-  static get serializedTypeName(): string { return 'StaticFile' }
 }
 
 export class ReferenceExpression {
@@ -67,8 +64,6 @@ export class ReferenceExpression {
     const ExpressionCtor = this.constructor as typeof ReferenceExpression
     return new ExpressionCtor(this.elemId, resValue)
   }
-
-  static get serializedTypeName(): string { return 'ReferenceExpression' }
 
   get traversalParts(): string[] {
     return this.elemId.getFullNameParts()
@@ -93,13 +88,9 @@ export class VariableExpression extends ReferenceExpression {
       } is a ${elemId.idType}`)
     }
   }
-
-  static get serializedTypeName(): string { return 'VariableExpression' }
 }
 
-export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> {
-  static get serializedTypeName(): string { return 'TemplateExpression' }
-}
+export class TemplateExpression extends types.Bean<{ parts: TemplatePart[] }> { }
 
 export type Expression = ReferenceExpression | TemplateExpression
 

@@ -153,7 +153,7 @@ export const deploy = async (
   return { success: true, errors: [] }
 }
 
-export type fillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
+export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
 
 export type FetchResult = {
   changes: Iterable<FetchChange>
@@ -162,13 +162,13 @@ export type FetchResult = {
   configChanges?: Plan
   adapterNameToConfigMessage?: Record<string, string>
 }
-export type fetchFunc = (
+export type FetchFunc = (
   workspace: Workspace,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   services?: string[],
 ) => Promise<FetchResult>
 
-export const fetch: fetchFunc = async (
+export const fetch: FetchFunc = async (
   workspace,
   progressEmitter?,
   services?,

@@ -50,9 +50,6 @@ describe('Values', () => {
   })
 
   describe('StaticFile', () => {
-    it('should have correct static serializedTypeName', () =>
-      expect(StaticFile.serializedTypeName).toEqual('StaticFile'))
-
     describe('equality (direct)', () => {
       it('equals', () => {
         const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))

@@ -26,7 +26,7 @@ import {
 } from '../core/search'
 
 export const addHiddenValuesAndHiddenTypes = (
-  workspaceElements: Element[],
+  workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
 ): Element[] => {
   const stateElementsMap = createElementsMap(stateElements)
@@ -71,8 +71,10 @@ export const addHiddenValuesAndHiddenTypes = (
   // 2. hidden types. (override)
   const instancesWithHiddenValues = workspaceElements.map(elem => {
     if (isInstanceElement(elem)) {
-      addValuesForHiddenFields(elem)
-      injectHiddenTypeToInstance(elem)
+      const clonedInstance = elem.clone()
+      addValuesForHiddenFields(clonedInstance)
+      injectHiddenTypeToInstance(clonedInstance)
+      return clonedInstance
     }
     return elem
   })

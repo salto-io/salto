@@ -16,7 +16,7 @@
 
 import {
   BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, InstanceElement, ListType,
-  ObjectType,
+  ObjectType, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import {
   addHiddenValuesAndHiddenTypes,
@@ -92,6 +92,17 @@ describe('hidden_values.ts', () => {
       num2: new Field(new ElemID('dummy', 'numField'), 'num2', BuiltinTypes.NUMBER),
     },
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+  })
+
+  const primType = new PrimitiveType({
+    elemID: new ElemID('dummy', 'PrimType'),
+    primitive: PrimitiveTypes.STRING,
+  })
+
+  const hiddenPrimType = new PrimitiveType({
+    elemID: new ElemID('dummy', 'hiddenPrimType'),
+    primitive: PrimitiveTypes.NUMBER,
+    annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
   })
 
   const hiddenInstance = new InstanceElement('instance_elem_id_name', hiddenType, {
@@ -223,30 +234,44 @@ describe('hidden_values.ts', () => {
       notHidden: 'notHidden2',
     })
 
-    const workspaceElements = [notHiddenType.clone(), workspaceInstance, newWorkspaceInstance]
+    const workspaceElements = [
+      primType.clone(),
+      notHiddenType.clone(),
+      workspaceInstance,
+      newWorkspaceInstance,
+    ]
 
     // State elements
     const stateInstance = hiddenInstance.clone()
-    const stateHiddenType = hiddenType.clone()
 
-    const stateElements = [notHiddenType.clone(), stateInstance, stateHiddenType]
+    const stateElements = [
+      primType.clone(),
+      notHiddenType.clone(),
+      stateInstance,
+      hiddenType.clone(),
+      hiddenPrimType.clone(),
+    ]
 
     let resp: Element[]
     let instanceAfterHiddenAddition: InstanceElement
     let newInstanceAfterHiddenAddition: InstanceElement
     let hiddenTypeAddition: ObjectType
+    let hiddenPrimTypeAddition: PrimitiveType
 
     beforeAll(async () => {
       resp = addHiddenValuesAndHiddenTypes(workspaceElements, stateElements)
 
-      instanceAfterHiddenAddition = resp[1] as InstanceElement
-      newInstanceAfterHiddenAddition = resp[2] as InstanceElement
-      hiddenTypeAddition = resp[3] as ObjectType
+      instanceAfterHiddenAddition = resp[2] as InstanceElement
+      newInstanceAfterHiddenAddition = resp[3] as InstanceElement
+      hiddenTypeAddition = resp[4] as ObjectType
+      hiddenPrimTypeAddition = resp[5] as PrimitiveType
     })
 
     it('should add hidden type to workspace elements list', () => {
-      expect(resp).toHaveLength(workspaceElements.length + 1)
+      expect(resp).toHaveLength(workspaceElements.length + 2)
       expect(hiddenTypeAddition.isEqual(hiddenType))
+        .toBeTruthy()
+      expect(hiddenPrimTypeAddition.isEqual(hiddenPrimType))
         .toBeTruthy()
     })
 
@@ -285,11 +310,13 @@ describe('hidden_values.ts', () => {
     })
 
     it('should not done in-place for state elements', () => {
-      expect(stateElements).toHaveLength(3)
+      expect(stateElements).toHaveLength(5)
 
-      expect((stateElements[0] as ObjectType).isEqual(notHiddenType)).toBeTruthy()
-      expect((stateElements[1] as InstanceElement).isEqual(hiddenInstance)).toBeTruthy()
-      expect((stateElements[2] as ObjectType).isEqual(hiddenType)).toBeTruthy()
+      expect((stateElements[0] as PrimitiveType).isEqual(primType)).toBeTruthy()
+      expect((stateElements[1] as ObjectType).isEqual(notHiddenType)).toBeTruthy()
+      expect((stateElements[2] as InstanceElement).isEqual(hiddenInstance)).toBeTruthy()
+      expect((stateElements[3] as ObjectType).isEqual(hiddenType)).toBeTruthy()
+      expect((stateElements[4] as PrimitiveType).isEqual(hiddenPrimType)).toBeTruthy()
     })
   })
 })

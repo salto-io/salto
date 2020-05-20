@@ -129,6 +129,7 @@ export const deploy = async (
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
     // Remove hidden Types and hidden values inside instances
     const elementsAfterHiddenRemoval = removeHiddenValuesAndHiddenTypes(changedElements)
+      .map(e => e.clone())
     const workspaceElements = await workspace.elements()
     const relevantWorkspaceElements = workspaceElements
       .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)

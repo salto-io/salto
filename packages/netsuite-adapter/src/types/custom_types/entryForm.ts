@@ -568,13 +568,13 @@ const entryForm_mainFields = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: {
-      type: entryForm_mainFields_defaultFieldGroup,
+    fieldGroup: {
+      type: new ListType(entryForm_mainFields_fieldGroup),
       annotations: {
       },
     },
-    fieldGroup: {
-      type: new ListType(entryForm_mainFields_fieldGroup),
+    defaultFieldGroup: {
+      type: entryForm_mainFields_defaultFieldGroup,
       annotations: {
       },
     },
@@ -860,13 +860,13 @@ const entryForm_tabs_tab_fieldGroups = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: {
-      type: entryForm_tabs_tab_fieldGroups_defaultFieldGroup,
+    fieldGroup: {
+      type: new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup),
       annotations: {
       },
     },
-    fieldGroup: {
-      type: new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup),
+    defaultFieldGroup: {
+      type: entryForm_tabs_tab_fieldGroups_defaultFieldGroup,
       annotations: {
       },
     },
@@ -1193,13 +1193,13 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: {
-      type: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
+    fieldGroup: {
+      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
       annotations: {
       },
     },
-    fieldGroup: {
-      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
+    defaultFieldGroup: {
+      type: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
       annotations: {
       },
     },
@@ -1376,6 +1376,26 @@ export const entryForm = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    mainFields: {
+      type: entryForm_mainFields,
+      annotations: {
+      },
+    },
+    tabs: {
+      type: entryForm_tabs,
+      annotations: {
+      },
+    },
+    quickViewFields: {
+      type: entryForm_quickViewFields,
+      annotations: {
+      },
+    },
+    actionbar: {
+      type: entryForm_actionbar,
+      annotations: {
+      },
+    },
     useForPopup: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
@@ -1386,36 +1406,6 @@ export const entryForm = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    actionbar: {
-      type: entryForm_actionbar,
-      annotations: {
-      },
-    },
-    buttons: {
-      type: entryForm_buttons,
-      annotations: {
-      },
-    },
-    customCode: {
-      type: entryForm_customCode,
-      annotations: {
-      },
-    },
-    mainFields: {
-      type: entryForm_mainFields,
-      annotations: {
-      },
-    },
-    quickViewFields: {
-      type: entryForm_quickViewFields,
-      annotations: {
-      },
-    },
-    tabs: {
-      type: entryForm_tabs,
-      annotations: {
-      },
-    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, entryFormElemID.name],
 })

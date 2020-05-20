@@ -254,13 +254,13 @@ const addressForm_mainFields = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: {
-      type: addressForm_mainFields_defaultFieldGroup,
+    fieldGroup: {
+      type: new ListType(addressForm_mainFields_fieldGroup),
       annotations: {
       },
     },
-    fieldGroup: {
-      type: new ListType(addressForm_mainFields_fieldGroup),
+    defaultFieldGroup: {
+      type: addressForm_mainFields_defaultFieldGroup,
       annotations: {
       },
     },
@@ -297,6 +297,11 @@ export const addressForm = new ObjectType({
         [constants.IS_NAME]: true,
       },
     },
+    mainFields: {
+      type: addressForm_mainFields,
+      annotations: {
+      },
+    },
     addressTemplate: {
       type: fieldTypes.cdata,
       annotations: {
@@ -308,11 +313,6 @@ export const addressForm = new ObjectType({
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see countries. */
-    mainFields: {
-      type: addressForm_mainFields,
-      annotations: {
-      },
-    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })

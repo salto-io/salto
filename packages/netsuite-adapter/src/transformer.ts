@@ -15,15 +15,20 @@
 */
 import {
   ElemID, Field, InstanceElement, isListType, isPrimitiveType, ObjectType, PrimitiveType,
-  PrimitiveTypes, Value, Values,
+  PrimitiveTypes, Value, Values, isObjectType,
 } from '@salto-io/adapter-api'
 import {
   applyRecursive, MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH, SCRIPT_ID } from './constants'
+import {
+  ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH,
+  SCRIPT_ID,
+} from './constants'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo } from './client/client'
 import { fieldTypes } from './types/field_types'
+import { customTypes } from './types'
+
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
@@ -116,6 +121,32 @@ export const restoreAttributes = (values: Values, type: ObjectType, instancePath
   return mapKeysRecursive(values, restoreAttributeFunc, instancePath)
 }
 
+const sortValuesBasedOnType = (typeName: string, values: Values, instancePath: ElemID): Values => {
+  // we use customTypes[typeName] and not instance.type since it preserves fields order
+  const topLevelType = customTypes[typeName]
+
+  const sortValues: TransformFunc = ({ field, value, path }) => {
+    const type = field?.type
+      ?? (path && path.isEqual(instancePath) ? topLevelType : undefined)
+    if (isObjectType(type) && _.isPlainObject(value)) {
+      const fieldsOrder = Object.keys(type.fields)
+      return _.fromPairs(fieldsOrder
+        .map(fieldName => [fieldName, value[fieldName]])
+        .filter(([_fieldName, val]) => !_.isUndefined(val)))
+    }
+    return value
+  }
+
+  return transformValues(
+    { type: topLevelType, values, transformFunc: sortValues, pathID: instancePath }
+  ) ?? {}
+}
+
+// According to https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html
+// there are types that their instances XMLs should be sent in a predefined order
+const shouldSortValues = (typeName: string): boolean =>
+  [ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM].includes(typeName)
+
 export const toCustomizationInfo = (instance: InstanceElement): CustomizationInfo => {
   const transformPrimitive: TransformFunc = ({ value, field }) => {
     const fieldType = field?.type
@@ -137,6 +168,10 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     transformFunc: transformPrimitive,
   }) || {}
 
-  const values = restoreAttributes(transformedValues, instance.type, instance.elemID)
-  return { typeName: instance.type.elemID.name, values }
+  const typeName = instance.type.elemID.name
+
+  const values = shouldSortValues(typeName)
+    ? sortValuesBasedOnType(typeName, transformedValues, instance.elemID)
+    : transformedValues
+  return { typeName, values: restoreAttributes(values, instance.type, instance.elemID) }
 }

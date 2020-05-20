@@ -578,13 +578,13 @@ const transactionForm_mainFields = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: {
-      type: transactionForm_mainFields_defaultFieldGroup,
+    fieldGroup: {
+      type: new ListType(transactionForm_mainFields_fieldGroup),
       annotations: {
       },
     },
-    fieldGroup: {
-      type: new ListType(transactionForm_mainFields_fieldGroup),
+    defaultFieldGroup: {
+      type: transactionForm_mainFields_defaultFieldGroup,
       annotations: {
       },
     },
@@ -949,13 +949,13 @@ const transactionForm_tabs_tab_fieldGroups = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: {
-      type: transactionForm_tabs_tab_fieldGroups_defaultFieldGroup,
+    fieldGroup: {
+      type: new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup),
       annotations: {
       },
     },
-    fieldGroup: {
-      type: new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup),
+    defaultFieldGroup: {
+      type: transactionForm_tabs_tab_fieldGroups_defaultFieldGroup,
       annotations: {
       },
     },
@@ -1343,13 +1343,13 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: {
-      type: transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
+    fieldGroup: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
       annotations: {
       },
     },
-    fieldGroup: {
-      type: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
+    defaultFieldGroup: {
+      type: transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
       annotations: {
       },
     },
@@ -1526,6 +1526,26 @@ export const transactionForm = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    mainFields: {
+      type: transactionForm_mainFields,
+      annotations: {
+      },
+    },
+    tabs: {
+      type: transactionForm_tabs,
+      annotations: {
+      },
+    },
+    quickViewFields: {
+      type: transactionForm_quickViewFields,
+      annotations: {
+      },
+    },
+    actionbar: {
+      type: transactionForm_actionbar,
+      annotations: {
+      },
+    },
     disclaimer: {
       type: BuiltinTypes.STRING,
       annotations: {
@@ -1541,38 +1561,8 @@ export const transactionForm = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    actionbar: {
-      type: transactionForm_actionbar,
-      annotations: {
-      },
-    },
-    buttons: {
-      type: transactionForm_buttons,
-      annotations: {
-      },
-    },
-    customCode: {
-      type: transactionForm_customCode,
-      annotations: {
-      },
-    },
-    mainFields: {
-      type: transactionForm_mainFields,
-      annotations: {
-      },
-    },
     printingType: {
       type: transactionForm_printingType,
-      annotations: {
-      },
-    },
-    quickViewFields: {
-      type: transactionForm_quickViewFields,
-      annotations: {
-      },
-    },
-    tabs: {
-      type: transactionForm_tabs,
       annotations: {
       },
     },

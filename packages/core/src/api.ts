@@ -49,7 +49,7 @@ import { Workspace } from './workspace/workspace'
 import { defaultDependencyChangers } from './core/plan/plan'
 import {
   addHiddenValuesAndHiddenTypes,
-  removeHiddenFieldsValues,
+  removeHiddenValuesAndHiddenTypes,
 } from './workspace/hidden_values'
 
 const log = logger(module)
@@ -123,12 +123,12 @@ export const deploy = async (
       ((action === 'remove')
         ? workspace.state().remove(element.elemID)
         : workspace.state().set(element)
-          .then(() => { changedElements.push(removeHiddenFieldsValues(element)) }))
+          .then(() => { changedElements.push(element) }))
     const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
     const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
-    // Clone the elements because getDetailedChanges can change its input
-    const clonedElements = changedElements.map(e => e.clone())
+    // Remove hidden Types and hidden values inside instances
+    const elementsAfterHiddenRemoval = removeHiddenValuesAndHiddenTypes(changedElements)
     const workspaceElements = await workspace.elements()
     const relevantWorkspaceElements = workspaceElements
       .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)
@@ -136,9 +136,11 @@ export const deploy = async (
     // Add workspace elements as an additional context for resolve so that we can resolve
     // variable expressions. Adding only variables is not enough for the case of a variable
     // with the value of a reference.
-    const changes = wu(await getDetailedChanges(relevantWorkspaceElements, clonedElements,
-      workspaceElements))
-      .map(change => ({ change, serviceChange: change }))
+    const changes = wu(await getDetailedChanges(
+      relevantWorkspaceElements,
+      elementsAfterHiddenRemoval,
+      workspaceElements
+    )).map(change => ({ change, serviceChange: change }))
       .map(toChangesWithPath(name => changedElementMap[name] || []))
       .flatten()
     const errored = errors.length > 0

@@ -56,28 +56,27 @@ const NameToType = {
   StaticFile: StaticFile,
 }
 
-type SerializableTypeNames = keyof typeof NameToType
-type SerializableTypes = InstanceType<types.ValueOf<typeof NameToType>>
+type SerializedName = keyof typeof NameToType
+type Serializable = InstanceType<types.ValueOf<typeof NameToType>>
 
 export const SALTO_CLASS_FIELD = '_salto_class'
 type SerializedClass = {
-  [SALTO_CLASS_FIELD]: SerializableTypeNames
+  [SALTO_CLASS_FIELD]: SerializedName
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
 
-const ctorNameToSerializedName: Record<string, SerializableTypeNames> = Object.assign(
-  {},
-  ...Object.entries(NameToType).map(([name, type]) => ({ [type.name]: name }))
-)
+const ctorNameToSerializedName: Record<string, SerializedName> = _(NameToType).entries()
+  .map(([name, type]) => [type.name, name]).fromPairs()
+  .value()
 
 type ReviverMap = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [K in SerializableTypeNames]: (v: any) => InstanceType<(typeof NameToType)[K]>
+  [K in SerializedName]: (v: any) => InstanceType<(typeof NameToType)[K]>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isSaltoSerializable(value: any): value is SerializableTypes {
+function isSaltoSerializable(value: any): value is Serializable {
   return _.some(Object.values(NameToType).map(t => value instanceof t))
 }
 
@@ -89,7 +88,7 @@ function isSerializedClass(value: any): value is SerializedClass {
 
 export const serialize = (elements: Element[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue'): string => {
-  const saltoClassReplacer = <T extends SerializableTypes>(e: T): T & SerializedClass => {
+  const saltoClassReplacer = <T extends Serializable>(e: T): T & SerializedClass => {
     // Add property SALTO_CLASS_FIELD
     const o = e as T & SerializedClass
     o[SALTO_CLASS_FIELD] = ctorNameToSerializedName[e.constructor.name]

@@ -28,7 +28,7 @@ const SERVICES = ['salesforce']
 const configID = new ElemID(SERVICES[0])
 const mockConfigType = new ObjectType({
   elemID: configID,
-  fields: [{ name: 'username', type: BuiltinTypes.STRING }],
+  fields: { username: { type: BuiltinTypes.STRING } },
 })
 const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
   username: 'test@test',

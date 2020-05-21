@@ -230,6 +230,24 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenCalledWith(addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(deployProjectCommandMatcher)
     })
+
+    it('should wrap the thrown string with Error object', async () => {
+      const errorMessage = 'error message'
+      mockExecuteAction.mockImplementation(() => {
+        throw errorMessage
+      })
+      await expect(client.deployCustomObject('elementName', {} as CustomizationInfo)).rejects
+        .toThrow(new Error(errorMessage))
+    })
+
+    it('should throw Error object', async () => {
+      const errorMessage = 'error message'
+      mockExecuteAction.mockImplementation(() => {
+        throw new Error(errorMessage)
+      })
+      await expect(client.deployCustomObject('elementName', {} as CustomizationInfo)).rejects
+        .toThrow(new Error(errorMessage))
+    })
   })
 
   describe('setSdfLogLevel', () => {

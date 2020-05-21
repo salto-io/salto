@@ -25,6 +25,7 @@ import { compareLogLevels, logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import path from 'path'
 import os from 'os'
+import _ from 'lodash'
 
 const log = logger(module)
 
@@ -145,7 +146,7 @@ export default class NetsuiteClient {
         return await log.time(call, desc)
       } catch (e) {
         log.error('failed to run Netsuite client command on: %o', e)
-        throw e
+        throw _.isObject(e) ? e : new Error(String(e))
       }
     }
   )

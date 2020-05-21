@@ -72,7 +72,7 @@ export const deployActions = async (
         reportProgress(item, 'finished')
         await postApplyAction(item.parent().action, deployActionResult)
       } catch (error) {
-        reportProgress(item, 'error', error.message)
+        reportProgress(item, 'error', error.message ?? String(error))
         throw error
       }
     })

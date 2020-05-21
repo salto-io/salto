@@ -45,7 +45,7 @@
     "jsforce": "https://github.com/salto-io/jsforce.git",
     "jsforce-types": "https://github.com/salto-io/jsforce-types.git",
     "jszip": "^3.2.2",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "requestretry": "^4.0.2",
     "stream": "0.0.2",
     "winston": "^3.2.1",
@@ -69,10 +69,10 @@
     "eslint-plugin-react-hooks": "^1.7.0",
     "jest": "^24.9.0",
     "jest-junit": "^6.4.0",
-    "nock": "^11.7.0",
+    "nock": "^12.0.1",
     "request": "^2.88.0",
     "ts-cleaner": "^1.0.3",
     "tsc-watch": "^2.2.1",
-    "typescript": "^3.8.3"
+    "typescript": "3.9.3"
   }
 }

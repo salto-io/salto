@@ -33,7 +33,7 @@
   "dependencies": {
     "@salto-io/lowerdash": "0.1.15",
     "chalk": "^2.4.2",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "logform": "^2.1.2",
     "minimatch": "^3.0.4",
     "winston": "^3.2.1",
@@ -60,7 +60,7 @@
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
     "tmp-promise": "^2.0.2",
-    "ts-cleaner": "^1.0.2",
+    "ts-cleaner": "^1.0.3",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
   }

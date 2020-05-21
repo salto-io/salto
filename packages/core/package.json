@@ -44,7 +44,7 @@
     "@salto-io/salesforce-adapter": "0.1.15",
     "axios": "^0.19.2",
     "fuse.js": "^3.4.5",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "moo": "^0.5.1",
     "nearley": "2.19.2",
     "pietile-eventemitter": "^1.0.0",
@@ -60,7 +60,7 @@
     "@types/node": "^12.7.1",
     "@types/supertest": "^2.0.4",
     "@types/tmp": "^0.1.0",
-    "@types/uuid": "^3.4.5",
+    "@types/uuid": "^3.4.6",
     "@types/wu": "^2.1.40",
     "@typescript-eslint/eslint-plugin": "2.31.0",
     "@typescript-eslint/parser": "2.31.0",
@@ -76,7 +76,7 @@
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
     "nock": "^12.0.1",
-    "ts-cleaner": "^1.0.2",
+    "ts-cleaner": "^1.0.3",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
   }

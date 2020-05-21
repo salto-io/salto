@@ -36,7 +36,7 @@
     "@salto-io/dag": "0.1.15",
     "@salto-io/logging": "0.1.15",
     "@salto-io/lowerdash": "0.1.15",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "wu": "^2.1.0"
   },
   "devDependencies": {
@@ -59,7 +59,7 @@
     "jest": "^24.9.0",
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
-    "ts-cleaner": "^1.0.2",
+    "ts-cleaner": "^1.0.3",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
   }

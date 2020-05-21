@@ -30,8 +30,8 @@ describe('NetsuiteAdapter creator', () => {
     },
   )
   describe('validateCredentials', () => {
-    beforeEach(() => {
-      creator.validateCredentials(credentials)
+    beforeEach(async () => {
+      await creator.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', async () => {

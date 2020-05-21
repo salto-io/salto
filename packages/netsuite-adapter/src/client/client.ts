@@ -102,7 +102,7 @@ export default class NetsuiteClient {
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
     const netsuiteClient = new NetsuiteClient({ credentials })
     await netsuiteClient.setupAccount()
-    return Promise.resolve('') // TODO: Find unique identifier for netsuite.
+    return Promise.resolve(credentials.accountId)
   }
 
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {

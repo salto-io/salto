@@ -30,20 +30,20 @@ jest.spyOn(utils, 'applyInstancesDefaults')
 const objectElemID = new ElemID('salto', 'object')
 const commonFragment = new ObjectType({
   elemID: objectElemID,
-  fields: [{ name: 'commonField', type: BuiltinTypes.STRING }],
+  fields: { commonField: { type: BuiltinTypes.STRING } },
 })
 const envFragment = new ObjectType({
   elemID: objectElemID,
-  fields: [{ name: 'envField', type: BuiltinTypes.STRING }],
+  fields: { envField: { type: BuiltinTypes.STRING } },
 })
 const inactiveFragment = new ObjectType({
   elemID: objectElemID,
-  fields: [{ name: 'inactiveField', type: BuiltinTypes.STRING }],
+  fields: { inactiveField: { type: BuiltinTypes.STRING } },
 })
 const commonElemID = new ElemID('salto', 'common')
 const commonObject = new ObjectType({
   elemID: commonElemID,
-  fields: [{ name: 'field', type: BuiltinTypes.STRING }],
+  fields: { field: { type: BuiltinTypes.STRING } },
 })
 const commonNaclFiles = {
   'common.nacl': [commonObject],
@@ -70,7 +70,7 @@ const commonErrors = new Errors({
 const envElemID = new ElemID('salto', 'env')
 const envObject = new ObjectType({
   elemID: envElemID,
-  fields: [{ name: 'field', type: BuiltinTypes.STRING }],
+  fields: { field: { type: BuiltinTypes.STRING } },
 })
 const envSourceRange = {
   start: { col: 0, line: 0, byte: 0 },
@@ -96,7 +96,7 @@ const envNaclFiles = {
 const inactiveElemID = new ElemID('salto', 'inactive')
 const inactiveObject = new ObjectType({
   elemID: inactiveElemID,
-  fields: [{ name: 'field', type: BuiltinTypes.STRING }],
+  fields: { field: { type: BuiltinTypes.STRING } },
 })
 const inactiveNaclFiles = {
   'inenv.nacl': [inactiveObject],

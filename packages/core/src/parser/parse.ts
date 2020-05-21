@@ -169,7 +169,7 @@ export const parse = async (
     const typeObj = new ObjectType(
       {
         elemID,
-        fields,
+        fields: Object.assign({}, ...fields.map(field => ({ [field.name]: field }))),
         annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
         annotations: await attrValues(typeBlock, elemID.createNestedID('attr')),
         isSettings,

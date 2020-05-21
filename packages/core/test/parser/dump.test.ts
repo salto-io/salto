@@ -66,12 +66,11 @@ describe('Salto Dump', () => {
 
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
-    fields: [
-      { name: 'name', type: strType, annotations: { label: 'Name' } },
-      { name: 'num', type: numType },
-      { name: 'list', type: new ListType(strType) },
-      {
-        name: 'field',
+    fields: {
+      name: { type: strType, annotations: { label: 'Name' } },
+      num: { type: numType },
+      list: { type: new ListType(strType) },
+      field: {
         type: fieldType,
         annotations: {
           alice: 1,
@@ -80,7 +79,7 @@ describe('Salto Dump', () => {
           jerry: 'mouse',
         },
       },
-    ],
+    },
     annotationTypes: {
       ServiceId: BuiltinTypes.SERVICE_ID,
     },

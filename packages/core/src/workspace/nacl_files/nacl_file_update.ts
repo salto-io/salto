@@ -17,7 +17,6 @@ import _ from 'lodash'
 import path from 'path'
 import {
   getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionDiff,
-  FieldDefinition, isField,
 } from '@salto-io/adapter-api'
 import { AdditionDiff } from '@salto-io/dag'
 import { DetailedChange } from '../../core/plan'
@@ -222,10 +221,12 @@ type DetailedAddition = AdditionDiff<Element> & {
 const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition => {
   const createObjectTypeFromNestedAdditions = (additions: DetailedAddition[]): ObjectType =>
     new ObjectType(additions.reduce((prev, addition) => {
-      if (isField(addition.data.after)) {
-        return { ...prev, fields: [...prev.fields, addition.data.after] }
-      }
       switch (addition.id.idType) {
+        case 'field': return { ...prev,
+          fields: {
+            ...prev.fields,
+            [addition.id.name]: addition.data.after,
+          } }
         case 'attr': return { ...prev,
           annotations: {
             ...prev.annotations,
@@ -240,7 +241,7 @@ const wrapAdditions = (nestedAdditions: DetailedAddition[]): DetailedAddition =>
       }
     }, {
       elemID: additions[0].id.createTopLevelParentID().parent,
-      fields: [] as FieldDefinition[],
+      fields: {},
       annotationTypes: {},
       annotations: {},
     }))

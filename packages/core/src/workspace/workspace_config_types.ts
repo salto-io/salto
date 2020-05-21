@@ -24,31 +24,31 @@ const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 const envConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME, 'env')
 export const envConfigType = new ObjectType({
   elemID: envConfigElemID,
-  fields: [
-    { name: 'name', type: BuiltinTypes.STRING, annotations: requireAnno },
-    { name: 'services', type: new ListType(BuiltinTypes.STRING) },
-  ],
+  fields: {
+    name: { type: BuiltinTypes.STRING, annotations: requireAnno },
+    services: { type: new ListType(BuiltinTypes.STRING) },
+  },
 })
 
 const workspaceConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME)
 export const workspaceConfigType = new ObjectType({
   elemID: workspaceConfigElemID,
-  fields: [
-    { name: 'uid', type: BuiltinTypes.STRING, annotations: requireAnno },
-    { name: 'name', type: BuiltinTypes.STRING, annotations: requireAnno },
+  fields: {
+    uid: { type: BuiltinTypes.STRING, annotations: requireAnno },
+    name: { type: BuiltinTypes.STRING, annotations: requireAnno },
     // Once we have map type we can have here map env name -> env config
-    { name: 'envs', type: new ListType(envConfigType) },
-    { name: 'staleStateThresholdMinutes', type: BuiltinTypes.NUMBER },
-  ],
+    envs: { type: new ListType(envConfigType) },
+    staleStateThresholdMinutes: { type: BuiltinTypes.NUMBER },
+  },
   isSettings: true,
 })
 
 const userConfigElemID = new ElemID(USER_CONFIG_NAME)
 export const workspaceUserConfigType = new ObjectType({
   elemID: userConfigElemID,
-  fields: [
-    { name: 'currentEnv', type: BuiltinTypes.STRING, annotations: requireAnno },
-  ],
+  fields: {
+    currentEnv: { type: BuiltinTypes.STRING, annotations: requireAnno },
+  },
   isSettings: true,
 })
 

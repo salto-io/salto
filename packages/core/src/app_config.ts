@@ -87,11 +87,14 @@ const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 
 export const saltoAppConfigType = new ObjectType({
   elemID: saltoConfigElemID,
-  fields: [
-    { name: 'installationID', type: BuiltinTypes.STRING, annotations: requireAnno },
-    { name: 'telemetry', type: BuiltinTypes.JSON, annotations: requireAnno },
-    { name: 'command', type: BuiltinTypes.JSON, annotations: { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG } },
-  ],
+  fields: {
+    installationID: { type: BuiltinTypes.STRING, annotations: requireAnno },
+    telemetry: { type: BuiltinTypes.JSON, annotations: requireAnno },
+    command: {
+      type: BuiltinTypes.JSON,
+      annotations: { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG },
+    },
+  },
   annotationTypes: {},
   annotations: {},
 })

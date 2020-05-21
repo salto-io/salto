@@ -24,28 +24,27 @@ export const getAllElements = (): AllElementsTypes => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
-    fields: [
-      { name: 'country', type: BuiltinTypes.STRING },
-      { name: 'city', type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      country: { type: BuiltinTypes.STRING },
+      city: { type: BuiltinTypes.STRING },
+    },
     annotationTypes: { label: BuiltinTypes.STRING },
   })
 
   const officeElemID = new ElemID('salto', 'office')
   const saltoOffice = new ObjectType({
     elemID: officeElemID,
-    fields: [
-      { name: 'name', type: BuiltinTypes.STRING },
-      {
-        name: 'location',
+    fields: {
+      name: { type: BuiltinTypes.STRING },
+      location: {
         type: saltoAddr,
         annotations: {
           label: 'Office Location',
           description: 'A location of an office',
         },
       },
-      { name: 'rooms', type: new ListType(BuiltinTypes.STRING) },
-    ],
+      rooms: { type: new ListType(BuiltinTypes.STRING) },
+    },
     // eslint-disable-next-line @typescript-eslint/camelcase,max-len
     annotationTypes: { label: BuiltinTypes.STRING, old: BuiltinTypes.STRING, case_sensitive: BuiltinTypes.BOOLEAN },
   })
@@ -54,29 +53,24 @@ export const getAllElements = (): AllElementsTypes => {
   const stringListType = new ListType(BuiltinTypes.STRING)
   const saltoEmployee = new ObjectType({
     elemID: employeeElemID,
-    fields: [
-      {
-        name: 'name',
+    fields: {
+      name: {
         type: BuiltinTypes.STRING,
         annotations: { _required: true },
       },
-      {
-        name: 'nicknames',
+      nicknames: {
         type: stringListType,
         annotations: {},
       },
-      {
-        name: 'employee_resident',
+      employee_resident: {
         type: saltoAddr,
         annotations: { label: 'Employee Resident' },
       },
-      {
-        name: 'company',
+      company: {
         type: BuiltinTypes.STRING,
         annotations: { _default: 'salto' },
       },
-      {
-        name: 'office',
+      office: {
         type: saltoOffice,
         annotations: {
           label: 'Based In',
@@ -93,7 +87,7 @@ export const getAllElements = (): AllElementsTypes => {
           },
         },
       },
-    ],
+    },
   })
 
   const saltoEmployeeInstance = new InstanceElement(

@@ -15,13 +15,8 @@
 */
 
 import {
-<<<<<<< HEAD
-  BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, InstanceElement, ListType,
-  ObjectType, PrimitiveType, PrimitiveTypes,
-=======
   BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ListType,
-  ObjectType,
->>>>>>> d0be5a0e... Change Field to hold reference to parent instead of just ID
+  ObjectType, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import {
   addHiddenValuesAndHiddenTypes,
@@ -35,49 +30,43 @@ describe('hidden_values.ts', () => {
   const innerObject = new ObjectType(
     {
       elemID: innerObjectElemID,
-      fields: [
-        { name: 'num', type: BuiltinTypes.NUMBER },
-        { name: 'stringList', type: new ListType(BuiltinTypes.STRING) },
-        {
-          name: 'hiddenStr',
+      fields: {
+        num: { type: BuiltinTypes.NUMBER },
+        stringList: { type: new ListType(BuiltinTypes.STRING) },
+        hiddenStr: {
           type: BuiltinTypes.STRING,
           annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
         },
-      ],
+      },
     }
   )
 
   const hiddenType = new ObjectType({
     elemID: anotherTypeID,
-    fields: [
-      { name: 'reg', type: BuiltinTypes.STRING },
-      {
-        name: 'listOfObjects',
+    fields: {
+      reg: { type: BuiltinTypes.STRING },
+      listOfObjects: {
         type: new ListType(innerObject),
-        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true }
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
-      {
-        name: 'notHidden',
+      notHidden: {
         type: BuiltinTypes.STRING,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false }
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
       },
-      {
-        name: 'hidden',
+      hidden: {
         type: BuiltinTypes.STRING,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true }
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
-      {
-        name: 'objField',
+      objField: {
         type: innerObject,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true }
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
-      {
-        name: 'numHidden',
+      numHidden: {
         type: BuiltinTypes.NUMBER,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true }
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
-      { name: 'addedField', type: BuiltinTypes.STRING },
-    ],
+      addedField: { type: BuiltinTypes.STRING },
+    },
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
     path: ['records', 'hidden'],
   })
@@ -86,10 +75,10 @@ describe('hidden_values.ts', () => {
   const regTypeID = new ElemID('dummy', 'regType')
   const notHiddenType = new ObjectType({
     elemID: regTypeID,
-    fields: [
-      { name: 'str', type: BuiltinTypes.STRING },
-      { name: 'num2', type: BuiltinTypes.NUMBER },
-    ],
+    fields: {
+      str: { type: BuiltinTypes.STRING },
+      num2: { type: BuiltinTypes.NUMBER },
+    },
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
   })
 

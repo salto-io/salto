@@ -28,10 +28,10 @@ describe('merger', () => {
   const baseElemID = new ElemID('salto', 'base')
   const base = new ObjectType({
     elemID: baseElemID,
-    fields: [
-      { name: 'field1', type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-      { name: 'field2', type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-    ],
+    fields: {
+      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+      field2: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+    },
     annotations: {
       _default: {
         field1: 'base1',
@@ -42,44 +42,44 @@ describe('merger', () => {
 
   const unrelated = new ObjectType({
     elemID: new ElemID('salto', 'unrelated'),
-    fields: [
-      { name: 'field1', type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-    ],
+    fields: {
+      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+    },
   })
 
   const fieldAnnotationConflict = new ObjectType({
     elemID: baseElemID,
-    fields: [
-      { name: 'field1', type: BuiltinTypes.STRING, annotations: { label: 'update1' } },
-    ],
+    fields: {
+      field1: { type: BuiltinTypes.STRING, annotations: { label: 'update1' } },
+    },
   })
 
   const fieldTypeConflict = new ObjectType({
     elemID: baseElemID,
-    fields: [
-      { name: 'field2', type: BuiltinTypes.NUMBER },
-    ],
+    fields: {
+      field2: { type: BuiltinTypes.NUMBER },
+    },
   })
 
   const fieldUpdate = new ObjectType({
     elemID: baseElemID,
-    fields: [
-      { name: 'field1', type: BuiltinTypes.STRING, annotations: { a: 'update' } },
-    ],
+    fields: {
+      field1: { type: BuiltinTypes.STRING, annotations: { a: 'update' } },
+    },
   })
 
   const fieldUpdate2 = new ObjectType({
     elemID: baseElemID,
-    fields: [
-      { name: 'field1', type: BuiltinTypes.STRING, annotations: { b: 'update' } },
-    ],
+    fields: {
+      field1: { type: BuiltinTypes.STRING, annotations: { b: 'update' } },
+    },
   })
 
   const newField = new ObjectType({
     elemID: baseElemID,
-    fields: [
-      { name: 'field3', type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      field3: { type: BuiltinTypes.STRING },
+    },
   })
 
   const updateAnno = new ObjectType({
@@ -115,11 +115,11 @@ describe('merger', () => {
 
   const mergedObject = new ObjectType({
     elemID: baseElemID,
-    fields: [
-      { name: 'field1', type: BuiltinTypes.STRING, annotations: { label: 'base', a: 'update', b: 'update' } },
-      { name: 'field2', type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-      { name: 'field3', type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      field1: { type: BuiltinTypes.STRING, annotations: { label: 'base', a: 'update', b: 'update' } },
+      field2: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+      field3: { type: BuiltinTypes.STRING },
+    },
     annotations: {
       anno1: 'updated',
       _default: {
@@ -245,11 +245,11 @@ describe('merger', () => {
     const nestedElemID = new ElemID('salto', 'nested')
     const nested = new ObjectType({
       elemID: nestedElemID,
-      fields: [
-        { name: 'field1', type: strType, annotations: { _default: 'field1' } },
-        { name: 'field2', type: strType },
-        { name: 'base', type: base },
-      ],
+      fields: {
+        field1: { type: strType, annotations: { _default: 'field1' } },
+        field2: { type: strType },
+        base: { type: base },
+      },
     })
     const ins1 = new InstanceElement(
       'ins',
@@ -361,10 +361,10 @@ describe('merger', () => {
 
     const nested = new ObjectType({
       elemID: nestedElemID,
-      fields: [
-        { name: 'prim', type: typeRef(strType) },
-        { name: 'base', type: typeRef(base) },
-      ],
+      fields: {
+        prim: { type: typeRef(strType) },
+        base: { type: typeRef(base) },
+      },
     })
 
     it('should replace type refs with full types', () => {

@@ -133,7 +133,7 @@ const mergeObjectDefinitions = (
   return {
     merged: new ObjectType({
       elemID,
-      fields: Object.values(fieldsMergeResults).map(r => r.merged),
+      fields: _.mapValues(fieldsMergeResults, r => r.merged),
       annotationTypes: annotationTypesMergeResults.merged,
       annotations: annotationsMergeResults.merged,
     }),

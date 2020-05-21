@@ -163,7 +163,7 @@ export const deserialize = async (
     ),
     ObjectType: v => new ObjectType({
       elemID: reviveElemID(v.elemID),
-      fields: Object.values(v.fields),
+      fields: v.fields,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
     }),

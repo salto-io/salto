@@ -83,10 +83,10 @@ describe('filterInvalidChanges', () => {
   it('should have onAdd change errors and omit invalid object & instance addition', async () => {
     const newInvalidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_invalid_obj'),
-      fields: [
-        { name: 'valid', type: BuiltinTypes.STRING },
-        { name: 'invalid', type: BuiltinTypes.STRING },
-      ],
+      fields: {
+        valid: { type: BuiltinTypes.STRING },
+        invalid: { type: BuiltinTypes.STRING },
+      },
       annotations: { value: 'value' },
     })
     const newInvalidInst = new InstanceElement('new_invalid_inst', newInvalidObj, {})
@@ -104,10 +104,10 @@ describe('filterInvalidChanges', () => {
   it('should have onAdd change errors and omit invalid object & insatance additionaaaaa', async () => {
     const newValidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_valid_obj'),
-      fields: [
-        { name: 'valid', type: BuiltinTypes.STRING },
-        { name: 'invalid', type: BuiltinTypes.STRING },
-      ],
+      fields: {
+        valid: { type: BuiltinTypes.STRING },
+        invalid: { type: BuiltinTypes.STRING },
+      },
       annotations: { value: 'value' },
     })
     const planResult = await getPlan(allElements, [...allElements, newValidObj],

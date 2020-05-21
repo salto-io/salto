@@ -26,10 +26,10 @@ describe('configs', () => {
   const configID = new ElemID(adapter)
   const configType = new ObjectType({
     elemID: configID,
-    fields: [
-      { name: 'field1', type: new ListType(BuiltinTypes.STRING) },
-      { name: 'field2', type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      field1: { type: new ListType(BuiltinTypes.STRING) },
+      field2: { type: BuiltinTypes.STRING },
+    },
   })
   const config = new InstanceElement(ElemID.CONFIG_NAME, configType, {
     field1: ['test1', 'test2'],

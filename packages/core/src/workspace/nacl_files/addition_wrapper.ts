@@ -16,7 +16,7 @@
 import { AdditionDiff } from '@salto-io/dag'
 import {
   Element, ElemID, ObjectType, InstanceElement, getChangeElement, Value,
-  isObjectType, isInstanceElement, PrimitiveType, isField, FieldDefinition,
+  isObjectType, isInstanceElement, PrimitiveType, isField, FieldDefinition, Field,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
@@ -27,17 +27,17 @@ export type DetailedAddition = AdditionDiff<Value> & {
 
 const addToField = (
   addition: DetailedAddition,
-  commonField: FieldDefinition,
+  commonField: Field,
   currentField?: FieldDefinition
-): FieldDefinition => {
-  if (isField(addition.data.after)) return addition.data.after
+): Record<string, FieldDefinition> => {
+  if (isField(addition.data.after)) return { [addition.data.after.name]: addition.data.after }
   const { name } = commonField
   const { path } = addition.id.createTopLevelParentID()
   const annotations = { ...currentField?.annotations }
   if (!_.isEmpty(path)) {
     _.set(annotations, path.slice(1), addition.data.after)
   }
-  return { name, type: commonField.type, annotations }
+  return { [name]: { type: commonField.type, annotations } }
 }
 
 const createObjectTypeFromNestedAdditions = (
@@ -49,14 +49,14 @@ const createObjectTypeFromNestedAdditions = (
       case 'field': {
         const fieldName = addition.id.createTopLevelParentID().path[0]
         return { ...prev,
-          fields: [
+          fields: {
             ...prev.fields,
-            addToField(
+            ...addToField(
               addition,
               commonObjectType.fields[fieldName],
-              prev.fields.find(f => f.name === fieldName),
+              prev.fields[fieldName],
             ),
-          ] }
+          } }
       }
       case 'attr': {
         const attrPath = addition.id.createTopLevelParentID().path
@@ -75,7 +75,7 @@ const createObjectTypeFromNestedAdditions = (
     }
   }, {
     elemID: commonObjectType.elemID,
-    fields: [] as FieldDefinition[],
+    fields: {} as Record<string, FieldDefinition>,
     annotationTypes: {},
     annotations: {},
     path: additions[0].path,

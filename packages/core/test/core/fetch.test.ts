@@ -42,7 +42,7 @@ describe('fetch', () => {
   const testID = new ElemID('dummy', 'elem')
   const typeWithField = new ObjectType({
     elemID: testID,
-    fields: [{ name: 'test', type: BuiltinTypes.STRING, annotations: { annotation: 'value' } }],
+    fields: { test: { type: BuiltinTypes.STRING, annotations: { annotation: 'value' } } },
   })
   const typeWithFieldChange = typeWithField.clone()
   typeWithFieldChange.fields.test.annotations.annotation = 'changed'
@@ -51,26 +51,24 @@ describe('fetch', () => {
   const newTypeID = new ElemID('dummy', 'new')
   const newTypeBase = new ObjectType({
     elemID: newTypeID,
-    fields: [{ name: 'base', type: BuiltinTypes.STRING }],
+    fields: { base: { type: BuiltinTypes.STRING } },
     path: ['path', 'base'],
   })
 
   const anotherTypeID = new ElemID('dummy', 'hiddenType')
   const typeWithHiddenField = new ObjectType({
     elemID: anotherTypeID,
-    fields: [
-      { name: 'reg', type: BuiltinTypes.STRING },
-      {
-        name: 'notHidden',
+    fields: {
+      reg: { type: BuiltinTypes.STRING },
+      notHidden: {
         type: BuiltinTypes.STRING,
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
       },
-      {
-        name: 'hidden',
+      hidden: {
         type: BuiltinTypes.STRING,
         annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
       },
-    ],
+    },
     path: ['records', 'hidden'],
   })
 
@@ -85,20 +83,20 @@ describe('fetch', () => {
 
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,
-    fields: [{ name: 'base', type: new ListType(BuiltinTypes.STRING) }],
+    fields: { base: { type: new ListType(BuiltinTypes.STRING) } },
     path: ['path', 'base'],
   })
   const newTypeExt = new ObjectType({
     elemID: newTypeID,
-    fields: [{ name: 'ext', type: BuiltinTypes.STRING }],
+    fields: { ext: { type: BuiltinTypes.STRING } },
     path: ['path', 'ext'],
   })
   const newTypeMerged = new ObjectType({
     elemID: newTypeID,
-    fields: [
-      { name: 'base', type: BuiltinTypes.STRING },
-      { name: 'ext', type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      base: { type: BuiltinTypes.STRING },
+      ext: { type: BuiltinTypes.STRING },
+    },
   })
 
   beforeEach(() => jest.spyOn(merger, 'mergeElements').mockRestore())
@@ -130,7 +128,7 @@ describe('fetch', () => {
       const configElemID = new ElemID('dummy')
       const configType = new ObjectType({
         elemID: configElemID,
-        fields: [{ name: 'test', type: new ListType(BuiltinTypes.STRING) }],
+        fields: { test: { type: new ListType(BuiltinTypes.STRING) } },
       })
       const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
       const currentInstanceConfig = new InstanceElement('ins', configType, { test: [] })
@@ -502,13 +500,15 @@ describe('fetch', () => {
           [SERVICE_ID_ANNOTATION]: 'ObjectServiceId',
         },
       })
-      const addField = (obj: ObjectType, field: FieldDefinition): Field => {
+
+      type FieldDefinitionWithName = FieldDefinition & { name: string }
+      const addField = (obj: ObjectType, field: FieldDefinitionWithName): Field => {
         const newField = new Field(obj, field.name, field.type, field.annotations)
         obj.fields[field.name] = newField
         return newField
       }
       let obj: ObjectType
-      let regularFieldDef: Required<FieldDefinition>
+      let regularFieldDef: Required<FieldDefinitionWithName>
       let regularFieldType: PrimitiveType
       let instance: InstanceElement
       beforeEach(() => {

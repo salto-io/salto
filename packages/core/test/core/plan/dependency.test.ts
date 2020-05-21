@@ -271,7 +271,7 @@ describe('dependecy changers', () => {
       })
       testType = new ObjectType({
         elemID: testTypeId,
-        fields: [{ name: 'ref', type: BuiltinTypes.STRING }],
+        fields: { ref: { type: BuiltinTypes.STRING } },
         annotations: { annoRef: new ReferenceExpression(testAnnoType.elemID) },
         annotationTypes: { annoRef: testAnnoType },
       })

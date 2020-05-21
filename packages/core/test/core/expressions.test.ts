@@ -41,17 +41,16 @@ describe('Test Salto Expressions', () => {
     const objElemID = new ElemID('salto', 'obj')
     const base = new ObjectType({
       elemID: baseElemID,
-      fields: [
-        { name: 'simple', type: BuiltinTypes.STRING, annotations: { anno: 'field_anno' } },
-        {
-          name: 'obj',
+      fields: {
+        simple: { type: BuiltinTypes.STRING, annotations: { anno: 'field_anno' } },
+        obj: {
           type: new ObjectType({
             elemID: objElemID,
-            fields: [{ name: 'value', type: BuiltinTypes.STRING }],
+            fields: { value: { type: BuiltinTypes.STRING } },
           }),
         },
-        { name: 'arr', type: new ListType(BuiltinTypes.STRING) },
-      ],
+        arr: { type: new ListType(BuiltinTypes.STRING) },
+      },
       annotations: {
         anno: 'base_anno',
       },
@@ -113,13 +112,12 @@ describe('Test Salto Expressions', () => {
     const objectRefID = new ElemID('salto', 'objref')
     const objectRef = new ObjectType({
       elemID: objectRefID,
-      fields: [
-        {
-          name: 'ref',
+      fields: {
+        ref: {
           type: BuiltinTypes.STRING,
           annotations: { anno: refTo(base, 'attr', 'anno') },
         },
-      ],
+      },
       annotations: {
         anno: refTo(base, 'attr', 'anno'),
       },

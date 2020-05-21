@@ -51,7 +51,7 @@ const projectType = (src: TypeElement, target: TypeElement): TypeElement | undef
         ...target,
         annotationTypes,
         annotations,
-        fields: Object.values(fields),
+        fields,
         path: src.path,
       })
   }

@@ -49,12 +49,12 @@ describe('State/cache serialization', () => {
 
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
-    fields: [
-      { name: 'name', type: strType, annotations: { label: 'Name' } },
-      { name: 'file', type: strType, annotations: { label: 'File' } },
-      { name: 'num', type: numType },
-      { name: 'list', type: strListType },
-    ],
+    fields: {
+      name: { type: strType, annotations: { label: 'Name' } },
+      file: { type: strType, annotations: { label: 'File' } },
+      num: { type: numType },
+      list: { type: strListType },
+    },
   })
 
   model.annotate({

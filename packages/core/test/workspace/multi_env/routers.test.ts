@@ -40,16 +40,16 @@ const commonObj = new ObjectType({
   annotations: {
     boolean: false,
   },
-  fields: [
+  fields: {
     commonField,
     listField,
-  ],
+  },
 })
 const envObj = new ObjectType({
   elemID: objectElemID,
-  fields: [
+  fields: {
     envField,
-  ],
+  },
 })
 const sharedObject = new ObjectType({
   elemID: objectElemID,
@@ -59,11 +59,11 @@ const sharedObject = new ObjectType({
   annotations: {
     boolean: false,
   },
-  fields: [
+  fields: {
     envField,
     commonField,
     listField,
-  ],
+  },
 })
 
 const newObj = new ObjectType({ elemID: new ElemID('salto', 'new') })
@@ -77,7 +77,7 @@ const commonInstance = new InstanceElement('commonInst', commonObj, {
 const splitObjectID = new ElemID('salto', 'split')
 const splitObjectFields = new ObjectType({
   elemID: splitObjectID,
-  fields: Object.values(commonObj.fields),
+  fields: commonObj.fields,
 })
 const splitObjectAnnotations = new ObjectType({
   elemID: splitObjectID,
@@ -89,7 +89,7 @@ const splitObjectAnnotationTypes = new ObjectType({
 })
 const splitObjJoined = new ObjectType({
   elemID: splitObjectID,
-  fields: Object.values(splitObjectFields.fields),
+  fields: splitObjectFields.fields,
   annotationTypes: splitObjectAnnotationTypes.annotationTypes,
   annotations: splitObjectAnnotations.annotations,
 })

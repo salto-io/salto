@@ -25,11 +25,11 @@ const configID = new ElemID(NETSUITE)
 
 const credentialsType = new ObjectType({
   elemID: configID,
-  fields: [
-    { name: 'accountId', type: BuiltinTypes.STRING },
-    { name: 'tokenId', type: BuiltinTypes.STRING },
-    { name: 'tokenSecret', type: BuiltinTypes.STRING },
-  ],
+  fields: {
+    accountId: { type: BuiltinTypes.STRING },
+    tokenId: { type: BuiltinTypes.STRING },
+    tokenSecret: { type: BuiltinTypes.STRING },
+  },
   annotationTypes: {},
   annotations: {},
 })

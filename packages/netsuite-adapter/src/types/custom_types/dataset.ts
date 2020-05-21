@@ -30,15 +30,14 @@ const dataset_dependencies = new ObjectType({
   elemID: dataset_dependenciesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'dependency',
+  fields: {
+    dependency: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customtransactiontype   customsegment   customrecordcustomfield   customrecordtype   crmcustomfield */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, datasetElemID.name],
 })
 
@@ -50,16 +49,14 @@ export const dataset = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custdataset_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custdataset’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -67,19 +64,17 @@ export const dataset = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
     }, /* Original description: This field value can be up to 50 characters long. */
-    {
-      name: 'definition',
+    definition: {
       type: fieldTypes.cdata,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'dependencies',
+    dependencies: {
       type: dataset_dependencies,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, datasetElemID.name],
 })

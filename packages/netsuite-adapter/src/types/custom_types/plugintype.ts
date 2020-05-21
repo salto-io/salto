@@ -30,15 +30,14 @@ const plugintype_libraries_library = new ObjectType({
   elemID: plugintype_libraries_libraryElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptfile',
+  fields: {
+    scriptfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a .js file. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, plugintypeElemID.name],
 })
 
@@ -50,14 +49,13 @@ const plugintype_libraries = new ObjectType({
   elemID: plugintype_librariesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'library',
+  fields: {
+    library: {
       type: new ListType(plugintype_libraries_library),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, plugintypeElemID.name],
 })
 
@@ -69,23 +67,21 @@ const plugintype_methods_method = new ObjectType({
   elemID: plugintype_methods_methodElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'method',
+  fields: {
+    method: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
     }, /* Original description: This field value can be up to 30 characters long. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
     }, /* Original description: This field value can be up to 30 characters long. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, plugintypeElemID.name],
 })
 
@@ -97,14 +93,13 @@ const plugintype_methods = new ObjectType({
   elemID: plugintype_methodsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'method',
+  fields: {
+    method: {
       type: new ListType(plugintype_methods_method),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, plugintypeElemID.name],
 })
 
@@ -116,16 +111,14 @@ export const plugintype = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -133,102 +126,87 @@ export const plugintype = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long. */
-    {
-      name: 'scriptfile',
+    scriptfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a .js file. */
-    {
-      name: 'deploymentmodel',
+    deploymentmodel: {
       type: enums.plugintype_deployment_model,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see plugintype_deployment_model. */
-    {
-      name: 'status',
+    status: {
       type: enums.plugintype_status,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'notifyadmins',
+    notifyadmins: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'notifyemails',
+    notifyemails: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-    {
-      name: 'notifygroup',
+    notifygroup: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: Note Account-specific values are not supported by SDF. */
-    {
-      name: 'notifyowner',
+    notifyowner: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'notifyuser',
+    notifyuser: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'class',
+    class: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long. */
-    {
-      name: 'documentationfile',
+    documentationfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     }, /* Original description: This field must reference a .pdf file. */
-    {
-      name: 'loglevel',
+    loglevel: {
       type: enums.plugintype_loglevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
-    {
-      name: 'libraries',
+    libraries: {
       type: plugintype_libraries,
       annotations: {
       },
     },
-    {
-      name: 'methods',
+    methods: {
       type: plugintype_methods,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, plugintypeElemID.name],
 })

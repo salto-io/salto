@@ -29,35 +29,31 @@ const customlist_customvalues_customvalue = new ObjectType({
   elemID: customlist_customvalues_customvalueElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'abbreviation',
+    abbreviation: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the ismatrixoption value is equal to T.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
 })
 
@@ -69,14 +65,13 @@ const customlist_customvalues = new ObjectType({
   elemID: customlist_customvaluesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'customvalue',
+  fields: {
+    customvalue: {
       type: new ListType(customlist_customvalues_customvalue),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
 })
 
@@ -88,16 +83,14 @@ export const customlist = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customlist_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘customlist’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -105,36 +98,31 @@ export const customlist = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
     }, /* Original description: This field value can be up to 30 characters long. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'ismatrixoption',
+    ismatrixoption: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
-    {
-      name: 'isordered',
+    isordered: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'customvalues',
+    customvalues: {
       type: customlist_customvalues,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customlistElemID.name],
 })

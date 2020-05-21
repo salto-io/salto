@@ -30,34 +30,30 @@ const centertab_portlets_portlet = new ObjectType({
   elemID: centertab_portlets_portletElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
-    {
-      name: 'portlet',
+    portlet: {
       type: enums.generic_portlet,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_portlet. */
-    {
-      name: 'portletcolumn',
+    portletcolumn: {
       type: enums.generic_portletcolumn,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_portletcolumn. */
-    {
-      name: 'isportletshown',
+    isportletshown: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
 })
 
@@ -69,14 +65,13 @@ const centertab_portlets = new ObjectType({
   elemID: centertab_portletsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'portlet',
+  fields: {
+    portlet: {
       type: new ListType(centertab_portlets_portlet),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
 })
 
@@ -88,71 +83,61 @@ export const centertab = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custcentertab_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentertab’. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
     },
-    {
-      name: 'center',
+    center: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */
-    {
-      name: 'allvendors',
+    allvendors: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allroles',
+    allroles: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allpartners',
+    allpartners: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
-    {
-      name: 'allcustomers',
+    allcustomers: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allemployees',
+    allemployees: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'audslctrole',
+    audslctrole: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
-    {
-      name: 'portlets',
+    portlets: {
       type: centertab_portlets,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
 })

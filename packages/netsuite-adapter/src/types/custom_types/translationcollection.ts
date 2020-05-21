@@ -30,31 +30,28 @@ const translationcollection_strings_string = new ObjectType({
   elemID: translationcollection_strings_stringElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 60 characters long. */
-    {
-      name: 'defaulttranslation',
+    defaulttranslation: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
     }, /* Original description: This field value can be up to 1000 characters long. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
     }, /* Original description: This field value can be up to 1000 characters long. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, translationcollectionElemID.name],
 })
 
@@ -66,14 +63,13 @@ const translationcollection_strings = new ObjectType({
   elemID: translationcollection_stringsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'string',
+  fields: {
+    string: {
       type: new ListType(translationcollection_strings_string),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, translationcollectionElemID.name],
 })
 
@@ -85,16 +81,14 @@ export const translationcollection = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custcollection_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 60 characters long.   The default value is ‘custcollection’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -102,26 +96,23 @@ export const translationcollection = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 100,
       },
     }, /* Original description: This field value can be up to 100 characters long. */
-    {
-      name: 'defaultlanguage',
+    defaultlanguage: {
       type: enums.translationcollection_defaultlanguage,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see translationcollection_defaultlanguage. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
     }, /* Original description: This field value can be up to 1000 characters long. */
-    {
-      name: 'strings',
+    strings: {
       type: translationcollection_strings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, translationcollectionElemID.name],
 })

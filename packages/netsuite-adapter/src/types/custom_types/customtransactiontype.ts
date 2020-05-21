@@ -30,26 +30,23 @@ const customtransactiontype_accounting = new ObjectType({
   elemID: customtransactiontype_accountingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'specifyaccountontransaction',
+  fields: {
+    specifyaccountontransaction: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is present in customtransactiontype_subliststyle_salesandpurchase.   The default value is F. */
-    {
-      name: 'filterbyaccounttypeall',
+    filterbyaccounttypeall: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the specifyaccountontransaction value is equal to T.   The default value is F. */
-    {
-      name: 'filterbyaccounttype',
+    filterbyaccounttype: {
       type: enums.customtransactiontype_filterbyaccounttype,
       annotations: {
       },
     }, /* Original description: This field is available when the specifyaccountontransaction value is equal to T.   This field is available when the filterbyaccounttypeall value is equal to F.   For information about possible values, see customtransactiontype_filterbyaccounttype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
 })
 
@@ -61,22 +58,20 @@ const customtransactiontype_permissions_permission = new ObjectType({
   elemID: customtransactiontype_permissions_permissionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'permittedrole',
+  fields: {
+    permittedrole: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    {
-      name: 'permittedlevel',
+    permittedlevel: {
       type: enums.generic_permission_level,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_permission_level.   The default value is 'NONE'. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
 })
 
@@ -88,14 +83,13 @@ const customtransactiontype_permissions = new ObjectType({
   elemID: customtransactiontype_permissionsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'permission',
+  fields: {
+    permission: {
       type: new ListType(customtransactiontype_permissions_permission),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
 })
 
@@ -107,44 +101,38 @@ const customtransactiontype_segments = new ObjectType({
   elemID: customtransactiontype_segmentsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'classposition',
+  fields: {
+    classposition: {
       type: enums.customtransactiontype_classification_position,
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   For information about possible values, see customtransactiontype_classification_position.   The default value is 'NONE'.   If this field appears in the project, you must reference the CLASSES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CLASSES must be enabled for this field to appear in your account. */
-    {
-      name: 'isclassmandatory',
+    isclassmandatory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the classposition value is not equal to NONE.   This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   The default value is F.   If this field appears in the project, you must reference the CLASSES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CLASSES must be enabled for this field to appear in your account. */
-    {
-      name: 'departmentposition',
+    departmentposition: {
       type: enums.customtransactiontype_classification_position,
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   For information about possible values, see customtransactiontype_classification_position.   The default value is 'NONE'.   If this field appears in the project, you must reference the DEPARTMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. DEPARTMENTS must be enabled for this field to appear in your account. */
-    {
-      name: 'isdepartmentmandatory',
+    isdepartmentmandatory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the departmentposition value is not equal to NONE.   This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   The default value is F.   If this field appears in the project, you must reference the DEPARTMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. DEPARTMENTS must be enabled for this field to appear in your account. */
-    {
-      name: 'locationposition',
+    locationposition: {
       type: enums.customtransactiontype_classification_position,
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   For information about possible values, see customtransactiontype_classification_position.   The default value is 'NONE'.   If this field appears in the project, you must reference the LOCATIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. LOCATIONS must be enabled for this field to appear in your account. */
-    {
-      name: 'islocationmandatory',
+    islocationmandatory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the locationposition value is not equal to NONE.   This field is available when the transactionstyle value is not present in customtransactiontype_subliststyle_salesandpurchase.   The default value is F.   If this field appears in the project, you must reference the LOCATIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. LOCATIONS must be enabled for this field to appear in your account. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
 })
 
@@ -156,37 +144,33 @@ const customtransactiontype_statuses_status = new ObjectType({
   elemID: customtransactiontype_statuses_statusElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 480,
       },
     }, /* Original description: This field value can be up to 480 characters long. */
-    {
-      name: 'id',
+    id: {
       type: enums.customtransactiontype_statuses_id,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see customtransactiontype_statuses_id. */
-    {
-      name: 'isposting',
+    isposting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
 })
 
@@ -198,14 +182,13 @@ const customtransactiontype_statuses = new ObjectType({
   elemID: customtransactiontype_statusesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'status',
+  fields: {
+    status: {
       type: new ListType(customtransactiontype_statuses_status),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
 })
 
@@ -217,16 +200,14 @@ export const customtransactiontype = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customtransaction_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -234,66 +215,56 @@ export const customtransactiontype = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 96,
       },
     }, /* Original description: This field value can be up to 96 characters long. */
-    {
-      name: 'subliststyle',
+    subliststyle: {
       type: enums.customtransactiontype_subliststyle,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the transactionstyle value is not defined.   For information about possible values, see customtransactiontype_subliststyle.   The default value is 'BASIC'. */
-    {
-      name: 'transactionstyle',
+    transactionstyle: {
       type: enums.customtransactiontype_subliststyle,
       annotations: {
       },
     }, /* Original description: For information about possible values, see customtransactiontype_subliststyle.   The default value is 'BASIC'. */
-    {
-      name: 'iscredit',
+    iscredit: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the transactionstyle value is present in customtransactiontype_creditsupportstyles.   The default value is F. */
-    {
-      name: 'isposting',
+    isposting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'showstatus',
+    showstatus: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'isvoidable',
+    isvoidable: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'accounting',
+    accounting: {
       type: customtransactiontype_accounting,
       annotations: {
       },
     },
-    {
-      name: 'permissions',
+    permissions: {
       type: customtransactiontype_permissions,
       annotations: {
       },
     },
-    {
-      name: 'segments',
+    segments: {
       type: customtransactiontype_segments,
       annotations: {
       },
     },
-    {
-      name: 'statuses',
+    statuses: {
       type: customtransactiontype_statuses,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customtransactiontypeElemID.name],
 })

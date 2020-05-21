@@ -30,57 +30,49 @@ const transactionbodycustomfield_customfieldfilters_customfieldfilter = new Obje
   elemID: transactionbodycustomfield_customfieldfilters_customfieldfilterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fldfilter',
+  fields: {
+    fldfilter: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fldfilterchecked',
+    fldfilterchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfiltercomparetype',
+    fldfiltercomparetype: {
       type: enums.generic_customfield_fldfiltercomparetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    {
-      name: 'fldfiltersel',
+    fldfiltersel: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'fldfilterval',
+    fldfilterval: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'fldfilternotnull',
+    fldfilternotnull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfilternull',
+    fldfilternull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldcomparefield',
+    fldcomparefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionbodycustomfieldElemID.name],
 })
 
@@ -92,14 +84,13 @@ const transactionbodycustomfield_customfieldfilters = new ObjectType({
   elemID: transactionbodycustomfield_customfieldfiltersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'customfieldfilter',
+  fields: {
+    customfieldfilter: {
       type: new ListType(transactionbodycustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionbodycustomfieldElemID.name],
 })
 
@@ -111,29 +102,26 @@ const transactionbodycustomfield_roleaccesses_roleaccess = new ObjectType({
   elemID: transactionbodycustomfield_roleaccesses_roleaccessElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'role',
+  fields: {
+    role: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    {
-      name: 'accesslevel',
+    accesslevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    {
-      name: 'searchlevel',
+    searchlevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionbodycustomfieldElemID.name],
 })
 
@@ -145,14 +133,13 @@ const transactionbodycustomfield_roleaccesses = new ObjectType({
   elemID: transactionbodycustomfield_roleaccessesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'roleaccess',
+  fields: {
+    roleaccess: {
       type: new ListType(transactionbodycustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionbodycustomfieldElemID.name],
 })
 
@@ -164,23 +151,20 @@ export const transactionbodycustomfield = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custbody_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘custbody’. */
-    {
-      name: 'fieldtype',
+    fieldtype: {
       type: enums.generic_customfield_fieldtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -188,402 +172,336 @@ export const transactionbodycustomfield = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
     }, /* Original description: This field value can be up to 200 characters long. */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    {
-      name: 'applyformatting',
+    applyformatting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'defaultchecked',
+    defaultchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'defaultselection',
+    defaultselection: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'defaultvalue',
+    defaultvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'displaytype',
+    displaytype: {
       type: enums.generic_customfield_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    {
-      name: 'dynamicdefault',
+    dynamicdefault: {
       type: enums.generic_customfield_dynamicdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    {
-      name: 'help',
+    help: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'linktext',
+    linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'minvalue',
+    minvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'maxvalue',
+    maxvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'storevalue',
+    storevalue: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'accesslevel',
+    accesslevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    {
-      name: 'checkspelling',
+    checkspelling: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'encryptatrest',
+    encryptatrest: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'displayheight',
+    displayheight: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
-    {
-      name: 'displaywidth',
+    displaywidth: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
-    {
-      name: 'globalsearch',
+    globalsearch: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'isformula',
+    isformula: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'ismandatory',
+    ismandatory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'maxlength',
+    maxlength: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'onparentdelete',
+    onparentdelete: {
       type: enums.generic_customfield_onparentdelete,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
-    {
-      name: 'searchcomparefield',
+    searchcomparefield: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'searchdefault',
+    searchdefault: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'searchlevel',
+    searchlevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    {
-      name: 'showhierarchy',
+    showhierarchy: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'showinlist',
+    showinlist: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'sourcefilterby',
+    sourcefilterby: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'sourcefrom',
+    sourcefrom: {
       type: BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'sourcelist',
+    sourcelist: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the transactionbodycustomfield custom type.   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isparent',
+    isparent: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'parentsubtab',
+    parentsubtab: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see generic_tab_parent. */
-    {
-      name: 'subtab',
+    subtab: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the subtab custom type.   For information about other possible values, see generic_body_tab. */
-    {
-      name: 'bodyassemblybuild',
+    bodyassemblybuild: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ASSEMBLIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ASSEMBLIES must be enabled for this field to appear in your account. */
-    {
-      name: 'bodybom',
+    bodybom: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WORKORDERS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WORKORDERS must be enabled for this field to appear in your account. */
-    {
-      name: 'bodycustomerpayment',
+    bodycustomerpayment: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the RECEIVABLES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. RECEIVABLES must be enabled for this field to appear in your account. */
-    {
-      name: 'bodydeposit',
+    bodydeposit: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'bodydepositapplication',
+    bodydepositapplication: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'bodyexpensereport',
+    bodyexpensereport: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the EXPREPORTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. EXPREPORTS must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyinventoryadjustment',
+    bodyinventoryadjustment: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the INVENTORY feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. INVENTORY must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyfulfillmentrequest',
+    bodyfulfillmentrequest: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the FULFILLMENTREQUEST feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. FULFILLMENTREQUEST must be enabled for this field to appear in your account. */
-    {
-      name: 'bodystorepickup',
+    bodystorepickup: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the STOREPICKUP feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. STOREPICKUP must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyitemfulfillment',
+    bodyitemfulfillment: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyitemfulfillmentorder',
+    bodyitemfulfillmentorder: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyitemreceipt',
+    bodyitemreceipt: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ADVRECEIVING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVRECEIVING must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyitemreceiptorder',
+    bodyitemreceiptorder: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ADVRECEIVING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVRECEIVING must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyjournal',
+    bodyjournal: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyperiodendjournal',
+    bodyperiodendjournal: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the PERIODENDJOURNALENTRIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. PERIODENDJOURNALENTRIES must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyopportunity',
+    bodyopportunity: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the OPPORTUNITIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. OPPORTUNITIES must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyothertransaction',
+    bodyothertransaction: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'bodypaycheck',
+    bodypaycheck: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the PAYCHECKJOURNAL feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. PAYCHECKJOURNAL must be enabled for this field to appear in your account. */
-    {
-      name: 'bodypickingticket',
+    bodypickingticket: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'bodyprintflag',
+    bodyprintflag: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'bodyprintpackingslip',
+    bodyprintpackingslip: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyprintstatement',
+    bodyprintstatement: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
-    {
-      name: 'bodypurchase',
+    bodypurchase: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
-    {
-      name: 'bodysale',
+    bodysale: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'bodystore',
+    bodystore: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSTORE feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSTORE must be enabled for this field to appear in your account. */
-    {
-      name: 'bodytransferorder',
+    bodytransferorder: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MULTILOCINVT feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MULTILOCINVT must be enabled for this field to appear in your account. */
-    {
-      name: 'bodyvendorpayment',
+    bodyvendorpayment: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the PAYABLES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. PAYABLES must be enabled for this field to appear in your account. */
-    {
-      name: 'bodybtegata',
+    bodybtegata: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ACCOUNTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ACCOUNTING must be enabled for this field to appear in your account. */
-    {
-      name: 'fldsizelabel',
+    fldsizelabel: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'bodycustomtransactions',
+    bodycustomtransactions: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the customtransactiontype custom type.   If this field appears in the project, you must reference the CUSTOMTRANSACTIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CUSTOMTRANSACTIONS must be enabled for this field to appear in your account. */
-    {
-      name: 'customfieldfilters',
+    customfieldfilters: {
       type: transactionbodycustomfield_customfieldfilters,
       annotations: {
       },
     },
-    {
-      name: 'roleaccesses',
+    roleaccesses: {
       type: transactionbodycustomfield_roleaccesses,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionbodycustomfieldElemID.name],
 })

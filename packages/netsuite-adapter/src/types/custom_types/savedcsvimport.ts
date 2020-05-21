@@ -30,44 +30,38 @@ const savedcsvimport_audience = new ObjectType({
   elemID: savedcsvimport_audienceElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'ispublic',
+  fields: {
+    ispublic: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'globaledit',
+    globaledit: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allemployees',
+    allemployees: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allpartners',
+    allpartners: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allroles',
+    allroles: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'roles',
+    roles: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })
 
@@ -79,27 +73,24 @@ const savedcsvimport_filemappings_filemapping = new ObjectType({
   elemID: savedcsvimport_filemappings_filemappingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'file',
+  fields: {
+    file: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol. */
-    {
-      name: 'primarykey',
+    primarykey: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'foreignkey',
+    foreignkey: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })
 
@@ -111,14 +102,13 @@ const savedcsvimport_filemappings = new ObjectType({
   elemID: savedcsvimport_filemappingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'filemapping',
+  fields: {
+    filemapping: {
       type: new ListType(savedcsvimport_filemappings_filemapping),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })
 
@@ -130,28 +120,25 @@ const savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmapping_col
   elemID: savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmapping_columnreferenceElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'file',
+  fields: {
+    file: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol. */
-    {
-      name: 'column',
+    column: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'type',
+    type: {
       type: enums.csvimport_referencetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see csvimport_referencetype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })
 
@@ -163,27 +150,24 @@ const savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmapping = n
   elemID: savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmappingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'field',
+  fields: {
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customsegment   customrecordcustomfield   crmcustomfield */
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'columnreference',
+    columnreference: {
       type: savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmapping_columnreference,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })
 
@@ -195,14 +179,13 @@ const savedcsvimport_recordmappings_recordmapping_fieldmappings = new ObjectType
   elemID: savedcsvimport_recordmappings_recordmapping_fieldmappingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldmapping',
+  fields: {
+    fieldmapping: {
       type: new ListType(savedcsvimport_recordmappings_recordmapping_fieldmappings_fieldmapping),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })
 
@@ -214,27 +197,24 @@ const savedcsvimport_recordmappings_recordmapping = new ObjectType({
   elemID: savedcsvimport_recordmappings_recordmappingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'record',
+  fields: {
+    record: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol. */
-    {
-      name: 'line',
+    line: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'fieldmappings',
+    fieldmappings: {
       type: savedcsvimport_recordmappings_recordmapping_fieldmappings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })
 
@@ -246,14 +226,13 @@ const savedcsvimport_recordmappings = new ObjectType({
   elemID: savedcsvimport_recordmappingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'recordmapping',
+  fields: {
+    recordmapping: {
       type: new ListType(savedcsvimport_recordmappings_recordmapping),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })
 
@@ -265,23 +244,20 @@ export const savedcsvimport = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custimport_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custimport’. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: enums.csvimport_recordtypes,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see csvimport_recordtypes. */
-    {
-      name: 'importname',
+    importname: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -289,137 +265,116 @@ export const savedcsvimport = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
     }, /* Original description: This field value can be up to 50 characters long. */
-    {
-      name: 'datahandling',
+    datahandling: {
       type: enums.csvimport_datahandling,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see csvimport_datahandling.   The default value is 'ADD'. */
-    {
-      name: 'decimaldelimiter',
+    decimaldelimiter: {
       type: enums.csvimport_decimaldelimiter,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see csvimport_decimaldelimiter. */
-    {
-      name: 'columndelimiter',
+    columndelimiter: {
       type: enums.csvimport_columndelimiter,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see csvimport_columndelimiter. */
-    {
-      name: 'entryform',
+    entryform: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the recordtype value is present in any of the following lists or values: csvimports_entryformrecordtypes, csvimport_customrecordtype.   This field is mandatory when the recordtype value is present in csvimports_entryformrecordtypes.   This field accepts references to the entryForm custom type.   For information about other possible values, see csvimport_entryform_standard. */
-    {
-      name: 'transactionform',
+    transactionform: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the recordtype value is present in any of the following lists or values: csvimports_transactionformrecordtypes, csvimport_customtransactiontype.   This field is mandatory when the recordtype value is present in csvimports_transactionformrecordtypes.   This field accepts references to the transactionForm custom type.   For information about other possible values, see csvimport_transactionform_standard. */
-    {
-      name: 'customrecord',
+    customrecord: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the recordtype value is equal to CUSTOMRECORD.   This field is mandatory when the recordtype value is equal to CUSTOMRECORD.   This field accepts references to the customrecordtype custom type.   For information about other possible values, see generic_standard_recordtype. */
-    {
-      name: 'customtransaction',
+    customtransaction: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the recordtype value is equal to CUSTOMTRANSACTION.   This field is mandatory when the recordtype value is equal to CUSTOMTRANSACTION.   This field accepts references to the customtransactiontype custom type. */
-    {
-      name: 'charencoding',
+    charencoding: {
       type: enums.csvimport_encoding,
       annotations: {
       },
     }, /* Original description: For information about possible values, see csvimport_encoding.   The default value is 'windows-1252'. */
-    {
-      name: 'logsystemnotescustfields',
+    logsystemnotescustfields: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'overwritemissingfields',
+    overwritemissingfields: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the recordtype value is not equal to CURRENCYRATE.   The default value is F. */
-    {
-      name: 'validatemandatorycustfields',
+    validatemandatorycustfields: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'overwritesublists',
+    overwritesublists: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'ignorereadonly',
+    ignorereadonly: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the recordtype value is not equal to any of the following lists or values: CUSTOMERANDCONTACT, LEADANDCONTACT, PROSPECTANDCONTACT.   The default value is T. */
-    {
-      name: 'preventduplicates',
+    preventduplicates: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the recordtype value is equal to any of the following lists or values: CUSTOMERANDCONTACT, LEADANDCONTACT, PROSPECTANDCONTACT, CONTACT, LEAD, PARTNER, VENDOR, CUSTOMER, PROSPECT.   The default value is F. */
-    {
-      name: 'usemultithread',
+    usemultithread: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'runserversuitescript',
+    runserversuitescript: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'multiselectdelimiter',
+    multiselectdelimiter: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1,
       },
     }, /* Original description: This field value can be up to 1 characters long.   The default value is '|'. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 499,
       },
     }, /* Original description: This field value can be up to 499 characters long. */
-    {
-      name: 'audience',
+    audience: {
       type: savedcsvimport_audience,
       annotations: {
       },
     },
-    {
-      name: 'filemappings',
+    filemappings: {
       type: savedcsvimport_filemappings,
       annotations: {
       },
     },
-    {
-      name: 'recordmappings',
+    recordmappings: {
       type: savedcsvimport_recordmappings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedcsvimportElemID.name],
 })

@@ -30,15 +30,14 @@ const workbook_dependencies = new ObjectType({
   elemID: workbook_dependenciesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'dependency',
+  fields: {
+    dependency: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the dataset custom type. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
 })
 
@@ -50,16 +49,14 @@ export const workbook = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custworkbook_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custworkbook’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -67,19 +64,17 @@ export const workbook = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
     }, /* Original description: This field value can be up to 50 characters long. */
-    {
-      name: 'definition',
+    definition: {
       type: fieldTypes.cdata,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'dependencies',
+    dependencies: {
       type: workbook_dependencies,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workbookElemID.name],
 })

@@ -29,24 +29,21 @@ export const cmscontenttype = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custcontenttype_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcontenttype’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -54,27 +51,24 @@ export const cmscontenttype = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 18,
       },
     }, /* Original description: This field value can be up to 18 characters long. */
-    {
-      name: 'customrecordid',
+    customrecordid: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the customrecordtype custom type. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-    {
-      name: 'iconimagepath',
+    iconimagepath: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, cmscontenttypeElemID.name],
 })

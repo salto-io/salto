@@ -31,28 +31,25 @@ const workflow_initcondition_parameters_parameter = new ObjectType({
   elemID: workflow_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -64,14 +61,13 @@ const workflow_initcondition_parameters = new ObjectType({
   elemID: workflow_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -83,27 +79,24 @@ const workflow_initcondition = new ObjectType({
   elemID: workflow_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -115,35 +108,31 @@ const workflow_recurrence_daily = new ObjectType({
   elemID: workflow_recurrence_dailyElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'starttime',
+    starttime: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'everyxdays',
+    everyxdays: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'enddate',
+    enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -155,21 +144,19 @@ const workflow_recurrence_every30minutes = new ObjectType({
   elemID: workflow_recurrence_every30minutesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'enddate',
+    enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -181,28 +168,25 @@ const workflow_recurrence_everyweekday = new ObjectType({
   elemID: workflow_recurrence_everyweekdayElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'starttime',
+    starttime: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'enddate',
+    enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -214,42 +198,37 @@ const workflow_recurrence_monthly = new ObjectType({
   elemID: workflow_recurrence_monthlyElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'starttime',
+    starttime: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'dayofmonth',
+    dayofmonth: {
       type: enums.generic_day_of_month,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_day_of_month. */
-    {
-      name: 'everyxmonths',
+    everyxmonths: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'enddate',
+    enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -261,49 +240,43 @@ const workflow_recurrence_monthlydayofweek = new ObjectType({
   elemID: workflow_recurrence_monthlydayofweekElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'starttime',
+    starttime: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'orderofweek',
+    orderofweek: {
       type: enums.workflow_order_of_week,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_order_of_week. */
-    {
-      name: 'dayofweek',
+    dayofweek: {
       type: enums.generic_day_of_week,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_day_of_week. */
-    {
-      name: 'everyxmonths',
+    everyxmonths: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'enddate',
+    enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -315,22 +288,20 @@ const workflow_recurrence_single = new ObjectType({
   elemID: workflow_recurrence_singleElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'starttime',
+    starttime: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -342,84 +313,73 @@ const workflow_recurrence_weekly = new ObjectType({
   elemID: workflow_recurrence_weeklyElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'starttime',
+    starttime: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'everyxweeks',
+    everyxweeks: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'sunday',
+    sunday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'monday',
+    monday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'tuesday',
+    tuesday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'wednesday',
+    wednesday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'thursday',
+    thursday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'friday',
+    friday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'saturday',
+    saturday: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'enddate',
+    enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -431,42 +391,37 @@ const workflow_recurrence_yearly = new ObjectType({
   elemID: workflow_recurrence_yearlyElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'starttime',
+    starttime: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'month',
+    month: {
       type: enums.generic_month,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_month. */
-    {
-      name: 'dayofmonth',
+    dayofmonth: {
       type: enums.generic_day_of_month,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_day_of_month. */
-    {
-      name: 'enddate',
+    enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -478,49 +433,43 @@ const workflow_recurrence_yearlydayofweek = new ObjectType({
   elemID: workflow_recurrence_yearlydayofweekElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'startdate',
+  fields: {
+    startdate: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'starttime',
+    starttime: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'orderofweek',
+    orderofweek: {
       type: enums.generic_order_of_week,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_order_of_week. */
-    {
-      name: 'dayofweek',
+    dayofweek: {
       type: enums.generic_day_of_week,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_day_of_week. */
-    {
-      name: 'month',
+    month: {
       type: enums.generic_month,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_month. */
-    {
-      name: 'enddate',
+    enddate: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -532,62 +481,53 @@ const workflow_recurrence = new ObjectType({
   elemID: workflow_recurrenceElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'daily',
+  fields: {
+    daily: {
       type: workflow_recurrence_daily,
       annotations: {
       },
     },
-    {
-      name: 'every30minutes',
+    every30minutes: {
       type: workflow_recurrence_every30minutes,
       annotations: {
       },
     },
-    {
-      name: 'everyweekday',
+    everyweekday: {
       type: workflow_recurrence_everyweekday,
       annotations: {
       },
     },
-    {
-      name: 'monthly',
+    monthly: {
       type: workflow_recurrence_monthly,
       annotations: {
       },
     },
-    {
-      name: 'monthlydayofweek',
+    monthlydayofweek: {
       type: workflow_recurrence_monthlydayofweek,
       annotations: {
       },
     },
-    {
-      name: 'single',
+    single: {
       type: workflow_recurrence_single,
       annotations: {
       },
     },
-    {
-      name: 'weekly',
+    weekly: {
       type: workflow_recurrence_weekly,
       annotations: {
       },
     },
-    {
-      name: 'yearly',
+    yearly: {
       type: workflow_recurrence_yearly,
       annotations: {
       },
     },
-    {
-      name: 'yearlydayofweek',
+    yearlydayofweek: {
       type: workflow_recurrence_yearlydayofweek,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -599,57 +539,49 @@ const workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_custo
   elemID: workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_customfieldfilterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fldfilter',
+  fields: {
+    fldfilter: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fldfilterchecked',
+    fldfilterchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfiltercomparetype',
+    fldfiltercomparetype: {
       type: enums.generic_customfield_fldfiltercomparetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    {
-      name: 'fldfiltersel',
+    fldfiltersel: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'fldfilterval',
+    fldfilterval: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'fldfilternotnull',
+    fldfilternotnull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfilternull',
+    fldfilternull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldcomparefield',
+    fldcomparefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -661,14 +593,13 @@ const workflow_workflowcustomfields_workflowcustomfield_customfieldfilters = new
   elemID: workflow_workflowcustomfields_workflowcustomfield_customfieldfiltersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'customfieldfilter',
+  fields: {
+    customfieldfilter: {
       type: new ListType(workflow_workflowcustomfields_workflowcustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -680,29 +611,26 @@ const workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess 
   elemID: workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccessElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'role',
+  fields: {
+    role: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    {
-      name: 'accesslevel',
+    accesslevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    {
-      name: 'searchlevel',
+    searchlevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -714,14 +642,13 @@ const workflow_workflowcustomfields_workflowcustomfield_roleaccesses = new Objec
   elemID: workflow_workflowcustomfields_workflowcustomfield_roleaccessesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'roleaccess',
+  fields: {
+    roleaccess: {
       type: new ListType(workflow_workflowcustomfields_workflowcustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -733,121 +660,103 @@ const workflow_workflowcustomfields_workflowcustomfield = new ObjectType({
   elemID: workflow_workflowcustomfields_workflowcustomfieldElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 42 characters long.   The default value is ‘custworkflow’. */
-    {
-      name: 'fieldtype',
+    fieldtype: {
       type: enums.generic_customfield_fieldtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
     }, /* Original description: This field value can be up to 200 characters long. */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    {
-      name: 'applyformatting',
+    applyformatting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'defaultchecked',
+    defaultchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'defaultselection',
+    defaultselection: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'defaultvalue',
+    defaultvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'displaytype',
+    displaytype: {
       type: enums.generic_customfield_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    {
-      name: 'dynamicdefault',
+    dynamicdefault: {
       type: enums.generic_customfield_dynamicdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    {
-      name: 'help',
+    help: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'linktext',
+    linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'minvalue',
+    minvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'maxvalue',
+    maxvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'storevalue',
+    storevalue: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'customfieldfilters',
+    customfieldfilters: {
       type: workflow_workflowcustomfields_workflowcustomfield_customfieldfilters,
       annotations: {
       },
     },
-    {
-      name: 'roleaccesses',
+    roleaccesses: {
       type: workflow_workflowcustomfields_workflowcustomfield_roleaccesses,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -859,14 +768,13 @@ const workflow_workflowcustomfields = new ObjectType({
   elemID: workflow_workflowcustomfieldsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'workflowcustomfield',
+  fields: {
+    workflowcustomfield: {
       type: new ListType(workflow_workflowcustomfields_workflowcustomfield),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -878,28 +786,25 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_init
   elemID: workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -911,14 +816,13 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_init
   elemID: workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -930,27 +834,24 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_init
   elemID: workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -962,65 +863,56 @@ const workflow_workflowstates_workflowstate_workflowactions_addbuttonaction = ne
   elemID: workflow_workflowstates_workflowstate_workflowactions_addbuttonactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'saverecordfirst',
+    saverecordfirst: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'checkconditionbeforeexecution',
+    checkconditionbeforeexecution: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1032,28 +924,25 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction_initco
   elemID: workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1065,14 +954,13 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction_initco
   elemID: workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1084,27 +972,24 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction_initco
   elemID: workflow_workflowstates_workflowstate_workflowactions_confirmaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1116,65 +1001,56 @@ const workflow_workflowstates_workflowstate_workflowactions_confirmaction = new 
   elemID: workflow_workflowstates_workflowstate_workflowactions_confirmactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'messagetext',
+    messagetext: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'clienttriggerfieldssublist',
+    clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'clienttriggerfieldsissublistfield',
+    clienttriggerfieldsissublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
-    {
-      name: 'clienttriggerfields',
+    clienttriggerfields: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_confirmaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1186,57 +1062,49 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_fie
   elemID: workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1248,14 +1116,13 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_fie
   elemID: workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1267,28 +1134,25 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1300,14 +1164,13 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1319,27 +1182,24 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_createlineaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1351,65 +1211,56 @@ const workflow_workflowstates_workflowstate_workflowactions_createlineaction = n
   elemID: workflow_workflowstates_workflowstate_workflowactions_createlineactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'position',
+    position: {
       type: enums.workflowaction_createline_position,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_createline_position.   The default value is 'AFTERLASTLINE'. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_createlineaction_fieldsettings,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_createlineaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1421,57 +1272,49 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_f
   elemID: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1483,14 +1326,13 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_f
   elemID: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1502,28 +1344,25 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_i
   elemID: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1535,14 +1374,13 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_i
   elemID: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1554,27 +1392,24 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction_i
   elemID: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1586,95 +1421,81 @@ const workflow_workflowstates_workflowstate_workflowactions_createrecordaction =
   elemID: workflow_workflowstates_workflowstate_workflowactions_createrecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_createrecordaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1686,28 +1507,25 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_initcon
   elemID: workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1719,14 +1537,13 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_initcon
   elemID: workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1738,27 +1555,24 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_initcon
   elemID: workflow_workflowstates_workflowstate_workflowactions_customaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1770,57 +1584,49 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_paramet
   elemID: workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetparameter',
+  fields: {
+    targetparameter: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1832,14 +1638,13 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction_paramet
   elemID: workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parametersetting',
+  fields: {
+    parametersetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1851,95 +1656,81 @@ const workflow_workflowstates_workflowstate_workflowactions_customaction = new O
   elemID: workflow_workflowstates_workflowstate_workflowactions_customactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'scripttype',
+    scripttype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflowactionscript custom type. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_customaction_initcondition,
       annotations: {
       },
     },
-    {
-      name: 'parametersettings',
+    parametersettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1951,28 +1742,25 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initc
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -1984,14 +1772,13 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initc
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2003,27 +1790,24 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initc
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2035,64 +1819,55 @@ const workflow_workflowstates_workflowstate_workflowactions_gotopageaction = new
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotopageactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'targetpage',
+    targetpage: {
       type: enums.generic_standard_task,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpageobject value is not defined.   For information about possible values, see generic_standard_task. */
-    {
-      name: 'targetpageobject',
+    targetpageobject: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpage value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customrecordtype   clientscript   centertab   bundleinstallationscript */
-    {
-      name: 'targetpagetasktype',
+    targetpagetasktype: {
       type: enums.centercategory_tasktype,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpageobject value is defined.   For information about possible values, see centercategory_tasktype. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_gotopageaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2104,57 +1879,49 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fie
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2166,14 +1933,13 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fie
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2185,28 +1951,25 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2218,14 +1981,13 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2237,27 +1999,24 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2269,77 +2028,66 @@ const workflow_workflowstates_workflowstate_workflowactions_gotorecordaction = n
   elemID: workflow_workflowstates_workflowstate_workflowactions_gotorecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'recordidfield',
+    recordidfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recordidjoinfield',
+    recordidjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'ineditmode',
+    ineditmode: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2351,28 +2099,25 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   elemID: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2384,14 +2129,13 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   elemID: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2403,27 +2147,24 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   elemID: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2435,57 +2176,49 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   elemID: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings_workflowfieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetworkflowfield',
+  fields: {
+    targetworkflowfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2497,14 +2230,13 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   elemID: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'workflowfieldsetting',
+  fields: {
+    workflowfieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2516,89 +2248,76 @@ const workflow_workflowstates_workflowstate_workflowactions_initiateworkflowacti
   elemID: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'initiatedworkflow',
+    initiatedworkflow: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflow custom type. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_initcondition,
       annotations: {
       },
     },
-    {
-      name: 'workflowfieldsettings',
+    workflowfieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2610,28 +2329,25 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2643,14 +2359,13 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2662,27 +2377,24 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_ini
   elemID: workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2694,46 +2406,40 @@ const workflow_workflowstates_workflowstate_workflowactions_lockrecordaction = n
   elemID: workflow_workflowstates_workflowstate_workflowactions_lockrecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2745,28 +2451,25 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_i
   elemID: workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2778,14 +2481,13 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_i
   elemID: workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2797,27 +2499,24 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_i
   elemID: workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2829,53 +2528,46 @@ const workflow_workflowstates_workflowstate_workflowactions_removebuttonaction =
   elemID: workflow_workflowstates_workflowstate_workflowactions_removebuttonactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'buttonid',
+    buttonid: {
       type: enums.workflowaction_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_buttonid. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_removebuttonaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2887,28 +2579,25 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
   elemID: workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2920,14 +2609,13 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
   elemID: workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2939,27 +2627,24 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
   elemID: workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -2971,71 +2656,61 @@ const workflow_workflowstates_workflowstate_workflowactions_returnusererroractio
   elemID: workflow_workflowstates_workflowstate_workflowactions_returnusererroractionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'errortext',
+    errortext: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'clienttriggerfieldssublist',
+    clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'clienttriggerfieldsissublistfield',
+    clienttriggerfieldsissublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
-    {
-      name: 'clienttriggerfields',
+    clienttriggerfields: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_returnusererroraction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3047,28 +2722,25 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
   elemID: workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3080,14 +2752,13 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
   elemID: workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3099,27 +2770,24 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
   elemID: workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3131,107 +2799,91 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
   elemID: workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recipientfield',
+    recipientfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipientiscurrentrecord',
+    recipientiscurrentrecord: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'recipientjoinfield',
+    recipientjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'campaignevent',
+    campaignevent: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: Note Account-specific values are not supported by SDF. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3243,28 +2895,25 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction_init
   elemID: workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3276,14 +2925,13 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction_init
   elemID: workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3295,27 +2943,24 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction_init
   elemID: workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3327,210 +2972,177 @@ const workflow_workflowstates_workflowstate_workflowactions_sendemailaction = ne
   elemID: workflow_workflowstates_workflowstate_workflowactions_sendemailactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'sendertype',
+    sendertype: {
       type: enums.workflowaction_sendertype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_sendertype. */
-    {
-      name: 'recipienttype',
+    recipienttype: {
       type: enums.workflowaction_recipienttype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_recipienttype. */
-    {
-      name: 'sender',
+    sender: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
-    {
-      name: 'senderfield',
+    senderfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipient',
+    recipient: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
-    {
-      name: 'recipientemail',
+    recipientemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to ADDRESS. */
-    {
-      name: 'recipientfield',
+    recipientfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'template',
+    template: {
       type: enums.generic_standard_template,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the usetemplate value is equal to T.   For information about possible values, see generic_standard_template. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'senderjoinfield',
+    senderjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipientjoinfield',
+    recipientjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipientccemail',
+    recipientccemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'recipientbccemail',
+    recipientbccemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'usetemplate',
+    usetemplate: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'subject',
+    subject: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'body',
+    body: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'includerecordlink',
+    includerecordlink: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'attachmenttype',
+    attachmenttype: {
       type: enums.workflowaction_attachmenttype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_attachmenttype. */
-    {
-      name: 'attachmentfile',
+    attachmentfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     },
-    {
-      name: 'attachmentjoinfield',
+    attachmentjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'attachmentfield',
+    attachmentfield: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'includetransaction',
+    includetransaction: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'includeformat',
+    includeformat: {
       type: enums.workflowaction_transtatementtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_transtatementtype. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_sendemailaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3542,28 +3154,25 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3575,14 +3184,13 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3594,27 +3202,24 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3626,88 +3231,75 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'clienttriggerfieldssublist',
+    clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'clienttriggerfieldsissublistfield',
+    clienttriggerfieldsissublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
-    {
-      name: 'clienttriggerfields',
+    clienttriggerfields: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'issublistfield',
+    issublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'displaylabel',
+    displaylabel: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3719,28 +3311,25 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
   elemID: workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3752,14 +3341,13 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
   elemID: workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3771,27 +3359,24 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
   elemID: workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3803,89 +3388,76 @@ const workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction
   elemID: workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'displaytype',
+    displaytype: {
       type: enums.workflowaction_displaytype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_displaytype. */
-    {
-      name: 'clienttriggerfieldssublist',
+    clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'clienttriggerfieldsissublistfield',
+    clienttriggerfieldsissublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
-    {
-      name: 'clienttriggerfields',
+    clienttriggerfields: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'issublistfield',
+    issublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3897,28 +3469,25 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
   elemID: workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3930,14 +3499,13 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
   elemID: workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3949,27 +3517,24 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
   elemID: workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -3981,88 +3546,75 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryact
   elemID: workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'clienttriggerfieldssublist',
+    clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'clienttriggerfieldsissublistfield',
+    clienttriggerfieldsissublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
-    {
-      name: 'clienttriggerfields',
+    clienttriggerfields: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'issublistfield',
+    issublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'ismandatory',
+    ismandatory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4074,28 +3626,25 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_
   elemID: workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4107,14 +3656,13 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_
   elemID: workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4126,27 +3674,24 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_
   elemID: workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4158,155 +3703,131 @@ const workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction 
   elemID: workflow_workflowstates_workflowstate_workflowactions_setfieldvalueactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'clienttriggerfieldssublist',
+    clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'clienttriggerfieldsissublistfield',
+    clienttriggerfieldsissublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
-    {
-      name: 'clienttriggerfields',
+    clienttriggerfields: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'valuetype',
+    valuetype: {
       type: enums.workflowaction_valuetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuetype. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuemultiselect',
+    valuemultiselect: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4318,28 +3839,25 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction_in
   elemID: workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4351,14 +3869,13 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction_in
   elemID: workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4370,27 +3887,24 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction_in
   elemID: workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4402,65 +3916,56 @@ const workflow_workflowstates_workflowstate_workflowactions_showmessageaction = 
   elemID: workflow_workflowstates_workflowstate_workflowactions_showmessageactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'messagetext',
+    messagetext: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'clienttriggerfieldssublist',
+    clienttriggerfieldssublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the clienttriggerfieldsissublistfield value is equal to T.   This field is mandatory when the clienttriggerfieldsissublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'clienttriggerfieldsissublistfield',
+    clienttriggerfieldsissublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the triggertype value is present in workflowaction_triggertype_client.   The default value is F. */
-    {
-      name: 'clienttriggerfields',
+    clienttriggerfields: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_showmessageaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4472,28 +3977,25 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
   elemID: workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4505,14 +4007,13 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
   elemID: workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4524,27 +4025,24 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
   elemID: workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4556,82 +4054,70 @@ const workflow_workflowstates_workflowstate_workflowactions_subscribetorecordact
   elemID: workflow_workflowstates_workflowstate_workflowactions_subscribetorecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'recordfield',
+    recordfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4643,57 +4129,49 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4705,14 +4183,13 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4724,28 +4201,25 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4757,14 +4231,13 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4776,27 +4249,24 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4808,95 +4278,81 @@ const workflow_workflowstates_workflowstate_workflowactions_transformrecordactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_transformrecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: enums.generic_standard_recordtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_standard_recordtype. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4908,41 +4364,36 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_addbuttonactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'saverecordfirst',
+    saverecordfirst: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'checkconditionbeforeexecution',
+    checkconditionbeforeexecution: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -4954,57 +4405,49 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5016,14 +4459,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5035,41 +4477,36 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'position',
+    position: {
       type: enums.workflowaction_createline_position,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_createline_position.   The default value is 'AFTERLASTLINE'. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5081,57 +4518,49 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5143,14 +4572,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5162,41 +4590,36 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5208,57 +4631,49 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetparameter',
+  fields: {
+    targetparameter: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5270,14 +4685,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parametersetting',
+  fields: {
+    parametersetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5289,41 +4703,36 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'scripttype',
+    scripttype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflowactionscript custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'parametersettings',
+    parametersettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5335,40 +4744,35 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotopageactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'targetpage',
+    targetpage: {
       type: enums.generic_standard_task,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpageobject value is not defined.   For information about possible values, see generic_standard_task. */
-    {
-      name: 'targetpageobject',
+    targetpageobject: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpage value is not defined.   This field accepts references to the following custom types:   workflowactionscript   usereventscript   scriptdeployment   suitelet   scheduledscript   savedsearch   restlet   portlet   massupdatescript   mapreducescript   customrecordtype   clientscript   centertab   bundleinstallationscript */
-    {
-      name: 'targetpagetasktype',
+    targetpagetasktype: {
       type: enums.centercategory_tasktype,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the targetpageobject value is defined.   For information about possible values, see centercategory_tasktype. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5380,57 +4784,49 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5442,14 +4838,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5461,53 +4856,46 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'recordidfield',
+    recordidfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recordidjoinfield',
+    recordidjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'ineditmode',
+    ineditmode: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction_fieldsettings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5519,28 +4907,25 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5552,14 +4937,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5571,27 +4955,24 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5603,57 +4984,49 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings_workflowfieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetworkflowfield',
+  fields: {
+    targetworkflowfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5665,14 +5038,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'workflowfieldsetting',
+  fields: {
+    workflowfieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5684,35 +5056,31 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'initiatedworkflow',
+    initiatedworkflow: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflow custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'workflowfieldsettings',
+    workflowfieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5724,22 +5092,20 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_lockrecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5751,29 +5117,26 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_removebuttonactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'buttonid',
+    buttonid: {
       type: enums.workflowaction_buttonid,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_buttonid. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5785,29 +5148,26 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_returnusererroractionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'errortext',
+    errortext: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5819,53 +5179,46 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendcampaignemailactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recipientfield',
+    recipientfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipientiscurrentrecord',
+    recipientiscurrentrecord: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'recipientjoinfield',
+    recipientjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'campaignevent',
+    campaignevent: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: Note Account-specific values are not supported by SDF. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -5877,156 +5230,132 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendemailactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'sendertype',
+    sendertype: {
       type: enums.workflowaction_sendertype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_sendertype. */
-    {
-      name: 'recipienttype',
+    recipienttype: {
       type: enums.workflowaction_recipienttype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_recipienttype. */
-    {
-      name: 'sender',
+    sender: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
-    {
-      name: 'senderfield',
+    senderfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipient',
+    recipient: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
-    {
-      name: 'recipientemail',
+    recipientemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to ADDRESS. */
-    {
-      name: 'recipientfield',
+    recipientfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'template',
+    template: {
       type: enums.generic_standard_template,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the usetemplate value is equal to T.   For information about possible values, see generic_standard_template. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'senderjoinfield',
+    senderjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipientjoinfield',
+    recipientjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipientccemail',
+    recipientccemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'recipientbccemail',
+    recipientbccemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'usetemplate',
+    usetemplate: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'subject',
+    subject: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'body',
+    body: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'includerecordlink',
+    includerecordlink: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'attachmenttype',
+    attachmenttype: {
       type: enums.workflowaction_attachmenttype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_attachmenttype. */
-    {
-      name: 'attachmentfile',
+    attachmentfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     },
-    {
-      name: 'attachmentjoinfield',
+    attachmentjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'attachmentfield',
+    attachmentfield: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'includetransaction',
+    includetransaction: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'includeformat',
+    includeformat: {
       type: enums.workflowaction_transtatementtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_transtatementtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6038,46 +5367,40 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaylabelactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'issublistfield',
+    issublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'displaylabel',
+    displaylabel: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6089,47 +5412,41 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaytypeactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'displaytype',
+    displaytype: {
       type: enums.workflowaction_displaytype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_displaytype. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'issublistfield',
+    issublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6141,46 +5458,40 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldmandatoryactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
       },
     }, /* Original description: This field is available when the issublistfield value is equal to T.   This field is mandatory when the issublistfield value is equal to T.   For information about possible values, see workflow_sublists.   The default value is 'item'. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'issublistfield',
+    issublistfield: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'ismandatory',
+    ismandatory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6192,83 +5503,71 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldvalueactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'valuetype',
+    valuetype: {
       type: enums.workflowaction_valuetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuetype. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuemultiselect',
+    valuemultiselect: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6280,28 +5579,25 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_subscribetorecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'recordfield',
+    recordfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6313,57 +5609,49 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6375,14 +5663,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6394,41 +5681,36 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: enums.generic_standard_recordtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_standard_recordtype. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction_fieldsettings,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6440,184 +5722,155 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup 
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroupElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the schedulemode value is equal to TIMEOFDAY. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'addbuttonaction',
+    addbuttonaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_addbuttonaction,
       annotations: {
       },
     },
-    {
-      name: 'createlineaction',
+    createlineaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction,
       annotations: {
       },
     },
-    {
-      name: 'createrecordaction',
+    createrecordaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction,
       annotations: {
       },
     },
-    {
-      name: 'customaction',
+    customaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction,
       annotations: {
       },
     },
-    {
-      name: 'gotopageaction',
+    gotopageaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotopageaction,
       annotations: {
       },
     },
-    {
-      name: 'gotorecordaction',
+    gotorecordaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition,
       annotations: {
       },
     },
-    {
-      name: 'initiateworkflowaction',
+    initiateworkflowaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction,
       annotations: {
       },
     },
-    {
-      name: 'lockrecordaction',
+    lockrecordaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_lockrecordaction,
       annotations: {
       },
     },
-    {
-      name: 'removebuttonaction',
+    removebuttonaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_removebuttonaction,
       annotations: {
       },
     },
-    {
-      name: 'returnusererroraction',
+    returnusererroraction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_returnusererroraction,
       annotations: {
       },
     },
-    {
-      name: 'sendcampaignemailaction',
+    sendcampaignemailaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendcampaignemailaction,
       annotations: {
       },
     },
-    {
-      name: 'sendemailaction',
+    sendemailaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendemailaction,
       annotations: {
       },
     },
-    {
-      name: 'setdisplaylabelaction',
+    setdisplaylabelaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaylabelaction,
       annotations: {
       },
     },
-    {
-      name: 'setdisplaytypeaction',
+    setdisplaytypeaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaytypeaction,
       annotations: {
       },
     },
-    {
-      name: 'setfieldmandatoryaction',
+    setfieldmandatoryaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldmandatoryaction,
       annotations: {
       },
     },
-    {
-      name: 'setfieldvalueaction',
+    setfieldvalueaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldvalueaction,
       annotations: {
       },
     },
-    {
-      name: 'subscribetorecordaction',
+    subscribetorecordaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_subscribetorecordaction,
       annotations: {
       },
     },
-    {
-      name: 'transformrecordaction',
+    transformrecordaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6629,57 +5882,49 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsettingElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'targetfield',
+  fields: {
+    targetfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     },
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6691,14 +5936,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettingsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fieldsetting',
+  fields: {
+    fieldsetting: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsetting),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6710,28 +5954,25 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6743,14 +5984,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6762,27 +6002,24 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6794,53 +6031,46 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'resultfield',
+    resultfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fieldsettings',
+    fieldsettings: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6852,28 +6082,25 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6885,14 +6112,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6904,27 +6130,24 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6936,28 +6159,25 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6969,14 +6189,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -6988,27 +6207,24 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7020,41 +6236,36 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroractionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'errortext',
+    errortext: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7066,28 +6277,25 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7099,14 +6307,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7118,27 +6325,24 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7150,168 +6354,142 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'sendertype',
+    sendertype: {
       type: enums.workflowaction_sendertype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_sendertype. */
-    {
-      name: 'recipienttype',
+    recipienttype: {
       type: enums.workflowaction_recipienttype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_recipienttype. */
-    {
-      name: 'sender',
+    sender: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
-    {
-      name: 'senderfield',
+    senderfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the sendertype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipient',
+    recipient: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to SPECIFIC.   Note Account-specific values are not supported by SDF. */
-    {
-      name: 'recipientemail',
+    recipientemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to ADDRESS. */
-    {
-      name: 'recipientfield',
+    recipientfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the recipienttype value is equal to FIELD.   This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'template',
+    template: {
       type: enums.generic_standard_template,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the usetemplate value is equal to T.   For information about possible values, see generic_standard_template. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'senderjoinfield',
+    senderjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipientjoinfield',
+    recipientjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'recipientccemail',
+    recipientccemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'recipientbccemail',
+    recipientbccemail: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'usetemplate',
+    usetemplate: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'subject',
+    subject: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'body',
+    body: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'includerecordlink',
+    includerecordlink: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'attachmenttype',
+    attachmenttype: {
       type: enums.workflowaction_attachmenttype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_attachmenttype. */
-    {
-      name: 'attachmentfile',
+    attachmentfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     },
-    {
-      name: 'attachmentjoinfield',
+    attachmentjoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'attachmentfield',
+    attachmentfield: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'includetransaction',
+    includetransaction: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'includeformat',
+    includeformat: {
       type: enums.workflowaction_transtatementtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_transtatementtype. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7323,28 +6501,25 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7356,14 +6531,13 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7375,27 +6549,24 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7407,95 +6578,81 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueactionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'field',
+    field: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'valuetype',
+    valuetype: {
       type: enums.workflowaction_valuetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuetype. */
-    {
-      name: 'valuetext',
+    valuetext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'valuechecked',
+    valuechecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'valueselect',
+    valueselect: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuemultiselect',
+    valuemultiselect: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'valuedate',
+    valuedate: {
       type: enums.workflowaction_valuedate,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_valuedate. */
-    {
-      name: 'valuejoinfield',
+    valuejoinfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valuefield',
+    valuefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'valueformula',
+    valueformula: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7507,107 +6664,91 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
   elemID: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroupElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowaction’. */
-    {
-      name: 'sublist',
+    sublist: {
       type: enums.workflow_sublists,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_sublists. */
-    {
-      name: 'scheduletimeofday',
+    scheduletimeofday: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the schedulemode value is equal to TIMEOFDAY. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'schedulerecurrence',
+    schedulerecurrence: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'schedulemode',
+    schedulemode: {
       type: enums.workflowaction_radioschedulemode,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowaction_radioschedulemode. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'createrecordaction',
+    createrecordaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction,
       annotations: {
       },
     },
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_initcondition,
       annotations: {
       },
     },
-    {
-      name: 'returnusererroraction',
+    returnusererroraction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction,
       annotations: {
       },
     },
-    {
-      name: 'sendemailaction',
+    sendemailaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction,
       annotations: {
       },
     },
-    {
-      name: 'setfieldvalueaction',
+    setfieldvalueaction: {
       type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7619,148 +6760,125 @@ const workflow_workflowstates_workflowstate_workflowactions = new ObjectType({
   elemID: workflow_workflowstates_workflowstate_workflowactionsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'triggertype',
+  fields: {
+    triggertype: {
       type: enums.workflowaction_triggertype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: For information about possible values, see workflowaction_triggertype. */
-    {
-      name: 'addbuttonaction',
+    addbuttonaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_addbuttonaction),
       annotations: {
       },
     },
-    {
-      name: 'confirmaction',
+    confirmaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_confirmaction),
       annotations: {
       },
     },
-    {
-      name: 'createlineaction',
+    createlineaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_createlineaction),
       annotations: {
       },
     },
-    {
-      name: 'createrecordaction',
+    createrecordaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_createrecordaction),
       annotations: {
       },
     },
-    {
-      name: 'customaction',
+    customaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_customaction),
       annotations: {
       },
     },
-    {
-      name: 'gotopageaction',
+    gotopageaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotopageaction),
       annotations: {
       },
     },
-    {
-      name: 'gotorecordaction',
+    gotorecordaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_gotorecordaction),
       annotations: {
       },
     },
-    {
-      name: 'initiateworkflowaction',
+    initiateworkflowaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction),
       annotations: {
       },
     },
-    {
-      name: 'lockrecordaction',
+    lockrecordaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_lockrecordaction),
       annotations: {
       },
     },
-    {
-      name: 'removebuttonaction',
+    removebuttonaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_removebuttonaction),
       annotations: {
       },
     },
-    {
-      name: 'returnusererroraction',
+    returnusererroraction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_returnusererroraction),
       annotations: {
       },
     },
-    {
-      name: 'sendcampaignemailaction',
+    sendcampaignemailaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction),
       annotations: {
       },
     },
-    {
-      name: 'sendemailaction',
+    sendemailaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_sendemailaction),
       annotations: {
       },
     },
-    {
-      name: 'setdisplaylabelaction',
+    setdisplaylabelaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaylabelaction),
       annotations: {
       },
     },
-    {
-      name: 'setdisplaytypeaction',
+    setdisplaytypeaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_setdisplaytypeaction),
       annotations: {
       },
     },
-    {
-      name: 'setfieldmandatoryaction',
+    setfieldmandatoryaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldmandatoryaction),
       annotations: {
       },
     },
-    {
-      name: 'setfieldvalueaction',
+    setfieldvalueaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_setfieldvalueaction),
       annotations: {
       },
     },
-    {
-      name: 'showmessageaction',
+    showmessageaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_showmessageaction),
       annotations: {
       },
     },
-    {
-      name: 'subscribetorecordaction',
+    subscribetorecordaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_subscribetorecordaction),
       annotations: {
       },
     },
-    {
-      name: 'transformrecordaction',
+    transformrecordaction: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_transformrecordaction),
       annotations: {
       },
     },
-    {
-      name: 'workflowactiongroup',
+    workflowactiongroup: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup),
       annotations: {
       },
     },
-    {
-      name: 'workflowsublistactiongroup',
+    workflowsublistactiongroup: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7772,57 +6890,49 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   elemID: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters_customfieldfilterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fldfilter',
+  fields: {
+    fldfilter: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fldfilterchecked',
+    fldfilterchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfiltercomparetype',
+    fldfiltercomparetype: {
       type: enums.generic_customfield_fldfiltercomparetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    {
-      name: 'fldfiltersel',
+    fldfiltersel: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'fldfilterval',
+    fldfilterval: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'fldfilternotnull',
+    fldfilternotnull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfilternull',
+    fldfilternull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldcomparefield',
+    fldcomparefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7834,14 +6944,13 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   elemID: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfiltersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'customfieldfilter',
+  fields: {
+    customfieldfilter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7853,29 +6962,26 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   elemID: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccessElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'role',
+  fields: {
+    role: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    {
-      name: 'accesslevel',
+    accesslevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    {
-      name: 'searchlevel',
+    searchlevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7887,14 +6993,13 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   elemID: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccessesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'roleaccess',
+  fields: {
+    roleaccess: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -7906,121 +7011,103 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowst
   elemID: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfieldElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 41 characters long.   The default value is ‘custwfstate’. */
-    {
-      name: 'fieldtype',
+    fieldtype: {
       type: enums.generic_customfield_fieldtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
     }, /* Original description: This field value can be up to 200 characters long. */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    {
-      name: 'applyformatting',
+    applyformatting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'defaultchecked',
+    defaultchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'defaultselection',
+    defaultselection: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'defaultvalue',
+    defaultvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'displaytype',
+    displaytype: {
       type: enums.generic_customfield_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    {
-      name: 'dynamicdefault',
+    dynamicdefault: {
       type: enums.generic_customfield_dynamicdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    {
-      name: 'help',
+    help: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'linktext',
+    linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'minvalue',
+    minvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'maxvalue',
+    maxvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'storevalue',
+    storevalue: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'customfieldfilters',
+    customfieldfilters: {
       type: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_customfieldfilters,
       annotations: {
       },
     },
-    {
-      name: 'roleaccesses',
+    roleaccesses: {
       type: workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield_roleaccesses,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8032,14 +7119,13 @@ const workflow_workflowstates_workflowstate_workflowstatecustomfields = new Obje
   elemID: workflow_workflowstates_workflowstate_workflowstatecustomfieldsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'workflowstatecustomfield',
+  fields: {
+    workflowstatecustomfield: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowstatecustomfields_workflowstatecustomfield),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8051,28 +7137,25 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
   elemID: workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters_parameterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'name',
+  fields: {
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'value',
+    value: {
       type: BuiltinTypes.STRING /* Original type was join   Join field types must be set to a colon-delimited list of values. */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   customsegment   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8084,14 +7167,13 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
   elemID: workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parametersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'parameter',
+  fields: {
+    parameter: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters_parameter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8103,27 +7185,24 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
   elemID: workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initconditionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'type',
+  fields: {
+    type: {
       type: enums.workflow_condition_type,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see workflow_condition_type. */
-    {
-      name: 'formula',
+    formula: {
       type: fieldTypes.cdata,
       annotations: {
       },
     },
-    {
-      name: 'parameters',
+    parameters: {
       type: workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8135,83 +7214,71 @@ const workflow_workflowstates_workflowstate_workflowtransitions_workflowtransiti
   elemID: workflow_workflowstates_workflowstate_workflowtransitions_workflowtransitionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowtransition’. */
-    {
-      name: 'tostate',
+    tostate: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the workflowstate custom type. */
-    {
-      name: 'eventtypes',
+    eventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflowaction_eventtype. */
-    {
-      name: 'contexttypes',
+    contexttypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'conditionsavedsearch',
+    conditionsavedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'triggertype',
+    triggertype: {
       type: enums.workflowtransition_triggertype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflowtransition_triggertype. */
-    {
-      name: 'waitforworkflow',
+    waitforworkflow: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the workflow custom type. */
-    {
-      name: 'waitforworkflowstate',
+    waitforworkflowstate: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the workflowstate custom type. */
-    {
-      name: 'buttonaction',
+    buttonaction: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   addbuttonaction   addbuttonaction */
-    {
-      name: 'scheduledelay',
+    scheduledelay: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'scheduletimeunit',
+    scheduletimeunit: {
       type: enums.workflow_timeunit,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_timeunit. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8223,14 +7290,13 @@ const workflow_workflowstates_workflowstate_workflowtransitions = new ObjectType
   elemID: workflow_workflowstates_workflowstate_workflowtransitionsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'workflowtransition',
+  fields: {
+    workflowtransition: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8242,65 +7308,56 @@ const workflow_workflowstates_workflowstate = new ObjectType({
   elemID: workflow_workflowstates_workflowstateElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘workflowstate’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'donotexitworkflow',
+    donotexitworkflow: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'positionx',
+    positionx: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'positiony',
+    positiony: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     },
-    {
-      name: 'workflowactions',
+    workflowactions: {
       type: new ListType(workflow_workflowstates_workflowstate_workflowactions),
       annotations: {
       },
     },
-    {
-      name: 'workflowstatecustomfields',
+    workflowstatecustomfields: {
       type: workflow_workflowstates_workflowstate_workflowstatecustomfields,
       annotations: {
       },
     },
-    {
-      name: 'workflowtransitions',
+    workflowtransitions: {
       type: workflow_workflowstates_workflowstate_workflowtransitions,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8312,14 +7369,13 @@ const workflow_workflowstates = new ObjectType({
   elemID: workflow_workflowstatesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'workflowstate',
+  fields: {
+    workflowstate: {
       type: new ListType(workflow_workflowstates_workflowstate),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })
 
@@ -8331,131 +7387,111 @@ export const workflow = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customworkflow_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customworkflow’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
-    {
-      name: 'recordtypes',
+    recordtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   customtransactiontype   customrecordtype   For information about other possible values, see generic_standard_recordtype. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'initcontexts',
+    initcontexts: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see execution_context. */
-    {
-      name: 'initeventtypes',
+    initeventtypes: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see workflow_eventtype. */
-    {
-      name: 'initsavedsearchcondition',
+    initsavedsearchcondition: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'initsavedsearchfilter',
+    initsavedsearchfilter: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'inittriggertype',
+    inittriggertype: {
       type: enums.workflow_triggertype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_triggertype. */
-    {
-      name: 'initoncreate',
+    initoncreate: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'initonvieworupdate',
+    initonvieworupdate: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'islogenabled',
+    islogenabled: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'releasestatus',
+    releasestatus: {
       type: enums.workflow_releasestatus,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_releasestatus.   The default value is 'NOTINITIATING'. */
-    {
-      name: 'runasadmin',
+    runasadmin: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'keephistory',
+    keephistory: {
       type: enums.workflow_keephistory,
       annotations: {
       },
     }, /* Original description: For information about possible values, see workflow_keephistory.   The default value is 'ONLYWHENTESTING'. */
-    {
-      name: 'initcondition',
+    initcondition: {
       type: workflow_initcondition,
       annotations: {
       },
     },
-    {
-      name: 'recurrence',
+    recurrence: {
       type: workflow_recurrence,
       annotations: {
       },
     },
-    {
-      name: 'workflowcustomfields',
+    workflowcustomfields: {
       type: workflow_workflowcustomfields,
       annotations: {
       },
     },
-    {
-      name: 'workflowstates',
+    workflowstates: {
       type: workflow_workflowstates,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, workflowElemID.name],
 })

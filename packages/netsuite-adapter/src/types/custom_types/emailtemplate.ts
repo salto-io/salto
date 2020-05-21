@@ -31,16 +31,14 @@ export const emailtemplate = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custemailtmpl_',
     [constants.ADDITIONAL_FILE_SUFFIX]: '.template.html',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custemailtmpl’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -48,62 +46,53 @@ export const emailtemplate = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 60,
       },
     }, /* Original description: This field value can be up to 60 characters long. */
-    {
-      name: 'mediaitem',
+    mediaitem: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the usesmedia value is equal to T.   This field must reference a file with any of the following extensions: .ftl, .html, .txt */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
     }, /* Original description: This field value can be up to 1000 characters long. */
-    {
-      name: 'recordtype',
+    recordtype: {
       type: enums.emailtemplate_recordtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see emailtemplate_recordtype. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'subject',
+    subject: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 199,
       },
     }, /* Original description: This field value can be up to 199 characters long. */
-    {
-      name: 'isprivate',
+    isprivate: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'addunsubscribelink',
+    addunsubscribelink: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'addcompanyaddress',
+    addcompanyaddress: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'usesmedia',
+    usesmedia: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, emailtemplateElemID.name],
 })

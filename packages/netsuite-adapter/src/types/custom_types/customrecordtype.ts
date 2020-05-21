@@ -30,57 +30,49 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield_customfi
   elemID: customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfilters_customfieldfilterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fldfilter',
+  fields: {
+    fldfilter: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fldfilterchecked',
+    fldfilterchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfiltercomparetype',
+    fldfiltercomparetype: {
       type: enums.generic_customfield_fldfiltercomparetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    {
-      name: 'fldfiltersel',
+    fldfiltersel: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'fldfilterval',
+    fldfilterval: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'fldfilternotnull',
+    fldfilternotnull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfilternull',
+    fldfilternull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldcomparefield',
+    fldcomparefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -92,14 +84,13 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield_customfi
   elemID: customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfiltersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'customfieldfilter',
+  fields: {
+    customfieldfilter: {
       type: new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -111,29 +102,26 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield_roleacce
   elemID: customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses_roleaccessElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'role',
+  fields: {
+    role: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    {
-      name: 'accesslevel',
+    accesslevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    {
-      name: 'searchlevel',
+    searchlevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -145,14 +133,13 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield_roleacce
   elemID: customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccessesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'roleaccess',
+  fields: {
+    roleaccess: {
       type: new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -164,253 +151,213 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield = new Ob
   elemID: customrecordtype_customrecordcustomfields_customrecordcustomfieldElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custrecord’. */
-    {
-      name: 'fieldtype',
+    fieldtype: {
       type: enums.generic_customfield_fieldtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
     }, /* Original description: This field value can be up to 200 characters long. */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    {
-      name: 'applyformatting',
+    applyformatting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'defaultchecked',
+    defaultchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'defaultselection',
+    defaultselection: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'defaultvalue',
+    defaultvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'displaytype',
+    displaytype: {
       type: enums.generic_customfield_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    {
-      name: 'dynamicdefault',
+    dynamicdefault: {
       type: enums.generic_customfield_dynamicdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    {
-      name: 'help',
+    help: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'linktext',
+    linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'minvalue',
+    minvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'maxvalue',
+    maxvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'storevalue',
+    storevalue: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'accesslevel',
+    accesslevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    {
-      name: 'checkspelling',
+    checkspelling: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'encryptatrest',
+    encryptatrest: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'displayheight',
+    displayheight: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
-    {
-      name: 'displaywidth',
+    displaywidth: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
-    {
-      name: 'globalsearch',
+    globalsearch: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'isformula',
+    isformula: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'ismandatory',
+    ismandatory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'maxlength',
+    maxlength: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'onparentdelete',
+    onparentdelete: {
       type: enums.generic_customfield_onparentdelete,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
-    {
-      name: 'searchcomparefield',
+    searchcomparefield: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'searchdefault',
+    searchdefault: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'searchlevel',
+    searchlevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    {
-      name: 'showinlist',
+    showinlist: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'sourcefilterby',
+    sourcefilterby: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'sourcefrom',
+    sourcefrom: {
       type: BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'sourcelist',
+    sourcelist: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the customrecordcustomfield custom type.   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isparent',
+    isparent: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'parentsubtab',
+    parentsubtab: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see generic_tab_parent. */
-    {
-      name: 'subtab',
+    subtab: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the subtab custom type. */
-    {
-      name: 'allowquickadd',
+    allowquickadd: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'rolerestrict',
+    rolerestrict: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'customfieldfilters',
+    customfieldfilters: {
       type: customrecordtype_customrecordcustomfields_customrecordcustomfield_customfieldfilters,
       annotations: {
       },
     },
-    {
-      name: 'roleaccesses',
+    roleaccesses: {
       type: customrecordtype_customrecordcustomfields_customrecordcustomfield_roleaccesses,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -422,14 +369,13 @@ const customrecordtype_customrecordcustomfields = new ObjectType({
   elemID: customrecordtype_customrecordcustomfieldsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'customrecordcustomfield',
+  fields: {
+    customrecordcustomfield: {
       type: new ListType(customrecordtype_customrecordcustomfields_customrecordcustomfield),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -441,40 +387,35 @@ const customrecordtype_instances_instance = new ObjectType({
   elemID: customrecordtype_instances_instanceElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
-    {
-      name: 'altname',
+    altname: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the includename value is equal to T.   This field is available when the enablenumbering value is equal to T.   This field is mandatory when the includename value is equal to T.   This field is mandatory when the enablenumbering value is equal to T. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the includename value is equal to T.   This field is available when the enablenumbering value is equal to F.   This field is mandatory when the includename value is equal to T.   This field is mandatory when the enablenumbering value is equal to F. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'parent',
+    parent: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is available when the hierarchical value is equal to T.   This field accepts references to the instance custom type. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -486,14 +427,13 @@ const customrecordtype_instances = new ObjectType({
   elemID: customrecordtype_instancesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'instance',
+  fields: {
+    instance: {
       type: new ListType(customrecordtype_instances_instance),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -505,28 +445,25 @@ const customrecordtype_links_link = new ObjectType({
   elemID: customrecordtype_links_linkElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'linkcategory',
+  fields: {
+    linkcategory: {
       type: enums.generic_centercategory,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_centercategory. */
-    {
-      name: 'linktasktype',
+    linktasktype: {
       type: enums.customrecordtype_tasktype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see customrecordtype_tasktype. */
-    {
-      name: 'linklabel',
+    linklabel: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -538,14 +475,13 @@ const customrecordtype_links = new ObjectType({
   elemID: customrecordtype_linksElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'link',
+  fields: {
+    link: {
       type: new ListType(customrecordtype_links_link),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -557,28 +493,25 @@ const customrecordtype_permissions_permission = new ObjectType({
   elemID: customrecordtype_permissions_permissionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'permittedrole',
+  fields: {
+    permittedrole: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    {
-      name: 'permittedlevel',
+    permittedlevel: {
       type: enums.generic_permission_level,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_permission_level.   The default value is 'NONE'. */
-    {
-      name: 'restriction',
+    restriction: {
       type: enums.role_restrict,
       annotations: {
       },
     }, /* Original description: For information about possible values, see role_restrict. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -590,14 +523,13 @@ const customrecordtype_permissions = new ObjectType({
   elemID: customrecordtype_permissionsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'permission',
+  fields: {
+    permission: {
       type: new ListType(customrecordtype_permissions_permission),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -609,42 +541,37 @@ const customrecordtype_recordsublists_recordsublist = new ObjectType({
   elemID: customrecordtype_recordsublists_recordsublistElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
-    {
-      name: 'recordsearch',
+    recordsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'recorddescr',
+    recorddescr: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'recordtab',
+    recordtab: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the subtab custom type. */
-    {
-      name: 'recordfield',
+    recordfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the customrecordcustomfield custom type.   For information about other possible values, see generic_standard_field. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -656,14 +583,13 @@ const customrecordtype_recordsublists = new ObjectType({
   elemID: customrecordtype_recordsublistsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'recordsublist',
+  fields: {
+    recordsublist: {
       type: new ListType(customrecordtype_recordsublists_recordsublist),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -675,29 +601,26 @@ const customrecordtype_subtabs_subtab = new ObjectType({
   elemID: customrecordtype_subtabs_subtabElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
-    {
-      name: 'tabtitle',
+    tabtitle: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'tabparent',
+    tabparent: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the subtab custom type. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -709,14 +632,13 @@ const customrecordtype_subtabs = new ObjectType({
   elemID: customrecordtype_subtabsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'subtab',
+  fields: {
+    subtab: {
       type: new ListType(customrecordtype_subtabs_subtab),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })
 
@@ -728,298 +650,250 @@ export const customrecordtype = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customrecord_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customrecord’. */
-    {
-      name: 'recordname',
+    recordname: {
       type: BuiltinTypes.STRING,
       annotations: {
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long.   This field is available when the customsegment value is equal to   This field is mandatory when the customsegment value is equal to */
-    {
-      name: 'customsegment',
+    customsegment: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the customsegment custom type.   If this field appears in the project, you must reference the CUSTOMSEGMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CUSTOMSEGMENTS must be enabled for this field to appear in your account. */
-    {
-      name: 'accesstype',
+    accesstype: {
       type: enums.customrecordtype_accesstype,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   For information about possible values, see customrecordtype_accesstype.   The default value is 'CUSTRECORDENTRYPERM'. */
-    {
-      name: 'allowattachments',
+    allowattachments: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'allowinlineediting',
+    allowinlineediting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allowinlinedeleting',
+    allowinlinedeleting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allowinlinedetaching',
+    allowinlinedetaching: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allowmobileaccess',
+    allowmobileaccess: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
-    {
-      name: 'allownumberingoverride',
+    allownumberingoverride: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
-    {
-      name: 'allowquickadd',
+    allowquickadd: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'allowquicksearch',
+    allowquicksearch: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'allowuiaccess',
+    allowuiaccess: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is T. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
-    {
-      name: 'enabledle',
+    enabledle: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T.   If this field appears in the project, you must reference the EXTREMELIST feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. EXTREMELIST must be enabled for this field to appear in your account. */
-    {
-      name: 'enablekeywords',
+    enablekeywords: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'enablemailmerge',
+    enablemailmerge: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MAILMERGE feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MAILMERGE must be enabled for this field to appear in your account. */
-    {
-      name: 'enablenametranslation',
+    enablenametranslation: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F.   If this field appears in the project, you must reference the MULTILANGUAGE feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MULTILANGUAGE must be enabled for this field to appear in your account. */
-    {
-      name: 'enablenumbering',
+    enablenumbering: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
-    {
-      name: 'enableoptimisticlocking',
+    enableoptimisticlocking: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'enablesystemnotes',
+    enablesystemnotes: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'hierarchical',
+    hierarchical: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
-    {
-      name: 'numberingprefix',
+    numberingprefix: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
-    {
-      name: 'numberingsuffix',
+    numberingsuffix: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
-    {
-      name: 'numberingmindigits',
+    numberingmindigits: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
-    {
-      name: 'numberinginit',
+    numberinginit: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to */
-    {
-      name: 'icon',
+    icon: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
       },
     },
-    {
-      name: 'iconbuiltin',
+    iconbuiltin: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'iconindex',
+    iconindex: {
       type: enums.generic_custom_record_icon,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_custom_record_icon. */
-    {
-      name: 'includeinsearchmenu',
+    includeinsearchmenu: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'includename',
+    includename: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is T. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
-    {
-      name: 'isordered',
+    isordered: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
-    {
-      name: 'showcreationdate',
+    showcreationdate: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'showcreationdateonlist',
+    showcreationdateonlist: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'showid',
+    showid: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the customsegment value is equal to   The default value is F. */
-    {
-      name: 'showlastmodified',
+    showlastmodified: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'showlastmodifiedonlist',
+    showlastmodifiedonlist: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'shownotes',
+    shownotes: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'showowner',
+    showowner: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'showownerallowchange',
+    showownerallowchange: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'showowneronlist',
+    showowneronlist: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'customrecordcustomfields',
+    customrecordcustomfields: {
       type: customrecordtype_customrecordcustomfields,
       annotations: {
       },
     },
-    {
-      name: 'instances',
+    instances: {
       type: customrecordtype_instances,
       annotations: {
       },
     },
-    {
-      name: 'links',
+    links: {
       type: customrecordtype_links,
       annotations: {
       },
     },
-    {
-      name: 'permissions',
+    permissions: {
       type: customrecordtype_permissions,
       annotations: {
       },
     },
-    {
-      name: 'recordsublists',
+    recordsublists: {
       type: customrecordtype_recordsublists,
       annotations: {
       },
     },
-    {
-      name: 'subtabs',
+    subtabs: {
       type: customrecordtype_subtabs,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, customrecordtypeElemID.name],
 })

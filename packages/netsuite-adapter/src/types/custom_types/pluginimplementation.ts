@@ -30,15 +30,14 @@ const pluginimplementation_libraries_library = new ObjectType({
   elemID: pluginimplementation_libraries_libraryElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptfile',
+  fields: {
+    scriptfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a .js file. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
 })
 
@@ -50,14 +49,13 @@ const pluginimplementation_libraries = new ObjectType({
   elemID: pluginimplementation_librariesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'library',
+  fields: {
+    library: {
       type: new ListType(pluginimplementation_libraries_library),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
 })
 
@@ -69,16 +67,14 @@ export const pluginimplementation = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -86,83 +82,71 @@ export const pluginimplementation = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long. */
-    {
-      name: 'scriptfile',
+    scriptfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a .js file. */
-    {
-      name: 'customplugintype',
+    customplugintype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the plugintype custom type. */
-    {
-      name: 'status',
+    status: {
       type: enums.plugintype_status,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'notifyadmins',
+    notifyadmins: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'notifyemails',
+    notifyemails: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-    {
-      name: 'notifygroup',
+    notifygroup: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: Note Account-specific values are not supported by SDF. */
-    {
-      name: 'notifyowner',
+    notifyowner: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'notifyuser',
+    notifyuser: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'loglevel',
+    loglevel: {
       type: enums.plugintype_loglevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
-    {
-      name: 'libraries',
+    libraries: {
       type: pluginimplementation_libraries,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, pluginimplementationElemID.name],
 })

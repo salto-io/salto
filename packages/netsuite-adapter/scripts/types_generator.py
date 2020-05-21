@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-from selenium import webdriver
+# from selenium import webdriver
 import os
-import pyotp
+# import pyotp
+import json
 import re
 import sys
 import time
@@ -113,17 +114,16 @@ type_annotations_template = '''
 type_template = '''
 {export}const {type_name} = new ObjectType({{
   elemID: {type_name}ElemID,{annotations}
-  fields: [
+  fields: {{
 {field_definitions}
-  ],
+  }},
   path: {path},
 }})
 '''
 
 type_path_template = '[constants.NETSUITE, constants.TYPES_PATH, {type_name}ElemID.name]'
 
-field_template = '''    {{
-      name: '{field_name}',
+field_template = '''    {field_name}: {{
       type: {field_type},
       annotations: {{{annotations}
       }},
@@ -406,7 +406,7 @@ def format_type_def(type_name, type_def, top_level_type_name = None):
     def format_field_def(field_def):
         formatted_field_annotations = format_field_annotations(field_def[ANNOTATIONS])
         field_type = 'new ListType({0})'.format(field_def[TYPE]) if field_def[IS_LIST] else field_def[TYPE]
-        formatted_field = field_template.format(field_name = field_def[NAME], field_type = field_type, annotations = formatted_field_annotations)
+        formatted_field = field_template.format(field_name = field_def[NAME], type_name = type_name, field_type = field_type, annotations = formatted_field_annotations)
         field_description_comment = ' /* Original description: {0} */'.format(field_def[DESCRIPTION]) if (DESCRIPTION in field_def and field_def[DESCRIPTION] != '') else ''
         return formatted_field + field_description_comment
 
@@ -597,10 +597,11 @@ field_name_to_type_name = {
 }
 
 
-webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
+# webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
 def main():
-    account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-    type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa)
+    # account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    # type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa)
+    type_name_to_types_defs, enum_to_possible_values = [json.load(open(name)) for name in sys.argv[1:3]]
     generate_enums_file(enum_to_possible_values)
     logging.info('Generated enums file')
     generate_file_per_type(type_name_to_types_defs)

@@ -30,28 +30,25 @@ const role_permissions_permission = new ObjectType({
   elemID: role_permissions_permissionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'permkey',
+  fields: {
+    permkey: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customsegment   customrecordtype   For information about other possible values, see generic_permission. */
-    {
-      name: 'permlevel',
+    permlevel: {
       type: enums.generic_permission_level,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_permission_level. */
-    {
-      name: 'restriction',
+    restriction: {
       type: enums.role_restrict,
       annotations: {
       },
     }, /* Original description: For information about possible values, see role_restrict. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, roleElemID.name],
 })
 
@@ -63,14 +60,13 @@ const role_permissions = new ObjectType({
   elemID: role_permissionsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'permission',
+  fields: {
+    permission: {
       type: new ListType(role_permissions_permission),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, roleElemID.name],
 })
 
@@ -82,34 +78,30 @@ const role_recordrestrictions_recordrestriction = new ObjectType({
   elemID: role_recordrestrictions_recordrestrictionElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'segment',
+  fields: {
+    segment: {
       type: enums.role_restrictionsegment,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see role_restrictionsegment. */
-    {
-      name: 'restriction',
+    restriction: {
       type: enums.role_restrictions,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see role_restrictions. */
-    {
-      name: 'viewingallowed',
+    viewingallowed: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the restriction value is not equal to DEFAULTTOOWN.   The default value is F. */
-    {
-      name: 'itemsrestricted',
+    itemsrestricted: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the restriction value is not equal to DEFAULTTOOWN.   The default value is F. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, roleElemID.name],
 })
 
@@ -121,14 +113,13 @@ const role_recordrestrictions = new ObjectType({
   elemID: role_recordrestrictionsElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'recordrestriction',
+  fields: {
+    recordrestriction: {
       type: new ListType(role_recordrestrictions_recordrestriction),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, roleElemID.name],
 })
 
@@ -140,89 +131,76 @@ export const role = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customrole_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customrole’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
     },
-    {
-      name: 'centertype',
+    centertype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see role_centertype. */
-    {
-      name: 'issalesrole',
+    issalesrole: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'issupportrole',
+    issupportrole: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'iswebserviceonlyrole',
+    iswebserviceonlyrole: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the WEBSERVICES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. WEBSERVICES must be enabled for this field to appear in your account. */
-    {
-      name: 'restrictip',
+    restrictip: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the IPADDRESSRULES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. IPADDRESSRULES must be enabled for this field to appear in your account. */
-    {
-      name: 'employeerestriction',
+    employeerestriction: {
       type: enums.role_fullrestrictions,
       annotations: {
       },
     }, /* Original description: For information about possible values, see role_fullrestrictions. */
-    {
-      name: 'employeeviewingallowed',
+    employeeviewingallowed: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: This field is available when the employeerestriction value is not equal to any of the following lists or values: DEFAULTTOOWN, NONE.   The default value is F. */
-    {
-      name: 'restricttimeandexpenses',
+    restricttimeandexpenses: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'restrictbydevice',
+    restrictbydevice: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'permissions',
+    permissions: {
       type: role_permissions,
       annotations: {
       },
     },
-    {
-      name: 'recordrestrictions',
+    recordrestrictions: {
       type: role_recordrestrictions,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, roleElemID.name],
 })

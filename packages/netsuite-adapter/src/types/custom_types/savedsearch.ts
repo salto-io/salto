@@ -29,15 +29,14 @@ const savedsearch_dependencies = new ObjectType({
   elemID: savedsearch_dependenciesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'dependency',
+  fields: {
+    dependency: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field only accepts references to any custom type. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
 })
 
@@ -49,28 +48,25 @@ export const savedsearch = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customsearch_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
         [constants.IS_NAME]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */
-    {
-      name: 'definition',
+    definition: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
-    {
-      name: 'dependencies',
+    dependencies: {
       type: savedsearch_dependencies,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
 })

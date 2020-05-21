@@ -30,57 +30,49 @@ const itemcustomfield_customfieldfilters_customfieldfilter = new ObjectType({
   elemID: itemcustomfield_customfieldfilters_customfieldfilterElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'fldfilter',
+  fields: {
+    fldfilter: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'fldfilterchecked',
+    fldfilterchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfiltercomparetype',
+    fldfiltercomparetype: {
       type: enums.generic_customfield_fldfiltercomparetype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    {
-      name: 'fldfiltersel',
+    fldfiltersel: {
       type: BuiltinTypes.STRING /* Original type was multi-select list */,
       annotations: {
       },
     }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'fldfilterval',
+    fldfilterval: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'fldfilternotnull',
+    fldfilternotnull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldfilternull',
+    fldfilternull: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'fldcomparefield',
+    fldcomparefield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemcustomfieldElemID.name],
 })
 
@@ -92,14 +84,13 @@ const itemcustomfield_customfieldfilters = new ObjectType({
   elemID: itemcustomfield_customfieldfiltersElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'customfieldfilter',
+  fields: {
+    customfieldfilter: {
       type: new ListType(itemcustomfield_customfieldfilters_customfieldfilter),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemcustomfieldElemID.name],
 })
 
@@ -111,29 +102,26 @@ const itemcustomfield_roleaccesses_roleaccess = new ObjectType({
   elemID: itemcustomfield_roleaccesses_roleaccessElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'role',
+  fields: {
+    role: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    {
-      name: 'accesslevel',
+    accesslevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    {
-      name: 'searchlevel',
+    searchlevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemcustomfieldElemID.name],
 })
 
@@ -145,14 +133,13 @@ const itemcustomfield_roleaccesses = new ObjectType({
   elemID: itemcustomfield_roleaccessesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'roleaccess',
+  fields: {
+    roleaccess: {
       type: new ListType(itemcustomfield_roleaccesses_roleaccess),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemcustomfieldElemID.name],
 })
 
@@ -164,23 +151,20 @@ export const itemcustomfield = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custitem_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘custitem’. */
-    {
-      name: 'fieldtype',
+    fieldtype: {
       type: enums.generic_customfield_fieldtype,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -188,306 +172,256 @@ export const itemcustomfield = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
     }, /* Original description: This field value can be up to 200 characters long. */
-    {
-      name: 'selectrecordtype',
+    selectrecordtype: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    {
-      name: 'applyformatting',
+    applyformatting: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'defaultchecked',
+    defaultchecked: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'defaultselection',
+    defaultselection: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    {
-      name: 'defaultvalue',
+    defaultvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'displaytype',
+    displaytype: {
       type: enums.generic_customfield_displaytype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    {
-      name: 'dynamicdefault',
+    dynamicdefault: {
       type: enums.generic_customfield_dynamicdefault,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    {
-      name: 'help',
+    help: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'linktext',
+    linktext: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'minvalue',
+    minvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'maxvalue',
+    maxvalue: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'storevalue',
+    storevalue: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'accesslevel',
+    accesslevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    {
-      name: 'checkspelling',
+    checkspelling: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'encryptatrest',
+    encryptatrest: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'displayheight',
+    displayheight: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
-    {
-      name: 'displaywidth',
+    displaywidth: {
       type: BuiltinTypes.NUMBER,
       annotations: {
       },
     }, /* Original description: This field value must be greater than or equal to 0. */
-    {
-      name: 'globalsearch',
+    globalsearch: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'isformula',
+    isformula: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'ismandatory',
+    ismandatory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'maxlength',
+    maxlength: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     },
-    {
-      name: 'onparentdelete',
+    onparentdelete: {
       type: enums.generic_customfield_onparentdelete,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
-    {
-      name: 'searchcomparefield',
+    searchcomparefield: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'searchdefault',
+    searchdefault: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the savedsearch custom type. */
-    {
-      name: 'searchlevel',
+    searchlevel: {
       type: enums.generic_accesslevel_searchlevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    {
-      name: 'showhierarchy',
+    showhierarchy: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'showinlist',
+    showinlist: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'sourcefilterby',
+    sourcefilterby: {
       type: enums.generic_standard_field,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'sourcefrom',
+    sourcefrom: {
       type: BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */
-    {
-      name: 'sourcelist',
+    sourcelist: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the itemcustomfield custom type.   For information about other possible values, see generic_standard_field. */
-    {
-      name: 'isparent',
+    isparent: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'parentsubtab',
+    parentsubtab: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see generic_tab_parent. */
-    {
-      name: 'subtab',
+    subtab: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the subtab custom type.   For information about other possible values, see generic_item_tab. */
-    {
-      name: 'appliestogroup',
+    appliestogroup: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'appliestokit',
+    appliestokit: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'appliestoinventory',
+    appliestoinventory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the INVENTORY feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. INVENTORY must be enabled for this field to appear in your account. */
-    {
-      name: 'appliestoitemassembly',
+    appliestoitemassembly: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the ASSEMBLIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ASSEMBLIES must be enabled for this field to appear in your account. */
-    {
-      name: 'appliestononinventory',
+    appliestononinventory: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'appliestoothercharge',
+    appliestoothercharge: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'appliestopricelist',
+    appliestopricelist: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'appliestoservice',
+    appliestoservice: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'appliestospecificitems',
+    appliestospecificitems: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'appliestosubplan',
+    appliestosubplan: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'includechilditems',
+    includechilditems: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'itemmatrix',
+    itemmatrix: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MATRIXITEMS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MATRIXITEMS must be enabled for this field to appear in your account. */
-    {
-      name: 'ismhitemattribute',
+    ismhitemattribute: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F.   If this field appears in the project, you must reference the MERCHANDISEHIERARCHY feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. MERCHANDISEHIERARCHY must be enabled for this field to appear in your account. */
-    {
-      name: 'itemsubtype',
+    itemsubtype: {
       type: enums.itemcustomfield_itemsubtype,
       annotations: {
       },
     }, /* Original description: For information about possible values, see itemcustomfield_itemsubtype. */
-    {
-      name: 'customfieldfilters',
+    customfieldfilters: {
       type: itemcustomfield_customfieldfilters,
       annotations: {
       },
     },
-    {
-      name: 'roleaccesses',
+    roleaccesses: {
       type: itemcustomfield_roleaccesses,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemcustomfieldElemID.name],
 })

@@ -29,22 +29,20 @@ export const center = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custcenter_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcenter’. */
-    {
-      name: 'label',
+    label: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, centerElemID.name],
 })

@@ -30,15 +30,14 @@ const promotionsplugin_libraries_library = new ObjectType({
   elemID: promotionsplugin_libraries_libraryElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'scriptfile',
+  fields: {
+    scriptfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a .js file. */
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, promotionspluginElemID.name],
 })
 
@@ -50,14 +49,13 @@ const promotionsplugin_libraries = new ObjectType({
   elemID: promotionsplugin_librariesElemID,
   annotations: {
   },
-  fields: [
-    {
-      name: 'library',
+  fields: {
+    library: {
       type: new ListType(promotionsplugin_libraries_library),
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, promotionspluginElemID.name],
 })
 
@@ -69,16 +67,14 @@ export const promotionsplugin = new ObjectType({
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
-  fields: [
-    {
-      name: 'scriptid',
+  fields: {
+    scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    {
-      name: 'name',
+    name: {
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -86,81 +82,69 @@ export const promotionsplugin = new ObjectType({
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long. */
-    {
-      name: 'scriptfile',
+    scriptfile: {
       type: BuiltinTypes.STRING /* Original type was filereference */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field must reference a .js file. */
-    {
-      name: 'description',
+    description: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-    {
-      name: 'isinactive',
+    isinactive: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'notifyadmins',
+    notifyadmins: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'notifyemails',
+    notifyemails: {
       type: BuiltinTypes.STRING,
       annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
     }, /* Original description: This field value can be up to 999 characters long. */
-    {
-      name: 'notifygroup',
+    notifygroup: {
       type: BuiltinTypes.STRING,
       annotations: {
       },
     }, /* Original description: Note Account-specific values are not supported by SDF. */
-    {
-      name: 'notifyowner',
+    notifyowner: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is T. */
-    {
-      name: 'notifyuser',
+    notifyuser: {
       type: BuiltinTypes.BOOLEAN,
       annotations: {
       },
     }, /* Original description: The default value is F. */
-    {
-      name: 'loglevel',
+    loglevel: {
       type: enums.script_loglevel,
       annotations: {
       },
     }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
-    {
-      name: 'runasrole',
+    runasrole: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
       },
     }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
-    {
-      name: 'status',
+    status: {
       type: enums.script_status,
       annotations: {
       },
     }, /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
-    {
-      name: 'libraries',
+    libraries: {
       type: promotionsplugin_libraries,
       annotations: {
       },
     },
-  ],
+  },
   path: [constants.NETSUITE, constants.TYPES_PATH, promotionspluginElemID.name],
 })

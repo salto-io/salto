@@ -86,10 +86,12 @@ const setSdfLogLevel = (): void => {
   process.env.IS_SDF_VERBOSE = isSaltoLogVerbose() ? 'true' : 'false'
 }
 
+type Project = {
+  projectName: string
+  executor: CommandActionExecutor
+}
+
 export default class NetsuiteClient {
-  private projectName?: string
-  private projectCommandActionExecutor?: CommandActionExecutor
-  private isAccountSetUp = false
   private readonly credentials: Credentials
   private readonly authId: string
 
@@ -101,7 +103,7 @@ export default class NetsuiteClient {
 
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
     const netsuiteClient = new NetsuiteClient({ credentials })
-    await netsuiteClient.setupAccount()
+    await netsuiteClient.initProject()
     return Promise.resolve(credentials.accountId)
   }
 
@@ -118,23 +120,6 @@ export default class NetsuiteClient {
       commandsMetadataService,
     })
   }
-
-  private async ensureAccountIsSetUp(): Promise<void> {
-    if (!this.isAccountSetUp) {
-      await this.setupAccount()
-      this.isAccountSetUp = true
-    }
-  }
-
-  private static requiresSetupAccount = decorators.wrapMethodWith(
-    async function withSetupAccount(
-      this: NetsuiteClient,
-      originalMethod: decorators.OriginalCall
-    ): Promise<unknown> {
-      await this.ensureAccountIsSetUp()
-      return originalMethod.call()
-    }
-  )
 
   private static logDecorator = decorators.wrapMethodWith(
     async (
@@ -172,40 +157,30 @@ export default class NetsuiteClient {
     }
   }
 
-  private async executeProjectAction(commandName: string, commandArguments: Values): Promise<void> {
-    if (!this.projectName) {
-      this.projectName = await NetsuiteClient.createProject()
-    }
-
-    if (!this.projectCommandActionExecutor) {
-      this.projectCommandActionExecutor = NetsuiteClient
-        .initCommandActionExecutor(`${this.getProjectPath()}`)
-    }
-
-    const operationResult = await this.projectCommandActionExecutor.executeAction({
+  private static async executeProjectAction(commandName: string, commandArguments: Values,
+    projectCommandActionExecutor: CommandActionExecutor): Promise<void> {
+    const operationResult = await projectCommandActionExecutor.executeAction({
       commandName,
       runInInteractiveMode: false,
       arguments: commandArguments,
     })
-
     NetsuiteClient.verifySuccessfulOperation(operationResult)
   }
 
-  protected async setupAccount(): Promise<void> {
+  protected async setupAccount(projectCommandActionExecutor: CommandActionExecutor): Promise<void> {
     // Todo: use the correct implementation and not Salto's temporary solution after:
     //  https://github.com/oracle/netsuite-suitecloud-sdk/issues/81 is resolved
     const setupAccountUsingExistingAuthID = async (): Promise<void> =>
-      this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
-        authid: this.authId,
-      })
+      NetsuiteClient.executeProjectAction(COMMANDS.SETUP_ACCOUNT, { authid: this.authId },
+        projectCommandActionExecutor)
 
     const setupAccountUsingNewAuthID = async (): Promise<void> =>
-      this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
+      NetsuiteClient.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
         authid: this.authId,
         accountid: this.credentials.accountId,
         tokenid: this.credentials.tokenId,
         tokensecret: this.credentials.tokenSecret,
-      })
+      }, projectCommandActionExecutor)
 
     try {
       await setupAccountUsingExistingAuthID()
@@ -214,17 +189,25 @@ export default class NetsuiteClient {
     }
   }
 
+  private async initProject(): Promise<Project> {
+    const projectName = await NetsuiteClient.createProject()
+    const executor = NetsuiteClient
+      .initCommandActionExecutor(NetsuiteClient.getProjectPath(projectName))
+    await this.setupAccount(executor)
+    return { projectName, executor }
+  }
+
   @NetsuiteClient.logDecorator
-  @NetsuiteClient.requiresSetupAccount
   async listCustomObjects(): Promise<CustomizationInfo[]> {
-    await this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
+    const project = await this.initProject()
+    await NetsuiteClient.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
       destinationfolder: `${path.sep}${OBJECTS_DIR}`,
       type: 'ALL',
       scriptid: 'ALL',
       excludefiles: true,
-    })
+    }, project.executor)
 
-    const objectsDirPath = this.getObjectsDirPath()
+    const objectsDirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
     const dirContent = await readDir(objectsDirPath)
     // Todo: when we'll support more types (e.g. emailTemplates), there might be other file types
     //  in the directory. remove the below row once these types are supported
@@ -235,27 +218,25 @@ export default class NetsuiteClient {
     }))
   }
 
-  private getObjectsDirPath(): string {
-    return path.resolve(this.getProjectPath(), SRC_DIR, OBJECTS_DIR)
-  }
-
-  private getProjectPath(): string {
-    return path.resolve(baseExecutionPath, this.projectName as string)
-  }
-
   @NetsuiteClient.logDecorator
-  @NetsuiteClient.requiresSetupAccount
   async deployCustomObject(filename: string, customizationInfo: CustomizationInfo): Promise<void> {
-    await this.deploy(path.resolve(this.getObjectsDirPath(), `${filename}.xml`), customizationInfo)
+    const project = await this.initProject()
+    await NetsuiteClient.deploy(path.resolve(NetsuiteClient.getObjectsDirPath(project.projectName),
+      `${filename}.xml`), customizationInfo, project.executor)
   }
 
-  private async deploy(filePath: string, customizationInfo: CustomizationInfo): Promise<void> {
+  private static async deploy(filePath: string, customizationInfo: CustomizationInfo,
+    executor: CommandActionExecutor): Promise<void> {
     await writeFile(filePath, convertToXmlContent(customizationInfo))
-    await this.addProjectDependencies()
-    await this.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {})
+    await NetsuiteClient.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
+    await NetsuiteClient.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {}, executor)
   }
 
-  private async addProjectDependencies(): Promise<void> {
-    return this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {})
+  private static getProjectPath(projectName: string): string {
+    return path.resolve(baseExecutionPath, projectName)
+  }
+
+  private static getObjectsDirPath(projectName: string): string {
+    return path.resolve(NetsuiteClient.getProjectPath(projectName), SRC_DIR, OBJECTS_DIR)
   }
 }

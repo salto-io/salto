@@ -27,10 +27,16 @@ describe('callbacks', () => {
     const iRes = getFieldInputType(BuiltinTypes.NUMBER, 'i')
     const bRes = getFieldInputType(BuiltinTypes.BOOLEAN, 'b')
     const passRes = getFieldInputType(BuiltinTypes.STRING, 'password')
+    const tokenRes = getFieldInputType(BuiltinTypes.STRING, 'token')
+    const tokenIdRes = getFieldInputType(BuiltinTypes.STRING, 'tokenId')
+    const tokenSecretRes = getFieldInputType(BuiltinTypes.STRING, 'tokenSecret')
     expect(iRes).toBe('number')
     expect(bRes).toBe('confirm')
     expect(stRes).toBe('input')
     expect(passRes).toBe('password')
+    expect(tokenRes).toBe('password')
+    expect(tokenIdRes).toBe('password')
+    expect(tokenSecretRes).toBe('password')
   })
 
   describe('getApprovedChanges', () => {

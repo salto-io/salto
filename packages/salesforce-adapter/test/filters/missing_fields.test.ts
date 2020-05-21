@@ -25,7 +25,7 @@ describe('missing fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
-    fields: [{ name: 'existing', type: BuiltinTypes.STRING }],
+    fields: { existing: { type: BuiltinTypes.STRING } },
   })
   const complexType = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'complex_type'),

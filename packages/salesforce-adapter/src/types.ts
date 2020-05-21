@@ -45,23 +45,21 @@ const configID = new ElemID('salesforce')
 
 export const credentialsType = new ObjectType({
   elemID: configID,
-  fields: [
-    { name: 'username', type: BuiltinTypes.STRING },
-    { name: 'password', type: BuiltinTypes.STRING },
-    {
-      name: 'token',
+  fields: {
+    username: { type: BuiltinTypes.STRING },
+    password: { type: BuiltinTypes.STRING },
+    token: {
       type: BuiltinTypes.STRING,
       annotations: { message: 'Token (empty if your org uses IP whitelisting)' },
     },
-    { name: 'sandbox', type: BuiltinTypes.BOOLEAN },
-  ],
+    sandbox: { type: BuiltinTypes.BOOLEAN },
+  },
 })
 
 export const configType = new ObjectType({
   elemID: configID,
-  fields: [
-    {
-      name: METADATA_TYPES_SKIPPED_LIST,
+  fields: {
+    [METADATA_TYPES_SKIPPED_LIST]: {
       type: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
@@ -69,8 +67,7 @@ export const configType = new ObjectType({
         ],
       },
     },
-    {
-      name: INSTANCES_REGEX_SKIPPED_LIST,
+    [INSTANCES_REGEX_SKIPPED_LIST]: {
       type: new ListType(BuiltinTypes.STRING),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
@@ -78,23 +75,21 @@ export const configType = new ObjectType({
         ],
       },
     },
-    {
-      name: MAX_CONCURRENT_RETRIEVE_REQUESTS,
+    [MAX_CONCURRENT_RETRIEVE_REQUESTS]: {
       type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 25 }),
       },
     },
-    {
-      name: MAX_ITEMS_IN_RETRIEVE_REQUEST,
+    [MAX_ITEMS_IN_RETRIEVE_REQUEST]: {
       type: BuiltinTypes.NUMBER,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1000, max: 10000 }),
       },
     },
-  ],
+  },
 })
 
 export interface MetadataInfoWithStaticFile extends MetadataInfo {

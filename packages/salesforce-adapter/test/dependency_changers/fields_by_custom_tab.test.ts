@@ -32,7 +32,10 @@ describe('fields_by_custom_tab dependency changer', () => {
   const testTypeId = new ElemID(SALESFORCE, 'Test')
   const testType = new ObjectType({
     elemID: testTypeId,
-    fields: FIELDS_CREATED_BY_CUSTOM_TAB.map(name => ({ name, type: BuiltinTypes.STRING })),
+    fields: Object.assign(
+      {},
+      ...FIELDS_CREATED_BY_CUSTOM_TAB.map(name => ({ [name]: { type: BuiltinTypes.STRING } }))
+    ),
   })
   let tabInstance: InstanceElement
 

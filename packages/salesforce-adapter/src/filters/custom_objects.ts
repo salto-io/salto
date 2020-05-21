@@ -129,9 +129,12 @@ const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] =
   return [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
 }
 
-const createCustomFieldsObjects = (customFields: FieldDefinition[], objectName: string,
+type FieldDefinitionWithName = FieldDefinition & { name: string }
+const createCustomFieldsObjects = (customFields: FieldDefinitionWithName[], objectName: string,
   serviceIds: ServiceIds, objNamespace?: string): ObjectType[] => {
-  const createObjectWithFields = (fields: FieldDefinition[], namespace?: string): ObjectType => {
+  const createObjectWithFields = (
+    fields: FieldDefinitionWithName[], namespace?: string
+  ): ObjectType => {
     const obj = Types.get(objectName, true, false, serviceIds) as ObjectType
     fields.forEach(({ name, type, annotations }) => {
       obj.fields[name] = new Field(obj, name, type, annotations)
@@ -379,7 +382,7 @@ const createFromInstance = (instance: InstanceElement,
   typesFromInstance: TypesFromInstance): Element[] => {
   const createFieldsFromInstanceFields = (
     instanceFields: Values, objectName: string,
-  ): FieldDefinition[] =>
+  ): FieldDefinitionWithName[] =>
     instanceFields
       .map((field: Values) => {
         const fieldFullName = naclCase(field[INSTANCE_FULL_NAME_FIELD])

@@ -48,8 +48,7 @@ const createPicklistObjectType = (
   valueSetName: string,
 ): ObjectType => new ObjectType({
   elemID: mockElemID,
-  fields: [{
-    name: 'state',
+  fields: { state: {
     type: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
     annotations: {
       [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -58,7 +57,7 @@ const createPicklistObjectType = (
       [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: valueSetName,
       [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
     },
-  }],
+  } },
   annotations: {
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
   },

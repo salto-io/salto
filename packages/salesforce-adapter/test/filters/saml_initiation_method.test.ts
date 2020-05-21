@@ -26,15 +26,14 @@ describe('saml initiation method filter', () => {
   const mockType = new ObjectType(
     {
       elemID: CANVAS_METADATA_TYPE_ID,
-      fields: [{
-        name: SAML_INIT_METHOD_FIELD_NAME,
+      fields: { [SAML_INIT_METHOD_FIELD_NAME]: {
         type: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
             values: ['None', 'IdpInitiated', 'SpInitiated'],
           }),
         },
-      }],
+      } },
     }
   )
 

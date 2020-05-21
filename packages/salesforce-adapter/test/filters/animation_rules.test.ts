@@ -28,9 +28,8 @@ import { FilterWith } from '../../src/filter'
 describe('animation rules filter', () => {
   const animationRuleType = new ObjectType({
     elemID: ANIMATION_RULE_TYPE_ID,
-    fields: [
-      {
-        name: ANIMATION_FREQUENCY,
+    fields: {
+      [ANIMATION_FREQUENCY]: {
         type: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -38,8 +37,7 @@ describe('animation rules filter', () => {
           }),
         },
       },
-      {
-        name: RECORD_TYPE_CONTEXT,
+      [RECORD_TYPE_CONTEXT]: {
         type: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -47,7 +45,7 @@ describe('animation rules filter', () => {
           }),
         },
       },
-    ],
+    },
   })
 
   const mockAnimationRuleInstance = new InstanceElement('object_type', animationRuleType,

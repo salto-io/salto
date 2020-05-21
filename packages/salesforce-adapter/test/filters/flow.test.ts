@@ -25,15 +25,14 @@ describe('flow filter', () => {
     'RecursiveCountVariable', 'EventType']
   const mockFlow = new ObjectType({
     elemID,
-    fields: [
-      {
-        name: 'name',
+    fields: {
+      name: {
         type: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values }),
         },
       },
-    ],
+    },
   })
 
   it('remove restriction values from flow_metadata_value.name', () => {

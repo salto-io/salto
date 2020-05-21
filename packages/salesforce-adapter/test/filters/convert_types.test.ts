@@ -31,34 +31,32 @@ describe('convert types filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
-    fields: [
-      { name: 'strAsStr', type: BuiltinTypes.STRING },
-      { name: 'strAsNum', type: BuiltinTypes.STRING },
-      { name: 'boolAsBool', type: BuiltinTypes.BOOLEAN },
-      { name: 'boolAsStr', type: BuiltinTypes.BOOLEAN },
-      { name: 'numAsNum', type: BuiltinTypes.NUMBER },
-      { name: 'numAsStr', type: BuiltinTypes.NUMBER },
-      { name: 'nullStr', type: BuiltinTypes.STRING },
-      {
-        name: 'values',
+    fields: {
+      strAsStr: { type: BuiltinTypes.STRING },
+      strAsNum: { type: BuiltinTypes.STRING },
+      boolAsBool: { type: BuiltinTypes.BOOLEAN },
+      boolAsStr: { type: BuiltinTypes.BOOLEAN },
+      numAsNum: { type: BuiltinTypes.NUMBER },
+      numAsStr: { type: BuiltinTypes.NUMBER },
+      nullStr: { type: BuiltinTypes.STRING },
+      values: {
         type: new ListType(new ObjectType({
           elemID: mockObjId,
-          fields: [
-            { name: 'field', type: BuiltinTypes.STRING },
-            { name: 'value', type: BuiltinTypes.STRING },
-          ],
+          fields: {
+            field: { type: BuiltinTypes.STRING },
+            value: { type: BuiltinTypes.STRING },
+          },
         })),
       },
-      { name: 'numArray', type: new ListType(BuiltinTypes.NUMBER) },
-      {
-        name: 'picklist',
+      numArray: { type: new ListType(BuiltinTypes.NUMBER) },
+      picklist: {
         type: BuiltinTypes.STRING,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['a', 'b', 'c'] }),
         },
       },
-      { name: 'refToStr', type: BuiltinTypes.STRING },
-    ],
+      refToStr: { type: BuiltinTypes.STRING },
+    },
   })
   type XsdValueType = { _: string; $: { 'xsi:type': string }}
   const xsdValue = (val: string, type: string): XsdValueType => ({

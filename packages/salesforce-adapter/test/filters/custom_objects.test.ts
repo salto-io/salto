@@ -52,57 +52,58 @@ describe('Custom Objects filter', () => {
   let result: Element[]
 
   const generateCustomObjectType = (): ObjectType => {
-    const generateInnerMetadataTypeFields = (name: string): FieldDefinition[] => {
+    const generateInnerMetadataTypeFields = (name: string): Record<string, FieldDefinition> => {
       if (name === NESTED_INSTANCE_VALUE_NAME.LIST_VIEWS) {
         const listViewFilterElemId = new ElemID(SALESFORCE, 'ListViewFilter')
-        return [
-          { name: INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.STRING },
-          { name: 'columns', type: BuiltinTypes.STRING },
-          {
-            name: 'filters',
+        return {
+          [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+          columns: { type: BuiltinTypes.STRING },
+          filters: {
             type: new ObjectType({
               elemID: listViewFilterElemId,
-              fields: [
-                { name: 'field', type: BuiltinTypes.STRING },
-                { name: 'value', type: BuiltinTypes.STRING },
-              ],
+              fields: {
+                field: { type: BuiltinTypes.STRING },
+                value: { type: BuiltinTypes.STRING },
+              },
             }),
           },
-        ]
+        }
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.FIELD_SETS) {
-        return [
-          { name: 'availableFields', type: BuiltinTypes.STRING },
-          { name: 'displayedFields', type: BuiltinTypes.STRING },
-          { name: INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.STRING },
-        ]
+        return {
+          availableFields: { type: BuiltinTypes.STRING },
+          displayedFields: { type: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+        }
       }
       if (name === NESTED_INSTANCE_VALUE_NAME.COMPACT_LAYOUTS) {
-        return [
-          { name: 'fields', type: BuiltinTypes.STRING },
-          { name: INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.STRING },
-        ]
+        return {
+          fields: { type: BuiltinTypes.STRING },
+          [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+        }
       }
-      return []
+      return {}
     }
 
-    const innerMetadataTypesFromInstance = Object.entries(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)
-      .map(([annotationName, typeName]) => ({
-        name: annotationName,
-        type: new ObjectType({
-          elemID: new ElemID(SALESFORCE, typeName),
-          fields: generateInnerMetadataTypeFields(annotationName),
-        }),
-      }))
+    const innerMetadataTypesFromInstance = _(NESTED_INSTANCE_VALUE_TO_TYPE_NAME)
+      .entries()
+      .map(([annotationName, typeName]) => {
+        const elemID = new ElemID(SALESFORCE, typeName)
+        return [annotationName, { type: new ObjectType({
+          elemID, fields: generateInnerMetadataTypeFields(annotationName),
+        }) }]
+      })
+      .fromPairs()
+      .value()
 
     return new ObjectType({
       elemID: CUSTOM_OBJECT_TYPE_ID,
-      fields: [
+      fields: {
         ...innerMetadataTypesFromInstance,
-        { name: INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.STRING },
-        { name: 'pluralLabel', type: BuiltinTypes.STRING },
-        { name: 'enableFeeds', type: BuiltinTypes.BOOLEAN },
-      ],
+        [INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.STRING },
+        pluralLabel: { type: BuiltinTypes.STRING },
+        enableFeeds: { type: BuiltinTypes.BOOLEAN },
+      },
     })
   }
 

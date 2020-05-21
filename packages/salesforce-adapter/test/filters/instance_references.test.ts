@@ -27,21 +27,21 @@ describe('instance_reference filter', () => {
   const objTypeID = new ElemID(SALESFORCE, 'obj')
   const nestedType = new ObjectType({
     elemID: nestedId,
-    fields: [
-      { name: parentObjFieldName, type: BuiltinTypes.STRING },
-      { name: otherRefObjName, type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      [parentObjFieldName]: { type: BuiltinTypes.STRING },
+      [otherRefObjName]: { type: BuiltinTypes.STRING },
+    },
   })
   const objType = new ObjectType({
     annotations: { [METADATA_TYPE]: 'obj' },
     elemID: objTypeID,
-    fields: [
-      { name: 'reg', type: BuiltinTypes.STRING },
-      { name: parentObjFieldName, type: BuiltinTypes.STRING },
-      { name: otherRefObjName, type: BuiltinTypes.STRING },
-      { name: 'parentObjNested', type: nestedType },
-      { name: 'parentObjArr', type: new ListType(BuiltinTypes.STRING) },
-    ],
+    fields: {
+      reg: { type: BuiltinTypes.STRING },
+      [parentObjFieldName]: { type: BuiltinTypes.STRING },
+      [otherRefObjName]: { type: BuiltinTypes.STRING },
+      parentObjNested: { type: nestedType },
+      parentObjArr: { type: new ListType(BuiltinTypes.STRING) },
+    },
   })
 
   // Instances
@@ -154,9 +154,7 @@ describe('instance_reference filter', () => {
         [API_NAME]: 'Target',
       },
       elemID: targetElemID,
-      fields: [{
-        name: fieldName, type: BuiltinTypes.STRING, annotations: { [API_NAME]: 'Target.Field' },
-      }],
+      fields: { [fieldName]: { type: BuiltinTypes.STRING, annotations: { [API_NAME]: 'Target.Field' } } },
     })
 
     const srcId = new ElemID(SALESFORCE, 'src')
@@ -165,10 +163,10 @@ describe('instance_reference filter', () => {
     const srcType = new ObjectType({
       annotations: { [METADATA_TYPE]: 'src' },
       elemID: srcId,
-      fields: [
-        { name: srcObj, type: BuiltinTypes.STRING },
-        { name: srcField, type: BuiltinTypes.STRING },
-      ],
+      fields: {
+        [srcObj]: { type: BuiltinTypes.STRING },
+        [srcField]: { type: BuiltinTypes.STRING },
+      },
     })
 
     const srcInstance = new InstanceElement('srcInstace', srcType, {

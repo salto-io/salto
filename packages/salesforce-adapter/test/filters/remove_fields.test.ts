@@ -25,17 +25,17 @@ describe('remove fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')
   const mockType = new ObjectType({
     elemID: mockObjId,
-    fields: [
-      { name: 'existing', type: BuiltinTypes.STRING },
-      { name: 'test', type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      existing: { type: BuiltinTypes.STRING },
+      test: { type: BuiltinTypes.STRING },
+    },
   })
   const anotherMockObjId = new ElemID(constants.SALESFORCE, 'anotherType')
   const anotherMockType = new ObjectType({
     elemID: anotherMockObjId,
-    fields: [
-      { name: 'test', type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      test: { type: BuiltinTypes.STRING },
+    },
   })
 
   const { client } = mockClient()

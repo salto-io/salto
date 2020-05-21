@@ -42,11 +42,11 @@ describe('Field Permissions filter', () => {
 
   const mockTopic = new ObjectType({
     elemID: mockTopicElemID,
-    fields: [
-      { name: ENABLE_TOPICS, type: BuiltinTypes.BOOLEAN },
-      { name: ENTITY_API_NAME, type: BuiltinTypes.STRING },
-      { name: constants.INSTANCE_FULL_NAME_FIELD, type: BuiltinTypes.SERVICE_ID },
-    ],
+    fields: {
+      [ENABLE_TOPICS]: { type: BuiltinTypes.BOOLEAN },
+      [ENTITY_API_NAME]: { type: BuiltinTypes.STRING },
+      [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+    },
     annotationTypes: {},
     annotations: {
       [constants.METADATA_TYPE]: TOPICS_FOR_OBJECTS_METADATA_TYPE,

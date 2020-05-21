@@ -35,8 +35,7 @@ describe('lookup filters filter', () => {
 
     const origMockObject = new ObjectType({
       elemID: objectTypeElemId,
-      fields: [{
-        name: 'lookup',
+      fields: { lookup: {
         type: lookupType,
         annotations: {
           [constants.API_NAME]: lookupFieldApiName,
@@ -58,7 +57,7 @@ describe('lookup filters filter', () => {
             }],
           },
         },
-      }],
+      } },
       annotations: {
         label: 'test label',
         [constants.API_NAME]: mockObjectApiName,
@@ -137,9 +136,9 @@ describe('lookup filters filter', () => {
 
     const origBeforeObject = new ObjectType({
       elemID: objectTypeElemId,
-      fields: [{
-        name: 'lookup', type: lookupType, annotations: { [constants.API_NAME]: lookupFieldApiName },
-      }],
+      fields: { lookup: {
+        type: lookupType, annotations: { [constants.API_NAME]: lookupFieldApiName },
+      } },
       annotations: {
         label: 'test label',
         [constants.API_NAME]: mockObjectApiName,

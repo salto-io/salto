@@ -41,25 +41,23 @@ describe('custom object translation filter', () => {
   const customObjectField = new ObjectType(
     {
       elemID: customObjElemID,
-      fields: [
-        {
-          name: customFieldName,
+      fields: {
+        [customFieldName]: {
           type: BuiltinTypes.STRING,
           annotations: { [API_NAME]: `${customObjName}.${customFieldName}` },
         },
-      ],
+      },
     }
   )
   const customObjectAdditionalField = new ObjectType(
     {
       elemID: customObjElemID,
-      fields: [
-        {
-          name: 'additional',
+      fields: {
+        additional: {
           type: BuiltinTypes.STRING,
           annotations: { [API_NAME]: `${customObjName}.additional` },
         },
-      ],
+      },
     }
   )
   const validationRuleName = 'Last_price_must_for_recently_sold'

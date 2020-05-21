@@ -154,12 +154,12 @@ export class Types {
   private static filterItemElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.FILTER_ITEM)
   private static filterItemType = new ObjectType({
     elemID: Types.filterItemElemID,
-    fields: [
-      { name: FILTER_ITEM_FIELDS.FIELD, type: BuiltinTypes.STRING },
-      { name: FILTER_ITEM_FIELDS.OPERATION, type: BuiltinTypes.STRING },
-      { name: FILTER_ITEM_FIELDS.VALUE_FIELD, type: BuiltinTypes.STRING },
-      { name: FILTER_ITEM_FIELDS.VALUE, type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.OPERATION]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
+    },
     annotations: {
       [API_NAME]: 'FilterItem',
     },
@@ -168,14 +168,14 @@ export class Types {
   private static lookupFilterElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.LOOKUP_FILTER)
   private static lookupFilterType = new ObjectType({
     elemID: Types.lookupFilterElemID,
-    fields: [
-      { name: LOOKUP_FILTER_FIELDS.ACTIVE, type: BuiltinTypes.BOOLEAN },
-      { name: LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER, type: BuiltinTypes.STRING },
-      { name: LOOKUP_FILTER_FIELDS.ERROR_MESSAGE, type: BuiltinTypes.STRING },
-      { name: LOOKUP_FILTER_FIELDS.INFO_MESSAGE, type: BuiltinTypes.STRING },
-      { name: LOOKUP_FILTER_FIELDS.IS_OPTIONAL, type: BuiltinTypes.BOOLEAN },
-      { name: LOOKUP_FILTER_FIELDS.FILTER_ITEMS, type: new ListType(Types.filterItemType) },
-    ],
+    fields: {
+      [LOOKUP_FILTER_FIELDS.ACTIVE]: { type: BuiltinTypes.BOOLEAN },
+      [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: { type: BuiltinTypes.STRING },
+      [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: { type: BuiltinTypes.STRING },
+      [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: { type: BuiltinTypes.STRING },
+      [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: { type: BuiltinTypes.BOOLEAN },
+      [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: { type: new ListType(Types.filterItemType) },
+    },
     annotations: {
       [API_NAME]: 'LookupFilter',
     },
@@ -184,15 +184,14 @@ export class Types {
   private static valueSettingsElemID = new ElemID(SALESFORCE, ANNOTATION_TYPE_NAMES.VALUE_SETTINGS)
   private static valueSettingsType = new ObjectType({
     elemID: Types.valueSettingsElemID,
-    fields: [
+    fields: {
       // todo: currently this field is populated with the referenced field's API name,
       //  should be modified to elemID reference once we'll use HIL
-      { name: VALUE_SETTINGS_FIELDS.VALUE_NAME, type: BuiltinTypes.STRING },
-      {
-        name: VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE,
+      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: { type: BuiltinTypes.STRING },
+      [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: {
         type: new ListType(BuiltinTypes.STRING),
       },
-    ],
+    },
     annotations: {
       [API_NAME]: 'ValueSettings',
     },
@@ -201,13 +200,13 @@ export class Types {
   private static valueSetElemID = new ElemID(SALESFORCE, FIELD_ANNOTATIONS.VALUE_SET)
   private static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,
-    fields: [
-      { name: CUSTOM_VALUE.FULL_NAME, type: BuiltinTypes.STRING },
-      { name: CUSTOM_VALUE.LABEL, type: BuiltinTypes.STRING },
-      { name: CUSTOM_VALUE.DEFAULT, type: BuiltinTypes.BOOLEAN },
-      { name: CUSTOM_VALUE.IS_ACTIVE, type: BuiltinTypes.BOOLEAN },
-      { name: CUSTOM_VALUE.COLOR, type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      [CUSTOM_VALUE.FULL_NAME]: { type: BuiltinTypes.STRING },
+      [CUSTOM_VALUE.LABEL]: { type: BuiltinTypes.STRING },
+      [CUSTOM_VALUE.DEFAULT]: { type: BuiltinTypes.BOOLEAN },
+      [CUSTOM_VALUE.IS_ACTIVE]: { type: BuiltinTypes.BOOLEAN },
+      [CUSTOM_VALUE.COLOR]: { type: BuiltinTypes.STRING },
+    },
   })
 
   private static fieldDependencyElemID = new ElemID(
@@ -216,10 +215,10 @@ export class Types {
 
   private static fieldDependencyType = new ObjectType({
     elemID: Types.fieldDependencyElemID,
-    fields: [
-      { name: FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD, type: BuiltinTypes.STRING },
-      { name: FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS, type: new ListType(Types.valueSettingsType) },
-    ],
+    fields: {
+      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: { type: BuiltinTypes.STRING },
+      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: { type: new ListType(Types.valueSettingsType) },
+    },
   })
 
   private static rollupSummaryOperationTypeElemID = new ElemID(SALESFORCE,
@@ -257,12 +256,12 @@ export class Types {
 
   private static rollupSummaryFilterItemsType = new ObjectType({
     elemID: Types.rollupSummaryFilterItemsElemID,
-    fields: [
-      { name: FILTER_ITEM_FIELDS.FIELD, type: BuiltinTypes.STRING },
-      { name: FILTER_ITEM_FIELDS.OPERATION, type: Types.rollupSummaryFilterOperationTypeType },
-      { name: FILTER_ITEM_FIELDS.VALUE, type: BuiltinTypes.STRING },
-      { name: FILTER_ITEM_FIELDS.VALUE_FIELD, type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.OPERATION]: { type: Types.rollupSummaryFilterOperationTypeType },
+      [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
+    },
   })
 
   private static encryptedTextMaskTypeTypeElemID = new ElemID(SALESFORCE,
@@ -595,37 +594,37 @@ export class Types {
   public static compoundDataTypes: Record<COMPOUND_FIELD_TYPE_NAMES, ObjectType> = {
     Address: new ObjectType({
       elemID: addressElemID,
-      fields: [
-        { name: ADDRESS_FIELDS.CITY, type: BuiltinTypes.STRING },
-        { name: ADDRESS_FIELDS.COUNTRY, type: BuiltinTypes.STRING },
-        { name: ADDRESS_FIELDS.GEOCODE_ACCURACY, type: Types.primitiveDataTypes.Picklist },
-        { name: ADDRESS_FIELDS.LATITUDE, type: BuiltinTypes.NUMBER },
-        { name: ADDRESS_FIELDS.LONGITUDE, type: BuiltinTypes.NUMBER },
-        { name: ADDRESS_FIELDS.POSTAL_CODE, type: BuiltinTypes.STRING },
-        { name: ADDRESS_FIELDS.STATE, type: BuiltinTypes.STRING },
-        { name: ADDRESS_FIELDS.STREET, type: Types.primitiveDataTypes.TextArea },
-      ],
+      fields: {
+        [ADDRESS_FIELDS.CITY]: { type: BuiltinTypes.STRING },
+        [ADDRESS_FIELDS.COUNTRY]: { type: BuiltinTypes.STRING },
+        [ADDRESS_FIELDS.GEOCODE_ACCURACY]: { type: Types.primitiveDataTypes.Picklist },
+        [ADDRESS_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
+        [ADDRESS_FIELDS.LONGITUDE]: { type: BuiltinTypes.NUMBER },
+        [ADDRESS_FIELDS.POSTAL_CODE]: { type: BuiltinTypes.STRING },
+        [ADDRESS_FIELDS.STATE]: { type: BuiltinTypes.STRING },
+        [ADDRESS_FIELDS.STREET]: { type: Types.primitiveDataTypes.TextArea },
+      },
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     Name: new ObjectType({
       elemID: nameElemID,
-      fields: [
-        { name: NAME_FIELDS.FIRST_NAME, type: BuiltinTypes.STRING },
-        { name: NAME_FIELDS.LAST_NAME, type: BuiltinTypes.STRING },
-        { name: NAME_FIELDS.SALUTATION, type: Types.primitiveDataTypes.Picklist },
-      ],
+      fields: {
+        [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
+        [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
+        [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
+      },
       annotationTypes: {
         ...Types.commonAnnotationTypes,
       },
     }),
     Location: new ObjectType({
       elemID: geoLocationElemID,
-      fields: [
-        { name: GEOLOCATION_FIELDS.LATITUDE, type: BuiltinTypes.NUMBER },
-        { name: GEOLOCATION_FIELDS.LONGITUDE, type: BuiltinTypes.NUMBER },
-      ],
+      fields: {
+        [GEOLOCATION_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
+        [GEOLOCATION_FIELDS.LONGITUDE]: { type: BuiltinTypes.NUMBER },
+      },
       annotationTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
         [FIELD_ANNOTATIONS.SCALE]: Types.restrictedNumberTypes.LocationScale,
@@ -697,7 +696,10 @@ export class Types {
   ): ObjectType[] => Object.entries(missingTypes)
     .map(([typeName, fieldTypes]) => new ObjectType({
       elemID: new ElemID(SALESFORCE, typeName),
-      fields: Object.entries(fieldTypes).map(([name, type]) => ({ name, type })),
+      fields: Object.assign(
+        {},
+        ...Object.entries(fieldTypes).map(([name, type]) => ({ [name]: { type } }))
+      ),
       path: [SALESFORCE, TYPES_PATH, ...isSubType ? [SUBTYPES_PATH] : [], typeName],
     }))
 

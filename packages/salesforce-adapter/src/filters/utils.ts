@@ -115,9 +115,9 @@ export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIEL
 export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType => {
   const annotationTypesElemID = new ElemID(SALESFORCE, 'AnnotationType')
   return new ObjectType({ elemID: annotationTypesElemID,
-    fields: Object.entries(annotationTypes)
+    fields: Object.assign({}, ...Object.entries(annotationTypes)
       .concat(Object.entries(CoreAnnotationTypes))
-      .map(([name, type]) => ({ name, type })) })
+      .map(([name, type]) => ({ [name]: { type } }))) })
 }
 
 export const generateApiNameToCustomObject = (elements: Element[]): Map<string, ObjectType> =>

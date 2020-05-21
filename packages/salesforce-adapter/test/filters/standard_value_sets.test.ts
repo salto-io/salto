@@ -47,8 +47,7 @@ const createPicklistObjectType = (
   isMultiPicklist = false
 ): ObjectType => new ObjectType({
   elemID: mockElemID,
-  fields: [{
-    name: 'state',
+  fields: { state: {
     type: isMultiPicklist
       ? Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.MULTIPICKLIST]
       : Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
@@ -62,7 +61,7 @@ const createPicklistObjectType = (
         [constants.CUSTOM_VALUE.DEFAULT]: val === 'Bart',
       })),
     },
-  }],
+  } },
   annotations: {
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
   },

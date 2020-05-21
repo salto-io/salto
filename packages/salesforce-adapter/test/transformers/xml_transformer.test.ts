@@ -39,11 +39,11 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'AssignmentRules',
         },
-        fields: [
-          { name: 'str', type: BuiltinTypes.STRING },
-          { name: 'lst', type: new ListType(BuiltinTypes.NUMBER) },
-          { name: 'bool', type: BuiltinTypes.BOOLEAN },
-        ],
+        fields: {
+          str: { type: BuiltinTypes.STRING },
+          lst: { type: new ListType(BuiltinTypes.NUMBER) },
+          bool: { type: BuiltinTypes.BOOLEAN },
+        },
       })
       const assignmentRuleInstance = new InstanceElement(
         'instance',
@@ -93,10 +93,10 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'ApexClass',
         },
-        fields: [
-          { name: apiVersion, type: BuiltinTypes.NUMBER },
-          { name: 'content', type: BuiltinTypes.STRING },
-        ],
+        fields: {
+          [apiVersion]: { type: BuiltinTypes.NUMBER },
+          content: { type: BuiltinTypes.STRING },
+        },
       })
       const apexClassInstance = new InstanceElement(
         'instance',
@@ -173,9 +173,9 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'EmailFolder',
         },
-        fields: [
-          { name: 'name', type: BuiltinTypes.STRING },
-        ],
+        fields: {
+          name: { type: BuiltinTypes.STRING },
+        },
       })
       const emailFolderInstance = new InstanceElement(
         'instance',
@@ -222,11 +222,11 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'ApexClass',
         },
-        fields: [
+        fields: {
           // eslint-disable-next-line @typescript-eslint/camelcase
-          { name: apiVersion, type: BuiltinTypes.NUMBER },
-          { name: 'content', type: BuiltinTypes.STRING },
-        ],
+          [apiVersion]: { type: BuiltinTypes.NUMBER },
+          content: { type: BuiltinTypes.STRING },
+        },
       })
       const apexClassInstance = new InstanceElement(
         'instance',
@@ -270,9 +270,9 @@ describe('XML Transformer', () => {
         annotations: {
           [METADATA_TYPE]: 'EmailFolder',
         },
-        fields: [
-          { name: 'name', type: BuiltinTypes.STRING },
-        ],
+        fields: {
+          name: { type: BuiltinTypes.STRING },
+        },
       })
       const emailFolderInstance = new InstanceElement(
         'instance',

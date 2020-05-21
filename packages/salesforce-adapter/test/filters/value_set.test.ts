@@ -101,8 +101,7 @@ describe('lookup filters filter', () => {
       const createObjectWithPicklistField = (values?: string[], restricted = true): ObjectType =>
         new ObjectType({
           elemID: mockElemID,
-          fields: [{
-            name: fieldName,
+          fields: { [fieldName]: {
             type: Types.primitiveDataTypes.Picklist,
             annotations: {
               [constants.API_NAME]: `${customObjectName}.${fieldName}`,
@@ -118,7 +117,7 @@ describe('lookup filters filter', () => {
                   [constants.CUSTOM_VALUE.IS_ACTIVE]: true,
                 })) },
             },
-          }],
+          } },
           annotations: {
             [constants.API_NAME]: customObjectName,
             [constants.LABEL]: 'object label',

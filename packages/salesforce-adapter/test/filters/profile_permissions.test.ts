@@ -38,13 +38,12 @@ describe('Object Permissions filter', () => {
       [constants.API_NAME]: 'Test__c',
       [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
     },
-    fields: [
-      {
-        name: descriptionFieldName,
+    fields: {
+      [descriptionFieldName]: {
         type: stringType,
         annotations: { [constants.API_NAME]: `Test__c.${descriptionFieldName}` },
       },
-    ],
+    },
   })
 
   let mockUpdate: jest.Mock

@@ -523,18 +523,16 @@ describe('transformer', () => {
       const existingField = 'test'
       const objType = new ObjectType({
         elemID,
-        fields: [
-          {
-            name: existingField,
+        fields: {
+          [existingField]: {
             type: Types.primitiveDataTypes.Text,
             annotations: { [API_NAME]: 'Test__c' },
           },
-          {
-            name: ignoredField,
+          [ignoredField]: {
             type: Types.primitiveDataTypes.Text,
             annotations: { [API_NAME]: 'Ignored__c' },
           },
-        ],
+        },
         annotations: {
           [API_NAME]: 'Test__c',
           [METADATA_TYPE]: CUSTOM_OBJECT,
@@ -586,7 +584,7 @@ describe('transformer', () => {
       const fieldName = COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME
       const origObjectType = new ObjectType({
         elemID,
-        fields: [{ name: fieldName, type: Types.primitiveDataTypes.Lookup, annotations }],
+        fields: { [fieldName]: { type: Types.primitiveDataTypes.Lookup, annotations } },
       })
       let objectType: ObjectType
       beforeEach(() => {
@@ -672,7 +670,7 @@ describe('transformer', () => {
       const fieldName = 'field_name'
       const origObjectType = new ObjectType({
         elemID,
-        fields: [{ name: fieldName, type: Types.primitiveDataTypes.Picklist, annotations }],
+        fields: { [fieldName]: { type: Types.primitiveDataTypes.Picklist, annotations } },
       })
       let obj: ObjectType
       beforeEach(() => {
@@ -740,7 +738,7 @@ describe('transformer', () => {
       const fieldName = 'field_name'
       const origObjectType = new ObjectType({
         elemID,
-        fields: [{ name: fieldName, type: Types.primitiveDataTypes.Picklist, annotations }],
+        fields: { [fieldName]: { type: Types.primitiveDataTypes.Picklist, annotations } },
       })
       let obj: ObjectType
       beforeEach(() => {
@@ -778,7 +776,7 @@ describe('transformer', () => {
       const fieldName = 'field_name'
       const origObjectType = new ObjectType({
         elemID,
-        fields: [{ name: fieldName, type: Types.primitiveDataTypes.Summary, annotations }],
+        fields: { [fieldName]: { type: Types.primitiveDataTypes.Summary, annotations } },
       })
       let obj: ObjectType
       beforeEach(() => {
@@ -1064,9 +1062,8 @@ describe('transformer', () => {
         reg: regValue,
         changeToRef: regValue,
       },
-      fields: [
-        {
-          name: 'field',
+      fields: {
+        field: {
           type: element,
           annotations: {
             instanceRef,
@@ -1076,7 +1073,7 @@ describe('transformer', () => {
             changeToRef: regValue,
           },
         },
-      ],
+      },
     })
     const origCopy = orig.clone()
     const modified = resolveValues(orig, getLookUpName)
@@ -1131,30 +1128,29 @@ describe('transformer', () => {
   describe('getLookUpName', () => {
     const refObject = new ObjectType({
       elemID: new ElemID(SALESFORCE, 'Lead'),
-      fields: [{
-        name: 'test',
+      fields: { test: {
         type: BuiltinTypes.STRING,
         annotations: {
           [API_NAME]: 'Lead.Test__c',
         },
-      }],
+      } },
     })
     describe('with fields in layout instance', () => {
       const mockLayoutItem = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutItem'),
-        fields: [{ name: 'field', type: BuiltinTypes.STRING }],
+        fields: { field: { type: BuiltinTypes.STRING } },
       })
       const mockLayoutColumn = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutColumn'),
-        fields: [{ name: 'layoutItems', type: new ListType(mockLayoutItem) }],
+        fields: { layoutItems: { type: new ListType(mockLayoutItem) } },
       })
       const mockLayoutSection = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'LayoutSection'),
-        fields: [{ name: 'layoutColumns', type: new ListType(mockLayoutColumn) }],
+        fields: { layoutColumns: { type: new ListType(mockLayoutColumn) } },
       })
       const mockLayoutType = new ObjectType({
         elemID: LAYOUT_TYPE_ID,
-        fields: [{ name: 'layoutSections', type: new ListType(mockLayoutSection) }],
+        fields: { layoutSections: { type: new ListType(mockLayoutSection) } },
       })
       const mockLayoutInstance = new InstanceElement('test', mockLayoutType, {})
       it('should resolve to relative api name', () => {
@@ -1170,7 +1166,7 @@ describe('transformer', () => {
     describe('with all other cases', () => {
       const srcObject = new ObjectType({
         elemID: new ElemID(SALESFORCE, 'test'),
-        fields: [{ name: 'test', type: BuiltinTypes.STRING }],
+        fields: { test: { type: BuiltinTypes.STRING } },
       })
       const srcInst = new InstanceElement('test', srcObject, {})
       it('should resolve to full api name', () => {

@@ -27,7 +27,7 @@ import {
 } from '../src/core/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 
-import { IllegalReference } from '../src/parser/internal/converters'
+import { IllegalReference } from '../src/parser/internal/converter/types'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')

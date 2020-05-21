@@ -14,117 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, ElemID, Element, VariableExpression, ReferenceExpression, TemplateExpression, isReferenceExpression, ObjectType, Field, PrimitiveType, Values, PrimitiveTypes, TypeMap, Variable, InstanceElement, INSTANCE_ANNOTATIONS, isObjectType, TemplatePart, TypeElement, ListType } from '@salto-io/adapter-api'
+import { Element, INSTANCE_ANNOTATIONS, Variable, ElemID, PrimitiveTypes, TypeMap, Values, TypeElement, ListType, ObjectType, Field, PrimitiveType, InstanceElement, Value, isObjectType } from '@salto-io/adapter-api'
 import wu from 'wu'
-import { HclExpression, SourceRange } from './types'
-import { SourceMap } from './source_map'
-import { Keywords } from '../language'
-import { evaluateFunction, Functions } from '../functions'
-
-interface FuncWatcher {
-  parent: Value
-  key: string | number
-}
-
-interface InternalParseRes<T> {
-  value: T
-  source: SourceRange
-  sourceMap?: SourceMap
-}
-
-type AttrData = [string, Value]
-
-type FieldData = {
-  annotations: Values
-  type: string
-  name: string
-}
-
-type TopLevelElementData = {
-  elements: Element[]
-  sourceMap: SourceMap
-}
-
-type ElementItem = AttrData | FieldData | TypeMap
-
-interface LexerToken {
-  type: string
-  value: string
-  text: string
-  line: number
-  lineBreaks: number
-  col: number
-  offset: number
-}
+import { SourceMap } from '../../source_map'
+import { Keywords } from '../../language'
+import { InternalParseRes, AttrData, TopLevelElementData, FieldData, ElementItem, LexerToken } from './types'
+import { createSourceRange } from './context'
+import { convertAttributes } from './values'
 
 const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
-
-type Token = LexerToken | InternalParseRes<Value>
-
-type NearleyErrorToken = Partial<InternalParseRes<Value> & LexerToken>
-
-export class NearleyError extends Error {
-  constructor(
-    public token: NearleyErrorToken,
-    public offset: number,
-    message: string
-  ) {
-    super(message)
-  }
-}
-
-export class IllegalReference {
-  constructor(public ref: string, public message: string) {}
-}
-
-let currentFilename: string
-let currentFunctions: Functions
-let allowWildcard = false
-let funcWatchers: FuncWatcher[] = []
-
-const isLexerToken = (token: Token): token is LexerToken => 'value' in token
-    && 'text' in token
-    && 'line' in token
-    && 'col' in token
-    && 'offset' in token
-
-export const startParse = (filename: string, functions: Functions): void => {
-  currentFilename = filename
-  currentFunctions = functions
-  allowWildcard = false
-}
-
-export const replaceFunctionValues = async (): Promise<void> => {
-  await Promise.all(funcWatchers.map(async watcher => {
-    const { parent, key } = watcher
-    parent[key] = await parent[key]
-  }))
-  funcWatchers = []
-}
-
-export const setErrorRecoveryMode = (): void => {
-  allowWildcard = true
-}
-
-const addFuncWatcher = (parent: Value, key: string | number): void => {
-  if (parent[key].then) {
-    funcWatchers.push({ parent, key })
-  }
-}
-
-const createSourceRange = (st: Token, et: Token): SourceRange => {
-  const start = isLexerToken(st)
-    ? { line: st.line, col: st.col, byte: st.offset }
-    : (st as InternalParseRes<Value>).source.start
-  const end = isLexerToken(et)
-    ? {
-      line: et.line + et.lineBreaks,
-      col: et.lineBreaks === 0 ? et.col + et.text.length : et.text.length - et.text.lastIndexOf('\n'),
-      byte: et.offset + et.text.length,
-    }
-    : (et as InternalParseRes<Value>).source.end
-  return { filename: currentFilename, start, end }
-}
 
 export const parseElemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
@@ -180,7 +78,7 @@ const parseType = (
   const listElements: Map<string, ListType> = new Map<string, ListType>()
   const createFieldType = (blockType: string): TypeElement => {
     if (blockType.startsWith(Keywords.LIST_PREFIX)
-      && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
+        && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
       const listType = new ListType(createFieldType(
         blockType.substring(
           Keywords.LIST_PREFIX.length,
@@ -288,42 +186,6 @@ const parseElementBlock = (
   throw new Error('unsupported block')
 }
 
-export const convertMain = (
-  topLevelElements: TopLevelElementData[]
-): TopLevelElementData => {
-  const elements = _.flatten(topLevelElements.map(item => item.elements))
-  const sourceMaps = topLevelElements.map(item => item.sourceMap)
-  const mergedSourceMap = new SourceMap()
-  // TODO - this should use merge source maps from the source map file
-  sourceMaps.forEach(sourceMap => {
-    sourceMap.forEach((value, key) => mergedSourceMap.push(key, ...value))
-  })
-  return { elements, sourceMap: mergedSourceMap }
-}
-
-const convertAttributes = (
-  attrs: InternalParseRes<AttrData>[]
-): Omit<InternalParseRes<Values>, 'source'> => {
-  const value: Record<string, Value> = {}
-  const sourceMap = new SourceMap()
-  attrs.forEach(attr => {
-    const [attrKey, attrValue] = attr.value
-    if (value[attrKey] !== undefined) {
-      throw new NearleyError(attr, attr.source.start.byte, 'Attribute redefined')
-    }
-    value[attrKey] = attrValue
-    addFuncWatcher(value, attrKey)
-    sourceMap.push(attrKey, attr.source)
-    if (attr.sourceMap) {
-      sourceMap.mount(attrKey, attr.sourceMap)
-    }
-  })
-  return {
-    value,
-    sourceMap,
-  }
-}
-
 export const converTopLevelBlock = (
   labels: InternalParseRes<string>[],
   elementItems: InternalParseRes<ElementItem>[],
@@ -337,8 +199,8 @@ export const converTopLevelBlock = (
   const isFieldBlock = (
     item: InternalParseRes<Value>
   ): item is InternalParseRes<FieldData> => item.value.annotations
-    && item.value.type
-    && item.value.name
+      && item.value.type
+      && item.value.name
   const isAttribute = (
     item: InternalParseRes<Value>
   ): item is InternalParseRes<AttrData> => _.isArray(item.value) && item.value.length === 2
@@ -354,9 +216,9 @@ export const converTopLevelBlock = (
   const [element, sourceMap, listTypes] = parseElementBlock(
     elementType,
     elementLabels,
-    annotationsTypes?.value ?? {},
-    annotations,
-    fields
+      annotationsTypes?.value ?? {},
+      annotations,
+      fields
   )
   const elemKey = element.elemID.getFullName()
   if (annotationsTypes?.sourceMap) {
@@ -408,148 +270,3 @@ export const convertField = (
     sourceMap,
   }
 }
-
-export const convertArray = (
-  ob: LexerToken,
-  arrayItems: InternalParseRes<Value>[],
-  cb: LexerToken
-): InternalParseRes<Value[]> => {
-  const sourceMap = new SourceMap()
-  const value: Value[] = []
-  arrayItems.forEach((item, index) => {
-    sourceMap.push(index.toString(), item.source)
-    value.push(item.value)
-    addFuncWatcher(value, index)
-    if (item.sourceMap) {
-      sourceMap.mount(index.toString(), item.sourceMap)
-    }
-  })
-  return {
-    value,
-    source: createSourceRange(ob, cb),
-    sourceMap,
-  }
-}
-
-export const convertObject = (
-  ob: LexerToken,
-  attrs: InternalParseRes<AttrData>[],
-  cb: LexerToken
-): InternalParseRes<Values> => ({
-  ...convertAttributes(attrs),
-  source: createSourceRange(ob, cb),
-})
-
-export const convertReference = (
-  reference: LexerToken
-): InternalParseRes<ReferenceExpression | IllegalReference> => {
-  const ref = reference.value
-  const source = createSourceRange(reference, reference)
-  try {
-    const elemId = ElemID.fromFullName(ref)
-    return elemId.adapter === ElemID.VARIABLES_NAMESPACE
-      ? { value: new VariableExpression(elemId), source }
-      : { value: new ReferenceExpression(elemId), source }
-  } catch (e) {
-    return { value: new IllegalReference(ref, e.message), source }
-  }
-}
-
-const unescapeTemplateMarker = (text: string): string =>
-  text.replace(/\\\$\{/gi, '${',)
-
-export const convertString = (
-  oq: LexerToken,
-  contentTokens: LexerToken[],
-  cq: LexerToken
-): InternalParseRes<string | TemplateExpression> => {
-  const source = createSourceRange(oq, cq)
-  const convertedTokens = contentTokens.map(t => (isReferenceExpression(t)
-    ? convertReference(t)
-    : JSON.parse(`"${unescapeTemplateMarker(t.text)}"`)))
-  if (_.some(convertedTokens, isReferenceExpression)) {
-    return {
-      value: new TemplateExpression({ parts: convertedTokens }),
-      source,
-    }
-  }
-  return {
-    value: convertedTokens.join(),
-    source,
-  }
-}
-
-export const convertMultilineString = (
-  mlStart: LexerToken,
-  contentTokens: LexerToken[],
-  mlEnd: LexerToken
-): InternalParseRes<string | TemplateExpression> => {
-  const expressions = contentTokens.map((t, index) => {
-    const withoutEscaping = unescapeTemplateMarker(t.text)
-    const value = index === contentTokens.length - 1
-      ? withoutEscaping.slice(0, withoutEscaping.length - 1) // Remove the last \n
-      : withoutEscaping
-    return t.type === 'reference'
-      ? convertReference(t).value
-      : value
-  })
-  const source = createSourceRange(mlStart, mlEnd)
-  return _.some(expressions, exp => isReferenceExpression(exp))
-    ? { value: new TemplateExpression({ parts: expressions as TemplatePart[] }), source }
-    : { value: expressions.join(''), source }
-}
-
-export const convertBoolean = (bool: LexerToken): InternalParseRes<boolean> => ({
-  value: bool.text === 'true',
-  source: createSourceRange(bool, bool), // LOL. This was unindented. Honest.
-})
-
-export const convertNumber = (num: LexerToken): InternalParseRes<number> => ({
-  value: parseFloat(num.text),
-  source: createSourceRange(num, num),
-})
-
-const convertAttrKey = (key: LexerToken): string => (key.type === 'string'
-  ? JSON.parse(key.text)
-  : key.text)
-
-export const convertAttr = (
-  attrKey: LexerToken,
-  attrValue: InternalParseRes<Value>
-): InternalParseRes<AttrData> => {
-  const key = convertAttrKey(attrKey)
-  const value = [key, attrValue.value] as AttrData
-  const source = createSourceRange(attrKey, attrValue)
-  return { value, source, sourceMap: attrValue.sourceMap }
-}
-
-// This is really broken fix this
-export const convertWildcard = (wildcard: LexerToken): HclExpression => {
-  const exp = {
-    type: 'dynamic',
-    expressions: [],
-    source: createSourceRange(wildcard, wildcard),
-  } as HclExpression
-  if (allowWildcard) return exp
-  throw new NearleyError(exp, wildcard.offset, 'Invalid wildcard token')
-}
-
-export const convertFunction = (
-  funcName: LexerToken,
-  parameters: InternalParseRes<Value>[],
-  funcEnd: LexerToken
-): InternalParseRes<Promise<Value>> => {
-  const source = createSourceRange(funcName, funcEnd)
-  const value = evaluateFunction(
-    funcName.value,
-    parameters.map(p => p.value),
-    currentFunctions
-  )
-  return { source, value }
-}
-
-
-/* console.log("Don't forget functions!")
-console.log("Don't forget instance IDs in source map!!! - ADD TESTS!")
-console.log("Don't forget to add tests for objects with functions!")
-console.log('Add comment to the create instance regarding the unset usage') */

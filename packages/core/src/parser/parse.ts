@@ -21,11 +21,11 @@ import {
   SourceRange as InternalSourceRange,
   HclParseError,
 } from './internal/types'
-import { parse as hclParse } from './internal/parse'
+import { parseBuffer, filterErrors, generateErrorContext, restoreErrorOrigRanges } from './internal/parse'
 import {
   Functions,
 } from './functions'
-import { SourceMap } from './internal/source_map'
+import { SourceMap } from './source_map'
 
 
 // Re-export these types because we do not want code outside the parser to import hcl
@@ -61,10 +61,26 @@ export const parse = async (
   filename: string,
   functions: Functions = {},
 ): Promise<ParseResult> => {
-  const { elements, errors, sourceMap } = await hclParse(naclFile, filename, functions)
+  const srcString = naclFile.toString()
+  const [patchedSrc, elements, sourceMap, errors] = await parseBuffer(
+    srcString,
+    filename,
+    functions
+  )
+  let fixedErrors = filterErrors(errors, patchedSrc)
+  fixedErrors = fixedErrors
+    .map(error => {
+      const updatedError = generateErrorContext(srcString, error)
+      return updatedError
+    })
+    .map(error => restoreErrorOrigRanges(patchedSrc, error))
   return {
     elements: elements.map(flattenElementStr),
-    errors,
     sourceMap,
+    errors: fixedErrors.map(err => ({
+      ...err,
+      severity: 'Error',
+      message: err.detail,
+    })),
   }
 }

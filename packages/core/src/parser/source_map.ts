@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID } from '@salto-io/adapter-api'
-import { SourceRange, isSourceRange } from './types'
+import { SourceRange, isSourceRange } from './internal/types'
 
 const CHILDREN = 0
 const VALUE = 1

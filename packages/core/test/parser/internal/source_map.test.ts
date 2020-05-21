@@ -16,7 +16,7 @@
 import wu from 'wu'
 import { ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { SourceMap } from '../../../src/parser/internal/source_map'
+import { SourceMap } from '../../../src/parser/source_map'
 import { SourceRange } from '../../../src/parser/parse'
 
 describe('tree source map', () => {

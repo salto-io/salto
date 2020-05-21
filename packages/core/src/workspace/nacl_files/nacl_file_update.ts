@@ -21,7 +21,7 @@ import {
 import { AdditionDiff } from '@salto-io/dag'
 import { DetailedChange } from '../../core/plan'
 import { SourceRange } from '../../parser/parse'
-import { SourceMap } from '../../parser/internal/source_map'
+import { SourceMap } from '../../parser/source_map'
 import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../parser/dump'

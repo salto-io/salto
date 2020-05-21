@@ -18,11 +18,12 @@ import _ from 'lodash'
 
 import { logger } from '@salto-io/logging'
 import { Element, SaltoError } from '@salto-io/adapter-api'
-import { startParse, NearleyError, setErrorRecoveryMode, convertMain, replaceFunctionValues } from './converters'
 import { HclParseError, SourcePos, SourceRange } from './types'
 import { WILDCARD } from './lexer'
-import { SourceMap } from './source_map'
+import { SourceMap } from '../source_map'
 import { Functions } from '../functions'
+import { TopLevelElementData, NearleyError } from './converter/types'
+import { startParse, setErrorRecoveryMode, replaceFunctionValues } from './converter/context'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
@@ -170,9 +171,23 @@ const hasFatalError = (src: string): boolean => src.includes(
   _.repeat(WILDCARD, MAX_ALLOWED_DYNAMIC_TOKEN)
 )
 
+const convertMain = (
+  topLevelElements: TopLevelElementData[]
+): TopLevelElementData => {
+  const elements = _.flatten(topLevelElements.map(item => item.elements))
+  const sourceMaps = topLevelElements.map(item => item.sourceMap)
+  const mergedSourceMap = new SourceMap()
+  // TODO - this should use merge source maps from the source map file
+  sourceMaps.forEach(sourceMap => {
+    sourceMap.forEach((value, key) => mergedSourceMap.push(key, ...value))
+  })
+  return { elements, sourceMap: mergedSourceMap }
+}
+
 export const parseBuffer = async (
   src: string,
   filename: string,
+  functions: Functions,
   prevErrors: HclParseError[] = [],
   errorRecoveryMode = false
 ): Promise<[string, Element[], SourceMap, HclParseError[]]> => {
@@ -181,6 +196,7 @@ export const parseBuffer = async (
   }
   const hclParser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
   try {
+    startParse(filename, functions)
     hclParser.feed(src)
   } catch (err) {
     // The next two lines recover the state of the parser before the bad token was
@@ -204,6 +220,7 @@ export const parseBuffer = async (
       const [finalFixedBuffer, elements, sourceMap, errors] = await parseBuffer(
         fixedBuffer,
         filename,
+        functions,
         [...prevErrors, parserError],
         true
       )
@@ -233,7 +250,7 @@ export const parseBuffer = async (
 const isWildcardToken = (error: HclParseError): boolean => error.detail.includes(WILDCARD)
 
 // This function removes all errors that are generated because of wildcard use
-const filterErrors = (errors: HclParseError[], src: string): HclParseError[] => {
+export const filterErrors = (errors: HclParseError[], src: string): HclParseError[] => {
   if (_.isEmpty(errors)) {
     return errors
   }
@@ -249,7 +266,7 @@ const filterErrors = (errors: HclParseError[], src: string): HclParseError[] => 
     .filter(error => !isWildcardToken(error))
 }
 
-const generateErrorContext = (src: string, error: HclParseError): HclParseError => {
+export const generateErrorContext = (src: string, error: HclParseError): HclParseError => {
   error.context = getContextSourceRange(error.subject.filename, error.subject.start.line, src)
   return error
 }
@@ -270,7 +287,7 @@ const calculateAmountWildcards = (patchedSrc: string, error: HclParseError): num
     .reduce((amountWildcards, current) =>
       (current < error.subject.end.byte ? amountWildcards + 1 : amountWildcards), 0)
 
-const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError): HclParseError => {
+export const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError): HclParseError => {
   const amountWildcardsBefore = calculateAmountWildcards(patchedSrc, error)
   error.subject.start = subtractWildcardOffset(
     error.subject.start, amountWildcardsBefore
@@ -279,30 +296,4 @@ const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError): HclPa
     error.subject.end, amountWildcardsBefore
   )
   return error
-}
-
-export const parse = async (
-  src: Buffer,
-  filename: string,
-  functions: Functions
-): Promise<ParseResult> => {
-  startParse(filename, functions)
-  const srcString = src.toString()
-  const [patchedSrc, elements, sourceMap, errors] = await parseBuffer(srcString, filename)
-  let fixedErrors = filterErrors(errors, patchedSrc)
-  fixedErrors = fixedErrors
-    .map(error => {
-      const updatedError = generateErrorContext(srcString, error)
-      return updatedError
-    })
-    .map(error => restoreErrorOrigRanges(patchedSrc, error))
-  return {
-    elements,
-    sourceMap,
-    errors: fixedErrors.map(err => ({
-      ...err,
-      severity: 'Error',
-      message: err.detail,
-    })),
-  }
 }

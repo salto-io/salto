@@ -34,7 +34,7 @@ import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files/common'
 import { getStaticFilesFunctions } from '../static_files/functions'
-import { SourceMap } from '../../parser/internal/source_map'
+import { SourceMap } from '../../parser/source_map'
 import { Functions } from '../../parser/functions'
 
 const { withLimitedConcurrency } = promises.array
@@ -99,14 +99,14 @@ const buildNaclFilesSource = (
     ...getStaticFilesFunctions(staticFileSource), // add future functions here
   }
   const parseNaclFile = async (naclFile: NaclFile): Promise<ParseResult> => {
-    //const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
-    let parseResult = undefined //await cache.get(key)
+    // const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
+    let parseResult // await cache.get(key)
     if (parseResult === undefined) {
       parseResult = await parse(
         Buffer.from(naclFile.buffer), naclFile.filename,
         functions,
       )
-      //await cache.put(key, parseResult)
+      // await cache.put(key, parseResult)
     }
     return parseResult
   }

@@ -33,7 +33,7 @@ This means that inside an environment you can not rename, delete or create Folde
 #### Emails
 
 * The “Smart rules” features support is limited to Subject.
-* You can’t create new smart rules through Salto. Only ones that already appear in the NaCL’s can be used (in other emails).
+* You can’t create new smart rules through Salto. Only ones that already appear in the NaCl’s can be used (in other emails).
 
 ## Multi-environment
 

@@ -40,8 +40,10 @@ export const rules: Record<string, moo.Rules> = {
     // (?:(?:[ \t]+)|(?:\/\/[^\r\n]*))* -> a series of white spaces and comments
     // (?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*(?:[\r\n]+)(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))* -> a new line
     // padded by spaces and comments
-    newline: { match: /(?:(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*(?:[\r\n]+)(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*)+/, lineBreaks: true },
-    ws: /[ \t]+/,
+    // newline: { match: /(?:(?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*(?:[\r\n]+)
+    // (?:(?:[ \t]+)|(?:\/\/[^\r\n]*))*)+/, lineBreaks: true },
+    // ws: /[ \t]+/,
+    ws: { match: /[ \t\r\n]+/, lineBreaks: true },
     comment: /\/\/[^\r\n]*/,
     invalidSyntax: { match: /[^ ]+/, error: true },
   },

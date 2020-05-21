@@ -17,9 +17,12 @@ import * as nearley from 'nearley'
 import _ from 'lodash'
 
 import { logger } from '@salto-io/logging'
-import { startParse, convertMain, NearleyError, setErrorRecoveryMode } from './converters'
-import { HclParseError, HclParseReturn, ParsedHclBlock, SourcePos, isSourceRange, HclExpression, SourceRange } from './types'
+import { Element, SaltoError } from '@salto-io/adapter-api'
+import { startParse, NearleyError, setErrorRecoveryMode, convertMain, replaceFunctionValues } from './converters'
+import { HclParseError, SourcePos, SourceRange } from './types'
 import { WILDCARD } from './lexer'
+import { SourceMap } from './source_map'
+import { Functions } from '../functions'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
@@ -30,6 +33,14 @@ const MAX_FILE_ERRORS = 20
 // This value was set for the longest minimal length of an empty non-literal
 // in the grammer.
 const MAX_ALLOWED_DYNAMIC_TOKEN = 3
+
+export type ParseError = HclParseError & SaltoError
+export type ParseResult = {
+  elements: Element[]
+  errors: ParseError[]
+  sourceMap: SourceMap
+}
+
 const getStatePrintToken = (state: nearley.LexerState): string | undefined => {
   const symbol = state.rule.symbols[state.dot]
   if (typeof symbol === 'object' && symbol.type && symbol.type !== 'wildcard') {
@@ -116,22 +127,6 @@ const convertParserError = (
   }
 }
 
-const createEmptyBody = (src: string, filename: string): ParsedHclBlock => ({
-  attrs: {},
-  blocks: [],
-  type: '',
-  labels: [],
-  source: {
-    filename,
-    start: { col: 0, line: 0, byte: 0 },
-    end: {
-      col: src.length - src.lastIndexOf('\n'),
-      line: src.split('\n').length,
-      byte: src.length,
-    },
-  },
-})
-
 const unexpectedEOFError = (src: string, filename: string): HclParseError => {
   const pos = {
     col: src.length - src.lastIndexOf('\n'),
@@ -157,28 +152,30 @@ const addLineOffset = (pos: SourcePos, wildcardPosition: SourcePos): SourcePos =
 )
 
 const restoreOrigBlockRanges = (
-  blockItems: HclExpression[],
+  sourceMap: SourceMap,
   wildcardPosition: SourcePos
-): HclExpression[] => (
-  _.cloneDeepWith(blockItems, value => ((isSourceRange(value))
-    ? {
-      start: addLineOffset(value.start, wildcardPosition),
-      end: addLineOffset(value.end, wildcardPosition),
-      filename: value.filename,
-    }
-    : undefined))
-)
+): SourceMap => {
+  const restoredSourceMap = new SourceMap()
+  sourceMap.forEach((ranges, key) => {
+    restoredSourceMap.set(key, ranges.map(range => ({
+      start: addLineOffset(range.start, wildcardPosition),
+      end: addLineOffset(range.end, wildcardPosition),
+      filename: range.filename,
+    })))
+  })
+  return restoredSourceMap
+}
 
 const hasFatalError = (src: string): boolean => src.includes(
   _.repeat(WILDCARD, MAX_ALLOWED_DYNAMIC_TOKEN)
 )
 
-export const parseBuffer = (
+export const parseBuffer = async (
   src: string,
   filename: string,
   prevErrors: HclParseError[] = [],
   errorRecoveryMode = false
-): [string, HclExpression[], HclParseError[]] => {
+): Promise<[string, Element[], SourceMap, HclParseError[]]> => {
   if (!errorRecoveryMode) {
     log.debug('Started parsing: %s (%d bytes)', filename, src.length)
   }
@@ -204,7 +201,7 @@ export const parseBuffer = (
       ].join('')
       setErrorRecoveryMode() // Allows the wildcard token to be parsed from now on in this file
 
-      const [finalFixedBuffer, blockItems, errors] = parseBuffer(
+      const [finalFixedBuffer, elements, sourceMap, errors] = await parseBuffer(
         fixedBuffer,
         filename,
         [...prevErrors, parserError],
@@ -214,15 +211,23 @@ export const parseBuffer = (
         log.debug('Finished parsing: %s (%d bytes)', filename, errors.length)
       }
       return [finalFixedBuffer,
-        restoreOrigBlockRanges(blockItems, parserError.subject.start), errors]
+        elements,
+        restoreOrigBlockRanges(sourceMap, parserError.subject.start),
+        errors,
+      ]
     }
-    return [src, [], [...prevErrors, parserError]]
+    return [src, [], new SourceMap(), [...prevErrors, parserError]]
   }
   if (!errorRecoveryMode) {
     log.debug('Finished parsing: %s', filename)
   }
-  const blockItems = hclParser.finish()[0]
-  return [src, blockItems, prevErrors]
+  const parseResult = hclParser.finish()[0]
+  await replaceFunctionValues()
+  if (parseResult !== undefined) {
+    const { elements, sourceMap } = convertMain(parseResult)
+    return [src, elements, sourceMap, prevErrors]
+  }
+  return [src, [], new SourceMap(), [unexpectedEOFError(src, filename)]]
 }
 
 const isWildcardToken = (error: HclParseError): boolean => error.detail.includes(WILDCARD)
@@ -276,10 +281,14 @@ const restoreErrorOrigRanges = (patchedSrc: string, error: HclParseError): HclPa
   return error
 }
 
-export const parse = (src: Buffer, filename: string): HclParseReturn => {
-  startParse(filename)
+export const parse = async (
+  src: Buffer,
+  filename: string,
+  functions: Functions
+): Promise<ParseResult> => {
+  startParse(filename, functions)
   const srcString = src.toString()
-  const [patchedSrc, blockItems, errors] = parseBuffer(srcString, filename)
+  const [patchedSrc, elements, sourceMap, errors] = await parseBuffer(srcString, filename)
   let fixedErrors = filterErrors(errors, patchedSrc)
   fixedErrors = fixedErrors
     .map(error => {
@@ -287,14 +296,13 @@ export const parse = (src: Buffer, filename: string): HclParseReturn => {
       return updatedError
     })
     .map(error => restoreErrorOrigRanges(patchedSrc, error))
-  if (blockItems !== undefined) {
-    return {
-      body: convertMain(blockItems),
-      errors: fixedErrors,
-    }
-  }
   return {
-    body: createEmptyBody(srcString, filename),
-    errors: [unexpectedEOFError(srcString, filename)],
+    elements,
+    sourceMap,
+    errors: fixedErrors.map(err => ({
+      ...err,
+      severity: 'Error',
+      message: err.detail,
+    })),
   }
 }

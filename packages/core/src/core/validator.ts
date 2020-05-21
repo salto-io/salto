@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { InvalidStaticFile } from '../workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
-import { IllegalReference } from '../parser/expressions'
+import { IllegalReference } from '../parser/internal/converters'
 
 const { makeArray } = collections.array
 

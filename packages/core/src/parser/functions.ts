@@ -17,13 +17,12 @@
 import {
   Value, SaltoError, SaltoErrorSeverity,
 } from '@salto-io/adapter-api'
-import { HclExpression } from './internal/types'
 import { FunctionExpression } from './internal/functions'
 
 export { FunctionExpression } from './internal/functions'
 
 export type FunctionImplementation = {
- parse(funcExp: HclExpression): Promise<Value>
+ parse(parameters: Value[]): Promise<Value>
  dump(val: Value): Promise<FunctionExpression>
  isSerializedAsFunction(val: Value): boolean
 }
@@ -44,17 +43,16 @@ export class MissingFunctionError implements SaltoError {
 }
 
 export const evaluateFunction = (
-  funcExp: HclExpression,
+  funcName: string,
+  parameters: Value[],
   functions: Functions,
 ): Promise<Value | MissingFunctionError> => {
-  const { funcName } = funcExp.value
-
   const func = functions[funcName]
   if (func === undefined) {
     return Promise.resolve(new MissingFunctionError(funcName))
   }
 
-  return func.parse(funcExp)
+  return func.parse(parameters)
 }
 
 export const getFunctionExpression = (

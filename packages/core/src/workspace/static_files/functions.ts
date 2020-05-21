@@ -20,8 +20,8 @@ import { Functions, FunctionExpression } from '../../parser/functions'
 
 export const getStaticFilesFunctions = (staticFilesSource: StaticFilesSource): Functions => ({
   file: {
-    parse: (funcExp): Promise<StaticFile | InvalidStaticFile> => {
-      const [filepath] = funcExp.value.parameters
+    parse: (parameters): Promise<StaticFile | InvalidStaticFile> => {
+      const [filepath] = parameters
       return staticFilesSource.getStaticFile(filepath)
     },
     dump: async (val: Value): Promise<FunctionExpression> => {

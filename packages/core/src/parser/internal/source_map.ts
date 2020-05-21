@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { ElemID } from '@salto-io/adapter-api'
-import { NAMESPACE_SEPARATOR } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { SourceRange, isSourceRange } from './types'
 
 const CHILDREN = 0
@@ -112,7 +111,9 @@ export class SourceMap implements Map<string, SourceRange[]> {
   }
 
   mount(baseId: string, otherMap: SourceMap): void {
-    otherMap.forEach((ranges, id) => this.push([baseId, id].join(NAMESPACE_SEPARATOR), ...ranges))
+    otherMap.forEach(
+      (ranges, id) => this.push([baseId, id].join(ElemID.NAMESPACE_SEPARATOR), ...ranges)
+    )
   }
 
   delete(id: string): boolean {

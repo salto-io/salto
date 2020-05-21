@@ -35,7 +35,7 @@ describe('local workspace', () => {
   const mockExists = exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
   const mockDirStoreInstance = (): DirectoryStore => ({
-    get: jest.fn(),
+    get: jest.fn().mockResolvedValue({ buffer: '', filename: '' }),
     set: jest.fn(),
     flush: jest.fn(),
     list: jest.fn(),
@@ -131,7 +131,8 @@ describe('local workspace', () => {
         ]
         currentEnv = "default"
       }
-      ` })
+      `,
+      filename: '' })
       await loadLocalWorkspace('.')
 
       expect(mockLoad).toHaveBeenCalledTimes(1)

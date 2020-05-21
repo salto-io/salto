@@ -10,22 +10,39 @@
 # Pass your lexer object using the @lexer option:
 @lexer lexer
 
-main -> _nl blockItems _nl {% d => d[1] %}
+main -> _nl elements _nl {% d => d[1] %}
 	| _nl {%d => [] %}
-block -> blockLabels %ws oObj _nl blockItems _nl cObj {% d => converters.convertBlock(d[0], d[4], d[6]) %}
-	| blockLabels %ws oObj _nl cObj {% d => converters.convertBlock(d[0], [], d[4]) %}
-blockItems ->
-	  blockItem {% d => d %}
-	| blockItems __nl blockItem {% d => d[0].concat(d[2]) %}
-blockLabels ->
-	label {% d => d %}
-	| blockLabels %ws label {% d => d[0].concat(d[2]) %}
+elements ->
+	  element
+    | elements __nl element {% d => d[0].concat(d[2]) %}
+element -> elementLabels %ws oObj _nl elementItems _nl cObj {% d => converters.converTopLevelBlock(d[0], d[4], d[6]) %}
+	| elementLabels %ws oObj _nl cObj {% d => converters.converTopLevelBlock(d[0], [], d[4]) %}
+elementLabels ->
+	  label #settings 
+	| label %ws label {% d => [d[0], d[2]] %} #type/instance def
+	| label %ws label %ws label %ws label {% d => [d[0], d[2], d[4], d[6]] %}#primitive type def
+elementItems ->
+	  elementItem
+	| elementItems __nl elementItem {% d => d[0].concat(d[2]) %}
+elementItem ->
+	  attr {% id %}
+	| field {% id %}
+	| annotationsBlock {% id %}
+annotationsBlock -> "annotations" %ws oObj _nl annotationsBlockItems _nl cObj 
+					{% d => converters.convertAnnotationTypes(d[0], d[4], d[6]) %}
+	| "annotations" %ws oObj _nl cObj {% d => converters.convertAnnotationTypes(d[0], [], d[4]) %}
+annotationsBlockItems ->
+	  field {% d => d %}
+	| annotationsBlockItems __nl field {% d => d[0].concat(d[2]) %}
+field -> 
+	  label %ws label %ws oObj _nl fieldItems _nl cObj {% d => converters.convertField(d[0], d[2], d[6], d[8]) %}
+	| label %ws label %ws oObj _nl cObj {% d => converters.convertField(d[0], d[2],[], d[6]) %}
+fieldItems ->
+	  attr {% d => d %}
+	| fieldItems __nl attr {% d => d[0].concat(d[2]) %}
 label ->
 	  %word {% id %}
 	| string {% id %}
-blockItem ->
-	  block {% id %}
-	| attr {% id %}
 attr ->
       %word _ eq _ value {% d => converters.convertAttr(d[0], d[4]) %}
 	| string _ eq _ value {% d => converters.convertAttr(d[0], d[4]) %}
@@ -77,7 +94,6 @@ _nl ->
 __nl ->
 	 %newline {% () => null %}
 	| %ws {% () => null %}
-
 _ ->
 	null {% () => null %}
 	| %ws {% () => null %}

@@ -21,7 +21,6 @@ import {
   MissingFunctionError,
   FunctionExpression,
 } from '../../src/parser/functions'
-import { HclExpression, SourcePos } from '../../src/parser/internal/types'
 
 export class TestFuncImpl {
   constructor(
@@ -54,10 +53,7 @@ export const registerTestFunction = (
   registerFunction(
     funcName,
     {
-      parse: (funcExp: HclExpression) => Promise.resolve(new TestFuncImpl(
-        funcExp.value.funcName,
-        funcExp.value.parameters,
-      )),
+      parse: (parameters: Value[]) => Promise.resolve(new TestFuncImpl(funcName, parameters)),
       dump: (val: Value) => Promise.resolve(new FunctionExpression(
         funcName,
         val.parameters,
@@ -67,26 +63,6 @@ export const registerTestFunction = (
     functions,
     aliases,
   )
-
-const sourcePos: SourcePos = {
-  line: 42,
-  col: 42,
-  byte: 42,
-}
-
-export const getHclFunc = (funcName: string, parameters: string[]): HclExpression => ({
-  type: 'func',
-  expressions: [],
-  value: {
-    parameters,
-    funcName,
-  },
-  source: {
-    start: sourcePos,
-    end: sourcePos,
-    filename: 'ZOMG',
-  },
-})
 
 describe('Functions', () => {
   describe('MissingFunctionError', () => {
@@ -99,12 +75,10 @@ describe('Functions', () => {
   })
   describe('Factory', () => {
     it('should fail if missing function with default parameters', async () => {
-      const hclFunc = getHclFunc('ZOMG', ['arg', 'us'])
-      expect(await evaluateFunction(hclFunc, {})).toEqual(new MissingFunctionError('ZOMG'))
+      expect(await evaluateFunction('ZOMG', ['arg', 'us'], {})).toEqual(new MissingFunctionError('ZOMG'))
     })
     it('should fail if missing function with explicit parameters', async () => {
-      const hclFunc = getHclFunc('ZOMG', ['arg', 'us'])
-      expect(await evaluateFunction(hclFunc, {})).toEqual(new MissingFunctionError('ZOMG'))
+      expect(await evaluateFunction('ZOMG', ['arg', 'us'], {})).toEqual(new MissingFunctionError('ZOMG'))
     })
   })
 })

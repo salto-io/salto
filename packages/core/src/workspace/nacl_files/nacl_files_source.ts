@@ -99,14 +99,14 @@ const buildNaclFilesSource = (
     ...getStaticFilesFunctions(staticFileSource), // add future functions here
   }
   const parseNaclFile = async (naclFile: NaclFile): Promise<ParseResult> => {
-    const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
-    let parseResult = await cache.get(key)
+    //const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
+    let parseResult = undefined //await cache.get(key)
     if (parseResult === undefined) {
       parseResult = await parse(
         Buffer.from(naclFile.buffer), naclFile.filename,
         functions,
       )
-      await cache.put(key, parseResult)
+      //await cache.put(key, parseResult)
     }
     return parseResult
   }
@@ -130,8 +130,10 @@ const buildNaclFilesSource = (
 
   const buildNaclFilesState = async (newNaclFiles: NaclFile[], current: ParsedNaclFileMap):
     Promise<NaclFilesState> => {
+    const d = new Date()
     log.debug(`going to parse ${newNaclFiles.length} NaCl files`)
     const ParsedNaclFiles = await parseNaclFiles(newNaclFiles)
+    log.debug(`Done parsing ${newNaclFiles.length} NaCl files. Took ${(new Date()).getTime() - d.getTime()}`)
     const newParsed = _.keyBy(ParsedNaclFiles, parsed => parsed.filename)
     const allParsed = _.omitBy({ ...current, ...newParsed },
       parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))

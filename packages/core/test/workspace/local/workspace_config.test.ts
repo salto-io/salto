@@ -29,7 +29,7 @@ import * as mockDirStore from '../../../src/workspace/local/dir_store'
 jest.mock('../../../src/workspace/local/dir_store')
 describe('workspace local config', () => {
   const mockDirStoreInstance = (key: string, buffer: string): DirectoryStore => ({
-    get: jest.fn().mockImplementation(name => (name.startsWith(key) ? ({ buffer }) : undefined)),
+    get: jest.fn().mockImplementation(name => (name.startsWith(key) ? ({ buffer, filename: '' }) : undefined)),
     set: jest.fn(),
     flush: jest.fn(),
     list: jest.fn(),

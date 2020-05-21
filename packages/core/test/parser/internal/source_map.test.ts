@@ -16,7 +16,6 @@
 import wu from 'wu'
 import { ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { NAMESPACE_SEPARATOR } from '@salto-io/salesforce-adapter/dist/src/constants'
 import { SourceMap } from '../../../src/parser/internal/source_map'
 import { SourceRange } from '../../../src/parser/parse'
 
@@ -162,7 +161,7 @@ describe('tree source map', () => {
     sourceMap.mount(mountKey, mountMap)
     baseEntries.forEach(([key, ranges]) => {
       expect(sourceMap.get(key)).toEqual(ranges)
-      expect(sourceMap.get([mountKey, key].join(NAMESPACE_SEPARATOR))).toEqual(ranges)
+      expect(sourceMap.get([mountKey, key].join(ElemID.NAMESPACE_SEPARATOR))).toEqual(ranges)
     })
   })
 })

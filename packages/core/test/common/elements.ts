@@ -62,10 +62,6 @@ export const getAllElements = (): AllElementsTypes => {
         type: stringListType,
         annotations: {},
       },
-      employee_resident: {
-        type: saltoAddr,
-        annotations: { label: 'Employee Resident' },
-      },
       company: {
         type: BuiltinTypes.STRING,
         annotations: { _default: 'salto' },

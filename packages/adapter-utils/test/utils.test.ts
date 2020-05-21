@@ -819,7 +819,9 @@ describe('Test utils.ts', () => {
     const ot = new ObjectType({
       elemID: otID,
       fields: {
+        // eslint-disable-next-line @typescript-eslint/camelcase
         num_field: { type: primNum },
+        // eslint-disable-next-line @typescript-eslint/camelcase
         str_field: { type: primStr },
       },
       annotationTypes: {},

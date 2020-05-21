@@ -183,10 +183,6 @@ export const elements = (): Element[] => {
         type: new ListType(BuiltinTypes.STRING),
         annotations: {},
       },
-      employee_resident: {
-        type: saltoAddr,
-        annotations: { label: 'Employee Resident' },
-      },
       company: {
         type: BuiltinTypes.STRING,
         annotations: { _default: 'salto' },

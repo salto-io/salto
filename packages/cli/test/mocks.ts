@@ -145,27 +145,26 @@ export const elements = (): Element[] => {
   const addrElemID = new ElemID('salto', 'address')
   const saltoAddr = new ObjectType({
     elemID: addrElemID,
-    fields: [
-      { name: 'country', type: BuiltinTypes.STRING },
-      { name: 'city', type: BuiltinTypes.STRING },
-    ],
+    fields: {
+      country: { type: BuiltinTypes.STRING },
+      city: { type: BuiltinTypes.STRING },
+    },
   })
   saltoAddr.annotationTypes.label = BuiltinTypes.STRING
 
   const officeElemID = new ElemID('salto', 'office')
   const saltoOffice = new ObjectType({
     elemID: officeElemID,
-    fields: [
-      { name: 'name', type: BuiltinTypes.STRING },
-      {
-        name: 'location',
+    fields: {
+      name: { type: BuiltinTypes.STRING },
+      location: {
         type: saltoAddr,
         annotations: {
           label: 'Office Location',
           description: 'A location of an office',
         },
       },
-    ],
+    },
     annotations: {
       description: 'Office type in salto',
     },
@@ -175,29 +174,24 @@ export const elements = (): Element[] => {
   const employeeElemID = new ElemID('salto', 'employee')
   const saltoEmployee = new ObjectType({
     elemID: employeeElemID,
-    fields: [
-      {
-        name: 'name',
+    fields: {
+      name: {
         type: BuiltinTypes.STRING,
         annotations: { _required: true },
       },
-      {
-        name: 'nicknames',
+      nicknames: {
         type: new ListType(BuiltinTypes.STRING),
         annotations: {},
       },
-      {
-        name: 'employee_resident',
+      employee_resident: {
         type: saltoAddr,
         annotations: { label: 'Employee Resident' },
       },
-      {
-        name: 'company',
+      company: {
         type: BuiltinTypes.STRING,
         annotations: { _default: 'salto' },
       },
-      {
-        name: 'office',
+      office: {
         type: saltoOffice,
         annotations: {
           label: 'Based In',
@@ -214,7 +208,7 @@ export const elements = (): Element[] => {
           },
         },
       },
-    ],
+    },
   })
 
   const saltoEmployeeInstance = new InstanceElement(
@@ -297,12 +291,12 @@ export const mockConfigType = (adapterName: string): ObjectType => {
   const configID = new ElemID(adapterName)
   return new ObjectType({
     elemID: configID,
-    fields: [
-      { name: 'username', type: BuiltinTypes.STRING },
-      { name: 'password', type: BuiltinTypes.STRING },
-      { name: 'token', type: BuiltinTypes.STRING },
-      { name: 'sandbox', type: BuiltinTypes.BOOLEAN },
-    ],
+    fields: {
+      username: { type: BuiltinTypes.STRING },
+      password: { type: BuiltinTypes.STRING },
+      token: { type: BuiltinTypes.STRING },
+      sandbox: { type: BuiltinTypes.BOOLEAN },
+    },
     annotationTypes: {},
     annotations: {},
   })
@@ -362,7 +356,7 @@ export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement
   const configElemID = new ElemID('salesforce')
   const configType = new ObjectType({
     elemID: configElemID,
-    fields: [{ name: 'test', type: new ListType(BuiltinTypes.STRING) }],
+    fields: { test: { type: new ListType(BuiltinTypes.STRING) } },
   })
   const configInstance = new InstanceElement(ElemID.CONFIG_NAME, configType, { test: [] })
   const updatedConfig = configInstance.clone()

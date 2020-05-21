@@ -32,10 +32,10 @@ const sfRole = new ObjectType({
   annotations: {
     metadataType: 'Role',
   },
-  fields: [
-    { name: 'description', type: BuiltinTypes.STRING },
-    { name: 'name', type: BuiltinTypes.STRING },
-  ],
+  fields: {
+    description: { type: BuiltinTypes.STRING },
+    name: { type: BuiltinTypes.STRING },
+  },
 })
 
 export const customObject = (
@@ -44,10 +44,10 @@ export const customObject = (
   const elemID = new ElemID('salesforce', data.objName)
   return new ObjectType({
     elemID,
-    fields: [
-      { name: 'alpha', type: sfText, annotations: { label: data.alphaLabel } },
-      { name: 'beta', type: sfText, annotations: { label: data.betaLabel } },
-    ],
+    fields: {
+      alpha: { type: sfText, annotations: { label: data.alphaLabel } },
+      beta: { type: sfText, annotations: { label: data.betaLabel } },
+    },
   })
 }
 

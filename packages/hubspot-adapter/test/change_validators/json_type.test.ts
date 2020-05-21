@@ -28,15 +28,14 @@ describe('json type change validator', () => {
   beforeEach(() => {
     object = new ObjectType({
       elemID: new ElemID('hubspot', 'obj'),
-      fields: [{
-        name: 'f',
+      fields: { f: {
         type: BuiltinTypes.JSON,
         annotations: {
           name: 'f',
           _readOnly: false,
           [CORE_ANNOTATIONS.REQUIRED]: false,
         },
-      }],
+      } },
     })
     instance = new InstanceElement('instance', object, {})
   })

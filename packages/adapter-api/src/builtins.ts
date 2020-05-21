@@ -60,16 +60,15 @@ export const InstanceAnnotationTypes: TypeMap = {
 
 const restrictionType = new ObjectType({
   elemID: new ElemID('', 'restriction'),
-  fields: [
-    { name: 'enforce_value', type: BuiltinTypes.BOOLEAN },
-    { name: 'values', type: BuiltinTypes.STRING },
-    { name: 'min', type: BuiltinTypes.NUMBER },
-    { name: 'max', type: BuiltinTypes.NUMBER },
-  ],
+  fields: {
+    enforce_value: { type: BuiltinTypes.BOOLEAN },
+    values: { type: BuiltinTypes.STRING },
+    min: { type: BuiltinTypes.NUMBER },
+    max: { type: BuiltinTypes.NUMBER },
+  },
 })
 
 type RestrictionAnnotationType = Partial<{
-  // eslint-disable-next-line @typescript-eslint/camelcase
   enforce_value: boolean
   values: ReadonlyArray<unknown>
   min: number

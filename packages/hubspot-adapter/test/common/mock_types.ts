@@ -21,46 +21,42 @@ const objectElemID = new ElemID(HUBSPOT, 'object')
 const innerObjectElemID = new ElemID(HUBSPOT, 'innerObject')
 const simpleField = (
   name: string, type: TypeElement = Types.userIdentifierType,
-): FieldDefinition => (
-  { name, type, annotations: { name, _readOnly: false } }
+): Record<string, FieldDefinition> => (
+  { [name]: { type, annotations: { name, _readOnly: false } } }
 )
 
 const stringListField = (name: string): ReturnType<typeof simpleField> =>
   simpleField(name, new ListType(Types.userIdentifierType))
 
 const strField = {
-  name: 'str',
-  type: BuiltinTypes.STRING,
-  annotations: {
-    name: 'str',
-  },
+  str: { type: BuiltinTypes.STRING, annotations: { name: 'str' } },
 }
 
 const innerObject = new ObjectType(
   {
     elemID: innerObjectElemID,
-    fields: [
-      strField,
-      simpleField('simple'),
-      simpleField('simpleNum'),
-      stringListField('stringList'),
-      stringListField('stringArray'),
-    ],
+    fields: {
+      ...strField,
+      ...simpleField('simple'),
+      ...simpleField('simpleNum'),
+      ...stringListField('stringList'),
+      ...stringListField('stringArray'),
+    },
   }
 )
 export const useridentifierObjectType = new ObjectType(
   {
     elemID: objectElemID,
-    fields: [
-      strField,
-      simpleField('simple'),
-      simpleField('simpleNum'),
-      stringListField('stringList'),
-      stringListField('stringArray'),
-      simpleField('objField', innerObject),
-      simpleField('listOfObjField', new ListType(innerObject)),
-      simpleField('listOfListOfObjField', new ListType(new ListType(innerObject))),
-      simpleField('listOfListOfListOfObjField', new ListType(new ListType(new ListType(innerObject)))),
-    ],
+    fields: {
+      ...strField,
+      ...simpleField('simple'),
+      ...simpleField('simpleNum'),
+      ...stringListField('stringList'),
+      ...stringListField('stringArray'),
+      ...simpleField('objField', innerObject),
+      ...simpleField('listOfObjField', new ListType(innerObject)),
+      ...simpleField('listOfListOfObjField', new ListType(new ListType(innerObject))),
+      ...simpleField('listOfListOfListOfObjField', new ListType(new ListType(new ListType(innerObject)))),
+    },
   }
 )

@@ -212,7 +212,6 @@ export class PrimitiveType extends Element {
 }
 
 export type FieldDefinition = {
-  name: string
   type: TypeElement
   annotations?: Values
 }
@@ -225,25 +224,23 @@ export class ObjectType extends Element {
 
   constructor({
     elemID,
-    fields = [],
+    fields = {},
     annotationTypes = {},
     annotations = {},
     isSettings = false,
     path = undefined,
   }: {
     elemID: ElemID
-    fields?: ReadonlyArray<FieldDefinition>
+    fields?: Record<string, FieldDefinition>
     annotationTypes?: TypeMap
     annotations?: Values
     isSettings?: boolean
     path?: ReadonlyArray<string>
   }) {
     super({ elemID, annotationTypes, annotations, path })
-    this.fields = Object.assign(
-      {},
-      ...fields.map(({ name, type, annotations: fieldAnnotations }) => (
-        { [name]: new Field(this, name, type, fieldAnnotations) }
-      ))
+    this.fields = _.mapValues(
+      fields,
+      (fieldDef, name) => new Field(this, name, fieldDef.type, fieldDef.annotations),
     )
     this.isSettings = isSettings
   }
@@ -278,7 +275,7 @@ export class ObjectType extends Element {
 
     const res: ObjectType = new ObjectType({
       elemID: this.elemID,
-      fields: Object.values(clonedFields),
+      fields: clonedFields,
       annotationTypes: clonedAnnotationTypes,
       annotations: clonedAnnotations,
       isSettings,

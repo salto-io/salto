@@ -22,7 +22,7 @@ describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
   const obj = new ObjectType({
     elemID: objElemID,
-    fields: [{ name: 'field', type: BuiltinTypes.STRING }],
+    fields: { field: { type: BuiltinTypes.STRING } },
   })
   const inst = new InstanceElement('inst', obj, { field: 'val' })
 

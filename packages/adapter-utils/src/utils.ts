@@ -186,10 +186,20 @@ export const transformElement = <T extends Element>(
   }
 
   if (isObjectType(element)) {
+    const clonedFields = _.mapValues(
+      element.fields,
+      field => transformElement(
+        {
+          element: field,
+          transformFunc,
+          strict,
+        }
+      )
+    )
+
     newElement = new ObjectType({
       elemID: element.elemID,
-      fields: Object.values(element.fields)
-        .map(field => transformElement({ element: field, transformFunc, strict })),
+      fields: clonedFields,
       annotationTypes: element.annotationTypes,
       annotations: transformedAnnotations,
       path: element.path,
@@ -390,7 +400,7 @@ export const flattenElementStr = (element: Element): Element => {
     elemID: obj.elemID,
     annotationTypes: _(obj.annotationTypes).mapKeys((_v, k) => flatStr(k)).value(),
     annotations: flatValues(obj.annotations),
-    fields: Object.values(obj.fields).map(flattenField),
+    fields: _(obj.fields).mapKeys((_v, k) => flatStr(k)).mapValues(flattenField).value(),
     isSettings: obj.isSettings,
     path: obj.path?.map(flatStr),
   })
@@ -459,7 +469,7 @@ export const filterByID = async <T>(
       elemID: value.elemID,
       annotations: await filterAnnotations(value.annotations),
       annotationTypes: await filterAnnotationType(value.annotationTypes),
-      fields: filteredFields.filter(isDefined),
+      fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
       path: value.path,
       isSettings: value.isSettings,
     }) as Value as T

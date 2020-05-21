@@ -24,7 +24,7 @@ const configID = new ElemID('hubspot')
 
 const credentialsType = new ObjectType({
   elemID: configID,
-  fields: [{ name: 'apiKey', type: BuiltinTypes.STRING }],
+  fields: { apiKey: { type: BuiltinTypes.STRING } },
   annotationTypes: {},
   annotations: {},
 })

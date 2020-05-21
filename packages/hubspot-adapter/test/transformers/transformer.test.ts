@@ -71,9 +71,8 @@ describe('Transformer', () => {
 
     const mockSubType = new ObjectType({
       elemID: mockSubTypeElemID,
-      fields: [
-        {
-          name: 'subSame',
+      fields: {
+        subSame: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: 'subSame',
@@ -81,8 +80,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: 'subAutoGen',
+        subAutoGen: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: 'subAutoGen',
@@ -90,14 +88,13 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
     })
 
     const mockObject = new ObjectType({
       elemID: mockTypeElemID,
-      fields: [
-        {
-          name: 'name',
+      fields: {
+        name: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: 'name',
@@ -105,8 +102,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: 'autoGen',
+        autoGen: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: 'autoGen',
@@ -114,8 +110,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: 'subType',
+        subType: {
           type: mockSubType,
           annotations: {
             name: 'subType',
@@ -123,8 +118,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: 'listSubType',
+        listSubType: {
           type: new ListType(mockSubType),
           annotations: {
             name: 'listSubType',
@@ -132,8 +126,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: 'list',
+        list: {
           type: new ListType(BuiltinTypes.STRING),
           annotations: {
             name: 'list',
@@ -141,8 +134,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: 'diff',
+        diff: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: 'diff',
@@ -150,7 +142,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
     })
 
     const instance = new InstanceElement(
@@ -198,9 +190,8 @@ describe('Transformer', () => {
     const mockTypeWithJSONElemID = new ElemID(HUBSPOT, 'mockType')
     const mockObjectWithJSON = new ObjectType({
       elemID: mockTypeWithJSONElemID,
-      fields: [
-        {
-          name: 'jsonType',
+      fields: {
+        jsonType: {
           type: BuiltinTypes.JSON,
           annotations: {
             name: 'jsonType',
@@ -208,8 +199,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: 'jsonTypeFileValue',
+        jsonTypeFileValue: {
           type: BuiltinTypes.JSON,
           annotations: {
             name: 'jsonTypeFileValue',
@@ -217,7 +207,7 @@ describe('Transformer', () => {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
     })
     const jsonString = '{ "a": "b", "c": [ "1", "2", "3"] }'
     const mockValuesWithJSON = {

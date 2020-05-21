@@ -92,9 +92,8 @@ export class Types {
   private static optionsType: ObjectType =
     new ObjectType({
       elemID: optionsElemID,
-      fields: [
-        {
-          name: OPTIONS_FIELDS.LABEL,
+      fields: {
+        [OPTIONS_FIELDS.LABEL]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: OPTIONS_FIELDS.LABEL,
@@ -102,8 +101,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: OPTIONS_FIELDS.VALUE,
+        [OPTIONS_FIELDS.VALUE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: OPTIONS_FIELDS.VALUE,
@@ -111,8 +109,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: OPTIONS_FIELDS.READONLY,
+        [OPTIONS_FIELDS.READONLY]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: OPTIONS_FIELDS.READONLY,
@@ -120,8 +117,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: OPTIONS_FIELDS.DISPLAYORDER,
+        [OPTIONS_FIELDS.DISPLAYORDER]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: OPTIONS_FIELDS.DISPLAYORDER,
@@ -129,8 +125,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: OPTIONS_FIELDS.HIDDEN,
+        [OPTIONS_FIELDS.HIDDEN]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: OPTIONS_FIELDS.HIDDEN,
@@ -138,8 +133,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: OPTIONS_FIELDS.DESCRIPTION,
+        [OPTIONS_FIELDS.DESCRIPTION]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: OPTIONS_FIELDS.DESCRIPTION,
@@ -147,16 +141,15 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, optionsElemID.name],
     })
 
   private static fieldFilterType: ObjectType =
     new ObjectType({
       elemID: fieldFilterElemID,
-      fields: [
-        {
-          name: FIELD_FILTER_FIELDS.OPERATOR,
+      fields: {
+        [FIELD_FILTER_FIELDS.OPERATOR]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FIELD_FILTER_FIELDS.OPERATOR,
@@ -165,8 +158,7 @@ export class Types {
             // TODO: Find the values
           },
         },
-        {
-          name: FIELD_FILTER_FIELDS.STRVALUE,
+        [FIELD_FILTER_FIELDS.STRVALUE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FIELD_FILTER_FIELDS.STRVALUE,
@@ -174,8 +166,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FIELD_FILTER_FIELDS.STRVALUES,
+        [FIELD_FILTER_FIELDS.STRVALUES]: {
           type: new ListType(BuiltinTypes.STRING),
           annotations: {
             name: FIELD_FILTER_FIELDS.STRVALUES,
@@ -183,8 +174,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FIELD_FILTER_FIELDS.BOOLVALUE,
+        [FIELD_FILTER_FIELDS.BOOLVALUE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FIELD_FILTER_FIELDS.BOOLVALUE,
@@ -192,8 +182,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FIELD_FILTER_FIELDS.NUMBERVALUE,
+        [FIELD_FILTER_FIELDS.NUMBERVALUE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: FIELD_FILTER_FIELDS.NUMBERVALUE,
@@ -201,8 +190,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FIELD_FILTER_FIELDS.NUMVALUES,
+        [FIELD_FILTER_FIELDS.NUMVALUES]: {
           type: new ListType(BuiltinTypes.NUMBER),
           annotations: {
             name: FIELD_FILTER_FIELDS.NUMVALUES,
@@ -210,16 +198,15 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, fieldFilterElemID.name],
     })
 
     private static contactPropertyOverridesType: ObjectType =
       new ObjectType({
         elemID: contactPropertyOverridesElemID,
-        fields: [
-          {
-            name: CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
+        fields: {
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL]: {
             type: BuiltinTypes.STRING,
             annotations: {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.LABEL,
@@ -227,8 +214,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER]: {
             type: BuiltinTypes.NUMBER,
             annotations: {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.DISPLAYORDER,
@@ -236,8 +222,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
+          [CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS]: {
             type: new ListType(Types.optionsType),
             annotations: {
               name: CONTACT_PROPERTY_OVERRIDES_FIELDS.OPTIONS,
@@ -245,7 +230,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-        ],
+        },
         path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactPropertyOverridesElemID.name],
       })
 
@@ -254,10 +239,9 @@ export class Types {
       isFatherProperty: boolean
     ): ObjectType => new ObjectType({
       elemID,
-      fields: [
-        {
+      fields: {
+        [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY]: {
           // TODO: This is not really a string
-          name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY,
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY,
@@ -265,8 +249,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
+        [FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES]: {
           type: Types.contactPropertyOverridesType,
           annotations: {
             name: FORM_PROPERTY_INNER_FIELDS.CONTACT_PROPERTY_OVERRIDES,
@@ -274,8 +257,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_FIELDS.DEFAULTVALUE,
+        [FORM_PROPERTY_FIELDS.DEFAULTVALUE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_PROPERTY_FIELDS.DEFAULTVALUE,
@@ -283,8 +265,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_FIELDS.PLACEHOLDER,
+        [FORM_PROPERTY_FIELDS.PLACEHOLDER]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_PROPERTY_FIELDS.PLACEHOLDER,
@@ -292,8 +273,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_INNER_FIELDS.HELPTEXT,
+        [FORM_PROPERTY_INNER_FIELDS.HELPTEXT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_PROPERTY_INNER_FIELDS.HELPTEXT,
@@ -301,8 +281,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_FIELDS.REQUIRED,
+        [FORM_PROPERTY_FIELDS.REQUIRED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_PROPERTY_FIELDS.REQUIRED,
@@ -310,8 +289,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_FIELDS.SELECTEDOPTIONS,
+        [FORM_PROPERTY_FIELDS.SELECTEDOPTIONS]: {
           type: new ListType(BuiltinTypes.STRING),
           annotations: {
             name: FORM_PROPERTY_FIELDS.SELECTEDOPTIONS,
@@ -319,8 +297,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_FIELDS.ISSMARTFIELD,
+        [FORM_PROPERTY_FIELDS.ISSMARTFIELD]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_PROPERTY_FIELDS.ISSMARTFIELD,
@@ -329,17 +306,18 @@ export class Types {
           },
         },
         ...isFatherProperty
-          ? [{
-            name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
-            type: new ListType(Types.dependentFormFieldFiltersType),
-            annotations: {
-              name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
-              _readOnly: false,
-              [CORE_ANNOTATIONS.REQUIRED]: false,
+          ? {
+            [FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS]: {
+              type: new ListType(Types.dependentFormFieldFiltersType),
+              annotations: {
+                name: FORM_PROPERTY_FIELDS.DEPENDENTFIELDFILTERS,
+                _readOnly: false,
+                [CORE_ANNOTATIONS.REQUIRED]: false,
+              },
             },
-          }]
-          : [],
-      ],
+          }
+          : {},
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, elemID.name],
     })
 
@@ -351,9 +329,8 @@ export class Types {
   private static dependentFormFieldFiltersType: ObjectType =
     new ObjectType({
       elemID: dependentFormFieldFiltersElemID,
-      fields: [
-        {
-          name: DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
+      fields: {
+        [DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: DEPENDENT_FIELD_FILTER_FIELDS.FORMFIELDACTION,
@@ -362,8 +339,7 @@ export class Types {
             // TODO: See if this can be anything else other than DISPLAY
           },
         },
-        {
-          name: DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
+        [DEPENDENT_FIELD_FILTER_FIELDS.FILTERS]: {
           type: new ListType(Types.fieldFilterType),
           annotations: {
             name: DEPENDENT_FIELD_FILTER_FIELDS.FILTERS,
@@ -371,8 +347,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
+        [DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD]: {
           type: Types.dependeeFormFieldType,
           annotations: {
             name: DEPENDENT_FIELD_FILTER_FIELDS.DEPEDENTFORMFIELD,
@@ -380,7 +355,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, dependentFormFieldFiltersElemID.name],
     })
 
@@ -392,9 +367,8 @@ export class Types {
   private static richTextType: ObjectType =
     new ObjectType({
       elemID: richTextElemID,
-      fields: [
-        {
-          name: RICHTEXT_FIELDS.CONTENT,
+      fields: {
+        [RICHTEXT_FIELDS.CONTENT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: RICHTEXT_FIELDS.CONTENT,
@@ -402,16 +376,15 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, richTextElemID.name],
     })
 
   private static propertyGroupType: ObjectType =
     new ObjectType({
       elemID: propertyGroupElemID,
-      fields: [
-        {
-          name: FORM_PROPERTY_GROUP_FIELDS.DEFAULT,
+      fields: {
+        [FORM_PROPERTY_GROUP_FIELDS.DEFAULT]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_PROPERTY_GROUP_FIELDS.DEFAULT,
@@ -419,8 +392,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_GROUP_FIELDS.FIELDS,
+        [FORM_PROPERTY_GROUP_FIELDS.FIELDS]: {
           type: new ListType(Types.dependentFormFieldType),
           annotations: {
             name: FORM_PROPERTY_GROUP_FIELDS.FIELDS,
@@ -428,8 +400,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP,
+        [FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_PROPERTY_GROUP_FIELDS.ISSMARTGROUP,
@@ -437,8 +408,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_PROPERTY_GROUP_FIELDS.RICHTEXT,
+        [FORM_PROPERTY_GROUP_FIELDS.RICHTEXT]: {
           type: Types.richTextType,
           annotations: {
             name: FORM_PROPERTY_GROUP_FIELDS.RICHTEXT,
@@ -446,16 +416,15 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, propertyGroupElemID.name],
     })
 
   private static eventAnchorType: ObjectType =
     new ObjectType({
       elemID: eventAnchorElemID,
-      fields: [
-        {
-          name: EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR,
+      fields: {
+        [EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: EVENTANCHOR_FIELDS.CONTACTPROPERTYANCHOR,
@@ -463,8 +432,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: EVENTANCHOR_FIELDS.STATICDATEANCHOR,
+        [EVENTANCHOR_FIELDS.STATICDATEANCHOR]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: EVENTANCHOR_FIELDS.STATICDATEANCHOR,
@@ -472,16 +440,15 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, eventAnchorElemID.name],
     })
 
   private static anchorSettingType: ObjectType =
     new ObjectType({
       elemID: anchorSettingElemID,
-      fields: [
-        {
-          name: ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY,
+      fields: {
+        [ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: ANCHOR_SETTING_FIELDS.EXECTIMEOFDAY,
@@ -489,8 +456,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES,
+        [ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: ANCHOR_SETTING_FIELDS.EXECTIMEINMINUTES,
@@ -498,8 +464,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: ANCHOR_SETTING_FIELDS.BOUNDARY,
+        [ANCHOR_SETTING_FIELDS.BOUNDARY]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: ANCHOR_SETTING_FIELDS.BOUNDARY,
@@ -507,16 +472,15 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, anchorSettingElemID.name],
     })
 
   private static criteriaType: ObjectType =
     new ObjectType({
       elemID: criteriaElemID,
-      fields: [
-        {
-          name: CRITERIA_FIELDS.FILTERFAMILY,
+      fields: {
+        [CRITERIA_FIELDS.FILTERFAMILY]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CRITERIA_FIELDS.FILTERFAMILY,
@@ -524,8 +488,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CRITERIA_FIELDS.OPERATOR,
+        [CRITERIA_FIELDS.OPERATOR]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CRITERIA_FIELDS.OPERATOR,
@@ -533,8 +496,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CRITERIA_FIELDS.PROPERTY,
+        [CRITERIA_FIELDS.PROPERTY]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CRITERIA_FIELDS.PROPERTY,
@@ -542,8 +504,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CRITERIA_FIELDS.PROPERTYOBJECTTYPE,
+        [CRITERIA_FIELDS.PROPERTYOBJECTTYPE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CRITERIA_FIELDS.PROPERTYOBJECTTYPE,
@@ -551,8 +512,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CRITERIA_FIELDS.TYPE,
+        [CRITERIA_FIELDS.TYPE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CRITERIA_FIELDS.TYPE,
@@ -560,8 +520,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CRITERIA_FIELDS.VALUE,
+        [CRITERIA_FIELDS.VALUE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CRITERIA_FIELDS.VALUE,
@@ -569,8 +528,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CRITERIA_FIELDS.WITHINTIMEMODE,
+        [CRITERIA_FIELDS.WITHINTIMEMODE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CRITERIA_FIELDS.WITHINTIMEMODE,
@@ -578,7 +536,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, criteriaElemID.name],
     })
 
@@ -586,9 +544,8 @@ export class Types {
     private static createActionType = (): ObjectType => {
       const actionType = new ObjectType({
         elemID: actionElemID,
-        fields: [
-          {
-            name: ACTION_FIELDS.TYPE,
+        fields: {
+          [ACTION_FIELDS.TYPE]: {
             type: BuiltinTypes.STRING,
             annotations: {
               name: ACTION_FIELDS.TYPE,
@@ -596,8 +553,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: ACTION_FIELDS.ACTIONID,
+          [ACTION_FIELDS.ACTIONID]: {
             type: BuiltinTypes.NUMBER,
             annotations: {
               name: ACTION_FIELDS.ACTIONID,
@@ -606,8 +562,7 @@ export class Types {
               [CORE_ANNOTATIONS.HIDDEN]: true,
             },
           },
-          {
-            name: ACTION_FIELDS.DELAYMILLS,
+          [ACTION_FIELDS.DELAYMILLS]: {
             type: BuiltinTypes.NUMBER,
             annotations: {
               name: ACTION_FIELDS.DELAYMILLS,
@@ -615,8 +570,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: ACTION_FIELDS.STEPID,
+          [ACTION_FIELDS.STEPID]: {
             type: BuiltinTypes.NUMBER,
             annotations: {
               name: ACTION_FIELDS.STEPID,
@@ -625,8 +579,7 @@ export class Types {
               [CORE_ANNOTATIONS.HIDDEN]: true,
             },
           },
-          {
-            name: ACTION_FIELDS.ANCHORSETTING,
+          [ACTION_FIELDS.ANCHORSETTING]: {
             type: Types.anchorSettingType,
             annotations: {
               name: ACTION_FIELDS.ANCHORSETTING,
@@ -634,8 +587,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: ACTION_FIELDS.FILTERSLISTID,
+          [ACTION_FIELDS.FILTERSLISTID]: {
             type: BuiltinTypes.NUMBER,
             annotations: {
               name: ACTION_FIELDS.FILTERSLISTID,
@@ -644,8 +596,7 @@ export class Types {
               [CORE_ANNOTATIONS.HIDDEN]: true,
             },
           },
-          {
-            name: ACTION_FIELDS.FILTERS,
+          [ACTION_FIELDS.FILTERS]: {
             type: new ListType(new ListType(Types.criteriaType)),
             annotations: {
               name: ACTION_FIELDS.FILTERS,
@@ -653,8 +604,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: ACTION_FIELDS.PROPERTYNAME,
+          [ACTION_FIELDS.PROPERTYNAME]: {
             type: BuiltinTypes.STRING,
             annotations: {
               name: ACTION_FIELDS.PROPERTYNAME,
@@ -662,8 +612,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: ACTION_FIELDS.BODY,
+          [ACTION_FIELDS.BODY]: {
             type: BuiltinTypes.STRING,
             annotations: {
               name: ACTION_FIELDS.BODY,
@@ -671,8 +620,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: ACTION_FIELDS.NEWVALUE,
+          [ACTION_FIELDS.NEWVALUE]: {
             type: BuiltinTypes.STRING,
             annotations: {
               name: ACTION_FIELDS.NEWVALUE,
@@ -680,8 +628,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-          {
-            name: ACTION_FIELDS.STATICTO,
+          [ACTION_FIELDS.STATICTO]: {
             type: BuiltinTypes.STRING,
             annotations: {
               name: ACTION_FIELDS.STATICTO,
@@ -689,7 +636,7 @@ export class Types {
               [CORE_ANNOTATIONS.REQUIRED]: false,
             },
           },
-        ],
+        },
         path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, actionElemID.name],
       })
 
@@ -717,9 +664,8 @@ export class Types {
   private static nurtureTimeRangeType: ObjectType =
     new ObjectType({
       elemID: nurtureTimeRangeElemID,
-      fields: [
-        {
-          name: NURTURETIMERANGE_FIELDS.ENABLED,
+      fields: {
+        [NURTURETIMERANGE_FIELDS.ENABLED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: NURTURETIMERANGE_FIELDS.ENABLED,
@@ -727,8 +673,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: NURTURETIMERANGE_FIELDS.STARTHOUR,
+        [NURTURETIMERANGE_FIELDS.STARTHOUR]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: NURTURETIMERANGE_FIELDS.STARTHOUR,
@@ -736,8 +681,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: NURTURETIMERANGE_FIELDS.STOPHOUR,
+        [NURTURETIMERANGE_FIELDS.STOPHOUR]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: NURTURETIMERANGE_FIELDS.STOPHOUR,
@@ -745,16 +689,15 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, nurtureTimeRangeElemID.name],
     })
 
   private static contactListIdsType: ObjectType =
     new ObjectType({
       elemID: contactListIdsElemID,
-      fields: [
-        {
-          name: CONTACTLISTIDS_FIELDS.ENROLLED,
+      fields: {
+        [CONTACTLISTIDS_FIELDS.ENROLLED]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: CONTACTLISTIDS_FIELDS.ENROLLED,
@@ -762,8 +705,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CONTACTLISTIDS_FIELDS.ACTIVE,
+        [CONTACTLISTIDS_FIELDS.ACTIVE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: CONTACTLISTIDS_FIELDS.ACTIVE,
@@ -771,8 +713,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CONTACTLISTIDS_FIELDS.SUCCEEDED,
+        [CONTACTLISTIDS_FIELDS.SUCCEEDED]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: CONTACTLISTIDS_FIELDS.SUCCEEDED,
@@ -780,8 +721,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CONTACTLISTIDS_FIELDS.COMPLETED,
+        [CONTACTLISTIDS_FIELDS.COMPLETED]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: CONTACTLISTIDS_FIELDS.COMPLETED,
@@ -789,16 +729,15 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, contactListIdsElemID.name],
     })
 
   private static rssToEmailTimingType: ObjectType =
     new ObjectType({
       elemID: rssToEmailTimingElemID,
-      fields: [
-        {
-          name: RSSTOEMAILTIMING_FIELDS.REPEATS,
+      fields: {
+        [RSSTOEMAILTIMING_FIELDS.REPEATS]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: RSSTOEMAILTIMING_FIELDS.REPEATS,
@@ -809,8 +748,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY,
+        [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: RSSTOEMAILTIMING_FIELDS.REPEATS_ON_MONTHLY,
@@ -818,8 +756,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY,
+        [RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: RSSTOEMAILTIMING_FIELDS.REPEATS_ON_WEEKLY,
@@ -827,8 +764,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: RSSTOEMAILTIMING_FIELDS.TIME,
+        [RSSTOEMAILTIMING_FIELDS.TIME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: RSSTOEMAILTIMING_FIELDS.TIME,
@@ -836,7 +772,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, SUBTYPES_PATH, rssToEmailTimingElemID.name],
     })
 
@@ -847,9 +783,8 @@ export class Types {
   public static hubspotObjects: Record<string, ObjectType> = {
     [OBJECTS_NAMES.FORM]: new ObjectType({
       elemID: formElemID,
-      fields: [
-        {
-          name: FORM_FIELDS.GUID,
+      fields: {
+        [FORM_FIELDS.GUID]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_FIELDS.GUID,
@@ -858,8 +793,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: FORM_FIELDS.NAME,
+        [FORM_FIELDS.NAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_FIELDS.NAME,
@@ -867,8 +801,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: FORM_FIELDS.CSSCLASS,
+        [FORM_FIELDS.CSSCLASS]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_FIELDS.CSSCLASS,
@@ -876,8 +809,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.REDIRECT,
+        [FORM_FIELDS.REDIRECT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_FIELDS.REDIRECT,
@@ -885,8 +817,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.SUBMITTEXT,
+        [FORM_FIELDS.SUBMITTEXT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_FIELDS.SUBMITTEXT,
@@ -894,8 +825,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.NOTIFYRECIPIENTS,
+        [FORM_FIELDS.NOTIFYRECIPIENTS]: {
           type: new ListType(Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER]),
           annotations: {
             name: FORM_FIELDS.NOTIFYRECIPIENTS,
@@ -903,8 +833,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.IGNORECURRENTVALUES,
+        [FORM_FIELDS.IGNORECURRENTVALUES]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_FIELDS.IGNORECURRENTVALUES,
@@ -912,8 +841,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.DELETABLE,
+        [FORM_FIELDS.DELETABLE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_FIELDS.DELETABLE,
@@ -921,8 +849,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.INLINEMESSAGE,
+        [FORM_FIELDS.INLINEMESSAGE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_FIELDS.INLINEMESSAGE,
@@ -930,8 +857,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.FORMFIELDGROUPS,
+        [FORM_FIELDS.FORMFIELDGROUPS]: {
           type: new ListType(Types.propertyGroupType),
           annotations: {
             name: FORM_FIELDS.FORMFIELDGROUPS,
@@ -939,8 +865,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.CAPTCHAENABLED,
+        [FORM_FIELDS.CAPTCHAENABLED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_FIELDS.CAPTCHAENABLED,
@@ -948,8 +873,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.CREATEDAT,
+        [FORM_FIELDS.CREATEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: FORM_FIELDS.CREATEDAT,
@@ -958,8 +882,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: FORM_FIELDS.CLONEABLE,
+        [FORM_FIELDS.CLONEABLE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_FIELDS.CLONEABLE,
@@ -967,8 +890,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.STYLE,
+        [FORM_FIELDS.STYLE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_FIELDS.STYLE,
@@ -976,8 +898,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.EDITABLE,
+        [FORM_FIELDS.EDITABLE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: FORM_FIELDS.EDITABLE,
@@ -985,8 +906,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: FORM_FIELDS.THEMENAME,
+        [FORM_FIELDS.THEMENAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: FORM_FIELDS.THEMENAME,
@@ -994,14 +914,13 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, formElemID.name],
     }),
     [OBJECTS_NAMES.WORKFLOW]: new ObjectType({
       elemID: workflowsElemID,
-      fields: [
-        {
-          name: WORKFLOWS_FIELDS.ID,
+      fields: {
+        [WORKFLOWS_FIELDS.ID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: WORKFLOWS_FIELDS.ID,
@@ -1010,8 +929,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.NAME,
+        [WORKFLOWS_FIELDS.NAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: WORKFLOWS_FIELDS.NAME,
@@ -1019,8 +937,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.SEGMENTCRITERIA,
+        [WORKFLOWS_FIELDS.SEGMENTCRITERIA]: {
           type: new ListType(new ListType(Types.criteriaType)),
           annotations: {
             name: WORKFLOWS_FIELDS.SEGMENTCRITERIA,
@@ -1028,8 +945,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.GOALCRITERIA,
+        [WORKFLOWS_FIELDS.GOALCRITERIA]: {
           type: new ListType(new ListType(Types.criteriaType)),
           annotations: {
             name: WORKFLOWS_FIELDS.GOALCRITERIA,
@@ -1037,8 +953,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.TYPE,
+        [WORKFLOWS_FIELDS.TYPE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: WORKFLOWS_FIELDS.TYPE,
@@ -1050,8 +965,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.ENABLED,
+        [WORKFLOWS_FIELDS.ENABLED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: WORKFLOWS_FIELDS.ENABLED,
@@ -1059,8 +973,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.INSERTEDAT,
+        [WORKFLOWS_FIELDS.INSERTEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: WORKFLOWS_FIELDS.INSERTEDAT,
@@ -1069,8 +982,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.UPDATEDAT,
+        [WORKFLOWS_FIELDS.UPDATEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: WORKFLOWS_FIELDS.UPDATEDAT,
@@ -1079,8 +991,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.CONTACTLISTIDS,
+        [WORKFLOWS_FIELDS.CONTACTLISTIDS]: {
           type: Types.contactListIdsType,
           annotations: {
             name: WORKFLOWS_FIELDS.CONTACTLISTIDS,
@@ -1088,8 +999,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.INTERNAL,
+        [WORKFLOWS_FIELDS.INTERNAL]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: WORKFLOWS_FIELDS.INTERNAL,
@@ -1097,8 +1007,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS,
+        [WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: WORKFLOWS_FIELDS.ONLYEXECONBIZDAYS,
@@ -1106,8 +1015,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.NURTURETIMERANGE,
+        [WORKFLOWS_FIELDS.NURTURETIMERANGE]: {
           type: Types.nurtureTimeRangeType,
           annotations: {
             name: WORKFLOWS_FIELDS.NURTURETIMERANGE,
@@ -1115,8 +1023,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.ACTIONS,
+        [WORKFLOWS_FIELDS.ACTIONS]: {
           type: new ListType(Types.actionType),
           annotations: {
             name: WORKFLOWS_FIELDS.ACTIONS,
@@ -1124,8 +1031,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.LISTENING,
+        [WORKFLOWS_FIELDS.LISTENING]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: WORKFLOWS_FIELDS.LISTENING,
@@ -1133,8 +1039,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.EVENTANCHOR,
+        [WORKFLOWS_FIELDS.EVENTANCHOR]: {
           type: Types.eventAnchorType,
           annotations: {
             name: WORKFLOWS_FIELDS.EVENTANCHOR,
@@ -1142,8 +1047,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES,
+        [WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: WORKFLOWS_FIELDS.ALLOWCONTACTTOTRIGGERMULTIPLETIMES,
@@ -1151,8 +1055,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.ONLYENROLLMANUALLY,
+        [WORKFLOWS_FIELDS.ONLYENROLLMANUALLY]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: WORKFLOWS_FIELDS.ONLYENROLLMANUALLY,
@@ -1160,8 +1063,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE,
+        [WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: WORKFLOWS_FIELDS.ENROLLONCRITERIAUPDATE,
@@ -1169,8 +1071,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: WORKFLOWS_FIELDS.SUPRESSIONLISTIDS,
+        [WORKFLOWS_FIELDS.SUPRESSIONLISTIDS]: {
           type: new ListType(BuiltinTypes.NUMBER),
           annotations: {
             name: WORKFLOWS_FIELDS.SUPRESSIONLISTIDS,
@@ -1178,14 +1079,13 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, workflowsElemID.name],
     }),
     [OBJECTS_NAMES.MARKETINGEMAIL]: new ObjectType({
       elemID: marketingEmailElemID,
-      fields: [
-        {
-          name: MARKETING_EMAIL_FIELDS.AB,
+      fields: {
+        [MARKETING_EMAIL_FIELDS.AB]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.AB,
@@ -1193,8 +1093,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABHOURSWAIT,
+        [MARKETING_EMAIL_FIELDS.ABHOURSWAIT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABHOURSWAIT,
@@ -1202,8 +1101,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABVARIATION,
+        [MARKETING_EMAIL_FIELDS.ABVARIATION]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABVARIATION,
@@ -1211,8 +1109,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT,
+        [MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABSAMPLESIZEDEFAULT,
@@ -1221,8 +1118,7 @@ export class Types {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT,
+        [MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABSAMPLINGDEFAULT,
@@ -1231,8 +1127,7 @@ export class Types {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABSTATUS,
+        [MARKETING_EMAIL_FIELDS.ABSTATUS]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABSTATUS,
@@ -1241,8 +1136,7 @@ export class Types {
             [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['master', 'variant'] }),
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC,
+        [MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABSUCCESSMETRIC,
@@ -1253,8 +1147,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABTESTID,
+        [MARKETING_EMAIL_FIELDS.ABTESTID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABTESTID,
@@ -1262,8 +1155,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE,
+        [MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABTESTPERCENTAGE,
@@ -1271,8 +1163,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ABSOLUTEURL,
+        [MARKETING_EMAIL_FIELDS.ABSOLUTEURL]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ABSOLUTEURL,
@@ -1280,8 +1171,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
+        [MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS]: {
           type: new ListType(BuiltinTypes.NUMBER),
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ALLEMAILCAMPAIGNIDS,
@@ -1289,8 +1179,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID,
+        [MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ANALYTICSPAGEID,
@@ -1298,8 +1187,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ARCHIVED,
+        [MARKETING_EMAIL_FIELDS.ARCHIVED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ARCHIVED,
@@ -1307,8 +1195,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.AUTHOR,
+        [MARKETING_EMAIL_FIELDS.AUTHOR]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.AUTHOR,
@@ -1317,8 +1204,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.AUTHORAT,
+        [MARKETING_EMAIL_FIELDS.AUTHORAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.AUTHORAT,
@@ -1327,8 +1213,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.AUTHOREMAIL,
+        [MARKETING_EMAIL_FIELDS.AUTHOREMAIL]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.AUTHOREMAIL,
@@ -1337,8 +1222,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.AUTHORNAME,
+        [MARKETING_EMAIL_FIELDS.AUTHORNAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.AUTHORNAME,
@@ -1347,8 +1231,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.AUTHORUSERID,
+        [MARKETING_EMAIL_FIELDS.AUTHORUSERID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.AUTHORUSERID,
@@ -1357,8 +1240,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE,
+        [MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.BLOGEMAILTYPE,
@@ -1369,9 +1251,8 @@ export class Types {
             }),
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS]: {
           // TODO: Format this the right way
-          name: MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS,
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.BLOGRSSSETTINGS,
@@ -1379,8 +1260,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.CAMPAIGN,
+        [MARKETING_EMAIL_FIELDS.CAMPAIGN]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.CAMPAIGN,
@@ -1388,8 +1268,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.CAMPAIGNNAME,
+        [MARKETING_EMAIL_FIELDS.CAMPAIGNNAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.CAMPAIGNNAME,
@@ -1397,8 +1276,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID,
+        [MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.CANSPAMSETTINGSID,
@@ -1406,8 +1284,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.CLONEDFROM,
+        [MARKETING_EMAIL_FIELDS.CLONEDFROM]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.CLONEDFROM,
@@ -1415,8 +1292,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.CREATEPAGE,
+        [MARKETING_EMAIL_FIELDS.CREATEPAGE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.CREATEPAGE,
@@ -1424,8 +1300,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.CREATED,
+        [MARKETING_EMAIL_FIELDS.CREATED]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.CREATED,
@@ -1434,8 +1309,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED,
+        [MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.CURRENTLYPUBLISHED,
@@ -1443,8 +1317,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.DOMAIN,
+        [MARKETING_EMAIL_FIELDS.DOMAIN]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.DOMAIN,
@@ -1452,8 +1325,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.EMAILBODY,
+        [MARKETING_EMAIL_FIELDS.EMAILBODY]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.EMAILBODY,
@@ -1461,8 +1333,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.EMAILNOTE,
+        [MARKETING_EMAIL_FIELDS.EMAILNOTE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.EMAILNOTE,
@@ -1470,8 +1341,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.EMAILTYPE,
+        [MARKETING_EMAIL_FIELDS.EMAILTYPE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.EMAILTYPE,
@@ -1486,8 +1356,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY,
+        [MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.FEEDBACKEMAILCATEGORY,
@@ -1499,8 +1368,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID,
+        [MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.FEEDBACKSURVEYID,
@@ -1508,8 +1376,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.FLEXAREAS,
+        [MARKETING_EMAIL_FIELDS.FLEXAREAS]: {
           type: BuiltinTypes.JSON,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.FLEXAREAS,
@@ -1517,8 +1384,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.FOLDERID,
+        [MARKETING_EMAIL_FIELDS.FOLDERID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.FOLDERID,
@@ -1526,8 +1392,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.FREEZEDATE,
+        [MARKETING_EMAIL_FIELDS.FREEZEDATE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.FREEZEDATE,
@@ -1536,8 +1401,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.FROMNAME,
+        [MARKETING_EMAIL_FIELDS.FROMNAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.FROMNAME,
@@ -1545,8 +1409,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.HTMLTITLE,
+        [MARKETING_EMAIL_FIELDS.HTMLTITLE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.HTMLTITLE,
@@ -1554,8 +1417,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ID,
+        [MARKETING_EMAIL_FIELDS.ID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ID,
@@ -1564,8 +1426,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED,
+        [MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ISGRAYMAILSUPPRESSIONENABLED,
@@ -1573,8 +1434,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND,
+        [MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ISLOCALTIMEZONESEND,
@@ -1582,8 +1442,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ISPUBLISHED,
+        [MARKETING_EMAIL_FIELDS.ISPUBLISHED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ISPUBLISHED,
@@ -1591,8 +1450,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED,
+        [MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.ISRECIPIENTFATIGUESUPPRESSIONENABLED,
@@ -1600,8 +1458,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.LEADFLOWID,
+        [MARKETING_EMAIL_FIELDS.LEADFLOWID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.LEADFLOWID,
@@ -1609,8 +1466,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.LIVEDOMAIN,
+        [MARKETING_EMAIL_FIELDS.LIVEDOMAIN]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.LIVEDOMAIN,
@@ -1619,9 +1475,8 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED]: {
           // TODO: Convert this to reference
-          name: MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED,
           type: new ListType(BuiltinTypes.NUMBER),
           annotations: {
             name: MARKETING_EMAIL_FIELDS.MAILINGLISTSEXCLUDED,
@@ -1629,9 +1484,8 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED]: {
           // TODO: Convert this to reference
-          name: MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED,
           type: new ListType(BuiltinTypes.NUMBER),
           annotations: {
             name: MARKETING_EMAIL_FIELDS.MAILINGLISTSINCLUDED,
@@ -1639,8 +1493,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.MAXRSSENTRIES,
+        [MARKETING_EMAIL_FIELDS.MAXRSSENTRIES]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.MAXRSSENTRIES,
@@ -1648,8 +1501,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.METADESCRIPTION,
+        [MARKETING_EMAIL_FIELDS.METADESCRIPTION]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.METADESCRIPTION,
@@ -1657,8 +1509,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.NAME,
+        [MARKETING_EMAIL_FIELDS.NAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.NAME,
@@ -1666,8 +1517,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE,
+        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYDATE,
@@ -1676,8 +1526,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID,
+        [MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PAGEEXPIRYREDIRECTEID,
@@ -1686,8 +1535,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PAGEREDIRECTED,
+        [MARKETING_EMAIL_FIELDS.PAGEREDIRECTED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PAGEREDIRECTED,
@@ -1695,8 +1543,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PREVIEWKEY,
+        [MARKETING_EMAIL_FIELDS.PREVIEWKEY]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PREVIEWKEY,
@@ -1704,8 +1551,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS,
+        [MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PROCESSINGSTATUS,
@@ -1718,8 +1564,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PUBLISHDATE,
+        [MARKETING_EMAIL_FIELDS.PUBLISHDATE]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PUBLISHDATE,
@@ -1728,8 +1573,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PUBLISHEDAT,
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDAT,
@@ -1738,8 +1582,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYID,
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYID,
@@ -1748,8 +1591,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME,
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDBYNAME,
@@ -1758,8 +1600,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY,
+        [MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PUBLISHIMMEDIATELY,
@@ -1767,8 +1608,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.PUBLISHEDURL,
+        [MARKETING_EMAIL_FIELDS.PUBLISHEDURL]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.PUBLISHEDURL,
@@ -1776,9 +1616,8 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.REPLYTO]: {
           // TODO: Decide if to enforce link to fromName?
-          name: MARKETING_EMAIL_FIELDS.REPLYTO,
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.REPLYTO,
@@ -1786,8 +1625,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN,
+        [MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RESOLVEDDOMAIN,
@@ -1795,8 +1633,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE,
+        [MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILAUTHORLINETEMPLATE,
@@ -1804,8 +1641,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH,
+        [MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILBLOGIMAGEMAXWIDTH,
@@ -1813,8 +1649,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT,
+        [MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILBYTEXT,
@@ -1822,8 +1657,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT,
+        [MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILCLICKTHROUGHTEXT,
@@ -1831,8 +1665,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT,
+        [MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILCOMMENTTEXT,
@@ -1840,8 +1673,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE,
+        [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATE,
@@ -1849,8 +1681,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED,
+        [MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILENTRYTEMPLATEENABLED,
@@ -1858,8 +1689,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSEMAILURL,
+        [MARKETING_EMAIL_FIELDS.RSSEMAILURL]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSEMAILURL,
@@ -1867,8 +1697,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING,
+        [MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING]: {
           type: Types.rssToEmailTimingType,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.RSSTOEMAILTIMING,
@@ -1876,8 +1705,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.SLUG,
+        [MARKETING_EMAIL_FIELDS.SLUG]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.SLUG,
@@ -1885,9 +1713,8 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS]: {
           // TODO: Understand this and convert to a list of smart fields
-          name: MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS,
           type: BuiltinTypes.JSON,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.SMARTEMAILFIELDS,
@@ -1895,8 +1722,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.STYLESETTINGS,
+        [MARKETING_EMAIL_FIELDS.STYLESETTINGS]: {
           type: BuiltinTypes.JSON,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.STYLESETTINGS,
@@ -1904,8 +1730,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.SUBCATEGORY,
+        [MARKETING_EMAIL_FIELDS.SUBCATEGORY]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.SUBCATEGORY,
@@ -1922,8 +1747,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.SUBJECT,
+        [MARKETING_EMAIL_FIELDS.SUBJECT]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.SUBJECT,
@@ -1931,9 +1755,8 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTION]: {
           // TODO: Check what email subscription type is
-          name: MARKETING_EMAIL_FIELDS.SUBSCRIPTION,
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.SUBSCRIPTION,
@@ -1941,8 +1764,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID,
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.SUBSCRIPTIONBLOGID,
@@ -1950,8 +1772,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME,
+        [MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.SUBSCRIPTIONNAME,
@@ -1959,8 +1780,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.TEMPLATEPATH,
+        [MARKETING_EMAIL_FIELDS.TEMPLATEPATH]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.TEMPLATEPATH,
@@ -1968,8 +1788,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.TRANSACTIONAL,
+        [MARKETING_EMAIL_FIELDS.TRANSACTIONAL]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.TRANSACTIONAL,
@@ -1977,8 +1796,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT,
+        [MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.UNPUBLISHEDAT,
@@ -1987,8 +1805,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.UPDATED,
+        [MARKETING_EMAIL_FIELDS.UPDATED]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.UPDATED,
@@ -1997,8 +1814,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.UPDATEDBYID,
+        [MARKETING_EMAIL_FIELDS.UPDATEDBYID]: {
           type: Types.fieldTypes[FIELD_TYPES.USERIDENTIFIER],
           annotations: {
             name: MARKETING_EMAIL_FIELDS.UPDATEDBYID,
@@ -2007,8 +1823,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.URL,
+        [MARKETING_EMAIL_FIELDS.URL]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.URL,
@@ -2016,8 +1831,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT,
+        [MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.USERSSHEADLINEASSUBJECT,
@@ -2025,9 +1839,8 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.VIDSEXCLUDED]: {
           // TODO: No contact instances (maybe convert to email)
-          name: MARKETING_EMAIL_FIELDS.VIDSEXCLUDED,
           type: new ListType(BuiltinTypes.NUMBER),
           annotations: {
             name: MARKETING_EMAIL_FIELDS.VIDSEXCLUDED,
@@ -2035,9 +1848,8 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.VIDSINCLUDED]: {
           // TODO: No contact instances (maybe convert to email)
-          name: MARKETING_EMAIL_FIELDS.VIDSINCLUDED,
           type: new ListType(BuiltinTypes.NUMBER),
           annotations: {
             name: MARKETING_EMAIL_FIELDS.VIDSINCLUDED,
@@ -2045,8 +1857,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: MARKETING_EMAIL_FIELDS.WIDGETS,
+        [MARKETING_EMAIL_FIELDS.WIDGETS]: {
           type: BuiltinTypes.JSON,
           annotations: {
             name: MARKETING_EMAIL_FIELDS.WIDGETS,
@@ -2054,9 +1865,8 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
+        [MARKETING_EMAIL_FIELDS.WORKFLOWNAMES]: {
           // TODO: Convert to reference
-          name: MARKETING_EMAIL_FIELDS.WORKFLOWNAMES,
           type: new ListType(BuiltinTypes.STRING),
           annotations: {
             name: MARKETING_EMAIL_FIELDS.WORKFLOWNAMES,
@@ -2064,14 +1874,13 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, marketingEmailElemID.name],
     }),
     [OBJECTS_NAMES.CONTACT_PROPERTY]: new ObjectType({
       elemID: contactPropertyElemID,
-      fields: [
-        {
-          name: CONTACT_PROPERTY_FIELDS.NAME,
+      fields: {
+        [CONTACT_PROPERTY_FIELDS.NAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.NAME,
@@ -2079,8 +1888,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.LABEL,
+        [CONTACT_PROPERTY_FIELDS.LABEL]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.LABEL,
@@ -2088,8 +1896,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.DESCRIPTION,
+        [CONTACT_PROPERTY_FIELDS.DESCRIPTION]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.DESCRIPTION,
@@ -2097,8 +1904,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.GROUPNAME,
+        [CONTACT_PROPERTY_FIELDS.GROUPNAME]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.GROUPNAME,
@@ -2106,8 +1912,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.TYPE,
+        [CONTACT_PROPERTY_FIELDS.TYPE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.TYPE,
@@ -2118,8 +1923,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.FIELDTYPE,
+        [CONTACT_PROPERTY_FIELDS.FIELDTYPE]: {
           type: BuiltinTypes.STRING,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.FIELDTYPE,
@@ -2130,8 +1934,7 @@ export class Types {
             }),
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.OPTIONS,
+        [CONTACT_PROPERTY_FIELDS.OPTIONS]: {
           type: new ListType(Types.optionsType),
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.OPTIONS,
@@ -2139,8 +1942,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.DELETED,
+        [CONTACT_PROPERTY_FIELDS.DELETED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.DELETED,
@@ -2148,8 +1950,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.FORMFIELD,
+        [CONTACT_PROPERTY_FIELDS.FORMFIELD]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.FORMFIELD,
@@ -2157,8 +1958,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: true,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.DISPLAYORDER,
+        [CONTACT_PROPERTY_FIELDS.DISPLAYORDER]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.DISPLAYORDER,
@@ -2167,8 +1967,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: -1,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.READONLYVALUE,
+        [CONTACT_PROPERTY_FIELDS.READONLYVALUE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.READONLYVALUE,
@@ -2177,8 +1976,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.READONLYDEFINITION,
+        [CONTACT_PROPERTY_FIELDS.READONLYDEFINITION]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.READONLYDEFINITION,
@@ -2187,8 +1985,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.HIDDEN,
+        [CONTACT_PROPERTY_FIELDS.HIDDEN]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.HIDDEN,
@@ -2197,8 +1994,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
+        [CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.MUTABLEDEFINITIONNOTDELETABLE,
@@ -2207,8 +2003,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.CALCULATED,
+        [CONTACT_PROPERTY_FIELDS.CALCULATED]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.CALCULATED,
@@ -2216,8 +2011,7 @@ export class Types {
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.CREATEDAT,
+        [CONTACT_PROPERTY_FIELDS.CREATEDAT]: {
           type: BuiltinTypes.NUMBER,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.CREATEDAT,
@@ -2226,8 +2020,7 @@ export class Types {
             [CORE_ANNOTATIONS.HIDDEN]: true,
           },
         },
-        {
-          name: CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS,
+        [CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS]: {
           type: BuiltinTypes.BOOLEAN,
           annotations: {
             name: CONTACT_PROPERTY_FIELDS.EXTERNALOPTIONS,
@@ -2236,7 +2029,7 @@ export class Types {
             [CORE_ANNOTATIONS.DEFAULT]: false,
           },
         },
-      ],
+      },
       path: [HUBSPOT, TYPES_PATH, contactPropertyElemID.name],
     }),
   }

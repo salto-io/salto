@@ -45,10 +45,10 @@ describe('Test elements.ts', () => {
   const otID = new ElemID('test', 'obj')
   const ot = new ObjectType({
     elemID: otID,
-    fields: [
-      { name: 'num_field', type: primNum },
-      { name: 'str_field', type: primStr },
-    ],
+    fields: {
+      num_field: { type: primNum },
+      str_field: { type: primStr },
+    },
     annotationTypes: {},
     annotations: {},
   })
@@ -153,7 +153,7 @@ describe('Test elements.ts', () => {
   describe('isEqualElements and type guards', () => {
     const objT = new ObjectType({
       elemID: new ElemID('test', 'obj'),
-      fields: [{ name: 'str', type: primStr }],
+      fields: { str: { type: primStr } },
       annotationTypes: {
         anno: primStr,
       },

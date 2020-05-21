@@ -31,11 +31,11 @@ describe('Test utils.ts & isXXX in elements.ts', () => {
   const mockElemID = new ElemID('test-utils', 'obj')
   const mockObjectType = new ObjectType({
     elemID: mockElemID,
-    fields: [
-      { name: 'fieldTest', type: BuiltinTypes.NUMBER },
-      { name: 'listFieldTest', type: new ListType(BuiltinTypes.NUMBER) },
-      { name: 'listOfListFieldTest', type: new ListType(new ListType(BuiltinTypes.NUMBER)) },
-    ],
+    fields: {
+      fieldTest: { type: BuiltinTypes.NUMBER },
+      listFieldTest: { type: new ListType(BuiltinTypes.NUMBER) },
+      listOfListFieldTest: { type: new ListType(new ListType(BuiltinTypes.NUMBER)) },
+    },
     annotationTypes: {},
     annotations: {},
   })

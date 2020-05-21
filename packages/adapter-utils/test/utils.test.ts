@@ -50,45 +50,45 @@ describe('Test utils.ts', () => {
     annotations: {
       testAnno: 'TEST ANNO',
     },
-    fields: [
-      { name: 'ref', type: BuiltinTypes.STRING },
-      { name: 'str', type: BuiltinTypes.STRING, annotations: { testAnno: 'TEST FIELD ANNO' } },
-      { name: 'file', type: BuiltinTypes.STRING },
-      { name: 'bool', type: BuiltinTypes.BOOLEAN },
-      { name: 'num', type: BuiltinTypes.NUMBER },
-      { name: 'numArray', type: new ListType(BuiltinTypes.NUMBER) },
-      { name: 'strArray', type: new ListType(BuiltinTypes.STRING) },
-      {
-        name: 'obj',
+    fields: {
+      ref: { type: BuiltinTypes.STRING },
+      str: { type: BuiltinTypes.STRING, annotations: { testAnno: 'TEST FIELD ANNO' } },
+      file: { type: BuiltinTypes.STRING },
+      bool: { type: BuiltinTypes.BOOLEAN },
+      num: { type: BuiltinTypes.NUMBER },
+      numArray: { type: new ListType(BuiltinTypes.NUMBER) },
+      strArray: { type: new ListType(BuiltinTypes.STRING) },
+      obj: {
+
         type: new ListType(new ObjectType({
           elemID: mockElem,
-          fields: [
-            { name: 'field', type: BuiltinTypes.STRING },
-            { name: 'value', type: BuiltinTypes.STRING },
-            {
-              name: 'innerObj',
+          fields: {
+            field: { type: BuiltinTypes.STRING },
+            value: { type: BuiltinTypes.STRING },
+            innerObj: {
+
               type: new ObjectType({
                 elemID: mockElem,
-                fields: [
-                  { name: 'name', type: BuiltinTypes.STRING },
-                  { name: 'listOfNames', type: new ListType(BuiltinTypes.STRING) },
-                  {
-                    name: 'magical',
+                fields: {
+                  name: { type: BuiltinTypes.STRING },
+                  listOfNames: { type: new ListType(BuiltinTypes.STRING) },
+                  magical: {
+
                     type: new ObjectType({
                       elemID: mockElem,
-                      fields: [
-                        { name: 'deepNumber', type: BuiltinTypes.NUMBER },
-                        { name: 'deepName', type: BuiltinTypes.STRING },
-                      ],
+                      fields: {
+                        deepNumber: { type: BuiltinTypes.NUMBER },
+                        deepName: { type: BuiltinTypes.STRING },
+                      },
                     }),
                   },
-                ],
+                },
               }),
             },
-          ],
+          },
         })),
       },
-    ],
+    },
     path: ['this', 'is', 'happening'],
   })
 
@@ -512,11 +512,11 @@ describe('Test utils.ts', () => {
           elementID.createNestedID('annotation', 'name'), objectName
         ),
       },
-      fields: [
-        { name: 'refValue', type: BuiltinTypes.STRING },
-        { name: 'arrayValues', type: new ListType(BuiltinTypes.STRING) },
-        { name: 'fileValue', type: BuiltinTypes.STRING },
-      ],
+      fields: {
+        refValue: { type: BuiltinTypes.STRING },
+        arrayValues: { type: new ListType(BuiltinTypes.STRING) },
+        fileValue: { type: BuiltinTypes.STRING },
+      },
     })
 
     const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
@@ -572,16 +572,16 @@ describe('Test utils.ts', () => {
         refValue: valueRef,
         reg: regValue,
       },
-      fields: [
-        {
-          name: 'field',
+      fields: {
+        field: {
+
           type: element,
           annotations: {
             reg: regValue,
             refValue: valueRef,
           },
         },
-      ],
+      },
     })
 
     const getName = (refValue: Value): Value =>
@@ -818,10 +818,10 @@ describe('Test utils.ts', () => {
     const otID = new ElemID('test', 'obj')
     const ot = new ObjectType({
       elemID: otID,
-      fields: [
-        { name: 'num_field', type: primNum },
-        { name: 'str_field', type: primStr },
-      ],
+      fields: {
+        num_field: { type: primNum },
+        str_field: { type: primStr },
+      },
       annotationTypes: {},
       annotations: {},
     })
@@ -929,10 +929,10 @@ describe('Test utils.ts', () => {
     const annoTypeID = new ElemID('salto', 'annoType')
     const annoType = new ObjectType({
       elemID: annoTypeID,
-      fields: [
-        { name: 'str', type: BuiltinTypes.STRING },
-        { name: 'num', type: BuiltinTypes.NUMBER },
-      ],
+      fields: {
+        str: { type: BuiltinTypes.STRING },
+        num: { type: BuiltinTypes.NUMBER },
+      },
     })
     const objElemID = new ElemID('salto', 'obj')
     const obj = new ObjectType({
@@ -948,10 +948,10 @@ describe('Test utils.ts', () => {
         },
         list: ['I', 'do', 'not', 'write', 'jokes', 'in', 'base 13'],
       },
-      fields: [
-        { name: 'obj', type: annoType, annotations: { label: 'LABEL' } },
-        { name: 'list', type: new ListType(BuiltinTypes.STRING) },
-      ],
+      fields: {
+        obj: { type: annoType, annotations: { label: 'LABEL' } },
+        list: { type: new ListType(BuiltinTypes.STRING) },
+      },
     })
     const inst = new InstanceElement('inst', obj, {
       obj: { str: 'Well I do', num: 42 },
@@ -1129,10 +1129,10 @@ describe('Test utils.ts', () => {
     const baseElemID = new ElemID('salto', 'base')
     const base = new ObjectType({
       elemID: baseElemID,
-      fields: [
-        { name: 'field1', type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-        { name: 'field2', type: BuiltinTypes.STRING, annotations: { label: 'base' } },
-      ],
+      fields: {
+        field1: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+        field2: { type: BuiltinTypes.STRING, annotations: { label: 'base' } },
+      },
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {
           field1: 'base1',
@@ -1149,11 +1149,11 @@ describe('Test utils.ts', () => {
     const nestedElemID = new ElemID('salto', 'nested')
     const nested = new ObjectType({
       elemID: nestedElemID,
-      fields: [
-        { name: 'field1', type: strType, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'field1' } },
-        { name: 'field2', type: strType },
-        { name: 'base', type: base },
-      ],
+      fields: {
+        field1: { type: strType, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'field1' } },
+        field2: { type: strType },
+        base: { type: base },
+      },
     })
     const ins1 = new InstanceElement(
       'ins',
@@ -1215,10 +1215,10 @@ describe('Test utils.ts', () => {
       const typeWithNestedDefaultsElemID = new ElemID('salto', 'typeWithNestedDefaults')
       const typeWithNestedDefaults = new ObjectType({
         elemID: typeWithNestedDefaultsElemID,
-        fields: [
-          { name: 'withDefault', type: strType, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'default val' } },
-          { name: 'nestedTypeHasDefaults', type: nested },
-        ],
+        fields: {
+          withDefault: { type: strType, annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'default val' } },
+          nestedTypeHasDefaults: { type: nested },
+        },
       })
 
       const instanceWithNoValues = new InstanceElement(
@@ -1239,13 +1239,13 @@ describe('Test utils.ts', () => {
       const mockElemID = new ElemID('test')
       const configType = new ObjectType({
         elemID: mockElemID,
-        fields: [
-          {
-            name: 'val1',
+        fields: {
+          val1: {
+
             type: BuiltinTypes.STRING,
             annotations: { [CORE_ANNOTATIONS.DEFAULT]: 'test' },
           },
-        ],
+        },
       })
       expect(createDefaultInstanceFromType('test', configType))
         .toEqual(new InstanceElement('test', configType, { val1: 'test' }))

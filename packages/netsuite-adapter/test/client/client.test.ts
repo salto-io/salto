@@ -104,18 +104,20 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
+      const accountId = await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
+      expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
     })
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
+      const accountId = await NetsuiteClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+      expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
     })
   })
 

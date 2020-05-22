@@ -2294,13 +2294,13 @@ describe('Salesforce adapter E2E with real account', () => {
           customFieldsObject = findCustomFieldsObject(result, customObjectWithFieldsName)
           const newCustomObject = new ObjectType({
             elemID: mockElemID,
-            fields: _.mapValues(
-              customFieldsObject.fields,
-              field => {
-                const name = [
-                  masterDetailFieldName,
-                  lookupFieldName,
-                ].includes(field.name) ? `${testAddFieldPrefix}${field.name}` : field.name
+            fields: _(customFieldsObject.fields)
+              .mapKeys((_field, name) => (
+                [masterDetailFieldName, lookupFieldName].includes(name)
+                  ? `${testAddFieldPrefix}${name}`
+                  : name
+              ))
+              .mapValues((field, name) => {
                 const annotations = _.cloneDeep(field.annotations)
                 annotations[constants.API_NAME] = `${customObjectAddFieldsName}.${name}`
 
@@ -2308,8 +2308,8 @@ describe('Salesforce adapter E2E with real account', () => {
                   annotations[constants.VALUE_SET_DEFINITION_FIELDS.SORTED] = true
                 }
                 return { type: field.type, annotations }
-              }
-            ),
+              })
+              .value(),
             annotations: {
               [constants.API_NAME]: customObjectAddFieldsName,
               [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,

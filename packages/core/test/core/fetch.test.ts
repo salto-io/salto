@@ -21,6 +21,7 @@ import {
   ListType,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
+import * as utilsSource from '@salto-io/adapter-utils/dist/src/utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
@@ -634,7 +635,8 @@ describe('fetch', () => {
 
     describe('instance defaults', () => {
       it('should call applyInstancesDefaults', async () => {
-        jest.spyOn(utils, 'applyInstancesDefaults')
+        // spyOn where utils is defined https://stackoverflow.com/a/53307822
+        jest.spyOn(utilsSource, 'applyInstancesDefaults')
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [workspaceInstance] })
         )

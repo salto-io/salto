@@ -17,6 +17,7 @@ import path from 'path'
 import { ElemID, Field, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
+import * as utilsSource from '@salto-io/adapter-utils/dist/src/utils'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { multiEnvSource } from '../../../src/workspace/nacl_files/mutil_env/multi_env_source'
 import { Errors } from '../../../src/workspace/errors'
@@ -25,7 +26,8 @@ import { MergeError } from '../../../src/core/merger/internal/common'
 import { expectToContainAllItems } from '../../common/helpers'
 import { DetailedChange } from '../../../src/core/plan'
 
-jest.spyOn(utils, 'applyInstancesDefaults')
+// spyOn where utils is defined https://stackoverflow.com/a/53307822
+jest.spyOn(utilsSource, 'applyInstancesDefaults')
 
 const objectElemID = new ElemID('salto', 'object')
 const commonField = new Field(objectElemID, 'commonField', BuiltinTypes.STRING)

@@ -15,6 +15,7 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
+import * as utilsSource from '@salto-io/adapter-utils/dist/src/utils'
 import { creator } from '@salto-io/salesforce-adapter'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
@@ -52,7 +53,8 @@ describe('adapters.ts', () => {
 
   describe('getDefaultAdapterConfig', () => {
     it('should call createDefaultInstanceFromType', () => {
-      jest.spyOn(utils, 'createDefaultInstanceFromType')
+      // spyOn where utils is defined https://stackoverflow.com/a/53307822
+      jest.spyOn(utilsSource, 'createDefaultInstanceFromType')
       getDefaultAdapterConfig('salesforce')
       expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
     })

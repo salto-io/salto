@@ -21,7 +21,6 @@ import {
   ListType,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
-import * as utilsSource from '@salto-io/adapter-utils/dist/src/utils'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
@@ -35,6 +34,10 @@ import {
 const { DuplicateAnnotationError } = merger
 
 jest.mock('pietile-eventemitter')
+jest.mock('@salto-io/adapter-utils', () => ({
+  ...jest.requireActual('@salto-io/adapter-utils'),
+  applyInstancesDefaults: jest.fn(),
+}))
 
 describe('fetch', () => {
   const mockMergeResult = (mockResult: merger.MergeResult): jest.SpyInstance =>
@@ -636,7 +639,6 @@ describe('fetch', () => {
     describe('instance defaults', () => {
       it('should call applyInstancesDefaults', async () => {
         // spyOn where utils is defined https://stackoverflow.com/a/53307822
-        jest.spyOn(utilsSource, 'applyInstancesDefaults')
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [workspaceInstance] })
         )

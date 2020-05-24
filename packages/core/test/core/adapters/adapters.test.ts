@@ -15,13 +15,17 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
-import * as utilsSource from '@salto-io/adapter-utils/dist/src/utils'
 import { creator } from '@salto-io/salesforce-adapter'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
 } from '../../../src/core/adapters/adapters'
 
 jest.mock('../../../src/workspace/config_source')
+jest.mock('@salto-io/adapter-utils', () => ({
+  ...jest.requireActual('@salto-io/adapter-utils'),
+  createDefaultInstanceFromType: jest.fn(),
+}))
+
 describe('adapters.ts', () => {
   const { credentialsType } = creator
   const services = ['salesforce']
@@ -53,8 +57,6 @@ describe('adapters.ts', () => {
 
   describe('getDefaultAdapterConfig', () => {
     it('should call createDefaultInstanceFromType', () => {
-      // spyOn where utils is defined https://stackoverflow.com/a/53307822
-      jest.spyOn(utilsSource, 'createDefaultInstanceFromType')
       getDefaultAdapterConfig('salesforce')
       expect(utils.createDefaultInstanceFromType).toHaveBeenCalled()
     })

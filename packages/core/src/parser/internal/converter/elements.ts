@@ -18,7 +18,7 @@ import { Element, INSTANCE_ANNOTATIONS, Variable, ElemID, PrimitiveTypes, TypeMa
 import wu from 'wu'
 import { SourceMap } from '../../source_map'
 import { Keywords } from '../../language'
-import { InternalParseRes, AttrData, TopLevelElementData, FieldData, ElementItem, LexerToken } from './types'
+import { InternalParseRes, AttrData, TopLevelElementData, FieldData, ElementItem, LexerToken, NearleyError } from './types'
 import { createSourceRange } from './context'
 import { convertAttributes } from './values'
 
@@ -106,15 +106,19 @@ const parseType = (
 }
 
 const parsePrimitiveType = (
-  labels: string[],
+  labels: InternalParseRes<string>[],
   annotationTypes: TypeMap,
   annotations: Omit<InternalParseRes<Values>, 'source'>,
 ): [PrimitiveType, SourceMap] => {
   const [typeName, kw, baseType] = labels
-  if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
-    throw new Error(`expected keyword ${Keywords.TYPE_INHERITANCE_SEPARATOR}. found ${kw}`)
+  if (kw.value !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
+    throw new NearleyError(
+      kw,
+      createSourceRange(kw, kw).start.byte,
+      `expected keyword ${Keywords.TYPE_INHERITANCE_SEPARATOR}. found ${kw}`
+    )
   }
-  const elemID = parseElemID(typeName)
+  const elemID = parseElemID(typeName.value)
   const sourceMap = new SourceMap()
   if (annotations.sourceMap) {
     sourceMap.mount([elemID.getFullName(), 'attr'].join(ElemID.NAMESPACE_SEPARATOR), annotations.sourceMap)
@@ -122,7 +126,7 @@ const parsePrimitiveType = (
   return [
     new PrimitiveType({
       elemID,
-      primitive: primitiveType(baseType),
+      primitive: primitiveType(baseType.value),
       annotationTypes,
       annotations: annotations.value,
     }),
@@ -163,27 +167,35 @@ const parseInstance = (
 }
 
 const parseElementBlock = (
-  elementType: string,
-  elementLabels: string[],
+  elementType: InternalParseRes<string>,
+  elementLabels: InternalParseRes<string>[],
   annotationsTypes: TypeMap,
   attributes: Omit<InternalParseRes<Values>, 'source'>,
   fields: InternalParseRes<FieldData>[]
 ): [Element, SourceMap, ListType[]] => {
-  if (elementType === Keywords.TYPE_DEFINITION && elementLabels.length > 1) {
+  if (elementType.value === Keywords.TYPE_DEFINITION && elementLabels.length > 1) {
     const [inst, sourceMap] = parsePrimitiveType(elementLabels, annotationsTypes, attributes)
     return [inst, sourceMap, []]
   }
-  const isSettings = elementType === Keywords.SETTINGS_DEFINITION
-  if (elementType === Keywords.TYPE_DEFINITION || isSettings) {
-    return parseType(elementLabels[0], fields, annotationsTypes, attributes, isSettings)
+  const isSettings = elementType.value === Keywords.SETTINGS_DEFINITION
+  if (elementType.value === Keywords.TYPE_DEFINITION || isSettings) {
+    return parseType(elementLabels[0].value, fields, annotationsTypes, attributes, isSettings)
   }
   if (elementLabels.length === 0 || elementLabels.length === 1) {
-    const [inst, sourceMap] = parseInstance(elementType, elementLabels, attributes)
+    const [inst, sourceMap] = parseInstance(
+      elementType.value,
+      elementLabels.map(l => l.value),
+      attributes
+    )
     return [inst, sourceMap, []]
   }
   // Without this exception the linter won't allow us to end the function
   // without a return value
-  throw new Error('unsupported block')
+  throw new NearleyError(
+    { text: [elementType, ...elementLabels].map(l => l.value).join(' ') },
+    createSourceRange(elementType, elementLabels[elementLabels.length - 1]).start.byte,
+    'unsupported block definition'
+  )
 }
 
 export const converTopLevelBlock = (
@@ -205,11 +217,11 @@ export const converTopLevelBlock = (
     item: InternalParseRes<Value>
   ): item is InternalParseRes<AttrData> => _.isArray(item.value) && item.value.length === 2
 
-  const [elementType, ...elementLabels] = labels.map(l => l.value)
+  const [elementType, ...elementLabels] = labels
   const annotationsTypes = elementItems.filter(isAnnotationsBlock)[0]
   const attributes = elementItems.filter(isAttribute)
   const fields = elementItems.filter(isFieldBlock)
-  if (elementType === Keywords.VARIABLES_DEFINITION) {
+  if (elementType.value === Keywords.VARIABLES_DEFINITION) {
     return parseVariablesBlock(attributes)
   }
   const annotations = convertAttributes(attributes)
@@ -228,8 +240,8 @@ export const converTopLevelBlock = (
   return { elements: [element, ...listTypes], sourceMap }
 }
 
-export const convertAnnotationTypes = (
-  oToken: LexerToken,
+const convertAnnotationTypes = (
+  oToken: InternalParseRes<string>,
   annotationTypes: InternalParseRes<FieldData>[],
   cb: LexerToken
 ): InternalParseRes<TypeMap> => {
@@ -252,7 +264,7 @@ export const convertAnnotationTypes = (
   return { value, source, sourceMap }
 }
 
-export const convertField = (
+const convertField = (
   fieldType: InternalParseRes<string>,
   fieldName: InternalParseRes<string>,
   attributes: InternalParseRes<AttrData>[],
@@ -269,4 +281,31 @@ export const convertField = (
     source,
     sourceMap,
   }
+}
+
+export const convertNestedBlock = (
+  labels: InternalParseRes<string>[],
+  blockItems: InternalParseRes<FieldData | AttrData>[],
+  cb: LexerToken
+): InternalParseRes<FieldData | TypeMap> => {
+  if (labels.length === 1 && labels[0].value === 'annotations') {
+    return convertAnnotationTypes(
+      labels[0],
+      blockItems as InternalParseRes<FieldData>[],
+      cb
+    )
+  }
+  if (labels.length === 2) {
+    return convertField(
+      labels[0],
+      labels[1],
+      blockItems as InternalParseRes<AttrData>[],
+      cb
+    )
+  }
+  throw new NearleyError(
+    labels[0],
+    createSourceRange(labels[0], cb).start.byte,
+    'unsupported nested block'
+  )
 }

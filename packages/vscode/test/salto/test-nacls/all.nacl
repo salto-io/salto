@@ -105,7 +105,7 @@ vs.loan weekend_car {
 }
 
 vs.loan not_a_loan {
-    nothing {
+    nothing = {
         attr = "value"
     }    
 }
@@ -174,7 +174,7 @@ type vs.name is string {
         }
     }
 
-    owner {
+    owner = {
         first_name = "Roi"
         last_name = "Ronn"
         age= 35

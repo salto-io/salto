@@ -24,7 +24,6 @@ export const rules: Record<string, moo.Rules> = {
     dq: { match: '"', push: 'string' },
     number: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
     boolean: /true|false/,
-    word: /[a-zA-Z_][\w.]*(?!\*\*\*\*dynamic\*\*\*\*)/s,
     lparen: '(',
     rparen: ')',
     arrOpen: '[',
@@ -33,6 +32,7 @@ export const rules: Record<string, moo.Rules> = {
     cCurly: '}',
     oCurly: '{',
     eq: '=',
+    word: /[a-zA-Z_][\w.]*(?!\*\*\*\*dynamic\*\*\*\*)/s,
     // This regex below defines a token which is compesed of a serious new line charecters, each
     // possibly padded by empty spaces and comments:
     // (?:[ \t]+) -> white spaces

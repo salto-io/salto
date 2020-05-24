@@ -11,36 +11,24 @@
 # Pass your lexer object using the @lexer option:
 @lexer lexer
 
-main -> _nl elements _nl {% d => d[1] %}
-	| _nl {%d => [] %}
+main -> _ elements _ {% d => d[1] %}
+	| _ {%d => [] %}
 elements ->
 	  element
-    | elements __nl element {% d => d[0].concat(d[2]) %}
-element -> elementLabels %ws oObj _nl elementItems _nl cObj {% d => elementConverters.converTopLevelBlock(d[0], d[4], d[6]) %}
-	| elementLabels %ws oObj _nl cObj {% d => elementConverters.converTopLevelBlock(d[0], [], d[4]) %}
-elementLabels ->
-	  label #settings 
-	| label %ws label {% d => [d[0], d[2]] %} #type/instance def
-	| label %ws label %ws label %ws label {% d => [d[0], d[2], d[4], d[6]] %}#primitive type def
-elementItems ->
-	  elementItem
-	| elementItems __nl elementItem {% d => d[0].concat(d[2]) %}
-elementItem ->
+    | elements %ws element {% d => d[0].concat(d[2]) %}
+element -> blockLabels %ws oObj _ blockItems _ cObj {% d => elementConverters.converTopLevelBlock(d[0], d[4], d[6]) %}
+	| blockLabels %ws oObj _ cObj {% d => elementConverters.converTopLevelBlock(d[0], [], d[4]) %}
+blockLabels ->
+	  label
+	| blockLabels %ws label {% d => d[0].concat(d[2]) %}
+blockItems ->
+	  blockItem
+	| blockItems %ws blockItem {% d => d[0].concat(d[2]) %}
+blockItem ->
 	  attr {% id %}
-	| field {% id %}
-	| annotationsBlock {% id %}
-annotationsBlock -> "annotations" %ws oObj _nl annotationsBlockItems _nl cObj 
-					{% d => elementConverters.convertAnnotationTypes(d[0], d[4], d[6]) %}
-	| "annotations" %ws oObj _nl cObj {% d => elementConverters.convertAnnotationTypes(d[0], [], d[4]) %}
-annotationsBlockItems ->
-	  field {% d => d %}
-	| annotationsBlockItems __nl field {% d => d[0].concat(d[2]) %}
-field -> 
-	  label %ws label %ws oObj _nl fieldItems _nl cObj {% d => elementConverters.convertField(d[0], d[2], d[6], d[8]) %}
-	| label %ws label %ws oObj _nl cObj {% d => elementConverters.convertField(d[0], d[2],[], d[6]) %}
-fieldItems ->
-	  attr {% d => d %}
-	| fieldItems __nl attr {% d => d[0].concat(d[2]) %}
+	| block {% id %}
+block -> blockLabels %ws oObj _ blockItems _ cObj {% d => elementConverters.convertNestedBlock(d[0], d[4], d[6]) %}
+	| blockLabels %ws oObj _ cObj {% d => elementConverters.convertNestedBlock(d[0], [], d[4]) %}
 label ->
 	  %word {% id %}
 	| string {% id %}
@@ -48,17 +36,17 @@ attr ->
       %word _ eq _ value {% d => valueConverters.convertAttr(d[0], d[4]) %}
 	| string _ eq _ value {% d => valueConverters.convertAttr(d[0], d[4]) %}
     | %wildcard _ eq _ value {% d => valueConverters.convertAttr(d[0], d[4]) %}
-array -> oArr _nl arrayItems _nl cArr {% d => valueConverters.convertArray(d[0], d[2], d[4])%}
-	| oArr _nl cArr {% d => valueConverters.convertArray(d[0], [], d[2])%}
+array -> oArr _ arrayItems _ cArr {% d => valueConverters.convertArray(d[0], d[2], d[4])%}
+	| oArr _ cArr {% d => valueConverters.convertArray(d[0], [], d[2])%}
 arrayItems ->
 	  value {% d => [d[0]] %}
-	| arrayItems _nl comma _nl value {% d => d[0].concat(d[4]) %}
-	| arrayItems _nl comma {% d => d[0] %}
-object -> oObj _nl objectItems _nl cObj {% d => valueConverters.convertObject(d[0], d[2], d[4]) %}
-	| oObj _nl cObj {% d => valueConverters.convertObject(d[0], [], d[2]) %}
+	| arrayItems _ comma _ value {% d => d[0].concat(d[4]) %}
+	| arrayItems _ comma {% d => d[0] %}
+object -> oObj _ objectItems _ cObj {% d => valueConverters.convertObject(d[0], d[2], d[4]) %}
+	| oObj _ cObj {% d => valueConverters.convertObject(d[0], [], d[2]) %}
 objectItems ->
 	  attr {% d => d %}
-	| objectItems __nl attr {% d => d[0].concat(d[2]) %}
+	| objectItems %ws attr {% d => d[0].concat(d[2]) %}
 value ->
 	  primitive {% id %}
 	| array {% id %}
@@ -75,7 +63,7 @@ primitive ->
 
 
 func -> %word args {% d => valueConverters.convertFunction(d[0], d[1][2], d[1][4]) %}
-args -> "(" _nl arrayItems _nl ")" {% d => d %}
+args -> "(" _ arrayItems _ ")" {% d => d %}
 
 string -> "\"" (content {% id %} |reference {% id %}):* stringEnd {% d => valueConverters.convertString(d[0], d[1], d[2]) %}
 multilineString -> %mlStart (reference {% id %} | content {% id %}):* %mlEnd {% d => valueConverters.convertMultilineString(d[0], d[1], d[2]) %}
@@ -88,13 +76,6 @@ oObj -> "{" {% id %} | %wildcard {% id %}
 cObj -> "}" {% id %} | %wildcard {% id %}
 eq -> "=" {% id %} | %wildcard {% id %}
 comma -> "," {% id %} | %wildcard {% id %}
-_nl ->
-   	null {% () => null %}
-	| %newline {% () => null %}
-	| %ws {% () => null %}
-__nl ->
-	 %newline {% () => null %}
-	| %ws {% () => null %}
 _ ->
 	null {% () => null %}
 	| %ws {% () => null %}

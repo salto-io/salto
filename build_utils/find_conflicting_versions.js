@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -15,34 +16,59 @@
 */
 const fs = require('fs')
 const path = require('path')
-const _ = require('lodash')
+const child_process = require('child_process')
+const { promisify } = require('util')
 
-const rootDir = path.join(__dirname, '..')
-const packagesDir = path.join(rootDir, 'packages')
-const manifestFilenames = [rootDir].concat(fs.readdirSync(packagesDir).map(d => path.join(packagesDir, d)))
-  .map(d => path.join(d, 'package.json'))
-  .filter(f => fs.statSync(f))
+const exec = promisify(child_process.exec)
 
-const manifests = Object.fromEntries(
-  manifestFilenames.map(fn => [
-    fn,
-    JSON.parse(fs.readFileSync(fn))
-  ])
+const mapValues = (o, f) => Object.fromEntries(Object.entries(o).map(([k, v, i]) => [k, f(v, k, i)]))
+
+const mapValuesAsync = async (o, f) => Object.fromEntries(
+  await Promise.all(Object.entries(o).map(async ([k, v], i) => [k, await f(v, k, i)]))
 )
 
-const packageToDeps = _.mapValues(manifests, v => ({ ...v.dependencies, ...v.devDependencies }))
+const filterValues = (o, f) => Object.fromEntries(
+  Object.entries(o).filter(([k, v], i) => f(v, k, i))
+)
 
-const depsVersions = Object.entries(packageToDeps).reduce((res, [manifest, deps]) => {
-  Object.entries(deps).forEach(([name, version]) => {
-    res[name] = res[name] || {}
-    res[name][version] = res[name][version] || []
-    res[name][version].push(manifest)
+const readManifests = async () => {
+  const { stdout } = await exec('yarn workspaces -s info')
+  return mapValuesAsync(JSON.parse(stdout), async info => {
+    const manifestFile = path.join(info.location, 'package.json')
+    return JSON.parse(await fs.promises.readFile(manifestFile))
   })
-  return res
-}, {})
+}
 
-const mismatchedVersions = Object.fromEntries(
-  Object.entries(depsVersions).filter(([_dep, versions]) => Object.keys(versions).length > 1)
-)
+const main = async () => {
+  const manifests = await readManifests()
 
-console.dir(mismatchedVersions)
+  const packageToDeps = mapValues(manifests, v => ({ ...v.dependencies, ...v.devDependencies }))
+
+  const depsVersions = Object.entries(packageToDeps).reduce(
+    (res, [manifest, deps]) => Object.entries(deps).reduce((res, [name, version]) => {
+      res[name] = res[name] || {}
+      res[name][version] = res[name][version] || []
+      res[name][version].push(manifest)
+      return res
+    }, res),
+    {},
+  )
+
+  const mismatchedVersions = filterValues(
+    depsVersions,
+    versions => Object.keys(versions).length > 1
+  )
+
+  const numberOfMismatches = Object.keys(mismatchedVersions).length
+  if (numberOfMismatches === 0) {
+    return
+  }
+
+  console.error('Found conflicting versions:\n%s', JSON.stringify(mismatchedVersions, null, 4))
+  process.exit(2)
+}
+
+main().catch(e => {
+  console.error(e.stack || e)
+  process.exit(2)
+})

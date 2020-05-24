@@ -32,16 +32,6 @@ import { SourceMap } from './source_map'
 export type SourceRange = InternalSourceRange
 export type ParseError = HclParseError & SaltoError
 
-export const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {
-  const result = new SourceMap()
-  sourceMaps.forEach(sourceMap => {
-    sourceMap.forEach((ranges, key) => {
-      result.push(key, ...ranges)
-    })
-  })
-  return result
-}
-
 export type ParseResult = {
   elements: Element[]
   errors: ParseError[]

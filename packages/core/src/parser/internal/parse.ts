@@ -177,9 +177,8 @@ const convertMain = (
   const elements = _.flatten(topLevelElements.map(item => item.elements))
   const sourceMaps = topLevelElements.map(item => item.sourceMap)
   const mergedSourceMap = new SourceMap()
-  // TODO - this should use merge source maps from the source map file
   sourceMaps.forEach(sourceMap => {
-    sourceMap.forEach((value, key) => mergedSourceMap.push(key, ...value))
+    mergedSourceMap.merge(sourceMap)
   })
   return { elements, sourceMap: mergedSourceMap }
 }

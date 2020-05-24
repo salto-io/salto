@@ -26,7 +26,7 @@ import { mergeElements, MergeError } from '../../core/merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate,
 } from './nacl_file_update'
-import { mergeSourceMaps, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
+import { parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
 import { DetailedChange } from '../../core/plan'
@@ -99,14 +99,14 @@ const buildNaclFilesSource = (
     ...getStaticFilesFunctions(staticFileSource), // add future functions here
   }
   const parseNaclFile = async (naclFile: NaclFile): Promise<ParseResult> => {
-    // const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
-    let parseResult // await cache.get(key)
+    const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
+    let parseResult = await cache.get(key)
     if (parseResult === undefined) {
       parseResult = await parse(
         Buffer.from(naclFile.buffer), naclFile.filename,
         functions,
       )
-      // await cache.put(key, parseResult)
+      await cache.put(key, parseResult)
     }
     return parseResult
   }
@@ -216,7 +216,11 @@ const buildNaclFilesSource = (
           await getSourceMap(ParsedNaclFiles[naclFile].filename)]),
       CACHE_READ_CONCURRENCY)
     )
-    const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
+    const mergedSourceMap = Object.values(changedFileToSourceMap).reduce((acc, sourceMap) => {
+      acc.merge(sourceMap)
+      return acc
+    }, new SourceMap())
+
     const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)

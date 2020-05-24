@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement, ListType,
+  PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
   VariableExpression, StaticFile,
 } from '@salto-io/adapter-api'
@@ -49,11 +49,13 @@ describe('State/cache serialization', () => {
 
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
+    fields: {
+      name: { type: strType, annotations: { label: 'Name' } },
+      file: { type: strType, annotations: { label: 'File' } },
+      num: { type: numType },
+      list: { type: strListType },
+    },
   })
-  model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
-  model.fields.file = new Field(model.elemID, 'file', strType, { label: 'File' })
-  model.fields.num = new Field(model.elemID, 'num', numType)
-  model.fields.list = new Field(model.elemID, 'list', strListType, {})
 
   model.annotate({
     LeadConvertSettings: {

@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, ElemID, InstanceElement, INSTANCE_ANNOTATIONS, ReferenceExpression,
-  BuiltinTypes, Field,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import {
   naclCase,
@@ -67,12 +67,12 @@ describe('Test layout filter', () => {
       const standardFieldObj = new ObjectType({
         elemID: testSObj.elemID,
         path: [constants.SALESFORCE],
-        fields: { foo: new Field(LAYOUT_TYPE_ID, 'foo', BuiltinTypes.STRING, { apiName: 'foo' }) },
+        fields: { foo: { type: BuiltinTypes.STRING, annotations: { apiName: 'foo' } } },
       })
       const customFieldObj = new ObjectType({
         elemID: testSObj.elemID,
         path: [constants.SALESFORCE],
-        fields: { bar: new Field(LAYOUT_TYPE_ID, 'bar', BuiltinTypes.STRING, { apiName: 'bar' }) },
+        fields: { bar: { type: BuiltinTypes.STRING, annotations: { apiName: 'bar' } } },
       })
 
       const elements = [testSObj, testLayout, standardFieldObj, customFieldObj]

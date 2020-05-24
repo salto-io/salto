@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -32,63 +32,47 @@ const addressForm_mainFields_defaultFieldGroup_fields_field = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      addressForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see addressform_fieldid. */
-    label: new Field(
-      addressForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see addressform_fieldid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      addressForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      addressForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    mandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      addressForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    displayType: {
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      addressForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    columnBreak: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      addressForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    spaceBefore: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      addressForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sameRowAsPrevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })
@@ -102,22 +86,18 @@ const addressForm_mainFields_defaultFieldGroup_fields = new ObjectType({
   annotations: {
   },
   fields: {
-    position: new Field(
-      addressForm_mainFields_defaultFieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+    position: {
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      addressForm_mainFields_defaultFieldGroup_fieldsElemID,
-      'field',
-      new ListType(addressForm_mainFields_defaultFieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    field: {
+      type: new ListType(addressForm_mainFields_defaultFieldGroup_fields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })
@@ -131,13 +111,11 @@ const addressForm_mainFields_defaultFieldGroup = new ObjectType({
   annotations: {
   },
   fields: {
-    fields: new Field(
-      addressForm_mainFields_defaultFieldGroupElemID,
-      'fields',
-      addressForm_mainFields_defaultFieldGroup_fields,
-      {
+    fields: {
+      type: addressForm_mainFields_defaultFieldGroup_fields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })
@@ -151,63 +129,47 @@ const addressForm_mainFields_fieldGroup_fields_field = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      addressForm_mainFields_fieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see addressform_fieldid. */
-    label: new Field(
-      addressForm_mainFields_fieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see addressform_fieldid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      addressForm_mainFields_fieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      addressForm_mainFields_fieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    mandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      addressForm_mainFields_fieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    displayType: {
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      addressForm_mainFields_fieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    columnBreak: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      addressForm_mainFields_fieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    spaceBefore: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      addressForm_mainFields_fieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sameRowAsPrevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })
@@ -221,22 +183,18 @@ const addressForm_mainFields_fieldGroup_fields = new ObjectType({
   annotations: {
   },
   fields: {
-    position: new Field(
-      addressForm_mainFields_fieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+    position: {
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      addressForm_mainFields_fieldGroup_fieldsElemID,
-      'field',
-      new ListType(addressForm_mainFields_fieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    field: {
+      type: new ListType(addressForm_mainFields_fieldGroup_fields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })
@@ -250,51 +208,39 @@ const addressForm_mainFields_fieldGroup = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      addressForm_mainFields_fieldGroupElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long. */
-    label: new Field(
-      addressForm_mainFields_fieldGroupElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      addressForm_mainFields_fieldGroupElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showTitle: new Field(
-      addressForm_mainFields_fieldGroupElemID,
-      'showTitle',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    showTitle: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    singleColumn: new Field(
-      addressForm_mainFields_fieldGroupElemID,
-      'singleColumn',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    singleColumn: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fields: new Field(
-      addressForm_mainFields_fieldGroupElemID,
-      'fields',
-      addressForm_mainFields_fieldGroup_fields,
-      {
+    }, /* Original description: The default value is F. */
+    fields: {
+      type: addressForm_mainFields_fieldGroup_fields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })
@@ -308,20 +254,16 @@ const addressForm_mainFields = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: new Field(
-      addressForm_mainFieldsElemID,
-      'defaultFieldGroup',
-      addressForm_mainFields_defaultFieldGroup,
-      {
+    defaultFieldGroup: {
+      type: addressForm_mainFields_defaultFieldGroup,
+      annotations: {
       },
-    ),
-    fieldGroup: new Field(
-      addressForm_mainFieldsElemID,
-      'fieldGroup',
-      new ListType(addressForm_mainFields_fieldGroup),
-      {
+    },
+    fieldGroup: {
+      type: new ListType(addressForm_mainFields_fieldGroup),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })
@@ -335,54 +277,42 @@ export const addressForm = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custform_',
   },
   fields: {
-    scriptid: new Field(
-      addressFormElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
-    standard: new Field(
-      addressFormElemID,
-      'standard',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
+    standard: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long. */
-    name: new Field(
-      addressFormElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
-    ),
-    addressTemplate: new Field(
-      addressFormElemID,
-      'addressTemplate',
-      fieldTypes.cdata,
-      {
+    },
+    addressTemplate: {
+      type: fieldTypes.cdata,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field value can be up to 3990 characters long. */
-    countries: new Field(
-      addressFormElemID,
-      'countries',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: This field value can be up to 3990 characters long. */
+    countries: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see countries. */
-    mainFields: new Field(
-      addressFormElemID,
-      'mainFields',
-      addressForm_mainFields,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   For information about possible values, see countries. */
+    mainFields: {
+      type: addressForm_mainFields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, addressFormElemID.name],
 })

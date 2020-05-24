@@ -15,7 +15,7 @@
 */
 import jszip from 'jszip'
 import {
-  BuiltinTypes, ElemID, Field, InstanceElement, ObjectType, ListType,
+  BuiltinTypes, ElemID, InstanceElement, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
@@ -40,9 +40,9 @@ describe('XML Transformer', () => {
           [METADATA_TYPE]: 'AssignmentRules',
         },
         fields: {
-          str: new Field(ASSIGNMENT_RULES_TYPE_ID, 'str', BuiltinTypes.STRING),
-          lst: new Field(ASSIGNMENT_RULES_TYPE_ID, 'lst', new ListType(BuiltinTypes.NUMBER), {}),
-          bool: new Field(ASSIGNMENT_RULES_TYPE_ID, 'bool', BuiltinTypes.BOOLEAN),
+          str: { type: BuiltinTypes.STRING },
+          lst: { type: new ListType(BuiltinTypes.NUMBER) },
+          bool: { type: BuiltinTypes.BOOLEAN },
         },
       })
       const assignmentRuleInstance = new InstanceElement(
@@ -94,8 +94,8 @@ describe('XML Transformer', () => {
           [METADATA_TYPE]: 'ApexClass',
         },
         fields: {
-          [apiVersion]: new Field(apexTypeElemID, apiVersion, BuiltinTypes.NUMBER),
-          content: new Field(apexTypeElemID, 'content', BuiltinTypes.STRING),
+          [apiVersion]: { type: BuiltinTypes.NUMBER },
+          content: { type: BuiltinTypes.STRING },
         },
       })
       const apexClassInstance = new InstanceElement(
@@ -174,7 +174,7 @@ describe('XML Transformer', () => {
           [METADATA_TYPE]: 'EmailFolder',
         },
         fields: {
-          name: new Field(emailFolderElemID, 'name', BuiltinTypes.STRING),
+          name: { type: BuiltinTypes.STRING },
         },
       })
       const emailFolderInstance = new InstanceElement(
@@ -224,8 +224,8 @@ describe('XML Transformer', () => {
         },
         fields: {
           // eslint-disable-next-line @typescript-eslint/camelcase
-          [apiVersion]: new Field(apexTypeElemID, apiVersion, BuiltinTypes.NUMBER),
-          content: new Field(apexTypeElemID, 'content', BuiltinTypes.STRING),
+          [apiVersion]: { type: BuiltinTypes.NUMBER },
+          content: { type: BuiltinTypes.STRING },
         },
       })
       const apexClassInstance = new InstanceElement(
@@ -271,7 +271,7 @@ describe('XML Transformer', () => {
           [METADATA_TYPE]: 'EmailFolder',
         },
         fields: {
-          name: new Field(emailFolderElemID, 'name', BuiltinTypes.STRING),
+          name: { type: BuiltinTypes.STRING },
         },
       })
       const emailFolderInstance = new InstanceElement(

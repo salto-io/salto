@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,14 +31,12 @@ const scheduledscript_customplugintypes_plugintype = new ObjectType({
   annotations: {
   },
   fields: {
-    plugintype: new Field(
-      scheduledscript_customplugintypes_plugintypeElemID,
-      'plugintype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    plugintype: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the plugintype custom type. */
+    }, /* Original description: This field accepts references to the plugintype custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -52,13 +50,11 @@ const scheduledscript_customplugintypes = new ObjectType({
   annotations: {
   },
   fields: {
-    plugintype: new Field(
-      scheduledscript_customplugintypesElemID,
-      'plugintype',
-      new ListType(scheduledscript_customplugintypes_plugintype),
-      {
+    plugintype: {
+      type: new ListType(scheduledscript_customplugintypes_plugintype),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -72,14 +68,12 @@ const scheduledscript_libraries_library = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptfile: new Field(
-      scheduledscript_libraries_libraryElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    scriptfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
+    }, /* Original description: This field must reference a .js file. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -93,13 +87,11 @@ const scheduledscript_libraries = new ObjectType({
   annotations: {
   },
   fields: {
-    library: new Field(
-      scheduledscript_librariesElemID,
-      'library',
-      new ListType(scheduledscript_libraries_library),
-      {
+    library: {
+      type: new ListType(scheduledscript_libraries_library),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -113,63 +105,47 @@ const scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_cu
   annotations: {
   },
   fields: {
-    fldfilter: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilter',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    fldfilter: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    fldfilterchecked: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    fldfilterchecked: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfiltercomparetype: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltercomparetype',
-      enums.generic_customfield_fldfiltercomparetype,
-      {
+    }, /* Original description: The default value is F. */
+    fldfiltercomparetype: {
+      type: enums.generic_customfield_fldfiltercomparetype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    fldfiltersel: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltersel',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
+    fldfiltersel: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    fldfilterval: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterval',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    fldfilterval: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    fldfilternotnull: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternotnull',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    fldfilternotnull: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfilternull: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternull',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    fldfilternull: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldcomparefield: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldcomparefield',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    fldcomparefield: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -183,13 +159,11 @@ const scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters = 
   annotations: {
   },
   fields: {
-    customfieldfilter: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID,
-      'customfieldfilter',
-      new ListType(scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
-      {
+    customfieldfilter: {
+      type: new ListType(scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -203,30 +177,24 @@ const scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleacce
   annotations: {
   },
   fields: {
-    role: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'role',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    role: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    accesslevel: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
+    accesslevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    searchlevel: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+    searchlevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -240,13 +208,11 @@ const scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses = new Ob
   annotations: {
   },
   fields: {
-    roleaccess: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfield_roleaccessesElemID,
-      'roleaccess',
-      new ListType(scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
-      {
+    roleaccess: {
+      type: new ListType(scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -260,221 +226,161 @@ const scheduledscript_scriptcustomfields_scriptcustomfield = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */
-    fieldtype: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'fieldtype',
-      enums.generic_customfield_fieldtype,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */
+    fieldtype: {
+      type: enums.generic_customfield_fieldtype,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    label: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
-    selectrecordtype: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'selectrecordtype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value can be up to 200 characters long. */
+    selectrecordtype: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    applyformatting: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'applyformatting',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
+    applyformatting: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    defaultchecked: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    defaultchecked: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    defaultselection: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultselection',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    defaultselection: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    defaultvalue: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultvalue',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    defaultvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    description: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    },
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    displaytype: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'displaytype',
-      enums.generic_customfield_displaytype,
-      {
+    },
+    displaytype: {
+      type: enums.generic_customfield_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    dynamicdefault: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'dynamicdefault',
-      enums.generic_customfield_dynamicdefault,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
+    dynamicdefault: {
+      type: enums.generic_customfield_dynamicdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    help: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'help',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
+    help: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    linktext: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'linktext',
-      BuiltinTypes.STRING,
-      {
+    },
+    linktext: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    minvalue: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'minvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    minvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    maxvalue: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'maxvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    maxvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    storevalue: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'storevalue',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    storevalue: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    accesslevel: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: The default value is T. */
+    accesslevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    checkspelling: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'checkspelling',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    checkspelling: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayheight: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'displayheight',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: The default value is F. */
+    displayheight: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    displaywidth: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'displaywidth',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    displaywidth: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    isformula: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'isformula',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    isformula: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    ismandatory: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'ismandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    ismandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    maxlength: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'maxlength',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    maxlength: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    onparentdelete: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'onparentdelete',
-      enums.generic_customfield_onparentdelete,
-      {
+    },
+    onparentdelete: {
+      type: enums.generic_customfield_onparentdelete,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
-    searchcomparefield: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'searchcomparefield',
-      enums.generic_standard_field,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
+    searchcomparefield: {
+      type: enums.generic_standard_field,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    searchdefault: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'searchdefault',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    searchdefault: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type. */
-    searchlevel: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type. */
+    searchlevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    setting: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'setting',
-      enums.script_setting,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    setting: {
+      type: enums.script_setting,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_setting. */
-    customfieldfilters: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'customfieldfilters',
-      scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters,
-      {
+    }, /* Original description: For information about possible values, see script_setting. */
+    customfieldfilters: {
+      type: scheduledscript_scriptcustomfields_scriptcustomfield_customfieldfilters,
+      annotations: {
       },
-    ),
-    roleaccesses: new Field(
-      scheduledscript_scriptcustomfields_scriptcustomfieldElemID,
-      'roleaccesses',
-      scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses,
-      {
+    },
+    roleaccesses: {
+      type: scheduledscript_scriptcustomfields_scriptcustomfield_roleaccesses,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -488,13 +394,11 @@ const scheduledscript_scriptcustomfields = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptcustomfield: new Field(
-      scheduledscript_scriptcustomfieldsElemID,
-      'scriptcustomfield',
-      new ListType(scheduledscript_scriptcustomfields_scriptcustomfield),
-      {
+    scriptcustomfield: {
+      type: new ListType(scheduledscript_scriptcustomfields_scriptcustomfield),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -508,44 +412,34 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily = new 
   annotations: {
   },
   fields: {
-    startdate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_dailyElemID,
-      'startdate',
-      BuiltinTypes.STRING,
-      {
+    startdate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    starttime: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_dailyElemID,
-      'starttime',
-      BuiltinTypes.STRING,
-      {
+    },
+    starttime: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    everyxdays: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_dailyElemID,
-      'everyxdays',
-      BuiltinTypes.STRING,
-      {
+    },
+    everyxdays: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    enddate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_dailyElemID,
-      'enddate',
-      BuiltinTypes.STRING,
-      {
+    },
+    enddate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    repeat: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_dailyElemID,
-      'repeat',
-      enums.generic_repeat_time,
-      {
+    },
+    repeat: {
+      type: enums.generic_repeat_time,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_repeat_time. */
+    }, /* Original description: For information about possible values, see generic_repeat_time. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -559,36 +453,28 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday
   annotations: {
   },
   fields: {
-    startdate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekdayElemID,
-      'startdate',
-      BuiltinTypes.STRING,
-      {
+    startdate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    starttime: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekdayElemID,
-      'starttime',
-      BuiltinTypes.STRING,
-      {
+    },
+    starttime: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    enddate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekdayElemID,
-      'enddate',
-      BuiltinTypes.STRING,
-      {
+    },
+    enddate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    repeat: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekdayElemID,
-      'repeat',
-      enums.generic_repeat_time,
-      {
+    },
+    repeat: {
+      type: enums.generic_repeat_time,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_repeat_time. */
+    }, /* Original description: For information about possible values, see generic_repeat_time. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -602,44 +488,34 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly = ne
   annotations: {
   },
   fields: {
-    startdate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlyElemID,
-      'startdate',
-      BuiltinTypes.STRING,
-      {
+    startdate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    starttime: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlyElemID,
-      'starttime',
-      BuiltinTypes.STRING,
-      {
+    },
+    starttime: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    everyxmonths: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlyElemID,
-      'everyxmonths',
-      BuiltinTypes.STRING,
-      {
+    },
+    everyxmonths: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    enddate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlyElemID,
-      'enddate',
-      BuiltinTypes.STRING,
-      {
+    },
+    enddate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    repeat: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlyElemID,
-      'repeat',
-      enums.generic_repeat_time,
-      {
+    },
+    repeat: {
+      type: enums.generic_repeat_time,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_repeat_time. */
+    }, /* Original description: For information about possible values, see generic_repeat_time. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -653,60 +529,46 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayof
   annotations: {
   },
   fields: {
-    startdate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID,
-      'startdate',
-      BuiltinTypes.STRING,
-      {
+    startdate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    starttime: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID,
-      'starttime',
-      BuiltinTypes.STRING,
-      {
+    },
+    starttime: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    orderofweek: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID,
-      'orderofweek',
-      enums.generic_order_of_week,
-      {
+    },
+    orderofweek: {
+      type: enums.generic_order_of_week,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_order_of_week. */
-    dayofweek: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID,
-      'dayofweek',
-      enums.generic_day_of_week,
-      {
+    }, /* Original description: For information about possible values, see generic_order_of_week. */
+    dayofweek: {
+      type: enums.generic_day_of_week,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_day_of_week. */
-    everyxmonths: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID,
-      'everyxmonths',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_day_of_week. */
+    everyxmonths: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    enddate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID,
-      'enddate',
-      BuiltinTypes.STRING,
-      {
+    },
+    enddate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    repeat: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweekElemID,
-      'repeat',
-      enums.generic_repeat_time,
-      {
+    },
+    repeat: {
+      type: enums.generic_repeat_time,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_repeat_time. */
+    }, /* Original description: For information about possible values, see generic_repeat_time. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -720,29 +582,23 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence_single = new
   annotations: {
   },
   fields: {
-    startdate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_singleElemID,
-      'startdate',
-      BuiltinTypes.STRING,
-      {
+    startdate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    starttime: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_singleElemID,
-      'starttime',
-      BuiltinTypes.STRING,
-      {
+    },
+    starttime: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    repeat: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_singleElemID,
-      'repeat',
-      enums.generic_repeat_time,
-      {
+    },
+    repeat: {
+      type: enums.generic_repeat_time,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_repeat_time. */
+    }, /* Original description: For information about possible values, see generic_repeat_time. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -756,100 +612,76 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly = new
   annotations: {
   },
   fields: {
-    startdate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'startdate',
-      BuiltinTypes.STRING,
-      {
+    startdate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    starttime: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'starttime',
-      BuiltinTypes.STRING,
-      {
+    },
+    starttime: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    everyxweeks: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'everyxweeks',
-      BuiltinTypes.STRING,
-      {
+    },
+    everyxweeks: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    sunday: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'sunday',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sunday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-    monday: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'monday',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    monday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-    tuesday: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'tuesday',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    tuesday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-    wednesday: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'wednesday',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    wednesday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-    thursday: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'thursday',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    thursday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-    friday: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'friday',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    friday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-    saturday: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'saturday',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    saturday: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is F. */
-    enddate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'enddate',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    enddate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    repeat: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weeklyElemID,
-      'repeat',
-      enums.generic_repeat_time,
-      {
+    },
+    repeat: {
+      type: enums.generic_repeat_time,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_repeat_time. */
+    }, /* Original description: For information about possible values, see generic_repeat_time. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -863,36 +695,28 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly = new
   annotations: {
   },
   fields: {
-    startdate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlyElemID,
-      'startdate',
-      BuiltinTypes.STRING,
-      {
+    startdate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    starttime: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlyElemID,
-      'starttime',
-      BuiltinTypes.STRING,
-      {
+    },
+    starttime: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    enddate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlyElemID,
-      'enddate',
-      BuiltinTypes.STRING,
-      {
+    },
+    enddate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    repeat: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlyElemID,
-      'repeat',
-      enums.generic_repeat_time,
-      {
+    },
+    repeat: {
+      type: enums.generic_repeat_time,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_repeat_time. */
+    }, /* Original description: For information about possible values, see generic_repeat_time. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -906,52 +730,40 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofw
   annotations: {
   },
   fields: {
-    startdate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID,
-      'startdate',
-      BuiltinTypes.STRING,
-      {
+    startdate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    starttime: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID,
-      'starttime',
-      BuiltinTypes.STRING,
-      {
+    },
+    starttime: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    orderofweek: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID,
-      'orderofweek',
-      enums.generic_order_of_week,
-      {
+    },
+    orderofweek: {
+      type: enums.generic_order_of_week,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_order_of_week. */
-    dayofweek: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID,
-      'dayofweek',
-      enums.generic_day_of_week,
-      {
+    }, /* Original description: For information about possible values, see generic_order_of_week. */
+    dayofweek: {
+      type: enums.generic_day_of_week,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_day_of_week. */
-    enddate: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID,
-      'enddate',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_day_of_week. */
+    enddate: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    repeat: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweekElemID,
-      'repeat',
-      enums.generic_repeat_time,
-      {
+    },
+    repeat: {
+      type: enums.generic_repeat_time,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_repeat_time. */
+    }, /* Original description: For information about possible values, see generic_repeat_time. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -965,62 +777,46 @@ const scheduledscript_scriptdeployments_scriptdeployment_recurrence = new Object
   annotations: {
   },
   fields: {
-    daily: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-      'daily',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily,
-      {
+    daily: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence_daily,
+      annotations: {
       },
-    ),
-    everyweekday: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-      'everyweekday',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday,
-      {
+    },
+    everyweekday: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence_everyweekday,
+      annotations: {
       },
-    ),
-    monthly: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-      'monthly',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly,
-      {
+    },
+    monthly: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthly,
+      annotations: {
       },
-    ),
-    monthlydayofweek: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-      'monthlydayofweek',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek,
-      {
+    },
+    monthlydayofweek: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence_monthlydayofweek,
+      annotations: {
       },
-    ),
-    single: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-      'single',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_single,
-      {
+    },
+    single: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence_single,
+      annotations: {
       },
-    ),
-    weekly: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-      'weekly',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly,
-      {
+    },
+    weekly: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence_weekly,
+      annotations: {
       },
-    ),
-    yearly: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-      'yearly',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly,
-      {
+    },
+    yearly: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearly,
+      annotations: {
       },
-    ),
-    yearlydayofweek: new Field(
-      scheduledscript_scriptdeployments_scriptdeployment_recurrenceElemID,
-      'yearlydayofweek',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek,
-      {
+    },
+    yearlydayofweek: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence_yearlydayofweek,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -1034,52 +830,40 @@ const scheduledscript_scriptdeployments_scriptdeployment = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      scheduledscript_scriptdeployments_scriptdeploymentElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */
-    status: new Field(
-      scheduledscript_scriptdeployments_scriptdeploymentElemID,
-      'status',
-      enums.script_status,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */
+    status: {
+      type: enums.script_status,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
-    title: new Field(
-      scheduledscript_scriptdeployments_scriptdeploymentElemID,
-      'title',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
+    title: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    isdeployed: new Field(
-      scheduledscript_scriptdeployments_scriptdeploymentElemID,
-      'isdeployed',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    isdeployed: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    loglevel: new Field(
-      scheduledscript_scriptdeployments_scriptdeploymentElemID,
-      'loglevel',
-      enums.script_loglevel,
-      {
+    }, /* Original description: The default value is T. */
+    loglevel: {
+      type: enums.script_loglevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
-    recurrence: new Field(
-      scheduledscript_scriptdeployments_scriptdeploymentElemID,
-      'recurrence',
-      scheduledscript_scriptdeployments_scriptdeployment_recurrence,
-      {
+    }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
+    recurrence: {
+      type: scheduledscript_scriptdeployments_scriptdeployment_recurrence,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -1093,13 +877,11 @@ const scheduledscript_scriptdeployments = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptdeployment: new Field(
-      scheduledscript_scriptdeploymentsElemID,
-      'scriptdeployment',
-      new ListType(scheduledscript_scriptdeployments_scriptdeployment),
-      {
+    scriptdeployment: {
+      type: new ListType(scheduledscript_scriptdeployments_scriptdeployment),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })
@@ -1113,111 +895,83 @@ export const scheduledscript = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
   fields: {
-    scriptid: new Field(
-      scheduledscriptElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    name: new Field(
-      scheduledscriptElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    scriptfile: new Field(
-      scheduledscriptElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    scriptfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
-    defaultfunction: new Field(
-      scheduledscriptElemID,
-      'defaultfunction',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field must reference a .js file. */
+    defaultfunction: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    description: new Field(
-      scheduledscriptElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    },
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    isinactive: new Field(
-      scheduledscriptElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    isinactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyadmins: new Field(
-      scheduledscriptElemID,
-      'notifyadmins',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    notifyadmins: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyemails: new Field(
-      scheduledscriptElemID,
-      'notifyemails',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    notifyemails: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    notifygroup: new Field(
-      scheduledscriptElemID,
-      'notifygroup',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    notifygroup: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: Note Account-specific values are not supported by SDF. */
-    notifyowner: new Field(
-      scheduledscriptElemID,
-      'notifyowner',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: Note Account-specific values are not supported by SDF. */
+    notifyowner: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    customplugintypes: new Field(
-      scheduledscriptElemID,
-      'customplugintypes',
-      scheduledscript_customplugintypes,
-      {
+    }, /* Original description: The default value is T. */
+    customplugintypes: {
+      type: scheduledscript_customplugintypes,
+      annotations: {
       },
-    ),
-    libraries: new Field(
-      scheduledscriptElemID,
-      'libraries',
-      scheduledscript_libraries,
-      {
+    },
+    libraries: {
+      type: scheduledscript_libraries,
+      annotations: {
       },
-    ),
-    scriptcustomfields: new Field(
-      scheduledscriptElemID,
-      'scriptcustomfields',
-      scheduledscript_scriptcustomfields,
-      {
+    },
+    scriptcustomfields: {
+      type: scheduledscript_scriptcustomfields,
+      annotations: {
       },
-    ),
-    scriptdeployments: new Field(
-      scheduledscriptElemID,
-      'scriptdeployments',
-      scheduledscript_scriptdeployments,
-      {
+    },
+    scriptdeployments: {
+      type: scheduledscript_scriptdeployments,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, scheduledscriptElemID.name],
 })

@@ -19,7 +19,6 @@ import {
   CORE_ANNOTATIONS,
   Element,
   ElemID,
-  Field,
   InstanceElement,
   ObjectType,
   PrimitiveType,
@@ -46,10 +45,10 @@ const configID = new ElemID(SERVICES[0])
 const mockConfigType = new ObjectType({
   elemID: configID,
   fields: {
-    username: new Field(configID, 'username', BuiltinTypes.STRING),
-    password: new Field(configID, 'password', BuiltinTypes.STRING),
-    token: new Field(configID, 'token', BuiltinTypes.STRING),
-    sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
+    username: { type: BuiltinTypes.STRING },
+    password: { type: BuiltinTypes.STRING },
+    token: { type: BuiltinTypes.STRING },
+    sandbox: { type: BuiltinTypes.BOOLEAN },
   },
 })
 const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
@@ -100,18 +99,14 @@ describe('api.ts', () => {
   const typeWithHiddenField = new ObjectType({
     elemID: new ElemID(SERVICES[0], 'dummyHidden'),
     fields: {
-      hidden: new Field(
-        new ElemID(SERVICES[0], 'dummyHidden'),
-        'hidden',
-        BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.HIDDEN]: true }
-      ),
-      regField: new Field(
-        new ElemID(SERVICES[0], 'dummyHidden'),
-        'regField',
-        BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.HIDDEN]: false }
-      ),
+      hidden: {
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      },
+      regField: {
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+      },
     },
   })
 

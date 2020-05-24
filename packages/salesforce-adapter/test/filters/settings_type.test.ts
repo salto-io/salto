@@ -32,8 +32,6 @@ describe('Test Settings Type', () => {
 
   const mockObject = new ObjectType({
     elemID: mockElemID,
-    fields: {
-    },
     annotations: {
       label: 'test label',
       [constants.API_NAME]: 'Test__c',

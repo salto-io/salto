@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,38 +31,30 @@ export const subtab = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custtab_',
   },
   fields: {
-    scriptid: new Field(
-      subtabElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custtab’. */
-    title: new Field(
-      subtabElemID,
-      'title',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custtab’. */
+    title: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
-    ),
-    tabtype: new Field(
-      subtabElemID,
-      'tabtype',
-      enums.generic_tab_type,
-      {
+    },
+    tabtype: {
+      type: enums.generic_tab_type,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_tab_type. */
-    parent: new Field(
-      subtabElemID,
-      'parent',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_tab_type. */
+    parent: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the subtab custom type.   For information about other possible values, see generic_tab_parent. */
+    }, /* Original description: This field accepts references to the subtab custom type.   For information about other possible values, see generic_tab_parent. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, subtabElemID.name],
 })

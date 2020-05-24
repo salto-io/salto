@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID } from './element_id'
-import { Element, TypeMap, ObjectType, Field, PrimitiveType, PrimitiveTypes, ListType } from './elements'
+import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType } from './elements'
 
 export const GLOBAL_ADAPTER = ''
 
@@ -58,34 +58,28 @@ export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.PARENT]: new ListType(BuiltinTypes.STRING),
 }
 
-const RESTRICTION_ANNOTATIONS_FIELDS = {
-  // eslint-disable-next-line @typescript-eslint/camelcase
-  enforce_value: BuiltinTypes.BOOLEAN,
-  values: BuiltinTypes.STRING,
-  min: BuiltinTypes.NUMBER,
-  max: BuiltinTypes.NUMBER,
-}
+const restrictionType = new ObjectType({
+  elemID: new ElemID('', 'restriction'),
+  fields: {
+    // eslint-disable-next-line @typescript-eslint/camelcase
+    enforce_value: { type: BuiltinTypes.BOOLEAN },
+    values: { type: BuiltinTypes.STRING },
+    min: { type: BuiltinTypes.NUMBER },
+    max: { type: BuiltinTypes.NUMBER },
+  },
+})
 
 type RestrictionAnnotationType = Partial<{
-  // eslint-disable-next-line @typescript-eslint/camelcase
   enforce_value: boolean
   values: ReadonlyArray<unknown>
   min: number
   max: number
 }>
 
-const restrictionElemID = new ElemID('', 'restriction')
 export const CoreAnnotationTypes: TypeMap = {
   [CORE_ANNOTATIONS.DEFAULT]: BuiltinTypes.STRING,
   [CORE_ANNOTATIONS.REQUIRED]: BuiltinTypes.BOOLEAN,
-  [CORE_ANNOTATIONS.RESTRICTION]: new ObjectType({
-    elemID: restrictionElemID,
-    fields: Object.assign(
-      {},
-      ...Object.entries(RESTRICTION_ANNOTATIONS_FIELDS)
-        .map(([name, type]) => ({ [name]: new Field(restrictionElemID, name, type) }))
-    ),
-  }),
+  [CORE_ANNOTATIONS.RESTRICTION]: restrictionType,
 }
 
 export const getRestriction = (

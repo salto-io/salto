@@ -87,7 +87,7 @@ describe('Workflow filter', () => {
               annotations: { [METADATA_TYPE]: subType },
             })
             workflowType.fields[fieldName] = new Field(
-              workflowType.elemID, fieldName, new ListType(fieldType), {},
+              workflowType, fieldName, new ListType(fieldType),
             )
             return fieldType
           })

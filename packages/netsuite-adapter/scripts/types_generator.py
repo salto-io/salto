@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-from selenium import webdriver
+# from selenium import webdriver
 import os
-import pyotp
+# import pyotp
+import json
 import re
 import sys
 import time
@@ -51,7 +52,7 @@ field_types_import = '''import { fieldTypes } from '../field_types'
 '''
 
 import_statements_for_type_def_template = '''import {{
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,{list_type_import}
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,{list_type_import}
 }} from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 {enums_import}{field_types_import}
@@ -122,13 +123,11 @@ type_template = '''
 
 type_path_template = '[constants.NETSUITE, constants.TYPES_PATH, {type_name}ElemID.name]'
 
-field_template = '''    {field_name}: new Field(
-      {type_name}ElemID,
-      '{field_name}',
-      {field_type},
-      {{{annotations}
+field_template = '''    {field_name}: {{
+      type: {field_type},
+      annotations: {{{annotations}
       }},
-    ),'''
+    }},'''
 
 field_annotation_template = '''
         {annotation_name}: {annotation_value},'''
@@ -598,10 +597,11 @@ field_name_to_type_name = {
 }
 
 
-webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
+# webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
 def main():
-    account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-    type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa)
+    # account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    # type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa)
+    type_name_to_types_defs, enum_to_possible_values = [json.load(open(name)) for name in sys.argv[1:3]]
     generate_enums_file(enum_to_possible_values)
     logging.info('Generated enums file')
     generate_file_per_type(type_name_to_types_defs)

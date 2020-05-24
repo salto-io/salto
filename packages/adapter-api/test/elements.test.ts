@@ -46,10 +46,10 @@ describe('Test elements.ts', () => {
   const ot = new ObjectType({
     elemID: otID,
     fields: {
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      num_field: new Field(otID, 'num_field', primNum),
-      /* eslint-disable-next-line @typescript-eslint/camelcase */
-      str_field: new Field(otID, 'str_field', primStr),
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      num_field: { type: primNum },
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      str_field: { type: primStr },
     },
     annotationTypes: {},
     annotations: {},
@@ -74,8 +74,6 @@ describe('Test elements.ts', () => {
   it('Should test getValuesThatNotInPrevOrDifferent func', () => {
     const prevInstance = new InstanceElement('diff', new ObjectType({
       elemID: new ElemID('test', 'diff'),
-      fields: {
-      },
       annotationTypes: {},
       annotations: {},
     }),
@@ -98,8 +96,6 @@ describe('Test elements.ts', () => {
 
     const newInstance = new InstanceElement('diff', new ObjectType({
       elemID: new ElemID('test', 'diff'),
-      fields: {
-      },
       annotationTypes: {},
       annotations: {},
     }),
@@ -159,17 +155,15 @@ describe('Test elements.ts', () => {
   describe('isEqualElements and type guards', () => {
     const objT = new ObjectType({
       elemID: new ElemID('test', 'obj'),
-      fields: {
-        str: new Field(new ElemID('test', 'obj'), 'str_field', primStr),
-      },
+      fields: { str: { type: primStr } },
       annotationTypes: {
         anno: primStr,
       },
       annotations: {},
     })
 
-    const strField = new Field(new ElemID('test', 'obj'), 'str_field', primStr)
-    const lstField = new Field(new ElemID('test', 'objList'), 'list_field', new ListType(primStr))
+    const strField = new Field(objT, 'str_field', primStr)
+    const lstField = new Field(objT, 'list_field', new ListType(primStr))
     const inst = new InstanceElement('inst', objT, { str: 'test' })
     const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName'), 3)
 

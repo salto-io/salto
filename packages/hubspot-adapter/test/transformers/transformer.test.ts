@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  InstanceElement, ElemID, Values, ObjectType, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
+  InstanceElement, ElemID, Values, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType,
 } from '@salto-io/adapter-api'
 import { RequestPromise } from 'requestretry'
 import HubspotClient from '../../src/client/client'
@@ -72,68 +72,76 @@ describe('Transformer', () => {
     const mockSubType = new ObjectType({
       elemID: mockSubTypeElemID,
       fields: {
-        subSame: new Field(
-          mockSubTypeElemID, 'subSame', BuiltinTypes.STRING, {
+        subSame: {
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'subSame',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        subAutoGen: new Field(
-          mockSubTypeElemID, 'subAutoGen', BuiltinTypes.STRING, {
+        },
+        subAutoGen: {
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'subAutoGen',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
+        },
       },
     })
 
     const mockObject = new ObjectType({
       elemID: mockTypeElemID,
       fields: {
-        name: new Field(
-          mockTypeElemID, 'name', BuiltinTypes.STRING, {
+        name: {
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'name',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        autoGen: new Field(
-          mockTypeElemID, 'autoGen', BuiltinTypes.STRING, {
+        },
+        autoGen: {
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'autoGen',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        subType: new Field(
-          mockTypeElemID, 'subType', mockSubType, {
+        },
+        subType: {
+          type: mockSubType,
+          annotations: {
             name: 'subType',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        listSubType: new Field(
-          mockTypeElemID, 'listSubType', new ListType(mockSubType), {
+        },
+        listSubType: {
+          type: new ListType(mockSubType),
+          annotations: {
             name: 'listSubType',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        list: new Field(
-          mockTypeElemID, 'list', new ListType(BuiltinTypes.STRING), {
+        },
+        list: {
+          type: new ListType(BuiltinTypes.STRING),
+          annotations: {
             name: 'list',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        diff: new Field(
-          mockTypeElemID, 'diff', BuiltinTypes.STRING, {
+        },
+        diff: {
+          type: BuiltinTypes.STRING,
+          annotations: {
             name: 'diff',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
+        },
       },
     })
 
@@ -183,20 +191,22 @@ describe('Transformer', () => {
     const mockObjectWithJSON = new ObjectType({
       elemID: mockTypeWithJSONElemID,
       fields: {
-        jsonType: new Field(
-          mockTypeWithJSONElemID, 'jsonType', BuiltinTypes.JSON, {
+        jsonType: {
+          type: BuiltinTypes.JSON,
+          annotations: {
             name: 'jsonType',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
-        jsonTypeFileValue: new Field(
-          mockTypeWithJSONElemID, 'jsonTypeFileValue', BuiltinTypes.JSON, {
+        },
+        jsonTypeFileValue: {
+          type: BuiltinTypes.JSON,
+          annotations: {
             name: 'jsonTypeFileValue',
             _readOnly: false,
             [CORE_ANNOTATIONS.REQUIRED]: false,
           },
-        ),
+        },
       },
     })
     const jsonString = '{ "a": "b", "c": [ "1", "2", "3"] }'

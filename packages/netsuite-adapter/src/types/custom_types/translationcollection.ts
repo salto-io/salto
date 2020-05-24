@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,32 +31,26 @@ const translationcollection_strings_string = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      translationcollection_strings_stringElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 60 characters long. */
-    defaulttranslation: new Field(
-      translationcollection_strings_stringElemID,
-      'defaulttranslation',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 60 characters long. */
+    defaulttranslation: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
-    ), /* Original description: This field value can be up to 1000 characters long. */
-    description: new Field(
-      translationcollection_strings_stringElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 1000 characters long. */
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
-    ), /* Original description: This field value can be up to 1000 characters long. */
+    }, /* Original description: This field value can be up to 1000 characters long. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, translationcollectionElemID.name],
 })
@@ -70,13 +64,11 @@ const translationcollection_strings = new ObjectType({
   annotations: {
   },
   fields: {
-    string: new Field(
-      translationcollection_stringsElemID,
-      'string',
-      new ListType(translationcollection_strings_string),
-      {
+    string: {
+      type: new ListType(translationcollection_strings_string),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, translationcollectionElemID.name],
 })
@@ -90,47 +82,37 @@ export const translationcollection = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custcollection_',
   },
   fields: {
-    scriptid: new Field(
-      translationcollectionElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 60 characters long.   The default value is ‘custcollection’. */
-    name: new Field(
-      translationcollectionElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 60 characters long.   The default value is ‘custcollection’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 100,
       },
-    ), /* Original description: This field value can be up to 100 characters long. */
-    defaultlanguage: new Field(
-      translationcollectionElemID,
-      'defaultlanguage',
-      enums.translationcollection_defaultlanguage,
-      {
+    }, /* Original description: This field value can be up to 100 characters long. */
+    defaultlanguage: {
+      type: enums.translationcollection_defaultlanguage,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see translationcollection_defaultlanguage. */
-    description: new Field(
-      translationcollectionElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see translationcollection_defaultlanguage. */
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 1000,
       },
-    ), /* Original description: This field value can be up to 1000 characters long. */
-    strings: new Field(
-      translationcollectionElemID,
-      'strings',
-      translationcollection_strings,
-      {
+    }, /* Original description: This field value can be up to 1000 characters long. */
+    strings: {
+      type: translationcollection_strings,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, translationcollectionElemID.name],
 })

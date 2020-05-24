@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,29 +31,23 @@ const transactionForm_actionbar_buttons_button = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_actionbar_buttons_buttonElemID,
-      'id',
-      enums.transactionform_buttonid,
-      {
+    id: {
+      type: enums.transactionform_buttonid,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see transactionform_buttonid. */
-    label: new Field(
-      transactionForm_actionbar_buttons_buttonElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see transactionform_buttonid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    visible: new Field(
-      transactionForm_actionbar_buttons_buttonElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
+    }, /* Original description: The default value is T. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -67,13 +61,11 @@ const transactionForm_actionbar_buttons = new ObjectType({
   annotations: {
   },
   fields: {
-    button: new Field(
-      transactionForm_actionbar_buttonsElemID,
-      'button',
-      new ListType(transactionForm_actionbar_buttons_button),
-      {
+    button: {
+      type: new ListType(transactionForm_actionbar_buttons_button),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -87,23 +79,19 @@ const transactionForm_actionbar_customButtons_customButton = new ObjectType({
   annotations: {
   },
   fields: {
-    label: new Field(
-      transactionForm_actionbar_customButtons_customButtonElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    ), /* Original description: This field value can be up to 99 characters long. */
-    function: new Field(
-      transactionForm_actionbar_customButtons_customButtonElemID,
-      'function',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 99 characters long. */
+    function: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
+    }, /* Original description: This field value can be up to 200 characters long. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -117,13 +105,11 @@ const transactionForm_actionbar_customButtons = new ObjectType({
   annotations: {
   },
   fields: {
-    customButton: new Field(
-      transactionForm_actionbar_customButtonsElemID,
-      'customButton',
-      new ListType(transactionForm_actionbar_customButtons_customButton),
-      {
+    customButton: {
+      type: new ListType(transactionForm_actionbar_customButtons_customButton),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -137,23 +123,19 @@ const transactionForm_actionbar_customMenu_customMenuItem = new ObjectType({
   annotations: {
   },
   fields: {
-    label: new Field(
-      transactionForm_actionbar_customMenu_customMenuItemElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    ), /* Original description: This field value can be up to 99 characters long. */
-    function: new Field(
-      transactionForm_actionbar_customMenu_customMenuItemElemID,
-      'function',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 99 characters long. */
+    function: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
+    }, /* Original description: This field value can be up to 200 characters long. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -167,13 +149,11 @@ const transactionForm_actionbar_customMenu = new ObjectType({
   annotations: {
   },
   fields: {
-    customMenuItem: new Field(
-      transactionForm_actionbar_customMenuElemID,
-      'customMenuItem',
-      new ListType(transactionForm_actionbar_customMenu_customMenuItem),
-      {
+    customMenuItem: {
+      type: new ListType(transactionForm_actionbar_customMenu_customMenuItem),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -187,29 +167,23 @@ const transactionForm_actionbar_menu_menuitem = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_actionbar_menu_menuitemElemID,
-      'id',
-      enums.transactionform_buttonid,
-      {
+    id: {
+      type: enums.transactionform_buttonid,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see transactionform_buttonid. */
-    label: new Field(
-      transactionForm_actionbar_menu_menuitemElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see transactionform_buttonid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    visible: new Field(
-      transactionForm_actionbar_menu_menuitemElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
+    }, /* Original description: The default value is T. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -223,13 +197,11 @@ const transactionForm_actionbar_menu = new ObjectType({
   annotations: {
   },
   fields: {
-    menuitem: new Field(
-      transactionForm_actionbar_menuElemID,
-      'menuitem',
-      new ListType(transactionForm_actionbar_menu_menuitem),
-      {
+    menuitem: {
+      type: new ListType(transactionForm_actionbar_menu_menuitem),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -243,34 +215,26 @@ const transactionForm_actionbar = new ObjectType({
   annotations: {
   },
   fields: {
-    buttons: new Field(
-      transactionForm_actionbarElemID,
-      'buttons',
-      transactionForm_actionbar_buttons,
-      {
+    buttons: {
+      type: transactionForm_actionbar_buttons,
+      annotations: {
       },
-    ),
-    customButtons: new Field(
-      transactionForm_actionbarElemID,
-      'customButtons',
-      transactionForm_actionbar_customButtons,
-      {
+    },
+    customButtons: {
+      type: transactionForm_actionbar_customButtons,
+      annotations: {
       },
-    ),
-    customMenu: new Field(
-      transactionForm_actionbarElemID,
-      'customMenu',
-      transactionForm_actionbar_customMenu,
-      {
+    },
+    customMenu: {
+      type: transactionForm_actionbar_customMenu,
+      annotations: {
       },
-    ),
-    menu: new Field(
-      transactionForm_actionbarElemID,
-      'menu',
-      transactionForm_actionbar_menu,
-      {
+    },
+    menu: {
+      type: transactionForm_actionbar_menu,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -284,35 +248,27 @@ const transactionForm_buttons_standardButtons_button = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_buttons_standardButtons_buttonElemID,
-      'id',
-      enums.transactionform_buttonid,
-      {
+    id: {
+      type: enums.transactionform_buttonid,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see transactionform_buttonid. */
-    label: new Field(
-      transactionForm_buttons_standardButtons_buttonElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see transactionform_buttonid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_buttons_standardButtons_buttonElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    style: new Field(
-      transactionForm_buttons_standardButtons_buttonElemID,
-      'style',
-      enums.form_buttonstyle,
-      {
+    }, /* Original description: The default value is T. */
+    style: {
+      type: enums.form_buttonstyle,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_buttonstyle.   The default value is 'BUTTON'. */
+    }, /* Original description: For information about possible values, see form_buttonstyle.   The default value is 'BUTTON'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -326,13 +282,11 @@ const transactionForm_buttons_standardButtons = new ObjectType({
   annotations: {
   },
   fields: {
-    button: new Field(
-      transactionForm_buttons_standardButtonsElemID,
-      'button',
-      new ListType(transactionForm_buttons_standardButtons_button),
-      {
+    button: {
+      type: new ListType(transactionForm_buttons_standardButtons_button),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -346,13 +300,11 @@ const transactionForm_buttons = new ObjectType({
   annotations: {
   },
   fields: {
-    standardButtons: new Field(
-      transactionForm_buttonsElemID,
-      'standardButtons',
-      transactionForm_buttons_standardButtons,
-      {
+    standardButtons: {
+      type: transactionForm_buttons_standardButtons,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -366,13 +318,11 @@ const transactionForm_customCode = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptFile: new Field(
-      transactionForm_customCodeElemID,
-      'scriptFile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    scriptFile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
       },
-    ), /* Original description: This field must reference a .js file. */
+    }, /* Original description: This field must reference a .js file. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -386,77 +336,57 @@ const transactionForm_mainFields_defaultFieldGroup_fields_field = new ObjectType
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
-    label: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    mandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    displayType: {
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    columnBreak: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    spaceBefore: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sameRowAsPrevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    quickAdd: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    checkBoxDefault: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fields_fieldElemID,
-      'checkBoxDefault',
-      enums.transactionform_checkboxdefault,
-      {
+    }, /* Original description: The default value is F. */
+    checkBoxDefault: {
+      type: enums.transactionform_checkboxdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'UNCHECKED'. */
+    }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'UNCHECKED'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -470,22 +400,18 @@ const transactionForm_mainFields_defaultFieldGroup_fields = new ObjectType({
   annotations: {
   },
   fields: {
-    position: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+    position: {
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      transactionForm_mainFields_defaultFieldGroup_fieldsElemID,
-      'field',
-      new ListType(transactionForm_mainFields_defaultFieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    field: {
+      type: new ListType(transactionForm_mainFields_defaultFieldGroup_fields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -499,13 +425,11 @@ const transactionForm_mainFields_defaultFieldGroup = new ObjectType({
   annotations: {
   },
   fields: {
-    fields: new Field(
-      transactionForm_mainFields_defaultFieldGroupElemID,
-      'fields',
-      transactionForm_mainFields_defaultFieldGroup_fields,
-      {
+    fields: {
+      type: transactionForm_mainFields_defaultFieldGroup_fields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -519,77 +443,57 @@ const transactionForm_mainFields_fieldGroup_fields_field = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
-    label: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    mandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    displayType: {
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    columnBreak: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    spaceBefore: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sameRowAsPrevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    quickAdd: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    checkBoxDefault: new Field(
-      transactionForm_mainFields_fieldGroup_fields_fieldElemID,
-      'checkBoxDefault',
-      enums.transactionform_checkboxdefault,
-      {
+    }, /* Original description: The default value is F. */
+    checkBoxDefault: {
+      type: enums.transactionform_checkboxdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'UNCHECKED'. */
+    }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'UNCHECKED'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -603,22 +507,18 @@ const transactionForm_mainFields_fieldGroup_fields = new ObjectType({
   annotations: {
   },
   fields: {
-    position: new Field(
-      transactionForm_mainFields_fieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+    position: {
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      transactionForm_mainFields_fieldGroup_fieldsElemID,
-      'field',
-      new ListType(transactionForm_mainFields_fieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    field: {
+      type: new ListType(transactionForm_mainFields_fieldGroup_fields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -632,51 +532,39 @@ const transactionForm_mainFields_fieldGroup = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      transactionForm_mainFields_fieldGroupElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long. */
-    label: new Field(
-      transactionForm_mainFields_fieldGroupElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      transactionForm_mainFields_fieldGroupElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showTitle: new Field(
-      transactionForm_mainFields_fieldGroupElemID,
-      'showTitle',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    showTitle: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    singleColumn: new Field(
-      transactionForm_mainFields_fieldGroupElemID,
-      'singleColumn',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    singleColumn: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fields: new Field(
-      transactionForm_mainFields_fieldGroupElemID,
-      'fields',
-      transactionForm_mainFields_fieldGroup_fields,
-      {
+    }, /* Original description: The default value is F. */
+    fields: {
+      type: transactionForm_mainFields_fieldGroup_fields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -690,20 +578,16 @@ const transactionForm_mainFields = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: new Field(
-      transactionForm_mainFieldsElemID,
-      'defaultFieldGroup',
-      transactionForm_mainFields_defaultFieldGroup,
-      {
+    defaultFieldGroup: {
+      type: transactionForm_mainFields_defaultFieldGroup,
+      annotations: {
       },
-    ),
-    fieldGroup: new Field(
-      transactionForm_mainFieldsElemID,
-      'fieldGroup',
-      new ListType(transactionForm_mainFields_fieldGroup),
-      {
+    },
+    fieldGroup: {
+      type: new ListType(transactionForm_mainFields_fieldGroup),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -717,20 +601,16 @@ const transactionForm_printingType_advanced = new ObjectType({
   annotations: {
   },
   fields: {
-    printTemplate: new Field(
-      transactionForm_printingType_advancedElemID,
-      'printTemplate',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    printTemplate: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
-    emailTemplate: new Field(
-      transactionForm_printingType_advancedElemID,
-      'emailTemplate',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
+    emailTemplate: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
+    }, /* Original description: This field accepts references to the advancedpdftemplate custom type.   For information about other possible values, see transactionform_advancedtemplate.   If this field appears in the project, you must reference the ADVANCEDPRINTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. ADVANCEDPRINTING must be enabled for this field to appear in your account. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -744,20 +624,16 @@ const transactionForm_printingType_basic = new ObjectType({
   annotations: {
   },
   fields: {
-    pdfLayout: new Field(
-      transactionForm_printingType_basicElemID,
-      'pdfLayout',
-      enums.transactionform_pdflayout,
-      {
+    pdfLayout: {
+      type: enums.transactionform_pdflayout,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see transactionform_pdflayout. */
-    htmlLayout: new Field(
-      transactionForm_printingType_basicElemID,
-      'htmlLayout',
-      enums.transactionform_htmllayout,
-      {
+    }, /* Original description: For information about possible values, see transactionform_pdflayout. */
+    htmlLayout: {
+      type: enums.transactionform_htmllayout,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see transactionform_htmllayout. */
+    }, /* Original description: For information about possible values, see transactionform_htmllayout. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -771,20 +647,16 @@ const transactionForm_printingType = new ObjectType({
   annotations: {
   },
   fields: {
-    advanced: new Field(
-      transactionForm_printingTypeElemID,
-      'advanced',
-      transactionForm_printingType_advanced,
-      {
+    advanced: {
+      type: transactionForm_printingType_advanced,
+      annotations: {
       },
-    ),
-    basic: new Field(
-      transactionForm_printingTypeElemID,
-      'basic',
-      transactionForm_printingType_basic,
-      {
+    },
+    basic: {
+      type: transactionForm_printingType_basic,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -798,14 +670,12 @@ const transactionForm_quickViewFields_field = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_quickViewFields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -819,13 +689,11 @@ const transactionForm_quickViewFields = new ObjectType({
   annotations: {
   },
   fields: {
-    field: new Field(
-      transactionForm_quickViewFieldsElemID,
-      'field',
-      new ListType(transactionForm_quickViewFields_field),
-      {
+    field: {
+      type: new ListType(transactionForm_quickViewFields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -839,77 +707,57 @@ const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field = new 
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
-    label: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    mandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    displayType: {
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    columnBreak: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    spaceBefore: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sameRowAsPrevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    quickAdd: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    checkBoxDefault: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'checkBoxDefault',
-      enums.transactionform_checkboxdefault,
-      {
+    }, /* Original description: The default value is F. */
+    checkBoxDefault: {
+      type: enums.transactionform_checkboxdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
+    }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -923,22 +771,18 @@ const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields = new Object
   annotations: {
   },
   fields: {
-    position: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+    position: {
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fieldsElemID,
-      'field',
-      new ListType(transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    field: {
+      type: new ListType(transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -952,13 +796,11 @@ const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup = new ObjectType({
   annotations: {
   },
   fields: {
-    fields: new Field(
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroupElemID,
-      'fields',
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields,
-      {
+    fields: {
+      type: transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -972,77 +814,57 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field = new ObjectT
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
-    label: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    mandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    displayType: {
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    columnBreak: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    spaceBefore: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sameRowAsPrevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    quickAdd: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    checkBoxDefault: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'checkBoxDefault',
-      enums.transactionform_checkboxdefault,
-      {
+    }, /* Original description: The default value is F. */
+    checkBoxDefault: {
+      type: enums.transactionform_checkboxdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
+    }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1056,22 +878,18 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup_fields = new ObjectType({
   annotations: {
   },
   fields: {
-    position: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+    position: {
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fieldsElemID,
-      'field',
-      new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    field: {
+      type: new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1085,51 +903,39 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long. */
-    label: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showTitle: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'showTitle',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    showTitle: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    singleColumn: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'singleColumn',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    singleColumn: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fields: new Field(
-      transactionForm_tabs_tab_fieldGroups_fieldGroupElemID,
-      'fields',
-      transactionForm_tabs_tab_fieldGroups_fieldGroup_fields,
-      {
+    }, /* Original description: The default value is F. */
+    fields: {
+      type: transactionForm_tabs_tab_fieldGroups_fieldGroup_fields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1143,20 +949,16 @@ const transactionForm_tabs_tab_fieldGroups = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: new Field(
-      transactionForm_tabs_tab_fieldGroupsElemID,
-      'defaultFieldGroup',
-      transactionForm_tabs_tab_fieldGroups_defaultFieldGroup,
-      {
+    defaultFieldGroup: {
+      type: transactionForm_tabs_tab_fieldGroups_defaultFieldGroup,
+      annotations: {
       },
-    ),
-    fieldGroup: new Field(
-      transactionForm_tabs_tab_fieldGroupsElemID,
-      'fieldGroup',
-      new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup),
-      {
+    },
+    fieldGroup: {
+      type: new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1170,28 +972,22 @@ const transactionForm_tabs_tab_subItems_subList_columns_column = new ObjectType(
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tab_subItems_subList_columns_columnElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the transactioncolumncustomfield custom type.   For information about other possible values, see transactionform_columnid. */
-    label: new Field(
-      transactionForm_tabs_tab_subItems_subList_columns_columnElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the transactioncolumncustomfield custom type.   For information about other possible values, see transactionform_columnid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_subItems_subList_columns_columnElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
+    }, /* Original description: The default value is T. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1205,13 +1001,11 @@ const transactionForm_tabs_tab_subItems_subList_columns = new ObjectType({
   annotations: {
   },
   fields: {
-    column: new Field(
-      transactionForm_tabs_tab_subItems_subList_columnsElemID,
-      'column',
-      new ListType(transactionForm_tabs_tab_subItems_subList_columns_column),
-      {
+    column: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subList_columns_column),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1225,35 +1019,27 @@ const transactionForm_tabs_tab_subItems_subList = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tab_subItems_subListElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see transactionform_sublistid. */
-    label: new Field(
-      transactionForm_tabs_tab_subItems_subListElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see transactionform_sublistid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_subItems_subListElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    columns: new Field(
-      transactionForm_tabs_tab_subItems_subListElemID,
-      'columns',
-      transactionForm_tabs_tab_subItems_subList_columns,
-      {
+    }, /* Original description: The default value is T. */
+    columns: {
+      type: transactionForm_tabs_tab_subItems_subList_columns,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1267,29 +1053,23 @@ const transactionForm_tabs_tab_subItems_subLists_subList = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tab_subItems_subLists_subListElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see transactionform_sublistid. */
-    label: new Field(
-      transactionForm_tabs_tab_subItems_subLists_subListElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see transactionform_sublistid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_subItems_subLists_subListElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
+    }, /* Original description: The default value is T. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1303,13 +1083,11 @@ const transactionForm_tabs_tab_subItems_subLists = new ObjectType({
   annotations: {
   },
   fields: {
-    subList: new Field(
-      transactionForm_tabs_tab_subItems_subListsElemID,
-      'subList',
-      new ListType(transactionForm_tabs_tab_subItems_subLists_subList),
-      {
+    subList: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subLists_subList),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1323,77 +1101,57 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fie
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
-    label: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    mandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    displayType: {
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    columnBreak: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    spaceBefore: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sameRowAsPrevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    quickAdd: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    checkBoxDefault: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_fieldElemID,
-      'checkBoxDefault',
-      enums.transactionform_checkboxdefault,
-      {
+    }, /* Original description: The default value is F. */
+    checkBoxDefault: {
+      type: enums.transactionform_checkboxdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
+    }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1407,22 +1165,18 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fie
   annotations: {
   },
   fields: {
-    position: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+    position: {
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fieldsElemID,
-      'field',
-      new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    field: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1436,13 +1190,11 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup = n
   annotations: {
   },
   fields: {
-    fields: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroupElemID,
-      'fields',
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields,
-      {
+    fields: {
+      type: transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1456,77 +1208,57 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fie
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
-    label: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see transactionform_fieldid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    mandatory: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'mandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    mandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayType: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'displayType',
-      enums.form_displaytype,
-      {
+    }, /* Original description: The default value is F. */
+    displayType: {
+      type: enums.form_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
-    columnBreak: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'columnBreak',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see form_displaytype.   The default value is 'NORMAL'. */
+    columnBreak: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    spaceBefore: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'spaceBefore',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    spaceBefore: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    sameRowAsPrevious: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'sameRowAsPrevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    sameRowAsPrevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    quickAdd: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'quickAdd',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    quickAdd: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    checkBoxDefault: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_fieldElemID,
-      'checkBoxDefault',
-      enums.transactionform_checkboxdefault,
-      {
+    }, /* Original description: The default value is F. */
+    checkBoxDefault: {
+      type: enums.transactionform_checkboxdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
+    }, /* Original description: For information about possible values, see transactionform_checkboxdefault.   The default value is 'USE_FIELD_DEFAULT'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1540,22 +1272,18 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields = n
   annotations: {
   },
   fields: {
-    position: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fieldsElemID,
-      'position',
-      enums.form_fieldposition,
-      {
+    position: {
+      type: enums.form_fieldposition,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
-    field: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fieldsElemID,
-      'field',
-      new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field),
-      {
+    }, /* Original description: For information about possible values, see form_fieldposition.   The default value is ‘MIDDLE’. */
+    field: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1569,51 +1297,39 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup = new Obje
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long. */
-    label: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showTitle: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'showTitle',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    showTitle: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    singleColumn: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'singleColumn',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    singleColumn: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fields: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroupElemID,
-      'fields',
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields,
-      {
+    }, /* Original description: The default value is F. */
+    fields: {
+      type: transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1627,20 +1343,16 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups = new ObjectType({
   annotations: {
   },
   fields: {
-    defaultFieldGroup: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroupsElemID,
-      'defaultFieldGroup',
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
-      {
+    defaultFieldGroup: {
+      type: transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup,
+      annotations: {
       },
-    ),
-    fieldGroup: new Field(
-      transactionForm_tabs_tab_subItems_subTab_fieldGroupsElemID,
-      'fieldGroup',
-      new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
-      {
+    },
+    fieldGroup: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1654,36 +1366,28 @@ const transactionForm_tabs_tab_subItems_subTab = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tab_subItems_subTabElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see transactionform_subtabid. */
-    label: new Field(
-      transactionForm_tabs_tab_subItems_subTabElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see transactionform_subtabid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tab_subItems_subTabElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    fieldGroups: new Field(
-      transactionForm_tabs_tab_subItems_subTabElemID,
-      'fieldGroups',
-      transactionForm_tabs_tab_subItems_subTab_fieldGroups,
-      {
+    }, /* Original description: The default value is T. */
+    fieldGroups: {
+      type: transactionForm_tabs_tab_subItems_subTab_fieldGroups,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1697,27 +1401,21 @@ const transactionForm_tabs_tab_subItems = new ObjectType({
   annotations: {
   },
   fields: {
-    subList: new Field(
-      transactionForm_tabs_tab_subItemsElemID,
-      'subList',
-      new ListType(transactionForm_tabs_tab_subItems_subList),
-      {
+    subList: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subList),
+      annotations: {
       },
-    ),
-    subLists: new Field(
-      transactionForm_tabs_tab_subItemsElemID,
-      'subLists',
-      new ListType(transactionForm_tabs_tab_subItems_subLists),
-      {
+    },
+    subLists: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subLists),
+      annotations: {
       },
-    ),
-    subTab: new Field(
-      transactionForm_tabs_tab_subItemsElemID,
-      'subTab',
-      new ListType(transactionForm_tabs_tab_subItems_subTab),
-      {
+    },
+    subTab: {
+      type: new ListType(transactionForm_tabs_tab_subItems_subTab),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1731,43 +1429,33 @@ const transactionForm_tabs_tab = new ObjectType({
   annotations: {
   },
   fields: {
-    id: new Field(
-      transactionForm_tabs_tabElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see transactionform_tabid. */
-    label: new Field(
-      transactionForm_tabs_tabElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   subtab   subtab   For information about other possible values, see transactionform_tabid. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    visible: new Field(
-      transactionForm_tabs_tabElemID,
-      'visible',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    visible: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    fieldGroups: new Field(
-      transactionForm_tabs_tabElemID,
-      'fieldGroups',
-      transactionForm_tabs_tab_fieldGroups,
-      {
+    }, /* Original description: The default value is T. */
+    fieldGroups: {
+      type: transactionForm_tabs_tab_fieldGroups,
+      annotations: {
       },
-    ),
-    subItems: new Field(
-      transactionForm_tabs_tabElemID,
-      'subItems',
-      transactionForm_tabs_tab_subItems,
-      {
+    },
+    subItems: {
+      type: transactionForm_tabs_tab_subItems,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1781,13 +1469,11 @@ const transactionForm_tabs = new ObjectType({
   annotations: {
   },
   fields: {
-    tab: new Field(
-      transactionForm_tabsElemID,
-      'tab',
-      new ListType(transactionForm_tabs_tab),
-      {
+    tab: {
+      type: new ListType(transactionForm_tabs_tab),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })
@@ -1801,129 +1487,95 @@ export const transactionForm = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custform_',
   },
   fields: {
-    scriptid: new Field(
-      transactionFormElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
-    standard: new Field(
-      transactionFormElemID,
-      'standard',
-      enums.transactionform_standard,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
+    standard: {
+      type: enums.transactionform_standard,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see transactionform_standard. */
-    name: new Field(
-      transactionFormElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see transactionform_standard. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
-    ),
-    recordType: new Field(
-      transactionFormElemID,
-      'recordType',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    },
+    recordType: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ),
-    inactive: new Field(
-      transactionFormElemID,
-      'inactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    inactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    preferred: new Field(
-      transactionFormElemID,
-      'preferred',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    preferred: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    storedWithRecord: new Field(
-      transactionFormElemID,
-      'storedWithRecord',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    storedWithRecord: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    disclaimer: new Field(
-      transactionFormElemID,
-      'disclaimer',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    disclaimer: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    address: new Field(
-      transactionFormElemID,
-      'address',
-      BuiltinTypes.STRING,
-      {
+    },
+    address: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    allowAddMultiple: new Field(
-      transactionFormElemID,
-      'allowAddMultiple',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    allowAddMultiple: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    actionbar: new Field(
-      transactionFormElemID,
-      'actionbar',
-      transactionForm_actionbar,
-      {
+    }, /* Original description: The default value is F. */
+    actionbar: {
+      type: transactionForm_actionbar,
+      annotations: {
       },
-    ),
-    buttons: new Field(
-      transactionFormElemID,
-      'buttons',
-      transactionForm_buttons,
-      {
+    },
+    buttons: {
+      type: transactionForm_buttons,
+      annotations: {
       },
-    ),
-    customCode: new Field(
-      transactionFormElemID,
-      'customCode',
-      transactionForm_customCode,
-      {
+    },
+    customCode: {
+      type: transactionForm_customCode,
+      annotations: {
       },
-    ),
-    mainFields: new Field(
-      transactionFormElemID,
-      'mainFields',
-      transactionForm_mainFields,
-      {
+    },
+    mainFields: {
+      type: transactionForm_mainFields,
+      annotations: {
       },
-    ),
-    printingType: new Field(
-      transactionFormElemID,
-      'printingType',
-      transactionForm_printingType,
-      {
+    },
+    printingType: {
+      type: transactionForm_printingType,
+      annotations: {
       },
-    ),
-    quickViewFields: new Field(
-      transactionFormElemID,
-      'quickViewFields',
-      transactionForm_quickViewFields,
-      {
+    },
+    quickViewFields: {
+      type: transactionForm_quickViewFields,
+      annotations: {
       },
-    ),
-    tabs: new Field(
-      transactionFormElemID,
-      'tabs',
-      transactionForm_tabs,
-      {
+    },
+    tabs: {
+      type: transactionForm_tabs,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, transactionFormElemID.name],
 })

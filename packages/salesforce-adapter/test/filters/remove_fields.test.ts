@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, Field, BuiltinTypes,
+  ObjectType, ElemID, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { makeFilter } from '../../src/filters/remove_fields'
 import * as constants from '../../src/constants'
@@ -26,15 +26,15 @@ describe('remove fields filter', () => {
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
-      existing: new Field(mockObjId, 'existing', BuiltinTypes.STRING),
-      test: new Field(mockObjId, 'test', BuiltinTypes.STRING),
+      existing: { type: BuiltinTypes.STRING },
+      test: { type: BuiltinTypes.STRING },
     },
   })
   const anotherMockObjId = new ElemID(constants.SALESFORCE, 'anotherType')
   const anotherMockType = new ObjectType({
     elemID: anotherMockObjId,
     fields: {
-      test: new Field(anotherMockObjId, 'test', BuiltinTypes.STRING),
+      test: { type: BuiltinTypes.STRING },
     },
   })
 
@@ -58,14 +58,14 @@ describe('remove fields filter', () => {
     it('should remove field', () => {
       const [testType] = testElements
       expect(testType.fields.existing).toBeDefined()
-      expect(testType.fields.existing).toEqual(mockType.fields.existing)
+      expect(testType.fields.existing.isEqual(mockType.fields.existing)).toBeTruthy()
       expect(testType.fields.test).toBeUndefined()
     })
 
     it('should not remove field when the ID is not of the right object', () => {
       const testType = testElements[1]
       expect(testType.fields.test).toBeDefined()
-      expect(testType.fields.test).toEqual(anotherMockType.fields.test)
+      expect(testType.fields.test.isEqual(anotherMockType.fields.test)).toBeTruthy()
     })
   })
 })

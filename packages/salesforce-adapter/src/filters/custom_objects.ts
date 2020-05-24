@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import {
   ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType,
   isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement,
-  Values, INSTANCE_ANNOTATIONS, ReferenceExpression, ListType,
+  Values, INSTANCE_ANNOTATIONS, ReferenceExpression, ListType, FieldDefinition,
 } from '@salto-io/adapter-api'
 import {
   findObjectType,
@@ -40,12 +40,13 @@ import {
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive,
-  formulaTypeName, metadataType, isCustom,
+  formulaTypeName, metadataType, isCustom, relativeApiName,
 } from '../transformers/transformer'
 import {
-  id, addApiName, addMetadataType, addLabel, hasNamespace, getNamespace, boolValue,
+  id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
   buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference, apiNameParts,
   parentApiName,
+  getNamespaceFromString,
 } from './utils'
 import { convertList } from './convert_lists'
 import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
@@ -128,12 +129,15 @@ const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] =
   return [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
 }
 
-const createCustomFieldsObjects = (customFields: Field[], objectName: string,
+type FieldDefinitionWithName = FieldDefinition & { name: string }
+const createCustomFieldsObjects = (customFields: FieldDefinitionWithName[], objectName: string,
   serviceIds: ServiceIds, objNamespace?: string): ObjectType[] => {
-  const createObjectWithFields = (fields: Field[], namespace?: string): ObjectType => {
+  const createObjectWithFields = (
+    fields: FieldDefinitionWithName[], namespace?: string
+  ): ObjectType => {
     const obj = Types.get(objectName, true, false, serviceIds) as ObjectType
-    fields.forEach(field => {
-      obj.fields[field.name] = field
+    fields.forEach(({ name, type, annotations }) => {
+      obj.fields[name] = new Field(obj, name, type, annotations)
     })
     obj.path = [...getObjectDirectoryPath(obj, namespace), customFieldsFileName(obj.elemID.name)]
     return obj
@@ -143,8 +147,13 @@ const createCustomFieldsObjects = (customFields: Field[], objectName: string,
     // When having an object with namespace, all of its custom fields go to the same object
     return [createObjectWithFields(customFields, objNamespace)]
   }
-  const [packagedFields, regularCustomFields] = _.partition(customFields, f => hasNamespace(f))
-  const namespaceToFields: Record<string, Field[]> = _.groupBy(packagedFields, f => getNamespace(f))
+  const getFieldDefNamespace = (f: FieldDefinition): string | undefined => (
+    getNamespaceFromString(relativeApiName(f.annotations?.[API_NAME] ?? ''))
+  )
+  const [packagedFields, regularCustomFields] = _.partition(
+    customFields, f => getFieldDefNamespace(f) !== undefined
+  )
+  const namespaceToFields = _.groupBy(packagedFields, f => getFieldDefNamespace(f))
   // Custom fields that belong to a package go in a separate element
   const customFieldsObjects = Object.entries(namespaceToFields)
     .map(([namespace, packageFields]) => createObjectWithFields(packageFields, namespace))
@@ -169,7 +178,7 @@ const createSObjectTypesWithFields = (
   const standardFieldsElement = Types.get(objectName, true, false, serviceIds) as ObjectType
   filteredFields
     .filter(f => !f.custom)
-    .map(f => getSObjectFieldElement(standardFieldsElement.elemID, f, serviceIds))
+    .map(f => getSObjectFieldElement(standardFieldsElement, f, serviceIds))
     .forEach(field => {
       standardFieldsElement.fields[field.name] = field
     })
@@ -179,7 +188,7 @@ const createSObjectTypesWithFields = (
   // Create custom fields (if any)
   const customFields = filteredFields
     .filter(f => f.custom)
-    .map(f => getSObjectFieldElement(standardFieldsElement.elemID, f, serviceIds))
+    .map(f => getSObjectFieldElement(standardFieldsElement, f, serviceIds))
   return [standardFieldsElement,
     ...createCustomFieldsObjects(customFields, objectName, serviceIds, namespace)]
 }
@@ -339,7 +348,7 @@ const createObjectTypeWithBaseAnnotations = (name: string, label: string):
   addApiName(object, name)
   addMetadataType(object)
   addLabel(object, label)
-  const namespace = hasNamespace(object) ? getNamespace(object) : undefined
+  const namespace = getNamespace(object)
   object.path = [...getObjectDirectoryPath(object, namespace),
     annotationsFileName(object.elemID.name)]
   return { serviceIds, object, namespace }
@@ -371,17 +380,17 @@ const createNestedMetadataInstances = (instance: InstanceElement,
 
 const createFromInstance = (instance: InstanceElement,
   typesFromInstance: TypesFromInstance): Element[] => {
-  const createFieldsFromInstanceFields = (instanceFields: Values, elemID: ElemID,
-    objectName: string): Field[] =>
+  const createFieldsFromInstanceFields = (
+    instanceFields: Values, objectName: string,
+  ): FieldDefinitionWithName[] =>
     instanceFields
       .map((field: Values) => {
         const fieldFullName = naclCase(field[INSTANCE_FULL_NAME_FIELD])
-        return new Field(
-          elemID,
-          fieldFullName,
-          getFieldType(getFieldName(field)),
-          transformFieldAnnotations(field, objectName)
-        )
+        return {
+          name: fieldFullName,
+          type: getFieldType(getFieldName(field)),
+          annotations: transformFieldAnnotations(field, objectName),
+        }
       })
 
   const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
@@ -399,18 +408,18 @@ const createFromInstance = (instance: InstanceElement,
     isCustom(field[INSTANCE_FULL_NAME_FIELD]))
   if (!_.isEmpty(instanceStandardFields)) {
     const standardFieldsElement = Types.get(objectName, true, false, serviceIds) as ObjectType
-    const standardFields = createFieldsFromInstanceFields(instanceStandardFields,
-      annotationsObject.elemID, objectName)
+    const standardFields = createFieldsFromInstanceFields(instanceStandardFields, objectName)
     standardFields
-      .forEach(field => {
-        standardFieldsElement.fields[field.name] = field
+      .forEach(({ name, type, annotations }) => {
+        standardFieldsElement.fields[name] = new Field(
+          standardFieldsElement, name, type, annotations,
+        )
       })
     standardFieldsElement.path = [...getObjectDirectoryPath(standardFieldsElement, namespace),
       standardFieldsFileName(standardFieldsElement.elemID.name)]
     newElements.push(standardFieldsElement)
   }
-  const customFields = createFieldsFromInstanceFields(instanceCustomFields,
-    annotationsObject.elemID, objectName)
+  const customFields = createFieldsFromInstanceFields(instanceCustomFields, objectName)
   newElements.push(...createCustomFieldsObjects(customFields, objectName, serviceIds, namespace))
   const nestedMetadataInstances = createNestedMetadataInstances(instance, annotationsObject,
     typesFromInstance.nestedMetadataTypes)

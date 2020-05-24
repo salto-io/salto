@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -32,75 +32,57 @@ export const advancedpdftemplate = new ObjectType({
     [constants.ADDITIONAL_FILE_SUFFIX]: '.template.xml',
   },
   fields: {
-    scriptid: new Field(
-      advancedpdftemplateElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 98 characters long.   The default value is ‘custtmpl’. */
-    standard: new Field(
-      advancedpdftemplateElemID,
-      'standard',
-      enums.advancedpdftemplate_standard,
-      {
+    }, /* Original description: This attribute value can be up to 98 characters long.   The default value is ‘custtmpl’. */
+    standard: {
+      type: enums.advancedpdftemplate_standard,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see advancedpdftemplate_standard. */
-    title: new Field(
-      advancedpdftemplateElemID,
-      'title',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see advancedpdftemplate_standard. */
+    title: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 297,
       },
-    ), /* Original description: This field value can be up to 297 characters long. */
-    description: new Field(
-      advancedpdftemplateElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 297 characters long. */
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 4000,
       },
-    ), /* Original description: This field value can be up to 4000 characters long. */
-    displaysourcecode: new Field(
-      advancedpdftemplateElemID,
-      'displaysourcecode',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 4000 characters long. */
+    displaysourcecode: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    preferred: new Field(
-      advancedpdftemplateElemID,
-      'preferred',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    preferred: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    isinactive: new Field(
-      advancedpdftemplateElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    isinactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    savedsearch: new Field(
-      advancedpdftemplateElemID,
-      'savedsearch',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    savedsearch: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   If this field appears in the project, you must reference the SERVERSIDESCRIPTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SERVERSIDESCRIPTING must be enabled for this field to appear in your account. */
-    recordtype: new Field(
-      advancedpdftemplateElemID,
-      'recordtype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   If this field appears in the project, you must reference the SERVERSIDESCRIPTING feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SERVERSIDESCRIPTING must be enabled for this field to appear in your account. */
+    recordtype: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype */
+    }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, advancedpdftemplateElemID.name],
 })

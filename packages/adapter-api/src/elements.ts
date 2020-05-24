@@ -138,12 +138,12 @@ export class ListType extends Element {
  */
 export class Field extends Element {
   public constructor(
-    public parentID: ElemID,
+    public parent: ObjectType,
     public name: string,
     public type: TypeElement,
     annotations: Values = {},
   ) {
-    super({ elemID: parentID.createNestedID('field', name), annotations })
+    super({ elemID: parent.elemID.createNestedID('field', name), annotations })
   }
 
   isEqual(other: Field): boolean {
@@ -159,7 +159,7 @@ export class Field extends Element {
    */
   clone(annotations?: Values): Field {
     return new Field(
-      this.parentID,
+      this.parent,
       this.name,
       this.type,
       annotations === undefined ? _.cloneDeep(this.annotations) : annotations,
@@ -211,6 +211,10 @@ export class PrimitiveType extends Element {
   }
 }
 
+export type FieldDefinition = {
+  type: TypeElement
+  annotations?: Values
+}
 /**
  * Defines a type that represents an object (Also NOT auto generated)
  */
@@ -227,14 +231,17 @@ export class ObjectType extends Element {
     path = undefined,
   }: {
     elemID: ElemID
-    fields?: FieldMap
+    fields?: Record<string, FieldDefinition>
     annotationTypes?: TypeMap
     annotations?: Values
     isSettings?: boolean
     path?: ReadonlyArray<string>
   }) {
     super({ elemID, annotationTypes, annotations, path })
-    this.fields = fields
+    this.fields = _.mapValues(
+      fields,
+      (fieldDef, name) => new Field(this, name, fieldDef.type, fieldDef.annotations),
+    )
     this.isSettings = isSettings
   }
 

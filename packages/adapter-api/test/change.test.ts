@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, Field, InstanceElement } from '../src/elements'
+import { ObjectType, InstanceElement } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
 import { getChangeElement } from '../src/change'
@@ -22,9 +22,7 @@ describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
   const obj = new ObjectType({
     elemID: objElemID,
-    fields: {
-      field: new Field(objElemID, 'field', BuiltinTypes.STRING),
-    },
+    fields: { field: { type: BuiltinTypes.STRING } },
   })
   const inst = new InstanceElement('inst', obj, { field: 'val' })
 

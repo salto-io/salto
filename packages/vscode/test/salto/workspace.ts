@@ -16,7 +16,7 @@
 import * as path from 'path'
 import { Workspace, parse, Errors } from '@salto-io/core'
 import { readTextFile } from '@salto-io/file'
-import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { ParseError, ParseResult } from '@salto-io/core/dist/src/parser/parse'
 import { mergeElements } from '@salto-io/core/dist/src/core/merger'
@@ -28,9 +28,7 @@ const SERVICES = ['salesforce']
 const configID = new ElemID(SERVICES[0])
 const mockConfigType = new ObjectType({
   elemID: configID,
-  fields: {
-    username: new Field(configID, 'username', BuiltinTypes.STRING),
-  },
+  fields: { username: { type: BuiltinTypes.STRING } },
 })
 const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigType, {
   username: 'test@test',

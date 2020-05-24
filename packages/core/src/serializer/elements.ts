@@ -180,7 +180,7 @@ export const deserialize = async (
       v.innerType
     ),
     Field: v => new Field(
-      reviveElemID(v.parentID),
+      new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
       v.name,
       v.type,
       v.annotations,

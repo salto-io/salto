@@ -18,13 +18,14 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
-  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, FieldMap,
+  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
   CORE_ANNOTATIONS, TypeElement,
 } from '@salto-io/adapter-api'
-import { promises } from '@salto-io/lowerdash'
+import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 
 const { mapValuesAsync } = promises.object
+const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
@@ -74,7 +75,7 @@ export const transformValues = (
           item,
           !_.isUndefined(index) ? keyPathID?.createNestedID(String(index)) : keyPathID,
           new Field(
-            field.elemID.createParentID(),
+            field.parent,
             field.name,
             fieldType.innerType,
             field.annotations
@@ -120,7 +121,10 @@ export const transformValues = (
 
   const fieldMap = isObjectType(type)
     ? type.fields
-    : _.mapValues(type, (fieldType, name) => new Field(new ElemID(''), name, fieldType))
+    : _.mapValues(
+      type,
+      (fieldType, name) => new Field(new ObjectType({ elemID: new ElemID('') }), name, fieldType),
+    )
 
   const result = _(values)
     .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMap[key]))
@@ -207,7 +211,7 @@ export const transformElement = <T extends Element>(
 
   if (isField(element)) {
     newElement = new Field(
-      element.parentID,
+      element.parent,
       element.name,
       element.type,
       transformedAnnotations,
@@ -386,7 +390,7 @@ export const flatValues = (values: Value): Value => {
 // including object keys.
 export const flattenElementStr = (element: Element): Element => {
   const flattenField = (field: Field): Field => new Field(
-    field.parentID,
+    field.parent,
     flatStr(field.name),
     field.type,
     flatValues(field.annotations),
@@ -458,17 +462,14 @@ export const filterByID = async <T>(
     return undefined
   }
   if (isObjectType(value)) {
+    const filteredFields = await Promise.all(
+      Object.values(value.fields).map(field => filterByID(field.elemID, field, filterFunc))
+    )
     return new ObjectType({
       elemID: value.elemID,
       annotations: await filterAnnotations(value.annotations),
       annotationTypes: await filterAnnotationType(value.annotationTypes),
-      fields: _.pickBy(
-        await mapValuesAsync(
-          value.fields,
-          async field => filterByID(field.elemID, field, filterFunc)
-        ),
-        field => field !== undefined
-      ) as FieldMap,
+      fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
       path: value.path,
       isSettings: value.isSettings,
     }) as Value as T
@@ -484,7 +485,7 @@ export const filterByID = async <T>(
   }
   if (isField(value)) {
     return new Field(
-      value.parentID,
+      value.parent,
       value.name,
       value.type,
       await filterByID(value.elemID, value.annotations, filterFunc)

@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,104 +31,78 @@ export const bankstatementparserplugin = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
   fields: {
-    scriptid: new Field(
-      bankstatementparserpluginElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    name: new Field(
-      bankstatementparserpluginElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    scriptfile: new Field(
-      bankstatementparserpluginElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    scriptfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
-    description: new Field(
-      bankstatementparserpluginElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field must reference a .js file. */
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    isinactive: new Field(
-      bankstatementparserpluginElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    isinactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyadmins: new Field(
-      bankstatementparserpluginElemID,
-      'notifyadmins',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    notifyadmins: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyemails: new Field(
-      bankstatementparserpluginElemID,
-      'notifyemails',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    notifyemails: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    notifygroup: new Field(
-      bankstatementparserpluginElemID,
-      'notifygroup',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    notifygroup: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: Note Account-specific values are not supported by SDF. */
-    notifyowner: new Field(
-      bankstatementparserpluginElemID,
-      'notifyowner',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: Note Account-specific values are not supported by SDF. */
+    notifyowner: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    notifyuser: new Field(
-      bankstatementparserpluginElemID,
-      'notifyuser',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    notifyuser: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    loglevel: new Field(
-      bankstatementparserpluginElemID,
-      'loglevel',
-      enums.script_loglevel,
-      {
+    }, /* Original description: The default value is F. */
+    loglevel: {
+      type: enums.script_loglevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
-    runasrole: new Field(
-      bankstatementparserpluginElemID,
-      'runasrole',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
+    runasrole: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
-    status: new Field(
-      bankstatementparserpluginElemID,
-      'status',
-      enums.script_status,
-      {
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    status: {
+      type: enums.script_status,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
+    }, /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, bankstatementparserpluginElemID.name],
 })

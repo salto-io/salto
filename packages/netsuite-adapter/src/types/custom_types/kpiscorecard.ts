@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,34 +31,26 @@ const kpiscorecard_audience = new ObjectType({
   annotations: {
   },
   fields: {
-    allroles: new Field(
-      kpiscorecard_audienceElemID,
-      'allroles',
-      BuiltinTypes.BOOLEAN,
-      {
+    allroles: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    allpartners: new Field(
-      kpiscorecard_audienceElemID,
-      'allpartners',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    allpartners: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
-    allemployees: new Field(
-      kpiscorecard_audienceElemID,
-      'allemployees',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
+    allemployees: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    audslctrole: new Field(
-      kpiscorecard_audienceElemID,
-      'audslctrole',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    audslctrole: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is available when the allroles value is not equal to T.   You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    }, /* Original description: This field is available when the allroles value is not equal to T.   You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -72,76 +64,56 @@ const kpiscorecard_custom = new ObjectType({
   annotations: {
   },
   fields: {
-    kpi1: new Field(
-      kpiscorecard_customElemID,
-      'kpi1',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    kpi1: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi2: new Field(
-      kpiscorecard_customElemID,
-      'kpi2',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi2: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi3: new Field(
-      kpiscorecard_customElemID,
-      'kpi3',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi3: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi4: new Field(
-      kpiscorecard_customElemID,
-      'kpi4',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi4: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi5: new Field(
-      kpiscorecard_customElemID,
-      'kpi5',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi5: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi6: new Field(
-      kpiscorecard_customElemID,
-      'kpi6',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi6: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi7: new Field(
-      kpiscorecard_customElemID,
-      'kpi7',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi7: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi8: new Field(
-      kpiscorecard_customElemID,
-      'kpi8',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi8: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi9: new Field(
-      kpiscorecard_customElemID,
-      'kpi9',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi9: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
-    kpi10: new Field(
-      kpiscorecard_customElemID,
-      'kpi10',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    kpi10: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   generic_savedsearches_period   generic_savedsearches_daterange */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -155,69 +127,51 @@ const kpiscorecard_highlightings_highlighting = new ObjectType({
   annotations: {
   },
   fields: {
-    kpiindex: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'kpiindex',
-      BuiltinTypes.STRING,
-      {
+    kpiindex: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: The default value is 'ALL'. */
-    condition: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'condition',
-      enums.kpiscorecards_highlight_conditions,
-      {
+    }, /* Original description: The default value is 'ALL'. */
+    condition: {
+      type: enums.kpiscorecards_highlight_conditions,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see kpiscorecards_highlight_conditions. */
-    threshold: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'threshold',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: For information about possible values, see kpiscorecards_highlight_conditions. */
+    threshold: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ),
-    rangeindex: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'rangeindex',
-      BuiltinTypes.STRING,
-      {
+    },
+    rangeindex: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: The default value is 'ALL'. */
-    icon: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'icon',
-      enums.kpiscorecards_highlight_icons,
-      {
+    }, /* Original description: The default value is 'ALL'. */
+    icon: {
+      type: enums.kpiscorecards_highlight_icons,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see kpiscorecards_highlight_icons. */
-    foregroundcolor: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'foregroundcolor',
-      BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
-      {
+    }, /* Original description: For information about possible values, see kpiscorecards_highlight_icons. */
+    foregroundcolor: {
+      type: BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
+      annotations: {
       },
-    ), /* Original description: The default value is '#000000'. */
-    backgroundcolor: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'backgroundcolor',
-      BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
-      {
+    }, /* Original description: The default value is '#000000'. */
+    backgroundcolor: {
+      type: BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
+      annotations: {
       },
-    ), /* Original description: The default value is '#FFFFFF'. */
-    bold: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'bold',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is '#FFFFFF'. */
+    bold: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    headline: new Field(
-      kpiscorecard_highlightings_highlightingElemID,
-      'headline',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    headline: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -231,13 +185,11 @@ const kpiscorecard_highlightings = new ObjectType({
   annotations: {
   },
   fields: {
-    highlighting: new Field(
-      kpiscorecard_highlightingsElemID,
-      'highlighting',
-      new ListType(kpiscorecard_highlightings_highlighting),
-      {
+    highlighting: {
+      type: new ListType(kpiscorecard_highlightings_highlighting),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -251,72 +203,54 @@ const kpiscorecard_kpis_kpi = new ObjectType({
   annotations: {
   },
   fields: {
-    kpi: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'kpi',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    kpi: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see the following lists:   kpi_snapshots_formula   kpi_snapshots_daterange_or_period   kpi_snapshots_daterange   kpi_snapshots_custom */
-    comparevalueto: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'comparevalueto',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see the following lists:   kpi_snapshots_formula   kpi_snapshots_daterange_or_period   kpi_snapshots_daterange   kpi_snapshots_custom */
+    comparevalueto: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   For information about possible values, see the following lists:   kpi_snapshots_formula   kpi_snapshots_daterange_or_period   kpi_snapshots_daterange   kpi_snapshots_custom */
-    comparewithprevious: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'comparewithprevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   For information about possible values, see the following lists:   kpi_snapshots_formula   kpi_snapshots_daterange_or_period   kpi_snapshots_daterange   kpi_snapshots_custom */
+    comparewithprevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   The default value is F. */
-    comparisontype: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'comparisontype',
-      enums.kpiscorecards_comparisons,
-      {
+    }, /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   The default value is F. */
+    comparisontype: {
+      type: enums.kpiscorecards_comparisons,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   For information about possible values, see kpiscorecards_comparisons. */
-    invertcomparison: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'invertcomparison',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   For information about possible values, see kpiscorecards_comparisons. */
+    invertcomparison: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   The default value is F. */
-    formula: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'formula',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field is available when the kpi value is not present in kpi_snapshots_formula.   The default value is F. */
+    formula: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long.   This field is available when the kpi value is present in kpi_snapshots_formula. */
-    lessismore: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'lessismore',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 200 characters long.   This field is available when the kpi value is present in kpi_snapshots_formula. */
+    lessismore: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is present in kpi_snapshots_formula.   The default value is F. */
-    hidden: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'hidden',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is available when the kpi value is present in kpi_snapshots_formula.   The default value is F. */
+    hidden: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    label: new Field(
-      kpiscorecard_kpis_kpiElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    ), /* Original description: This field value can be up to 99 characters long. */
+    }, /* Original description: This field value can be up to 99 characters long. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -330,13 +264,11 @@ const kpiscorecard_kpis = new ObjectType({
   annotations: {
   },
   fields: {
-    kpi: new Field(
-      kpiscorecard_kpisElemID,
-      'kpi',
-      new ListType(kpiscorecard_kpis_kpi),
-      {
+    kpi: {
+      type: new ListType(kpiscorecard_kpis_kpi),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -350,50 +282,38 @@ const kpiscorecard_ranges_range = new ObjectType({
   annotations: {
   },
   fields: {
-    range: new Field(
-      kpiscorecard_ranges_rangeElemID,
-      'range',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    range: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see the following lists:   kpi_ranges_period   kpi_ranges_daterange_report   kpi_ranges_daterange_or_period   kpi_ranges_daterange */
-    comparevalueto: new Field(
-      kpiscorecard_ranges_rangeElemID,
-      'comparevalueto',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see the following lists:   kpi_ranges_period   kpi_ranges_daterange_report   kpi_ranges_daterange_or_period   kpi_ranges_daterange */
+    comparevalueto: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see the following lists:   kpi_ranges_period   kpi_ranges_daterange_report   kpi_ranges_daterange_or_period   kpi_ranges_daterange */
-    comparewithprevious: new Field(
-      kpiscorecard_ranges_rangeElemID,
-      'comparewithprevious',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see the following lists:   kpi_ranges_period   kpi_ranges_daterange_report   kpi_ranges_daterange_or_period   kpi_ranges_daterange */
+    comparewithprevious: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    comparisontype: new Field(
-      kpiscorecard_ranges_rangeElemID,
-      'comparisontype',
-      enums.kpiscorecards_comparisons,
-      {
+    }, /* Original description: The default value is F. */
+    comparisontype: {
+      type: enums.kpiscorecards_comparisons,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see kpiscorecards_comparisons. */
-    invertcomparison: new Field(
-      kpiscorecard_ranges_rangeElemID,
-      'invertcomparison',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see kpiscorecards_comparisons. */
+    invertcomparison: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    label: new Field(
-      kpiscorecard_ranges_rangeElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
-    ), /* Original description: This field value can be up to 99 characters long. */
+    }, /* Original description: This field value can be up to 99 characters long. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -407,13 +327,11 @@ const kpiscorecard_ranges = new ObjectType({
   annotations: {
   },
   fields: {
-    range: new Field(
-      kpiscorecard_rangesElemID,
-      'range',
-      new ListType(kpiscorecard_ranges_range),
-      {
+    range: {
+      type: new ListType(kpiscorecard_ranges_range),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })
@@ -427,75 +345,57 @@ export const kpiscorecard = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custkpiscorecard_',
   },
   fields: {
-    scriptid: new Field(
-      kpiscorecardElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custkpiscorecard’. */
-    name: new Field(
-      kpiscorecardElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custkpiscorecard’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 25,
       },
-    ), /* Original description: This field value can be up to 25 characters long. */
-    useperiods: new Field(
-      kpiscorecardElemID,
-      'useperiods',
-      enums.kpiscorecards_useperiods,
-      {
+    }, /* Original description: This field value can be up to 25 characters long. */
+    useperiods: {
+      type: enums.kpiscorecards_useperiods,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see kpiscorecards_useperiods. */
-    description: new Field(
-      kpiscorecardElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see kpiscorecards_useperiods. */
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    audience: new Field(
-      kpiscorecardElemID,
-      'audience',
-      kpiscorecard_audience,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    audience: {
+      type: kpiscorecard_audience,
+      annotations: {
       },
-    ),
-    custom: new Field(
-      kpiscorecardElemID,
-      'custom',
-      kpiscorecard_custom,
-      {
+    },
+    custom: {
+      type: kpiscorecard_custom,
+      annotations: {
       },
-    ),
-    highlightings: new Field(
-      kpiscorecardElemID,
-      'highlightings',
-      kpiscorecard_highlightings,
-      {
+    },
+    highlightings: {
+      type: kpiscorecard_highlightings,
+      annotations: {
       },
-    ),
-    kpis: new Field(
-      kpiscorecardElemID,
-      'kpis',
-      kpiscorecard_kpis,
-      {
+    },
+    kpis: {
+      type: kpiscorecard_kpis,
+      annotations: {
       },
-    ),
-    ranges: new Field(
-      kpiscorecardElemID,
-      'ranges',
-      kpiscorecard_ranges,
-      {
+    },
+    ranges: {
+      type: kpiscorecard_ranges,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, kpiscorecardElemID.name],
 })

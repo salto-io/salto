@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,14 +31,12 @@ const restlet_customplugintypes_plugintype = new ObjectType({
   annotations: {
   },
   fields: {
-    plugintype: new Field(
-      restlet_customplugintypes_plugintypeElemID,
-      'plugintype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    plugintype: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the plugintype custom type. */
+    }, /* Original description: This field accepts references to the plugintype custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -52,13 +50,11 @@ const restlet_customplugintypes = new ObjectType({
   annotations: {
   },
   fields: {
-    plugintype: new Field(
-      restlet_customplugintypesElemID,
-      'plugintype',
-      new ListType(restlet_customplugintypes_plugintype),
-      {
+    plugintype: {
+      type: new ListType(restlet_customplugintypes_plugintype),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -72,14 +68,12 @@ const restlet_libraries_library = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptfile: new Field(
-      restlet_libraries_libraryElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    scriptfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
+    }, /* Original description: This field must reference a .js file. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -93,13 +87,11 @@ const restlet_libraries = new ObjectType({
   annotations: {
   },
   fields: {
-    library: new Field(
-      restlet_librariesElemID,
-      'library',
-      new ListType(restlet_libraries_library),
-      {
+    library: {
+      type: new ListType(restlet_libraries_library),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -113,63 +105,47 @@ const restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfiel
   annotations: {
   },
   fields: {
-    fldfilter: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilter',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    fldfilter: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    fldfilterchecked: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    fldfilterchecked: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfiltercomparetype: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltercomparetype',
-      enums.generic_customfield_fldfiltercomparetype,
-      {
+    }, /* Original description: The default value is F. */
+    fldfiltercomparetype: {
+      type: enums.generic_customfield_fldfiltercomparetype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    fldfiltersel: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltersel',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
+    fldfiltersel: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    fldfilterval: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterval',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    fldfilterval: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    fldfilternotnull: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternotnull',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    fldfilternotnull: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfilternull: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternull',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    fldfilternull: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldcomparefield: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldcomparefield',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    fldcomparefield: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -183,13 +159,11 @@ const restlet_scriptcustomfields_scriptcustomfield_customfieldfilters = new Obje
   annotations: {
   },
   fields: {
-    customfieldfilter: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfiltersElemID,
-      'customfieldfilter',
-      new ListType(restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
-      {
+    customfieldfilter: {
+      type: new ListType(restlet_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -203,30 +177,24 @@ const restlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess = new
   annotations: {
   },
   fields: {
-    role: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'role',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    role: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    accesslevel: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
+    accesslevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    searchlevel: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccessElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+    searchlevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -240,13 +208,11 @@ const restlet_scriptcustomfields_scriptcustomfield_roleaccesses = new ObjectType
   annotations: {
   },
   fields: {
-    roleaccess: new Field(
-      restlet_scriptcustomfields_scriptcustomfield_roleaccessesElemID,
-      'roleaccess',
-      new ListType(restlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
-      {
+    roleaccess: {
+      type: new ListType(restlet_scriptcustomfields_scriptcustomfield_roleaccesses_roleaccess),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -260,221 +226,161 @@ const restlet_scriptcustomfields_scriptcustomfield = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */
-    fieldtype: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'fieldtype',
-      enums.generic_customfield_fieldtype,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custscript’. */
+    fieldtype: {
+      type: enums.generic_customfield_fieldtype,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    label: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
-    selectrecordtype: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'selectrecordtype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value can be up to 200 characters long. */
+    selectrecordtype: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    applyformatting: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'applyformatting',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
+    applyformatting: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    defaultchecked: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    defaultchecked: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    defaultselection: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultselection',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    defaultselection: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    defaultvalue: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'defaultvalue',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    defaultvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    description: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    },
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    displaytype: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'displaytype',
-      enums.generic_customfield_displaytype,
-      {
+    },
+    displaytype: {
+      type: enums.generic_customfield_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    dynamicdefault: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'dynamicdefault',
-      enums.generic_customfield_dynamicdefault,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
+    dynamicdefault: {
+      type: enums.generic_customfield_dynamicdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    help: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'help',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
+    help: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    linktext: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'linktext',
-      BuiltinTypes.STRING,
-      {
+    },
+    linktext: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    minvalue: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'minvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    minvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    maxvalue: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'maxvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    maxvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    storevalue: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'storevalue',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    storevalue: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    accesslevel: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: The default value is T. */
+    accesslevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    checkspelling: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'checkspelling',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    checkspelling: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayheight: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'displayheight',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: The default value is F. */
+    displayheight: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    displaywidth: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'displaywidth',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    displaywidth: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    isformula: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'isformula',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    isformula: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    ismandatory: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'ismandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    ismandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    maxlength: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'maxlength',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    maxlength: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    onparentdelete: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'onparentdelete',
-      enums.generic_customfield_onparentdelete,
-      {
+    },
+    onparentdelete: {
+      type: enums.generic_customfield_onparentdelete,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
-    searchcomparefield: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'searchcomparefield',
-      enums.generic_standard_field,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
+    searchcomparefield: {
+      type: enums.generic_standard_field,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    searchdefault: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'searchdefault',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    searchdefault: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type. */
-    searchlevel: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type. */
+    searchlevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    setting: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'setting',
-      enums.script_setting,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    setting: {
+      type: enums.script_setting,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_setting. */
-    customfieldfilters: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'customfieldfilters',
-      restlet_scriptcustomfields_scriptcustomfield_customfieldfilters,
-      {
+    }, /* Original description: For information about possible values, see script_setting. */
+    customfieldfilters: {
+      type: restlet_scriptcustomfields_scriptcustomfield_customfieldfilters,
+      annotations: {
       },
-    ),
-    roleaccesses: new Field(
-      restlet_scriptcustomfields_scriptcustomfieldElemID,
-      'roleaccesses',
-      restlet_scriptcustomfields_scriptcustomfield_roleaccesses,
-      {
+    },
+    roleaccesses: {
+      type: restlet_scriptcustomfields_scriptcustomfield_roleaccesses,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -488,13 +394,11 @@ const restlet_scriptcustomfields = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptcustomfield: new Field(
-      restlet_scriptcustomfieldsElemID,
-      'scriptcustomfield',
-      new ListType(restlet_scriptcustomfields_scriptcustomfield),
-      {
+    scriptcustomfield: {
+      type: new ListType(restlet_scriptcustomfields_scriptcustomfield),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -508,108 +412,80 @@ const restlet_scriptdeployments_scriptdeployment = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */
-    status: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'status',
-      enums.script_status,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customdeploy’. */
+    status: {
+      type: enums.script_status,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
-    title: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'title',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
+    title: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    allemployees: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'allemployees',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    allemployees: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    allpartners: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'allpartners',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    allpartners: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
-    allroles: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'allroles',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
+    allroles: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    auddepartment: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'auddepartment',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    auddepartment: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the DEPARTMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. DEPARTMENTS must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
-    audemployee: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'audemployee',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the DEPARTMENTS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. DEPARTMENTS must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
+    audemployee: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   Note Account-specific values are not supported by SDF. */
-    audgroup: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'audgroup',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   Note Account-specific values are not supported by SDF. */
+    audgroup: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   Note Account-specific values are not supported by SDF. */
-    audpartner: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'audpartner',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   Note Account-specific values are not supported by SDF. */
+    audpartner: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
-    audslctrole: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'audslctrole',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
+    audslctrole: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
-    audsubsidiary: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'audsubsidiary',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    audsubsidiary: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
-    isdeployed: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'isdeployed',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   If this field appears in the project, you must reference the SUBSIDIARIES feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. SUBSIDIARIES must be enabled for this field to appear in your account.   Note Account-specific values are not supported by SDF. */
+    isdeployed: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    loglevel: new Field(
-      restlet_scriptdeployments_scriptdeploymentElemID,
-      'loglevel',
-      enums.script_loglevel,
-      {
+    }, /* Original description: The default value is T. */
+    loglevel: {
+      type: enums.script_loglevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
+    }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -623,13 +499,11 @@ const restlet_scriptdeployments = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptdeployment: new Field(
-      restlet_scriptdeploymentsElemID,
-      'scriptdeployment',
-      new ListType(restlet_scriptdeployments_scriptdeployment),
-      {
+    scriptdeployment: {
+      type: new ListType(restlet_scriptdeployments_scriptdeployment),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })
@@ -643,139 +517,103 @@ export const restlet = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
   fields: {
-    scriptid: new Field(
-      restletElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    name: new Field(
-      restletElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    scriptfile: new Field(
-      restletElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    scriptfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
-    description: new Field(
-      restletElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field must reference a .js file. */
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    isinactive: new Field(
-      restletElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    isinactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyadmins: new Field(
-      restletElemID,
-      'notifyadmins',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    notifyadmins: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyemails: new Field(
-      restletElemID,
-      'notifyemails',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    notifyemails: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    notifygroup: new Field(
-      restletElemID,
-      'notifygroup',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    notifygroup: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: Note Account-specific values are not supported by SDF. */
-    notifyowner: new Field(
-      restletElemID,
-      'notifyowner',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: Note Account-specific values are not supported by SDF. */
+    notifyowner: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    notifyuser: new Field(
-      restletElemID,
-      'notifyuser',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    notifyuser: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    deletefunction: new Field(
-      restletElemID,
-      'deletefunction',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    deletefunction: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    getfunction: new Field(
-      restletElemID,
-      'getfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    getfunction: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    postfunction: new Field(
-      restletElemID,
-      'postfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    postfunction: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    putfunction: new Field(
-      restletElemID,
-      'putfunction',
-      BuiltinTypes.STRING,
-      {
+    },
+    putfunction: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    customplugintypes: new Field(
-      restletElemID,
-      'customplugintypes',
-      restlet_customplugintypes,
-      {
+    },
+    customplugintypes: {
+      type: restlet_customplugintypes,
+      annotations: {
       },
-    ),
-    libraries: new Field(
-      restletElemID,
-      'libraries',
-      restlet_libraries,
-      {
+    },
+    libraries: {
+      type: restlet_libraries,
+      annotations: {
       },
-    ),
-    scriptcustomfields: new Field(
-      restletElemID,
-      'scriptcustomfields',
-      restlet_scriptcustomfields,
-      {
+    },
+    scriptcustomfields: {
+      type: restlet_scriptcustomfields,
+      annotations: {
       },
-    ),
-    scriptdeployments: new Field(
-      restletElemID,
-      'scriptdeployments',
-      restlet_scriptdeployments,
-      {
+    },
+    scriptdeployments: {
+      type: restlet_scriptdeployments,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, restletElemID.name],
 })

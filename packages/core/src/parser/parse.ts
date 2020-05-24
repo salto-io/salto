@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Field, Values,
+  TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Values,
   Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS, ListType, Variable, Value,
 } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
@@ -132,18 +132,6 @@ export const parse = async (
   }
 
   const parseType = async (typeBlock: ParsedHclBlock, isSettings = false): Promise<TypeElement> => {
-    const [typeName] = typeBlock.labels
-    const elemID = parseElemID(typeName)
-    const typeObj = new ObjectType(
-      {
-        elemID,
-        annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
-        annotations: await attrValues(typeBlock, elemID.createNestedID('attr')),
-        isSettings,
-      }
-    )
-    sourceMap.push(typeObj.elemID, typeBlock.source)
-
     const isFieldBlock = (block: ParsedHclBlock): boolean =>
       block.labels.length === 1
 
@@ -162,24 +150,32 @@ export const parse = async (
       return new ObjectType({ elemID: parseElemID(blockType) })
     }
 
-    // Parse type fields
-    typeObj.fields = _.fromPairs(await Promise.all(typeBlock.blocks
+    const [typeName] = typeBlock.labels
+    const elemID = parseElemID(typeName)
+
+    const fields = await Promise.all(typeBlock.blocks
       .filter(isFieldBlock)
       .map(async block => {
-        const fieldName = block.labels[0]
-        const objectType = createFieldType(block.type)
-        const field = new Field(
-          typeObj.elemID,
-          fieldName,
-          objectType,
-          await attrValues(block, typeObj.elemID.createNestedID('field', fieldName)),
-        )
-        sourceMap.push(field.elemID, block)
-        /* typeObj.fields[fieldName] = field */
-        return [fieldName, field]
-      })))
+        const name = block.labels[0]
+        const fieldId = elemID.createNestedID('field', name)
+        const type = createFieldType(block.type)
+        const annotations = await attrValues(block, fieldId)
+        sourceMap.push(fieldId, block)
+        return { name, type, annotations }
+      }))
 
     // TODO: add error if there are any unparsed blocks
+
+    const typeObj = new ObjectType(
+      {
+        elemID,
+        fields: Object.assign({}, ...fields.map(field => ({ [field.name]: field }))),
+        annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
+        annotations: await attrValues(typeBlock, elemID.createNestedID('attr')),
+        isSettings,
+      }
+    )
+    sourceMap.push(typeObj.elemID, typeBlock.source)
 
     return typeObj
   }

@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,30 +31,24 @@ const sspapplication_entrypoints_entrypoint = new ObjectType({
   annotations: {
   },
   fields: {
-    entrytype: new Field(
-      sspapplication_entrypoints_entrypointElemID,
-      'entrytype',
-      enums.webapp_entrytype,
-      {
+    entrytype: {
+      type: enums.webapp_entrytype,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see webapp_entrytype. */
-    entryitem: new Field(
-      sspapplication_entrypoints_entrypointElemID,
-      'entryitem',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    }, /* Original description: For information about possible values, see webapp_entrytype. */
+    entryitem: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a file with any of the following extensions: .html, .ss, .ssp */
-    entryparameter: new Field(
-      sspapplication_entrypoints_entrypointElemID,
-      'entryparameter',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field must reference a file with any of the following extensions: .html, .ss, .ssp */
+    entryparameter: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 60,
       },
-    ), /* Original description: This field value can be up to 60 characters long. */
+    }, /* Original description: This field value can be up to 60 characters long. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, sspapplicationElemID.name],
 })
@@ -68,13 +62,11 @@ const sspapplication_entrypoints = new ObjectType({
   annotations: {
   },
   fields: {
-    entrypoint: new Field(
-      sspapplication_entrypointsElemID,
-      'entrypoint',
-      new ListType(sspapplication_entrypoints_entrypoint),
-      {
+    entrypoint: {
+      type: new ListType(sspapplication_entrypoints_entrypoint),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, sspapplicationElemID.name],
 })
@@ -88,14 +80,12 @@ const sspapplication_libraries_library = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptfile: new Field(
-      sspapplication_libraries_libraryElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    scriptfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
+    }, /* Original description: This field must reference a .js file. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, sspapplicationElemID.name],
 })
@@ -109,13 +99,11 @@ const sspapplication_libraries = new ObjectType({
   annotations: {
   },
   fields: {
-    library: new Field(
-      sspapplication_librariesElemID,
-      'library',
-      new ListType(sspapplication_libraries_library),
-      {
+    library: {
+      type: new ListType(sspapplication_libraries_library),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, sspapplicationElemID.name],
 })
@@ -129,85 +117,65 @@ export const sspapplication = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'webapp_',
   },
   fields: {
-    scriptid: new Field(
-      sspapplicationElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 34 characters long.   The default value is ‘webapp’. */
-    name: new Field(
-      sspapplicationElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 34 characters long.   The default value is ‘webapp’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    status: new Field(
-      sspapplicationElemID,
-      'status',
-      enums.plugintype_status,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    status: {
+      type: enums.plugintype_status,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
-    rootpath: new Field(
-      sspapplicationElemID,
-      'rootpath',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see plugintype_status.   The default value is 'TESTING'. */
+    rootpath: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    appfolder: new Field(
-      sspapplicationElemID,
-      'appfolder',
-      BuiltinTypes.STRING /* Original type was folderreference */,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    appfolder: {
+      type: BuiltinTypes.STRING /* Original type was folderreference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    description: new Field(
-      sspapplicationElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    },
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 3999,
       },
-    ), /* Original description: This field value can be up to 3999 characters long. */
-    isinactive: new Field(
-      sspapplicationElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 3999 characters long. */
+    isinactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    loglevel: new Field(
-      sspapplicationElemID,
-      'loglevel',
-      enums.plugintype_loglevel,
-      {
+    }, /* Original description: The default value is F. */
+    loglevel: {
+      type: enums.plugintype_loglevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
-    entrypoints: new Field(
-      sspapplicationElemID,
-      'entrypoints',
-      sspapplication_entrypoints,
-      {
+    }, /* Original description: For information about possible values, see plugintype_loglevel.   The default value is 'DEBUG'. */
+    entrypoints: {
+      type: sspapplication_entrypoints,
+      annotations: {
       },
-    ),
-    libraries: new Field(
-      sspapplicationElemID,
-      'libraries',
-      sspapplication_libraries,
-      {
+    },
+    libraries: {
+      type: sspapplication_libraries,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, sspapplicationElemID.name],
 })

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, Element, InstanceElement, Field, ReferenceExpression, CORE_ANNOTATIONS,
+  ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
@@ -25,7 +25,6 @@ import { Types } from '../../src/transformers/transformer'
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
-    fields: {},
     annotationTypes: {},
     annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
   }),
@@ -49,20 +48,16 @@ const createPicklistObjectType = (
   valueSetName: string,
 ): ObjectType => new ObjectType({
   elemID: mockElemID,
-  fields: {
-    state: new Field(
-      mockElemID,
-      'test',
-      Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
-      {
-        [CORE_ANNOTATIONS.REQUIRED]: false,
-        [constants.API_NAME]: apiName,
-        label: 'test label',
-        [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: valueSetName,
-        [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
-      }
-    ),
-  },
+  fields: { state: {
+    type: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
+    annotations: {
+      [CORE_ANNOTATIONS.REQUIRED]: false,
+      [constants.API_NAME]: apiName,
+      label: 'test label',
+      [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: valueSetName,
+      [constants.FIELD_ANNOTATIONS.RESTRICTED]: true,
+    },
+  } },
   annotations: {
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
   },

@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 
@@ -30,23 +30,19 @@ export const center = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custcenter_',
   },
   fields: {
-    scriptid: new Field(
-      centerElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcenter’. */
-    label: new Field(
-      centerElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcenter’. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, centerElemID.name],
 })

@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,14 +31,12 @@ const emailcaptureplugin_libraries_library = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptfile: new Field(
-      emailcaptureplugin_libraries_libraryElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    scriptfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
+    }, /* Original description: This field must reference a .js file. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, emailcapturepluginElemID.name],
 })
@@ -52,13 +50,11 @@ const emailcaptureplugin_libraries = new ObjectType({
   annotations: {
   },
   fields: {
-    library: new Field(
-      emailcaptureplugin_librariesElemID,
-      'library',
-      new ListType(emailcaptureplugin_libraries_library),
-      {
+    library: {
+      type: new ListType(emailcaptureplugin_libraries_library),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, emailcapturepluginElemID.name],
 })
@@ -72,111 +68,83 @@ export const emailcaptureplugin = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'customscript_',
   },
   fields: {
-    scriptid: new Field(
-      emailcapturepluginElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
-    name: new Field(
-      emailcapturepluginElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customscript’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
-    scriptfile: new Field(
-      emailcapturepluginElemID,
-      'scriptfile',
-      BuiltinTypes.STRING /* Original type was filereference */,
-      {
+    }, /* Original description: This field value can be up to 40 characters long. */
+    scriptfile: {
+      type: BuiltinTypes.STRING /* Original type was filereference */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field must reference a .js file. */
-    description: new Field(
-      emailcapturepluginElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field must reference a .js file. */
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    isinactive: new Field(
-      emailcapturepluginElemID,
-      'isinactive',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    isinactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyadmins: new Field(
-      emailcapturepluginElemID,
-      'notifyadmins',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    notifyadmins: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notifyemails: new Field(
-      emailcapturepluginElemID,
-      'notifyemails',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    notifyemails: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    notifygroup: new Field(
-      emailcapturepluginElemID,
-      'notifygroup',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    notifygroup: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ), /* Original description: Note Account-specific values are not supported by SDF. */
-    notifyowner: new Field(
-      emailcapturepluginElemID,
-      'notifyowner',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: Note Account-specific values are not supported by SDF. */
+    notifyowner: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    notifyuser: new Field(
-      emailcapturepluginElemID,
-      'notifyuser',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    notifyuser: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    loglevel: new Field(
-      emailcapturepluginElemID,
-      'loglevel',
-      enums.script_loglevel,
-      {
+    }, /* Original description: The default value is F. */
+    loglevel: {
+      type: enums.script_loglevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
-    runasrole: new Field(
-      emailcapturepluginElemID,
-      'runasrole',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see script_loglevel.   The default value is 'DEBUG'. */
+    runasrole: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
-    status: new Field(
-      emailcapturepluginElemID,
-      'status',
-      enums.script_status,
-      {
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    status: {
+      type: enums.script_status,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
-    libraries: new Field(
-      emailcapturepluginElemID,
-      'libraries',
-      emailcaptureplugin_libraries,
-      {
+    }, /* Original description: For information about possible values, see script_status.   The default value is 'TESTING'. */
+    libraries: {
+      type: emailcaptureplugin_libraries,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, emailcapturepluginElemID.name],
 })

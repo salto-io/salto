@@ -582,7 +582,10 @@ const mergeWithDefaults = (type: TypeElement, values: Values): Values => {
 export const applyInstancesDefaults = (instances: InstanceElement[]): void => {
   instances
     .forEach(inst => {
-      inst.value = mergeWithDefaults(inst.type, inst.value)
+      const valueWithDefaults = mergeWithDefaults(inst.type, inst.value)
+      if (!_.isEmpty(valueWithDefaults)) {
+        inst.value = valueWithDefaults
+      }
     })
 }
 

@@ -152,16 +152,50 @@ describe('tree source map', () => {
       .toEqual(baseEntries.map(([_k, v]) => [...v, createPos(0, 0, 0)]))
   })
 
-  it('should allow mount operations', () => {
+  it('should allow mount operations when prefix is new', () => {
     const sourceMap = new SourceMap()
     const mountMap = new SourceMap()
     baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
     baseEntries.forEach(([key, value]) => mountMap.set(key, value))
-    const mountKey = 'mount'
+    const mountKey = 'mount.key'
     sourceMap.mount(mountKey, mountMap)
     baseEntries.forEach(([key, ranges]) => {
       expect(sourceMap.get(key)).toEqual(ranges)
       expect(sourceMap.get([mountKey, key].join(ElemID.NAMESPACE_SEPARATOR))).toEqual(ranges)
+    })
+  })
+
+  it('should allow mount operations when prefix is old', () => {
+    const sourceMap = new SourceMap()
+    const mountMap = new SourceMap()
+    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
+    baseEntries.forEach(([key, value]) => mountMap.set(key, value))
+    const mountKey = 'mount.key'
+    sourceMap.set(mountKey, [createPos(6, 6, 6)])
+    sourceMap.mount(mountKey, mountMap)
+    baseEntries.forEach(([key, ranges]) => {
+      expect(sourceMap.get(key)).toEqual(ranges)
+      expect(sourceMap.get([mountKey, key].join(ElemID.NAMESPACE_SEPARATOR))).toEqual(ranges)
+    })
+  })
+
+  it('should allow merge operations', () => {
+    const newEntries: [string, SourceRange[]][] = [
+      ['salesforce.test', [createPos(2, 2, 2)]], // merge for existing
+      ['salesforce.test.c.b', [createPos(4, 4, 4)]], // merge for a new mid key
+      ['salesforce.test.d', [createPos(5, 5, 5)]], // merge for a new end key
+      ['salesforce.test.a.b', [createPos(6, 6, 6)]], // Merge Leaf
+      ['new', [createPos(6, 6, 6)]],
+    ]
+    const newSourceMap = new SourceMap()
+    const sourceMap = new SourceMap()
+    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
+    newEntries.forEach(([key, value]) => newSourceMap.set(key, value))
+    sourceMap.merge(newSourceMap);
+    [...baseEntries, ...newEntries].forEach(([key, values]) => {
+      values.forEach(
+        value => expect(sourceMap.get(key)?.find(r => _.isEqual(r, value))).toBeTruthy()
+      )
     })
   })
 })

@@ -16,42 +16,72 @@
 import _ from 'lodash'
 import { ElemID } from '@salto-io/adapter-api'
 import { SourceRange, isSourceRange } from './types'
+import wu from 'wu'
 
 const CHILDREN = 0
 const VALUE = 1
 type SourceMapEntry = [Record<string, SourceMapEntry>, SourceRange[]]
 
-const setToPath = (
+const mergeEntries = (src: SourceMapEntry, target: SourceMapEntry): void => {
+  src[VALUE].push(...target[VALUE])
+  // eslint-disable-next-line no-restricted-syntax
+  for (const key in target[CHILDREN]) {
+    if (src[CHILDREN][key]) {
+      mergeEntries(src[CHILDREN][key] as SourceMapEntry, target[CHILDREN][key])
+    } else {
+      src[CHILDREN][key] = target[CHILDREN][key]
+    }
+  }
+}
+
+const mountToPath = (
   data: SourceMapEntry,
   path: string[],
-  value: SourceRange[]
-): boolean => {
+  value: SourceMapEntry
+): void => {
   const [key, ...restOfPath] = path
   if (!data[CHILDREN][key]) {
     data[CHILDREN][key] = [{}, []]
   }
   if (_.isEmpty(restOfPath)) {
-    const newItem = _.isEmpty(data[CHILDREN][key][VALUE])
-    data[CHILDREN][key][VALUE] = value.map(r => ({ ...r, filename: r.filename ? r.filename : '' }))
-    return newItem
+    if (data[CHILDREN][key]) {
+      return mergeEntries(data[CHILDREN][key], value)
+    }
+    data[CHILDREN][key] = value
+  }
+  return mountToPath(data[CHILDREN][key], restOfPath, value)
+}
+
+const setToPath = (
+  data: SourceMapEntry,
+  path: string[],
+  value: SourceRange[]
+): void => {
+  const [key, ...restOfPath] = path
+  if (!data[CHILDREN][key]) {
+    data[CHILDREN][key] = [{}, []]
+  }
+  if (_.isEmpty(restOfPath)) {
+    data[CHILDREN][key][VALUE] = value
+    return
   }
   return setToPath(data[CHILDREN][key], restOfPath, value)
 }
 
 const getFromPath = (
   data: SourceMapEntry,
-  path: string[]
+  path: string[],
+  debug = false
 ): SourceMapEntry | undefined => {
   const [key, ...restOfPath] = path
   if (_.isEmpty(restOfPath)) {
     return data[CHILDREN][key]
   }
-  return data[CHILDREN][key] ? getFromPath(data[CHILDREN][key], restOfPath) : undefined
+  return data[CHILDREN][key] ? getFromPath(data[CHILDREN][key], restOfPath, debug) : undefined
 }
 
 export class SourceMap implements Map<string, SourceRange[]> {
   [Symbol.toStringTag] = 'SourceMap Map'
-  private numOfEntries = 0
   private data: SourceMapEntry = [{}, []];
 
   private *createGenerator<T>(
@@ -72,32 +102,29 @@ export class SourceMap implements Map<string, SourceRange[]> {
     return this.createGenerator(e => e)
   }
 
-  get size(): number { return this.numOfEntries }
+  get size(): number { return wu(this.keys()).toArray().length }
 
   push(id: string, ...sources: (SourceRange | { source: SourceRange })[]): void {
     const key = id.split(ElemID.NAMESPACE_SEPARATOR)
-    sources.forEach(source => {
-      const sourceRange = isSourceRange(source) ? source : source.source
-      const sourceRangeList = getFromPath(this.data, key)
-      if (sourceRangeList) {
-        sourceRangeList[VALUE].push(sourceRange)
-      } else {
-        setToPath(this.data, key, [sourceRange])
-      }
-    })
+    const sourceRangeList = getFromPath(this.data, key)
+    const ranges = sources.map(s => (isSourceRange(s) ? s : s.source))
+    if (sourceRangeList) {
+      sourceRangeList[VALUE].push(...ranges)
+    } else {
+      setToPath(this.data, key, ranges)
+    }
   }
 
   set(id: string, source: SourceRange[]): this {
     const path = id.split(ElemID.NAMESPACE_SEPARATOR)
-    if (setToPath(this.data, path, source)) {
-      this.numOfEntries += 1
-    }
+    setToPath(this.data, path, source)
     return this
   }
 
   get(id: string): SourceRange[] | undefined {
+    const debug = id === 'salesforce.lead.field.ext_field._default'
     const path = id.split(ElemID.NAMESPACE_SEPARATOR)
-    const entry = getFromPath(this.data, path)
+    const entry = getFromPath(this.data, path, debug)
     return entry && entry[VALUE]
   }
 
@@ -111,9 +138,12 @@ export class SourceMap implements Map<string, SourceRange[]> {
   }
 
   mount(baseId: string, otherMap: SourceMap): void {
-    otherMap.forEach(
-      (ranges, id) => this.push([baseId, id].join(ElemID.NAMESPACE_SEPARATOR), ...ranges)
-    )
+    const path = baseId.split(ElemID.NAMESPACE_SEPARATOR)
+    mountToPath(this.data, path, otherMap.data)
+  }
+
+  merge(otherMap: SourceMap): void {
+    mergeEntries(this.data, otherMap.data)
   }
 
   delete(id: string): boolean {
@@ -122,7 +152,6 @@ export class SourceMap implements Map<string, SourceRange[]> {
     const entry = getFromPath(this.data, path)
     if (entry && lastPart) {
       const deleted = delete entry[CHILDREN][lastPart]
-      if (deleted) this.numOfEntries -= 1
       return deleted
     }
     return false

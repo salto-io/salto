@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import { ElemID } from '@salto-io/adapter-api'
-import { SourceRange, isSourceRange } from './types'
 import wu from 'wu'
+import { SourceRange, isSourceRange } from './types'
 
 const CHILDREN = 0
 const VALUE = 1
@@ -65,7 +65,7 @@ const setToPath = (
     data[CHILDREN][key][VALUE] = value
     return
   }
-  return setToPath(data[CHILDREN][key], restOfPath, value)
+  setToPath(data[CHILDREN][key], restOfPath, value)
 }
 
 const getFromPath = (

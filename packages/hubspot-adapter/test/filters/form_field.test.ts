@@ -14,125 +14,18 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, Values } from '@salto-io/adapter-api'
 import { OnFetchFilter } from 'src/filter'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/form_field'
-import { Types } from '../../src/transformers/transformer'
-import { valuePropInstance, datePropInstance, g1PropInstance } from '../common/mock_elements'
-import { OBJECTS_NAMES } from '../../src/constants'
+import {
+  valuePropInstance,
+  datePropInstance,
+  g1PropInstance,
+  formInstance,
+} from '../common/mock_elements'
 
 describe('form_field filter', () => {
   let filter: OnFetchFilter
-  const formValues = {
-    portalId: 6774238,
-    guid: 'guid',
-    name: 'formName',
-    action: '',
-    method: 'POST',
-    cssClass: '',
-    editable: true,
-    deletable: false,
-    createdAt: 1500588456053,
-    redirect: 'google.com',
-    submitText: '',
-    cloneable: false,
-    captchaEnabled: true,
-    formFieldGroups: [
-      {
-        fields: [
-          {
-            name: 'g1',
-            label: 'g1!',
-            type: 'string',
-            fieldType: 'text',
-            description: 'g1 property',
-            required: false,
-            hidden: false,
-            displayOrder: 1,
-            defaultValue: '',
-            isSmartField: false,
-            selectedOptions: [],
-            options: [],
-            dependentFieldFilters: [
-              {
-                filters: [
-                  {
-                    operator: 'EQ',
-                    strValue: 'em@salto.io',
-                    boolValue: false,
-                    numberValue: 0,
-                    strValues: [],
-                    numberValues: [],
-                  },
-                ],
-                dependentFormField: {
-                  name: 'date_of_birth',
-                  label: 'Date of birth override',
-                  type: 'string',
-                  fieldType: 'text',
-                  description: 'l',
-                  groupName: 'contactinformation',
-                  displayOrder: 1,
-                  required: false,
-                  selectedOptions: [],
-                  options: [],
-                  enabled: true,
-                  hidden: false,
-                  isSmartField: false,
-                  unselectedLabel: 'unselected',
-                  placeholder: 'place',
-                  dependentFieldFilters: [],
-                  labelHidden: false,
-                  propertyObjectType: 'CONTACT',
-                  metaData: [],
-                },
-                formFieldAction: 'DISPLAY',
-              },
-            ],
-          },
-        ],
-        default: true,
-        isSmartGroup: false,
-      },
-      {
-        fields: [
-          {
-            name: 'value',
-            label: 'Value',
-            type: 'string',
-            fieldType: 'text',
-            description: '',
-            required: false,
-            hidden: false,
-            defaultValue: '',
-            isSmartField: false,
-            displayOrder: 1,
-            selectedOptions: ['val1'],
-            options: [
-              {
-                label: 'opt1',
-                value: 'val1',
-                hidden: true,
-                readOnly: true,
-              },
-            ],
-          },
-        ],
-        default: true,
-        isSmartGroup: false,
-      },
-    ],
-    ignoreCurrentValues: false,
-    inlineMessage: 'inline',
-    themeName: 'theme',
-    notifyRecipients: '',
-  } as Values
-  const formInstance = new InstanceElement(
-    'mockForm',
-    Types.hubspotObjects[OBJECTS_NAMES.FORM],
-    formValues
-  )
 
   beforeEach(() => {
     const { client } = mockClient()
@@ -141,7 +34,7 @@ describe('form_field filter', () => {
   })
 
   it('should not effect non-formFieldGroups fields', () => {
-    expect(_.omit(formInstance.value, ['formFieldGroups'])).toEqual(_.omit(formValues, ['formFieldGroups']))
+    expect(_.omit(formInstance.value, ['formFieldGroups'])).toEqual(_.omit(formInstance.value, ['formFieldGroups']))
   })
 
   it('should keep the formFieldGroups and fields structure as is', () => {
@@ -193,7 +86,7 @@ describe('form_field filter', () => {
 
   it('should not include equal values in contactPropertyOverrides', () => {
     // g1 property (formfieldGroups[0].fields[0])
-    expect(formValues.formFieldGroups[0].fields[0].displayOrder)
+    expect(formInstance.value.formFieldGroups[0].fields[0].displayOrder)
       .toEqual(g1PropInstance.value.displayOrder)
     expect(formInstance.value.formFieldGroups[0].fields[0].contactPropertyOverrides.displayOrder)
       .toBeUndefined()
@@ -202,7 +95,7 @@ describe('form_field filter', () => {
   it('should put description value in helpText at top level', () => {
     // g1 property (formfieldGroups[0].fields[0])
     expect(formInstance.value.formFieldGroups[0].fields[0].helpText)
-      .toEqual(formValues.formFieldGroups[0].fields[0].description)
+      .toEqual(formInstance.value.formFieldGroups[0].fields[0].description)
   })
 
   it('should add references to contactProperties in dependent fields', () => {
@@ -237,7 +130,7 @@ describe('form_field filter', () => {
   })
 
   it('should not include equal values in contactPropertyOverrides in dependent fields', () => {
-    expect(formValues.formFieldGroups[0].fields[0].dependentFieldFilters[0]
+    expect(formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
       .dependentFormField.displayOrder)
       .toEqual(datePropInstance.value.displayOrder)
     expect(formInstance.value.formFieldGroups[0].fields[0].contactPropertyOverrides.displayOrder)
@@ -247,7 +140,7 @@ describe('form_field filter', () => {
   it('should put description value in helpText in dependent fields', () => {
     expect(formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
       .dependentFormField.helpText)
-      .toEqual(formValues.formFieldGroups[0].fields[0].dependentFieldFilters[0]
+      .toEqual(formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
         .dependentFormField.helpText)
   })
 })

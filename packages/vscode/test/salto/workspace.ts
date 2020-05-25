@@ -60,8 +60,8 @@ const buildMockWorkspace = async (
   }
   const merged = mergeElements(parseResult.elements)
   return {
-    elements: () => merged.merged,
-    errors: () => ({
+    elements: () => Promise.resolve(merged.merged),
+    errors: () => Promise.resolve({
       all: () => parseResult.errors || [],
       strings: () => (parseResult.errors || []).map(err => err.message),
       parse: parseResult.errors || [],

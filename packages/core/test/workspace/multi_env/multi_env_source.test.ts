@@ -25,7 +25,10 @@ import { MergeError } from '../../../src/core/merger/internal/common'
 import { expectToContainAllItems } from '../../common/helpers'
 import { DetailedChange } from '../../../src/core/plan'
 
-jest.spyOn(utils, 'applyInstancesDefaults')
+jest.mock('@salto-io/adapter-utils', () => ({
+  ...jest.requireActual('@salto-io/adapter-utils'),
+  applyInstancesDefaults: jest.fn(),
+}))
 
 const objectElemID = new ElemID('salto', 'object')
 const commonFragment = new ObjectType({

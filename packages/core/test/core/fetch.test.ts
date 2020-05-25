@@ -35,6 +35,10 @@ import {
 const { DuplicateAnnotationError } = merger
 
 jest.mock('pietile-eventemitter')
+jest.mock('@salto-io/adapter-utils', () => ({
+  ...jest.requireActual('@salto-io/adapter-utils'),
+  applyInstancesDefaults: jest.fn(),
+}))
 
 describe('fetch', () => {
   const mockMergeResult = (mockResult: merger.MergeResult): jest.SpyInstance =>
@@ -635,7 +639,7 @@ describe('fetch', () => {
 
     describe('instance defaults', () => {
       it('should call applyInstancesDefaults', async () => {
-        jest.spyOn(utils, 'applyInstancesDefaults')
+        // spyOn where utils is defined https://stackoverflow.com/a/53307822
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [workspaceInstance] })
         )

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import retryStrategies from '../../../src/retry/strategies'
+import { retryStrategies } from '../../../src/retry'
 
 describe('index', () => {
   describe('retryStrategies', () => {

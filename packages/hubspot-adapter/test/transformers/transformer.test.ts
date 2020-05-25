@@ -495,7 +495,7 @@ describe('Transformer', () => {
             .contactPropertyOverrides.label
         )
 
-        // Overriden by helpText (special case for description)
+        // Overridden by helpText (special case for description)
         expect(fieldWithDependent.description).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].helpText
         )
@@ -542,7 +542,7 @@ describe('Transformer', () => {
             .contactPropertyOverrides.options
         )
 
-        // Overriden by '' if helpText is empty (special case for description)
+        // Overridden by '' if helpText is empty (special case for description)
         expect(fieldWithOptions.description).toEqual('')
 
         // From Field
@@ -576,7 +576,7 @@ describe('Transformer', () => {
             .dependentFormField.contactPropertyOverrides.label
         )
 
-        // Overriden by helpText (special description case)
+        // Overridden by helpText (special description case)
         expect(dependentFormField.description).toEqual(
           formInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
             .dependentFormField.helpText

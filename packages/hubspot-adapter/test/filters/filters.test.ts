@@ -36,11 +36,10 @@ describe('HubspotAdapter filters', () => {
       )
       adapter = mocks.adapter
       client = mocks.client
-      const mockGetAllInstances = jest.fn().mockImplementation(
+      client.getAllInstances = jest.fn().mockImplementation(
         (_type: string): Promise<HubspotMetadata[]> => (
             [] as unknown as Promise<HubspotMetadata[]>)
       )
-      client.getAllInstances = mockGetAllInstances
     })
 
     it('should call onFetch filters upon fetch', async () => {

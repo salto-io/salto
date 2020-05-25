@@ -15,7 +15,7 @@
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
-import { creator } from '@salto-io/salesforce-adapter'
+import { adapter } from '@salto-io/salesforce-adapter'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
 } from '../../../src/core/adapters/adapters'
@@ -27,7 +27,7 @@ jest.mock('@salto-io/adapter-utils', () => ({
 }))
 
 describe('adapters.ts', () => {
-  const { credentialsType } = creator
+  const { credentialsType } = adapter
   const services = ['salesforce']
   const sfConfig = new InstanceElement(
     ElemID.CONFIG_NAME,

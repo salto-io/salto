@@ -16,7 +16,7 @@
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, AdapterCreator,
+  InstanceElement, Adapter,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
 import changeValidator from './change_validator'
@@ -51,16 +51,18 @@ SalesforceConfig => {
 const clientFromCredentials = (credentials: InstanceElement): SalesforceClient =>
   new SalesforceClient({ credentials: credentialsFromConfig(credentials) })
 
-export const creator: AdapterCreator = {
-  create: opts => new SalesforceAdapter({
-    client: clientFromCredentials(opts.credentials),
-    config: adapterConfigFromConfig(opts.config),
-    getElemIdFunc: opts.getElemIdFunc,
+export const adapter: Adapter = {
+  operations: context => new SalesforceAdapter({
+    client: clientFromCredentials(context.credentials),
+    config: adapterConfigFromConfig(context.config),
+    getElemIdFunc: context.getElemIdFunc,
   }),
   validateCredentials: config => validateCredentials(
     credentialsFromConfig(config)
   ),
   credentialsType,
   configType,
-  changeValidator,
+  deployModifiers: {
+    changeValidator,
+  },
 }

@@ -17,7 +17,7 @@ import {
   AdditionDiff, ModificationDiff, RemovalDiff, ActionName,
 } from '@salto-io/dag'
 import {
-  ObjectType, InstanceElement, Field, PrimitiveType,
+  ObjectType, InstanceElement, Field, PrimitiveType, isInstanceElement, isObjectType, isField,
 } from './elements'
 
 export { ActionName }
@@ -35,3 +35,15 @@ export const isAdditionDiff = <T>(change: Change<T>): change is AdditionDiff<T> 
 
 export const getChangeElement = <T>(change: Change<T>): T =>
   (change.action === 'remove' ? change.data.before : change.data.after)
+
+export const isInstanceChange = (change: Change): change is Change<InstanceElement> => (
+  isInstanceElement(getChangeElement(change))
+)
+
+export const isObjectTypeChange = (change: Change): change is Change<ObjectType> => (
+  isObjectType(getChangeElement(change))
+)
+
+export const isFieldChange = (change: Change): change is Change<Field> => (
+  isField(getChangeElement(change))
+)

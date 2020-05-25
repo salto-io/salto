@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { creator as salesforceAdapterCreator } from '@salto-io/salesforce-adapter'
-import { AdapterCreator } from '@salto-io/adapter-api'
-import { creator as hubspotAdapterCreator } from '@salto-io/hubspot-adapter'
+import { Adapter } from '@salto-io/adapter-api'
+import { adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
+import { adapter as hubspotAdapter } from '@salto-io/hubspot-adapter'
 
-const adapterCreators: Record<string, AdapterCreator> = {
-  salesforce: salesforceAdapterCreator,
-  hubspot: hubspotAdapterCreator,
+const adapterCreators: Record<string, Adapter> = {
+  salesforce: salesforceAdapter,
+  hubspot: hubspotAdapter,
 }
 
 export default adapterCreators

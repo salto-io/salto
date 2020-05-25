@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, ElemID, ObjectType } from '@salto-io/adapter-api'
-import { creator } from '../src/adapter_creator'
+import { adapter } from '../src/adapter_creator'
 import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 
@@ -24,7 +24,7 @@ jest.mock('../src/adapter')
 describe('SalesforceAdapter creator', () => {
   const credentials = new InstanceElement(
     ElemID.CONFIG_NAME,
-    creator.credentialsType,
+    adapter.credentialsType,
     {
       username: 'myUser',
       password: 'myPassword',
@@ -34,7 +34,7 @@ describe('SalesforceAdapter creator', () => {
   )
   const config = new InstanceElement(
     ElemID.CONFIG_NAME,
-    creator.configType as ObjectType,
+    adapter.configType as ObjectType,
     {
       metadataTypesSkippedList: ['test1'],
       instancesRegexSkippedList: ['test3', 'test2'],
@@ -43,7 +43,7 @@ describe('SalesforceAdapter creator', () => {
   )
   describe('when validateCredentials is called', () => {
     beforeEach(() => {
-      creator.validateCredentials(credentials)
+      adapter.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', () => {
@@ -58,7 +58,7 @@ describe('SalesforceAdapter creator', () => {
 
   describe('when passed config elements', () => {
     beforeAll(() => {
-      creator.create({ credentials, config })
+      adapter.operations({ credentials, config })
     })
 
     it('creates the client correctly', () => {

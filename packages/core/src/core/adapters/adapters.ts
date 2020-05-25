@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, Adapter, ElemIdGetter, AdapterCreatorOpts, ElemID, InstanceElement,
+  ObjectType, AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import adapterCreators from './creators'
@@ -30,18 +30,18 @@ export const getAdaptersCredentialsTypes = (
 }
 
 export const initAdapters = (
-  config: Record<string, AdapterCreatorOpts>,
-): Record<string, Adapter> =>
+  config: Record<string, AdapterOperationsContext>,
+): Record<string, AdapterOperations> =>
   _.mapValues(
-    config, (opts, adapter) => {
-      if (!opts.credentials) {
+    config, (context, adapter) => {
+      if (!context.credentials) {
         throw new Error(`${adapter} is not logged in.\n\nPlease login and try again.`)
       }
       const creator = adapterCreators[adapter]
       if (!creator) {
         throw new Error(`${adapter} adapter is not registered.`)
       }
-      return creator.create(opts)
+      return creator.operations(context)
     }
   )
 
@@ -55,7 +55,7 @@ export const getAdaptersCreatorConfigs = async (
   credentials: Readonly<Record<string, InstanceElement>>,
   config: Readonly<Record<string, InstanceElement>>,
   elemIdGetter?: ElemIdGetter,
-): Promise<Record<string, AdapterCreatorOpts>> =>
+): Promise<Record<string, AdapterOperationsContext>> =>
   (_
     .fromPairs(await Promise.all(adapters.map(
       async adapter => {
@@ -73,5 +73,5 @@ export const getAdapters = async (
   credentials: Readonly<Record<string, InstanceElement>>,
   config: Readonly<Record<string, InstanceElement>>,
   elemIdGetter?: ElemIdGetter,
-): Promise<Record<string, Adapter>> =>
+): Promise<Record<string, AdapterOperations>> =>
   initAdapters(await getAdaptersCreatorConfigs(adapters, credentials, config, elemIdGetter))

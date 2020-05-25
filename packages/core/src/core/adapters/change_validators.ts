@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
 
 export const getAdapterChangeValidators = (): Record<string, ChangeValidator> =>
   _(adapterCreators)
-    .entries()
-    .map(([name, creator]) => [name, creator.changeValidator])
-    .fromPairs()
+    .mapValues(adapter => adapter.deployModifiers?.changeValidator)
+    .pickBy(values.isDefined)
     .value()

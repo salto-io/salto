@@ -21,10 +21,9 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
-  DetailedChange, Plan, PlanItem, SearchResult, Workspace,
+  DetailedChange, Plan, PlanItem, SearchResult, Workspace, EVENT_TYPES,
   DeployResult, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, CommandConfig,
 } from '@salto-io/core'
-import { EVENT_TYPES } from '@salto-io/core/dist/src/telemetry'
 import * as workspace from '../src/workspace/workspace'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'

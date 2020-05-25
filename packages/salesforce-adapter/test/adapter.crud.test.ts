@@ -16,11 +16,11 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction,
+  ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS,
+  createRestriction, DeployResult, getChangeElement,
 } from '@salto-io/adapter-api'
 import {
-  MetadataInfo, SaveResult, DeployResult, DeployDetails,
+  MetadataInfo, SaveResult, DeployResult as JSForceDeployResult, DeployDetails,
 } from 'jsforce'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
@@ -29,6 +29,7 @@ import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { createValueSetEntry } from './utils'
 import { WORKFLOW_TYPE_ID } from '../src/filters/workflow'
+import { createElement, removeElement } from '../e2e_test/utils'
 
 const { makeArray } = collections.array
 
@@ -40,7 +41,9 @@ describe('SalesforceAdapter CRUD', () => {
   const mockElemID = new ElemID(constants.SALESFORCE, 'Test')
   const mockInstanceName = 'Instance'
 
-  const getDeployResult = (success: boolean, details?: DeployDetails[]): Promise<DeployResult> =>
+  const getDeployResult = (
+    success: boolean, details?: DeployDetails[]
+  ): Promise<JSForceDeployResult> =>
     Promise.resolve({
       id: '',
       checkOnly: false,
@@ -120,7 +123,7 @@ describe('SalesforceAdapter CRUD', () => {
         let result: InstanceElement
 
         beforeEach(async () => {
-          result = await adapter.add(instance) as InstanceElement
+          result = await createElement(adapter, instance)
         })
 
         it('Should add new instance', async () => {
@@ -143,7 +146,7 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       describe('when the request fails', () => {
-        let result: Promise<Element>
+        let result: DeployResult
 
         beforeEach(async () => {
           connection.metadata.upsert = jest.fn()
@@ -156,24 +159,27 @@ describe('SalesforceAdapter CRUD', () => {
               ],
             }]))
 
-          result = adapter.add(
-            new InstanceElement(
-              mockInstanceName,
-              new ObjectType({
-                elemID: mockElemID,
-                fields: {},
-                annotationTypes: {},
-                annotations: {},
-              }),
-              {},
-            )
+          const newInst = new InstanceElement(
+            mockInstanceName,
+            new ObjectType({
+              elemID: mockElemID,
+              fields: {},
+              annotationTypes: {},
+              annotations: {},
+            }),
+            {},
           )
+
+          result = await adapter.deploy({
+            groupID: newInst.elemID.getFullName(),
+            changes: [{ action: 'add', data: { after: newInst } }],
+          })
         })
 
-        it(
-          'should reject the promise',
-          () => expect(result).rejects.toEqual(new Error('Failed to add Test__c\nAdditional message'))
-        )
+        it('should return an error', () => {
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0]).toEqual(new Error('Failed to add Test__c\nAdditional message'))
+        })
       })
     })
 
@@ -201,7 +207,7 @@ describe('SalesforceAdapter CRUD', () => {
       let result: ObjectType
 
       beforeEach(async () => {
-        result = await adapter.add(element) as ObjectType
+        result = await createElement(adapter, element)
       })
 
       it('should add the new element', () => {
@@ -253,7 +259,7 @@ describe('SalesforceAdapter CRUD', () => {
       let result: ObjectType
 
       beforeEach(async () => {
-        result = await adapter.add(element) as ObjectType
+        result = await createElement(adapter, element)
       })
 
       it('should create the type correctly', () => {
@@ -450,7 +456,7 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       beforeEach(async () => {
-        await adapter.add(element)
+        await createElement(adapter, element)
       })
 
       it('should create the element correctly', () => {
@@ -587,7 +593,7 @@ describe('SalesforceAdapter CRUD', () => {
       )
 
       it('should not add the instance in the main flow', async () => {
-        await adapter.add(workflowInstance)
+        await createElement(adapter, workflowInstance)
         expect(mockUpsert.mock.calls.length).toBe(0)
       })
     })
@@ -619,7 +625,7 @@ describe('SalesforceAdapter CRUD', () => {
         )
 
         beforeEach(async () => {
-          await adapter.remove(element)
+          await removeElement(adapter, element)
         })
 
         it('should call the connection methods correctly', () => {
@@ -641,7 +647,7 @@ describe('SalesforceAdapter CRUD', () => {
         })
 
         beforeEach(async () => {
-          await adapter.remove(element)
+          await removeElement(adapter, element)
         })
 
         it('should call the connection methods correctly', () => {
@@ -660,9 +666,10 @@ describe('SalesforceAdapter CRUD', () => {
         },
       })
 
-      let result: Promise<void>
+      let result: DeployResult
+      // let result: Promise<void>
 
-      beforeEach(() => {
+      beforeEach(async () => {
         mockDelete = jest.fn().mockImplementationOnce(async () => ([{
           success: false,
           fullName: 'Test__c',
@@ -673,13 +680,16 @@ describe('SalesforceAdapter CRUD', () => {
 
         connection.metadata.delete = mockDelete
 
-        result = adapter.remove(element)
+        result = await adapter.deploy({
+          groupID: element.elemID.getFullName(),
+          changes: [{ action: 'remove', data: { before: element } }],
+        })
       })
 
-      it(
-        'should reject the promise',
-        () => expect(result).rejects.toEqual(new Error('Failed to remove Test__c'))
-      )
+      it('should return an error', () => {
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0]).toEqual(new Error('Failed to remove Test__c'))
+      })
     })
 
     describe('for a workflow instance element', () => {
@@ -694,7 +704,7 @@ describe('SalesforceAdapter CRUD', () => {
       )
 
       it('should not remove the instance in the main flow', async () => {
-        await adapter.remove(workflowInstance)
+        await removeElement(adapter, workflowInstance)
         expect(mockDelete.mock.calls.length).toBe(0)
       })
     })
@@ -718,19 +728,24 @@ describe('SalesforceAdapter CRUD', () => {
       )
 
       describe('when the request fails because fullNames are not the same', () => {
-        let result: Promise<Element>
+        let result: DeployResult
 
-        beforeEach(() => {
+        beforeEach(async () => {
           const newElement = oldElement.clone()
           newElement.value[constants.INSTANCE_FULL_NAME_FIELD] = 'wrong'
-          result = adapter.update(oldElement, newElement, [])
-          result.catch(_err => undefined) // prevent Unhandled promise rejection message
+          result = await adapter.deploy({
+            groupID: newElement.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
+          })
         })
 
-        it(
-          'should reject the promise',
-          () => expect(result).rejects.toThrow()
-        )
+        it('should return an error', () => {
+          expect(result.errors).toHaveLength(1)
+        })
+
+        it('should return empty applied changes', () => {
+          expect(result.appliedChanges).toHaveLength(0)
+        })
 
         it('should not call the connection', () => {
           expect(mockUpdate.mock.calls.length).toBe(0)
@@ -780,11 +795,13 @@ describe('SalesforceAdapter CRUD', () => {
           )
 
           beforeEach(async () => {
-            adapter.update(
-              oldAssignmentRules,
-              newAssignmentRules,
-              [{ action: 'modify', data: { before: oldAssignmentRules, after: newAssignmentRules } }]
-            )
+            await adapter.deploy({
+              groupID: oldAssignmentRules.elemID.getFullName(),
+              changes: [{
+                action: 'modify',
+                data: { before: oldAssignmentRules, after: newAssignmentRules },
+              }],
+            })
           })
 
           it('should call delete on remove metadata objects with field names', () => {
@@ -836,11 +853,13 @@ describe('SalesforceAdapter CRUD', () => {
           )
 
           beforeEach(async () => {
-            await adapter.update(
-              oldCustomLabels,
-              newCustomLabels,
-              [{ action: 'modify', data: { before: oldCustomLabels, after: newCustomLabels } }]
-            )
+            await adapter.deploy({
+              groupID: oldCustomLabels.elemID.getFullName(),
+              changes: [{
+                action: 'modify',
+                data: { before: oldCustomLabels, after: newCustomLabels },
+              }],
+            })
           })
 
           it('should call delete on remove metadata objects with object names', () => {
@@ -861,19 +880,24 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       describe('when the request fails because fullNames are not the same', () => {
-        let result: Promise<Element>
+        let result: DeployResult
 
-        beforeEach(() => {
+        beforeEach(async () => {
           const newElement = oldElement.clone()
           newElement.annotations[constants.API_NAME] = 'Test2__c'
-          result = adapter.update(oldElement, newElement, [])
-          result.catch(_err => undefined) // prevent Unhandled promise rejection message
+          result = await adapter.deploy({
+            groupID: oldElement.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
+          })
         })
 
-        it(
-          'should reject the promise',
-          () => expect(result).rejects.toThrow()
-        )
+        it('should return an error', () => {
+          expect(result.errors).toHaveLength(1)
+        })
+
+        it('should return empty applied changes', () => {
+          expect(result.appliedChanges).toHaveLength(0)
+        })
 
         it('should not call the connection', () => {
           expect(mockUpdate.mock.calls.length).toBe(0)
@@ -882,7 +906,7 @@ describe('SalesforceAdapter CRUD', () => {
     })
 
     describe('when the request succeeds', () => {
-      let result: Element
+      let result: DeployResult
 
       describe('for an instance element', () => {
         const mockProfileType = new ObjectType({
@@ -988,11 +1012,15 @@ describe('SalesforceAdapter CRUD', () => {
         )
 
         beforeEach(async () => {
-          result = await adapter.update(oldElement, newElement, [])
+          result = await adapter.deploy({
+            groupID: oldElement.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: oldElement, after: newElement } }],
+          })
         })
 
         it('should return an InstanceElement', () => {
-          expect(result).toBeInstanceOf(InstanceElement)
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeElement(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
         })
 
         it('should call the connection methods correctly', () => {
@@ -1026,7 +1054,13 @@ describe('SalesforceAdapter CRUD', () => {
           const newElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: { type: stringType, annotations: { label: 'test2 label' } },
+              address: {
+                type: stringType,
+                annotations: {
+                  label: 'test2 label',
+                  [constants.API_NAME]: 'Test__c.address__c',
+                },
+              },
             },
             annotations: {
               label: 'test2 label',
@@ -1035,15 +1069,19 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement, [
-              { action: 'modify', data: { before: oldElement, after: newElement } },
-              { action: 'remove', data: { before: oldElement.fields.description } },
-              { action: 'add', data: { after: newElement.fields.address } },
-            ])
+            result = await adapter.deploy({
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
+                { action: 'modify', data: { before: oldElement, after: newElement } },
+                { action: 'remove', data: { before: oldElement.fields.description } },
+                { action: 'add', data: { after: newElement.fields.address } },
+              ],
+            })
           })
 
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
+          it('should return change applied to the element', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
           })
 
           it('should call the connection methods correctly', () => {
@@ -1053,7 +1091,9 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           it('should not add annotations to the object type', () => {
-            expect(result.annotations).toEqual(newElement.annotations)
+            const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+            expect(updatedObj).toBeDefined()
+            expect(updatedObj.annotations).toEqual(newElement.annotations)
           })
         })
 
@@ -1082,14 +1122,19 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement, [
-              { action: 'add', data: { after: newElement.fields.description } },
-              { action: 'add', data: { after: newElement.fields.apple } },
-            ])
+            result = await adapter.deploy({
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
+                { action: 'add', data: { after: newElement.fields.description } },
+                { action: 'add', data: { after: newElement.fields.apple } },
+              ],
+            })
           })
 
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
+          it('should return change applied to the element', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+            expect(Object.keys(updatedObj.fields)).toEqual(Object.keys(newElement.fields))
           })
 
           it('should call the connection methods correctly', () => {
@@ -1137,25 +1182,23 @@ describe('SalesforceAdapter CRUD', () => {
             },
           })
 
-          const newElement = new ObjectType({
-            elemID: mockElemID,
-            fields: _.pick(oldElement.fields, 'description'),
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test2 label',
-              [constants.API_NAME]: 'Test__c',
-            },
-          })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement, [
-              { action: 'remove', data: { before: oldElement.fields.address } },
-              { action: 'remove', data: { before: oldElement.fields.banana } },
-            ])
+            result = await adapter.deploy({
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
+                { action: 'remove', data: { before: oldElement.fields.address } },
+                { action: 'remove', data: { before: oldElement.fields.banana } },
+              ],
+            })
           })
 
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
+          it('should return change applied to the element', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+            expect(Object.keys(updatedObj.fields)).toEqual(
+              Object.keys(_.omit(oldElement.fields, ['address', 'banana']))
+            )
           })
 
           it('should only delete fields', () => {
@@ -1208,14 +1251,19 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement, [
-              { action: 'remove', data: { before: oldElement.fields.address } },
-              { action: 'add', data: { after: newElement.fields.description } },
-            ])
+            result = await adapter.deploy({
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
+                { action: 'remove', data: { before: oldElement.fields.address } },
+                { action: 'add', data: { after: newElement.fields.description } },
+              ],
+            })
           })
 
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
+          it('should return change applied to the element', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            const updatedObj = getChangeElement(result.appliedChanges[0]) as ObjectType
+            expect(Object.keys(updatedObj.fields)).toEqual(Object.keys(newElement.fields))
           })
 
           it('should only call delete and upsert', () => {
@@ -1265,13 +1313,17 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement, [
-              { action: 'modify', data: { before: oldElement, after: newElement } },
-            ])
+            result = await adapter.deploy({
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
+                { action: 'modify', data: { before: oldElement, after: newElement } },
+              ],
+            })
           })
 
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
+          it('should return change applied to the element', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
           })
 
           it('should only call update', () => {
@@ -1344,8 +1396,9 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement,
-              [
+            result = await adapter.deploy({
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
                 { action: 'remove', data: { before: oldElement.fields.address } },
                 { action: 'modify',
                   data: {
@@ -1353,11 +1406,13 @@ describe('SalesforceAdapter CRUD', () => {
                     after: newElement.fields.banana,
                   } },
                 { action: 'add', data: { after: newElement.fields.description } },
-              ])
+              ],
+            })
           })
 
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
+          it('should return change applied to the element', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
           })
 
           it('should call delete, upsert and update', () => {
@@ -1412,11 +1467,17 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement, [])
+            result = await adapter.deploy({
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
+                { action: 'modify', data: { before: oldElement, after: newElement } },
+              ],
+            })
           })
 
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
+          it('should return change applied to the element', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
           })
 
           it('should not call delete, upsert or update', () => {
@@ -1460,17 +1521,20 @@ describe('SalesforceAdapter CRUD', () => {
           })
 
           beforeEach(async () => {
-            result = await adapter.update(oldElement, newElement,
-              [
+            result = await adapter.deploy({
+              groupID: oldElement.elemID.getFullName(),
+              changes: [
                 { action: 'modify', data: { before: oldElement, after: newElement } },
                 { action: 'modify',
                   data: { before: oldElement.fields.banana,
                     after: newElement.fields.banana } },
-              ])
+              ],
+            })
           })
 
-          it('should return an instance of ObjectType', () => {
-            expect(result).toBeInstanceOf(ObjectType)
+          it('should return change applied to the element', () => {
+            expect(result.appliedChanges).toHaveLength(1)
+            expect(getChangeElement(result.appliedChanges[0])).toEqual(newElement)
           })
 
           it('should call update twice', () => {
@@ -1528,7 +1592,10 @@ describe('SalesforceAdapter CRUD', () => {
 
       describe('when the deploy call succeeds', () => {
         it('should update with deploy for specific types', async () => {
-          await adapter.update(before, after, [])
+          await adapter.deploy({
+            groupID: before.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before, after } }],
+          })
           expect(mockDeploy).toHaveBeenCalled()
           expect(mockUpdate).not.toHaveBeenCalled()
         })
@@ -1538,14 +1605,20 @@ describe('SalesforceAdapter CRUD', () => {
         it('should not update with deploy for unsupported types even if listed', async () => {
           before.type.annotations[constants.METADATA_TYPE] = 'UnsupportedType'
           after.type.annotations[constants.METADATA_TYPE] = 'UnsupportedType'
-          await adapter.update(before, after, [])
+          await adapter.deploy({
+            groupID: before.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before, after } }],
+          })
           expect(mockDeploy).not.toHaveBeenCalled()
           expect(mockUpdate).not.toHaveBeenCalled()
         })
         it('should not update with deploy not listed types', async () => {
           before.type.annotations[constants.METADATA_TYPE] = 'NotListedType'
           after.type.annotations[constants.METADATA_TYPE] = 'NotListedType'
-          await adapter.update(before, after, [])
+          await adapter.deploy({
+            groupID: before.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before, after } }],
+          })
           expect(mockDeploy).not.toHaveBeenCalled()
           expect(mockUpdate).toHaveBeenCalled()
         })
@@ -1570,7 +1643,9 @@ describe('SalesforceAdapter CRUD', () => {
           }],
         })
 
-        beforeEach(() => {
+        let result: DeployResult
+
+        beforeEach(async () => {
           connection.metadata.deploy = jest.fn().mockImplementationOnce(
             () => ({
               complete: () => getDeployResult(false, [
@@ -1579,10 +1654,19 @@ describe('SalesforceAdapter CRUD', () => {
               ]),
             })
           )
+          result = await adapter.deploy({
+            groupID: before.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before, after } }],
+          })
         })
 
-        it('should reject the promise', async () => {
-          await expect(adapter.update(before, after, [])).rejects.toThrow(
+        it('should not apply changes', () => {
+          expect(result.appliedChanges).toHaveLength(0)
+        })
+
+        it('should return error', () => {
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0].message).toMatch(
             /Component.*InstName.*my error.*Component.*OtherInst.*some error/s
           )
         })
@@ -1601,7 +1685,13 @@ describe('SalesforceAdapter CRUD', () => {
       )
 
       it('should not update the instance in the main flow', async () => {
-        await adapter.update(beforeWorkflowInstance, beforeWorkflowInstance.clone(), [])
+        await adapter.deploy({
+          groupID: beforeWorkflowInstance.elemID.getFullName(),
+          changes: [{
+            action: 'modify',
+            data: { before: beforeWorkflowInstance, after: beforeWorkflowInstance.clone() },
+          }],
+        })
         expect(mockUpdate.mock.calls.length).toBe(0)
       })
     })
@@ -1616,7 +1706,13 @@ describe('SalesforceAdapter CRUD', () => {
           },
         }), {}
       )
-      await adapter.update(beforeFlowInstance, beforeFlowInstance.clone(), [])
+      await adapter.deploy({
+        groupID: beforeFlowInstance.elemID.getFullName(),
+        changes: [{
+          action: 'modify',
+          data: { before: beforeFlowInstance, after: beforeFlowInstance.clone() },
+        }],
+      })
       expect(mockUpdate.mock.calls.length).toBe(0)
       expect(mockUpsert.mock.calls.length).toBe(1)
     })

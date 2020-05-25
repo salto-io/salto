@@ -15,3 +15,4 @@
 */
 export * from './src/utils'
 export * from './src/change_validator'
+export * from './src/deploy'

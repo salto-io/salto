@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { creator } from '../src/adapter_creator'
+import { adapter } from '../src/adapter_creator'
 import HubspotClient from '../src/client/client'
 
 jest.mock('../src/client/client')
@@ -23,14 +23,14 @@ describe('HubspotAdapter creator', () => {
   describe('when validateCredentials is called', () => {
     const config = new InstanceElement(
       ElemID.CONFIG_NAME,
-      creator.credentialsType,
+      adapter.credentialsType,
       {
         apiKey: 'myKey',
       }
     )
 
     beforeEach(() => {
-      creator.validateCredentials(config)
+      adapter.validateCredentials(config)
     })
 
     it('should call validateCredentials with the correct credentials', () => {
@@ -44,14 +44,14 @@ describe('HubspotAdapter creator', () => {
   describe('when passed a config element', () => {
     const credentials = new InstanceElement(
       ElemID.CONFIG_NAME,
-      creator.credentialsType,
+      adapter.credentialsType,
       {
         apiKey: 'myApiKey',
       }
     )
 
     beforeEach(() => {
-      creator.create({ credentials })
+      adapter.operations({ credentials })
     })
 
     it('creates the client correctly', () => {

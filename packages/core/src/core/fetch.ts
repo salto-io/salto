@@ -17,7 +17,7 @@ import wu from 'wu'
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
 import {
-  Element, ElemID, Adapter, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
+  Element, ElemID, AdapterOperations, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   ADAPTER, ElemIdGetter,
 } from '@salto-io/adapter-api'
@@ -215,7 +215,7 @@ type UpdatedConfig = {
 }
 
 const fetchAndProcessMergeErrors = async (
-  adapters: Record<string, Adapter>,
+  adapters: Record<string, AdapterOperations>,
   stateElements: ReadonlyArray<Element>,
   getChangesEmitter: StepEmitter):
   Promise<{
@@ -297,7 +297,7 @@ const calcFetchChanges = async (
 }
 
 export const fetchChanges = async (
-  adapters: Record<string, Adapter>,
+  adapters: Record<string, AdapterOperations>,
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
   currentConfigs: InstanceElement[],

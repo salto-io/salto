@@ -15,8 +15,11 @@
 */
 import {
   BuiltinTypes, Element, FetchResult, Field, InstanceElement, isInstanceElement, ObjectType,
+  AdapterOperations,
+  DeployResult,
+  ChangeGroup,
 } from '@salto-io/adapter-api'
-import { naclCase, resolveValues, restoreValues } from '@salto-io/adapter-utils'
+import { naclCase, resolveValues, restoreValues, deployInstance } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import NetsuiteClient, {
@@ -62,7 +65,7 @@ const addCustomTypeDefaults = (instance: InstanceElement): void => {
   }
 }
 
-export default class NetsuiteAdapter {
+export default class NetsuiteAdapter implements AdapterOperations {
   private readonly client: NetsuiteClient
   private readonly typesToSkip: string[]
 
@@ -103,7 +106,7 @@ export default class NetsuiteAdapter {
     return this.typesToSkip.includes(type.elemID.name)
   }
 
-  public async add(instance: InstanceElement): Promise<InstanceElement> {
+  private async add(instance: InstanceElement): Promise<InstanceElement> {
     if (!isCustomType(instance.type) && !isFileCabinetType(instance.type)) {
       throw Error('Salto currently supports adding instances of customTypes and fileCabinet only')
     }
@@ -118,12 +121,12 @@ export default class NetsuiteAdapter {
     return restoreValues(instance, resolved, getLookUpName)
   }
 
-  public async remove(_element: Element): Promise<void> { // todo: implement
+  private async remove(_element: Element): Promise<void> { // todo: implement
     // eslint-disable-next-line no-console
     console.log(this.client)
   }
 
-  public async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
+  private async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
     if (!isCustomType(after.type) && !isFileCabinetType(after.type)) {
       throw Error('Salto currently supports updating instances of customTypes and fileCabinet only')
     }
@@ -146,5 +149,14 @@ export default class NetsuiteAdapter {
       return this.client.deployFolder(customizationInfo)
     }
     return this.client.deployCustomObject(instance.value[SCRIPT_ID], customizationInfo)
+  }
+
+  public async deploy(changes: ChangeGroup): Promise<DeployResult> {
+    const operations = {
+      add: this.add.bind(this),
+      remove: this.remove.bind(this),
+      update: this.update.bind(this),
+    }
+    return deployInstance(operations, changes)
   }
 }

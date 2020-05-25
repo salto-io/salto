@@ -15,7 +15,7 @@
 */
 import { EventEmitter } from 'pietile-eventemitter'
 import {
-  ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, Adapter, Element,
+  ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
   isModificationDiff,
   ListType,
@@ -31,6 +31,7 @@ import { getPlan, Plan } from '../../src/core/plan'
 import {
   removeHiddenFieldsValues,
 } from '../../src/workspace/hidden_values'
+import { mockFunction } from '../common/helpers'
 
 const { DuplicateAnnotationError } = merger
 
@@ -108,19 +109,20 @@ describe('fetch', () => {
   describe('fetchChanges', () => {
     const mockAdapters = {
       dummy: {
-        fetch: jest.fn().mockResolvedValue(Promise.resolve([])),
+        fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+        deploy: mockFunction<AdapterOperations['deploy']>(),
       },
     }
     let changes: FetchChange[]
     describe('when the adapter returns elements with merge errors', () => {
       beforeEach(() => {
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [newTypeBase, newTypeBaseModified, typeWithField] }),
+          { elements: [newTypeBase, newTypeBaseModified, typeWithField] },
         )
       })
       it('should fail', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
+          mockAdapters,
           [],
           [],
           [],
@@ -152,14 +154,17 @@ describe('fetch', () => {
       })
       it('should return config change plan when there is no current config', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>, [], [], [],
+          mockAdapters, [], [], [],
         )
         verifyPlan(fetchChangesResult.configChanges, await getPlan([], [configInstance]), 1)
       })
 
       it('should return config change plan when there is current config', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>, [], [], [currentInstanceConfig],
+          mockAdapters,
+          [],
+          [],
+          [currentInstanceConfig],
         )
         verifyPlan(
           fetchChangesResult.configChanges,
@@ -170,7 +175,7 @@ describe('fetch', () => {
 
       it('should return empty plan when there is no change', async () => {
         const fetchChangesResult = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>, [], [], [configInstance],
+          mockAdapters, [], [], [configInstance],
         )
         expect([...fetchChangesResult.configChanges.itemsByEvalOrder()]).toHaveLength(0)
       })
@@ -247,7 +252,7 @@ describe('fetch', () => {
         )
 
         const result = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
+          mockAdapters,
           [newTypeMerged, workspaceInstance],
           [newTypeMerged, hiddenInstance],
           [],
@@ -278,7 +283,7 @@ describe('fetch', () => {
         )
 
         const result = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
+          mockAdapters,
           [typeWithField, workspaceInstance],
           [typeWithField, hiddenInstance],
           [],
@@ -304,7 +309,7 @@ describe('fetch', () => {
         )
         progressEmitter = new EventEmitter<FetchProgressEvents>()
         const result = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
+          mockAdapters,
           [],
           [],
           [],
@@ -325,7 +330,7 @@ describe('fetch', () => {
           Promise.resolve({ elements: [newTypeBase, newTypeExt] })
         )
         const result = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
+          mockAdapters,
           [],
           [],
           [],
@@ -354,7 +359,7 @@ describe('fetch', () => {
                 newTypeExtWPath] })
             )
             const result = await fetchChanges(
-              mockAdapters as unknown as Record<string, Adapter>,
+              mockAdapters,
               [newTypeBaseWPath],
               [newTypeBaseWPath],
               [],
@@ -390,7 +395,7 @@ describe('fetch', () => {
                 newTypeB] })
             )
             const result = await fetchChanges(
-              mockAdapters as unknown as Record<string, Adapter>,
+              mockAdapters,
               [newTypeA],
               [newTypeA],
               [],
@@ -414,7 +419,7 @@ describe('fetch', () => {
             Promise.resolve({ elements: [typeWithFieldChange] })
           )
           const result = await fetchChanges(
-            mockAdapters as unknown as Record<string, Adapter>,
+            mockAdapters,
             [typeWithFieldChange],
             [typeWithField],
             [],
@@ -432,7 +437,7 @@ describe('fetch', () => {
             Promise.resolve({ elements: [typeWithFieldChange] })
           )
           const result = await fetchChanges(
-            mockAdapters as unknown as Record<string, Adapter>,
+            mockAdapters,
             [typeWithFieldConflict],
             [typeWithField],
             [],
@@ -450,7 +455,7 @@ describe('fetch', () => {
             Promise.resolve({ elements: [typeWithFieldChange] })
           )
           const result = await fetchChanges(
-            mockAdapters as unknown as Record<string, Adapter>,
+            mockAdapters,
             [],
             [typeWithField],
             [],
@@ -617,7 +622,7 @@ describe('fetch', () => {
           Promise.resolve({ elements: [typeWithField, hiddenInstance] })
         )
         const result = await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
+          mockAdapters,
           [],
           [],
           [],
@@ -644,7 +649,7 @@ describe('fetch', () => {
           Promise.resolve({ elements: [workspaceInstance] })
         )
         await fetchChanges(
-          mockAdapters as unknown as Record<string, Adapter>,
+          mockAdapters,
           [],
           [],
           [],

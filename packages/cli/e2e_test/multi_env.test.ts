@@ -19,7 +19,7 @@ import { Plan, dumpElements } from '@salto-io/core'
 import { strings } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
-import { Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
+import { isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store/dist/src/jest-environment/creds'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
 import { ensureFilesExist, runInit, runSetEnv, runFetch, runPreviewGetPlan, runAddSalesforceService, runCreateEnv, runDeploy, ensureFilesDontExist, getNaclFileElements } from './helpers/workspace'
@@ -156,8 +156,8 @@ describe('multi env tests', () => {
 
   const env1Elements = [commonObj, env1Obj, diffObjEnv1, commonInst, env1Inst, diffInstEnv1]
   const env2Elements = [commonObj, env2Obj, diffObjEnv2, commonInst, env2Inst, diffInstEnv2]
-  let env1ElementAfterDeploy: Element[]
-  let env2ElementAfterDeploy: Element[]
+  let env1ElementAfterDeploy: typeof env1Elements
+  let env2ElementAfterDeploy: typeof env2Elements
   let env1CredsLease: CredsLease<Credentials>
   let env2CredsLease: CredsLease<Credentials>
   let env1Creds: Credentials
@@ -275,11 +275,9 @@ describe('multi env tests', () => {
     })
   })
 
-  // eslint-disable-next-line jest/no-disabled-tests
   describe('handle changes that originated in the service', () => {
     const objToSyncFromServiceName = `TestSyncFromServiceObj${tempID}`
     const instToSyncFromServiceName = `TestSyncFromServiceInst${tempID}`
-    let fromSyncToRemove: Element[]
     const objToSyncFromService = templates.customObject({
       objName: objToSyncFromServiceName,
       alphaLabel: 'alpha2',
@@ -289,14 +287,14 @@ describe('multi env tests', () => {
       instName: instToSyncFromServiceName,
       description: 'This was created on the service',
     })
+    const elementsAddedToService = [objToSyncFromService, instToSyncFromService]
+    let fromSyncToRemove: typeof elementsAddedToService
 
     describe('fetch an add change from the service', () => {
       let afterFetchPlan: Plan | undefined
       beforeAll(async () => {
         // Add the new element directly to the service
-        fromSyncToRemove = await addElements(
-          env1Client, [objToSyncFromService, instToSyncFromService]
-        )
+        fromSyncToRemove = await addElements(env1Client, elementsAddedToService)
         // We fetch it to common
         await runSetEnv(baseDir, ENV1_NAME)
         await runFetch(baseDir, false) // Fetch in normal mode

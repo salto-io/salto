@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdapterCreator, ObjectType, ElemID, DependencyChanger, dependencyChange, ChangeDataType, Change, DependencyChange, ChangeEntry } from '@salto-io/adapter-api'
+import { Adapter, ObjectType, ElemID, DependencyChanger, dependencyChange, ChangeDataType, Change, DependencyChange, ChangeEntry, AdapterOperations } from '@salto-io/adapter-api'
 import { getAdapterDependencyChangers } from '../../../src/core/adapters'
+import { mockFunction } from '../../common/helpers'
 
 describe('getAdapterDependencyChangers', () => {
   const toChange = (action: 'add' | 'remove', data: ChangeDataType): Change => (
@@ -23,23 +24,25 @@ describe('getAdapterDependencyChangers', () => {
       : { action, data: { before: data } }
   )
 
-  const mockAdapterCreator = (dependencyChanger?: DependencyChanger): AdapterCreator => ({
+  const mockAdapter = (dependencyChanger?: DependencyChanger): Adapter => ({
     credentialsType: new ObjectType({ elemID: new ElemID('test') }),
     configType: new ObjectType({ elemID: new ElemID('test') }),
-    create: () => ({
-      fetch: jest.fn(),
-      add: jest.fn(),
-      remove: jest.fn(),
-      update: jest.fn(),
+    operations: mockFunction<Adapter['operations']>().mockReturnValue({
+      fetch: mockFunction<AdapterOperations['fetch']>(),
+      deploy: mockFunction<AdapterOperations['deploy']>(),
     }),
-    validateCredentials: jest.fn(),
-    dependencyChanger,
+    validateCredentials: mockFunction<Adapter['validateCredentials']>(),
+    deployModifiers: {
+      dependencyChanger,
+    },
   })
 
   const mockDepChanges = [dependencyChange('add', 1, 2)]
-  const mockCreators: Record<string, AdapterCreator> = {
-    withDepChanger: mockAdapterCreator(jest.fn().mockResolvedValue(mockDepChanges)),
-    withoutDepChanger: mockAdapterCreator(),
+  const mockCreators: Record<string, Adapter> = {
+    withDepChanger: mockAdapter(
+      mockFunction<DependencyChanger>().mockResolvedValue(mockDepChanges)
+    ),
+    withoutDepChanger: mockAdapter(),
   }
   let depChangers: ReadonlyArray<DependencyChanger>
   beforeAll(async () => {
@@ -66,7 +69,7 @@ describe('getAdapterDependencyChangers', () => {
       resultChanges = [...await depChangers[0](mockChanges, allDeps)]
     })
     it('should be called only with the changes of the same adapter and dependencies of changes within the adapter', async () => {
-      expect(mockCreators.withDepChanger.dependencyChanger).toHaveBeenCalledWith(
+      expect(mockCreators.withDepChanger.deployModifiers?.dependencyChanger).toHaveBeenCalledWith(
         new Map(adapterChanges), new Map([[1, new Set([2])]]),
       )
     })

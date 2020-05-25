@@ -15,10 +15,10 @@
 */
 import _ from 'lodash'
 import {
-  Element, InstanceElement, ObjectType, FetchResult,
+  Element, InstanceElement, ObjectType, FetchResult, AdapterOperations, ChangeGroup, DeployResult,
 } from '@salto-io/adapter-api'
 import {
-  resolveValues, restoreValues,
+  resolveValues, restoreValues, deployInstance,
 } from '@salto-io/adapter-utils'
 import {
   HubspotMetadata,
@@ -53,7 +53,7 @@ export interface HubspotAdapterParams {
   filtersCreators?: FilterCreator[]
 }
 
-export default class HubspotAdapter {
+export default class HubspotAdapter implements AdapterOperations {
   private client: HubspotClient
   private filtersCreators: FilterCreator[]
 
@@ -109,7 +109,7 @@ export default class HubspotAdapter {
    * @returns the updated element
    * @throws error in case of failure
    */
-  public async add(instance: InstanceElement): Promise<InstanceElement> {
+  private async add(instance: InstanceElement): Promise<InstanceElement> {
     const resolved = resolveValues(instance, getLookUpName)
     const resp = await this.client.createInstance(
       resolved.type.elemID.name,
@@ -127,7 +127,7 @@ export default class HubspotAdapter {
    * @param instance to remove
    * @throws error in case of failure
    */
-  public async remove(instance: InstanceElement): Promise<void> {
+  private async remove(instance: InstanceElement): Promise<void> {
     const resolved = resolveValues(instance, getLookUpName)
     await this.client.deleteInstance(
       resolved.type.elemID.name,
@@ -141,7 +141,7 @@ export default class HubspotAdapter {
    * @param after The new metadata of the element to replace
    * @returns the updated element
    */
-  public async update(
+  private async update(
     before: InstanceElement,
     after: InstanceElement,
   ): Promise<InstanceElement> {
@@ -157,6 +157,15 @@ export default class HubspotAdapter {
       await transformAfterUpdateOrAdd(resolvedAfter, resp),
       getLookUpName
     )
+  }
+
+  public async deploy(changes: ChangeGroup): Promise<DeployResult> {
+    const operations = {
+      add: this.add.bind(this),
+      remove: this.remove.bind(this),
+      update: this.update.bind(this),
+    }
+    return deployInstance(operations, changes)
   }
 
   private async runFiltersOnFetch(elements: Element[]): Promise<void> {

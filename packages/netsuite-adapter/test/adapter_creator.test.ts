@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { creator } from '../src/adapter_creator'
+import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 
 jest.mock('../src/client/client')
@@ -22,7 +22,7 @@ jest.mock('../src/client/client')
 describe('NetsuiteAdapter creator', () => {
   const credentials = new InstanceElement(
     ElemID.CONFIG_NAME,
-    creator.credentialsType,
+    adapter.credentialsType,
     {
       accountId: 'foo',
       tokenId: 'bar',
@@ -31,7 +31,7 @@ describe('NetsuiteAdapter creator', () => {
   )
   describe('validateCredentials', () => {
     beforeEach(async () => {
-      await creator.validateCredentials(credentials)
+      await adapter.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', async () => {
@@ -41,7 +41,7 @@ describe('NetsuiteAdapter creator', () => {
 
   describe('client creation', () => {
     it('should create the client correctly', () => {
-      creator.create({ credentials })
+      adapter.operations({ credentials })
       expect(NetsuiteClient).toHaveBeenCalledWith({
         credentials: credentials.value,
       })

@@ -15,12 +15,16 @@
 */
 import wu from 'wu'
 import {
-  ActionName,
   Element,
   InstanceElement,
   ObjectType,
   ElemID,
   AccountId,
+  getChangeElement,
+  isField,
+  Change,
+  ChangeDataType,
+  isFieldChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -110,7 +114,7 @@ export const deploy = async (
   services = workspace.services(),
   force = false
 ): Promise<DeployResult> => {
-  const changedElements: Element[] = []
+  const changedElements = new Map<string, Element>()
   const actionPlan = await preview(workspace, services)
   if (force || await shouldDeploy(actionPlan)) {
     const adapters = await getAdapters(
@@ -119,20 +123,38 @@ export const deploy = async (
       await workspace.servicesConfig(services),
     )
 
-    const postDeploy = async (action: ActionName, element: Element): Promise<void> =>
-      ((action === 'remove')
-        ? workspace.state().remove(element.elemID)
-        : workspace.state().set(element)
-          .then(() => { changedElements.push(element) }))
+    const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
+      const changeElem = getChangeElement(change)
+      if (!isField(changeElem)) {
+        return changeElem
+      }
+      const topLevelElem = await workspace.state().get(changeElem.parent.elemID) as ObjectType
+      return new ObjectType({
+        ...topLevelElem,
+        fields: change.action === 'remove'
+          ? _.omit(topLevelElem.fields, changeElem.name)
+          : _.merge({}, topLevelElem.fields, { [changeElem.name]: changeElem }),
+      })
+    }
+
+    const postDeploy = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
+      await promises.array.series(appliedChanges.map(change => async () => {
+        const updatedElement = await getUpdatedElement(change)
+        const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
+          ? workspace.state().remove(updatedElement.elemID)
+          : workspace.state().set(updatedElement)
+        await stateUpdate
+        changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
+      }))
+    }
     const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
 
-    const changedElementMap = _.groupBy(changedElements, e => e.elemID.getFullName())
     // Remove hidden Types and hidden values inside instances
-    const elementsAfterHiddenRemoval = removeHiddenValuesAndHiddenTypes(changedElements)
+    const elementsAfterHiddenRemoval = removeHiddenValuesAndHiddenTypes(changedElements.values())
       .map(e => e.clone())
     const workspaceElements = await workspace.elements()
     const relevantWorkspaceElements = workspaceElements
-      .filter(e => changedElementMap[e.elemID.getFullName()] !== undefined)
+      .filter(e => changedElements.has(e.elemID.getFullName()))
 
     // Add workspace elements as an additional context for resolve so that we can resolve
     // variable expressions. Adding only variables is not enough for the case of a variable
@@ -142,7 +164,10 @@ export const deploy = async (
       elementsAfterHiddenRemoval,
       workspaceElements
     )).map(change => ({ change, serviceChange: change }))
-      .map(toChangesWithPath(name => changedElementMap[name] || []))
+      .map(toChangesWithPath(name => {
+        const elem = changedElements.get(name)
+        return elem === undefined ? [] : [elem]
+      }))
       .flatten()
     const errored = errors.length > 0
     return {

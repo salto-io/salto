@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
-  Adapter,
+  AdapterOperations,
   BuiltinTypes,
   CORE_ANNOTATIONS,
   Element,
@@ -24,6 +25,8 @@ import {
   PrimitiveType,
   PrimitiveTypes,
   Variable,
+  Adapter,
+  isObjectType,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
 import * as workspace from '../src/workspace/workspace'
@@ -31,17 +34,18 @@ import * as api from '../src/api'
 
 import * as plan from '../src/core/plan'
 import * as fetch from '../src/core/fetch'
-import * as deploy from '../src/core/deploy'
-import * as adapters from '../src/core/adapters/adapters'
 import adapterCreators from '../src/core/adapters/creators'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import mockState from './common/state'
+import { mockFunction } from './common/helpers'
 
-const SERVICES = ['salesforce']
+const mockService = 'salto'
 
-const configID = new ElemID(SERVICES[0])
+const SERVICES = [mockService]
+
+const configID = new ElemID(mockService)
 const mockConfigType = new ObjectType({
   elemID: configID,
   fields: {
@@ -58,28 +62,28 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
   sandbox: false,
 })
 
-const mockWorkspace = (elements: Element[] = [], name?: string): workspace.Workspace => ({
-  elements: () => Promise.resolve(elements),
-  name,
-  envs: () => ['default'],
-  currentEnv: 'default',
-  services: () => SERVICES,
-  state: () => mockState(),
-  updateNaclFiles: jest.fn(),
-  flush: jest.fn(),
-  servicesCredentials: jest.fn().mockResolvedValue({ [SERVICES[0]]: mockConfigInstance }),
-  servicesConfig: jest.fn().mockResolvedValue({}),
-  getWorkspaceErrors: jest.fn().mockResolvedValue([]),
-  addService: jest.fn(),
-  updateServiceCredentials: jest.fn(),
-  updateServiceConfig: jest.fn(),
-} as unknown as workspace.Workspace)
+const mockWorkspace = (elements: Element[] = [], name?: string): workspace.Workspace => {
+  const state = mockState(SERVICES, elements)
+  return {
+    elements: () => Promise.resolve(elements),
+    name,
+    envs: () => ['default'],
+    currentEnv: 'default',
+    services: () => SERVICES,
+    state: () => state,
+    updateNaclFiles: jest.fn(),
+    flush: jest.fn(),
+    servicesCredentials: jest.fn().mockResolvedValue({ [mockService]: mockConfigInstance }),
+    servicesConfig: jest.fn().mockResolvedValue({}),
+    getWorkspaceErrors: jest.fn().mockResolvedValue([]),
+    addService: jest.fn(),
+    updateServiceCredentials: jest.fn(),
+    updateServiceConfig: jest.fn(),
+  } as unknown as workspace.Workspace
+}
 
-jest.mock('../src/core/adapters/adapters')
 jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
-jest.mock('../src/core/deploy')
-jest.mock('../src/core/adapters/creators')
 
 jest.spyOn(workspace, 'initWorkspace').mockImplementation(
   (
@@ -91,13 +95,21 @@ jest.spyOn(workspace, 'initWorkspace').mockImplementation(
 )
 
 describe('api.ts', () => {
-  const initAdapters = adapters.initAdapters as jest.Mock
-  initAdapters.mockReturnValue({
-    [SERVICES[0]]: {} as unknown as Adapter,
-  })
+  const mockAdapterOps = {
+    fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
+    deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(
+      changes => Promise.resolve({ errors: [], appliedChanges: changes.changes })
+    ),
+  }
+  const mockAdapter = {
+    operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
+    credentialsType: mockConfigType,
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+  }
+  adapterCreators[mockService] = mockAdapter
 
   const typeWithHiddenField = new ObjectType({
-    elemID: new ElemID(SERVICES[0], 'dummyHidden'),
+    elemID: new ElemID(mockService, 'dummyHidden'),
     fields: {
       hidden: {
         type: BuiltinTypes.STRING,
@@ -112,7 +124,7 @@ describe('api.ts', () => {
 
   describe('fetch', () => {
     const mockedFetchChanges = fetch.fetchChanges as jest.Mock
-    const objType = new ObjectType({ elemID: new ElemID(SERVICES[0], 'dummy') })
+    const objType = new ObjectType({ elemID: new ElemID(mockService, 'dummy') })
 
     const fetchedElements = [
       objType,
@@ -126,20 +138,13 @@ describe('api.ts', () => {
       configs: [],
     })
 
-    const stateElements = [{ elemID: new ElemID(SERVICES[0], 'test') }]
+    const stateElements = [{ elemID: new ElemID(mockService, 'test') }]
     const ws = mockWorkspace()
     const mockFlush = ws.flush as jest.Mock
     const mockedState = { ...mockState(), list: jest.fn().mockResolvedValue(stateElements) }
     ws.state = jest.fn().mockReturnValue(mockedState)
 
     beforeAll(async () => {
-      const mockGetAdaptersCreatorConfigs = adapters.getAdaptersCreatorConfigs as jest.Mock
-      mockGetAdaptersCreatorConfigs.mockReturnValue({
-        [SERVICES[0]]: {
-          config: mockConfigInstance.clone(),
-          credentials: mockConfigInstance.clone(),
-        },
-      })
       await api.fetch(ws, undefined, SERVICES)
     })
 
@@ -158,7 +163,7 @@ describe('api.ts', () => {
   describe('plan', () => {
     const mockedGetPlan = plan.getPlan as jest.Mock
     const mockGetPlanResult = mockPlan.getPlan()
-    mockedGetPlan.mockReturnValueOnce(mockGetPlanResult)
+    mockedGetPlan.mockResolvedValue(mockGetPlanResult)
     let result: plan.Plan
 
     const stateInstance = new InstanceElement(
@@ -212,10 +217,7 @@ describe('api.ts', () => {
 
     const mockedGetPlan = plan.getPlan as jest.Mock
     const mockGetPlanResult = mockPlan.getPlan()
-    mockedGetPlan.mockReturnValue(mockGetPlanResult)
-
-    const mockedDeployActions = deploy.deployActions as jest.Mock
-    mockedDeployActions.mockReturnValue(Promise.resolve([]))
+    mockedGetPlan.mockResolvedValue(mockGetPlanResult)
 
     const mockedGetDetailedChanges = fetch.getDetailedChanges as jest.Mock
     const elem = mockElements.getAllElements()[2]
@@ -235,6 +237,7 @@ describe('api.ts', () => {
 
     describe('when approved', () => {
       beforeAll(async () => {
+        mockAdapterOps.deploy.mockClear()
         result = await api.deploy(
           ws,
           mockShouldDeploy,
@@ -256,7 +259,7 @@ describe('api.ts', () => {
       })
 
       it('should deploy changes', async () => {
-        expect(mockedDeployActions).toHaveBeenCalledTimes(1)
+        expect(mockAdapterOps.deploy).toHaveBeenCalledTimes(1)
       })
       it('should get detailed changes with resolve context', async () => {
         expect(mockedGetDetailedChanges).toHaveBeenCalledTimes(1)
@@ -269,14 +272,40 @@ describe('api.ts', () => {
     })
     describe('when aborted', () => {
       beforeAll(async () => {
+        mockAdapterOps.deploy.mockClear()
         mockShouldDeploy.mockResolvedValueOnce(false)
         result = await api.deploy(ws, mockShouldDeploy, mockReportCurrentAction)
       })
       it('should not deploy', () => {
-        expect(mockedDeployActions).not.toHaveBeenCalledWith()
+        expect(mockAdapterOps.deploy).not.toHaveBeenCalled()
       })
       it('should return success', () => {
         expect(result.success).toBeTruthy()
+      })
+    })
+    describe('with field changes', () => {
+      let changedElement: ObjectType
+      beforeAll(async () => {
+        const origElement = mockElements.getAllElements().find(isObjectType) as ObjectType
+        const [removedField, origField] = Object.values(origElement.fields)
+        changedElement = new ObjectType({
+          ...origElement,
+          fields: _.omit(origElement.fields, removedField.name),
+        })
+        const changedField = changedElement.fields[origField.name]
+        changedField.annotations.test = 1
+        mockedGetPlan.mockResolvedValueOnce(mockPlan.createPlan(
+          [[
+            { action: 'remove', data: { before: removedField } },
+            { action: 'modify', data: { before: origField, after: changedField } },
+          ]]
+        ))
+
+        result = await api.deploy(ws, mockShouldDeploy, mockReportCurrentAction)
+      })
+      it('should set updated top level element to state', async () => {
+        const stateElement = await ws.state().get(changedElement.elemID)
+        expect(stateElement).toEqual(changedElement)
       })
     })
   })
@@ -284,7 +313,7 @@ describe('api.ts', () => {
   describe('login', () => {
     const elements: Element[] = [
       new PrimitiveType({
-        elemID: new ElemID(SERVICES[0], 'prim'),
+        elemID: new ElemID(mockService, 'prim'),
         primitive: PrimitiveTypes.STRING,
       }),
     ]
@@ -305,8 +334,7 @@ describe('api.ts', () => {
 
         await api.updateCredentials(ws, newConf)
 
-        const adapterCreator = adapterCreators.salesforce
-        expect(adapterCreator.validateCredentials).toHaveBeenCalledTimes(1)
+        expect(mockAdapter.validateCredentials).toHaveBeenCalledTimes(1)
       })
     })
 
@@ -327,18 +355,19 @@ describe('api.ts', () => {
 
         await api.verifyCredentials(newConf)
 
-        const adapterCreator = adapterCreators.salesforce
-        expect(adapterCreator.validateCredentials).toHaveBeenCalledTimes(1)
+        expect(mockAdapter.validateCredentials).toHaveBeenCalledTimes(1)
       })
     })
 
     describe('addAdapter', () => {
       it('should set adapter config', async () => {
         const serviceName = 'test'
-        const getAdaptersCredentialsTypes = adapters.getAdaptersCredentialsTypes as jest.Mock
-        getAdaptersCredentialsTypes.mockReturnValue({
-          [serviceName]: new ObjectType({ elemID: new ElemID(serviceName) }),
-        })
+        const mockNewService = {
+          credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }),
+          operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+        }
+        adapterCreators[serviceName] = mockNewService
         const wsp = mockWorkspace()
         await api.addAdapter(wsp, serviceName)
         expect((wsp.addService as jest.Mock).call).toHaveLength(1)

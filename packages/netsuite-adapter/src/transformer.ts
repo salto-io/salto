@@ -138,7 +138,7 @@ const sortValuesBasedOnType = (typeName: string, values: Values, instancePath: E
   }
 
   return transformValues(
-    { type: topLevelType, values, transformFunc: sortValues, pathID: instancePath }
+    { type: topLevelType, values, transformFunc: sortValues, pathID: instancePath, strict: true }
   ) ?? {}
 }
 

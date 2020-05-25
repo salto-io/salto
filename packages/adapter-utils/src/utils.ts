@@ -50,12 +50,14 @@ export const transformValues = (
     transformFunc,
     strict = true,
     pathID = undefined,
+    isTopLevel = true,
   }: {
     values: Value
     type: ObjectType | TypeMap
     transformFunc: TransformFunc
     strict?: boolean
     pathID?: ElemID
+    isTopLevel?: boolean
   }
 ): Values | undefined => {
   const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): Value => {
@@ -65,6 +67,11 @@ export const transformValues = (
 
     if (isReferenceExpression(value)) {
       return transformFunc({ value, path: keyPathID, field })
+    }
+
+    const newVal = transformFunc({ value, path: keyPathID, field })
+    if (newVal === undefined) {
+      return undefined
     }
 
     const fieldType = field.type
@@ -81,23 +88,23 @@ export const transformValues = (
             field.annotations
           ),
         ))
-      if (!_.isArray(value)) {
+      if (!_.isArray(newVal)) {
         if (strict) {
           log.warn(`Array value and isListType mis-match for field - ${field.name}. Got non-array for ListType.`)
         }
-        return transformListInnerValue(value)
+        return transformListInnerValue(newVal)
       }
-      const transformed = value
+      const transformed = newVal
         .map(transformListInnerValue)
         .filter((val: Value) => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
     // It shouldn't get here because only ListType should have array values
-    if (_.isArray(value)) {
+    if (_.isArray(newVal)) {
       if (strict) {
         log.warn(`Array value and isListType mis-match for field - ${field.name}. Only ListTypes should have array values.`)
       }
-      const transformed = value
+      const transformed = newVal
         .map((item, index) => transformValue(item, keyPathID?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
@@ -106,17 +113,18 @@ export const transformValues = (
     if (isObjectType(fieldType)) {
       const transformed = _.omitBy(
         transformValues({
-          values: value,
+          values: newVal,
           type: fieldType,
           transformFunc,
           strict,
           pathID: keyPathID,
+          isTopLevel: false,
         }),
         _.isUndefined
       )
       return _.isEmpty(transformed) ? undefined : transformed
     }
-    return transformFunc({ value, path: keyPathID, field })
+    return newVal
   }
 
   const fieldMap = isObjectType(type)
@@ -126,7 +134,8 @@ export const transformValues = (
       (fieldType, name) => new Field(new ObjectType({ elemID: new ElemID('') }), name, fieldType),
     )
 
-  const result = _(values)
+  const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
+  const result = _(newVal)
     .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMap[key]))
     .omitBy(_.isUndefined)
     .value()

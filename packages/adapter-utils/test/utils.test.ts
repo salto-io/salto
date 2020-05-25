@@ -473,7 +473,7 @@ describe('Test utils.ts', () => {
         if (value && field && path) {
           paths.add(path.getFullName())
         }
-        return undefined
+        return value
       }
 
       beforeAll(() => {

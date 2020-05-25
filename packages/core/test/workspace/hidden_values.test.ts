@@ -47,7 +47,7 @@ describe('hidden_values.ts', () => {
       reg: { type: BuiltinTypes.STRING },
       listOfObjects: {
         type: new ListType(innerObject),
-        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
       },
       notHidden: {
         type: BuiltinTypes.STRING,
@@ -59,7 +59,7 @@ describe('hidden_values.ts', () => {
       },
       objField: {
         type: innerObject,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
       },
       numHidden: {
         type: BuiltinTypes.NUMBER,

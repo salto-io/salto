@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { collections } from '@salto-io/lowerdash'
 import {
   CORE_ANNOTATIONS, Element, InstanceElement,
-  isInstanceElement, isObjectType, isType, ObjectType, Values,
+  isInstanceElement, isObjectType, isType, ObjectType, Values, isListType,
 } from '@salto-io/adapter-api'
 import {
-  transformElement, TransformFunc,
+  transformElement, TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
@@ -47,22 +48,38 @@ export const addHiddenValuesAndHiddenTypes = (
 
   const generateValuesWithHiddenFields = (instance: InstanceElement): Values => {
     const stateElement = stateElementsMap[instance.elemID.getFullName()]
-    if (stateElement !== undefined) {
-      const createHiddenMapCallback: TransformFunc = ({ value, field }) => {
-        if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-          return value
+    if (isInstanceElement(stateElement)) {
+      const hiddenMap = new collections.map.DefaultMap<string, Values>(() => ({}))
+      const createHiddenMapCallback: TransformFunc = ({ value, path, field }) => {
+        if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true && path !== undefined) {
+          hiddenMap.get(path.createParentID().getFullName())[path.name] = value
         }
-        return undefined
+        return value
       }
 
-      const hiddenValuesInstance = transformElement({
+      transformElement({
         element: stateElement,
         transformFunc: createHiddenMapCallback,
         strict: true,
-      }) as InstanceElement
+      })
 
-      // Return values after hidden fields added
-      return _.merge({}, instance.value, hiddenValuesInstance.value)
+      const restoreHiddenValues: TransformFunc = ({ value, path, field }) => {
+        if (path !== undefined && !isListType(field?.type) && hiddenMap.has(path.getFullName())) {
+          const hidden = hiddenMap.get(path.getFullName())
+          return _.merge({}, value, hidden)
+        }
+        return value
+      }
+      if (hiddenMap.size === 0) {
+        return instance.value
+      }
+      return transformValues({
+        values: instance.value,
+        type: stateElement.type, // Use type from state in case the type is hidden
+        pathID: instance.elemID,
+        transformFunc: restoreHiddenValues,
+        strict: false,
+      }) as Values
     }
     // Return the original values if the instance isn't part of the state
     return instance.value

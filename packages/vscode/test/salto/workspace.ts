@@ -34,11 +34,11 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
   username: 'test@test',
 })
 
-export const mockErrors = (errors: SaltoError[]): Errors => ({
-  all: () => errors,
+export const mockErrors = (errors: SaltoError[], parseErrors: ParseError[] = []): Errors => ({
+  all: () => [...errors, ...parseErrors],
   hasErrors: () => errors.length !== 0,
   merge: [],
-  parse: [],
+  parse: parseErrors,
   validation: errors.map(err => ({ elemID: new ElemID('test'), error: '', ...err })),
   strings: () => errors.map(err => err.message),
 })

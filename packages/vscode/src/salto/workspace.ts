@@ -120,7 +120,7 @@ export class EditorWorkspace {
       // After we ran the update we check if the operation resulted with no
       // errors. If so - we update the last valid state.
       if (_.isEmpty((await this.workspace.errors()).parse)
-        && !_.isEmpty(await this.workspace.elements)) {
+        && !_.isEmpty(await this.workspace.elements())) {
         this.lastValidCopy = Promise.resolve(this.workspace.clone())
       }
       // We recall this method to make sure no pending were added since

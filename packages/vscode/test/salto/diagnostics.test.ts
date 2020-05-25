@@ -17,13 +17,32 @@ import { Workspace } from '@salto-io/core'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getDiagnostics } from '../../src/salto/diagnostics'
 import { mockWorkspace, mockErrors, mockFunction } from './workspace'
+import { ParseError } from '@salto-io/core/dist/src/parser/parse'
+import _ from 'lodash'
 
 describe('diagnostics', () => {
   it('should diagnostics on errors', async () => {
     const baseWs = await mockWorkspace()
-    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([
-      { severity: 'Error', message: 'Blabla' },
-    ]))
+    const parseRange = {
+      start: { col: 2, line: 2, byte: 2 },
+      end: { col: 3, line: 3, byte: 3 },
+      filename: '/parse_error.nacl',
+    }
+    baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors(
+      [{ severity: 'Error', message: 'Blabla' }],
+      [{ 
+        message: 'parse',  
+        detail: 'parse detail',
+        context : {
+          start: { col: 1, line: 1, byte: 1 },
+          end: { col: 2, line: 1, byte: 2 },
+          filename: '/parse_error.nacl',
+        },
+        subject : parseRange,
+        severity: "Error",
+        summary : "parse error"
+      }],
+    ))
     baseWs.transformError = mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
       ...err,
       sourceFragments: [{
@@ -33,12 +52,19 @@ describe('diagnostics', () => {
           end: { col: 2, line: 1, byte: 2 },
           filename: '/parse_error.nacl',
         },
+        subRange : (err as ParseError).subject
       }],
     }))
     const workspace = new EditorWorkspace('bla', baseWs)
-    const diag = (await getDiagnostics(workspace))['/parse_error.nacl'][0]
-    expect(diag).toBeDefined()
-    expect(diag.msg).toContain('Blabla')
-    expect(diag.severity).toBe('Error')
+    const diag = (await getDiagnostics(workspace))['/parse_error.nacl']
+    const validationError = diag[0]
+    expect(validationError).toBeDefined()
+    expect(validationError.msg).toContain('Blabla')
+    expect(validationError.severity).toBe('Error')
+    const parseError = diag[1]
+    expect(parseError).toBeDefined()
+    expect(parseError.msg).toContain('parse')
+    expect(parseError.severity).toBe('Error')
+    expect(parseError.range).toEqual(_.omit(parseRange,'filename'))
   })
 })

@@ -15,7 +15,9 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import { ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID } from '../src/constants'
+import {
+  ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID, TRANSACTION_FORM,
+} from '../src/constants'
 import { customTypes } from '../src/types'
 import { convertToCustomizationInfo, convertToXmlContent } from '../src/client/client'
 
@@ -375,6 +377,65 @@ describe('Transformer', () => {
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
+    })
+
+    it('should transform ordered values for forms', () => {
+      const transactionFormInstance = new InstanceElement('elementName',
+        customTypes[TRANSACTION_FORM], {
+          address: 'my address',
+          mainFields: {
+            defaultFieldGroup: {
+              fields: {
+                field: [{
+                  label: 'My Default Label',
+                  visible: true,
+                  id: 'my_default_id',
+                }],
+                position: 'TOP',
+              },
+            },
+            fieldGroup: {
+              fields: {
+                field: [{
+                  label: 'My Label',
+                  visible: true,
+                  id: 'my_id',
+                }],
+                position: 'MIDDLE',
+              },
+            },
+          },
+          name: 'Form Name',
+          standard: 'STANDARDESTIMATE',
+          [SCRIPT_ID]: 'custform_my_script_id',
+        })
+
+      const customizationInfo = toCustomizationInfo(transactionFormInstance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(removeLineBreaks('<transactionForm scriptid="custform_my_script_id" standard="STANDARDESTIMATE">\n'
+        + '  <name>Form Name</name>\n'
+        + '  <mainFields>\n'
+        + '   <fieldGroup>\n'
+        + '     <fields position="MIDDLE">\n'
+        + '       <field>\n'
+        + '         <id>my_id</id>\n'
+        + '         <label>My Label</label>\n'
+        + '         <visible>T</visible>\n'
+        + '       </field>\n'
+        + '     </fields>\n'
+        + '   </fieldGroup>\n'
+        + '   <defaultFieldGroup>\n'
+        + '     <fields position="TOP">\n'
+        + '       <field>\n'
+        + '         <id>my_default_id</id>\n'
+        + '         <label>My Default Label</label>\n'
+        + '         <visible>T</visible>\n'
+        + '       </field>\n'
+        + '     </fields>\n'
+        + '   </defaultFieldGroup>\n'
+        + '  </mainFields>\n'
+        + '  <address>my address</address>\n'
+        + '</transactionForm>\n'))
     })
   })
 })

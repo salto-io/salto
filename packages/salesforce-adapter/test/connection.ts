@@ -38,6 +38,8 @@ const mockJsforce: () => Connection = () => ({
   } as Soap,
 
   describeGlobal: jest.fn().mockImplementation(async () => Promise.resolve({ sobjects: [] })),
+  query: jest.fn().mockImplementation(() => Promise.resolve([])),
+  queryMore: jest.fn().mockImplementation(() => Promise.resolve([])),
   limits: jest.fn().mockImplementation(() => Promise.resolve({
     DailyApiRequests: { Remaining: 10000 },
   })),

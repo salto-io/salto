@@ -858,6 +858,9 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 }
 
 export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
+  if (_.isNull(value)) {
+    return undefined
+  }
   // We sometimes get empty strings that we want to filter out
   if (value === '') {
     return undefined

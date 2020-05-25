@@ -18,8 +18,9 @@ import {
   MetadataObject, ValueTypeField, MetadataInfo, SaveResult, UpsertResult,
   ListMetadataQuery, FileProperties, DescribeSObjectResult,
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator, DeployResult,
-  RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo,
+  RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo, QueryResult,
 } from 'jsforce'
+import { Value } from '@salto-io/adapter-api'
 
 // This class is the interfaces we use from jsforce library
 // It's here so we will be able to mock jsforce efficiently
@@ -66,5 +67,7 @@ export default interface Connection {
   metadata: Metadata
   soap: Soap
   describeGlobal(): Promise<Global>
+  query(soql: string): Promise<QueryResult<Value>>
+  queryMore(locator: string): Promise<QueryResult<Value>>
   limits(): Promise<Limits>
 }

@@ -22,6 +22,7 @@ import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
+export const NAMESPACES_TO_FETCH_INSTANCES_FOR = 'namespacesToFetchInstancesFor'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -31,6 +32,7 @@ export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: RegExp[]
   [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
+  [NAMESPACES_TO_FETCH_INSTANCES_FOR]?: string[]
 }
 
 export type SalesforceConfig = {
@@ -39,6 +41,7 @@ export type SalesforceConfig = {
   [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [HIDE_TYPES_IN_NACLS]?: boolean
+  [NAMESPACES_TO_FETCH_INSTANCES_FOR]?: string[]
 }
 
 export type ConfigChangeSuggestion = {
@@ -104,6 +107,12 @@ export const configType = new ObjectType({
       type: BuiltinTypes.BOOLEAN,
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_HIDE_TYPES_IN_NACLS,
+      },
+    },
+    [NAMESPACES_TO_FETCH_INSTANCES_FOR]: {
+      type: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: [],
       },
     },
   },

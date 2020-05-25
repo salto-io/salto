@@ -20,12 +20,12 @@ import { collections, decorators } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, DeployResult,
-  RetrieveRequest, RetrieveResult, ListMetadataQuery, UpsertResult,
+  RetrieveRequest, RetrieveResult, ListMetadataQuery, UpsertResult, QueryResult,
 } from 'jsforce'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { AccountId } from '@salto-io/adapter-api'
+import { AccountId, Value } from '@salto-io/adapter-api'
 import { CompleteSaveResult, SfError } from './types'
 import Connection from './jsforce'
 
@@ -453,5 +453,27 @@ export default class SalesforceClient {
   public async deploy(zip: Buffer): Promise<DeployResult> {
     return flatValues(await this.conn.metadata.deploy(zip, { rollbackOnError: true })
       .complete(true))
+  }
+
+  /**
+   * Queries for all the available Records given a query string
+   * @param queryString the string to query with for records
+   */
+  @SalesforceClient.logDecorator
+  @SalesforceClient.requiresLogin
+  public async *queryAll(queryString: string): AsyncIterable<Value[]> {
+    const doesHasMore = (results: QueryResult<Value>): boolean =>
+      !_.isUndefined(results.nextRecordsUrl)
+
+    let results = await this.conn.query(queryString)
+    yield results.records as Value[]
+
+    let hasMore = doesHasMore(results)
+    while (hasMore) {
+      // eslint-disable-next-line no-await-in-loop
+      results = await this.conn.queryMore(results.nextRecordsUrl as string)
+      yield results.records as Value[]
+      hasMore = doesHasMore(results)
+    }
   }
 }

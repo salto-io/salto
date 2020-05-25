@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import nock from 'nock'
 import { RetryStrategies } from 'requestretry'
+import { Values } from '@salto-io/adapter-api'
 import SalesforceClient, { ApiLimitsTooLowError, getConnectionDetails, validateCredentials } from '../src/client/client'
 import mockClient from './client'
 
@@ -224,6 +226,87 @@ describe('salesforce client', () => {
     })
     it('should return empty string', async () => {
       expect(await validateCredentials(credentials, 3, connection)).toEqual('')
+    })
+  })
+
+  describe('queryAll', () => {
+    let resultsIterable: AsyncIterable<Values[]>
+    let dodoScope: nock.Scope
+    const asyncIterableValuesCounter = async (
+      iterator: AsyncIterator<Values[]>
+    ): Promise<number> => {
+      let counter = 0
+      const next = async (): Promise<void> => {
+        const curr = await iterator.next()
+        if (curr.done) return undefined
+        if (_.isArray(curr.value) && curr.value.length > 0) {
+          counter += curr.value.length
+        }
+        return next()
+      }
+      await next()
+      return counter
+    }
+
+    describe('when all results are in a single query', () => {
+      beforeEach(async () => {
+        dodoScope = nock('http://dodo22/services/data/v47.0/query/')
+          .get(/.*/)
+          .times(1)
+          .reply(200, {
+            totalSize: 2,
+            done: true,
+            records: [{ val: 1 }, { val: 2 }],
+          })
+        resultsIterable = await client.queryAll('queryString')
+      })
+
+      it('should have the query returned elements', async () => {
+        const iter = resultsIterable[Symbol.asyncIterator]()
+        expect(iter).toBeDefined()
+        const counter = await asyncIterableValuesCounter(iter)
+        expect(counter).toEqual(2)
+      })
+
+      afterAll(() => {
+        expect(connection.queryMore).not.toHaveBeenCalled()
+        expect(dodoScope.isDone()).toBeTruthy()
+      })
+    })
+
+    describe('when results are returned in more tha one query', () => {
+      beforeEach(async () => {
+        dodoScope = nock('http://dodo22/services/data/v47.0/query')
+          .persist()
+          .get(/.*queryString/)
+          .times(1)
+          .reply(200, {
+            totalSize: 2,
+            done: false,
+            nextRecordsUrl: 'next',
+            records: [{ val: 1 }, { val: 2 }],
+          })
+          .get(/.*/)
+          .times(1)
+          .reply(200, {
+            totalSize: 1,
+            done: true,
+            records: [{ val: 3 }],
+          })
+
+        resultsIterable = await client.queryAll('queryString')
+      })
+
+      it('should get the query returned elements of both query and query more', async () => {
+        const iter = resultsIterable[Symbol.asyncIterator]()
+        expect(iter).toBeDefined()
+        const counter = await asyncIterableValuesCounter(iter)
+        expect(counter).toEqual(3)
+      })
+
+      afterAll(() => {
+        expect(dodoScope.isDone()).toBeTruthy()
+      })
     })
   })
 })

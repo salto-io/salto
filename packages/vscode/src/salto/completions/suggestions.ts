@@ -197,7 +197,7 @@ export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
 export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
   const attrName = params.tokens[0]
-  const valueField = getField(params.ref.element.type, params.ref.path)
+  const valueField = getField(params.ref.element.type, params.ref.path)?.field
   const valueFieldType = getFieldType(params.ref.element.type, params.ref.path)
   const valueToken = _.last(params.tokens) || ''
   return (valueField && valueFieldType)
@@ -232,10 +232,11 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
     : params.ref.path
   const valueToken = _.last(params.tokens) || ''
   if (annoType && !_.isEmpty(refPath)) {
-    const attrField = getField(annoType, params.ref.path)
-    return (attrField)
+    const attrField = getField(annoType, params.ref.path)?.field
+    const attrFieldType = getFieldType(annoType, params.ref.path)
+    return (attrField && attrFieldType)
       ? [
-        ...valueSuggestions(annoName, attrField, attrField.type, valueToken),
+        ...valueSuggestions(annoName, attrField, attrFieldType, valueToken),
         ...referenceSuggestions(params.elements, valueToken),
       ]
       : referenceSuggestions(params.elements, valueToken)

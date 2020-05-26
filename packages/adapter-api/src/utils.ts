@@ -19,7 +19,6 @@ import {
   isListType, isObjectType, isField,
 } from './elements'
 import { Values } from './values'
-import { ElemID } from './element_id'
 
 interface AnnoRef {
   annoType?: TypeElement
@@ -46,35 +45,41 @@ export const getSubElement = (
   pathParts: string[]
 ): SubElementSearchResult | undefined => {
   const getChildElement = (source: TypeElement, key: string): Field | TypeElement| undefined => {
+    if (isIndexPathPart(key) && isListType(source)) {
+      return source.innerType
+    }
     if (source.annotationTypes[key]) return source.annotationTypes[key]
     if (isObjectType(source)) return source.fields[key]
     return undefined
   }
 
-  const [curPart, ...restOfParts] = pathParts.filter(p => Number.isNaN(Number(p)))
+  const [curPart, ...restOfParts] = pathParts// .filter(p => Number.isNaN(Number(p)))
   const nextBase = getChildElement(baseType, curPart)
+  if (_.isUndefined(nextBase)) {
+    return undefined
+  }
 
   if (_.isEmpty(restOfParts)) {
-    return nextBase
+    return isField(nextBase) ? { field: nextBase, path: [] } : { path: [curPart] }
   }
 
-  if (nextBase) {
-    return isField(nextBase)
-      ? getSubElement(nextBase.type, restOfParts)
-      : getSubElement(nextBase, restOfParts)
-  }
+  const fieldData = isField(nextBase)
+    ? getSubElement(nextBase.type, restOfParts)
+    : getSubElement(nextBase, restOfParts)
 
-  // First token is no good, we check if it is a part of a longer name
-  const nextCur = [curPart, restOfParts[0]].join(ElemID.NAMESPACE_SEPARATOR)
-  const nextRest = restOfParts.slice(1)
-  return getSubElement(baseType, [nextCur, ...nextRest])
+  if (_.isUndefined(fieldData)) return undefined
+  if (fieldData.field) return fieldData
+  if (isField(nextBase)) {
+    return {
+      path: restOfParts,
+      field: nextBase,
+    }
+  }
+  return {
+    path: pathParts,
+  }
 }
 
-<<<<<<< HEAD
-export const getField = (baseType: TypeElement, pathParts: string[]): Field | undefined => {
-  const element = getSubElement(baseType, pathParts)
-  return isField(element) ? element : undefined
-=======
 export const getField = (
   baseType: TypeElement,
   pathParts: string[]
@@ -84,22 +89,35 @@ export const getField = (
     return fieldData
   }
   return undefined
->>>>>>> 375143ad... extracted getSubElement return value to a type
 }
 
-export const getFieldType = (baseType: TypeElement, pathParts: string[]):
+export const getFieldType = (baseType: TypeElement, path: string[]):
   TypeElement | undefined => {
-  const field = getField(baseType, pathParts)
-  return (isField(field)) ? field.type : undefined
+  const getFieldInternalType = (
+    fieldType: TypeElement,
+    pathParts: string[]
+  ): TypeElement | undefined => {
+    const [curPart, ...restOfParts] = pathParts
+    if (_.isEmpty(curPart)) {
+      return fieldType
+    }
+    if (isIndexPathPart(curPart) && isListType(fieldType)) {
+      return getFieldInternalType(fieldType.innerType, restOfParts)
+    }
+    return undefined
+  }
+  const fieldData = getField(baseType, path)
+  const r = fieldData?.field && getFieldInternalType(fieldData.field.type, fieldData.path)
+  return r
 }
 
 export const getFieldNames = (refType: ObjectType, path: string[]): string[] => {
   if (_.isEmpty(path)) {
     return _.keys(refType.fields)
   }
-  const pathField = getField(refType, path)
-  if (pathField && isField(pathField) && isObjectType(pathField.type)) {
-    return _.keys(pathField.type.fields)
+  const fieldType = getFieldType(refType, path)
+  if (isObjectType(fieldType)) {
+    return _.keys(fieldType.fields)
   }
   return []
 }

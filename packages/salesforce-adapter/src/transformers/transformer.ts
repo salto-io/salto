@@ -56,7 +56,7 @@ export const metadataType = (element: Element): string => {
     // We expect to reach to this place only with field of CustomObject
     return CUSTOM_FIELD
   }
-  return element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
+  return element.annotations[METADATA_TYPE] || 'unknown'
 }
 
 export const isCustomObject = (element: Element): boolean =>

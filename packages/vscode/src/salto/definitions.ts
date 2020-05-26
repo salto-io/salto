@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isObjectType, isInstanceElement, getField } from '@salto-io/adapter-api'
+import { isInstanceElement, getField } from '@salto-io/adapter-api'
 import { parseElemID } from '@salto-io/core'
+import _ from 'lodash'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
 import { getLocations, SaltoElemLocation } from './location'
@@ -25,17 +26,12 @@ export const provideWorkspaceDefinition = async (
   token: string
 ): Promise<SaltoElemLocation[]> => {
   if (context.ref && isInstanceElement(context.ref.element)) {
-    const refPath = context.ref.path.replace(new RegExp(`${token}$`), '')
-    const refType = (refPath)
-      ? getField(context.ref.element.type, refPath.split(' '))
-      : context.ref.element.type
-    // If we are inside an instance obj, we look for the *field* definitions by
-    // field name
-    if (isObjectType(refType)) {
-      const refField = refType.fields[token]
-      const fullName = (refField) ? refField.elemID.getFullName() : refType.elemID.getFullName()
-      return getLocations(workspace, fullName)
+    const refPath = context.ref.path
+    if (!_.isEmpty(refPath) && _.last(refPath) === token) {
+      const field = getField(context.ref.element.type, refPath)
+      return field ? getLocations(workspace, field.elemID.getFullName()) : []
     }
+    return getLocations(workspace, context.ref.element.elemID.getFullName())
   }
   // We are not in instance, so we can just look the current token
   return getLocations(workspace, parseElemID(token).getFullName())

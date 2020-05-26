@@ -264,6 +264,7 @@ describe('Test elements.ts', () => {
   describe('ElemID', () => {
     const typeId = new ElemID('adapter', 'example')
     const fieldId = typeId.createNestedID('field', 'test')
+    const fieldIdWithPath = fieldId.createNestedID('nested', 'annotation')
     const annotationTypeId = typeId.createNestedID('annotation', 'anno')
     const annotationTypesId = typeId.createNestedID('annotation')
     const typeInstId = typeId.createNestedID('instance', 'test')
@@ -527,6 +528,100 @@ describe('Test elements.ts', () => {
         })
         it('should return the nesting path in the instance', () => {
           expect(path).toEqual(['nested', 'value'])
+        })
+      })
+    })
+    describe('createBaseID', () => {
+      describe('from field id', () => {
+        describe('without annotations', () => {
+          let parent: ElemID
+          let path: ReadonlyArray<string>
+          beforeAll(() => {
+            ({ parent, path } = fieldId.createBaseID())
+          })
+
+          it('should return the field', () => {
+            expect(parent).toEqual(fieldId)
+          })
+          it('should return the field name as the path', () => {
+            expect(path).toEqual([])
+          })
+        })
+        describe('with nested annotations', () => {
+          let parent: ElemID
+          let path: ReadonlyArray<string>
+          beforeAll(() => {
+            ({ parent, path } = fieldIdWithPath.createBaseID())
+          })
+
+          it('should return the field', () => {
+            expect(parent).toEqual(fieldId)
+          })
+          it('should return the field name as the path', () => {
+            expect(path).toEqual(['nested', 'annotation'])
+          })
+        })
+      })
+      describe('from annotation types id', () => {
+        describe('without path', () => {
+          let parent: ElemID
+          let path: ReadonlyArray<string>
+          beforeAll(() => {
+            ({ parent, path } = annotationTypesId.createBaseID())
+          })
+
+          it('should return the type', () => {
+            expect(parent).toEqual(
+              new ElemID(annotationTypesId.adapter, annotationTypesId.typeName)
+            )
+          })
+          it('should return empty path', () => {
+            expect(path).toEqual([])
+          })
+        })
+      })
+      describe('from annotation type id', () => {
+        let parent: ElemID
+        let path: ReadonlyArray<string>
+        beforeAll(() => {
+          ({ parent, path } = annotationTypeId.createBaseID())
+        })
+
+        it('should return the type', () => {
+          expect(parent).toEqual(new ElemID(annotationTypeId.adapter, annotationTypeId.typeName))
+        })
+        it('should return the annotation name as the path', () => {
+          expect(path).toEqual([annotationTypeId.name])
+        })
+      })
+      describe('from instace id', () => {
+        describe('without path', () => {
+          let parent: ElemID
+          let path: ReadonlyArray<string>
+          beforeAll(() => {
+            ({ parent, path } = typeInstId.createBaseID())
+          })
+
+          it('should return the instance', () => {
+            expect(parent).toEqual(typeInstId)
+          })
+          it('should return the nesting path in the instance', () => {
+            expect(path).toEqual([])
+          })
+        })
+        describe('with path', () => {
+          let parent: ElemID
+          let path: ReadonlyArray<string>
+          beforeAll(() => {
+            ({ parent, path } = valueId.createBaseID())
+          })
+
+          it('should return the instance', () => {
+            expect(parent).toEqual(typeInstId)
+          })
+          it('should return the nesting path in the instance', () => {
+            expect(path).toEqual(['nested', 'value'])
+          })
         })
       })
     })

@@ -101,7 +101,7 @@ describe('Cursor context resolver', () => {
       const ctx = await getPositionContext(workspace, naclFilename, pos)
       expect(ctx.type).toBe('instance')
 
-      expect(ctx.ref && ctx.ref.path).toBe('obj')
+      expect(ctx.ref && ctx.ref.path).toEqual(['obj'])
     })
 
     it('should identify instance list', async () => {
@@ -110,7 +110,7 @@ describe('Cursor context resolver', () => {
       expect(ctx.type).toBe('instance')
 
       expect(ctx.ref && ctx.ref.isList).toBe(true)
-      expect(ctx.ref && ctx.ref.path).toBe('arr')
+      expect(ctx.ref && ctx.ref.path).toEqual(['arr'])
     })
   })
 

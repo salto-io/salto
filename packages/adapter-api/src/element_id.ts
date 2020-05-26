@@ -183,4 +183,16 @@ export class ElemID {
     // Everything other than instance is nested under type
     return { parent: new ElemID(this.adapter, this.typeName), path: this.nameParts }
   }
+
+  createBaseID(): {parent: ElemID; path: ReadonlyArray<string>} {
+    const { parent, path } = this.createTopLevelParentID()
+    if (this.idType === 'field') {
+      const [fieldName, ...fieldPath] = this.nameParts
+      return {
+        parent: parent.createNestedID('field', fieldName),
+        path: fieldPath,
+      }
+    }
+    return { parent, path }
+  }
 }

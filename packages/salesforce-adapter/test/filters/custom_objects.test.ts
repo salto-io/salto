@@ -104,6 +104,9 @@ describe('Custom Objects filter', () => {
         pluralLabel: { type: BuiltinTypes.STRING },
         enableFeeds: { type: BuiltinTypes.BOOLEAN },
       },
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+      },
     })
   }
 
@@ -585,7 +588,10 @@ describe('Custom Objects filter', () => {
 
     describe('Merge elements', () => {
       const testInstanceElement = new InstanceElement('Lead', new ObjectType(
-        { elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT) }
+        {
+          elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT),
+          annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+        }
       ),
       { fields: [
         {
@@ -973,10 +979,12 @@ describe('Custom Objects filter', () => {
           const articleTypeObj = new ObjectType({ elemID: new ElemID(SALESFORCE, 'ArticleType'),
             annotations: {
               [API_NAME]: 'ArticleType__kav',
+              [METADATA_TYPE]: CUSTOM_OBJECT,
             } })
           const platformEventObj = new ObjectType({ elemID: new ElemID(SALESFORCE, 'PlatformEvent'),
             annotations: {
               [API_NAME]: 'PlatformEvent__e',
+              [METADATA_TYPE]: CUSTOM_OBJECT,
             } })
           const articleTypeChannelDisplayTypeObj = new ObjectType(
             {

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { isInstanceElement, getField } from '@salto-io/adapter-api'
-import { parseElemID } from '@salto-io/core'
 import _ from 'lodash'
 import { EditorWorkspace } from './workspace'
 import { PositionContext } from './context'
@@ -31,8 +30,11 @@ export const provideWorkspaceDefinition = async (
       const field = getField(context.ref.element.type, refPath)?.field
       return field ? getLocations(workspace, field.elemID.getFullName()) : []
     }
-    return getLocations(workspace, context.ref.element.elemID.getFullName())
   }
-  // We are not in instance, so we can just look the current token
-  return getLocations(workspace, parseElemID(token).getFullName())
+  // We are not in instance field, so we can just look the current token
+  try {
+    return getLocations(workspace, token)
+  } catch (e) {
+    return []
+  }
 }

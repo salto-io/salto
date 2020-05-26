@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { Workspace } from '@salto-io/core'
+import { ParseError } from '@salto-io/core/dist/src/parser/parse'
+import _ from 'lodash'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getDiagnostics } from '../../src/salto/diagnostics'
 import { mockWorkspace, mockErrors, mockFunction } from './workspace'
-import { ParseError } from '@salto-io/core/dist/src/parser/parse'
-import _ from 'lodash'
 
 describe('diagnostics', () => {
   it('should diagnostics on errors', async () => {
@@ -30,17 +30,17 @@ describe('diagnostics', () => {
     }
     baseWs.errors = mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors(
       [{ severity: 'Error', message: 'Blabla' }],
-      [{ 
-        message: 'parse',  
+      [{
+        message: 'parse',
         detail: 'parse detail',
-        context : {
+        context: {
           start: { col: 1, line: 1, byte: 1 },
           end: { col: 2, line: 1, byte: 2 },
           filename: '/parse_error.nacl',
         },
-        subject : parseRange,
-        severity: "Error",
-        summary : "parse error"
+        subject: parseRange,
+        severity: 'Error',
+        summary: 'parse error',
       }],
     ))
     baseWs.transformError = mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
@@ -52,7 +52,7 @@ describe('diagnostics', () => {
           end: { col: 2, line: 1, byte: 2 },
           filename: '/parse_error.nacl',
         },
-        subRange : (err as ParseError).subject
+        subRange: (err as ParseError).subject,
       }],
     }))
     const workspace = new EditorWorkspace('bla', baseWs)
@@ -65,6 +65,6 @@ describe('diagnostics', () => {
     expect(parseError).toBeDefined()
     expect(parseError.msg).toContain('parse')
     expect(parseError.severity).toBe('Error')
-    expect(parseError.range).toEqual(_.omit(parseRange,'filename'))
+    expect(parseError.range).toEqual(_.omit(parseRange, 'filename'))
   })
 })

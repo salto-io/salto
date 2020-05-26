@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { EditorRange, PositionContext } from './context'
 
 export enum SaltoSymbolKind {
@@ -31,16 +32,10 @@ export interface SaltoSymbol {
   range: EditorRange
 }
 
-const getSaltoSymbolName = (context: PositionContext, prefName?: string): string => {
+const getSaltoSymbolName = (context: PositionContext): string => {
   if (context.ref) {
-    const fullName = context.ref.path
-      ? context.ref.path
-      : context.ref.element.elemID.name
-    if (prefName && fullName.indexOf(prefName) >= 0) {
-      const partName = fullName.slice(fullName.indexOf(prefName) + prefName.length + 1)
-      return Number.isNaN(Number(partName)) ? partName : `[${partName}]`
-    }
-    return fullName
+    const fullName = _.last(context.ref.path) || context.ref.element.elemID.name
+    return Number.isNaN(Number(fullName)) ? fullName : `[${fullName}]`
   }
   return 'global'
 }
@@ -48,17 +43,17 @@ const getSaltoSymbolName = (context: PositionContext, prefName?: string): string
 const getSaltoSymbolKind = (context: PositionContext): SaltoSymbolKind => {
   if (context.ref && context.ref.isList) return SaltoSymbolKind.Array
   if (context.type === 'field') {
-    return (context.ref && context.ref.path)
+    return (context.ref && !_.isEmpty(context.ref.path))
       ? SaltoSymbolKind.Annotation
       : SaltoSymbolKind.Field
   }
   if (context.type === 'instance') {
-    return (context.ref && context.ref.path)
+    return (context.ref && !_.isEmpty(context.ref.path))
       ? SaltoSymbolKind.Attribute
       : SaltoSymbolKind.Instance
   }
   if (context.type === 'type') {
-    return (context.ref && context.ref.path)
+    return (context.ref && !_.isEmpty(context.ref.path))
       ? SaltoSymbolKind.Annotation
       : SaltoSymbolKind.Type
   }
@@ -68,9 +63,7 @@ const getSaltoSymbolKind = (context: PositionContext): SaltoSymbolKind => {
 export const createSaltoSymbol = (
   context: PositionContext,
 ): SaltoSymbol => {
-  const name = context.parent
-    ? getSaltoSymbolName(context, getSaltoSymbolName(context.parent))
-    : getSaltoSymbolName(context)
+  const name = getSaltoSymbolName(context)
   const type = getSaltoSymbolKind(context)
   return { name, type, range: context.range }
 }

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
-  getFieldNames, getFieldType, getAnnotationKey, ElemID, Element,
+  getFieldNames, getFieldType, ElemID, Element,
   isListType, getRestriction } from '@salto-io/adapter-api'
 import { dumpElemID, parseElemID } from '@salto-io/core'
 import { resolvePath } from '@salto-io/adapter-utils'
@@ -197,39 +197,26 @@ export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
 export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
   const attrName = params.tokens[0]
-  const refPath = (attrName)
-    ? params.ref.path.replace(new RegExp(`${attrName}$`), '')
-    : params.ref.path
-  const refType = (refPath)
-    ? getFieldType(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPARATOR))
-    : params.ref.element.type
-
-  const valueField = (attrName && isObjectType(refType))
-    ? refType.fields[attrName]
-    : getField(params.ref.element.type, refPath.split(ElemID.NAMESPACE_SEPARATOR))
-
+  const valueField = getField(params.ref.element.type, params.ref.path)
+  const valueFieldType = getFieldType(params.ref.element.type, params.ref.path)
   const valueToken = _.last(params.tokens) || ''
-  return (valueField)
+  return (valueField && valueFieldType)
     ? [
-      ...valueSuggestions(attrName, valueField, valueField.type, valueToken),
+      ...valueSuggestions(attrName, valueField, valueFieldType, valueToken),
       ...referenceSuggestions(params.elements, valueToken),
     ]
     : referenceSuggestions(params.elements, valueToken)
 }
 
 export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
-  // Utility function that is only used in this function
   if (!(params.ref && isField(params.ref.element))) return []
 
-  if (!params.ref.path) {
+  if (_.isEmpty(params.ref.path)) {
     return _.keys(params.ref.element.type.annotationTypes)
   }
-  const { annoName, annoType } = getAnnotationKey(
-    params.ref.element.type.annotationTypes,
-    params.ref.path
-  )
+  const [annoName, ...annoPath] = params.ref.path
+  const annoType = params.ref.element.annotationTypes[annoName]
   if (annoName && isObjectType(annoType)) {
-    const annoPath = params.ref.path.slice(annoName.length)
     return getFieldNames(annoType, annoPath)
   }
   return []
@@ -241,11 +228,11 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
   const annoName = params.tokens[0]
   const annoType = params.ref.element.type.annotationTypes[annoName]
   const refPath = (annoName)
-    ? params.ref.path.replace(new RegExp(`${annoName}$`), '')
+    ? params.ref.path.slice(1)
     : params.ref.path
   const valueToken = _.last(params.tokens) || ''
-  if (annoType && refPath) {
-    const attrField = getField(annoType, refPath.split(ElemID.NAMESPACE_SEPARATOR))
+  if (annoType && !_.isEmpty(refPath)) {
+    const attrField = getField(annoType, params.ref.path)
     return (attrField)
       ? [
         ...valueSuggestions(annoName, attrField, attrField.type, valueToken),

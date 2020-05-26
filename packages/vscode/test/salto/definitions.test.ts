@@ -47,7 +47,6 @@ describe('Test go to definitions', () => {
     expect(defs.length).toBe(2)
   })
 
-  // TODO: enable this back
   it('should give the field definition for an instance attr', async () => {
     const pos = { line: 89, col: 8 }
     const ctx = await getPositionContext(workspace, naclFileName, pos)

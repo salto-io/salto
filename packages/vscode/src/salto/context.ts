@@ -16,10 +16,10 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, isField, isType, isObjectType,
+  Element, isField, isType, isObjectType, ElemID,
 } from '@salto-io/adapter-api'
 import {
-  findElement,
+  findElement, resolvePath,
 } from '@salto-io/adapter-utils'
 import { SourceMap } from '@salto-io/core'
 import { EditorWorkspace } from './workspace'
@@ -43,7 +43,7 @@ interface NamedRange {
 
 export interface ContextReference {
   element: Element
-  path: string
+  path: string[]
   isList: boolean
 }
 
@@ -76,22 +76,16 @@ const getText = (content: string, range: EditorRange): string => {
 // scope in which contains the ref, and its internal path
 const getContextReference = (
   fileContent: string,
-  refElements: Element[],
+  refElements: Record<string, Element>,
   contextRange: NamedRange
 ): ContextReference | undefined => {
-  // If the range is contained in the element, then the elementID is a prefix of the refName
-  const candidates = refElements.filter(e =>
-    // using index of and not startsWith for performance
-    contextRange.name.indexOf(e.elemID.getFullName()) === 0)
-  // Now all we need is to find the element with the longest fullName
-  const element = _.maxBy(candidates, e => e.elemID.getFullName().length)
+  const rangeContent = getText(fileContent, contextRange.range)
+  const isList = _.last(rangeContent) === ']' || _.takeRight(rangeContent, 2).join('') === '],'
+  const elemID = ElemID.fromFullName(contextRange.name)
+  const { parent, path } = elemID.createBaseID()
+  const element = refElements[parent.getFullName()]
   if (element) {
-    const rangeContent = getText(fileContent, contextRange.range)
-    const isList = _.last(rangeContent) === ']'
-      || _.takeRight(rangeContent, 2).join('') === '],'
-    // The part of the range name which is not in the element name is the path
-    const path = contextRange.name.slice(element.elemID.getFullName().length + 1)
-    return { element, path, isList }
+    return { element, path: [...path], isList }
   }
   return undefined
 }
@@ -127,7 +121,7 @@ const isContained = (inner: EditorRange, outter: EditorRange): boolean => {
 }
 
 const buildPositionContext = (
-  refElements: Element[],
+  refElements: Record<string, Element>,
   fileContent: string,
   range: NamedRange,
   encapsulatedRanges: NamedRange[],
@@ -146,7 +140,7 @@ const buildPositionContext = (
     return _.isEmpty(notEncapsulated) ? [childCtx] : [childCtx, ...buildChildren(notEncapsulated)]
   }
 
-  const ref = getContextReference(fileContent, refElements || [], range)
+  const ref = getContextReference(fileContent, refElements, range)
   const context: PositionContext = {
     parent,
     ref,
@@ -157,10 +151,11 @@ const buildPositionContext = (
   return context
 }
 
-const extractFields = (elements: readonly Element[]): Element[] => (
+const extractFields = (elements: readonly Element[]): Record<string, Element> => (
   _(elements).map(e => (
     (isObjectType(e)) ? [..._.values(e.fields), e] : [e]
-  )).flatten().value()
+  )).flatten().keyBy(e => e.elemID.getFullName())
+    .value()
 )
 
 export const buildDefinitionsTree = (
@@ -183,8 +178,9 @@ export const buildDefinitionsTree = (
 }
 
 const getFullElement = (elements: ReadonlyArray<Element>, partial: Element): Element => {
-  const fullElement = findElement(extractFields(elements || []), partial.elemID)
-  return fullElement || partial
+  const { parent } = partial.elemID.createTopLevelParentID()
+  const topLevelElement = findElement(elements, parent)
+  return (topLevelElement && resolvePath(topLevelElement, partial.elemID)) || partial
 }
 
 const getPositionFromTree = (

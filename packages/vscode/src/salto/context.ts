@@ -55,7 +55,7 @@ export interface PositionContext {
   children?: PositionContext[]
 }
 
-const GLOBAL_RANGE: NamedRange = {
+export const GLOBAL_RANGE: NamedRange = {
   name: 'global',
   range: {
     start: { line: 0, col: 0 },

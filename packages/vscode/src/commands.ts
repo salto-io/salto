@@ -15,7 +15,6 @@
 */
 import * as vscode from 'vscode'
 import _ from 'lodash'
-import { ElemID } from '@salto-io/adapter-api'
 import { copy as copyToClipboard } from 'copy-paste'
 import { getPositionContext } from './salto/context'
 import { EditorWorkspace } from './salto/workspace'
@@ -41,8 +40,6 @@ export const createCopyReferenceCommand = (
     editor.document.fileName,
     saltoPos
   )
-  const copyText = _.isEmpty(ctx.ref?.path)
-    ? ctx.ref?.element.elemID.getFullName()
-    : [ctx.ref?.element.elemID.getFullName(), ctx.ref?.path].join(ElemID.NAMESPACE_SEPARATOR)
+  const copyText = ctx.ref?.element.elemID.createNestedID(...ctx.ref.path).getFullName()
   copyToClipboard(copyText)
 }

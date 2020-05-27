@@ -18,6 +18,7 @@ import { EditorWorkspace } from '../../src/salto/workspace'
 import { provideWorkspaceReferences } from '../../src/salto/usage'
 import { SaltoElemLocation } from '../../src/salto/location'
 import { mockWorkspace } from './workspace'
+import { getPositionContext, PositionContext, GLOBAL_RANGE } from '../../src/salto/context'
 
 describe('Test go to definitions', () => {
   let workspace: EditorWorkspace
@@ -33,7 +34,12 @@ describe('Test go to definitions', () => {
 
   it('should give all fields usages of a type', async () => {
     const token = 'vs.str'
-    const defs = await provideWorkspaceReferences(workspace, token)
+    const pos = {
+      line: 1,
+      col: 8,
+    }
+    const context = await getPositionContext(workspace, 'all.nacl', pos)
+    const defs = await provideWorkspaceReferences(workspace, token, context)
     expect(getRefLines(defs)).toEqual(
       [1, 33, 37, 50, 67, 114, 128, 131, 144, 147, 150, 153, 156, 159, 162, 165]
     )
@@ -41,13 +47,33 @@ describe('Test go to definitions', () => {
 
   it('should give all instance usages of a type', async () => {
     const token = 'vs.loan'
-    const defs = await provideWorkspaceReferences(workspace, token)
-    expect(getRefLines(defs)).toEqual([60, 87, 107, 113])
+    const pos = {
+      line: 60,
+      col: 10,
+    }
+    const context = await getPositionContext(workspace, 'all.nacl', pos)
+    const defs = await provideWorkspaceReferences(workspace, token, context)
+    expect(getRefLines(defs)).toEqual([60, 87, 107, 113, 151])
   })
 
   it('should give all instance AND field usages of a type', async () => {
     const token = 'vs.person'
-    const defs = await provideWorkspaceReferences(workspace, token)
+    const pos = {
+      line: 32,
+      col: 11,
+    }
+    const context = await getPositionContext(workspace, 'all.nacl', pos)
+    const defs = await provideWorkspaceReferences(workspace, token, context)
+    expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 127, 136, 193, 197])
+  })
+
+  it('should work on tokens which have no context element', async () => {
+    const token = 'vs.person'
+    const context: PositionContext = {
+      range: GLOBAL_RANGE.range,
+      type: 'global',
+    }
+    const defs = await provideWorkspaceReferences(workspace, token, context)
     expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 127, 136, 193, 197])
   })
 })

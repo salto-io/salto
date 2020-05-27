@@ -299,7 +299,7 @@ export const restoreValues = <T extends Element>(
     }
     const file = allStaticFilesPaths.get(path.getFullName())
     if (!_.isUndefined(file)) {
-      return new StaticFile(file.filepath, Buffer.from(value))
+      return new StaticFile({ filepath: file.filepath, content: Buffer.from(value) })
     }
 
     return value

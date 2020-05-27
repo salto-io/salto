@@ -95,7 +95,7 @@ describe('Test utils.ts', () => {
   const regValue = 'regValue'
   const valueRef = new ReferenceExpression(mockElem, regValue)
   const fileContent = 'bb'
-  const valueFile = new StaticFile('aa', Buffer.from(fileContent))
+  const valueFile = new StaticFile({ filepath: 'aa', content: Buffer.from(fileContent) })
 
   const mockInstance = new InstanceElement(
     'mockInstance',

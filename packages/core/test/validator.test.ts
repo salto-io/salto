@@ -619,7 +619,7 @@ describe('Elements validation', () => {
             },
           }),
           {
-            someFile: new StaticFile('path', 'hash'),
+            someFile: new StaticFile({ filepath: 'path', hash: 'hash' }),
           },
         )
 

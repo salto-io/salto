@@ -32,7 +32,7 @@ describe('Functions', () => {
   it('should have a file function', () =>
     expect(functions).toHaveProperty('file'))
   it('should identify static file values', () =>
-    expect(functions.file.isSerializedAsFunction(new StaticFile('aa', 'hash'))).toBeTruthy())
+    expect(functions.file.isSerializedAsFunction(new StaticFile({ filepath: 'aa', hash: 'hash' }))).toBeTruthy())
   it('should not identify for other values', () =>
     expect(functions.file.isSerializedAsFunction('a' as Value)).toBeFalsy())
   it('should convert valid function expression to valid static metadata', async () => {
@@ -41,19 +41,19 @@ describe('Functions', () => {
     expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith('aa')
   })
   it('should not persist when dumping static file with no content', async () => {
-    const dumped = await functions.file.dump(new StaticFile(
-      'filepath',
-      'hash',
-    ))
+    const dumped = await functions.file.dump(new StaticFile({
+      filepath: 'filepath',
+      hash: 'hash',
+    }))
     expect(dumped).toHaveProperty('funcName', 'file')
     expect(dumped).toHaveProperty('parameters', ['filepath'])
     expect(mockedStaticFilesSource.persistStaticFile).toHaveBeenCalledTimes(0)
   })
   it('should persist when dumping static file with content', async () => {
-    const dumped = await functions.file.dump(new StaticFile(
-      'filepath',
-      Buffer.from('ZOMG')
-    ))
+    const dumped = await functions.file.dump(new StaticFile({
+      filepath: 'filepath',
+      content: Buffer.from('ZOMG'),
+    }))
     expect(dumped).toHaveProperty('funcName', 'file')
     expect(dumped).toHaveProperty('parameters', ['filepath'])
     expect(mockedStaticFilesSource.persistStaticFile).toHaveBeenCalledTimes(1)

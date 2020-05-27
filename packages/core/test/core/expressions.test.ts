@@ -128,7 +128,7 @@ describe('Test Salto Expressions', () => {
       several: new TestFuncImpl('several', [false, 123]),
       list: new TestFuncImpl('list', [['aaa', true, 123]]),
       mixed: new TestFuncImpl('mixed', ['aaa', [1, 2, 'aa']]),
-      file: new StaticFile('some/path.ext', 'hash'),
+      file: new StaticFile({ filepath: 'some/path.ext', hash: 'hash' }),
     })
 
     const elements = [

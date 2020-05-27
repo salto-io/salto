@@ -52,10 +52,10 @@ export const buildStaticFilesSource = (
         }
 
         const staticFileBuffer = Buffer.from(file.buffer)
-        const staticFileWithHashAndContent = new StaticFile(
+        const staticFileWithHashAndContent = new StaticFile({
           filepath,
-          staticFileBuffer,
-        )
+          content: staticFileBuffer,
+        })
         await staticFilesCache.put({
           hash: staticFileWithHashAndContent.hash,
           modified,
@@ -64,10 +64,10 @@ export const buildStaticFilesSource = (
         return staticFileWithHashAndContent
       }
 
-      return new StaticFile(
+      return new StaticFile({
         filepath,
-        cachedResult.hash,
-      )
+        hash: cachedResult.hash,
+      })
     },
     getContent: async (
       filepath: string

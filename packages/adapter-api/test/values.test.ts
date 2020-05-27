@@ -52,25 +52,25 @@ describe('Values', () => {
   describe('StaticFile', () => {
     describe('equality (direct)', () => {
       it('equals', () => {
-        const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
-        const fileFunc2 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
         expect(fileFunc1.isEqual(fileFunc2)).toEqual(true)
       })
       it('unequals', () => {
-        const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
-        const fileFunc2 = new StaticFile('some/path.ext', Buffer.from('ZOMG1'))
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG1') })
         expect(fileFunc1.isEqual(fileFunc2)).toEqual(false)
       })
     })
     describe('equality (via isEqualValues)', () => {
       it('equals by hash', () => {
-        const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
-        const fileFunc2 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(true)
       })
       it('unequals', () => {
-        const fileFunc1 = new StaticFile('some/path.ext', Buffer.from('ZOMG'))
-        const fileFunc2 = new StaticFile('some/path.ext', Buffer.from('ZOMG1'))
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG1') })
         expect(isEqualValues(fileFunc1, fileFunc2)).toEqual(false)
       })
     })
@@ -80,7 +80,7 @@ describe('Values', () => {
       const zOMGResult = calculateStaticFileHash(zOMGBuffer)
       expect(zOMGResult).toEqual(hash)
     })
-    it('isStaticFile when static file', () => expect(isStaticFile(new StaticFile('aa', 'bb'))).toBeTruthy())
+    it('isStaticFile when static file', () => expect(isStaticFile(new StaticFile({ filepath: 'aa', hash: 'bb' }))).toBeTruthy())
     it('isStaticFile when not static file', () => expect(isStaticFile('ZOMG')).toBeFalsy())
   })
 
@@ -96,7 +96,7 @@ describe('Values', () => {
         new ReferenceExpression(new ElemID('')),
         new TemplateExpression({ parts: [] }),
         new VariableExpression(new ElemID('var', 'a')),
-        new StaticFile('dummy', 'dummy'),
+        new StaticFile({ filepath: 'dummy', hash: 'dummy' }),
         { a: 1 },
         [1, 2, 3],
       ]

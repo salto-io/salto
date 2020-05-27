@@ -128,7 +128,7 @@ describe('State/cache serialization', () => {
     'also_me_function',
     model,
     {
-      file: new StaticFile('some/path.ext', 'hash'),
+      file: new StaticFile({ filepath: 'some/path.ext', hash: 'hash' }),
       singleparam: new TestFuncImpl('funcadelic', ['aaa']),
       multipleparams: new TestFuncImpl('george', [false, 321]),
       withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
@@ -260,7 +260,7 @@ describe('State/cache serialization', () => {
       const serialized = serialize(elementsToSerialize)
       const funcElement = (await deserialize(
         serialized,
-        x => Promise.resolve(new StaticFile(x.filepath, 'ZOMGZOMGZOMG'))
+        x => Promise.resolve(new StaticFile({ filepath: x.filepath, hash: 'ZOMGZOMGZOMG' }))
       ))[0] as InstanceElement
 
       expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'ZOMGZOMGZOMG' })

@@ -166,10 +166,10 @@ export const fromRetrieveResult = async (retrieveResult: RetrieveResult,
       return {
         ...metadataInfo,
         ...{
-          content: new StaticFile(
-            `salesforce/${zipProps.dirName}/${basename(file.name)}`,
-            Buffer.from(content),
-          ),
+          content: new StaticFile({
+            filepath: `salesforce/${zipProps.dirName}/${basename(file.name)}`,
+            content: Buffer.from(content),
+          }),
         },
       } as MetadataInfoWithStaticFile
     }

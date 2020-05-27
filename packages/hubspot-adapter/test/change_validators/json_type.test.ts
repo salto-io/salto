@@ -18,8 +18,8 @@ import jsonTypeValidator from '../../src/change_validators/json_type'
 
 const invalidJSON = '{'
 const validJSON = '{ "a": "bba" }'
-const invalidJSONStaticFile = new StaticFile('path', Buffer.from(invalidJSON))
-const validJSONStaticFile = new StaticFile('path', Buffer.from(validJSON))
+const invalidJSONStaticFile = new StaticFile({ filepath: 'path', content: Buffer.from(invalidJSON) })
+const validJSONStaticFile = new StaticFile({ filepath: 'path', content: Buffer.from(validJSON) })
 
 describe('json type change validator', () => {
   let instance: InstanceElement

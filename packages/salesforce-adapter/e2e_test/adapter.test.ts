@@ -3407,7 +3407,10 @@ describe('Salesforce adapter E2E with real account', () => {
           const after = instance.clone()
           const contentString = getContentFromStaticFileOrString(after.value.content).replace('Created', 'Updated')
           after.value.content = isStaticFile(after.value.content)
-            ? new StaticFile(after.value.content.filepath, Buffer.from(contentString))
+            ? new StaticFile({
+              filepath: after.value.content.filepath,
+              content: Buffer.from(contentString),
+            })
             : contentString
           await adapter.update(instance, after, [])
           const instanceInfo = await findInstance(instance)
@@ -3442,7 +3445,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex class manipulation', () => {
           const apexClassInstance = createInstanceElement('MyApexClass', 'ApexClass',
-            new StaticFile('ApexClass.cls', Buffer.from('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}')))
+            new StaticFile({
+              filepath: 'ApexClass.cls',
+              content: Buffer.from('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'),
+            }))
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexClassInstance)
@@ -3469,7 +3475,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex trigger manipulation', () => {
           const apexTriggerInstance = createInstanceElement('MyApexTrigger', 'ApexTrigger',
-            new StaticFile('MyApexTrigger.trigger', Buffer.from('trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}')))
+            new StaticFile({
+              filepath: 'MyApexTrigger.trigger',
+              content: Buffer.from('trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}'),
+            }))
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexTriggerInstance)
@@ -3496,7 +3505,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex page manipulation', () => {
           const apexPageInstance = createInstanceElement('MyApexPage', 'ApexPage',
-            new StaticFile('ApexPage.page', Buffer.from('<apex:page>Created by e2e test!</apex:page>')))
+            new StaticFile({
+              filepath: 'ApexPage.page',
+              content: Buffer.from('<apex:page>Created by e2e test!</apex:page>'),
+            }))
           apexPageInstance.value.label = 'MyApexPage'
 
           beforeAll(async () => {
@@ -3524,7 +3536,10 @@ describe('Salesforce adapter E2E with real account', () => {
 
         describe('apex component manipulation', () => {
           const apexComponentInstance = createInstanceElement('MyApexComponent', 'ApexComponent',
-            new StaticFile('MyApexComponent.component', Buffer.from('<apex:component >Created by e2e test!</apex:component>')))
+            new StaticFile({
+              filepath: 'MyApexComponent.component',
+              content: Buffer.from('<apex:component >Created by e2e test!</apex:component>'),
+            }))
           apexComponentInstance.value.label = 'MyApexComponent'
 
           beforeAll(async () => {
@@ -3600,7 +3615,10 @@ describe('Salesforce adapter E2E with real account', () => {
               encodingKey: 'UTF-8',
               type: 'text',
               description: 'My Email Template Description',
-              content: new StaticFile('MyEmailTemplate.email', Buffer.from('My Email Template Body')),
+              content: new StaticFile({
+                filepath: 'MyEmailTemplate.email',
+                content: Buffer.from('My Email Template Body'),
+              }),
             }, 'EmailTemplate')
             await removeElementIfAlreadyExists(client, emailTemplateInstance)
           })

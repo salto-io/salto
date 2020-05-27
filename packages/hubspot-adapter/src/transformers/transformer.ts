@@ -861,10 +861,10 @@ export const transformPrimitive: TransformFunc = ({ value, field, path }) => {
     if (_.isEmpty(value)) {
       return undefined
     }
-    return new StaticFile(
-      `${path?.getFullNameParts().filter((namePart: string): boolean => namePart !== 'instance').join('/')}.json`,
-      Buffer.from(JSON.stringify(value, null, 2))
-    )
+    return new StaticFile({
+      filepath: `${path?.getFullNameParts().filter((namePart: string): boolean => namePart !== 'instance').join('/')}.json`,
+      content: Buffer.from(JSON.stringify(value, null, 2)),
+    })
   }
   return value
 }

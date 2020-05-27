@@ -106,7 +106,12 @@ export const createReferenceProvider = (
     position: vscode.Position,
   ): Promise<vscode.Location[]> => {
     const currenToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
-    return (await provideWorkspaceReferences(workspace, currenToken)).map(
+    const context = await getPositionContext(
+      workspace,
+      doc.fileName,
+      vsPosToSaltoPos(position)
+    )
+    return (await provideWorkspaceReferences(workspace, currenToken, context)).map(
       def => new vscode.Location(
         vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
         saltoPosToVsPos(def.range.start)

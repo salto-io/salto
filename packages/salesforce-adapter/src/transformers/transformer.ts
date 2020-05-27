@@ -76,10 +76,7 @@ const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
     return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
-  const elemMetadataType = metadataType(elem)
-  return elemMetadataType === CUSTOM_OBJECT || CUSTOM_FIELD
-    ? elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
-    : elemMetadataType
+  return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
 }
 
 export const relativeApiName = (name: string): string => (

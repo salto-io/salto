@@ -16,9 +16,9 @@
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
-  ADAPTER, Element, Field, ObjectType, ServiceIds, TypeElement, isObjectType,
+  ADAPTER, Element, Field, ObjectType, TypeElement, isObjectType,
   isInstanceElement, ElemID, BuiltinTypes, CORE_ANNOTATIONS, TypeMap, InstanceElement,
-  Values, INSTANCE_ANNOTATIONS, ReferenceExpression, ListType, FieldDefinition,
+  Values, INSTANCE_ANNOTATIONS, ReferenceExpression, ListType,
 } from '@salto-io/adapter-api'
 import {
   findObjectType,
@@ -40,13 +40,12 @@ import {
 import { FilterCreator } from '../filter'
 import {
   getSObjectFieldElement, Types, isCustomObject, apiName, transformPrimitive,
-  formulaTypeName, metadataType, isCustom, relativeApiName,
+  formulaTypeName, metadataType, isCustom,
 } from '../transformers/transformer'
 import {
   id, addApiName, addMetadataType, addLabel, getNamespace, boolValue,
   buildAnnotationsObjectType, generateApiNameToCustomObject, addObjectParentReference, apiNameParts,
   parentApiName,
-  getNamespaceFromString,
 } from './utils'
 import { convertList } from './convert_lists'
 import { WORKFLOW_FIELD_TO_TYPE } from './workflow'
@@ -127,70 +126,6 @@ const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] =
     return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
   }
   return [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
-}
-
-type FieldDefinitionWithName = FieldDefinition & { name: string }
-const createCustomFieldsObjects = (customFields: FieldDefinitionWithName[], objectName: string,
-  serviceIds: ServiceIds, objNamespace?: string): ObjectType[] => {
-  const createObjectWithFields = (
-    fields: FieldDefinitionWithName[], namespace?: string
-  ): ObjectType => {
-    const obj = Types.get(objectName, true, false, serviceIds) as ObjectType
-    fields.forEach(({ name, type, annotations }) => {
-      obj.fields[name] = new Field(obj, name, type, annotations)
-    })
-    obj.path = [...getObjectDirectoryPath(obj, namespace), customFieldsFileName(obj.elemID.name)]
-    return obj
-  }
-
-  if (!_.isUndefined(objNamespace) && !_.isEmpty(customFields)) {
-    // When having an object with namespace, all of its custom fields go to the same object
-    return [createObjectWithFields(customFields, objNamespace)]
-  }
-  const getFieldDefNamespace = (f: FieldDefinition): string | undefined => (
-    getNamespaceFromString(relativeApiName(f.annotations?.[API_NAME] ?? ''))
-  )
-  const [packagedFields, regularCustomFields] = _.partition(
-    customFields, f => getFieldDefNamespace(f) !== undefined
-  )
-  const namespaceToFields = _.groupBy(packagedFields, f => getFieldDefNamespace(f))
-  // Custom fields that belong to a package go in a separate element
-  const customFieldsObjects = Object.entries(namespaceToFields)
-    .map(([namespace, packageFields]) => createObjectWithFields(packageFields, namespace))
-
-  if (!_.isEmpty(regularCustomFields)) {
-    // Custom fields that has no namespace go in a separate element
-    const customPart = createObjectWithFields(regularCustomFields)
-    customFieldsObjects.push(customPart)
-  }
-  return customFieldsObjects
-}
-
-const createSObjectTypesWithFields = (
-  objectName: string,
-  fields: SObjField[],
-  serviceIds: ServiceIds,
-  namespace?: string,
-): ObjectType[] => {
-  // Filter out nested fields of compound fields
-  const filteredFields = fields.filter(field => !field.compoundFieldName)
-
-  const standardFieldsElement = Types.get(objectName, true, false, serviceIds) as ObjectType
-  filteredFields
-    .filter(f => !f.custom)
-    .map(f => getSObjectFieldElement(standardFieldsElement, f, serviceIds))
-    .forEach(field => {
-      standardFieldsElement.fields[field.name] = field
-    })
-  standardFieldsElement.path = [...getObjectDirectoryPath(standardFieldsElement, namespace),
-    standardFieldsFileName(standardFieldsElement.elemID.name)]
-
-  // Create custom fields (if any)
-  const customFields = filteredFields
-    .filter(f => f.custom)
-    .map(f => getSObjectFieldElement(standardFieldsElement, f, serviceIds))
-  return [standardFieldsElement,
-    ...createCustomFieldsObjects(customFields, objectName, serviceIds, namespace)]
 }
 
 const getFieldDependency = (values: Values): Values | undefined => {
@@ -331,27 +266,7 @@ const mergeCustomObjectWithInstance = (
       delete field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
     }
   })
-  if (customObject.annotations[API_NAME]) {
-    // assigning annotations only to the "AnnotationsObjectType"
-    transformObjectAnnotations(customObject, annotationTypesFromInstance, instance)
-  }
-}
-
-const createObjectTypeWithBaseAnnotations = (name: string, label: string):
-  { serviceIds: ServiceIds; object: ObjectType; namespace?: string } => {
-  const serviceIds = {
-    [ADAPTER]: SALESFORCE,
-    [API_NAME]: name,
-    [METADATA_TYPE]: CUSTOM_OBJECT,
-  }
-  const object = Types.get(name, true, false, serviceIds) as ObjectType
-  addApiName(object, name)
-  addMetadataType(object)
-  addLabel(object, label)
-  const namespace = getNamespace(object)
-  object.path = [...getObjectDirectoryPath(object, namespace),
-    annotationsFileName(object.elemID.name)]
-  return { serviceIds, object, namespace }
+  transformObjectAnnotations(customObject, annotationTypesFromInstance, instance)
 }
 
 const createNestedMetadataInstances = (instance: InstanceElement,
@@ -378,53 +293,46 @@ const createNestedMetadataInstances = (instance: InstanceElement,
       })
     }))
 
+const createObjectType = (name: string, label: string, fields?: SObjField[]): ObjectType => {
+  const serviceIds = {
+    [ADAPTER]: SALESFORCE,
+    [API_NAME]: name,
+    [METADATA_TYPE]: CUSTOM_OBJECT,
+  }
+  const object = Types.get(name, true, false, serviceIds) as ObjectType
+  addApiName(object, name)
+  addMetadataType(object)
+  addLabel(object, label)
+  object.path = [...getObjectDirectoryPath(object, getNamespace(object)), object.elemID.name]
+  if (!_.isUndefined(fields)) {
+    fields
+      .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields
+      .map(f => getSObjectFieldElement(object, f, serviceIds))
+      .forEach(field => {
+        object.fields[field.name] = field
+      })
+  }
+  return object
+}
+
 const createFromInstance = (instance: InstanceElement,
   typesFromInstance: TypesFromInstance): Element[] => {
-  const createFieldsFromInstanceFields = (
-    instanceFields: Values, objectName: string,
-  ): FieldDefinitionWithName[] =>
-    instanceFields
-      .map((field: Values) => {
-        const fieldFullName = naclCase(field[INSTANCE_FULL_NAME_FIELD])
-        return {
-          name: fieldFullName,
-          type: getFieldType(getFieldName(field)),
-          annotations: transformFieldAnnotations(field, objectName),
-        }
-      })
-
   const objectName = instance.value[INSTANCE_FULL_NAME_FIELD]
-  const newElements: Element[] = []
-  const { serviceIds, object: annotationsObject, namespace } = createObjectTypeWithBaseAnnotations(
-    objectName, instance.value[LABEL]
-  )
-  transformObjectAnnotations(annotationsObject, isCustom(objectName)
+  const object = createObjectType(objectName, instance.value[LABEL])
+  transformObjectAnnotations(object, isCustom(objectName)
     ? typesFromInstance.customAnnotationTypes
     : typesFromInstance.standardAnnotationTypes, instance)
-  newElements.push(annotationsObject)
 
   const instanceFields = makeArray(instance.value.fields)
-  const [instanceCustomFields, instanceStandardFields] = _.partition(instanceFields, field =>
-    isCustom(field[INSTANCE_FULL_NAME_FIELD]))
-  if (!_.isEmpty(instanceStandardFields)) {
-    const standardFieldsElement = Types.get(objectName, true, false, serviceIds) as ObjectType
-    const standardFields = createFieldsFromInstanceFields(instanceStandardFields, objectName)
-    standardFields
-      .forEach(({ name, type, annotations }) => {
-        standardFieldsElement.fields[name] = new Field(
-          standardFieldsElement, name, type, annotations,
-        )
-      })
-    standardFieldsElement.path = [...getObjectDirectoryPath(standardFieldsElement, namespace),
-      standardFieldsFileName(standardFieldsElement.elemID.name)]
-    newElements.push(standardFieldsElement)
-  }
-  const customFields = createFieldsFromInstanceFields(instanceCustomFields, objectName)
-  newElements.push(...createCustomFieldsObjects(customFields, objectName, serviceIds, namespace))
-  const nestedMetadataInstances = createNestedMetadataInstances(instance, annotationsObject,
+  instanceFields
+    .forEach((field: Values) => {
+      const fieldFullName = naclCase(field[INSTANCE_FULL_NAME_FIELD])
+      object.fields[fieldFullName] = new Field(object, fieldFullName,
+        getFieldType(getFieldName(field)), transformFieldAnnotations(field, objectName))
+    })
+  const nestedMetadataInstances = createNestedMetadataInstances(instance, object,
     typesFromInstance.nestedMetadataTypes)
-  newElements.push(...nestedMetadataInstances)
-  return newElements
+  return [object, ...nestedMetadataInstances]
 }
 
 const fetchSObjects = async (client: SalesforceClient):
@@ -460,22 +368,21 @@ const createFromSObjectsAndInstances = (
   typesFromInstance: TypesFromInstance
 ): Element[] =>
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
-    const { serviceIds, object, namespace } = createObjectTypeWithBaseAnnotations(name, label)
-    const objects = [object, ...createSObjectTypesWithFields(name, fields, serviceIds, namespace)]
+    const object = createObjectType(name, label, fields)
     const instance = instances[name]
     if (!instance) {
-      return objects
+      return [object]
     }
     const fieldNameToFieldAnnotations = _(makeArray(instance.value.fields))
       .map(field => [field[INSTANCE_FULL_NAME_FIELD], field])
       .fromPairs()
       .value()
-    objects.forEach(obj => mergeCustomObjectWithInstance(
-      obj, fieldNameToFieldAnnotations, instance, custom
+    mergeCustomObjectWithInstance(
+      object, fieldNameToFieldAnnotations, instance, custom
         ? typesFromInstance.customAnnotationTypes
         : typesFromInstance.standardAnnotationTypes
-    ))
-    return [...objects, ...createNestedMetadataInstances(instance, object,
+    )
+    return [object, ...createNestedMetadataInstances(instance, object,
       typesFromInstance.nestedMetadataTypes)]
   }))
 

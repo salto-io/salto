@@ -197,3 +197,29 @@ vs.person hadar {
 vs.person parentTester {
     _parent = vs.person.instance.hadar._parent
 }
+
+type vs.annotated {
+    annotations {
+        vs.loan loan {
+            
+        }
+    }
+
+    loan = {
+        reason = "Need to check base level annotations"
+        loaner = {
+            first_name = "Roi"
+            last_name = "Ronn"
+            age = 35
+        }
+        propety = {
+            car_owner = {
+                first_name = "Ruth"
+                last_name = "Ronn"
+                age = 61
+            }
+            model = "Honda Jazz"
+            year = 2016
+        }
+    }
+}

@@ -19,11 +19,13 @@ import {
   isInsertText, Suggestions, SuggestionsResolver, keywordSuggestions, typesSuggestions,
   isSuggestions, inheritanceSuggestions, annoSuggestions, eqSuggestions,
   annoValueSuggestions, instanceSuggestions, fieldSuggestions, fieldValueSuggestions,
+  typeBodySuggestions,
 } from './suggestions'
 import { PositionContext, EditorPosition } from '../context'
 import { EditorWorkspace } from '../workspace'
 
-type LineType = 'empty'|'type'|'field'|'annotation'|'instance'|'attr'|'fieldList'|'annoList'
+type LineType = 'empty'|'type'|'typeBody'|'field'
+  |'annotation'|'instance'|'attr'|'fieldList'|'annoList'
 export interface SaltoCompletion {
   label: string
   insertText: string
@@ -35,6 +37,8 @@ const LINE_SUGGESTIONS: {[key in LineType]: SuggestionsResolver[] } = {
   empty: [keywordSuggestions],
   // <keyword> <type_name> (is <primitive_type> )
   type: [keywordSuggestions, typesSuggestions, isSuggestions, inheritanceSuggestions],
+  // <field_type OR annotation name>
+  typeBody: [typeBodySuggestions],
   // <field_type>
   field: [typesSuggestions],
   // <annotationName> = <value>
@@ -79,14 +83,21 @@ const getLineType = (
   if (context.type === 'type' && isDefLine) {
     return 'type'
   }
+  if (context.type === 'type'
+    && !isDefLine
+    && _.isEmpty(context.ref?.path)
+    && _.isEmpty(lineTokens)
+  ) {
+    return 'typeBody'
+  }
   if (context.type === 'type' && !isDefLine) {
-    return 'field'
+    return (context.ref?.isList && !lineTokens[0]) ? 'annoList' : 'annotation'
   }
   if (context.type === 'field' && isDefLine) {
     return 'field'
   }
   if (context.type === 'field' && !isDefLine) {
-    return (context.ref && context.ref.isList && !lineTokens[0]) ? 'annoList' : 'annotation'
+    return (context.ref?.isList && !lineTokens[0]) ? 'annoList' : 'annotation'
   }
   if (context.type === 'instance' && isDefLine) {
     return 'instance'

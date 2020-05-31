@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values, Value, ElemID, ReferenceExpression, VariableExpression, TemplateExpression, isReferenceExpression, TemplatePart } from '@salto-io/adapter-api'
+import { Values, Value, ElemID, ReferenceExpression, VariableExpression, TemplateExpression, isReferenceExpression, TemplatePart, IllegalReference } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SourceMap } from '../../source_map'
-import { InternalParseRes, AttrData, NearleyError, LexerToken, IllegalReference } from './types'
+import { InternalParseRes, AttrData, NearleyError, LexerToken } from './types'
 import { HclExpression } from '../types'
 import { evaluateFunction } from '../../functions'
-import { addFuncWatcher, createSourceRange, getAllowWildcard, getCurrentFunctions } from './context'
+import { addValuePromiseWatcher, createSourceRange, getAllowWildcard, getCurrentFunctions } from './context'
 
 export const convertAttributes = (
   attrs: InternalParseRes<AttrData>[]
@@ -32,11 +32,11 @@ export const convertAttributes = (
       throw new NearleyError(attr, attr.source.start.byte, 'Attribute redefined')
     }
     value[attrKey] = attrValue
-    addFuncWatcher(value, attrKey)
-    sourceMap.push(attrKey, attr.source)
+    addValuePromiseWatcher(value, attrKey)
     if (attr.sourceMap) {
       sourceMap.mount(attrKey, attr.sourceMap)
     }
+    sourceMap.push(attrKey, attr.source)
   })
   return {
     value,
@@ -45,34 +45,34 @@ export const convertAttributes = (
 }
 
 export const convertArray = (
-  ob: LexerToken,
+  openingBracket: LexerToken,
   arrayItems: InternalParseRes<Value>[],
-  cb: LexerToken
+  closingBracket: LexerToken
 ): InternalParseRes<Value[]> => {
   const sourceMap = new SourceMap()
   const value: Value[] = []
   arrayItems.forEach((item, index) => {
-    sourceMap.push(index.toString(), item.source)
     value.push(item.value)
-    addFuncWatcher(value, index)
+    addValuePromiseWatcher(value, index)
     if (item.sourceMap) {
       sourceMap.mount(index.toString(), item.sourceMap)
     }
+    sourceMap.push(index.toString(), item.source)
   })
   return {
     value,
-    source: createSourceRange(ob, cb),
+    source: createSourceRange(openingBracket, closingBracket),
     sourceMap,
   }
 }
 
 export const convertObject = (
-  ob: LexerToken,
+  openingBracket: LexerToken,
   attrs: InternalParseRes<AttrData>[],
-  cb: LexerToken
+  closingBracket: LexerToken
 ): InternalParseRes<Values> => ({
   ...convertAttributes(attrs),
-  source: createSourceRange(ob, cb),
+  source: createSourceRange(openingBracket, closingBracket),
 })
 
 export const convertReference = (
@@ -94,11 +94,11 @@ const unescapeTemplateMarker = (text: string): string =>
   text.replace(/\\\$\{/gi, '${',)
 
 export const convertString = (
-  oq: LexerToken,
+  openingQuotationMark: LexerToken,
   contentTokens: LexerToken[],
-  cq: LexerToken
+  closingQuotationMark: LexerToken
 ): InternalParseRes<string | TemplateExpression> => {
-  const source = createSourceRange(oq, cq)
+  const source = createSourceRange(openingQuotationMark, closingQuotationMark)
   const convertedTokens = contentTokens.map(t => (isReferenceExpression(t)
     ? convertReference(t)
     : JSON.parse(`"${unescapeTemplateMarker(t.text)}"`)))
@@ -109,7 +109,7 @@ export const convertString = (
     }
   }
   return {
-    value: convertedTokens.join(),
+    value: convertedTokens.join(''),
     source,
   }
 }
@@ -119,13 +119,13 @@ export const convertMultilineString = (
   contentTokens: LexerToken[],
   mlEnd: LexerToken
 ): InternalParseRes<string | TemplateExpression> => {
-  const expressions = contentTokens.map((t, index) => {
-    const withoutEscaping = unescapeTemplateMarker(t.text)
+  const expressions = contentTokens.map((token, index) => {
+    const withoutEscaping = unescapeTemplateMarker(token.text)
     const value = index === contentTokens.length - 1
       ? withoutEscaping.slice(0, withoutEscaping.length - 1) // Remove the last \n
       : withoutEscaping
-    return t.type === 'reference'
-      ? convertReference(t).value
+    return token.type === 'reference'
+      ? convertReference(token).value
       : value
   })
   const source = createSourceRange(mlStart, mlEnd)
@@ -136,12 +136,12 @@ export const convertMultilineString = (
 
 export const convertBoolean = (bool: LexerToken): InternalParseRes<boolean> => ({
   value: bool.text === 'true',
-  source: createSourceRange(bool, bool), // LOL. This was unindented. Honest.
+  source: createSourceRange(bool), // LOL. This was unindented. Honest.
 })
 
 export const convertNumber = (num: LexerToken): InternalParseRes<number> => ({
   value: parseFloat(num.text),
-  source: createSourceRange(num, num),
+  source: createSourceRange(num),
 })
 
 const convertAttrKey = (key: LexerToken): string => (key.type === 'string'
@@ -158,12 +158,11 @@ export const convertAttr = (
   return { value, source, sourceMap: attrValue.sourceMap }
 }
 
-// This is really broken fix this
 export const convertWildcard = (wildcard: LexerToken): HclExpression => {
   const exp = {
     type: 'dynamic',
     expressions: [],
-    source: createSourceRange(wildcard, wildcard),
+    source: createSourceRange(wildcard),
   } as HclExpression
   if (getAllowWildcard()) return exp
   throw new NearleyError(exp, wildcard.offset, 'Invalid wildcard token')

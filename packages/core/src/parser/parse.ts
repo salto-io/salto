@@ -26,7 +26,7 @@ import {
   Functions,
 } from './functions'
 import { SourceMap } from './source_map'
-
+import { parseElemID as internalParseElemID } from './internal/converter/elements'
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
@@ -38,6 +38,7 @@ export type ParseResult = {
   sourceMap: SourceMap
 }
 
+export const parseElemID = internalParseElemID
 /**
  * Parse a Nacl file
  *
@@ -67,10 +68,6 @@ export const parse = async (
   return {
     elements: elements.map(flattenElementStr),
     sourceMap,
-    errors: fixedErrors.map(err => ({
-      ...err,
-      severity: 'Error',
-      message: err.detail,
-    })),
+    errors: fixedErrors.map(e => ({ ...e, severity: 'Error' })),
   }
 }

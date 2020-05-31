@@ -15,13 +15,13 @@
 */
 import { Value } from '@salto-io/adapter-api'
 import { Functions } from '../../functions'
-import { FuncWatcher, isLexerToken, InternalParseRes, Token } from './types'
+import { ValuePromiseWatcher, isLexerToken, InternalParseRes, Token } from './types'
 import { SourceRange } from '../types'
 
 let currentFilename: string
 let currentFunctions: Functions
 let allowWildcard = false
-let funcWatchers: FuncWatcher[] = []
+let valuePromiseWatchers: ValuePromiseWatcher[] = []
 
 
 export const startParse = (filename: string, functions: Functions): void => {
@@ -34,34 +34,35 @@ export const getCurrentFunctions = (): Functions => currentFunctions
 
 export const getAllowWildcard = (): boolean => allowWildcard
 
-export const replaceFunctionValues = async (): Promise<void> => {
-  await Promise.all(funcWatchers.map(async watcher => {
+export const replaceValuePromises = async (): Promise<void> => {
+  await Promise.all(valuePromiseWatchers.map(async watcher => {
     const { parent, key } = watcher
     parent[key] = await parent[key]
   }))
-  funcWatchers = []
+  valuePromiseWatchers = []
 }
 
 export const setErrorRecoveryMode = (): void => {
   allowWildcard = true
 }
 
-export const addFuncWatcher = (parent: Value, key: string | number): void => {
+export const addValuePromiseWatcher = (parent: Value, key: string | number): void => {
   if (parent[key].then) {
-    funcWatchers.push({ parent, key })
+    valuePromiseWatchers.push({ parent, key })
   }
 }
 
-export const createSourceRange = (st: Token, et: Token): SourceRange => {
-  const start = isLexerToken(st)
-    ? { line: st.line, col: st.col, byte: st.offset }
-    : (st as InternalParseRes<Value>).source.start
-  const end = isLexerToken(et)
+export const createSourceRange = (startToken: Token, endToken?: Token): SourceRange => {
+  const actualEndToken = endToken || startToken
+  const start = isLexerToken(startToken)
+    ? { line: startToken.line, col: startToken.col, byte: startToken.offset }
+    : (startToken as InternalParseRes<Value>).source.start
+  const end = isLexerToken(actualEndToken)
     ? {
-      line: et.line + et.lineBreaks,
-      col: et.lineBreaks === 0 ? et.col + et.text.length : et.text.length - et.text.lastIndexOf('\n'),
-      byte: et.offset + et.text.length,
+      line: actualEndToken.line + actualEndToken.lineBreaks,
+      col: actualEndToken.lineBreaks === 0 ? actualEndToken.col + actualEndToken.text.length : actualEndToken.text.length - actualEndToken.text.lastIndexOf('\n'),
+      byte: actualEndToken.offset + actualEndToken.text.length,
     }
-    : (et as InternalParseRes<Value>).source.end
+    : (actualEndToken as InternalParseRes<Value>).source.end
   return { filename: currentFilename, start, end }
 }

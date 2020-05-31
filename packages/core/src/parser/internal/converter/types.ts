@@ -31,11 +31,7 @@ export class NearleyError extends Error {
   }
 }
 
-export class IllegalReference {
-  constructor(public ref: string, public message: string) {}
-}
-
-export interface FuncWatcher {
+export interface ValuePromiseWatcher {
     parent: Value
     key: string | number
   }
@@ -61,7 +57,7 @@ export type TopLevelElementData = {
 
 export type ElementItem = AttrData | FieldData | TypeMap
 
-export interface LexerToken {
+export type LexerToken = {
     type: string
     value: string
     text: string
@@ -77,3 +73,5 @@ export const isLexerToken = (token: Token): token is LexerToken => 'value' in to
     && 'line' in token
     && 'col' in token
     && 'offset' in token
+    && 'lineBreaks' in token
+    && 'type' in token

@@ -38,10 +38,10 @@ const parseVariablesBlock = (attrs: InternalParseRes<AttrData>[]): TopLevelEleme
     const { source } = attr
     const [name, value] = attr.value
     const variable = new Variable(new ElemID(ElemID.VARIABLES_NAMESPACE, name), value)
-    sourceMap.push(variable.elemID.getFullName(), source)
     if (attr.sourceMap) {
       sourceMap.mount(variable.elemID.getFullName(), attr.sourceMap)
     }
+    sourceMap.push(variable.elemID.getFullName(), source)
     variables.push(variable)
   })
   return { elements: variables, sourceMap }
@@ -73,7 +73,7 @@ const parseType = (
   })
   const sourceMap = new SourceMap()
   if (annotations.sourceMap) {
-    sourceMap.mount([elemID.getFullName(), 'attr'].join(ElemID.NAMESPACE_SEPARATOR), annotations.sourceMap)
+    sourceMap.mount(elemID.createNestedID('attr').getFullName(), annotations.sourceMap)
   }
   const listElements: Map<string, ListType> = new Map<string, ListType>()
   const createFieldType = (blockType: string): TypeElement => {
@@ -96,10 +96,10 @@ const parseType = (
     const fieldType = createFieldType(type)
     const field = new Field(elemID, name, fieldType, fieldAnnotation)
     typeObj.fields[name] = field
-    sourceMap.push(field.elemID.getFullName(), fieldData.source)
     if (fieldData.sourceMap) {
       sourceMap.mount(field.elemID.getFullName(), fieldData.sourceMap)
     }
+    sourceMap.push(field.elemID.getFullName(), fieldData.source)
   })
 
   return [typeObj, sourceMap, wu(listElements.values()).toArray()]
@@ -114,7 +114,7 @@ const parsePrimitiveType = (
   if (kw.value !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
     throw new NearleyError(
       kw,
-      createSourceRange(kw, kw).start.byte,
+      createSourceRange(kw).start.byte,
       `expected keyword ${Keywords.TYPE_INHERITANCE_SEPARATOR}. found ${kw}`
     )
   }
@@ -193,7 +193,7 @@ const parseElementBlock = (
   // without a return value
   throw new NearleyError(
     { text: [elementType, ...elementLabels].map(l => l.value).join(' ') },
-    createSourceRange(elementType, elementLabels[elementLabels.length - 1]).start.byte,
+    createSourceRange(elementType).start.byte,
     'unsupported block definition'
   )
 }
@@ -202,7 +202,7 @@ export const converTopLevelBlock = (
   labels: InternalParseRes<string>[],
   elementItems: InternalParseRes<ElementItem>[],
   cb: LexerToken
-): TopLevelElementData => { // TODO always return array?
+): TopLevelElementData => {
   const isAnnotationsBlock = (
     item: InternalParseRes<Value>
   ): item is InternalParseRes<TypeMap> => (
@@ -210,15 +210,15 @@ export const converTopLevelBlock = (
   )
   const isFieldBlock = (
     item: InternalParseRes<Value>
-  ): item is InternalParseRes<FieldData> => item.value.annotations
-      && item.value.type
-      && item.value.name
+  ): item is InternalParseRes<FieldData> => item.value.annotations !== undefined
+      && item.value.type !== undefined
+      && item.value.name !== undefined
   const isAttribute = (
     item: InternalParseRes<Value>
   ): item is InternalParseRes<AttrData> => _.isArray(item.value) && item.value.length === 2
 
   const [elementType, ...elementLabels] = labels
-  const annotationsTypes = elementItems.filter(isAnnotationsBlock)[0]
+  const annotationTypes = elementItems.filter(isAnnotationsBlock)[0]
   const attributes = elementItems.filter(isAttribute)
   const fields = elementItems.filter(isFieldBlock)
   if (elementType.value === Keywords.VARIABLES_DEFINITION) {
@@ -228,24 +228,24 @@ export const converTopLevelBlock = (
   const [element, sourceMap, listTypes] = parseElementBlock(
     elementType,
     elementLabels,
-      annotationsTypes?.value ?? {},
-      annotations,
-      fields
+    annotationTypes?.value ?? {},
+    annotations,
+    fields
   )
   const elemKey = element.elemID.getFullName()
-  if (annotationsTypes?.sourceMap) {
-    sourceMap.mount(elemKey, annotationsTypes.sourceMap)
+  if (annotationTypes?.sourceMap) {
+    sourceMap.mount(elemKey, annotationTypes.sourceMap)
   }
   sourceMap.push(elemKey, createSourceRange(labels[0], cb))
   return { elements: [element, ...listTypes], sourceMap }
 }
 
 const convertAnnotationTypes = (
-  oToken: InternalParseRes<string>,
+  annotationLabel: InternalParseRes<string>,
   annotationTypes: InternalParseRes<FieldData>[],
-  cb: LexerToken
+  closingBracket: LexerToken
 ): InternalParseRes<TypeMap> => {
-  const source = createSourceRange(oToken, cb)
+  const source = createSourceRange(annotationLabel, closingBracket)
   const sourceMap = new SourceMap()
   const value: Record<string, ObjectType> = {}
   annotationTypes.forEach(annoType => {
@@ -255,10 +255,10 @@ const convertAnnotationTypes = (
       annotations,
     })
     const sourcePrefix = ['annotation', name].join(ElemID.NAMESPACE_SEPARATOR)
-    sourceMap.push(sourcePrefix, annoType.source)
     if (annoType.sourceMap) {
       sourceMap.mount(sourcePrefix, annoType.sourceMap)
     }
+    sourceMap.push(sourcePrefix, annoType.source)
   })
   sourceMap.push('annotation', source)
   return { value, source, sourceMap }

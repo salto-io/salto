@@ -130,10 +130,8 @@ const buildNaclFilesSource = (
 
   const buildNaclFilesState = async (newNaclFiles: NaclFile[], current: ParsedNaclFileMap):
     Promise<NaclFilesState> => {
-    const d = new Date()
     log.debug(`going to parse ${newNaclFiles.length} NaCl files`)
     const ParsedNaclFiles = await parseNaclFiles(newNaclFiles)
-    log.debug(`Done parsing ${newNaclFiles.length} NaCl files. Took ${(new Date()).getTime() - d.getTime()}`)
     const newParsed = _.keyBy(ParsedNaclFiles, parsed => parsed.filename)
     const allParsed = _.omitBy({ ...current, ...newParsed },
       parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))

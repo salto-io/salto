@@ -17,7 +17,8 @@
 import {
   ObjectType, ElemID, Field, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes, Field as TypeField,
-  ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
+  ListType, getRestriction, createRestriction, VariableExpression, Variable,
+  StaticFile, IllegalReference,
 } from '@salto-io/adapter-api'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
@@ -26,8 +27,6 @@ import {
   InvalidStaticFileError,
 } from '../src/core/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
-
-import { IllegalReference } from '../src/parser/internal/converter/types'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')
@@ -362,7 +361,9 @@ describe('Elements validation', () => {
       }
     )
 
-    circularRefInst.value.bool = new ReferenceExpression(circularRefInst2.elemID.createNestedID('bool'))
+    circularRefInst.value.bool = new ReferenceExpression(
+      circularRefInst2.elemID.createNestedID('bool')
+    )
 
     const wrongRefInst = new InstanceElement(
       'unresolved',

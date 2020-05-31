@@ -49,6 +49,11 @@ export class StaticFile {
   }
 }
 
+
+export class IllegalReference {
+  constructor(public ref: string, public message: string) {}
+}
+
 export class ReferenceExpression {
   constructor(
     public readonly elemId: ElemID, private resValue?: Value

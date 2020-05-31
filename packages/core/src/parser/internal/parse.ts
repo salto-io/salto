@@ -23,7 +23,7 @@ import { WILDCARD } from './lexer'
 import { SourceMap } from '../source_map'
 import { Functions } from '../functions'
 import { TopLevelElementData, NearleyError } from './converter/types'
-import { startParse, setErrorRecoveryMode, replaceFunctionValues } from './converter/context'
+import { startParse, setErrorRecoveryMode, replaceValuePromises } from './converter/context'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const grammar = require('./hcl')
@@ -118,7 +118,7 @@ const convertParserError = (
 
   return {
     summary,
-    detail: `Expected ${expectedMsg} token but found instead: ${text === '\n' ? '\\n' : text}.`,
+    message: `Expected ${expectedMsg} token but found instead: ${text === '\n' ? '\\n' : text}.`,
     subject: {
       filename,
       start,
@@ -136,7 +136,7 @@ const unexpectedEOFError = (src: string, filename: string): HclParseError => {
   }
   return {
     summary: 'Unexpected end of file',
-    detail: 'Unexpected end of file', // TODO - improve this
+    message: 'Unexpected end of file', // TODO - improve this
     subject: {
       filename,
       start: pos,
@@ -238,7 +238,7 @@ export const parseBuffer = async (
     log.debug('Finished parsing: %s', filename)
   }
   const parseResult = hclParser.finish()[0]
-  await replaceFunctionValues()
+  await replaceValuePromises()
   if (parseResult !== undefined) {
     const { elements, sourceMap } = convertMain(parseResult)
     return [src, elements, sourceMap, prevErrors]
@@ -246,7 +246,7 @@ export const parseBuffer = async (
   return [src, [], new SourceMap(), [unexpectedEOFError(src, filename)]]
 }
 
-const isWildcardToken = (error: HclParseError): boolean => error.detail.includes(WILDCARD)
+const isWildcardToken = (error: HclParseError): boolean => error.message.includes(WILDCARD)
 
 // This function removes all errors that are generated because of wildcard use
 export const filterErrors = (errors: HclParseError[], src: string): HclParseError[] => {

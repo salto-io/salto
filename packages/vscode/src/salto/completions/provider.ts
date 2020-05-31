@@ -28,7 +28,6 @@ export interface SaltoCompletion {
   label: string
   insertText: string
   filterText: string
-  reInvoke: boolean
 }
 
 const LINE_SUGGESTIONS: {[key in LineType]: SuggestionsResolver[] } = {
@@ -116,17 +115,14 @@ const removeLinePrefix = (line: string): string => {
 
 const createCompletionItems = (
   suggestions: Suggestions,
-  reInvoke: boolean
 ): SaltoCompletion[] => suggestions.map(suggestion => {
   const label = isInsertText(suggestion) ? suggestion.label : suggestion
-  const insertBody = isInsertText(suggestion) ? suggestion.insertText : suggestion
+  const insertText = isInsertText(suggestion) ? suggestion.insertText : suggestion
   const filterText = isInsertText(suggestion) && suggestion.filterText
     ? suggestion.filterText
     : label
-  const insertSuffix = reInvoke ? ' ' : ''
-  const insertText = [insertBody, insertSuffix].join('')
   return {
-    label, reInvoke, insertText, filterText,
+    label, insertText, filterText,
   }
 })
 
@@ -152,6 +148,5 @@ export const provideWorkspaceCompletionItems = async (
   const lineSuggestions = LINE_SUGGESTIONS[lineType]
   const tokenSuggestions = lineSuggestions[tokens.length - 1]
   const suggestions = (tokenSuggestions) ? tokenSuggestions(suggestionsParams) : []
-  const reInvoke = (tokens.length < lineSuggestions.length)
-  return createCompletionItems(suggestions, reInvoke)
+  return createCompletionItems(suggestions)
 }

@@ -92,17 +92,11 @@ export const buildVSCompletionItems = (
   completion: SaltoCompletion[]
 ): vscode.CompletionItem[] => (
   completion.map(({
-    label, reInvoke, insertText, filterText,
+    label, insertText, filterText,
   }) => {
     const item = new vscode.CompletionItem(label)
     item.insertText = new vscode.SnippetString(insertText)
     item.filterText = filterText
-    if (reInvoke) {
-      item.command = {
-        command: 'editor.action.triggerSuggest',
-        title: 'Re-trigger completions',
-      }
-    }
     return item
   })
 )

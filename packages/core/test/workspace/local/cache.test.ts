@@ -19,7 +19,7 @@ import { stat, mkdirp, replaceContents, readTextFile, exists } from '@salto-io/f
 import wu from 'wu'
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 import { parseResultCache } from '../../../src/workspace/cache'
-import { SourceMap } from '../../../src/parser/internal/source_map'
+import { SourceMap } from '../../../src/parser/source_map'
 import { mockStaticFilesSource } from '../static_files/common.test'
 import * as elementsModule from '../../../src/serializer/elements'
 

@@ -34,7 +34,7 @@ import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files/common'
 import { getStaticFilesFunctions } from '../static_files/functions'
-import { SourceMap } from '../../parser/internal/source_map'
+import { SourceMap } from '../../parser/source_map'
 import { Functions } from '../../parser/functions'
 
 const { withLimitedConcurrency } = promises.array

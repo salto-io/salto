@@ -30,7 +30,7 @@ import { Keywords } from './language'
 import {
   Functions,
 } from './functions'
-import { SourceMap } from './internal/source_map'
+import { SourceMap } from './source_map'
 
 const { object: { mapValuesAsync } } = promises
 

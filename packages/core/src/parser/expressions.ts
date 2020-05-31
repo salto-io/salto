@@ -22,7 +22,7 @@ import {
   evaluateFunction,
   Functions,
 } from './functions'
-import { SourceMap } from './internal/source_map'
+import { SourceMap } from './source_map'
 
 type ExpEvaluator = (expression: HclExpression) => Promise<Value>
 

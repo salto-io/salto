@@ -16,7 +16,7 @@
 import { EOL } from 'os'
 import { ParseResult, ParseError } from '../parser/parse'
 import * as elementSerializer from './elements'
-import { SourceMap } from '../parser/internal/source_map'
+import { SourceMap } from '../parser/source_map'
 
 const serializeErrors = (errors: ParseError[]): string =>
   JSON.stringify(errors)

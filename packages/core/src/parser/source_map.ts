@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { ElemID } from '@salto-io/adapter-api'
 import wu from 'wu'
-import { SourceRange, isSourceRange } from './types'
+import { SourceRange, isSourceRange } from './internal/types'
 
 interface SourceMapEntry {
   children: Record<string, SourceMapEntry>

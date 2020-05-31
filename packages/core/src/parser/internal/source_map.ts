@@ -18,18 +18,19 @@ import { ElemID } from '@salto-io/adapter-api'
 import wu from 'wu'
 import { SourceRange, isSourceRange } from './types'
 
-const CHILDREN = 0
-const VALUE = 1
-type SourceMapEntry = [Record<string, SourceMapEntry>, SourceRange[]]
+interface SourceMapEntry {
+  children: Record<string, SourceMapEntry>
+  value: SourceRange[]
+}
 
 const mergeEntries = (src: SourceMapEntry, target: SourceMapEntry): void => {
-  src[VALUE].push(...target[VALUE])
+  src.value.push(...target.value)
   // eslint-disable-next-line no-restricted-syntax
-  for (const key in target[CHILDREN]) {
-    if (src[CHILDREN][key]) {
-      mergeEntries(src[CHILDREN][key] as SourceMapEntry, target[CHILDREN][key])
+  for (const key in target.children) {
+    if (src.children[key]) {
+      mergeEntries(src.children[key] as SourceMapEntry, target.children[key])
     } else {
-      src[CHILDREN][key] = target[CHILDREN][key]
+      src.children[key] = target.children[key]
     }
   }
 }
@@ -40,16 +41,16 @@ const mountToPath = (
   value: SourceMapEntry
 ): void => {
   const [key, ...restOfPath] = path
-  if (!data[CHILDREN][key]) {
-    data[CHILDREN][key] = [{}, []]
+  if (!data.children[key]) {
+    data.children[key] = { children: {}, value: [] }
   }
   if (_.isEmpty(restOfPath)) {
-    if (data[CHILDREN][key]) {
-      return mergeEntries(data[CHILDREN][key], value)
+    if (data.children[key]) {
+      return mergeEntries(data.children[key], value)
     }
-    data[CHILDREN][key] = value
+    data.children[key] = value
   }
-  return mountToPath(data[CHILDREN][key], restOfPath, value)
+  return mountToPath(data.children[key], restOfPath, value)
 }
 
 const setToPath = (
@@ -58,14 +59,14 @@ const setToPath = (
   value: SourceRange[]
 ): void => {
   const [key, ...restOfPath] = path
-  if (!data[CHILDREN][key]) {
-    data[CHILDREN][key] = [{}, []]
+  if (!data.children[key]) {
+    data.children[key] = { children: {}, value: [] }
   }
   if (_.isEmpty(restOfPath)) {
-    data[CHILDREN][key][VALUE] = value
+    data.children[key].value = value
     return
   }
-  setToPath(data[CHILDREN][key], restOfPath, value)
+  setToPath(data.children[key], restOfPath, value)
 }
 
 const getFromPath = (
@@ -75,31 +76,34 @@ const getFromPath = (
 ): SourceMapEntry | undefined => {
   const [key, ...restOfPath] = path
   if (_.isEmpty(restOfPath)) {
-    return data[CHILDREN][key]
+    return data.children[key]
   }
-  return data[CHILDREN][key] ? getFromPath(data[CHILDREN][key], restOfPath, debug) : undefined
+  return data.children[key] ? getFromPath(data.children[key], restOfPath, debug) : undefined
 }
 
 export class SourceMap implements Map<string, SourceRange[]> {
-  [Symbol.toStringTag] = 'SourceMap Map'
-  private data: SourceMapEntry = [{}, []];
+  [Symbol.toStringTag] = 'SourceMap'
+  private data: SourceMapEntry = { children: {}, value: [] }
 
-  private *createGenerator<T>(
-    t: (entry: [string, SourceRange[]]) => T,
+  constructor(entries: Iterable<[string, SourceRange[]]> = []) {
+    wu(entries).forEach(([key, value]: [string, SourceRange[]]) => this.set(key, value))
+  }
+
+  private *createGenerator(
     baseEntry?: SourceMapEntry,
     prefix: string[] = [],
-  ): Generator<T> {
+  ): Generator<[string, SourceRange[]]> {
     const data = baseEntry || this.data
-    if (!_.isEmpty(data[VALUE])) yield t([prefix.join(ElemID.NAMESPACE_SEPARATOR), data[VALUE]])
+    if (!_.isEmpty(data.value)) yield [prefix.join(ElemID.NAMESPACE_SEPARATOR), data.value]
     // eslint-disable-next-line no-restricted-syntax
-    for (const key of _.keys(data[CHILDREN])) {
-      const itr = this.createGenerator(t, data[CHILDREN][key], [...prefix, key])
+    for (const key of _.keys(data.children)) {
+      const itr = this.createGenerator(data.children[key], [...prefix, key])
       yield* itr
     }
   }
 
   [Symbol.iterator](): Generator<[string, SourceRange[]]> {
-    return this.createGenerator(e => e)
+    return this.createGenerator()
   }
 
   get size(): number { return wu(this.keys()).toArray().length }
@@ -109,7 +113,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
     const sourceRangeList = getFromPath(this.data, key)
     const ranges = sources.map(s => (isSourceRange(s) ? s : s.source))
     if (sourceRangeList) {
-      sourceRangeList[VALUE].push(...ranges)
+      sourceRangeList.value.push(...ranges)
     } else {
       setToPath(this.data, key, ranges)
     }
@@ -122,10 +126,9 @@ export class SourceMap implements Map<string, SourceRange[]> {
   }
 
   get(id: string): SourceRange[] | undefined {
-    const debug = id === 'salesforce.lead.field.ext_field._default'
     const path = id.split(ElemID.NAMESPACE_SEPARATOR)
-    const entry = getFromPath(this.data, path, debug)
-    return entry && entry[VALUE]
+    const entry = getFromPath(this.data, path)
+    return entry && entry.value
   }
 
   has(id: string): boolean {
@@ -134,7 +137,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
   }
 
   clear(): void {
-    this.data = [{}, []]
+    this.data = { children: {}, value: [] }
   }
 
   mount(baseId: string, otherMap: SourceMap): void {
@@ -151,33 +154,29 @@ export class SourceMap implements Map<string, SourceRange[]> {
     const lastPart = path.pop()
     const entry = getFromPath(this.data, path)
     if (entry && lastPart) {
-      const deleted = delete entry[CHILDREN][lastPart]
+      const deleted = delete entry.children[lastPart]
       return deleted
     }
     return false
   }
 
-  keys(): Generator<string> {
-    return this.createGenerator<string>(([key, _range]) => key)
+  keys(): IterableIterator<string> {
+    const r = wu(this.createGenerator()).map(([key, _range]) => key)
+    return r
   }
 
   entries(): Generator<[string, SourceRange[]]> {
-    return this.createGenerator<[string, SourceRange[]]>(e => e)
+    return this.createGenerator()
   }
 
-  values(): Generator<SourceRange[]> {
-    return this.createGenerator<SourceRange[]>(([_key, value]) => value)
+  values(): IterableIterator<SourceRange[]> {
+    return wu(this.createGenerator()).map(([_key, value]) => value)
   }
 
   forEach(
     callbackfn: (value: SourceRange[], key: string, map: Map<string, SourceRange[]>) => void,
   ): void {
-    const itr = this.createGenerator<[string, SourceRange[]]>(e => e)
-    // eslint-disable-next-line no-restricted-syntax
-    for (const e of itr) {
-      const [key, value] = e
-      callbackfn(value, key, this)
-    }
+    wu(this.createGenerator()).forEach(([key, value]) => callbackfn(value, key, this))
   }
 
   serialize(): string {
@@ -186,8 +185,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
 
   static deserialize(json: string): SourceMap {
     const raw = JSON.parse(json)
-    const res = new SourceMap()
-    raw.forEach(([key, value]: [string, SourceRange[]]) => res.set(key, value))
+    const res = new SourceMap(raw)
     return res
   }
 }

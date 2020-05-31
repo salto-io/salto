@@ -55,17 +55,16 @@ export const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     await workspace.awaitAllUpdates()
-    const validWorkspace = await workspace.getValidCopy()
-    if (validWorkspace) {
+    if (workspace) {
       const saltoPos = vsPosToSaltoPos(position)
       const context = await getPositionContext(
-        validWorkspace,
+        workspace,
         doc.fileName,
         saltoPos
       )
       const line = doc.lineAt(position).text.substr(0, position.character)
       return buildVSCompletionItems(
-        await provideWorkspaceCompletionItems(validWorkspace, context, line, saltoPos)
+        await provideWorkspaceCompletionItems(workspace, context, line, saltoPos)
       )
     }
     return []
@@ -79,15 +78,14 @@ export const createDefinitionsProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.Definition> => {
-    const validWorkspace = await workspace.getValidCopy()
-    if (validWorkspace) {
+    if (workspace) {
       const currentToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
       const context = await getPositionContext(
-        validWorkspace,
+        workspace,
         doc.fileName,
         vsPosToSaltoPos(position)
       )
-      return (await provideWorkspaceDefinition(validWorkspace, context, currentToken)).map(
+      return (await provideWorkspaceDefinition(workspace, context, currentToken)).map(
         def => new vscode.Location(
           vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
           saltoPosToVsPos(def.range.start)

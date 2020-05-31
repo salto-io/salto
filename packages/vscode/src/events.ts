@@ -21,17 +21,23 @@ import { EditorWorkspace } from './salto/workspace'
 import { getDiagnostics } from './salto/diagnostics'
 import { toVSDiagnostics } from './adapters'
 
+const DIAG_IDLE_PERIOD = 500
+let diagTimout: NodeJS.Timeout
 export const onReportErrorsEvent = async (
   _event: vscode.TextDocumentChangeEvent,
   workspace: EditorWorkspace,
   diagCollection: vscode.DiagnosticCollection
 ): Promise<void> => {
-  await workspace.awaitAllUpdates()
-  const newDiag = toVSDiagnostics(
-    workspace.baseDir,
-    await getDiagnostics(workspace)
-  )
-  diagCollection.set(newDiag)
+  clearTimeout(diagTimout)
+  diagTimout = setTimeout(async () => {
+    await workspace.awaitAllUpdates()
+    const newDiag = toVSDiagnostics(
+      workspace.baseDir,
+      await getDiagnostics(workspace)
+    )
+    diagCollection.set(newDiag)
+  },
+  DIAG_IDLE_PERIOD)
 }
 
 // This function is called whenever a file content is changed. The function will

@@ -123,6 +123,9 @@ const referenceSuggestions = (
   elements: ReadonlyArray<Element>,
   valueToken: string
 ): Suggestions => {
+  // Reference suggestions creates a lot of 'noise' so we will avoid returning anything
+  // unless the user has already started writing the reference
+  if (_.isEmpty(valueToken)) return []
   // This means we are not defining a reference
   const unquotedMatch = valueToken.match(/".*\$\{\s*([^}]*$)/)
   if (!unquotedMatch && (valueToken.includes('"') || valueToken.includes("'"))) return []

@@ -204,14 +204,12 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should give only adapter ref as 3rd token for number', async () => {
+    it('should give nothing as 3rd token for number', async () => {
       const pos = { line: 92, col: 14 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = [...adapterRef]
-      const exclude = [...types, ...kw, ...instances]
-      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+      expect(suggestions).toEqual([])
     })
   })
 
@@ -340,8 +338,17 @@ describe('Test auto complete', () => {
   })
 
   describe('references', () => {
-    it('should suggest all adapters on empty first token', async () => {
+    it('should suggest nothing on an empty first token', async () => {
       const pos = { line: 145, col: 16 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['""']
+      const exclude = [...kw, ...types, ...instances, ...adapterRef]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+    it('should suggest adapters on a non empty first token', async () => {
+      const pos = { line: 145, col: 17 }
       const line = await getLine(workspace, naclFileName, pos)
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)

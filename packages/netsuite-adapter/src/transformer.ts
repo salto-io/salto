@@ -15,7 +15,7 @@
 */
 import {
   ElemID, Field, InstanceElement, isListType, isPrimitiveType, ObjectType, PrimitiveType,
-  PrimitiveTypes, Value, Values, isObjectType,
+  PrimitiveTypes, Value, Values, isObjectType, isPrimitiveValue, StaticFile,
 } from '@salto-io/adapter-api'
 import {
   applyRecursive, MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
@@ -23,7 +23,7 @@ import {
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH,
-  SCRIPT_ID,
+  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX,
 } from './constants'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo } from './client/client'
 import { fieldTypes } from './types/field_types'
@@ -47,7 +47,7 @@ const castToListRecursively = (
   applyRecursive(type, values, castLists)
 }
 
-export const createInstanceElement = (values: Values, type: ObjectType):
+export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType):
   InstanceElement => {
   const getInstanceName = (transformedValues: Values): string => {
     const nameField = Object.values(type.fields)
@@ -59,7 +59,7 @@ export const createInstanceElement = (values: Values, type: ObjectType):
 
   const transformPrimitive: TransformFunc = ({ value, field }) => {
     const fieldType = field?.type
-    if (!isPrimitiveType(fieldType)) {
+    if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
       return value
     }
 
@@ -81,14 +81,24 @@ export const createInstanceElement = (values: Values, type: ObjectType):
   const transformAttributeKey: MapKeyFunc = ({ key }) =>
     (key.startsWith(ATTRIBUTE_PREFIX) ? key.slice(ATTRIBUTE_PREFIX.length) : key)
 
-  const valuesWithTransformedAttrs = mapKeysRecursive(values, transformAttributeKey)
+  const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values,
+    transformAttributeKey)
+  const instanceName = getInstanceName(valuesWithTransformedAttrs)
+  const fileContentField = Object.values(type.fields)
+    .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
+  if (fileContentField && customizationInfo.fileContent) {
+    valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
+      filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.fileContent.extension}`,
+      content: Buffer.from(customizationInfo.fileContent.content),
+    })
+  }
+
   const transformedValues = transformValues({
     values: valuesWithTransformedAttrs,
     type,
     transformFunc: transformPrimitive,
   }) as Values
   castToListRecursively(type, transformedValues)
-  const instanceName = getInstanceName(transformedValues)
   return new InstanceElement(instanceName, type, transformedValues,
     [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
 }
@@ -170,8 +180,24 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
 
   const typeName = instance.type.elemID.name
 
-  const values = shouldSortValues(typeName)
+  const sortedValues = shouldSortValues(typeName)
     ? sortValuesBasedOnType(typeName, transformedValues, instance.elemID)
     : transformedValues
-  return { typeName, values: restoreAttributes(values, instance.type, instance.elemID) }
+
+  const values = restoreAttributes(sortedValues, instance.type, instance.elemID)
+  const customizationInfo: CustomizationInfo = { typeName, values }
+
+  const fileContentField = Object.values(instance.type.fields)
+    .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
+  if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])) {
+    customizationInfo.fileContent = {
+      extension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
+      content: values[fileContentField.name],
+    }
+    delete values[fileContentField.name]
+  }
+  return customizationInfo
 }
+
+// todo add support for references!
+export const getCustomObjectLookUpName = (refValue: Value): Value => refValue

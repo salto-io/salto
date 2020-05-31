@@ -270,7 +270,9 @@ def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_ty
             # we don't have anything interesting to extract here
             continue
         if fields_section_headline == 'Additional Files':
-            annotations['[constants.ADDITIONAL_FILE_SUFFIX]'] = fields_table.find_element_by_xpath('.//ul/li/p/strong').text[len('Object-Script-ID'):]
+            additional_file_suffix = fields_table.find_element_by_xpath('.//ul/li/p/strong').text[len('Object-Script-ID.template.'):]
+            field_definitions.append({ NAME: 'content', TYPE: 'fieldTypes.fileContent',
+                ANNOTATIONS: {'[constants.ADDITIONAL_FILE_SUFFIX]': "'{0}'".format(additional_file_suffix)}, IS_LIST: False })
             continue
         if fields_section_headline == 'Structured Fields':
             inner_structured_field_name_to_link = { inner_structured_field.text : inner_structured_field.get_attribute('href')
@@ -346,7 +348,7 @@ def login(username, password, secret_key_2fa):
     webpage.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/input').send_keys(password)
     webpage.find_element_by_xpath('//*[@id="rememberme"]').click()
     webpage.find_element_by_xpath('//*[@id="Submit"]').click()
-    time.sleep(1)
+    time.sleep(2)
 
     # generate 2FA token and submit
     token2fa = pyotp.TOTP(secret_key_2fa).now()
@@ -636,9 +638,9 @@ field_name_to_type_name = {
 
 webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
 def main():
-     account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-     type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa)
-     generate_enums_file(enum_to_possible_values)
+    account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa)
+    generate_enums_file(enum_to_possible_values)
     logging.info('Generated enums file')
     generate_file_per_type(type_name_to_types_defs)
     logging.info('Generated file per Netsuite type')
@@ -657,6 +659,7 @@ main()
 # script_id is not always padded with '_'
 # we mark SCRIPT_ID_FIELD_NAME as not required ONLY for top level types so the adapter will add defaults in case it's missing
 # we set the type of SCRIPT_ID_FIELD_NAME as BuiltinTypes.SERVICE_ID
+# emailtemplate & advancedpdftemplate types have an additional file containing the template data. We add the file's extension as an annotation to the type and added a 'content' field to the type.
 # there are fields that suppose to have a certain type but in fact they have another type, handled using field_name_to_type_name
 # every top level type has its own IS_NAME field, we set it manually using top_level_type_name_to_name_field
 # in addressForm, entryForm and transactionForm the order of the fields matters in the sent XML to SDF (https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html)

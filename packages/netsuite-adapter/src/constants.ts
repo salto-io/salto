@@ -25,6 +25,7 @@ export const ENTITY_CUSTOM_FIELD = 'entitycustomfield'
 export const ADDRESS_FORM = 'addressForm'
 export const ENTRY_FORM = 'entryForm'
 export const TRANSACTION_FORM = 'transactionForm'
+export const EMAIL_TEMPLATE = 'emailtemplate'
 
 // Type Annotations
 export const SCRIPT_ID_PREFIX = 'scriptIdPrefix'

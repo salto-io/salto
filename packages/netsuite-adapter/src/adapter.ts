@@ -16,11 +16,13 @@
 import {
   BuiltinTypes, Element, FetchResult, Field, InstanceElement, isInstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, resolveValues, restoreValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import NetsuiteClient, { CustomizationInfo } from './client/client'
-import { createInstanceElement, toCustomizationInfo } from './transformer'
+import {
+  createInstanceElement, getCustomObjectLookUpName, toCustomizationInfo,
+} from './transformer'
 import { customTypes, isCustomType, getAllTypes } from './types'
 import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from './constants'
 
@@ -72,16 +74,17 @@ export default class NetsuiteAdapter {
     })
     const instances = customObjects.map(customObject => {
       const type = customTypes[customObject.typeName]
-      return type ? createInstanceElement(customObject.values, type) : undefined
+      return type ? createInstanceElement(customObject, type) : undefined
     }).filter(isInstanceElement)
     return { elements: [...getAllTypes(), ...instances] }
   }
 
   public async add(instance: InstanceElement): Promise<InstanceElement> {
     if (isCustomType(instance.type)) {
-      addDefaults(instance)
-      await this.addOrUpdateCustomTypeInstance(instance)
-      return instance
+      const resolved = resolveValues(instance, getCustomObjectLookUpName)
+      addDefaults(resolved)
+      await this.addOrUpdateCustomTypeInstance(resolved)
+      return restoreValues(instance, resolved, getCustomObjectLookUpName)
     }
     throw Error('Salto currently supports adding instances of customTypes only')
   }
@@ -93,9 +96,11 @@ export default class NetsuiteAdapter {
 
   public async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
     if (isCustomType(after.type)) {
-      validateServiceIds(before, after)
-      await this.addOrUpdateCustomTypeInstance(after)
-      return after
+      const resBefore = resolveValues(before, getCustomObjectLookUpName)
+      const resAfter = resolveValues(after, getCustomObjectLookUpName)
+      validateServiceIds(resBefore, resAfter)
+      await this.addOrUpdateCustomTypeInstance(resAfter)
+      return restoreValues(after, resAfter, getCustomObjectLookUpName)
     }
     throw Error('Salto currently supports updating instances of customTypes only')
   }

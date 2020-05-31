@@ -13,9 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, isPrimitiveType } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { customTypes } from '../src/types'
-import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from '../src/constants'
+import { ADDITIONAL_FILE_SUFFIX, IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from '../src/constants'
+import { fieldTypes } from '../src/types/field_types'
 
 describe('Types', () => {
   describe('CustomTypes', () => {
@@ -39,6 +41,18 @@ describe('Types', () => {
         .forEach(typeDef => {
           expect(typeDef.fields[SCRIPT_ID]).toBeDefined()
           expect(typeDef.fields[SCRIPT_ID].annotations[CORE_ANNOTATIONS.REQUIRED]).toBeUndefined()
+        })
+    })
+
+    it('should have at most 1 fileContent field with ADDITIONAL_FILE_SUFFIX annotation', () => {
+      Object.values(customTypes)
+        .forEach(typeDef => {
+          const fileContentFields = Object.values(typeDef.fields)
+            .filter(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
+          expect(fileContentFields.length).toBeLessThanOrEqual(1)
+          if (!_.isEmpty(fileContentFields)) {
+            expect(fileContentFields[0].annotations[ADDITIONAL_FILE_SUFFIX]).toBeDefined()
+          }
         })
     })
   })

@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
+import { fieldTypes } from '../field_types'
 
 export const advancedpdftemplateInnerTypes: ObjectType[] = []
 
@@ -29,7 +30,6 @@ export const advancedpdftemplate = new ObjectType({
   elemID: advancedpdftemplateElemID,
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custtmpl_',
-    [constants.ADDITIONAL_FILE_SUFFIX]: '.template.xml',
   },
   fields: {
     scriptid: {
@@ -83,6 +83,12 @@ export const advancedpdftemplate = new ObjectType({
       annotations: {
       },
     }, /* Original description: This field accepts references to the following custom types:   customtransactiontype   customrecordtype */
+    content: {
+      type: fieldTypes.fileContent,
+      annotations: {
+        [constants.ADDITIONAL_FILE_SUFFIX]: 'xml',
+      },
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, advancedpdftemplateElemID.name],
 })

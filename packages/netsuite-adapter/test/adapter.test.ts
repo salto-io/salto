@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, StaticFile } from '@salto-io/adapter-api'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, getAllTypes } from '../src/types'
@@ -38,7 +38,7 @@ describe('Adapter', () => {
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
       expect(elements)
-        .toContainEqual(createInstanceElement(customizationInfo.values, customFieldType))
+        .toContainEqual(createInstanceElement(customizationInfo, customFieldType))
     })
 
     it('should handle exceptions during listCustomObjects', async () => {
@@ -67,6 +67,10 @@ describe('Adapter', () => {
       customTypes[ENTITY_CUSTOM_FIELD], {
         label: 'elementName',
         [SCRIPT_ID]: 'custentity_my_script_id',
+        description: new StaticFile({
+          filepath: 'netsuite/elementName.suffix',
+          content: Buffer.from('description value'),
+        }),
       })
     let instance: InstanceElement
 
@@ -77,17 +81,24 @@ describe('Adapter', () => {
     describe('add', () => {
       it('should add instance', async () => {
         const post = await netsuiteAdapter.add(instance)
-        expect(client.deployCustomObject)
-          .toHaveBeenCalledWith('custentity_my_script_id', toCustomizationInfo(instance))
-        expect(post).toEqual(instance)
+
+        const expectedResolvedInstance = instance.clone()
+        expectedResolvedInstance.value.description = 'description value'
+        expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_my_script_id',
+          toCustomizationInfo(expectedResolvedInstance))
+        expect(post.isEqual(instance)).toBe(true)
       })
 
       it('should add default SCRIPT_ID to custom type instance', async () => {
         delete instance.value[SCRIPT_ID]
         const post = await netsuiteAdapter.add(instance)
+
+        const expectedResolvedInstance = instance.clone()
+        expectedResolvedInstance.value.description = 'description value'
+        expectedResolvedInstance.value[SCRIPT_ID] = 'custentity_elementname'
         expect(post.value[SCRIPT_ID]).toEqual('custentity_elementname')
-        expect(client.deployCustomObject)
-          .toHaveBeenCalledWith('custentity_elementname', toCustomizationInfo(instance))
+        expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_elementname',
+          toCustomizationInfo(expectedResolvedInstance))
       })
 
       it('should throw error when trying to add a non custom type instance', async () => {
@@ -100,9 +111,27 @@ describe('Adapter', () => {
     describe('update', () => {
       it('should update instance', async () => {
         const post = await netsuiteAdapter.update(instance, instance.clone())
-        expect(client.deployCustomObject)
-          .toHaveBeenCalledWith('custentity_my_script_id', toCustomizationInfo(instance))
+
+        const expectedResolvedInstance = instance.clone()
+        expectedResolvedInstance.value.description = 'description value'
+        expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_my_script_id',
+          toCustomizationInfo(expectedResolvedInstance))
         expect(post).toEqual(instance)
+      })
+
+      it('should restore static file', async () => {
+        const after = instance.clone()
+        after.value.description = new StaticFile({
+          filepath: 'netsuite/elementName.suffix',
+          content: Buffer.from('edited description value'),
+        })
+        const post = await netsuiteAdapter.update(instance, after)
+
+        const expectedResolvedAfter = after.clone()
+        expectedResolvedAfter.value.description = 'edited description value'
+        expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_my_script_id',
+          toCustomizationInfo(expectedResolvedAfter))
+        expect(post).toEqual(after)
       })
 
       it('should throw an error if service id has been modified', async () => {

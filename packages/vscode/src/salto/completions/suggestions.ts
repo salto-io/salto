@@ -200,11 +200,11 @@ export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
 export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
   const attrName = params.tokens[0]
-  const refPathWithoutAttr = _.last(params.ref.path) !== attrName && !params.ref.isList
+  const refPathWithAttr = _.last(params.ref.path) !== attrName && !params.ref.isList
     ? [...params.ref.path, attrName]
     : params.ref.path
-  const valueField = getField(params.ref.element.type, refPathWithoutAttr)?.field
-  const valueFieldType = getFieldType(params.ref.element.type, refPathWithoutAttr)
+  const valueField = getField(params.ref.element.type, refPathWithAttr)?.field
+  const valueFieldType = getFieldType(params.ref.element.type, refPathWithAttr)
   const valueToken = _.last(params.tokens) || ''
   return (valueField && valueFieldType)
     ? [
@@ -215,10 +215,12 @@ export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions =>
 }
 
 export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
-  if (!(params.ref && isField(params.ref.element))) return []
-
+  if (!params.ref) return []
+  const refType = isField(params.ref.element)
+    ? params.ref.element.type
+    : params.ref.element
   if (_.isEmpty(params.ref.path)) {
-    return _.keys(params.ref.element.type.annotationTypes)
+    return _.keys(refType.annotationTypes)
   }
   const [annoName, ...annoPath] = params.ref.path
   const annoType = params.ref.element.annotationTypes[annoName]
@@ -230,16 +232,22 @@ export const annoSuggestions = (params: SuggestionsParams): Suggestions => {
 
 
 export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => {
-  if (!(params.ref && isField(params.ref.element))) return []
-  const annoName = params.tokens[0]
-  const annoType = params.ref.element.type.annotationTypes[annoName]
-  const refPath = (annoName)
-    ? params.ref.path.slice(1)
+  if (!params.ref) return []
+
+  const attrName = params.tokens[0]
+  const refPathWithAttr = _.last(params.ref.path) !== attrName && !params.ref.isList
+    ? [...params.ref.path, attrName]
     : params.ref.path
+  const [annoName, ...refPath] = refPathWithAttr
+
+  const annoType = isField(params.ref.element)
+    ? params.ref.element.type.annotationTypes[annoName]
+    : params.ref.element.annotationTypes[annoName]
+
   const valueToken = _.last(params.tokens) || ''
   if (annoType && !_.isEmpty(refPath)) {
-    const attrField = getField(annoType, params.ref.path)?.field
-    const attrFieldType = getFieldType(annoType, params.ref.path)
+    const attrField = getField(annoType, refPath)?.field
+    const attrFieldType = getFieldType(annoType, refPath)
     return (attrField && attrFieldType)
       ? [
         ...valueSuggestions(annoName, attrField, attrFieldType, valueToken),
@@ -255,7 +263,6 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
     : referenceSuggestions(params.elements, valueToken)
 }
 
-
 /**
  * Returns a list of all of the types that were defined in the system
  * and who's adapter matches the context allowed adapters.
@@ -269,6 +276,10 @@ export const typesSuggestions = (params: SuggestionsParams): Suggestions => {
   ]
 }
 
+export const typeBodySuggestions = (params: SuggestionsParams): Suggestions => [
+  ...annoSuggestions(params),
+  ...typesSuggestions(params),
+]
 /**
  * Returns a list of all possible primitives in the inheritance section
  */

@@ -66,6 +66,7 @@ describe('Test auto complete', () => {
     'car',
     'loan',
     'ref_tester',
+    'annotated',
   ]
   const instances = [
     'weekend_car',
@@ -200,6 +201,81 @@ describe('Test auto complete', () => {
       const ctx = await getPositionContext(workspace, naclFileName, pos)
       const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
       expect(suggestions).toEqual([])
+    })
+  })
+
+  describe('annotation values definitions in type', () => {
+    it('should give annotation Types as 1st token', async () => {
+      const pos = { line: 208, col: 4 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['loan']
+      const exclude = [...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+    it('should give annotation value as 3rd token', async () => {
+      const pos = { line: 208, col: 11 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['{}']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+    it('should give annotation type fields as 1rd token in 1 level nesting', async () => {
+      const pos = { line: 209, col: 8 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['reason', 'loaner', 'propety']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+    it('should give annotation type field value as 3rd token in 1 level nesting', async () => {
+      const pos = { line: 210, col: 17 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['{}']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+    it('should give field type fields as 1rd token in 2 levels nesting', async () => {
+      const pos = { line: 216, col: 12 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['car_owner', 'model', 'year']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+    it('should give field type field value as 3rd token in 2 levels nesting', async () => {
+      const pos = { line: 216, col: 24 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['{}']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+    it('should give field type fields as 1rd token in 3 levels nesting', async () => {
+      const pos = { line: 217, col: 16 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['first_name', 'last_name', 'age']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
+    })
+    it('should give field type field value as 3rd token in 3 levels nesting', async () => {
+      const pos = { line: 211, col: 25 }
+      const line = await getLine(workspace, naclFileName, pos)
+      const ctx = await getPositionContext(workspace, naclFileName, pos)
+      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
+      const include = ['""']
+      const exclude = [...types, ...kw, ...instances]
+      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
   })
 

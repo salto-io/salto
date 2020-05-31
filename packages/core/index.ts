@@ -31,6 +31,7 @@ export {
 export {
   workspaceConfigSource as localWorkspaceConfigSource,
   WorkspaceConfigSource as LocalWorkspaceConfigSource,
+  CONFIG_DIR_NAME,
 } from './src/workspace/local/workspace_config'
 export { ConfigSource } from './src/workspace/config_source'
 export { Errors } from './src/workspace/errors'

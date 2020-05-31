@@ -180,22 +180,29 @@ const primitiveSerializers: Record<string, PrimitiveSerializer> = {
 }
 
 export const dumpElements = async (
-  elements: Element[], functions: Functions = {}
+  elements: Element[], functions: Functions = {}, indentationLevel = 0
 ): Promise<string> =>
-  hclDump(wrapBlocks(await Promise.all(elements.map(e => dumpBlock(e, functions)))))
+  hclDump(
+    wrapBlocks(await Promise.all(elements.map(e => dumpBlock(e, functions)))),
+    indentationLevel
+  )
 
-export const dumpSingleAnnotationType = (name: string, type: TypeElement): string =>
-  hclDump(wrapBlocks([dumpAnnotationTypeBlock(name, type)]))
+export const dumpSingleAnnotationType = (
+  name: string, type: TypeElement, indentationLevel = 0
+): string =>
+  hclDump(wrapBlocks([dumpAnnotationTypeBlock(name, type)]), indentationLevel)
 
-export const dumpAnnotationTypes = (annotationTypes: TypeMap): string =>
-  hclDump(wrapBlocks(dumpAnnotationTypesBlock(annotationTypes)))
+export const dumpAnnotationTypes = (annotationTypes: TypeMap, indentationLevel = 0): string =>
+  hclDump(wrapBlocks(dumpAnnotationTypesBlock(annotationTypes)), indentationLevel)
 
-export const dumpValues = async (value: Value, functions: Functions): Promise<string> => {
+export const dumpValues = async (
+  value: Value, functions: Functions, indentationLevel = 0
+): Promise<string> => {
   if (_.isArray(value)) {
     // We got a Value array, we need to serialize it "manually" because our HCL implementation
     // accepts only blocks
     const nestedValues = await Promise.all(value.map(async elem => {
-      const serializedElem = await dumpValues(elem, functions)
+      const serializedElem = await dumpValues(elem, functions, indentationLevel)
       if ((_.isPlainObject(elem)) && !(serializedElem[0] === '{')) {
         // We need to make sure nested complex elements are wrapped in {}
         return `{\n${serializedElem}\n}`
@@ -214,5 +221,5 @@ export const dumpValues = async (value: Value, functions: Functions): Promise<st
   const objWithSerializedFunctions = await dumpAttributes(value, functions)
 
   // We got a values object, we can use the HCL serializer
-  return hclDump(await dumpBlock(objWithSerializedFunctions, functions))
+  return hclDump(await dumpBlock(objWithSerializedFunctions, functions), indentationLevel)
 }

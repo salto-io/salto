@@ -21,22 +21,21 @@ import { ParseResultCache } from 'src/workspace/cache'
 const workspaceFiles = {
   'file.nacl': `
 type salesforce.lead {
-salesforce.text base_field {
-  ${CORE_ANNOTATIONS.DEFAULT} = "asd"
-}
-"List<number>" list_field {
-  ${CORE_ANNOTATIONS.DEFAULT} = [
-    1,
-    2,
-    3,
-    4,
-    5
-  ]
-}
-number not_a_list_yet_field {
+  salesforce.text base_field {
+    ${CORE_ANNOTATIONS.DEFAULT} = "asd"
+  }
+  "List<number>" list_field {
+    ${CORE_ANNOTATIONS.DEFAULT} = [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  }
 
-}
-salesforce.text empty {}
+  number not_a_list_yet_field {}
+  salesforce.text empty {}
 }
 
 type salesforce.WithAnnotationsBlock {
@@ -53,9 +52,9 @@ type multi.loc { a = 1 }
 type one.liner { a = 1 }`,
   'subdir/file.nacl': `
 type salesforce.lead {
-salesforce.text ext_field {
-  ${CORE_ANNOTATIONS.DEFAULT} = "foo"
-}
+  salesforce.text ext_field {
+    ${CORE_ANNOTATIONS.DEFAULT} = "foo"
+  }
 }
 type multi.loc { b = 1 }`,
 
@@ -63,7 +62,7 @@ type multi.loc { b = 1 }`,
 
   'dup.nacl': `
 type salesforce.lead {
-string base_field {}
+  string base_field {}
 }`,
 
   'willbempty.nacl': 'type nonempty { a = 2 }',

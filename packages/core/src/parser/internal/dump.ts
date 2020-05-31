@@ -30,21 +30,13 @@ const O_ARR = '['
 const C_ARR = ']'
 const O_PAREN = '('
 const C_PAREN = ')'
-const IDENT = '  '
-const MULTILINE_STRING_PREFIX = '\'\'\'\n'
-const MULTILINE_STRING_SUFFIX = '\n\'\'\''
+export const INDENTATION_SPACES = 2
+export const INDENTATION = ' '
+export const MULTILINE_STRING_PREFIX = '\'\'\'\n'
+export const MULTILINE_STRING_SUFFIX = '\n\'\'\''
 
-const ident = (lines: string[]): string[] => {
-  // Using the good ol` for i syntax here for memory effeciancy.
-  // (to avoid creating new copies of the lines)
-  if (lines.length <= 2) return lines
-  lines.forEach((_l, index) => {
-    if (index > 0 && index < lines.length - 1) {
-      lines[index] = `${IDENT}${lines[index]}`
-    }
-  })
-  return lines
-}
+export const createIndentation = (indentationLevel: number): string =>
+  INDENTATION.repeat(indentationLevel <= 0 ? 0 : indentationLevel)
 
 const dumpWord = (word: string): string => {
   // word needs to be escaped if it will not be parsed back as a single word token
@@ -76,22 +68,28 @@ const dumpString = (prim: string): string => {
 
 const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
 
-const dumpObject = (obj: Value): string[] => {
+const dumpObject = (obj: Value, indentationLevel = 0): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const attributes = _.toPairs(obj).map(dumpAttr)
+  const attributes = _.toPairs(obj).map(attr => dumpAttr(attr, 0))
   const res = [O_OBJ]
-  attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(l)))
-  res.push(C_OBJ)
-  return ident(res)
+  attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(
+    `${createIndentation(indentationLevel + INDENTATION_SPACES)}${l}`
+  )))
+  res.push(`${createIndentation(indentationLevel)}${C_OBJ}`)
+  // return ident(res)
+  return res
 }
 
-const dumpArray = (arr: Value): string[] => {
+const dumpArray = (arr: Value, indentationLevel = 0): string[] => {
   // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const items = separateByCommas(arr.map(dumpValue))
+  const items = separateByCommas(arr.map((val: Value) => dumpValue(val, 0)))
   const res = [O_ARR]
-  items.forEach(itemLines => itemLines.forEach(l => res.push(l)))
-  res.push(C_ARR)
-  return ident(res)
+  items.forEach(itemLines => itemLines.forEach(l => res.push(
+    `${createIndentation(indentationLevel + INDENTATION_SPACES)}${l}`
+  )))
+  res.push(`${createIndentation(indentationLevel)}${C_ARR}`)
+  // return ident(res)
+  return res
 }
 
 const dumpExpression = (exp: Value): string[] => {
@@ -105,8 +103,8 @@ const dumpExpression = (exp: Value): string[] => {
   ]
 }
 
-const dumpValue = (value: Value): string[] => {
-  if (_.isArray(value)) return dumpArray(value)
+const dumpValue = (value: Value, indentationLevel = 0): string[] => {
+  if (_.isArray(value)) return dumpArray(value, indentationLevel)
   if (isFunctionExpression(value)) {
     const { parameters, funcName } = value
     const dumpedParams = parameters.map(dumpValue)
@@ -118,41 +116,54 @@ const dumpValue = (value: Value): string[] => {
     return [`${funcName}${O_PAREN}`, ...paramsForDump, C_PAREN]
   }
 
-  if (_.isPlainObject(value)) return dumpObject(value)
+  if (_.isPlainObject(value)) return dumpObject(value, indentationLevel)
   if (isExpression(value)) return dumpExpression(value)
   if (_.isString(value)) return [dumpString(escapeTemplateMarker(value))]
 
   return [dumpPrimitive(value)]
 }
 
-const dumpAttr = (attr: [string, Value]): string[] => {
+const dumpAttr = (attr: [string, Value], indentationLevel = 0): string[] => {
   const [key, value] = attr
-  const valueLines = dumpValue(value)
-  valueLines[0] = `${dumpWord(key)} = ${valueLines[0]}`
-  return ident(valueLines)
+  const valueLines = dumpValue(value, indentationLevel)
+  valueLines[0] = `${createIndentation(indentationLevel)}${dumpWord(key)} = ${valueLines[0]}`
+  // return ident(valueLines)
+  return valueLines
 }
 
-const createBlockDefLine = (block: DumpedHclBlock): string => {
+const createBlockDefLine = (block: DumpedHclBlock, indentationLevel = 0): string => {
   const type = dumpWord(block.type)
   const labels = block.labels.map(dumpWord)
-  return [type, ...labels, O_BLOCK].join(' ')
+  const defLine = [type, ...labels, O_BLOCK].join(' ')
+  return `${createIndentation(indentationLevel)}${defLine}`
 }
 
-const dumpBlock = (block: DumpedHclBlock): string[] => {
-  const defLine = createBlockDefLine(block)
-  const blocks = block.blocks.map(dumpBlock)
-  const attributes = _(block.attrs).toPairs().map(dumpAttr).value()
+const dumpBlock = (block: DumpedHclBlock, indentationLevel = 0): string[] => {
+  const defLine = createBlockDefLine(block, indentationLevel)
+  const blocks = block.blocks.map(
+    subBlock => dumpBlock(subBlock, indentationLevel + INDENTATION_SPACES)
+  )
+  const attributes = _(block.attrs).toPairs().map(
+    attr => dumpAttr(attr, indentationLevel + INDENTATION_SPACES)
+  ).value()
   const res = [defLine]
   blocks.forEach(blockLines => blockLines.forEach(b => res.push(b)))
   attributes.forEach(attributeLines => attributeLines.forEach(a => res.push(a)))
-  res.push(C_BLOCK)
-  return ident(res)
+  res.push(`${createIndentation(indentationLevel)}${C_BLOCK}`)
+  // return ident(res)
+  return res
 }
 
-export const dump = (body: DumpedHclBody): string => {
-  const attributesLines = _(body.attrs).toPairs().map(dumpAttr).flatten()
+export const dump = (body: DumpedHclBody, indentationLevel = 0): string => {
+  const attributesLines = _(body.attrs).toPairs()
+    .map(line => dumpAttr(line, indentationLevel))
+    .flatten()
     .value()
-  const blockLines = _(body.blocks).map(dumpBlock).flatten().value()
+  const blockLines = _(body.blocks).map(
+    block => dumpBlock(block, indentationLevel)
+  )
+    .flatten()
+    .value()
   return [
     ...attributesLines,
     ...blockLines,

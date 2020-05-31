@@ -25,6 +25,7 @@ import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../parser/dump'
 import { Functions } from '../../parser/functions'
+import { createIndentation, INDENTATION_SPACES, INDENTATION } from '../../parser/internal/dump'
 
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
@@ -91,29 +92,26 @@ export const getChangeLocations = (
   return findLocations().map(location => ({ ...change, location }))
 }
 
-const indent = (data: string, indentLevel: number, newValue: boolean): string => {
-  const indentLines = (lines: string[], level: number): string[] => (
-    lines.map(line => _.repeat(' ', level) + line)
-  )
+const removeBegginingIndentation = (
+  data: string,
+  action: 'add' | 'remove' | 'modify',
+  indentationLevel: number
+): string => {
   const lines = data.split('\n')
-
-  if (indentLevel > 0 && newValue && lines.length > 1) {
-    // New values start one character before the closing bracket of the scope.
-    // That means the first line needs only one level of indentation.
-    // It also means the empty line at the end needs to re-create the original indentation
-    // (so that the closing bracket doesn't move), so the last line should be indented
-    // one level less
+  if (action === 'remove') return data
+  const [firstLine] = lines
+  const [lastLine] = lines.slice(-1)
+  if (action === 'add' && indentationLevel > 0) {
     return [
-      ...indentLines(lines.slice(0, 1), 2),
-      ...indentLines(lines.slice(1, -1), indentLevel),
-      ...indentLines(lines.slice(-1), indentLevel - 2),
+      firstLine.slice(indentationLevel - INDENTATION_SPACES),
+      ...lines.slice(1, -1),
+      `${createIndentation(indentationLevel - INDENTATION_SPACES)}${lastLine}`,
     ].join('\n')
   }
-  // If this is not a new value we are at the original value's start position so we don't have
-  // to indent the first line
+  // If reached here, we are handling modify
   return [
-    ...lines.slice(0, 1),
-    ...indentLines(lines.slice(1), indentLevel),
+    firstLine[0] === INDENTATION ? firstLine.slice(indentationLevel) : firstLine,
+    ...lines.slice(1),
   ].join('\n')
 }
 
@@ -171,28 +169,29 @@ export const updateNaclFileData = async (
   const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
+    const indentationLevel = change.location.start.col - 1
     if (elem !== undefined) {
       const changeKey = change.id.name
       const isListElement = changeKey.match(/^\d+$/) !== null
       if (change.id.idType === 'annotation') {
         if (isType(elem)) {
-          newData = dumpSingleAnnotationType(changeKey, elem)
+          newData = dumpSingleAnnotationType(changeKey, elem, indentationLevel)
         } else {
-          newData = dumpAnnotationTypes(elem)
+          newData = dumpAnnotationTypes(elem, indentationLevel)
         }
       } else if (isElement(elem)) {
-        newData = await dumpElements([elem], functions)
+        newData = await dumpElements([elem], functions, indentationLevel)
       } else if (isListElement) {
-        newData = await dumpValues(elem, functions)
+        newData = await dumpValues(elem, functions, indentationLevel)
       } else {
         // When dumping values (attributes) we need to dump the key as well
-        newData = await dumpValues({ [changeKey]: elem }, functions)
+        newData = await dumpValues({ [changeKey]: elem }, functions, indentationLevel)
       }
       if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
         // Trim trailing newline (the original value already has one)
         newData = newData.slice(0, -1)
       }
-      newData = indent(newData, change.location.start.col - 1, change.action === 'add')
+      newData = removeBegginingIndentation(newData, change.action, indentationLevel)
     } else {
       // This is a removal, we want to replace the original content with an empty string
       newData = ''

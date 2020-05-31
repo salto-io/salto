@@ -17,22 +17,28 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { FILE_EXTENSION } from '@salto-io/core'
 import { readTextFile } from '@salto-io/file'
+import _ from 'lodash'
 import { EditorWorkspace } from './salto/workspace'
 import { getDiagnostics } from './salto/diagnostics'
 import { toVSDiagnostics } from './adapters'
 
-export const onReportErrorsEvent = async (
-  _event: vscode.TextDocumentChangeEvent,
+const DIAG_IDLE_PERIOD = 500
+export const createReportErrorsEventListener = (
   workspace: EditorWorkspace,
   diagCollection: vscode.DiagnosticCollection
-): Promise<void> => {
-  await workspace.awaitAllUpdates()
-  const newDiag = toVSDiagnostics(
-    workspace.baseDir,
-    await getDiagnostics(workspace)
-  )
-  diagCollection.set(newDiag)
-}
+): (
+) => void => _.debounce(
+  async (): Promise<void> => {
+    await workspace.awaitAllUpdates()
+    const newDiag = toVSDiagnostics(
+      workspace.baseDir,
+      await getDiagnostics(workspace)
+    )
+    diagCollection.set(newDiag)
+  },
+  DIAG_IDLE_PERIOD
+)
+
 
 // This function is called whenever a file content is changed. The function will
 // reparse the file that changed.

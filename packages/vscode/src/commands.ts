@@ -30,13 +30,9 @@ export const createCopyReferenceCommand = (
   }
   const position = editor.selection.active
   await workspace.awaitAllUpdates()
-  const validWorkspace = await workspace.getValidCopy()
-  if (!validWorkspace) {
-    return
-  }
   const saltoPos = vsPosToSaltoPos(position)
   const ctx = await getPositionContext(
-    validWorkspace,
+    workspace,
     editor.document.fileName,
     saltoPos
   )

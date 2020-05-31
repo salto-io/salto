@@ -144,16 +144,6 @@ describe('Test auto complete', () => {
       expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
     })
 
-    it('should suggest updates', async () => {
-      const pos = { line: 33, col: 4 }
-      const line = await getLine(workspace, naclFileName, pos)
-      const ctx = await getPositionContext(workspace, naclFileName, pos)
-      const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, line, pos)
-      const include = ['update first_name', 'update last_name', 'update age']
-      const exclude = ['update car_owner', ...kw, ...instances]
-      expect(checkSuggestions(suggestions, include, exclude)).toBe(true)
-    })
-
     it('should suggest nothing for field name ', async () => {
       const pos = { line: 33, col: 12 }
       const line = await getLine(workspace, naclFileName, pos)

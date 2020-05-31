@@ -263,17 +263,9 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
 export const typesSuggestions = (params: SuggestionsParams): Suggestions => {
   const contextAdapter = params.ref && params.ref.element.elemID.adapter
   const elements = params.elements || [] // may be undefined
-  const typeNames = [
+  return [
     ..._.values(BuiltinTypes).map(e => e.elemID.getFullName()),
     ...getAllTypes(elements, contextAdapter),
-  ]
-
-  const updates = (params.ref && isObjectType(params.ref.element))
-    ? _.keys(params.ref.element.fields).map(k => `update ${k}`) : []
-
-  return [
-    ...typeNames,
-    ...updates,
   ]
 }
 

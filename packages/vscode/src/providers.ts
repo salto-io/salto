@@ -55,20 +55,16 @@ export const createCompletionsProvider = (
     position: vscode.Position
   ) => {
     await workspace.awaitAllUpdates()
-    const validWorkspace = await workspace.getValidCopy()
-    if (validWorkspace) {
-      const saltoPos = vsPosToSaltoPos(position)
-      const context = await getPositionContext(
-        validWorkspace,
-        doc.fileName,
-        saltoPos
-      )
-      const line = doc.lineAt(position).text.substr(0, position.character)
-      return buildVSCompletionItems(
-        await provideWorkspaceCompletionItems(validWorkspace, context, line, saltoPos)
-      )
-    }
-    return []
+    const saltoPos = vsPosToSaltoPos(position)
+    const context = await getPositionContext(
+      workspace,
+      doc.fileName,
+      saltoPos
+    )
+    const line = doc.lineAt(position).text.substr(0, position.character)
+    return buildVSCompletionItems(
+      await provideWorkspaceCompletionItems(workspace, context, line, saltoPos)
+    )
   },
 })
 
@@ -79,22 +75,18 @@ export const createDefinitionsProvider = (
     doc: vscode.TextDocument,
     position: vscode.Position,
   ): Promise<vscode.Definition> => {
-    const validWorkspace = await workspace.getValidCopy()
-    if (validWorkspace) {
-      const currentToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
-      const context = await getPositionContext(
-        validWorkspace,
-        doc.fileName,
-        vsPosToSaltoPos(position)
+    const currentToken = doc.getText(doc.getWordRangeAtPosition(position, /[\w.]+/))
+    const context = await getPositionContext(
+      workspace,
+      doc.fileName,
+      vsPosToSaltoPos(position)
+    )
+    return (await provideWorkspaceDefinition(workspace, context, currentToken)).map(
+      def => new vscode.Location(
+        vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
+        saltoPosToVsPos(def.range.start)
       )
-      return (await provideWorkspaceDefinition(validWorkspace, context, currentToken)).map(
-        def => new vscode.Location(
-          vscode.Uri.file(path.resolve(workspace.baseDir, def.filename)),
-          saltoPosToVsPos(def.range.start)
-        )
-      )
-    }
-    return []
+    )
   },
 })
 

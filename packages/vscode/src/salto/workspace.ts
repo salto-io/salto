@@ -25,21 +25,12 @@ export class EditorWorkspace {
   // Indicates that the workspace is not the active workspace
   // (which means that the active workspace contains errors)
   // attempting to modify a copy of a workspace will result in an error
-  private isCopy: boolean
   private runningSetOperation?: Promise<void>
   private pendingSets: {[key: string]: NaclFile} = {}
   private pendingDeletes: Set<string> = new Set<string>()
-  private lastValidCopy? : Promise<Workspace | undefined>
 
-  constructor(public baseDir: string, workspace: Workspace, isCopy = false) {
+  constructor(public baseDir: string, workspace: Workspace) {
     this.workspace = workspace
-    this.isCopy = isCopy
-    this.lastValidCopy = workspace.hasErrors().then(hasErrors => {
-      if (!hasErrors) {
-        return workspace.clone()
-      }
-      return undefined
-    })
   }
 
   get elements(): Promise<readonly Element[]> {
@@ -100,9 +91,6 @@ export class EditorWorkspace {
   }
 
   private async runAggregatedSetOperation(): Promise<void> {
-    // We throw an error if someone attempted to trigger this
-    // on an inactive state
-    if (this.isCopy) throw new Error('Attempted to change inactive workspace')
     // No async ops here so the switch is atomic. Thanks JS!
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
@@ -116,12 +104,6 @@ export class EditorWorkspace {
       // Now add the waiting changes
       if (!_.isEmpty(opNaclFiles) && this.workspace) {
         await this.workspace.setNaclFiles(..._.values(opNaclFiles))
-      }
-      // After we ran the update we check if the operation resulted with no
-      // errors. If so - we update the last valid state.
-      if (_.isEmpty((await this.workspace.errors()).parse)
-        && !_.isEmpty(await this.workspace.elements())) {
-        this.lastValidCopy = Promise.resolve(this.workspace.clone())
       }
       // We recall this method to make sure no pending were added since
       // we started. Returning the promise will make sure the caller
@@ -188,11 +170,6 @@ export class EditorWorkspace {
   removeNaclFiles(...names: string[]): Promise<void> {
     this.addPendingDeletes(names.map(name => this.workspaceFilename(name)))
     return this.triggerAggregatedSetOperation()
-  }
-
-  async getValidCopy(): Promise<EditorWorkspace | undefined> {
-    const lastValidCopy = await this.lastValidCopy
-    return lastValidCopy ? new EditorWorkspace(this.baseDir, lastValidCopy, true) : undefined
   }
 
   hasErrors(): Promise<boolean> {

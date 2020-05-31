@@ -65,27 +65,6 @@ describe('workspace', () => {
     expect(removeNaclFilesMock.mock.calls[0][0]).toContain('all.nacl')
   })
 
-  it('should return last valid state if there are errors', async () => {
-    const baseWs = await mockWorkspace(naclFileName)
-    baseWs.hasErrors = jest.fn().mockResolvedValue(false)
-    const workspace = new EditorWorkspace(workspaceBaseDir, baseWs)
-    const shouldBeCurrent = await workspace.getValidCopy()
-    if (!shouldBeCurrent) throw new Error('lastValid not defined')
-    expect([...(await shouldBeCurrent.errors()).all()])
-      .toEqual([...(await workspace.errors()).all()])
-    expect(await shouldBeCurrent.elements).toEqual(await workspace.elements)
-
-    baseWs.hasErrors = jest.fn().mockResolvedValue(true)
-    workspace.setNaclFiles({ filename: 'error', buffer: 'error' })
-    await workspace.awaitAllUpdates()
-    expect(await workspace.elements).toBeDefined()
-    expect(workspace.hasErrors()).toBeTruthy()
-    await validate(workspace, 17)
-    const lastValid = workspace.getValidCopy()
-    if (!lastValid) throw new Error('lastValid not defined')
-    expect(lastValid).not.toEqual(workspace)
-  })
-
   it('should not allow to update Nacl files before all pending operations are done', async () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
     workspace.setNaclFiles({ filename: 'new', buffer: 'new content' })

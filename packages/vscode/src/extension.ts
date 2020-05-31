@@ -17,7 +17,7 @@ import * as vscode from 'vscode'
 import { loadLocalWorkspace } from '@salto-io/core'
 import { EditorWorkspace } from './salto/workspace'
 import { getDiagnostics } from './salto/diagnostics'
-import { onTextChangeEvent, onFileChange, onFileDelete, onReportErrorsEvent, onFileOpen } from './events'
+import { onTextChangeEvent, onFileChange, onFileDelete, onFileOpen, createReportErrorsEventListener } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
   createDocumentSymbolsProvider,
@@ -80,7 +80,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
         e => onTextChangeEvent(e, workspace)
       ),
       vscode.workspace.onDidChangeTextDocument(
-        e => onReportErrorsEvent(e, workspace, diagCollection)
+        createReportErrorsEventListener(workspace, diagCollection)
       ),
       vscode.workspace.onDidOpenTextDocument(onFileOpen),
       vscode.commands.registerCommand('salto.copyReference', createCopyReferenceCommand(workspace))

@@ -43,10 +43,10 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 --- packages/core/package.json	(revision a3ce672479f52363bb896ab47d977904bec80871)
 +++ packages/core/package.json	(date 1590413923866)
 @@ -39,6 +39,7 @@
-     "@salto-io/dag": "0.1.15",
-     "@salto-io/file": "0.1.15",
-     "@salto-io/hubspot-adapter": "0.1.15",
-+    "@salto-io/netsuite-adapter": "0.1.15",
-     "@salto-io/logging": "0.1.15",
-     "@salto-io/lowerdash": "0.1.15",
-     "@salto-io/salesforce-adapter": "0.1.15",
+     "@salto-io/dag": "0.1.16",
+     "@salto-io/file": "0.1.16",
+     "@salto-io/hubspot-adapter": "0.1.16",
++    "@salto-io/netsuite-adapter": "0.1.16",
+     "@salto-io/logging": "0.1.16",
+     "@salto-io/lowerdash": "0.1.16",
+     "@salto-io/salesforce-adapter": "0.1.16",

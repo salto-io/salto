@@ -18,10 +18,10 @@
   "types": "dist/src/index.d.ts",
   "scripts": {
     "prepublishOnly": "yarn test",
-    "build": "yarn lint && yarn tsc",
+    "build": "yarn lint && yarn tsc -b",
     "test": "jest --verbose=false",
     "clean": "rm -rf ./dist",
-    "watch-ts": "tsc -w",
+    "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn lint --fix"
   },

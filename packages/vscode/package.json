@@ -102,8 +102,8 @@
     "scripts": {
         "vscode:prepublish": "yarn run generate-yarn-lock",
         "build": "yarn run lint && yarn run build-ts",
-        "build-ts": "tsc",
-        "watch-ts": "tsc -w",
+        "build-ts": "tsc -b",
+        "watch-ts": "tsc -b -w",
         "clean": "rm -rf ./dist",
         "test": "jest",
         "e2e-test": "RUN_E2E_TESTS=1 jest",

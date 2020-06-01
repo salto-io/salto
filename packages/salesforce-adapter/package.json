@@ -28,8 +28,8 @@
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
-    "build-ts": "tsc",
-    "watch-ts": "tsc -w",
+    "build-ts": "tsc -b",
+    "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn run lint --fix"
   },

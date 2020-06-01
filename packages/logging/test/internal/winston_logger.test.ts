@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import fs from 'fs'
-import tmp from 'tmp-promise'
+import * as fs from 'fs'
+import * as tmp from 'tmp-promise'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
 import { Config, mergeConfigs } from '../../src/internal/config'

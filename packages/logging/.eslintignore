@@ -2,4 +2,4 @@
 *.d.ts
 *.config.js
 coverage
-src/tools/
+/src/internal/colors/colors.ts

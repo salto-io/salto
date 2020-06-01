@@ -25,7 +25,7 @@ import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../parser/dump'
 import { Functions } from '../../parser/functions'
-import { createIndentation, INDENTATION } from '../../parser/internal/dump'
+import { INDENTATION, createIndentation } from '../../parser/internal/dump'
 
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
@@ -92,28 +92,40 @@ export const getChangeLocations = (
   return findLocations().map(location => ({ ...change, location }))
 }
 
-const removeBegginingIndentation = (
+const fixEdgeIndentation = (
   data: string,
   action: 'add' | 'remove' | 'modify',
-  indentationLevel: number
+  indentationLevel: number,
+  initialIndentation: number,
 ): string => {
-  const startsWithIndentation = (str: string): boolean => str.startsWith(INDENTATION)
-  if (action === 'remove') return data
   const lines = data.split('\n')
   const [firstLine] = lines
   const [lastLine] = lines.slice(-1)
-  if (action === 'add' && indentationLevel > 0) {
+  /* When adding the placement we are given is right before the closing bracket.
+  * This means that the closing bracket will lose it's indentation and we add it again
+  * and that the first line will have initial indentation that needs to be removed.
+  */
+  if (action === 'add' && initialIndentation > 0) {
+    if (lines.length > 1) {
+      return [
+        firstLine.slice(initialIndentation),
+        ...lines.slice(1, -1),
+        `${createIndentation(initialIndentation / INDENTATION.length)}${lastLine}`,
+      ].join('\n')
+    }
+    return firstLine.slice(initialIndentation)
+  }
+  /*
+  * When modifying we readd the the indentation for the first line twice. We remove
+  * the first line of indentation after modifying.
+  */
+  if (action === 'modify' && indentationLevel > 0) {
     return [
-      firstLine.slice(indentationLevel * 2 - 2),
-      ...lines.slice(1, -1),
-      `${createIndentation(indentationLevel * 2 - 2)}${lastLine}`,
+      firstLine.trimLeft(),
+      ...lines.slice(1),
     ].join('\n')
   }
-  // If reached here, we are handling modify
-  return [
-    startsWithIndentation(firstLine) ? firstLine.slice(indentationLevel * 2) : firstLine,
-    ...lines.slice(1),
-  ].join('\n')
+  return data
 }
 
 export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
@@ -185,14 +197,20 @@ export const updateNaclFileData = async (
       } else if (isListElement) {
         newData = await dumpValues(elem, functions, indentationLevel)
       } else {
-        // When dumping values (attributes) we need to dump the key as well
         newData = await dumpValues({ [changeKey]: elem }, functions, indentationLevel)
       }
       if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
         // Trim trailing newline (the original value already has one)
         newData = newData.slice(0, -1)
       }
-      newData = removeBegginingIndentation(newData, change.action, indentationLevel)
+      // Need to subtract Indentation.length in order to give the enclosing indentation level
+      // change.location.start.col gives where the change should start including indentation.
+      newData = fixEdgeIndentation(
+        newData,
+        change.action,
+        indentationLevel,
+        change.location.start.col - 1 - INDENTATION.length
+      )
     } else {
       // This is a removal, we want to replace the original content with an empty string
       newData = ''

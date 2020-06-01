@@ -35,7 +35,7 @@ export const MULTILINE_STRING_PREFIX = '\'\'\'\n'
 export const MULTILINE_STRING_SUFFIX = '\n\'\'\''
 
 export const createIndentation = (indentationLevel: number): string =>
-  INDENTATION.repeat(indentationLevel <= 0 ? 0 : indentationLevel)
+  INDENTATION.repeat(indentationLevel)
 
 export const removeBegginingIndentation = (data: string[], indentationLevel: number): string[] =>
   [
@@ -43,10 +43,10 @@ export const removeBegginingIndentation = (data: string[], indentationLevel: num
     ...data.slice(1),
   ]
 
-const dumpWord = (word: string): string => {
+const dumpWord = (word: string, indentationLevel = 0): string => {
   // word needs to be escaped if it will not be parsed back as a single word token
   const [match] = (rules.main.word as RegExp).exec(word) ?? []
-  return match === word ? word : `"${word}"`
+  return match === word ? `${createIndentation(indentationLevel)}${word}` : `${createIndentation(indentationLevel)}"${word}"`
 }
 
 const separateByCommas = (items: string[][]): string[][] => {
@@ -63,27 +63,26 @@ const escapeTemplateMarker = (prim: string): string => prim.replace(/\$\{/gi, '\
 // Double escaping happens when we stringify after escaping.
 const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')
 
-const dumpMultilineString = (prim: string): string =>
-  [MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
+const dumpMultilineString = (prim: string, indentationLevel = 0): string =>
+  [createIndentation(indentationLevel), MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
 
-const dumpString = (prim: string): string => {
-  if (isMultilineString(prim)) return dumpMultilineString(prim)
-  return fixDoubleTemplateMarkerEscaping(JSON.stringify(prim))
+const dumpString = (prim: string, indentationLevel = 0): string => {
+  if (isMultilineString(prim)) return dumpMultilineString(prim, indentationLevel)
+  return `${createIndentation(indentationLevel)}${fixDoubleTemplateMarkerEscaping(JSON.stringify(prim))}`
 }
 
-const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
+const dumpPrimitive = (prim: Value, indentationLevel = 0): string =>
+  `${createIndentation(indentationLevel)}${JSON.stringify(prim)}`
 
 const dumpObject = (
   obj: Value, indentationLevel = 0,
 ): string[] => {
   const attributes = _.toPairs(obj).map(
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    attr => dumpAttr(attr, 0)
+    attr => dumpAttr(attr, indentationLevel + 1)
   )
   const res = [`${createIndentation(indentationLevel)}${O_OBJ}`]
-  attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(
-    `${createIndentation(indentationLevel + 2)}${l}`
-  )))
+  attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(l)))
   res.push(`${createIndentation(indentationLevel)}${C_OBJ}`)
   return res
 }
@@ -91,24 +90,25 @@ const dumpObject = (
 const dumpArray = (arr: Value, indentationLevel = 0): string[] => {
   const items = separateByCommas(arr.map(
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    (val: Value) => dumpValue(val, -1)
+    (val: Value) => dumpValue(val, indentationLevel + 1)
   ))
   const res = [`${createIndentation(indentationLevel)}${O_ARR}`]
-  items.forEach(itemLines => itemLines.forEach(l => res.push(
-    `${createIndentation(indentationLevel + 2)}${l}`
-  )))
+  items.forEach(itemLines => itemLines.forEach(l => res.push(l)))
   res.push(`${createIndentation(indentationLevel)}${C_ARR}`)
   return res
 }
 
-const dumpExpression = (exp: Value): string[] => {
+const dumpExpression = (exp: Value, indentationLevel = 0): string[] => {
   if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
   const { parts } = exp as TemplateExpression
   return [
-    dumpString(parts
-      .map(part => (isExpression(part)
-        ? `\${ ${dumpExpression(part).join('\n')} }`
-        : escapeTemplateMarker(part))).join('')),
+    dumpString(
+      parts
+        .map(part => (isExpression(part)
+          ? `\${ ${dumpExpression(part).join('\n')} }`
+          : escapeTemplateMarker(part))).join(''),
+      indentationLevel
+    ),
   ]
 }
 
@@ -116,28 +116,32 @@ const dumpValue = (
   value: Value, indentationLevel = 0
 ): string[] => {
   if (_.isArray(value)) {
-    return removeBegginingIndentation(dumpArray(value, indentationLevel), indentationLevel)
+    return dumpArray(value, indentationLevel)
   }
   if (isFunctionExpression(value)) {
     const { parameters, funcName } = value
     const dumpedParams = parameters.map(
-      param => dumpValue(param, indentationLevel)
+      param => dumpValue(param, indentationLevel + 1)
     )
     if (dumpedParams.length === 1 && dumpedParams[0].length === 1) {
-      return [`${funcName}${O_PAREN}${dumpedParams[0][0]}${C_PAREN}`]
+      return [`${createIndentation(indentationLevel)}${funcName}${O_PAREN}${dumpedParams[0][0].trimLeft()}${C_PAREN}`]
     }
     const paramsForDump = _.flatten(separateByCommas(dumpedParams))
 
-    return [`${funcName}${O_PAREN}`, ...paramsForDump, C_PAREN]
+    return [
+      `${createIndentation(indentationLevel)}${funcName}${O_PAREN}`,
+      ...paramsForDump,
+      `${createIndentation(indentationLevel)}${C_PAREN}`,
+    ]
   }
 
   if (_.isPlainObject(value)) {
-    return removeBegginingIndentation(dumpObject(value, indentationLevel), indentationLevel)
+    return dumpObject(value, indentationLevel)
   }
-  if (isExpression(value)) return dumpExpression(value)
-  if (_.isString(value)) return [dumpString(escapeTemplateMarker(value))]
+  if (isExpression(value)) return dumpExpression(value, indentationLevel)
+  if (_.isString(value)) return [dumpString(escapeTemplateMarker(value), indentationLevel)]
 
-  return [dumpPrimitive(value)]
+  return [dumpPrimitive(value, indentationLevel)]
 }
 
 const dumpAttr = (
@@ -145,15 +149,15 @@ const dumpAttr = (
 ): string[] => {
   const [key, value] = attr
   const valueLines = dumpValue(value, indentationLevel)
-  valueLines[0] = `${createIndentation(indentationLevel)}${dumpWord(key)} = ${valueLines[0]}`
+  valueLines[0] = `${dumpWord(key, indentationLevel)} = ${valueLines[0].trimLeft()}`
   return valueLines
 }
 
 const createBlockDefLine = (block: DumpedHclBlock, indentationLevel = 0): string => {
-  const type = dumpWord(block.type)
-  const labels = block.labels.map(dumpWord)
+  const type = dumpWord(block.type, indentationLevel)
+  const labels = block.labels.map(word => dumpWord(word, 0))
   const defLine = [type, ...labels, O_BLOCK].join(' ')
-  return `${createIndentation(indentationLevel)}${defLine}`
+  return defLine
 }
 
 const dumpBlock = (block: DumpedHclBlock, indentationLevel = 0): string[] => {

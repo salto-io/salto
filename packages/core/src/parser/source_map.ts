@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID } from '@salto-io/adapter-api'
-import wu from 'wu'
+import wu, { WuIterable } from 'wu'
 import { SourceRange, isSourceRange } from './internal/types'
 
 interface SourceMapEntry {
@@ -23,16 +23,33 @@ interface SourceMapEntry {
   value: SourceRange[]
 }
 
+const getFromPath = (
+  data: SourceMapEntry,
+  path: string[],
+  createIfMissing = false
+): SourceMapEntry | undefined => {
+  const [key, ...restOfPath] = path
+  if (data.children[key] === undefined && createIfMissing) {
+    data.children[key] = { children: {}, value: [] }
+  }
+  if (_.isEmpty(restOfPath)) {
+    return data.children[key]
+  }
+  return data.children[key]
+    ? getFromPath(data.children[key], restOfPath, createIfMissing)
+    : undefined
+}
+
 const mergeEntries = (src: SourceMapEntry, target: SourceMapEntry): void => {
   src.value.push(...target.value)
   // eslint-disable-next-line no-restricted-syntax
-  for (const key in target.children) {
-    if (src.children[key]) {
-      mergeEntries(src.children[key] as SourceMapEntry, target.children[key])
+  _.entries(target.children).forEach(([key, value]) => {
+    if (key in src.children) {
+      mergeEntries(src.children[key] as SourceMapEntry, value)
     } else {
-      src.children[key] = target.children[key]
+      src.children[key] = value
     }
-  }
+  })
 }
 
 const mountToPath = (
@@ -40,17 +57,10 @@ const mountToPath = (
   path: string[],
   value: SourceMapEntry
 ): void => {
-  const [key, ...restOfPath] = path
-  if (!data.children[key]) {
-    data.children[key] = { children: {}, value: [] }
+  const target = getFromPath(data, path, true)
+  if (target) {
+    mergeEntries(target, value)
   }
-  if (_.isEmpty(restOfPath)) {
-    if (data.children[key]) {
-      return mergeEntries(data.children[key], value)
-    }
-    data.children[key] = value
-  }
-  return mountToPath(data.children[key], restOfPath, value)
 }
 
 const setToPath = (
@@ -58,27 +68,22 @@ const setToPath = (
   path: string[],
   value: SourceRange[]
 ): void => {
-  const [key, ...restOfPath] = path
-  if (!data.children[key]) {
-    data.children[key] = { children: {}, value: [] }
+  const target = getFromPath(data, path, true)
+  if (target) {
+    target.value = value
   }
-  if (_.isEmpty(restOfPath)) {
-    data.children[key].value = value
-    return
-  }
-  setToPath(data.children[key], restOfPath, value)
 }
 
-const getFromPath = (
-  data: SourceMapEntry,
-  path: string[],
-  debug = false
-): SourceMapEntry | undefined => {
-  const [key, ...restOfPath] = path
-  if (_.isEmpty(restOfPath)) {
-    return data.children[key]
-  }
-  return data.children[key] ? getFromPath(data.children[key], restOfPath, debug) : undefined
+const iterEntry = (
+  entry: SourceMapEntry,
+  prefix: string[] = []
+): WuIterable<[string, SourceRange[]]> => {
+  const childEntries = wu.entries(entry.children)
+    .map(([key, child]) => iterEntry(child, [...prefix, key]))
+    .flatten(true)
+  return _.isEmpty(entry.value)
+    ? childEntries
+    : wu.chain([[prefix.join(ElemID.NAMESPACE_SEPARATOR), entry.value]], childEntries)
 }
 
 export class SourceMap implements Map<string, SourceRange[]> {
@@ -89,24 +94,11 @@ export class SourceMap implements Map<string, SourceRange[]> {
     wu(entries).forEach(([key, value]: [string, SourceRange[]]) => this.set(key, value))
   }
 
-  private *createGenerator(
-    baseEntry?: SourceMapEntry,
-    prefix: string[] = [],
-  ): Generator<[string, SourceRange[]]> {
-    const data = baseEntry || this.data
-    if (!_.isEmpty(data.value)) yield [prefix.join(ElemID.NAMESPACE_SEPARATOR), data.value]
-    // eslint-disable-next-line no-restricted-syntax
-    for (const key of _.keys(data.children)) {
-      const itr = this.createGenerator(data.children[key], [...prefix, key])
-      yield* itr
-    }
+  [Symbol.iterator](): IterableIterator<[string, SourceRange[]]> {
+    return iterEntry(this.data)
   }
 
-  [Symbol.iterator](): Generator<[string, SourceRange[]]> {
-    return this.createGenerator()
-  }
-
-  get size(): number { return wu(this.keys()).toArray().length }
+  get size(): number { return wu.reduce(count => count + 1, 0, this) }
 
   push(id: string, ...sources: (SourceRange | { source: SourceRange })[]): void {
     const key = id.split(ElemID.NAMESPACE_SEPARATOR)
@@ -128,7 +120,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
   get(id: string): SourceRange[] | undefined {
     const path = id.split(ElemID.NAMESPACE_SEPARATOR)
     const entry = getFromPath(this.data, path)
-    return entry && entry.value
+    return entry?.value
   }
 
   has(id: string): boolean {
@@ -161,22 +153,21 @@ export class SourceMap implements Map<string, SourceRange[]> {
   }
 
   keys(): IterableIterator<string> {
-    const r = wu(this.createGenerator()).map(([key, _range]) => key)
-    return r
+    return iterEntry(this.data).map(([key, _range]) => key)
   }
 
-  entries(): Generator<[string, SourceRange[]]> {
-    return this.createGenerator()
+  entries(): IterableIterator<[string, SourceRange[]]> {
+    return iterEntry(this.data)
   }
 
   values(): IterableIterator<SourceRange[]> {
-    return wu(this.createGenerator()).map(([_key, value]) => value)
+    return iterEntry(this.data).map(([_key, value]) => value)
   }
 
   forEach(
     callbackfn: (value: SourceRange[], key: string, map: Map<string, SourceRange[]>) => void,
   ): void {
-    wu(this.createGenerator()).forEach(([key, value]) => callbackfn(value, key, this))
+    iterEntry(this.data).forEach(([key, value]) => callbackfn(value, key, this))
   }
 
   serialize(): string {

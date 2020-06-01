@@ -34,8 +34,7 @@ describe('tree source map', () => {
   ]
 
   it('should add all values', () => {
-    const sourceMap = new SourceMap()
-    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
+    const sourceMap = new SourceMap(baseEntries)
     expect(wu(sourceMap.entries()).toArray()).toEqual(baseEntries)
     expect(sourceMap.size).toEqual(5)
   })
@@ -68,8 +67,7 @@ describe('tree source map', () => {
   })
 
   it('should delete all entries on clear', () => {
-    const sourceMap = new SourceMap()
-    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
+    const sourceMap = new SourceMap(baseEntries)
     expect(wu(sourceMap.keys()).toArray()).toEqual(baseEntries.map(([k, _v]) => k))
     sourceMap.clear()
     expect(wu(sourceMap.keys()).toArray()).toEqual([])
@@ -132,20 +130,17 @@ describe('tree source map', () => {
   })
 
   it('should return all keys', () => {
-    const sourceMap = new SourceMap()
-    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
+    const sourceMap = new SourceMap(baseEntries)
     expect(wu(sourceMap.keys()).toArray()).toEqual(baseEntries.map(([k, _v]) => k))
   })
 
   it('should return all values', () => {
-    const sourceMap = new SourceMap()
-    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
+    const sourceMap = new SourceMap(baseEntries)
     expect(wu(sourceMap.values()).toArray()).toEqual(baseEntries.map(([_k, v]) => v))
   })
 
   it('should support forEach', () => {
-    const sourceMap = new SourceMap()
-    _.cloneDeep(baseEntries).forEach(([key, value]) => sourceMap.set(key, value))
+    const sourceMap = new SourceMap(_.cloneDeep(baseEntries))
     wu(sourceMap.values()).toArray()
     sourceMap.forEach(v => v.push(createPos(0, 0, 0)))
     expect(wu(sourceMap.values()).toArray())
@@ -153,10 +148,8 @@ describe('tree source map', () => {
   })
 
   it('should allow mount operations when prefix is new', () => {
-    const sourceMap = new SourceMap()
-    const mountMap = new SourceMap()
-    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
-    baseEntries.forEach(([key, value]) => mountMap.set(key, value))
+    const sourceMap = new SourceMap(baseEntries)
+    const mountMap = new SourceMap(baseEntries)
     const mountKey = 'mount.key'
     sourceMap.mount(mountKey, mountMap)
     baseEntries.forEach(([key, ranges]) => {
@@ -166,10 +159,8 @@ describe('tree source map', () => {
   })
 
   it('should allow mount operations when prefix is old', () => {
-    const sourceMap = new SourceMap()
-    const mountMap = new SourceMap()
-    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
-    baseEntries.forEach(([key, value]) => mountMap.set(key, value))
+    const sourceMap = new SourceMap(baseEntries)
+    const mountMap = new SourceMap(baseEntries)
     const mountKey = 'mount.key'
     sourceMap.set(mountKey, [createPos(6, 6, 6)])
     sourceMap.mount(mountKey, mountMap)
@@ -187,10 +178,8 @@ describe('tree source map', () => {
       ['salesforce.test.a.b', [createPos(6, 6, 6)]], // Merge Leaf
       ['new', [createPos(6, 6, 6)]],
     ]
-    const newSourceMap = new SourceMap()
-    const sourceMap = new SourceMap()
-    baseEntries.forEach(([key, value]) => sourceMap.set(key, value))
-    newEntries.forEach(([key, value]) => newSourceMap.set(key, value))
+    const newSourceMap = new SourceMap(newEntries)
+    const sourceMap = new SourceMap(baseEntries)
     sourceMap.merge(newSourceMap);
     [...baseEntries, ...newEntries].forEach(([key, values]) => {
       values.forEach(

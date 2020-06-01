@@ -20,6 +20,7 @@ import { Element, ElemID, getChangeElement, isInstanceElement, Value } from '@sa
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { ValidationError } from 'src/core/validator'
+import wu from 'wu'
 import { ParseError, SourceRange } from '../../../parser/parse'
 import { SourceMap } from '../../../parser/source_map'
 import { mergeElements, MergeError } from '../../../core/merger'
@@ -183,13 +184,11 @@ const buildMultiEnvSource = (
     getSourceMap: async (filename: string): Promise<SourceMap> => {
       const { source, relPath } = getSourceForNaclFile(filename)
       const sourceMap = await source.getSourceMap(relPath)
-      const rebasedMap = new SourceMap()
-      if (sourceMap) {
-        sourceMap.forEach(
-          (ranges, key) => rebasedMap.set(key, ranges.map(r => ({ ...r, filename })))
-        )
-      }
-      return rebasedMap
+      return new SourceMap(wu(sourceMap.entries())
+        .map(([key, ranges]) => [
+          key,
+          ranges.map(r => ({ ...r, filename })),
+        ] as [string, SourceRange[]]))
     },
     getSourceRanges: async (elemID: ElemID): Promise<SourceRange[]> => (
       _.flatten(await Promise.all(_.entries(getActiveSources())

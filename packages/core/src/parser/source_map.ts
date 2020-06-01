@@ -169,14 +169,4 @@ export class SourceMap implements Map<string, SourceRange[]> {
   ): void {
     iterEntry(this.data).forEach(([key, value]) => callbackfn(value, key, this))
   }
-
-  serialize(): string {
-    return JSON.stringify(Array.from(this.entries()))
-  }
-
-  static deserialize(json: string): SourceMap {
-    const raw = JSON.parse(json)
-    const res = new SourceMap(raw)
-    return res
-  }
 }

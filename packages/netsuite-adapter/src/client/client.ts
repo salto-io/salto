@@ -59,24 +59,33 @@ const rootCLIPath = path.normalize(path.join(__dirname, ...Array(5).fill('..'), 
   '@salto-io', 'suitecloud-cli', 'src'))
 const baseExecutionPath = os.tmpdir()
 
-type FileContent = {
-  extension: string
-  content: string
-}
-
 export interface CustomizationInfo {
   typeName: string
   values: Values
-  fileContent?: FileContent
 }
 
-export const convertToCustomizationInfo = (xmlContent: string, fileContent?: FileContent):
+export interface TemplateCustomizationInfo extends CustomizationInfo {
+  additionalFileExtension: string
+  additionalFileContent: string
+}
+
+export const convertToCustomizationInfo = (xmlContent: string):
   CustomizationInfo => {
   const parsedXmlValues = xmlParser.parse(xmlContent,
     { attributeNamePrefix: ATTRIBUTE_PREFIX, ignoreAttributes: false })
   const typeName = Object.keys(parsedXmlValues)[0]
-  return { typeName, values: parsedXmlValues[typeName], fileContent }
+  return { typeName, values: parsedXmlValues[typeName] }
 }
+
+export const convertToTemplateCustomizationInfo = (xmlContent: string,
+  additionalFileExtension: string, additionalFileContent: string): TemplateCustomizationInfo =>
+  Object.assign(
+    convertToCustomizationInfo(xmlContent),
+    { additionalFileExtension, additionalFileContent }
+  )
+
+export const isTemplateCustomizationInfo = (customizationInfo: CustomizationInfo):
+  customizationInfo is TemplateCustomizationInfo => 'additionalFileContent' in customizationInfo
 
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
   // eslint-disable-next-line new-cap
@@ -218,17 +227,18 @@ export default class NetsuiteClient {
     }, project.executor)
 
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
-    const dirContent = await readDir(objectsDirPath)
-    const scriptIdToFiles = _.groupBy(dirContent, filename => filename.split(FILE_SEPARATOR)[0])
+    const filenames = await readDir(objectsDirPath)
+    const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
     return Promise.all(Object.values(scriptIdToFiles).map(async objectFileNames => {
       const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
         filename => filename.includes(ADDITIONAL_FILE_PATTERN))
       const xmlContent = readFile(path.resolve(objectsDirPath, contentFilename))
-      const fileContent = !_.isUndefined(additionalFilename) ? {
-        content: (await readFile(path.resolve(objectsDirPath, additionalFilename))).toString(),
-        extension: additionalFilename.split(FILE_SEPARATOR)[2],
-      } : undefined
-      return convertToCustomizationInfo((await xmlContent).toString(), fileContent)
+      if (_.isUndefined(additionalFilename)) {
+        return convertToCustomizationInfo((await xmlContent).toString())
+      }
+      const additionalFileContent = readFile(path.resolve(objectsDirPath, additionalFilename))
+      return convertToTemplateCustomizationInfo((await xmlContent).toString(),
+        additionalFilename.split(FILE_SEPARATOR)[2], (await additionalFileContent).toString())
     }))
   }
 
@@ -237,10 +247,10 @@ export default class NetsuiteClient {
     const project = await this.initProject()
     const dirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
     await writeFile(path.resolve(dirPath, `${filename}.xml`), convertToXmlContent(customizationInfo))
-    if (!_.isUndefined(customizationInfo.fileContent)) {
+    if (isTemplateCustomizationInfo(customizationInfo)) {
       await writeFile(path.resolve(dirPath,
-        `${filename}${ADDITIONAL_FILE_PATTERN}${customizationInfo.fileContent.extension}`),
-      customizationInfo.fileContent.content)
+        `${filename}${ADDITIONAL_FILE_PATTERN}${customizationInfo.additionalFileExtension}`),
+      customizationInfo.additionalFileContent)
     }
     await NetsuiteClient.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {},
       project.executor)

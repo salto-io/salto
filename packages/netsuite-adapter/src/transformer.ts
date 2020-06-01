@@ -25,7 +25,10 @@ import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX,
 } from './constants'
-import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo } from './client/client'
+import {
+  ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo, TemplateCustomizationInfo,
+  isTemplateCustomizationInfo,
+} from './client/client'
 import { fieldTypes } from './types/field_types'
 import { customTypes } from './types'
 
@@ -86,10 +89,10 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
   const fileContentField = Object.values(type.fields)
     .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
-  if (fileContentField && customizationInfo.fileContent) {
+  if (fileContentField && isTemplateCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
-      filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.fileContent.extension}`,
-      content: Buffer.from(customizationInfo.fileContent.content),
+      filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.additionalFileExtension}`,
+      content: Buffer.from(customizationInfo.additionalFileContent),
     })
   }
 
@@ -185,18 +188,20 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     : transformedValues
 
   const values = restoreAttributes(sortedValues, instance.type, instance.elemID)
-  const customizationInfo: CustomizationInfo = { typeName, values }
 
   const fileContentField = Object.values(instance.type.fields)
     .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
   if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])) {
-    customizationInfo.fileContent = {
-      extension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
-      content: values[fileContentField.name],
-    }
+    const additionalFileContent = values[fileContentField.name]
     delete values[fileContentField.name]
+    return {
+      typeName,
+      values,
+      additionalFileContent,
+      additionalFileExtension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
+    } as TemplateCustomizationInfo
   }
-  return customizationInfo
+  return { typeName, values }
 }
 
 // todo add support for references!

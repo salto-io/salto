@@ -201,17 +201,14 @@ describe('netsuite client', () => {
         values: {
           '@_filename': 'a.xml',
         },
-        fileContent: {
-          extension: 'html',
-          content: MOCK_TEMPLATE_CONTENT,
-        },
+        additionalFileContent: MOCK_TEMPLATE_CONTENT,
+        additionalFileExtension: 'html',
       },
       {
         typeName: 'elementName',
         values: {
           '@_filename': 'b.xml',
         },
-        fileContent: undefined,
       }])
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
@@ -271,10 +268,8 @@ describe('netsuite client', () => {
         values: {
           key: 'val',
         },
-        fileContent: {
-          extension: 'html',
-          content: MOCK_TEMPLATE_CONTENT,
-        },
+        additionalFileContent: MOCK_TEMPLATE_CONTENT,
+        additionalFileExtension: 'html',
       }
       await client.deployCustomObject(filename, customizationInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(2)

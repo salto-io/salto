@@ -245,10 +245,8 @@ describe('Transformer', () => {
           name: 'email template name',
           [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         },
-        fileContent: {
-          extension: 'html',
-          content: emailTemplateContent,
-        },
+        additionalFileContent: emailTemplateContent,
+        additionalFileExtension: 'html',
       }
       const result = createInstanceElement(
         emailTemplateCustomizationInfo,
@@ -498,10 +496,8 @@ describe('Transformer', () => {
         values: {
           name: elementName,
         },
-        fileContent: {
-          extension: 'html',
-          content: emailTemplateContent,
-        },
+        additionalFileContent: emailTemplateContent,
+        additionalFileExtension: 'html',
       })
     })
 

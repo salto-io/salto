@@ -34,7 +34,7 @@ export {
   CONFIG_DIR_NAME,
 } from './src/workspace/local/workspace_config'
 export { DirectoryStore, File } from './src/workspace/dir_store'
-export { ConfigSource } from './src/workspace/config_source'
+export { ConfigSource, configSource } from './src/workspace/config_source'
 export { Errors } from './src/workspace/errors'
 export { NaclFile, FILE_EXTENSION } from './src/workspace/nacl_files/nacl_files_source'
 export { parse, SourceMap, SourceRange, parseElemID } from './src/parser/parse'

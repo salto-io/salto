@@ -117,10 +117,6 @@ const getFieldName = (annotations: Values): string =>
 const getFieldType = (type: string): TypeElement =>
   (_.isUndefined(type) ? BuiltinTypes.STRING : Types.get(type))
 
-export const annotationsFileName = (objectName: string): string => `${objectName}Annotations`
-export const standardFieldsFileName = (objectName: string): string => `${objectName}StandardFields`
-export const customFieldsFileName = (objectName: string): string => `${objectName}CustomFields`
-
 const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] => {
   if (namespace) {
     return [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]

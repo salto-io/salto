@@ -1,0 +1,43 @@
+diff --git a/packages/core/package.json b/packages/core/package.json
+index 70e6ac1a..5f8473f2 100644
+--- a/packages/core/package.json
++++ b/packages/core/package.json
+@@ -39,6 +39,7 @@
+     "@salto-io/dag": "0.1.16",
+     "@salto-io/file": "0.1.16",
+     "@salto-io/hubspot-adapter": "0.1.16",
++    "@salto-io/netsuite-adapter": "0.1.16",
+     "@salto-io/logging": "0.1.16",
+     "@salto-io/lowerdash": "0.1.16",
+     "@salto-io/salesforce-adapter": "0.1.16",
+diff --git a/packages/core/src/core/adapters/creators.ts b/packages/core/src/core/adapters/creators.ts
+index d07a7fad..ac0ee196 100644
+--- a/packages/core/src/core/adapters/creators.ts
++++ b/packages/core/src/core/adapters/creators.ts
+@@ -16,10 +16,12 @@
+ import { creator as salesforceAdapterCreator } from '@salto-io/salesforce-adapter'
+ import { AdapterCreator } from '@salto-io/adapter-api'
+ import { creator as hubspotAdapterCreator } from '@salto-io/hubspot-adapter'
++import { creator as netsuiteAdapterCreator } from '@salto-io/netsuite-adapter'
+ 
+ const adapterCreators: Record<string, AdapterCreator> = {
+   salesforce: salesforceAdapterCreator,
+   hubspot: hubspotAdapterCreator,
++  netsuite: netsuiteAdapterCreator,
+ }
+ 
+ export default adapterCreators
+diff --git a/packages/core/tsconfig.json b/packages/core/tsconfig.json
+index 22cc9ff7..7b7af175 100644
+--- a/packages/core/tsconfig.json
++++ b/packages/core/tsconfig.json
+@@ -8,6 +8,9 @@
+         "paths": {
+             "jsforce": [
+                 "../../node_modules/jsforce-types"
++            ],
++            "@salto-io/suitecloud-cli": [
++              "../netsuite-adapter/types/suitecloud-cli"
+             ]
+         },
+         "lib": [

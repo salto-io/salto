@@ -15,7 +15,7 @@ JDK - https://www.oracle.com/java/technologies/javase-jdk11-downloads.html
 
 ### Build instructions
 ```
-extract the content of add_ns_adapter.patch
+download add_ns_adapter.patch and apply it by running `patch -p 1 -i packages/netsuite-adapter/add_ns_adapter.patch` from your repository root
 yarn
 yarn run build
 ```

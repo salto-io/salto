@@ -1,10 +1,19 @@
-Index: packages/core/src/core/adapters/creators.ts
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
---- packages/core/src/core/adapters/creators.ts	(revision a3ce672479f52363bb896ab47d977904bec80871)
-+++ packages/core/src/core/adapters/creators.ts	(date 1590413923869)
+diff --git a/packages/core/package.json b/packages/core/package.json
+index 70e6ac1a..5f8473f2 100644
+--- a/packages/core/package.json
++++ b/packages/core/package.json
+@@ -39,6 +39,7 @@
+     "@salto-io/dag": "0.1.16",
+     "@salto-io/file": "0.1.16",
+     "@salto-io/hubspot-adapter": "0.1.16",
++    "@salto-io/netsuite-adapter": "0.1.16",
+     "@salto-io/logging": "0.1.16",
+     "@salto-io/lowerdash": "0.1.16",
+     "@salto-io/salesforce-adapter": "0.1.16",
+diff --git a/packages/core/src/core/adapters/creators.ts b/packages/core/src/core/adapters/creators.ts
+index d07a7fad..ac0ee196 100644
+--- a/packages/core/src/core/adapters/creators.ts
++++ b/packages/core/src/core/adapters/creators.ts
 @@ -16,10 +16,12 @@
  import { creator as salesforceAdapterCreator } from '@salto-io/salesforce-adapter'
  import { AdapterCreator } from '@salto-io/adapter-api'
@@ -18,35 +27,17 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
  }
  
  export default adapterCreators
-Index: packages/core/tsconfig.json
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
---- packages/core/tsconfig.json	(revision a3ce672479f52363bb896ab47d977904bec80871)
-+++ packages/core/tsconfig.json	(date 1590413923870)
-@@ -9,8 +9,8 @@
+diff --git a/packages/core/tsconfig.json b/packages/core/tsconfig.json
+index 22cc9ff7..7b7af175 100644
+--- a/packages/core/tsconfig.json
++++ b/packages/core/tsconfig.json
+@@ -8,6 +8,9 @@
+         "paths": {
              "jsforce": [
                  "../../node_modules/jsforce-types"
--            ]
 +            ],
 +            "@salto-io/suitecloud-cli": [
 +              "../netsuite-adapter/types/suitecloud-cli"
-+            ]
+             ]
          },
          "lib": [
-Index: packages/core/package.json
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
---- packages/core/package.json	(revision a3ce672479f52363bb896ab47d977904bec80871)
-+++ packages/core/package.json	(date 1590413923866)
-@@ -39,6 +39,7 @@
-     "@salto-io/dag": "0.1.16",
-     "@salto-io/file": "0.1.16",
-     "@salto-io/hubspot-adapter": "0.1.16",
-+    "@salto-io/netsuite-adapter": "0.1.16",
-     "@salto-io/logging": "0.1.16",
-     "@salto-io/lowerdash": "0.1.16",
-     "@salto-io/salesforce-adapter": "0.1.16",

@@ -23,6 +23,7 @@ import { createSourceRange } from './context'
 import { convertAttributes } from './values'
 
 const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
+type ElementInternalParseRes = {element: Element; sourceMap: SourceMap; listTypes: ListType[]}
 
 export const parseElemID = (fullname: string): ElemID => {
   const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
@@ -63,7 +64,7 @@ const parseType = (
   annotationTypes: TypeMap,
   annotations: Omit<InternalParseRes<Values>, 'source'>,
   isSettings = false
-): [TypeElement, SourceMap, ListType[]] => {
+): ElementInternalParseRes => {
   const elemID = parseElemID(typeName)
   const typeObj = new ObjectType({
     elemID,
@@ -102,14 +103,14 @@ const parseType = (
     sourceMap.push(field.elemID.getFullName(), fieldData.source)
   })
 
-  return [typeObj, sourceMap, wu(listElements.values()).toArray()]
+  return { element: typeObj, sourceMap, listTypes: wu(listElements.values()).toArray() }
 }
 
 const parsePrimitiveType = (
   labels: InternalParseRes<string>[],
   annotationTypes: TypeMap,
   annotations: Omit<InternalParseRes<Values>, 'source'>,
-): [PrimitiveType, SourceMap] => {
+): ElementInternalParseRes => {
   const [typeName, kw, baseType] = labels
   if (kw.value !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
     throw new NearleyError(
@@ -123,22 +124,23 @@ const parsePrimitiveType = (
   if (annotations.sourceMap) {
     sourceMap.mount([elemID.getFullName(), 'attr'].join(ElemID.NAMESPACE_SEPARATOR), annotations.sourceMap)
   }
-  return [
-    new PrimitiveType({
+  return {
+    element: new PrimitiveType({
       elemID,
       primitive: primitiveType(baseType.value),
       annotationTypes,
       annotations: annotations.value,
     }),
     sourceMap,
-  ]
+    listTypes: [],
+  }
 }
 
 const parseInstance = (
   instanceType: string,
   labels: string[],
   attrs: Omit<InternalParseRes<Values>, 'source'>
-): [InstanceElement, SourceMap] => {
+): ElementInternalParseRes => {
   let typeID = parseElemID(instanceType)
   if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
     // In this case if there is just a single name we have to assume it is actually the adapter
@@ -147,8 +149,10 @@ const parseInstance = (
   const name = labels[0] || ElemID.CONFIG_NAME
   const annotations = _.pick(attrs.value, INSTANCE_ANNOTATIONS_ATTRS)
   const values = attrs.value
+  // using unset instead of _.pick in order to maintatin the element muteable,
+  // which is needed in order for the promise value replacer to replace the content
+  // on the proper object.
   INSTANCE_ANNOTATIONS_ATTRS.forEach(annoAttr => _.unset(values, annoAttr))
-  _.unset(attrs, INSTANCE_ANNOTATIONS_ATTRS)
   const inst = new InstanceElement(
     name,
     new ObjectType({
@@ -163,7 +167,7 @@ const parseInstance = (
   if (attrs.sourceMap) {
     sourceMap.mount(inst.elemID.getFullName(), attrs.sourceMap)
   }
-  return [inst, sourceMap]
+  return { element: inst, sourceMap, listTypes: [] }
 }
 
 const parseElementBlock = (
@@ -172,22 +176,21 @@ const parseElementBlock = (
   annotationsTypes: TypeMap,
   attributes: Omit<InternalParseRes<Values>, 'source'>,
   fields: InternalParseRes<FieldData>[]
-): [Element, SourceMap, ListType[]] => {
+): ElementInternalParseRes => {
   if (elementType.value === Keywords.TYPE_DEFINITION && elementLabels.length > 1) {
-    const [inst, sourceMap] = parsePrimitiveType(elementLabels, annotationsTypes, attributes)
-    return [inst, sourceMap, []]
+    return parsePrimitiveType(elementLabels, annotationsTypes, attributes)
   }
   const isSettings = elementType.value === Keywords.SETTINGS_DEFINITION
   if (elementType.value === Keywords.TYPE_DEFINITION || isSettings) {
     return parseType(elementLabels[0].value, fields, annotationsTypes, attributes, isSettings)
   }
   if (elementLabels.length === 0 || elementLabels.length === 1) {
-    const [inst, sourceMap] = parseInstance(
+    const { element, sourceMap, listTypes } = parseInstance(
       elementType.value,
       elementLabels.map(l => l.value),
       attributes
     )
-    return [inst, sourceMap, []]
+    return { element, sourceMap, listTypes }
   }
   // Without this exception the linter won't allow us to end the function
   // without a return value
@@ -222,10 +225,17 @@ export const converTopLevelBlock = (
   const attributes = elementItems.filter(isAttribute)
   const fields = elementItems.filter(isFieldBlock)
   if (elementType.value === Keywords.VARIABLES_DEFINITION) {
+    if (!(_.isEmpty(fields) && _.isEmpty(annotationTypes))) {
+      throw new NearleyError(
+        labels[0],
+        createSourceRange(labels[0]).start.byte,
+        'illegal var block'
+      )
+    }
     return parseVariablesBlock(attributes)
   }
   const annotations = convertAttributes(attributes)
-  const [element, sourceMap, listTypes] = parseElementBlock(
+  const { element, sourceMap, listTypes } = parseElementBlock(
     elementType,
     elementLabels,
     annotationTypes?.value ?? {},

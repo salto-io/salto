@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Element, SaltoError,
+  Element, SaltoError, SaltoErrorSeverity,
 } from '@salto-io/adapter-api'
 import { flattenElementStr } from '@salto-io/adapter-utils'
 import {
@@ -58,16 +58,13 @@ export const parse = async (
     filename,
     functions
   )
-  let fixedErrors = filterErrors(errors, patchedSrc)
-  fixedErrors = fixedErrors
-    .map(error => {
-      const updatedError = generateErrorContext(srcString, error)
-      return updatedError
-    })
+  const fixedErrors = filterErrors(errors, patchedSrc)
+    .map(error => generateErrorContext(srcString, error))
     .map(error => restoreErrorOrigRanges(patchedSrc, error))
+    .map(error => ({ severity: 'Error' as SaltoErrorSeverity, ...error }))
   return {
     elements: elements.map(flattenElementStr),
     sourceMap,
-    errors: fixedErrors.map(e => ({ ...e, severity: 'Error' })),
+    errors: fixedErrors,
   }
 }

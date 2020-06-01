@@ -25,7 +25,7 @@ import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../parser/dump'
 import { Functions } from '../../parser/functions'
-import { createIndentation, INDENTATION_SPACES, INDENTATION } from '../../parser/internal/dump'
+import { createIndentation, INDENTATION } from '../../parser/internal/dump'
 
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
@@ -97,20 +97,21 @@ const removeBegginingIndentation = (
   action: 'add' | 'remove' | 'modify',
   indentationLevel: number
 ): string => {
-  const lines = data.split('\n')
+  const startsWithIndentation = (str: string): boolean => str.startsWith(INDENTATION)
   if (action === 'remove') return data
+  const lines = data.split('\n')
   const [firstLine] = lines
   const [lastLine] = lines.slice(-1)
   if (action === 'add' && indentationLevel > 0) {
     return [
-      firstLine.slice(indentationLevel - INDENTATION_SPACES),
+      firstLine.slice(indentationLevel * 2 - 2),
       ...lines.slice(1, -1),
-      `${createIndentation(indentationLevel - INDENTATION_SPACES)}${lastLine}`,
+      `${createIndentation(indentationLevel * 2 - 2)}${lastLine}`,
     ].join('\n')
   }
   // If reached here, we are handling modify
   return [
-    firstLine[0] === INDENTATION ? firstLine.slice(indentationLevel) : firstLine,
+    startsWithIndentation(firstLine) ? firstLine.slice(indentationLevel * 2) : firstLine,
     ...lines.slice(1),
   ].join('\n')
 }
@@ -169,7 +170,7 @@ export const updateNaclFileData = async (
   const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
-    const indentationLevel = change.location.start.col - 1
+    const indentationLevel = (change.location.start.col - 1) / 2
     if (elem !== undefined) {
       const changeKey = change.id.name
       const isListElement = changeKey.match(/^\d+$/) !== null

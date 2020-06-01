@@ -30,13 +30,18 @@ const O_ARR = '['
 const C_ARR = ']'
 const O_PAREN = '('
 const C_PAREN = ')'
-export const INDENTATION_SPACES = 2
-export const INDENTATION = ' '
+export const INDENTATION = '  '
 export const MULTILINE_STRING_PREFIX = '\'\'\'\n'
 export const MULTILINE_STRING_SUFFIX = '\n\'\'\''
 
 export const createIndentation = (indentationLevel: number): string =>
   INDENTATION.repeat(indentationLevel <= 0 ? 0 : indentationLevel)
+
+export const removeBegginingIndentation = (data: string[], indentationLevel: number): string[] =>
+  [
+    data[0].slice(indentationLevel * 2),
+    ...data.slice(1),
+  ]
 
 const dumpWord = (word: string): string => {
   // word needs to be escaped if it will not be parsed back as a single word token
@@ -69,31 +74,28 @@ const dumpString = (prim: string): string => {
 const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
 
 const dumpObject = (
-  obj: Value, indentationLevel = 0, isRecursiveCall = false, fromArray = false
+  obj: Value, indentationLevel = 0,
 ): string[] => {
-  const openingCurlyIndentation = isRecursiveCall ? indentationLevel : 0
-  const lineIndentation = fromArray ? INDENTATION_SPACES : INDENTATION_SPACES * 2
   const attributes = _.toPairs(obj).map(
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    attr => dumpAttr(attr, 0, true)
+    attr => dumpAttr(attr, 0)
   )
-  const res = [`${createIndentation(openingCurlyIndentation)}${O_OBJ}`]
+  const res = [`${createIndentation(indentationLevel)}${O_OBJ}`]
   attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(
-    `${createIndentation(indentationLevel + lineIndentation)}${l}`
+    `${createIndentation(indentationLevel + 2)}${l}`
   )))
   res.push(`${createIndentation(indentationLevel)}${C_OBJ}`)
   return res
 }
 
-const dumpArray = (arr: Value, indentationLevel = 0, isRecursiveCall = false): string[] => {
-  const openingCurlyIndentation = isRecursiveCall ? indentationLevel : 0
+const dumpArray = (arr: Value, indentationLevel = 0): string[] => {
   const items = separateByCommas(arr.map(
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    (val: Value) => dumpValue(val, 0, true, true)
+    (val: Value) => dumpValue(val, -1)
   ))
-  const res = [`${createIndentation(openingCurlyIndentation)}${O_ARR}`]
+  const res = [`${createIndentation(indentationLevel)}${O_ARR}`]
   items.forEach(itemLines => itemLines.forEach(l => res.push(
-    `${createIndentation(indentationLevel + INDENTATION_SPACES * 2)}${l}`
+    `${createIndentation(indentationLevel + 2)}${l}`
   )))
   res.push(`${createIndentation(indentationLevel)}${C_ARR}`)
   return res
@@ -111,13 +113,15 @@ const dumpExpression = (exp: Value): string[] => {
 }
 
 const dumpValue = (
-  value: Value, indentationLevel = 0, isRecursiveCall = false, fromArray = false
+  value: Value, indentationLevel = 0
 ): string[] => {
-  if (_.isArray(value)) return dumpArray(value, indentationLevel, isRecursiveCall)
+  if (_.isArray(value)) {
+    return removeBegginingIndentation(dumpArray(value, indentationLevel), indentationLevel)
+  }
   if (isFunctionExpression(value)) {
     const { parameters, funcName } = value
     const dumpedParams = parameters.map(
-      param => dumpValue(param, indentationLevel, isRecursiveCall)
+      param => dumpValue(param, indentationLevel)
     )
     if (dumpedParams.length === 1 && dumpedParams[0].length === 1) {
       return [`${funcName}${O_PAREN}${dumpedParams[0][0]}${C_PAREN}`]
@@ -127,7 +131,9 @@ const dumpValue = (
     return [`${funcName}${O_PAREN}`, ...paramsForDump, C_PAREN]
   }
 
-  if (_.isPlainObject(value)) return dumpObject(value, indentationLevel, isRecursiveCall, fromArray)
+  if (_.isPlainObject(value)) {
+    return removeBegginingIndentation(dumpObject(value, indentationLevel), indentationLevel)
+  }
   if (isExpression(value)) return dumpExpression(value)
   if (_.isString(value)) return [dumpString(escapeTemplateMarker(value))]
 
@@ -135,10 +141,10 @@ const dumpValue = (
 }
 
 const dumpAttr = (
-  attr: [string, Value], indentationLevel = 0, isRecursiveCall = false
+  attr: [string, Value], indentationLevel = 0
 ): string[] => {
   const [key, value] = attr
-  const valueLines = dumpValue(value, indentationLevel, isRecursiveCall)
+  const valueLines = dumpValue(value, indentationLevel)
   valueLines[0] = `${createIndentation(indentationLevel)}${dumpWord(key)} = ${valueLines[0]}`
   return valueLines
 }
@@ -153,10 +159,10 @@ const createBlockDefLine = (block: DumpedHclBlock, indentationLevel = 0): string
 const dumpBlock = (block: DumpedHclBlock, indentationLevel = 0): string[] => {
   const defLine = createBlockDefLine(block, indentationLevel)
   const blocks = block.blocks.map(
-    subBlock => dumpBlock(subBlock, indentationLevel + INDENTATION_SPACES)
+    subBlock => dumpBlock(subBlock, indentationLevel + 1)
   )
   const attributes = _(block.attrs).toPairs().map(
-    attr => dumpAttr(attr, indentationLevel + INDENTATION_SPACES)
+    attr => dumpAttr(attr, indentationLevel + 1)
   ).value()
   const res = [defLine]
   blocks.forEach(blockLines => blockLines.forEach(b => res.push(b)))

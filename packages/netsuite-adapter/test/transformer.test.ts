@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement } from '@salto-io/adapter-api'
+import { InstanceElement, StaticFile } from '@salto-io/adapter-api'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
   ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID, TRANSACTION_FORM,
+  EMAIL_TEMPLATE,
 } from '../src/constants'
 import { customTypes } from '../src/types'
 import { convertToCustomizationInfo, convertToXmlContent } from '../src/client/client'
@@ -112,7 +113,7 @@ describe('Transformer', () => {
   describe('createInstanceElement', () => {
     const transformCustomFieldRecord = (xmlContent: string): InstanceElement => {
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
-      return createInstanceElement(convertToCustomizationInfo(xmlContent).values, customFieldType)
+      return createInstanceElement(convertToCustomizationInfo(xmlContent), customFieldType)
     }
 
     it('should create instance name correctly', () => {
@@ -125,7 +126,7 @@ describe('Transformer', () => {
       + '  <definition>BLA</definition>\n'
       + '</savedsearch>\n'
       const savedSearchType = customTypes.savedsearch
-      const result = createInstanceElement(convertToCustomizationInfo(savedSearchXmlContent).values,
+      const result = createInstanceElement(convertToCustomizationInfo(savedSearchXmlContent),
         savedSearchType)
       expect(result.elemID.name).toEqual('customsearch_my_search_script_id')
     })
@@ -134,7 +135,7 @@ describe('Transformer', () => {
       const customRecordTypeXmlContent = '<customrecordtype scriptid="customrecord__my_record_script_id">\n'
       + '</customrecordtype>\n'
       const result = createInstanceElement(
-        convertToCustomizationInfo(customRecordTypeXmlContent).values,
+        convertToCustomizationInfo(customRecordTypeXmlContent),
         customTypes[CUSTOM_RECORD_TYPE]
       )
       expect(result.elemID.name).toEqual('customrecord__my_record_script_id')
@@ -148,7 +149,7 @@ describe('Transformer', () => {
     it('should transform nested attributes', () => {
       const customRecordTypeXmlContent = XML_TEMPLATES.WITH_NESTED_ATTRIBUTE
       const result = createInstanceElement(
-        convertToCustomizationInfo(customRecordTypeXmlContent).values,
+        convertToCustomizationInfo(customRecordTypeXmlContent),
         customTypes[CUSTOM_RECORD_TYPE]
       )
       expect(result.value[SCRIPT_ID]).toEqual('customrecord_my_script_id')
@@ -234,6 +235,51 @@ describe('Transformer', () => {
     it('should ignore unknown fields', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_FIELD)
       expect(result.value.unknownfield).toBeUndefined()
+    })
+
+    it('should add content value with additionalFile content as static file', () => {
+      const emailTemplateContent = 'Email template content'
+      const emailTemplateCustomizationInfo = {
+        typeName: EMAIL_TEMPLATE,
+        values: {
+          name: 'email template name',
+          [SCRIPT_ID]: 'custemailtmpl_my_script_id',
+        },
+        fileContent: {
+          extension: 'html',
+          content: emailTemplateContent,
+        },
+      }
+      const result = createInstanceElement(
+        emailTemplateCustomizationInfo,
+        customTypes[EMAIL_TEMPLATE]
+      )
+      expect(result.value).toEqual({
+        name: 'email template name',
+        [SCRIPT_ID]: 'custemailtmpl_my_script_id',
+        content: new StaticFile({
+          filepath: 'netsuite/emailtemplate/email_template_name.html',
+          content: Buffer.from(emailTemplateContent),
+        }),
+      })
+    })
+
+    it('should not add content value when there is no additionalFile', () => {
+      const emailTemplateCustomizationInfo = {
+        typeName: EMAIL_TEMPLATE,
+        values: {
+          name: 'email template name',
+          [SCRIPT_ID]: 'custemailtmpl_my_script_id',
+        },
+      }
+      const result = createInstanceElement(
+        emailTemplateCustomizationInfo,
+        customTypes[EMAIL_TEMPLATE]
+      )
+      expect(result.value).toEqual({
+        name: 'email template name',
+        [SCRIPT_ID]: 'custemailtmpl_my_script_id',
+      })
     })
   })
 
@@ -436,6 +482,42 @@ describe('Transformer', () => {
         + '  </mainFields>\n'
         + '  <address>my address</address>\n'
         + '</transactionForm>\n'))
+    })
+
+    it('should transform additionalFile content', () => {
+      const emailTemplateContent = 'email template content'
+      const elementName = 'elementName'
+      const emailTemplateInstance = new InstanceElement(elementName,
+        customTypes[EMAIL_TEMPLATE], {
+          name: elementName,
+          content: emailTemplateContent,
+        })
+      const customizationInfo = toCustomizationInfo(emailTemplateInstance)
+      expect(customizationInfo).toEqual({
+        typeName: EMAIL_TEMPLATE,
+        values: {
+          name: elementName,
+        },
+        fileContent: {
+          extension: 'html',
+          content: emailTemplateContent,
+        },
+      })
+    })
+
+    it('should not transform additionalFile content when content is undefined', () => {
+      const elementName = 'elementName'
+      const emailTemplateInstance = new InstanceElement(elementName,
+        customTypes[EMAIL_TEMPLATE], {
+          name: elementName,
+        })
+      const customizationInfo = toCustomizationInfo(emailTemplateInstance)
+      expect(customizationInfo).toEqual({
+        typeName: EMAIL_TEMPLATE,
+        values: {
+          name: elementName,
+        },
+      })
     })
   })
 })

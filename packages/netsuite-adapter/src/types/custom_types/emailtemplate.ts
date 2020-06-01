@@ -20,6 +20,7 @@ import {
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
+import { fieldTypes } from '../field_types'
 
 export const emailtemplateInnerTypes: ObjectType[] = []
 
@@ -29,7 +30,6 @@ export const emailtemplate = new ObjectType({
   elemID: emailtemplateElemID,
   annotations: {
     [constants.SCRIPT_ID_PREFIX]: 'custemailtmpl_',
-    [constants.ADDITIONAL_FILE_SUFFIX]: '.template.html',
   },
   fields: {
     scriptid: {
@@ -93,6 +93,12 @@ export const emailtemplate = new ObjectType({
       annotations: {
       },
     }, /* Original description: The default value is F. */
+    content: {
+      type: fieldTypes.fileContent,
+      annotations: {
+        [constants.ADDITIONAL_FILE_SUFFIX]: 'html',
+      },
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, emailtemplateElemID.name],
 })

@@ -22,4 +22,9 @@ export const fieldTypes = {
     primitive: PrimitiveTypes.STRING,
     path: [NETSUITE, TYPES_PATH, SUBTYPES_PATH, FIELD_TYPES_PATH],
   }),
+  fileContent: new PrimitiveType({
+    elemID: new ElemID(NETSUITE, 'fileContent'),
+    primitive: PrimitiveTypes.STRING,
+    path: [NETSUITE, TYPES_PATH, SUBTYPES_PATH, FIELD_TYPES_PATH],
+  }),
 }

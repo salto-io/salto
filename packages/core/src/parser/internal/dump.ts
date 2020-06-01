@@ -68,27 +68,34 @@ const dumpString = (prim: string): string => {
 
 const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
 
-const dumpObject = (obj: Value, indentationLevel = 0): string[] => {
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const attributes = _.toPairs(obj).map(attr => dumpAttr(attr, 0))
-  const res = [O_OBJ]
+const dumpObject = (
+  obj: Value, indentationLevel = 0, isRecursiveCall = false, fromArray = false
+): string[] => {
+  const openingCurlyIndentation = isRecursiveCall ? indentationLevel : 0
+  const lineIndentation = fromArray ? INDENTATION_SPACES : INDENTATION_SPACES * 2
+  const attributes = _.toPairs(obj).map(
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    attr => dumpAttr(attr, 0, true)
+  )
+  const res = [`${createIndentation(openingCurlyIndentation)}${O_OBJ}`]
   attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(
-    `${createIndentation(indentationLevel + INDENTATION_SPACES)}${l}`
+    `${createIndentation(indentationLevel + lineIndentation)}${l}`
   )))
   res.push(`${createIndentation(indentationLevel)}${C_OBJ}`)
-  // return ident(res)
   return res
 }
 
-const dumpArray = (arr: Value, indentationLevel = 0): string[] => {
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const items = separateByCommas(arr.map((val: Value) => dumpValue(val, 0)))
-  const res = [O_ARR]
+const dumpArray = (arr: Value, indentationLevel = 0, isRecursiveCall = false): string[] => {
+  const openingCurlyIndentation = isRecursiveCall ? indentationLevel : 0
+  const items = separateByCommas(arr.map(
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    (val: Value) => dumpValue(val, 0, true, true)
+  ))
+  const res = [`${createIndentation(openingCurlyIndentation)}${O_ARR}`]
   items.forEach(itemLines => itemLines.forEach(l => res.push(
-    `${createIndentation(indentationLevel + INDENTATION_SPACES)}${l}`
+    `${createIndentation(indentationLevel + INDENTATION_SPACES * 2)}${l}`
   )))
   res.push(`${createIndentation(indentationLevel)}${C_ARR}`)
-  // return ident(res)
   return res
 }
 
@@ -103,11 +110,15 @@ const dumpExpression = (exp: Value): string[] => {
   ]
 }
 
-const dumpValue = (value: Value, indentationLevel = 0): string[] => {
-  if (_.isArray(value)) return dumpArray(value, indentationLevel)
+const dumpValue = (
+  value: Value, indentationLevel = 0, isRecursiveCall = false, fromArray = false
+): string[] => {
+  if (_.isArray(value)) return dumpArray(value, indentationLevel, isRecursiveCall)
   if (isFunctionExpression(value)) {
     const { parameters, funcName } = value
-    const dumpedParams = parameters.map(dumpValue)
+    const dumpedParams = parameters.map(
+      param => dumpValue(param, indentationLevel, isRecursiveCall)
+    )
     if (dumpedParams.length === 1 && dumpedParams[0].length === 1) {
       return [`${funcName}${O_PAREN}${dumpedParams[0][0]}${C_PAREN}`]
     }
@@ -116,18 +127,19 @@ const dumpValue = (value: Value, indentationLevel = 0): string[] => {
     return [`${funcName}${O_PAREN}`, ...paramsForDump, C_PAREN]
   }
 
-  if (_.isPlainObject(value)) return dumpObject(value, indentationLevel)
+  if (_.isPlainObject(value)) return dumpObject(value, indentationLevel, isRecursiveCall, fromArray)
   if (isExpression(value)) return dumpExpression(value)
   if (_.isString(value)) return [dumpString(escapeTemplateMarker(value))]
 
   return [dumpPrimitive(value)]
 }
 
-const dumpAttr = (attr: [string, Value], indentationLevel = 0): string[] => {
+const dumpAttr = (
+  attr: [string, Value], indentationLevel = 0, isRecursiveCall = false
+): string[] => {
   const [key, value] = attr
-  const valueLines = dumpValue(value, indentationLevel)
+  const valueLines = dumpValue(value, indentationLevel, isRecursiveCall)
   valueLines[0] = `${createIndentation(indentationLevel)}${dumpWord(key)} = ${valueLines[0]}`
-  // return ident(valueLines)
   return valueLines
 }
 
@@ -150,7 +162,6 @@ const dumpBlock = (block: DumpedHclBlock, indentationLevel = 0): string[] => {
   blocks.forEach(blockLines => blockLines.forEach(b => res.push(b)))
   attributes.forEach(attributeLines => attributeLines.forEach(a => res.push(a)))
   res.push(`${createIndentation(indentationLevel)}${C_BLOCK}`)
-  // return ident(res)
   return res
 }
 

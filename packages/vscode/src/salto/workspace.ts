@@ -80,12 +80,11 @@ export class EditorWorkspace {
   }
 
   private editorSourceMap(sourceMap: SourceMap): SourceMap {
-    return new Map(
-      wu(sourceMap.entries()).map(([filename, ranges]) => [
-        filename,
+    return new SourceMap(wu(sourceMap.entries())
+      .map(([key, ranges]) => [
+        key,
         ranges.map(range => this.editorSourceRange(range)),
-      ])
-    )
+      ]))
   }
 
   private hasPendingUpdates(): boolean {

@@ -14,14 +14,16 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { ParseResult, ParseError, SourceMap } from '../parser/parse'
+import { ParseResult, ParseError } from '../parser/parse'
 import * as elementSerializer from './elements'
+import { SourceMap } from '../parser/source_map'
 
 const serializeErrors = (errors: ParseError[]): string =>
   JSON.stringify(errors)
 
-const serializeSourceMap = (sourceMap: SourceMap): string =>
+const serializeSourceMap = (sourceMap: SourceMap): string => (
   JSON.stringify(Array.from(sourceMap.entries()))
+)
 
 export const serialize = (parseResult: ParseResult): string => [
   // When serializing for the cache, keep reference expressions
@@ -34,8 +36,11 @@ export const serialize = (parseResult: ParseResult): string => [
 const deserializeParseErrors = (data: string): ParseError[] =>
   JSON.parse(data)
 
-const deserializeSourceMap = (data: string): SourceMap =>
-  new Map(JSON.parse(data))
+const deserializeSourceMap = (data: string): SourceMap => {
+  const raw = JSON.parse(data)
+  const res = new SourceMap(raw)
+  return res
+}
 
 export const deserialize = async (
   data: string,

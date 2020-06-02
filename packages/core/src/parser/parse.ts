@@ -18,10 +18,10 @@ import {
   TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Values,
   Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS, ListType, Variable, Value,
 } from '@salto-io/adapter-api'
-import { collections, promises } from '@salto-io/lowerdash'
+import { promises } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
 import {
-  SourceRange as InternalSourceRange, SourceMap as SourceMapImpl,
+  SourceRange as InternalSourceRange,
   ParsedHclBlock, HclParseError, HclAttribute,
 } from './internal/types'
 import { parse as hclParse } from './internal/parse'
@@ -30,6 +30,7 @@ import { Keywords } from './language'
 import {
   Functions,
 } from './functions'
+import { SourceMap } from './source_map'
 
 const { object: { mapValuesAsync } } = promises
 
@@ -39,13 +40,11 @@ const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
 export type SourceRange = InternalSourceRange
 export type ParseError = HclParseError & SaltoError
 
-export type SourceMap = ReadonlyMap<string, SourceRange[]>
-
 export const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {
-  const result = new collections.map.DefaultMap<string, SourceRange[]>(() => [])
+  const result = new SourceMap()
   sourceMaps.forEach(sourceMap => {
     sourceMap.forEach((ranges, key) => {
-      result.get(key).push(...ranges)
+      result.push(key, ...ranges)
     })
   })
   return result
@@ -92,7 +91,7 @@ export const parse = async (
   functions: Functions = {},
 ): Promise<ParseResult> => {
   const { body, errors: parseErrors } = hclParse(naclFile, filename)
-  const sourceMap = new SourceMapImpl()
+  const sourceMap = new SourceMap()
   const listElements: Map<string, ListType> = new Map<string, ListType>()
 
   const annotationTypes = (block: ParsedHclBlock, annotationTypesId: ElemID):
@@ -100,10 +99,10 @@ export const parse = async (
     block.blocks
       .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
       .map(annoTypesBlk => {
-        sourceMap.push(annotationTypesId, annoTypesBlk.source)
+        sourceMap.push(annotationTypesId.getFullName(), annoTypesBlk.source)
         return _(annoTypesBlk.blocks)
           .map(innerBlock => {
-            sourceMap.push(annotationTypesId.createNestedID(innerBlock.labels[0]),
+            sourceMap.push(annotationTypesId.createNestedID(innerBlock.labels[0]).getFullName(),
               innerBlock.source)
             return [innerBlock.labels[0], new ObjectType({ elemID: parseElemID(innerBlock.type) })]
           })
@@ -160,7 +159,7 @@ export const parse = async (
         const fieldId = elemID.createNestedID('field', name)
         const type = createFieldType(block.type)
         const annotations = await attrValues(block, fieldId)
-        sourceMap.push(fieldId, block)
+        sourceMap.push(fieldId.getFullName(), block)
         return { name, type, annotations }
       }))
 
@@ -175,7 +174,7 @@ export const parse = async (
         isSettings,
       }
     )
-    sourceMap.push(typeObj.elemID, typeBlock.source)
+    sourceMap.push(typeObj.elemID.getFullName(), typeBlock.source)
 
     return typeObj
   }
@@ -198,7 +197,7 @@ export const parse = async (
       annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
       annotations: await attrValues(typeBlock, elemID.createNestedID('attr')),
     })
-    sourceMap.push(typeObj.elemID, typeBlock)
+    sourceMap.push(typeObj.elemID.getFullName(), typeBlock)
     return typeObj
   }
 
@@ -221,7 +220,7 @@ export const parse = async (
       undefined,
       _.pick(attrs, INSTANCE_ANNOTATIONS_ATTRS),
     )
-    sourceMap.push(inst.elemID, instanceBlock)
+    sourceMap.push(inst.elemID.getFullName(), instanceBlock)
     return inst
   }
 
@@ -229,7 +228,7 @@ export const parse = async (
     const elemID = new ElemID(ElemID.VARIABLES_NAMESPACE, name)
     const value = await attrValue(varAttribute, elemID)
     const variable = new Variable(elemID, value)
-    sourceMap.push(variable.elemID, varAttribute)
+    sourceMap.push(variable.elemID.getFullName(), varAttribute)
     return variable
   }
 

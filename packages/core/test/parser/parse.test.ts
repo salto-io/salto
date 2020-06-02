@@ -23,8 +23,9 @@ import {
 import {
   Functions,
 } from '../../src/parser/functions'
-import { SourceRange, SourceMap, parse, ParseError } from '../../src/parser/parse'
+import { SourceRange, parse, ParseError } from '../../src/parser/parse'
 import { HclParseError } from '../../src/parser/internal/types'
+import { SourceMap } from '../../src/parser/source_map'
 
 const funcName = 'funcush'
 

@@ -16,9 +16,10 @@
 import * as path from 'path'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { stat, mkdirp, replaceContents, readTextFile, exists } from '@salto-io/file'
+import wu from 'wu'
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 import { parseResultCache } from '../../../src/workspace/cache'
-import { SourceMap } from '../../../src/parser/internal/types'
+import { SourceMap } from '../../../src/parser/source_map'
 import { mockStaticFilesSource } from '../static_files/common.test'
 import * as elementsModule from '../../../src/serializer/elements'
 
@@ -45,7 +46,7 @@ describe('localParseResultCache', () => {
   const cache = parseResultCache(localDirectoryStore(mockBaseDirPath), mockedStaticFilesSource)
   const sourceMap = new SourceMap()
   const dummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
-  sourceMap.push(new ElemID('salesforce', 'dummy'), {
+  sourceMap.push(new ElemID('salesforce', 'dummy').getFullName(), {
     filename: 'dummy.nacl',
     start: {
       line: 1,
@@ -117,7 +118,11 @@ describe('localParseResultCache', () => {
           parseResult.elements[0].elemID.name
         )
         expect(parseResultFromCache.errors).toEqual([])
-        expect(parseResultFromCache.sourceMap.entries()).toEqual(parseResult.sourceMap.entries())
+        expect(
+          wu(parseResultFromCache.sourceMap.entries()).toArray()
+        ).toEqual(
+          wu(parseResult.sourceMap.entries()).toArray()
+        )
       }
     })
 

@@ -28,6 +28,9 @@ const getFromPath = (
   path: string[],
   createIfMissing = false
 ): SourceMapEntry | undefined => {
+  if (_.isEmpty(path)) {
+    return data
+  }
   const [key, ...restOfPath] = path
   if (data.children[key] === undefined && createIfMissing) {
     data.children[key] = { children: {}, value: [] }
@@ -42,7 +45,6 @@ const getFromPath = (
 
 const mergeEntries = (src: SourceMapEntry, target: SourceMapEntry): void => {
   src.value.push(...target.value)
-  // eslint-disable-next-line no-restricted-syntax
   _.entries(target.children).forEach(([key, value]) => {
     if (key in src.children) {
       mergeEntries(src.children[key] as SourceMapEntry, value)
@@ -58,7 +60,7 @@ const mountToPath = (
   value: SourceMapEntry
 ): void => {
   const target = getFromPath(data, path, true)
-  if (target) {
+  if (target !== undefined) {
     mergeEntries(target, value)
   }
 }
@@ -69,7 +71,7 @@ const setToPath = (
   value: SourceRange[]
 ): void => {
   const target = getFromPath(data, path, true)
-  if (target) {
+  if (target !== undefined) {
     target.value = value
   }
 }
@@ -91,7 +93,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
   private data: SourceMapEntry = { children: {}, value: [] }
 
   constructor(entries: Iterable<[string, SourceRange[]]> = []) {
-    wu(entries).forEach(([key, value]: [string, SourceRange[]]) => this.set(key, value))
+    wu(entries).forEach(([key, value]) => this.set(key, value))
   }
 
   [Symbol.iterator](): IterableIterator<[string, SourceRange[]]> {
@@ -104,7 +106,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
     const key = id.split(ElemID.NAMESPACE_SEPARATOR)
     const sourceRangeList = getFromPath(this.data, key)
     const ranges = sources.map(s => (isSourceRange(s) ? s : s.source))
-    if (sourceRangeList) {
+    if (sourceRangeList !== undefined) {
       sourceRangeList.value.push(...ranges)
     } else {
       setToPath(this.data, key, ranges)
@@ -145,7 +147,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
     const path = id.split(ElemID.NAMESPACE_SEPARATOR)
     const lastPart = path.pop()
     const entry = getFromPath(this.data, path)
-    if (entry && lastPart) {
+    if (entry !== undefined && lastPart) {
       const deleted = delete entry.children[lastPart]
       return deleted
     }

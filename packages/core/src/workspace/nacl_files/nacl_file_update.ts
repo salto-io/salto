@@ -98,27 +98,31 @@ const fixEdgeIndentation = (
   if (action === 'remove' || initialIndentationLevel === 0) return data
   const lines = data.split('\n')
   const [firstLine] = lines
-  let [lastLine] = lines.slice(-1)
-  /* When adding the placement we are given is right before the closing bracket.
-  * This means that the closing bracket will lose it's indentation and we add it again
-  * and that the first line will have initial indentation that needs to be removed.
-  */
+  const lastLine = lines.pop()
+  if (lastLine !== undefined && lastLine !== '') {
+    /* This currently never happens. The last line that is returned from hclDump is empty.
+    */
+    lines.push(lastLine)
+  }
   if (action === 'add') {
+    /* When adding the placement we are given is right before the closing bracket.
+    * The string that dump gave us has an empty last line, meaning we have to recreate the
+    * indentation that was there previously. We also have to slice from the beggining of the first
+    * line the initial indentation that was there in the begginging.
+    */
+    const afterInitialIndentation = firstLine.slice(initialIndentationLevel)
     if (lines.length > 1) {
-      const initialIndentation = firstLine.slice(0, initialIndentationLevel)
-      lastLine = lastLine === '' ? initialIndentation : `${initialIndentation}${lastLine}`
       return [
-        firstLine.slice(initialIndentationLevel),
-        ...lines.slice(1, -1),
-        lastLine,
+        afterInitialIndentation,
+        ...lines.slice(1),
+        firstLine.slice(0, initialIndentationLevel),
       ].join('\n')
     }
-    return firstLine.slice(initialIndentationLevel)
+    return afterInitialIndentation
   }
   /*
   * If we reached here we are handling modify.
-  * The placement we are given is right before the closing bracket. This means that
-  * the first line is already indented. We need to remove the excess indentation in the first line.
+  * The first line is already indented. We need to remove the excess indentation in the first line.
   */
   return [
     firstLine.trimLeft(),
@@ -203,10 +207,6 @@ export const updateNaclFileData = async (
         newData = await dumpValues(elem, functions, indentationLevel)
       } else {
         newData = await dumpValues({ [changeKey]: elem }, functions, indentationLevel)
-      }
-      if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
-        // Trim trailing newline (the original value already has one)
-        newData = newData.slice(0, -1)
       }
       newData = fixEdgeIndentation(
         newData,

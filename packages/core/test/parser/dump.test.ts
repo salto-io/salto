@@ -282,16 +282,16 @@ describe('Salto Dump', () => {
       }, functions)
 
       expect(body).toEqual(`nestalicous = {
-    ss = 321
-    nestFunc = ZOMG("yes")
-    cc = 321
+  ss = 321
+  nestFunc = ZOMG("yes")
+  cc = 321
 }
 bb = 123
 nestFunc2 = ZOMG("maybe")
 deep = {
-    very = {
-        nestFunc3 = ZOMG("definitely")
-    }
+  very = {
+    nestFunc3 = ZOMG("definitely")
+  }
 }
 `)
     })

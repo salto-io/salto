@@ -30,26 +30,18 @@ const O_ARR = '['
 const C_ARR = ']'
 const O_PAREN = '('
 const C_PAREN = ')'
-const IDENT = '  '
-const MULTILINE_STRING_PREFIX = '\'\'\'\n'
-const MULTILINE_STRING_SUFFIX = '\n\'\'\''
+export const INDENTATION = '  '
+export const MULTILINE_STRING_PREFIX = '\'\'\'\n'
+export const MULTILINE_STRING_SUFFIX = '\n\'\'\''
 
-const ident = (lines: string[]): string[] => {
-  // Using the good ol` for i syntax here for memory effeciancy.
-  // (to avoid creating new copies of the lines)
-  if (lines.length <= 2) return lines
-  lines.forEach((_l, index) => {
-    if (index > 0 && index < lines.length - 1) {
-      lines[index] = `${IDENT}${lines[index]}`
-    }
-  })
-  return lines
-}
+const createIndentation = (indentationLevel: number): string =>
+  INDENTATION.repeat(indentationLevel)
 
-const dumpWord = (word: string): string => {
+const dumpWord = (word: string, indentationLevel = 0): string => {
   // word needs to be escaped if it will not be parsed back as a single word token
   const [match] = (rules.main.word as RegExp).exec(word) ?? []
-  return match === word ? word : `"${word}"`
+  const escapedWord = match === word ? word : `"${word}"`
+  return `${createIndentation(indentationLevel)}${escapedWord}`
 }
 
 const separateByCommas = (items: string[][]): string[][] => {
@@ -69,90 +61,127 @@ const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/
 const dumpMultilineString = (prim: string): string =>
   [MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
 
-const dumpString = (prim: string): string => {
-  if (isMultilineString(prim)) return dumpMultilineString(prim)
-  return fixDoubleTemplateMarkerEscaping(JSON.stringify(prim))
+const dumpString = (prim: string, indentationLevel = 0): string => {
+  const dumpedString = isMultilineString(prim)
+    ? dumpMultilineString(prim)
+    : fixDoubleTemplateMarkerEscaping(JSON.stringify(prim))
+  return `${createIndentation(indentationLevel)}${dumpedString}`
 }
 
-const dumpPrimitive = (prim: Value): string => JSON.stringify(prim)
+const dumpPrimitive = (prim: Value, indentationLevel = 0): string =>
+  `${createIndentation(indentationLevel)}${JSON.stringify(prim)}`
 
-const dumpObject = (obj: Value): string[] => {
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const attributes = _.toPairs(obj).map(dumpAttr)
-  const res = [O_OBJ]
+const dumpObject = (
+  obj: Value, indentationLevel = 0,
+): string[] => {
+  const attributes = _.toPairs(obj).map(
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    attr => dumpAttr(attr, indentationLevel + 1)
+  )
+  const res = [`${createIndentation(indentationLevel)}${O_OBJ}`]
   attributes.forEach(attrLines => attrLines.forEach((l: string) => res.push(l)))
-  res.push(C_OBJ)
-  return ident(res)
+  res.push(`${createIndentation(indentationLevel)}${C_OBJ}`)
+  return res
 }
 
-const dumpArray = (arr: Value): string[] => {
-  // eslint-disable-next-line @typescript-eslint/no-use-before-define
-  const items = separateByCommas(arr.map(dumpValue))
-  const res = [O_ARR]
+const dumpArray = (arr: Value, indentationLevel = 0): string[] => {
+  const items = separateByCommas(arr.map(
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    (val: Value) => dumpValue(val, indentationLevel + 1)
+  ))
+  const res = [`${createIndentation(indentationLevel)}${O_ARR}`]
   items.forEach(itemLines => itemLines.forEach(l => res.push(l)))
-  res.push(C_ARR)
-  return ident(res)
+  res.push(`${createIndentation(indentationLevel)}${C_ARR}`)
+  return res
 }
 
-const dumpExpression = (exp: Value): string[] => {
+const dumpExpression = (exp: Value, indentationLevel = 0): string[] => {
   if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
   const { parts } = exp as TemplateExpression
   return [
-    dumpString(parts
-      .map(part => (isExpression(part)
-        ? `\${ ${dumpExpression(part).join('\n')} }`
-        : escapeTemplateMarker(part))).join('')),
+    dumpString(
+      parts
+        .map(part => (isExpression(part)
+          ? `\${ ${dumpExpression(part).join('\n')} }`
+          : escapeTemplateMarker(part))).join(''),
+      indentationLevel
+    ),
   ]
 }
 
-const dumpValue = (value: Value): string[] => {
-  if (_.isArray(value)) return dumpArray(value)
+const dumpValue = (
+  value: Value, indentationLevel = 0
+): string[] => {
+  if (_.isArray(value)) {
+    return dumpArray(value, indentationLevel)
+  }
   if (isFunctionExpression(value)) {
     const { parameters, funcName } = value
-    const dumpedParams = parameters.map(dumpValue)
+    const dumpedParams = parameters.map(
+      param => dumpValue(param, indentationLevel + 1)
+    )
     if (dumpedParams.length === 1 && dumpedParams[0].length === 1) {
-      return [`${funcName}${O_PAREN}${dumpedParams[0][0]}${C_PAREN}`]
+      return [`${createIndentation(indentationLevel)}${funcName}${O_PAREN}${dumpedParams[0][0].trimLeft()}${C_PAREN}`]
     }
     const paramsForDump = _.flatten(separateByCommas(dumpedParams))
 
-    return [`${funcName}${O_PAREN}`, ...paramsForDump, C_PAREN]
+    return [
+      `${createIndentation(indentationLevel)}${funcName}${O_PAREN}`,
+      ...paramsForDump,
+      `${createIndentation(indentationLevel)}${C_PAREN}`,
+    ]
   }
 
-  if (_.isPlainObject(value)) return dumpObject(value)
-  if (isExpression(value)) return dumpExpression(value)
-  if (_.isString(value)) return [dumpString(escapeTemplateMarker(value))]
+  if (_.isPlainObject(value)) {
+    return dumpObject(value, indentationLevel)
+  }
+  if (isExpression(value)) return dumpExpression(value, indentationLevel)
+  if (_.isString(value)) return [dumpString(escapeTemplateMarker(value), indentationLevel)]
 
-  return [dumpPrimitive(value)]
+  return [dumpPrimitive(value, indentationLevel)]
 }
 
-const dumpAttr = (attr: [string, Value]): string[] => {
+const dumpAttr = (
+  attr: [string, Value], indentationLevel = 0
+): string[] => {
   const [key, value] = attr
-  const valueLines = dumpValue(value)
-  valueLines[0] = `${dumpWord(key)} = ${valueLines[0]}`
-  return ident(valueLines)
+  const valueLines = dumpValue(value, indentationLevel)
+  valueLines[0] = `${dumpWord(key, indentationLevel)} = ${valueLines[0].trimLeft()}`
+  return valueLines
 }
 
-const createBlockDefLine = (block: DumpedHclBlock): string => {
-  const type = dumpWord(block.type)
-  const labels = block.labels.map(dumpWord)
-  return [type, ...labels, O_BLOCK].join(' ')
+const createBlockDefLine = (block: DumpedHclBlock, indentationLevel = 0): string => {
+  const type = dumpWord(block.type, indentationLevel)
+  const labels = block.labels.map(word => dumpWord(word, 0))
+  const defLine = [type, ...labels, O_BLOCK].join(' ')
+  return defLine
 }
 
-const dumpBlock = (block: DumpedHclBlock): string[] => {
-  const defLine = createBlockDefLine(block)
-  const blocks = block.blocks.map(dumpBlock)
-  const attributes = _(block.attrs).toPairs().map(dumpAttr).value()
+const dumpBlock = (block: DumpedHclBlock, indentationLevel = 0): string[] => {
+  const defLine = createBlockDefLine(block, indentationLevel)
+  const blocks = block.blocks.map(
+    subBlock => dumpBlock(subBlock, indentationLevel + 1)
+  )
+  const attributes = _(block.attrs).toPairs().map(
+    attr => dumpAttr(attr, indentationLevel + 1)
+  ).value()
   const res = [defLine]
   blocks.forEach(blockLines => blockLines.forEach(b => res.push(b)))
   attributes.forEach(attributeLines => attributeLines.forEach(a => res.push(a)))
-  res.push(C_BLOCK)
-  return ident(res)
+  res.push(`${createIndentation(indentationLevel)}${C_BLOCK}`)
+  return res
 }
 
-export const dump = (body: DumpedHclBody): string => {
-  const attributesLines = _(body.attrs).toPairs().map(dumpAttr).flatten()
+export const dump = (body: DumpedHclBody, indentationLevel = 0): string => {
+  const attributesLines = _(body.attrs).toPairs()
+    .map(line => dumpAttr(line, indentationLevel))
+    .flatten()
     .value()
-  const blockLines = _(body.blocks).map(dumpBlock).flatten().value()
+  const blockLines = _(body.blocks).map(
+    block => dumpBlock(block, indentationLevel)
+  )
+    .flatten()
+    .value()
   return [
     ...attributesLines,
     ...blockLines,

@@ -18,7 +18,7 @@ import path from 'path'
 import {
   getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionDiff,
 } from '@salto-io/adapter-api'
-import { AdditionDiff } from '@salto-io/dag'
+import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { DetailedChange } from '../../core/plan'
 import { SourceRange } from '../../parser/parse'
 import { SourceMap } from '../../parser/source_map'
@@ -44,10 +44,9 @@ export const getChangeLocations = (
   const lastNestedLocation = (parentScope: SourceRange): SourceRange => {
     // We want to insert just before the scope's closing bracket, so we place the change
     // one byte before the closing bracket.
-    // We also want one indentation level into the scope so we take the starting column + 2
     const nestedPosition = {
       line: parentScope.end.line,
-      col: parentScope.start.col + 2,
+      col: parentScope.start.col,
       byte: parentScope.end.byte - 1,
     }
     return {
@@ -92,29 +91,39 @@ export const getChangeLocations = (
   return findLocations().map(location => ({ ...change, location }))
 }
 
-const indent = (data: string, indentLevel: number, newValue: boolean): string => {
-  const indentLines = (lines: string[], level: number): string[] => (
-    lines.map(line => _.repeat(' ', level) + line)
-  )
+const fixEdgeIndentation = (
+  data: string,
+  action: ActionName,
+  initialIndentationLevel: number,
+): string => {
+  if (action === 'remove' || initialIndentationLevel === 0) return data
   const lines = data.split('\n')
-
-  if (indentLevel > 0 && newValue && lines.length > 1) {
-    // New values start one character before the closing bracket of the scope.
-    // That means the first line needs only one level of indentation.
-    // It also means the empty line at the end needs to re-create the original indentation
-    // (so that the closing bracket doesn't move), so the last line should be indented
-    // one level less
+  const [firstLine] = lines
+  const lastLine = lines.pop()
+  if (lastLine !== undefined && lastLine !== '') {
+    /* This currently never happens. The last line that is returned from hclDump is empty.
+    */
+    lines.push(lastLine)
+  }
+  if (action === 'add') {
+    /* When adding the placement we are given is right before the closing bracket.
+    * The string that dump gave us has an empty last line, meaning we have to recreate the
+    * indentation that was there previously. We also have to slice from the beggining of the first
+    * line the initial indentation that was there in the begginging.
+    */
     return [
-      ...indentLines(lines.slice(0, 1), 2),
-      ...indentLines(lines.slice(1, -1), indentLevel),
-      ...indentLines(lines.slice(-1), indentLevel - 2),
+      firstLine.slice(initialIndentationLevel),
+      ...lines.slice(1),
+      firstLine.slice(0, initialIndentationLevel),
     ].join('\n')
   }
-  // If this is not a new value we are at the original value's start position so we don't have
-  // to indent the first line
+  /*
+  * If we reached here we are handling modify.
+  * The first line is already indented. We need to remove the excess indentation in the first line.
+  */
   return [
-    ...lines.slice(0, 1),
-    ...indentLines(lines.slice(1), indentLevel),
+    firstLine.trimLeft(),
+    ...lines.slice(1),
   ].join('\n')
 }
 
@@ -172,28 +181,35 @@ export const updateNaclFileData = async (
   const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
+    let indentationLevel = (change.location.start.col - 1) / 2
+    /* When adding need to increase one level of indentation because we get the placement
+    * of the closing brace of the next line. The closing brace will be indented one line
+    * less then wanted change
+    */
+    if (change.action === 'add') {
+      indentationLevel += 1
+    }
     if (elem !== undefined) {
       const changeKey = change.id.name
       const isListElement = changeKey.match(/^\d+$/) !== null
       if (change.id.idType === 'annotation') {
         if (isType(elem)) {
-          newData = dumpSingleAnnotationType(changeKey, elem)
+          newData = dumpSingleAnnotationType(changeKey, elem, indentationLevel)
         } else {
-          newData = dumpAnnotationTypes(elem)
+          newData = dumpAnnotationTypes(elem, indentationLevel)
         }
       } else if (isElement(elem)) {
-        newData = await dumpElements([elem], functions)
+        newData = await dumpElements([elem], functions, indentationLevel)
       } else if (isListElement) {
-        newData = await dumpValues(elem, functions)
+        newData = await dumpValues(elem, functions, indentationLevel)
       } else {
-        // When dumping values (attributes) we need to dump the key as well
-        newData = await dumpValues({ [changeKey]: elem }, functions)
+        newData = await dumpValues({ [changeKey]: elem }, functions, indentationLevel)
       }
-      if (change.action === 'modify' && newData.slice(-1)[0] === '\n') {
-        // Trim trailing newline (the original value already has one)
-        newData = newData.slice(0, -1)
-      }
-      newData = indent(newData, change.location.start.col - 1, change.action === 'add')
+      newData = fixEdgeIndentation(
+        newData,
+        change.action,
+        change.location.start.col - 1,
+      )
     } else {
       // This is a removal, we want to replace the original content with an empty string
       newData = ''

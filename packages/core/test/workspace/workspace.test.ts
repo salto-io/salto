@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, ObjectType, ElemID, CORE_ANNOTATIONS, Field,
-  BuiltinTypes, InstanceElement, ListType, isListType, Values,
+  Element, ObjectType, ElemID, Field,
+  BuiltinTypes, InstanceElement, ListType, Values, CORE_ANNOTATIONS, isListType,
 } from '@salto-io/adapter-api'
 import {
   findElement,
@@ -222,8 +222,8 @@ describe('workspace', () => {
       expect(wsErros.severity).toBe('Error')
       const firstSourceFragment = wsErros.sourceFragments[0]
       expect(firstSourceFragment.sourceRange.filename).toBe('file.nacl')
-      expect(firstSourceFragment.sourceRange.start).toEqual({ byte: 24, col: 1, line: 3 })
-      expect(firstSourceFragment.sourceRange.end).toEqual({ byte: 73, col: 2, line: 5 })
+      expect(firstSourceFragment.sourceRange.start).toEqual({ byte: 26, col: 3, line: 3 })
+      expect(firstSourceFragment.sourceRange.end).toEqual({ byte: 79, col: 4, line: 5 })
       expect(firstSourceFragment.fragment).toContain('salesforce.text base_field')
     })
   })
@@ -313,8 +313,24 @@ describe('workspace', () => {
       new ListType(BuiltinTypes.NUMBER),
       {},
     )
+    const newMultiLineField = new Field(
+      fieldsParent,
+      'myFormula',
+      BuiltinTypes.STRING,
+      {
+        myFormula: 'This\nis\nmultiline',
+      },
+    )
 
     const changes: DetailedChange[] = [
+      {
+        path: ['file'],
+        id: newMultiLineField.elemID,
+        action: 'add',
+        data: {
+          after: newMultiLineField,
+        },
+      },
       { // modify value
         id: new ElemID('salesforce', 'lead', 'field', 'base_field', CORE_ANNOTATIONS.DEFAULT),
         action: 'modify',
@@ -508,6 +524,14 @@ describe('workspace', () => {
       expect(isListType(lead.fields.not_a_list_yet_field.type)).toBeTruthy()
     })
 
+    it('my formula was added correctly', () => {
+      expect(lead.fields.myFormula.annotations.myFormula).toEqual('This\nis\nmultiline')
+    })
+    it('my formula is not indented', () => {
+      const setNaclFile = dirStore.set as jest.Mock
+      const myFormula = /'''\nThis\nis\nmultiline\n'''/
+      expect(setNaclFile.mock.calls[0][0].buffer).toMatch(myFormula)
+    })
     it('should not fail in case one of the changes fails', async () => {
       jest.spyOn(dump, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
       const change1: DetailedChange = {

@@ -18,6 +18,7 @@ import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
+  IllegalReference,
 } from '@salto-io/adapter-api'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,

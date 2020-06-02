@@ -95,7 +95,7 @@ const parseType = (
   fields.forEach(fieldData => {
     const { type, name, annotations: fieldAnnotation } = fieldData.value
     const fieldType = createFieldType(type)
-    const field = new Field(elemID, name, fieldType, fieldAnnotation)
+    const field = new Field(typeObj, name, fieldType, fieldAnnotation)
     typeObj.fields[name] = field
     if (fieldData.sourceMap) {
       sourceMap.mount(field.elemID.getFullName(), fieldData.sourceMap)

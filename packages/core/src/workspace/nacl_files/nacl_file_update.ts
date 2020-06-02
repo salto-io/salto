@@ -110,15 +110,11 @@ const fixEdgeIndentation = (
     * indentation that was there previously. We also have to slice from the beggining of the first
     * line the initial indentation that was there in the begginging.
     */
-    const afterInitialIndentation = firstLine.slice(initialIndentationLevel)
-    if (lines.length > 1) {
-      return [
-        afterInitialIndentation,
-        ...lines.slice(1),
-        firstLine.slice(0, initialIndentationLevel),
-      ].join('\n')
-    }
-    return afterInitialIndentation
+    return [
+      firstLine.slice(initialIndentationLevel),
+      ...lines.slice(1),
+      firstLine.slice(0, initialIndentationLevel),
+    ].join('\n')
   }
   /*
   * If we reached here we are handling modify.

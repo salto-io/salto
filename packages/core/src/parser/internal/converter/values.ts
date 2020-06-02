@@ -13,13 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values, Value, ElemID, ReferenceExpression, VariableExpression, TemplateExpression, isReferenceExpression, TemplatePart, IllegalReference } from '@salto-io/adapter-api'
+import { Values, Value, ElemID, ReferenceExpression, VariableExpression, TemplateExpression, isReferenceExpression, TemplatePart } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { SourceMap } from '../../source_map'
 import { InternalParseRes, AttrData, NearleyError, LexerToken } from './types'
 import { HclExpression } from '../types'
 import { evaluateFunction } from '../../functions'
 import { addValuePromiseWatcher, createSourceRange, getAllowWildcard, getCurrentFunctions } from './context'
+
+export class IllegalReference {
+  constructor(public ref: string, public message: string) {}
+}
 
 export const convertAttributes = (
   attrs: InternalParseRes<AttrData>[]

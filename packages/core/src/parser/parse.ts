@@ -26,7 +26,9 @@ import {
   Functions,
 } from './functions'
 import { SourceMap } from './source_map'
-import { parseElemID as internalParseElemID } from './internal/converter/elements'
+
+export { parseElemID } from './internal/converter/elements'
+export { IllegalReference } from './internal/converter/values'
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
@@ -38,7 +40,6 @@ export type ParseResult = {
   sourceMap: SourceMap
 }
 
-export const parseElemID = internalParseElemID
 /**
  * Parse a Nacl file
  *

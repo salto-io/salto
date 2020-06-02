@@ -18,7 +18,6 @@ import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, CORE_ANNOTATIONS,
   ReferenceExpression, PrimitiveType, PrimitiveTypes,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
-  IllegalReference,
 } from '@salto-io/adapter-api'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
@@ -27,6 +26,7 @@ import {
   InvalidStaticFileError,
 } from '../src/core/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
+import { IllegalReference } from '../src/parser/parse'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')

@@ -19,10 +19,11 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression, StaticFile, isPrimitiveValue, IllegalReference,
+  isReferenceExpression, StaticFile, isPrimitiveValue,
 } from '@salto-io/adapter-api'
 import { InvalidStaticFile } from '../workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
+import { IllegalReference } from '../parser/parse'
 
 const { makeArray } = collections.array
 

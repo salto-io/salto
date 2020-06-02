@@ -15,13 +15,14 @@
   },
   "devDependencies": {
     "codecov": "^3.5.0",
+    "jsonc-parser": "^2.2.1",
     "lerna": "^3.20.2"
   },
   "scripts": {
     "preinstall": "./build_utils/find_conflicting_versions.js",
-    "build": "lerna run build",
+    "build": "./build_utils/verify_tsconfig_references.js && lerna run build",
     "lint-fix": "lerna run lint-fix",
-    "clean": "lerna run clean",
+    "clean": "lerna run --parallel --no-sort clean",
     "test": "yarn run jest",
     "generate-notices-file": "./build_utils/generate_notices.sh",
     "lerna-version": "lerna version --no-git-tag-version --exact",

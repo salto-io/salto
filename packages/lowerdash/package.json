@@ -20,13 +20,13 @@
   "scripts": {
     "prepare": "yarn run build",
     "prepublishOnly": "yarn test",
-    "build": "yarn run lint && tsc",
+    "build": "yarn run lint && tsc -b",
     "test": "jest --verbose=false",
     "clean": "rm -rf ./dist",
     "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
     "clean-ts-test": "yarn run clean-ts && yarn run test",
     "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
-    "watch-ts": "tsc -w",
+    "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn run lint --fix"
   },

@@ -3,12 +3,15 @@
     "compilerOptions": {
         "outDir": "dist",
         "baseUrl": ".",
-        "declaration": true,
         "resolveJsonModule": true
     },
     "include": [
         "src/**/*",
+        "src/**/*.json",
         "test/**/*",
         "index.ts"
-    ]
+    ],
+    "references": [
+        { "path": "../lowerdash" },
+    ],
 }

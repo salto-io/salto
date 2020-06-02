@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { types } from 'util'
 import { Value } from '@salto-io/adapter-api'
 import { Functions } from '../../functions'
 import { ValuePromiseWatcher, isLexerToken, InternalParseRes, Token } from './types'
@@ -47,13 +48,13 @@ export const setErrorRecoveryMode = (): void => {
 }
 
 export const addValuePromiseWatcher = (parent: Value, key: string | number): void => {
-  if (parent[key].then) {
+  if (types.isPromise(parent[key])) {
     valuePromiseWatchers.push({ parent, key })
   }
 }
 
 export const createSourceRange = (startToken: Token, endToken?: Token): SourceRange => {
-  const actualEndToken = endToken || startToken
+  const actualEndToken = endToken ?? startToken
   const start = isLexerToken(startToken)
     ? { line: startToken.line, col: startToken.col, byte: startToken.offset }
     : (startToken as InternalParseRes<Value>).source.start

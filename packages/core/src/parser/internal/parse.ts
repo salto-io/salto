@@ -18,6 +18,7 @@ import _ from 'lodash'
 
 import { logger } from '@salto-io/logging'
 import { Element, SaltoError } from '@salto-io/adapter-api'
+import wu from 'wu'
 import { HclParseError, SourcePos, SourceRange } from './types'
 import { WILDCARD } from './lexer'
 import { SourceMap } from '../source_map'
@@ -155,17 +156,17 @@ const addLineOffset = (pos: SourcePos, wildcardPosition: SourcePos): SourcePos =
 const restoreOrigBlockRanges = (
   sourceMap: SourceMap,
   wildcardPosition: SourcePos
-): SourceMap => {
-  const restoredSourceMap = new SourceMap()
-  sourceMap.forEach((ranges, key) => {
-    restoredSourceMap.set(key, ranges.map(range => ({
+): SourceMap => new SourceMap(
+  wu(sourceMap.entries()).map(([key, ranges]) => [
+    key,
+    ranges.map(range => ({
       start: addLineOffset(range.start, wildcardPosition),
       end: addLineOffset(range.end, wildcardPosition),
       filename: range.filename,
-    })))
-  })
-  return restoredSourceMap
-}
+    })),
+  ])
+)
+
 
 const hasFatalError = (src: string): boolean => src.includes(
   _.repeat(WILDCARD, MAX_ALLOWED_DYNAMIC_TOKEN)

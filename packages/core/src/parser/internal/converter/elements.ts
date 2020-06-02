@@ -165,7 +165,10 @@ const parseInstance = (
   )
   const sourceMap = new SourceMap()
   if (attrs.sourceMap) {
-    sourceMap.mount(inst.elemID.getFullName(), attrs.sourceMap)
+    const mountKey = inst.type.isSettings
+      ? [inst.elemID.getFullName(), ElemID.CONFIG_NAME].join(ElemID.NAMESPACE_SEPARATOR)
+      : inst.elemID.getFullName()
+    sourceMap.mount(mountKey, attrs.sourceMap)
   }
   return { element: inst, sourceMap, listTypes: [] }
 }

@@ -38,6 +38,7 @@ import {
 import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFilter from './filters/custom_objects'
+import customObjectsSplitFilter from './filters/custom_object_split'
 import profilePermissionsFilter from './filters/profile_permissions'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
@@ -95,6 +96,7 @@ export const DEFAULT_FILTERS = [
   convertListsFilter,
   convertTypeFilter,
   instanceReferences,
+  customObjectsSplitFilter,
 ]
 
 const absoluteIDMetadataTypes: Record<string, string[]> = {

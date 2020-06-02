@@ -15,11 +15,15 @@
     "strict": true,
     "sourceMap": true,
     "incremental": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "composite": true,
   },
   "include": [
     "src/**/*",
     "test/**/*",
     "index.ts", "../lowerdash/test/retry/wait_for.test.ts"
+  ],
+  "references": [
+    { "path": "../lowerdash" },
   ]
 }

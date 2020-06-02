@@ -56,7 +56,7 @@ export const metadataType = (element: Element): string => {
     // We expect to reach to this place only with field of CustomObject
     return CUSTOM_FIELD
   }
-  return element.annotations[METADATA_TYPE] || CUSTOM_OBJECT
+  return element.annotations[METADATA_TYPE] || 'unknown'
 }
 
 export const isCustomObject = (element: Element): boolean =>
@@ -76,10 +76,7 @@ const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
     return elem.value[INSTANCE_FULL_NAME_FIELD]
   }
-  const elemMetadataType = metadataType(elem)
-  return elemMetadataType === CUSTOM_OBJECT || CUSTOM_FIELD
-    ? elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
-    : elemMetadataType
+  return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
 }
 
 export const relativeApiName = (name: string): string => (

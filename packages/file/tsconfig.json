@@ -9,5 +9,9 @@
         "src/**/*",
         "test/**/*",
         "index.ts"
+    ],
+    "references": [
+        { "path": "../lowerdash" },
     ]
+
 }

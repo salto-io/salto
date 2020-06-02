@@ -13,6 +13,10 @@
         "strict": true,
         "sourceMap": true,
         "incremental": true,
+        "composite": true,
+        "noEmitOnError": true,
         "experimentalDecorators": true
-    }
+    },
+    "files": [],
+    "include": []
 }

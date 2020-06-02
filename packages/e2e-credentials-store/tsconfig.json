@@ -14,5 +14,10 @@
         "src/**/*",
         "test/**/*",
         "index.ts"
+    ],
+    "references": [
+        { "path": "../logging" },
+        { "path": "../lowerdash" },
+        { "path": "../persistent-pool" },
     ]
 }

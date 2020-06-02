@@ -34,19 +34,14 @@ export const INDENTATION = '  '
 export const MULTILINE_STRING_PREFIX = '\'\'\'\n'
 export const MULTILINE_STRING_SUFFIX = '\n\'\'\''
 
-export const createIndentation = (indentationLevel: number): string =>
+const createIndentation = (indentationLevel: number): string =>
   INDENTATION.repeat(indentationLevel)
-
-export const removeBegginingIndentation = (data: string[], indentationLevel: number): string[] =>
-  [
-    data[0].slice(indentationLevel * 2),
-    ...data.slice(1),
-  ]
 
 const dumpWord = (word: string, indentationLevel = 0): string => {
   // word needs to be escaped if it will not be parsed back as a single word token
   const [match] = (rules.main.word as RegExp).exec(word) ?? []
-  return match === word ? `${createIndentation(indentationLevel)}${word}` : `${createIndentation(indentationLevel)}"${word}"`
+  const escapedWord = match === word ? word : `"${word}"`
+  return `${createIndentation(indentationLevel)}${escapedWord}`
 }
 
 const separateByCommas = (items: string[][]): string[][] => {
@@ -63,12 +58,14 @@ const escapeTemplateMarker = (prim: string): string => prim.replace(/\$\{/gi, '\
 // Double escaping happens when we stringify after escaping.
 const fixDoubleTemplateMarkerEscaping = (prim: string): string => prim.replace(/\\\\\$\{/g, '\\${')
 
-const dumpMultilineString = (prim: string, indentationLevel = 0): string =>
-  [createIndentation(indentationLevel), MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
+const dumpMultilineString = (prim: string): string =>
+  [MULTILINE_STRING_PREFIX, prim, MULTILINE_STRING_SUFFIX].join('')
 
 const dumpString = (prim: string, indentationLevel = 0): string => {
-  if (isMultilineString(prim)) return dumpMultilineString(prim, indentationLevel)
-  return `${createIndentation(indentationLevel)}${fixDoubleTemplateMarkerEscaping(JSON.stringify(prim))}`
+  const dumpedString = isMultilineString(prim)
+    ? dumpMultilineString(prim)
+    : fixDoubleTemplateMarkerEscaping(JSON.stringify(prim))
+  return `${createIndentation(indentationLevel)}${dumpedString}`
 }
 
 const dumpPrimitive = (prim: Value, indentationLevel = 0): string =>

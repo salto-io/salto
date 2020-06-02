@@ -18,14 +18,13 @@ import path from 'path'
 import {
   getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionDiff,
 } from '@salto-io/adapter-api'
-import { AdditionDiff } from '@salto-io/dag'
+import { AdditionDiff, ActionName } from '@salto-io/dag'
 import { DetailedChange } from '../../core/plan'
 import { SourceMap, SourceRange } from '../../parser/parse'
 import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../parser/dump'
 import { Functions } from '../../parser/functions'
-import { INDENTATION, createIndentation } from '../../parser/internal/dump'
 
 // Declared again to prevent cyclic dependency
 const FILE_EXTENSION = '.nacl'
@@ -44,10 +43,9 @@ export const getChangeLocations = (
   const lastNestedLocation = (parentScope: SourceRange): SourceRange => {
     // We want to insert just before the scope's closing bracket, so we place the change
     // one byte before the closing bracket.
-    // We also want one indentation level into the scope so we take the starting column + 2
     const nestedPosition = {
       line: parentScope.end.line,
-      col: parentScope.start.col + 2,
+      col: parentScope.start.col,
       byte: parentScope.end.byte - 1,
     }
     return {
@@ -94,38 +92,38 @@ export const getChangeLocations = (
 
 const fixEdgeIndentation = (
   data: string,
-  action: 'add' | 'remove' | 'modify',
-  indentationLevel: number,
-  initialIndentation: number,
+  action: ActionName,
+  initialIndentationLevel: number,
 ): string => {
+  if (action === 'remove' || initialIndentationLevel === 0) return data
   const lines = data.split('\n')
   const [firstLine] = lines
-  const [lastLine] = lines.slice(-1)
+  let [lastLine] = lines.slice(-1)
   /* When adding the placement we are given is right before the closing bracket.
   * This means that the closing bracket will lose it's indentation and we add it again
   * and that the first line will have initial indentation that needs to be removed.
   */
-  if (action === 'add' && initialIndentation > 0) {
+  if (action === 'add') {
     if (lines.length > 1) {
+      const initialIndentation = firstLine.slice(0, initialIndentationLevel)
+      lastLine = lastLine === '' ? initialIndentation : `${initialIndentation}${lastLine}`
       return [
-        firstLine.slice(initialIndentation),
+        firstLine.slice(initialIndentationLevel),
         ...lines.slice(1, -1),
-        `${createIndentation(initialIndentation / INDENTATION.length)}${lastLine}`,
+        lastLine,
       ].join('\n')
     }
-    return firstLine.slice(initialIndentation)
+    return firstLine.slice(initialIndentationLevel)
   }
   /*
-  * When modifying we readd the the indentation for the first line twice. We remove
-  * the first line of indentation after modifying.
+  * If we reached here we are handling modify.
+  * The placement we are given is right before the closing bracket. This means that
+  * the first line is already indented. We need to remove the excess indentation in the first line.
   */
-  if (action === 'modify' && indentationLevel > 0) {
-    return [
-      firstLine.trimLeft(),
-      ...lines.slice(1),
-    ].join('\n')
-  }
-  return data
+  return [
+    firstLine.trimLeft(),
+    ...lines.slice(1),
+  ].join('\n')
 }
 
 export const groupAnnotationTypeChanges = (fileChanges: DetailedChange[],
@@ -182,7 +180,14 @@ export const updateNaclFileData = async (
   const toBufferChange = async (change: DetailedChangeWithSource): Promise<BufferChange> => {
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
-    const indentationLevel = (change.location.start.col - 1) / 2
+    let indentationLevel = (change.location.start.col - 1) / 2
+    /* When adding need to increase one level of indentation because we get the placement
+    * of the closing brace of the next line. The closing brace will be indented one line
+    * less then wanted change
+    */
+    if (change.action === 'add') {
+      indentationLevel += 1
+    }
     if (elem !== undefined) {
       const changeKey = change.id.name
       const isListElement = changeKey.match(/^\d+$/) !== null
@@ -203,13 +208,10 @@ export const updateNaclFileData = async (
         // Trim trailing newline (the original value already has one)
         newData = newData.slice(0, -1)
       }
-      // Need to subtract Indentation.length in order to give the enclosing indentation level
-      // change.location.start.col gives where the change should start including indentation.
       newData = fixEdgeIndentation(
         newData,
         change.action,
-        indentationLevel,
-        change.location.start.col - 1 - INDENTATION.length
+        change.location.start.col - 1,
       )
     } else {
       // This is a removal, we want to replace the original content with an empty string

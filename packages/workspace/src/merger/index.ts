@@ -33,7 +33,7 @@ const log = logger(module)
 /**
  * Replace the pointers to all the merged elements to the merged version.
  */
-const updateMergedTypes = (
+export const updateMergedTypes = (
   elements: Element[],
   mergedTypes: TypeMap
 ): Element[] => elements.map(elem => {

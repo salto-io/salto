@@ -18,6 +18,10 @@ import {
   BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ListType,
   ObjectType, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
+// eslint-disable-next-line no-restricted-imports
+import {
+  LABEL, METADATA_TYPE,
+} from '@salto-io/salesforce-adapter/dist/src/constants'
 import {
   addHiddenValuesAndHiddenTypes,
   removeHiddenFieldsValues,
@@ -98,7 +102,10 @@ describe('hidden_values.ts', () => {
   const hiddenPrimType = new PrimitiveType({
     elemID: new ElemID('dummy', 'hiddenPrimType'),
     primitive: PrimitiveTypes.NUMBER,
-    annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+      [LABEL]: 'hiddenPrimType',
+    },
   })
 
   const hiddenInstance = new InstanceElement('instance_elem_id_name', hiddenType, {
@@ -233,19 +240,47 @@ describe('hidden_values.ts', () => {
     })
     workspaceInstance.type = hiddenTypePlaceholder
 
-    const newWorkspaceInstance = new InstanceElement('new_instance_elem_id', hiddenTypePlaceholder, {
-      reg: 'newReg',
-      notHidden: 'notHidden2',
+    const newWorkspaceInstance = new InstanceElement(
+      'new_instance_elem_id',
+      hiddenTypePlaceholder,
+      {
+        reg: 'newReg',
+        notHidden: 'notHidden2',
+      },
+    )
+
+    const newWorkspaceSubType = new ObjectType({
+      elemID: new ElemID('dummy', 'newType'),
+      fields: {
+        innerHiddenType: { type: new ObjectType(
+          { elemID: new ElemID('dummy', 'hiddenPrimType') }
+        ) },
+        num2: { type: BuiltinTypes.NUMBER },
+      },
+      annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
     })
-    const newWorkspaceType = new ObjectType({ elemID: new ElemID('dummy', 'newType') })
-    const newNormalInstance = new InstanceElement('instance_non_hidden_type', newWorkspaceType, {})
+
+    const newWorkspaceCustomObject = new ObjectType({
+      elemID: new ElemID('dummy', 'newTypeA'),
+      fields: {
+        innerHiddenTypeObj: { type: newWorkspaceSubType },
+        str2: { type: BuiltinTypes.STRING },
+      },
+      annotations: {
+        [METADATA_TYPE]: 'CustomObject',
+        [CORE_ANNOTATIONS.HIDDEN]: false,
+      },
+    })
+
+    const newNormalInstance = new InstanceElement('instance_non_hidden_type', newWorkspaceSubType, {})
 
     const workspaceElements = [
       primType.clone(),
       notHiddenType.clone(),
       workspaceInstance,
       newWorkspaceInstance,
-      newWorkspaceType,
+      newWorkspaceSubType,
+      newWorkspaceCustomObject,
       newNormalInstance,
     ]
 
@@ -265,18 +300,22 @@ describe('hidden_values.ts', () => {
     let newInstanceAfterHiddenAddition: InstanceElement
     let hiddenTypeAddition: ObjectType
     let hiddenPrimTypeAddition: PrimitiveType
-    let newType: ObjectType
+    let newSubType: ObjectType
+    let newCustomObject: ObjectType
     let normalInstance: InstanceElement
+
+    const clonedNewWorkspaceSubType = newWorkspaceSubType.clone()
 
     beforeAll(async () => {
       resp = addHiddenValuesAndHiddenTypes(workspaceElements, stateElements)
 
       instanceAfterHiddenAddition = resp[2] as InstanceElement
       newInstanceAfterHiddenAddition = resp[3] as InstanceElement
-      newType = resp[4] as ObjectType
-      normalInstance = resp[5] as InstanceElement
-      hiddenTypeAddition = resp[6] as ObjectType
-      hiddenPrimTypeAddition = resp[7] as PrimitiveType
+      newSubType = resp[4] as ObjectType
+      newCustomObject = resp[5] as ObjectType
+      normalInstance = resp[6] as InstanceElement
+      hiddenTypeAddition = resp[7] as ObjectType
+      hiddenPrimTypeAddition = resp[8] as PrimitiveType
     })
 
     it('should add hidden type to workspace elements list', () => {
@@ -337,8 +376,17 @@ describe('hidden_values.ts', () => {
       expect((stateElements[4] as PrimitiveType).isEqual(hiddenPrimType)).toBeTruthy()
     })
 
-    it('should not change new types', () => {
-      expect(newType).toEqual(newWorkspaceType)
+    it('should change new type fields (type)', () => {
+      expect(newSubType).not.toEqual(clonedNewWorkspaceSubType)
+
+      expect(newSubType.fields.innerHiddenType.type).toEqual(hiddenPrimType)
+    })
+
+    it('should replace all the inner hidden types', () => {
+      expect(
+        (newCustomObject.fields.innerHiddenTypeObj.type as ObjectType).fields.innerHiddenType.type
+      )
+        .toEqual(hiddenPrimType)
     })
 
     it('should not change new instances', () => {

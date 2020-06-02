@@ -95,7 +95,7 @@ const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] 
     path: [...getObjectDirectoryPath(customObject, namespace),
       standardFieldsFileName(customObject.elemID.name)],
   })
-  const customFieldsObjects = createCustomFieldsObjects(customObject)
+  const customFieldsObjects = createCustomFieldsObjects(customObject, namespace)
   return [...customFieldsObjects, standardFieldsObject, annotationsObject]
 }
 

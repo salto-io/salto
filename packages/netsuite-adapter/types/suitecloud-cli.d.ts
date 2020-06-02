@@ -15,7 +15,7 @@
 */
 
 declare module '@salto-io/suitecloud-cli' {
-  import { Values } from '@salto-io/adapter-api'
+  import { Value, Values } from '@salto-io/adapter-api'
 
   export class CommandsMetadataService {
     constructor(rootCLIPath: string)
@@ -69,6 +69,7 @@ declare module '@salto-io/suitecloud-cli' {
   export type OperationResultStatus = 'ERROR' | 'SUCCESS'
 
   export interface OperationResult {
+    data: Value
     status: OperationResultStatus
     resultMessage?: string
     errorMessages?: string[]

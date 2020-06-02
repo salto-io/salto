@@ -15,6 +15,7 @@
 */
 export const NETSUITE = 'netsuite'
 export const RECORDS_PATH = 'Records'
+export const FILE_CABINET_PATH = 'FileCabinet'
 export const TYPES_PATH = 'Types'
 export const SUBTYPES_PATH = 'Subtypes'
 export const FIELD_TYPES_PATH = 'fieldTypes'
@@ -27,12 +28,15 @@ export const ENTRY_FORM = 'entryForm'
 export const TRANSACTION_FORM = 'transactionForm'
 export const EMAIL_TEMPLATE = 'emailtemplate'
 export const SAVED_SEARCH = 'savedsearch'
+export const FILE = 'file'
+export const FOLDER = 'folder'
 
 // Type Annotations
 export const SCRIPT_ID_PREFIX = 'scriptIdPrefix'
 
 // Fields
 export const SCRIPT_ID = 'scriptid'
+export const PATH = 'path'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'

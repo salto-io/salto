@@ -15,26 +15,48 @@
 */
 import { OperationResult } from '@salto-io/suitecloud-cli'
 import _ from 'lodash'
-import { readFile, readDir, writeFile } from '@salto-io/file'
+import { readFile, readDir, writeFile, mkdirp } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
+import osPath from 'path'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
-import NetsuiteClient, { COMMANDS, CustomizationInfo } from '../../src/client/client'
+import NetsuiteClient, {
+  ATTRIBUTES_FILE_SUFFIX,
+  ATTRIBUTES_FOLDER_NAME,
+  COMMANDS,
+  CustomizationInfo,
+  FileCustomizationInfo,
+  FOLDER_ATTRIBUTES_FILE_SUFFIX, FolderCustomizationInfo,
+} from '../../src/client/client'
 
 
 const MOCK_TEMPLATE_CONTENT = 'Template Inner Content'
+const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
+const MOCK_FILE_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}content.html${ATTRIBUTES_FILE_SUFFIX}`
+const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
 jest.mock('@salto-io/file', () => ({
   readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
   readFile: jest.fn().mockImplementation(filePath => {
     if (filePath.includes('.template.')) {
       return MOCK_TEMPLATE_CONTENT
     }
+    if (filePath.endsWith(MOCK_FILE_PATH)) {
+      return 'dummy file content'
+    }
+    if (filePath.endsWith(MOCK_FILE_ATTRS_PATH)) {
+      return '<file><description>file description</description></file>'
+    }
+    if (filePath.endsWith(MOCK_FOLDER_ATTRS_PATH)) {
+      return '<folder><description>folder description</description></folder>'
+    }
     return `<elementName filename="${filePath.split('/').pop()}">`
   }),
   writeFile: jest.fn(),
+  mkdirp: jest.fn(),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock
 const writeFileMock = writeFile as jest.Mock
+const mkdirpMock = mkdirp as jest.Mock
 
 const mockExecuteAction = jest.fn()
 
@@ -78,6 +100,10 @@ describe('netsuite client', () => {
   })
   const importObjectsCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
+  const listFilesCommandMatcher = expect
+    .objectContaining({ commandName: COMMANDS.LIST_FILES })
+  const importFilesCommandMatcher = expect
+    .objectContaining({ commandName: COMMANDS.IMPORT_FILES })
   const addDependenciesCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.ADD_PROJECT_DEPENDENCIES })
   const deployProjectCommandMatcher = expect
@@ -218,6 +244,116 @@ describe('netsuite client', () => {
     })
   })
 
+  describe('importFileCabinet', () => {
+    let client: NetsuiteClient
+    beforeEach(() => {
+      client = mockClient()
+    })
+
+    it('should fail when CREATE_PROJECT has failed', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.CREATE_PROJECT) {
+          return Promise.resolve({ status: 'ERROR' })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      await expect(client.importFileCabinet()).rejects.toThrow()
+    })
+
+    it('should fail when SETUP_ACCOUNT has failed', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
+          return Promise.resolve({ status: 'ERROR' })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      await expect(client.importFileCabinet()).rejects.toThrow()
+    })
+
+    it('should fail when LIST_FILES has failed', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_FILES) {
+          return Promise.resolve({ status: 'ERROR' })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      await expect(client.importFileCabinet()).rejects.toThrow()
+    })
+
+    it('should fail when IMPORT_FILES has failed', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.IMPORT_FILES) {
+          return Promise.resolve({ status: 'ERROR' })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      await expect(client.importFileCabinet()).rejects.toThrow()
+    })
+
+    it('should succeed when having duplicated paths', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const filesPathResult = [
+          MOCK_FILE_PATH,
+        ]
+        if (context.commandName === COMMANDS.LIST_FILES
+          && context.arguments.folder === `${osPath.sep}Templates`) {
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: filesPathResult,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES
+          && _.isEqual(context.arguments.paths, filesPathResult)) {
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: {
+              results: [
+                {
+                  path: MOCK_FILE_PATH,
+                },
+                {
+                  path: MOCK_FILE_ATTRS_PATH,
+                },
+                {
+                  path: MOCK_FOLDER_ATTRS_PATH,
+                },
+                {
+                  path: MOCK_FOLDER_ATTRS_PATH,
+                },
+              ],
+            },
+          })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      const customizationInfos = await client.importFileCabinet()
+      expect(readFileMock).toHaveBeenCalledTimes(3)
+      expect(customizationInfos).toHaveLength(2)
+      expect(customizationInfos).toEqual([{
+        typeName: 'file',
+        values: {
+          description: 'file description',
+        },
+        path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
+        fileContent: 'dummy file content',
+      },
+      {
+        typeName: 'folder',
+        values: {
+          description: 'folder description',
+        },
+        path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+      }])
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
+    })
+  })
+
   describe('deployCustomObject', () => {
     let client: NetsuiteClient
     beforeEach(() => {
@@ -300,6 +436,67 @@ describe('netsuite client', () => {
       })
       await expect(client.deployCustomObject('elementName', {} as CustomizationInfo)).rejects
         .toThrow(new Error(errorMessage))
+    })
+  })
+
+  describe('deployFolder', () => {
+    let client: NetsuiteClient
+    beforeEach(() => {
+      client = mockClient()
+    })
+    it('should succeed', async () => {
+      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+      const folderCustomizationInfo: FolderCustomizationInfo = {
+        typeName: 'folder',
+        values: {
+          description: 'folder description',
+        },
+        path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+      }
+      await client.deployFolder(folderCustomizationInfo)
+      expect(mkdirpMock).toHaveBeenCalledTimes(1)
+      expect(mkdirpMock)
+        .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
+      expect(writeFileMock).toHaveBeenCalledTimes(1)
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
+        '<folder><description>folder description</description></folder>')
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+    })
+  })
+
+  describe('deployFile', () => {
+    let client: NetsuiteClient
+    beforeEach(() => {
+      client = mockClient()
+    })
+    it('should succeed', async () => {
+      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+      const fileCustomizationInfo: FileCustomizationInfo = {
+        typeName: 'file',
+        values: {
+          description: 'file description',
+        },
+        path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
+        fileContent: 'dummy file content',
+      }
+      await client.deployFile(fileCustomizationInfo)
+      expect(mkdirpMock).toHaveBeenCalledTimes(2)
+      expect(mkdirpMock)
+        .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
+      expect(mkdirpMock)
+        .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
+      expect(writeFileMock).toHaveBeenCalledTimes(2)
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
+        '<file><description>file description</description></file>')
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
+        'dummy file content')
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
     })
   })
 

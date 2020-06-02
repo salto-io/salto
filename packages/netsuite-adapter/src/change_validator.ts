@@ -15,11 +15,11 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import removeCustomObjectValidator from './change_validators/remove_custom_object'
+import removeCustomizationValidator from './change_validators/remove_customization'
 
 
 const changeValidators: Partial<ChangeValidator>[] = [
-  removeCustomObjectValidator,
+  removeCustomizationValidator,
 ]
 
 export default createChangeValidator(changeValidators)

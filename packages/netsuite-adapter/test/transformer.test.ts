@@ -17,10 +17,17 @@ import { InstanceElement, StaticFile } from '@salto-io/adapter-api'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
   ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID, TRANSACTION_FORM,
-  EMAIL_TEMPLATE,
+  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH,
 } from '../src/constants'
-import { customTypes } from '../src/types'
-import { convertToCustomizationInfo, convertToXmlContent } from '../src/client/client'
+import { customTypes, fileCabinetTypes } from '../src/types'
+import {
+  convertToCustomizationInfo,
+  convertToXmlContent,
+  FileCustomizationInfo,
+  FolderCustomizationInfo,
+  isFileCustomizationInfo,
+  isFolderCustomizationInfo,
+} from '../src/client/client'
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 
@@ -119,6 +126,11 @@ describe('Transformer', () => {
     it('should create instance name correctly', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LABEL)
       expect(result.elemID.name).toEqual('elementName')
+    })
+
+    it('should create instance path correctly for custom type instance', () => {
+      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LABEL)
+      expect(result.path).toEqual([NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, 'elementName'])
     })
 
     it('should create instance name correctly when name field is an attribute', () => {
@@ -277,6 +289,53 @@ describe('Transformer', () => {
       expect(result.value).toEqual({
         name: 'email template name',
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
+      })
+    })
+
+    describe('file cabinet types', () => {
+      const fileCustomizationInfo: FileCustomizationInfo = {
+        typeName: FILE,
+        values: {
+          description: 'file description',
+        },
+        path: ['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder', 'content.html'],
+        fileContent: 'dummy file content',
+      }
+
+      const folderCustomizationInfo: FolderCustomizationInfo = {
+        typeName: FOLDER,
+        values: {
+          description: 'folder description',
+        },
+        path: ['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder'],
+      }
+
+      it('should create instance path correctly for file instance', () => {
+        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE])
+        expect(result.path)
+          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
+            'Inner EmailTemplates Folder', 'content.html'])
+      })
+
+      it('should create instance path correctly for folder instance', () => {
+        const result = createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER])
+        expect(result.path)
+          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
+            'Inner EmailTemplates Folder'])
+      })
+
+      it('should transform path field correctly', () => {
+        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE])
+        expect(result.value[PATH])
+          .toEqual('Templates/E-mail Templates/Inner EmailTemplates Folder/content.html')
+      })
+
+      it('should set file content in the content field for file instance', () => {
+        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE])
+        expect(result.value.content).toEqual(new StaticFile({
+          filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
+          content: Buffer.from('dummy file content'),
+        }))
       })
     })
   })
@@ -513,6 +572,38 @@ describe('Transformer', () => {
         values: {
           name: elementName,
         },
+      })
+    })
+
+    describe('file cabinet types', () => {
+      it('should transform file instance', () => {
+        const fileInstance = new InstanceElement('elementName', fileCabinetTypes[FILE], {
+          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+          content: 'dummy file content',
+          description: 'file description',
+        })
+        const customizationInfo = toCustomizationInfo(fileInstance)
+        expect(isFileCustomizationInfo(customizationInfo)).toBe(true)
+        const fileCustomizationInfo = customizationInfo as FileCustomizationInfo
+        expect(fileCustomizationInfo.typeName).toEqual(FILE)
+        expect(fileCustomizationInfo.values).toEqual({ description: 'file description' })
+        expect(fileCustomizationInfo.path)
+          .toEqual(['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder', 'content.html'])
+        expect(fileCustomizationInfo.fileContent).toEqual('dummy file content')
+      })
+
+      it('should transform folder instance', () => {
+        const folder = new InstanceElement('elementName', fileCabinetTypes[FOLDER], {
+          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
+          description: 'folder description',
+        })
+        const customizationInfo = toCustomizationInfo(folder)
+        expect(isFolderCustomizationInfo(customizationInfo)).toBe(true)
+        const folderCustomizationInfo = customizationInfo as FolderCustomizationInfo
+        expect(folderCustomizationInfo.typeName).toEqual(FOLDER)
+        expect(folderCustomizationInfo.values).toEqual({ description: 'folder description' })
+        expect(folderCustomizationInfo.path)
+          .toEqual(['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder'])
       })
     })
   })

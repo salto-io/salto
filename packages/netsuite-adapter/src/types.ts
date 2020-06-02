@@ -15,6 +15,8 @@
 */
 import { ObjectType, TypeElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { file } from './types/file_cabinet/file'
+import { folder } from './types/file_cabinet/folder'
 import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
 import { advancedpdftemplate, advancedpdftemplateInnerTypes } from './types/custom_types/advancedpdftemplate'
 import { bankstatementparserplugin, bankstatementparserpluginInnerTypes } from './types/custom_types/bankstatementparserplugin'
@@ -181,12 +183,21 @@ const innerCustomTypes: ObjectType[] = [
   ...workflowactionscriptInnerTypes,
 ]
 
+export const fileCabinetTypes: Readonly<Record<string, ObjectType>> = {
+  file,
+  folder,
+}
+
 export const isCustomType = (type: ObjectType): boolean =>
   !_.isUndefined(customTypes[type.elemID.name])
+
+export const isFileCabinetType = (type: ObjectType): boolean =>
+  !_.isUndefined(fileCabinetTypes[type.elemID.name])
 
 export const getAllTypes = (): TypeElement[] => [
   ...Object.values(customTypes),
   ...innerCustomTypes,
   ...Object.values(enums),
+  ...Object.values(fileCabinetTypes),
   ...Object.values(fieldTypes),
 ]

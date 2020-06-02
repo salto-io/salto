@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, isPrimitiveType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, isPrimitiveType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { customTypes } from '../src/types'
-import { ADDITIONAL_FILE_SUFFIX, IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from '../src/constants'
+import { customTypes, fileCabinetTypes } from '../src/types'
+import { ADDITIONAL_FILE_SUFFIX, IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX, PATH } from '../src/constants'
 import { fieldTypes } from '../src/types/field_types'
 
 describe('Types', () => {
@@ -54,6 +54,32 @@ describe('Types', () => {
             expect(additionalFileFields[0].annotations[ADDITIONAL_FILE_SUFFIX]).toBeDefined()
           }
         })
+    })
+  })
+
+  describe('FileCabinetTypes', () => {
+    describe('file type definition', () => {
+      it('should have single fileContent field', () => {
+        expect(Object.values(fileCabinetTypes.file.fields)
+          .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent)))
+          .toBeDefined()
+      })
+
+      it('should have service_id path field', () => {
+        expect(Object.keys(fileCabinetTypes.file.fields)).toContain(PATH)
+        const pathFieldType = fileCabinetTypes.file.fields[PATH].type
+        expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))
+          .toBe(true)
+      })
+    })
+
+    describe('should have service_id path field', () => {
+      it('should have path field', () => {
+        expect(Object.keys(fileCabinetTypes.folder.fields)).toContain(PATH)
+        const pathFieldType = fileCabinetTypes.folder.fields[PATH].type
+        expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))
+          .toBe(true)
+      })
     })
   })
 })

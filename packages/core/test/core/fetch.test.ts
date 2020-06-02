@@ -19,6 +19,7 @@ import {
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
   isModificationDiff,
   ListType,
+  FieldDefinition,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import {
@@ -34,15 +35,18 @@ import {
 const { DuplicateAnnotationError } = merger
 
 jest.mock('pietile-eventemitter')
+jest.mock('@salto-io/adapter-utils', () => ({
+  ...jest.requireActual('@salto-io/adapter-utils'),
+  applyInstancesDefaults: jest.fn(),
+}))
 
 describe('fetch', () => {
   const mockMergeResult = (mockResult: merger.MergeResult): jest.SpyInstance =>
     jest.spyOn(merger, 'mergeElements').mockImplementation(() => mockResult)
   const testID = new ElemID('dummy', 'elem')
-  const testField = new Field(testID, 'test', BuiltinTypes.STRING, { annotation: 'value' })
   const typeWithField = new ObjectType({
     elemID: testID,
-    fields: { test: testField },
+    fields: { test: { type: BuiltinTypes.STRING, annotations: { annotation: 'value' } } },
   })
   const typeWithFieldChange = typeWithField.clone()
   typeWithFieldChange.fields.test.annotations.annotation = 'changed'
@@ -51,7 +55,7 @@ describe('fetch', () => {
   const newTypeID = new ElemID('dummy', 'new')
   const newTypeBase = new ObjectType({
     elemID: newTypeID,
-    fields: { base: new Field(newTypeID, 'base', BuiltinTypes.STRING) },
+    fields: { base: { type: BuiltinTypes.STRING } },
     path: ['path', 'base'],
   })
 
@@ -59,19 +63,15 @@ describe('fetch', () => {
   const typeWithHiddenField = new ObjectType({
     elemID: anotherTypeID,
     fields: {
-      reg: new Field(anotherTypeID, 'reg', BuiltinTypes.STRING),
-      notHidden: new Field(
-        anotherTypeID,
-        'notHidden',
-        BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.HIDDEN]: false }
-      ),
-      hidden: new Field(
-        anotherTypeID,
-        'hidden',
-        BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.HIDDEN]: true }
-      ),
+      reg: { type: BuiltinTypes.STRING },
+      notHidden: {
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+      },
+      hidden: {
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      },
     },
     path: ['records', 'hidden'],
   })
@@ -87,19 +87,19 @@ describe('fetch', () => {
 
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,
-    fields: { base: new Field(newTypeID, 'base', new ListType(BuiltinTypes.STRING), {}) },
+    fields: { base: { type: new ListType(BuiltinTypes.STRING) } },
     path: ['path', 'base'],
   })
   const newTypeExt = new ObjectType({
     elemID: newTypeID,
-    fields: { ext: new Field(newTypeID, 'ext', BuiltinTypes.STRING) },
+    fields: { ext: { type: BuiltinTypes.STRING } },
     path: ['path', 'ext'],
   })
   const newTypeMerged = new ObjectType({
     elemID: newTypeID,
     fields: {
-      base: new Field(newTypeID, 'base', BuiltinTypes.STRING),
-      ext: new Field(newTypeID, 'ext', BuiltinTypes.STRING),
+      base: { type: BuiltinTypes.STRING },
+      ext: { type: BuiltinTypes.STRING },
     },
   })
 
@@ -132,9 +132,7 @@ describe('fetch', () => {
       const configElemID = new ElemID('dummy')
       const configType = new ObjectType({
         elemID: configElemID,
-        fields: {
-          test: new Field(configElemID, 'test', new ListType(BuiltinTypes.STRING)),
-        },
+        fields: { test: { type: new ListType(BuiltinTypes.STRING) } },
       })
       const configInstance = new InstanceElement('ins', configType, { test: ['SkipMe'] })
       const currentInstanceConfig = new InstanceElement('ins', configType, { test: [] })
@@ -489,7 +487,7 @@ describe('fetch', () => {
       const REGULAR_FIELD_NAME = 'regular_field_name'
 
       const typeElemID = new ElemID('adapter', 'elem_id_name')
-      const serviceIdField = new Field(typeElemID, SERVICE_ID_FIELD_NAME, BuiltinTypes.SERVICE_ID)
+      const serviceIdField = { name: SERVICE_ID_FIELD_NAME, type: BuiltinTypes.SERVICE_ID }
       const origRegularFieldType = new PrimitiveType({
         elemID: new ElemID('adapter', 'regular'),
         primitive: PrimitiveTypes.STRING,
@@ -506,19 +504,26 @@ describe('fetch', () => {
           [SERVICE_ID_ANNOTATION]: 'ObjectServiceId',
         },
       })
+
+      type FieldDefinitionWithName = FieldDefinition & { name: string }
+      const addField = (obj: ObjectType, field: FieldDefinitionWithName): Field => {
+        const newField = new Field(obj, field.name, field.type, field.annotations)
+        obj.fields[field.name] = newField
+        return newField
+      }
       let obj: ObjectType
-      let regularField: Field
+      let regularFieldDef: Required<FieldDefinitionWithName>
       let regularFieldType: PrimitiveType
       let instance: InstanceElement
       beforeEach(() => {
         obj = origObj.clone()
         regularFieldType = origRegularFieldType.clone()
-        regularField = new Field(typeElemID, REGULAR_FIELD_NAME, regularFieldType, { [SERVICE_ID_ANNOTATION]: 'FieldServiceId' })
+        regularFieldDef = { name: REGULAR_FIELD_NAME, type: regularFieldType, annotations: { [SERVICE_ID_ANNOTATION]: 'FieldServiceId' } }
         instance = new InstanceElement('instance_elem_id_name', obj, { [SERVICE_ID_FIELD_NAME]: 'serviceIdValue' })
       })
 
       it('should generate for ObjectType and its fields', () => {
-        obj.fields = { [REGULAR_FIELD_NAME]: regularField }
+        const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
 
@@ -534,8 +539,8 @@ describe('fetch', () => {
       })
       it('should generate for ObjectType and its fields with no SERVICE_ID annotations', () => {
         delete obj.annotations[SERVICE_ID_ANNOTATION]
-        delete regularField.annotations[SERVICE_ID_ANNOTATION]
-        obj.fields = { [REGULAR_FIELD_NAME]: regularField }
+        delete regularFieldDef.annotations[SERVICE_ID_ANNOTATION]
+        const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
 
@@ -552,9 +557,9 @@ describe('fetch', () => {
       it('should generate for ObjectType and its fields with no SERVICE_ID annotations & annotationType', () => {
         delete obj.annotations[SERVICE_ID_ANNOTATION]
         delete obj.annotationTypes[SERVICE_ID_ANNOTATION]
-        delete regularField.annotations[SERVICE_ID_ANNOTATION]
+        delete regularFieldDef.annotations[SERVICE_ID_ANNOTATION]
         delete regularFieldType.annotationTypes[SERVICE_ID_ANNOTATION]
-        obj.fields = { [REGULAR_FIELD_NAME]: regularField }
+        const regularField = addField(obj, regularFieldDef)
 
         const serviceIdToStateElemId = generateServiceIdToStateElemId([obj])
 
@@ -569,7 +574,7 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(regularField.elemID)
       })
       it('should generate for InstanceElement with no SERVICE_ID value', () => {
-        obj.fields = { [SERVICE_ID_FIELD_NAME]: serviceIdField }
+        addField(obj, serviceIdField)
         delete instance.value[SERVICE_ID_FIELD_NAME]
 
         const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
@@ -581,7 +586,7 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
       })
       it('should generate for InstanceElement', () => {
-        obj.fields = { [SERVICE_ID_FIELD_NAME]: serviceIdField }
+        addField(obj, serviceIdField)
 
         const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
 
@@ -592,8 +597,8 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
       })
       it('should generate for InstanceElement with no SERVICE_ID value & field', () => {
-        obj.fields = { [SERVICE_ID_FIELD_NAME]: serviceIdField }
         serviceIdField.type = BuiltinTypes.STRING
+        addField(obj, serviceIdField)
         delete instance.value[SERVICE_ID_FIELD_NAME]
 
         const serviceIdToStateElemId = generateServiceIdToStateElemId([instance])
@@ -634,7 +639,7 @@ describe('fetch', () => {
 
     describe('instance defaults', () => {
       it('should call applyInstancesDefaults', async () => {
-        jest.spyOn(utils, 'applyInstancesDefaults')
+        // spyOn where utils is defined https://stackoverflow.com/a/53307822
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
           Promise.resolve({ elements: [workspaceInstance] })
         )

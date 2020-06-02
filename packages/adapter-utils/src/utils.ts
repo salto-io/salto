@@ -18,13 +18,14 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
-  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField, FieldMap,
+  Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
   CORE_ANNOTATIONS, TypeElement,
 } from '@salto-io/adapter-api'
-import { promises } from '@salto-io/lowerdash'
+import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 
 const { mapValuesAsync } = promises.object
+const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
@@ -49,12 +50,14 @@ export const transformValues = (
     transformFunc,
     strict = true,
     pathID = undefined,
+    isTopLevel = true,
   }: {
     values: Value
     type: ObjectType | TypeMap
     transformFunc: TransformFunc
     strict?: boolean
     pathID?: ElemID
+    isTopLevel?: boolean
   }
 ): Values | undefined => {
   const transformValue = (value: Value, keyPathID?: ElemID, field?: Field): Value => {
@@ -66,6 +69,11 @@ export const transformValues = (
       return transformFunc({ value, path: keyPathID, field })
     }
 
+    const newVal = transformFunc({ value, path: keyPathID, field })
+    if (newVal === undefined) {
+      return undefined
+    }
+
     const fieldType = field.type
 
     if (isListType(fieldType)) {
@@ -74,29 +82,29 @@ export const transformValues = (
           item,
           !_.isUndefined(index) ? keyPathID?.createNestedID(String(index)) : keyPathID,
           new Field(
-            field.elemID.createParentID(),
+            field.parent,
             field.name,
             fieldType.innerType,
             field.annotations
           ),
         ))
-      if (!_.isArray(value)) {
+      if (!_.isArray(newVal)) {
         if (strict) {
           log.warn(`Array value and isListType mis-match for field - ${field.name}. Got non-array for ListType.`)
         }
-        return transformListInnerValue(value)
+        return transformListInnerValue(newVal)
       }
-      const transformed = value
+      const transformed = newVal
         .map(transformListInnerValue)
         .filter((val: Value) => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
     }
     // It shouldn't get here because only ListType should have array values
-    if (_.isArray(value)) {
+    if (_.isArray(newVal)) {
       if (strict) {
         log.warn(`Array value and isListType mis-match for field - ${field.name}. Only ListTypes should have array values.`)
       }
-      const transformed = value
+      const transformed = newVal
         .map((item, index) => transformValue(item, keyPathID?.createNestedID(String(index)), field))
         .filter(val => !_.isUndefined(val))
       return transformed.length === 0 ? undefined : transformed
@@ -105,24 +113,29 @@ export const transformValues = (
     if (isObjectType(fieldType)) {
       const transformed = _.omitBy(
         transformValues({
-          values: value,
+          values: newVal,
           type: fieldType,
           transformFunc,
           strict,
           pathID: keyPathID,
+          isTopLevel: false,
         }),
         _.isUndefined
       )
       return _.isEmpty(transformed) ? undefined : transformed
     }
-    return transformFunc({ value, path: keyPathID, field })
+    return newVal
   }
 
   const fieldMap = isObjectType(type)
     ? type.fields
-    : _.mapValues(type, (fieldType, name) => new Field(new ElemID(''), name, fieldType))
+    : _.mapValues(
+      type,
+      (fieldType, name) => new Field(new ObjectType({ elemID: new ElemID('') }), name, fieldType),
+    )
 
-  const result = _(values)
+  const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
+  const result = _(newVal)
     .mapValues((value, key) => transformValue(value, pathID?.createNestedID(key), fieldMap[key]))
     .omitBy(_.isUndefined)
     .value()
@@ -207,7 +220,7 @@ export const transformElement = <T extends Element>(
 
   if (isField(element)) {
     newElement = new Field(
-      element.parentID,
+      element.parent,
       element.name,
       element.type,
       transformedAnnotations,
@@ -286,7 +299,7 @@ export const restoreValues = <T extends Element>(
     }
     const file = allStaticFilesPaths.get(path.getFullName())
     if (!_.isUndefined(file)) {
-      return new StaticFile(file.filepath, Buffer.from(value))
+      return new StaticFile({ filepath: file.filepath, content: Buffer.from(value) })
     }
 
     return value
@@ -386,7 +399,7 @@ export const flatValues = (values: Value): Value => {
 // including object keys.
 export const flattenElementStr = (element: Element): Element => {
   const flattenField = (field: Field): Field => new Field(
-    field.parentID,
+    field.parent,
     flatStr(field.name),
     field.type,
     flatValues(field.annotations),
@@ -458,17 +471,14 @@ export const filterByID = async <T>(
     return undefined
   }
   if (isObjectType(value)) {
+    const filteredFields = await Promise.all(
+      Object.values(value.fields).map(field => filterByID(field.elemID, field, filterFunc))
+    )
     return new ObjectType({
       elemID: value.elemID,
       annotations: await filterAnnotations(value.annotations),
       annotationTypes: await filterAnnotationType(value.annotationTypes),
-      fields: _.pickBy(
-        await mapValuesAsync(
-          value.fields,
-          async field => filterByID(field.elemID, field, filterFunc)
-        ),
-        field => field !== undefined
-      ) as FieldMap,
+      fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
       path: value.path,
       isSettings: value.isSettings,
     }) as Value as T
@@ -484,7 +494,7 @@ export const filterByID = async <T>(
   }
   if (isField(value)) {
     return new Field(
-      value.parentID,
+      value.parent,
       value.name,
       value.type,
       await filterByID(value.elemID, value.annotations, filterFunc)
@@ -581,7 +591,10 @@ const mergeWithDefaults = (type: TypeElement, values: Values): Values => {
 export const applyInstancesDefaults = (instances: InstanceElement[]): void => {
   instances
     .forEach(inst => {
-      inst.value = mergeWithDefaults(inst.type, inst.value)
+      const valueWithDefaults = mergeWithDefaults(inst.type, inst.value)
+      if (!_.isEmpty(valueWithDefaults)) {
+        inst.value = valueWithDefaults
+      }
     })
 }
 

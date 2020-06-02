@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, Field, PrimitiveType, PrimitiveTypes, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, PrimitiveType, PrimitiveTypes, BuiltinTypes, InstanceElement } from '@salto-io/adapter-api'
 
 const sfText = new PrimitiveType({
   elemID: new ElemID('salesforce', 'Text'),
@@ -24,7 +24,6 @@ const sfText = new PrimitiveType({
   },
 })
 
-const sfRoleID = new ElemID('salesforce', 'Role')
 const sfRole = new ObjectType({
   elemID: new ElemID('salesforce', 'Role'),
   annotationTypes: {
@@ -34,8 +33,8 @@ const sfRole = new ObjectType({
     metadataType: 'Role',
   },
   fields: {
-    description: new Field(sfRoleID, 'description', BuiltinTypes.STRING),
-    name: new Field(sfRoleID, 'name', BuiltinTypes.STRING),
+    description: { type: BuiltinTypes.STRING },
+    name: { type: BuiltinTypes.STRING },
   },
 })
 
@@ -46,12 +45,8 @@ export const customObject = (
   return new ObjectType({
     elemID,
     fields: {
-      alpha: new Field(elemID, 'alpha', sfText, {
-        label: data.alphaLabel,
-      }),
-      beta: new Field(elemID, 'beta', sfText, {
-        label: data.betaLabel,
-      }),
+      alpha: { type: sfText, annotations: { label: data.alphaLabel } },
+      beta: { type: sfText, annotations: { label: data.betaLabel } },
     },
   })
 }

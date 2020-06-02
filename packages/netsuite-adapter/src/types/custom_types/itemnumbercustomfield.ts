@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,63 +31,47 @@ const itemnumbercustomfield_customfieldfilters_customfieldfilter = new ObjectTyp
   annotations: {
   },
   fields: {
-    fldfilter: new Field(
-      itemnumbercustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilter',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    fldfilter: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
-    fldfilterchecked: new Field(
-      itemnumbercustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    fldfilterchecked: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfiltercomparetype: new Field(
-      itemnumbercustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltercomparetype',
-      enums.generic_customfield_fldfiltercomparetype,
-      {
+    }, /* Original description: The default value is F. */
+    fldfiltercomparetype: {
+      type: enums.generic_customfield_fldfiltercomparetype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
-    fldfiltersel: new Field(
-      itemnumbercustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfiltersel',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fldfiltercomparetype.   The default value is 'EQ'. */
+    fldfiltersel: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    fldfilterval: new Field(
-      itemnumbercustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilterval',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    fldfilterval: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    fldfilternotnull: new Field(
-      itemnumbercustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternotnull',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    fldfilternotnull: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldfilternull: new Field(
-      itemnumbercustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldfilternull',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    fldfilternull: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    fldcomparefield: new Field(
-      itemnumbercustomfield_customfieldfilters_customfieldfilterElemID,
-      'fldcomparefield',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    fldcomparefield: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemnumbercustomfieldElemID.name],
 })
@@ -101,13 +85,11 @@ const itemnumbercustomfield_customfieldfilters = new ObjectType({
   annotations: {
   },
   fields: {
-    customfieldfilter: new Field(
-      itemnumbercustomfield_customfieldfiltersElemID,
-      'customfieldfilter',
-      new ListType(itemnumbercustomfield_customfieldfilters_customfieldfilter),
-      {
+    customfieldfilter: {
+      type: new ListType(itemnumbercustomfield_customfieldfilters_customfieldfilter),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemnumbercustomfieldElemID.name],
 })
@@ -121,30 +103,24 @@ const itemnumbercustomfield_roleaccesses_roleaccess = new ObjectType({
   annotations: {
   },
   fields: {
-    role: new Field(
-      itemnumbercustomfield_roleaccesses_roleaccessElemID,
-      'role',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    role: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
-    accesslevel: new Field(
-      itemnumbercustomfield_roleaccesses_roleaccessElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see customrecordtype_permittedrole. */
+    accesslevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
-    searchlevel: new Field(
-      itemnumbercustomfield_roleaccesses_roleaccessElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+    searchlevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '0'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemnumbercustomfieldElemID.name],
 })
@@ -158,13 +134,11 @@ const itemnumbercustomfield_roleaccesses = new ObjectType({
   annotations: {
   },
   fields: {
-    roleaccess: new Field(
-      itemnumbercustomfield_roleaccessesElemID,
-      'roleaccess',
-      new ListType(itemnumbercustomfield_roleaccesses_roleaccess),
-      {
+    roleaccess: {
+      type: new ListType(itemnumbercustomfield_roleaccesses_roleaccess),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemnumbercustomfieldElemID.name],
 })
@@ -178,291 +152,211 @@ export const itemnumbercustomfield = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custitemnumber_',
   },
   fields: {
-    scriptid: new Field(
-      itemnumbercustomfieldElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 44 characters long.   The default value is ‘custitemnumber’. */
-    fieldtype: new Field(
-      itemnumbercustomfieldElemID,
-      'fieldtype',
-      enums.generic_customfield_fieldtype,
-      {
+    }, /* Original description: This attribute value can be up to 44 characters long.   The default value is ‘custitemnumber’. */
+    fieldtype: {
+      type: enums.generic_customfield_fieldtype,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
-    label: new Field(
-      itemnumbercustomfieldElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_fieldtype.   The default value is 'TEXT'. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 200,
       },
-    ), /* Original description: This field value can be up to 200 characters long. */
-    selectrecordtype: new Field(
-      itemnumbercustomfieldElemID,
-      'selectrecordtype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value can be up to 200 characters long. */
+    selectrecordtype: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
-    applyformatting: new Field(
-      itemnumbercustomfieldElemID,
-      'applyformatting',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is mandatory when the fieldtype value is equal to any of the following lists or values: SELECT, MULTISELECT.   This field accepts references to the following custom types:   customrecordtype   customlist   For information about other possible values, see generic_customfield_selectrecordtype. */
+    applyformatting: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    defaultchecked: new Field(
-      itemnumbercustomfieldElemID,
-      'defaultchecked',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    defaultchecked: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    defaultselection: new Field(
-      itemnumbercustomfieldElemID,
-      'defaultselection',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    defaultselection: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
-    defaultvalue: new Field(
-      itemnumbercustomfieldElemID,
-      'defaultvalue',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the following custom types:   scriptdeployment   workflowactionscript   workflowstatecustomfield   workflowcustomfield   workflow   scriptdeployment   usereventscript   transactioncolumncustomfield   transactionbodycustomfield   transactionForm   scriptdeployment   suitelet   scriptdeployment   scheduledscript   savedsearch   role   scriptdeployment   restlet   scriptdeployment   portlet   othercustomfield   scriptdeployment   massupdatescript   scriptdeployment   mapreducescript   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entryForm   entitycustomfield   statuses   customtransactiontype   instance   customrecordcustomfield   customrecordtype   customvalue   crmcustomfield   scriptdeployment   clientscript   scriptdeployment   bundleinstallationscript   advancedpdftemplate   addressForm */
+    defaultvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    description: new Field(
-      itemnumbercustomfieldElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    },
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    displaytype: new Field(
-      itemnumbercustomfieldElemID,
-      'displaytype',
-      enums.generic_customfield_displaytype,
-      {
+    },
+    displaytype: {
+      type: enums.generic_customfield_displaytype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
-    dynamicdefault: new Field(
-      itemnumbercustomfieldElemID,
-      'dynamicdefault',
-      enums.generic_customfield_dynamicdefault,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_displaytype.   The default value is 'NORMAL'. */
+    dynamicdefault: {
+      type: enums.generic_customfield_dynamicdefault,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
-    help: new Field(
-      itemnumbercustomfieldElemID,
-      'help',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_dynamicdefault. */
+    help: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    linktext: new Field(
-      itemnumbercustomfieldElemID,
-      'linktext',
-      BuiltinTypes.STRING,
-      {
+    },
+    linktext: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    minvalue: new Field(
-      itemnumbercustomfieldElemID,
-      'minvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    minvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    maxvalue: new Field(
-      itemnumbercustomfieldElemID,
-      'maxvalue',
-      BuiltinTypes.STRING,
-      {
+    },
+    maxvalue: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    storevalue: new Field(
-      itemnumbercustomfieldElemID,
-      'storevalue',
-      BuiltinTypes.BOOLEAN,
-      {
+    },
+    storevalue: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    accesslevel: new Field(
-      itemnumbercustomfieldElemID,
-      'accesslevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: The default value is T. */
+    accesslevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    checkspelling: new Field(
-      itemnumbercustomfieldElemID,
-      'checkspelling',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    checkspelling: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    encryptatrest: new Field(
-      itemnumbercustomfieldElemID,
-      'encryptatrest',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    encryptatrest: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    displayheight: new Field(
-      itemnumbercustomfieldElemID,
-      'displayheight',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: The default value is F. */
+    displayheight: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    displaywidth: new Field(
-      itemnumbercustomfieldElemID,
-      'displaywidth',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    displaywidth: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must be greater than or equal to 0. */
-    globalsearch: new Field(
-      itemnumbercustomfieldElemID,
-      'globalsearch',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0. */
+    globalsearch: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    isformula: new Field(
-      itemnumbercustomfieldElemID,
-      'isformula',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    isformula: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    ismandatory: new Field(
-      itemnumbercustomfieldElemID,
-      'ismandatory',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    ismandatory: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    maxlength: new Field(
-      itemnumbercustomfieldElemID,
-      'maxlength',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    maxlength: {
+      type: BuiltinTypes.STRING,
+      annotations: {
       },
-    ),
-    onparentdelete: new Field(
-      itemnumbercustomfieldElemID,
-      'onparentdelete',
-      enums.generic_customfield_onparentdelete,
-      {
+    },
+    onparentdelete: {
+      type: enums.generic_customfield_onparentdelete,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
-    searchcomparefield: new Field(
-      itemnumbercustomfieldElemID,
-      'searchcomparefield',
-      enums.generic_standard_field,
-      {
+    }, /* Original description: For information about possible values, see generic_customfield_onparentdelete. */
+    searchcomparefield: {
+      type: enums.generic_standard_field,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    searchdefault: new Field(
-      itemnumbercustomfieldElemID,
-      'searchdefault',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    searchdefault: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type. */
-    searchlevel: new Field(
-      itemnumbercustomfieldElemID,
-      'searchlevel',
-      enums.generic_accesslevel_searchlevel,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type. */
+    searchlevel: {
+      type: enums.generic_accesslevel_searchlevel,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
-    showhierarchy: new Field(
-      itemnumbercustomfieldElemID,
-      'showhierarchy',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see generic_accesslevel_searchlevel.   The default value is '2'. */
+    showhierarchy: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    showinlist: new Field(
-      itemnumbercustomfieldElemID,
-      'showinlist',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    showinlist: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    sourcefilterby: new Field(
-      itemnumbercustomfieldElemID,
-      'sourcefilterby',
-      enums.generic_standard_field,
-      {
+    }, /* Original description: The default value is F. */
+    sourcefilterby: {
+      type: enums.generic_standard_field,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    sourcefrom: new Field(
-      itemnumbercustomfieldElemID,
-      'sourcefrom',
-      BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    sourcefrom: {
+      type: BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_standard_field. */
-    sourcelist: new Field(
-      itemnumbercustomfieldElemID,
-      'sourcelist',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: For information about possible values, see generic_standard_field. */
+    sourcelist: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the itemnumbercustomfield custom type.   For information about other possible values, see generic_standard_field. */
-    appliestoallitems: new Field(
-      itemnumbercustomfieldElemID,
-      'appliestoallitems',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the itemnumbercustomfield custom type.   For information about other possible values, see generic_standard_field. */
+    appliestoallitems: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestogiftcerts: new Field(
-      itemnumbercustomfieldElemID,
-      'appliestogiftcerts',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    appliestogiftcerts: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestolots: new Field(
-      itemnumbercustomfieldElemID,
-      'appliestolots',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    appliestolots: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    appliestoserialized: new Field(
-      itemnumbercustomfieldElemID,
-      'appliestoserialized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    appliestoserialized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    customfieldfilters: new Field(
-      itemnumbercustomfieldElemID,
-      'customfieldfilters',
-      itemnumbercustomfield_customfieldfilters,
-      {
+    }, /* Original description: The default value is F. */
+    customfieldfilters: {
+      type: itemnumbercustomfield_customfieldfilters,
+      annotations: {
       },
-    ),
-    roleaccesses: new Field(
-      itemnumbercustomfieldElemID,
-      'roleaccesses',
-      itemnumbercustomfield_roleaccesses,
-      {
+    },
+    roleaccesses: {
+      type: itemnumbercustomfield_roleaccesses,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, itemnumbercustomfieldElemID.name],
 })

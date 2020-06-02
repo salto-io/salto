@@ -15,7 +15,7 @@
 */
 
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, InstanceElement, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ListType,
   ObjectType, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import {
@@ -31,14 +31,12 @@ describe('hidden_values.ts', () => {
     {
       elemID: innerObjectElemID,
       fields: {
-        num: new Field(innerObjectElemID, 'num', BuiltinTypes.NUMBER),
-        stringList: new Field(innerObjectElemID, 'stringList', new ListType(BuiltinTypes.STRING)),
-        hiddenStr: new Field(
-          innerObjectElemID,
-          'hiddenStr',
-          BuiltinTypes.STRING,
-          { [CORE_ANNOTATIONS.HIDDEN]: true }
-        ),
+        num: { type: BuiltinTypes.NUMBER },
+        stringList: { type: new ListType(BuiltinTypes.STRING) },
+        hiddenStr: {
+          type: BuiltinTypes.STRING,
+          annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+        },
       },
     }
   )
@@ -46,38 +44,36 @@ describe('hidden_values.ts', () => {
   const hiddenType = new ObjectType({
     elemID: anotherTypeID,
     fields: {
-      reg: new Field(anotherTypeID, 'reg', BuiltinTypes.STRING),
-      listOfObjects: new Field(
-        anotherTypeID,
-        'listOfObjects',
-        new ListType(innerObject),
-        { [CORE_ANNOTATIONS.HIDDEN]: true }
-      ),
-      notHidden: new Field(
-        anotherTypeID,
-        'notHidden',
-        BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.HIDDEN]: false }
-      ),
-      hidden: new Field(
-        anotherTypeID,
-        'hidden',
-        BuiltinTypes.STRING,
-        { [CORE_ANNOTATIONS.HIDDEN]: true }
-      ),
-      objField: new Field(
-        anotherTypeID,
-        'objField',
-        innerObject,
-        { [CORE_ANNOTATIONS.HIDDEN]: true }
-      ),
-      numHidden: new Field(
-        anotherTypeID,
-        'numHidden',
-        BuiltinTypes.NUMBER,
-        { [CORE_ANNOTATIONS.HIDDEN]: true }
-      ),
-      addedField: new Field(anotherTypeID, 'addedField', BuiltinTypes.STRING),
+      reg: { type: BuiltinTypes.STRING },
+      listOfObjects: {
+        type: new ListType(innerObject),
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+      },
+      notHidden: {
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+      },
+      hidden: {
+        type: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      },
+      objField: {
+        type: innerObject,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
+      },
+      numHidden: {
+        type: BuiltinTypes.NUMBER,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      },
+      hiddenList: {
+        type: new ListType(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      },
+      hiddenObj: {
+        type: innerObject,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
+      },
+      addedField: { type: BuiltinTypes.STRING },
     },
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: true },
     path: ['records', 'hidden'],
@@ -88,8 +84,8 @@ describe('hidden_values.ts', () => {
   const notHiddenType = new ObjectType({
     elemID: regTypeID,
     fields: {
-      str: new Field(new ElemID('dummy', 'strField'), 'str', BuiltinTypes.STRING),
-      num2: new Field(new ElemID('dummy', 'numField'), 'num2', BuiltinTypes.NUMBER),
+      str: { type: BuiltinTypes.STRING },
+      num2: { type: BuiltinTypes.NUMBER },
     },
     annotations: { [CORE_ANNOTATIONS.HIDDEN]: false },
   })
@@ -120,6 +116,7 @@ describe('hidden_values.ts', () => {
       {
         num: 11,
         stringList: 'test@gmail.com,test2,111',
+        hiddenStr: 'test1',
       },
       {
         num: 2,
@@ -135,6 +132,12 @@ describe('hidden_values.ts', () => {
       stringList: 'test1,tes2,3',
       hiddenStr: 'hiddenString',
     },
+    hiddenList: ['a', 'b', ''],
+    hiddenObj: {
+      num: 111,
+      stringList: 'asd,foo',
+      hiddenStr: 'hid',
+    },
   })
 
 
@@ -143,8 +146,11 @@ describe('hidden_values.ts', () => {
   // removing all hidden values
   delete instanceWithoutHiddenValues.value.hidden
   delete instanceWithoutHiddenValues.value.listOfObjects[0].hiddenStr
+  delete instanceWithoutHiddenValues.value.listOfObjects[2].hiddenStr
   delete instanceWithoutHiddenValues.value.objField.hiddenStr
   delete instanceWithoutHiddenValues.value.numHidden
+  delete instanceWithoutHiddenValues.value.hiddenList
+  delete instanceWithoutHiddenValues.value.hiddenObj
 
 
   describe('removeHiddenFieldsValues func', () => {
@@ -222,23 +228,25 @@ describe('hidden_values.ts', () => {
     workspaceInstance.value.numHidden = 11111
 
     // When type is hidden: (workspace) instance will contain an 'empty' type (only with elemID)
-    workspaceInstance.type = new ObjectType({
+    const hiddenTypePlaceholder = new ObjectType({
       elemID: anotherTypeID,
     })
+    workspaceInstance.type = hiddenTypePlaceholder
 
-
-    const newWorkspaceInstance = new InstanceElement('instance_elem_id_name', new ObjectType({
-      elemID: anotherTypeID,
-    }), {
+    const newWorkspaceInstance = new InstanceElement('new_instance_elem_id', hiddenTypePlaceholder, {
       reg: 'newReg',
       notHidden: 'notHidden2',
     })
+    const newWorkspaceType = new ObjectType({ elemID: new ElemID('dummy', 'newType') })
+    const newNormalInstance = new InstanceElement('instance_non_hidden_type', newWorkspaceType, {})
 
     const workspaceElements = [
       primType.clone(),
       notHiddenType.clone(),
       workspaceInstance,
       newWorkspaceInstance,
+      newWorkspaceType,
+      newNormalInstance,
     ]
 
     // State elements
@@ -257,14 +265,18 @@ describe('hidden_values.ts', () => {
     let newInstanceAfterHiddenAddition: InstanceElement
     let hiddenTypeAddition: ObjectType
     let hiddenPrimTypeAddition: PrimitiveType
+    let newType: ObjectType
+    let normalInstance: InstanceElement
 
     beforeAll(async () => {
       resp = addHiddenValuesAndHiddenTypes(workspaceElements, stateElements)
 
       instanceAfterHiddenAddition = resp[2] as InstanceElement
       newInstanceAfterHiddenAddition = resp[3] as InstanceElement
-      hiddenTypeAddition = resp[4] as ObjectType
-      hiddenPrimTypeAddition = resp[5] as PrimitiveType
+      newType = resp[4] as ObjectType
+      normalInstance = resp[5] as InstanceElement
+      hiddenTypeAddition = resp[6] as ObjectType
+      hiddenPrimTypeAddition = resp[7] as PrimitiveType
     })
 
     it('should add hidden type to workspace elements list', () => {
@@ -279,8 +291,14 @@ describe('hidden_values.ts', () => {
       expect(instanceAfterHiddenAddition.value.hidden).toEqual(stateInstance.value.hidden)
       expect(instanceAfterHiddenAddition.value.listOfObjects[0].hiddenStr)
         .toEqual(stateInstance.value.listOfObjects[0].hiddenStr)
+      expect(instanceAfterHiddenAddition.value.listOfObjects[2].hiddenStr)
+        .toEqual(stateInstance.value.listOfObjects[2].hiddenStr)
       expect(instanceAfterHiddenAddition.value.objField.hiddenStr)
         .toEqual(stateInstance.value.objField.hiddenStr)
+      expect(instanceAfterHiddenAddition.value.hiddenList)
+        .toEqual(stateInstance.value.hiddenList)
+      expect(instanceAfterHiddenAddition.value.hiddenObj)
+        .toEqual(stateInstance.value.hiddenObj)
     })
 
     it('should ignore hidden values from workspace element', () => {
@@ -317,6 +335,14 @@ describe('hidden_values.ts', () => {
       expect((stateElements[2] as InstanceElement).isEqual(hiddenInstance)).toBeTruthy()
       expect((stateElements[3] as ObjectType).isEqual(hiddenType)).toBeTruthy()
       expect((stateElements[4] as PrimitiveType).isEqual(hiddenPrimType)).toBeTruthy()
+    })
+
+    it('should not change new types', () => {
+      expect(newType).toEqual(newWorkspaceType)
+    })
+
+    it('should not change new instances', () => {
+      expect(normalInstance).toEqual(newNormalInstance)
     })
   })
 })

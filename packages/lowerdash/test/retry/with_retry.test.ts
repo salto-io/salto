@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import withRetry, { RetryError } from '../../src/retry/with_retry'
+import { withRetry, RetryError } from '../../src/retry'
 import retryStrategies from '../../src/retry/strategies'
 
 jest.mock('../../src/retry/strategies', () => ({

@@ -79,11 +79,11 @@ export class EditorWorkspace {
   }
 
   private editorSourceMap(sourceMap: SourceMap): SourceMap {
-    const editorSourceMap = new SourceMap()
-    sourceMap.forEach((ranges, key) => editorSourceMap.set(
-      key, ranges.map(range => this.editorSourceRange(range))
-    ))
-    return editorSourceMap
+    return new SourceMap(wu(sourceMap.entries())
+      .map(([key, ranges]) => [
+        key,
+        ranges.map(range => this.editorSourceRange(range)),
+      ]))
   }
 
   private hasPendingUpdates(): boolean {

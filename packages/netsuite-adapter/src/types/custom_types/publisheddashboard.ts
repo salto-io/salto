@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,91 +31,67 @@ const publisheddashboard_dashboards_dashboard_centercolumn_calendar = new Object
   annotations: {
   },
   fields: {
-    numberofrecordsinagenda: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'numberofrecordsinagenda',
-      BuiltinTypes.NUMBER,
-      {
+    numberofrecordsinagenda: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field value must be greater than or equal to 0.   The default value is '7'. */
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value must be greater than or equal to 0.   The default value is '7'. */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    showevents: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'showevents',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    showevents: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showblockingtasks: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'showblockingtasks',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    showblockingtasks: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    shownonblockingtasks: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'shownonblockingtasks',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    shownonblockingtasks: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showblockingcalls: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'showblockingcalls',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    showblockingcalls: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    shownonblockingcalls: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'shownonblockingcalls',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    shownonblockingcalls: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showcanceledevents: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'showcanceledevents',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    showcanceledevents: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    showweekendsinmonthlyview: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'showweekendsinmonthlyview',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    showweekendsinmonthlyview: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    recordstodisplayinagenda: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'recordstodisplayinagenda',
-      enums.portlet_calendar_agenda,
-      {
+    }, /* Original description: The default value is T. */
+    recordstodisplayinagenda: {
+      type: enums.portlet_calendar_agenda,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_calendar_agenda.   The default value is 'TODAY_ONLY'. */
-    showcampaignevents: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'showcampaignevents',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see portlet_calendar_agenda.   The default value is 'TODAY_ONLY'. */
+    showcampaignevents: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    showresourceallocations: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_calendarElemID,
-      'showresourceallocations',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    showresourceallocations: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the RESOURCEALLOCATIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. RESOURCEALLOCATIONS must be enabled for this field to appear in your account. */
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the RESOURCEALLOCATIONS feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. RESOURCEALLOCATIONS must be enabled for this field to appear in your account. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -129,21 +105,17 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customportlet = new O
   annotations: {
   },
   fields: {
-    source: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customportletElemID,
-      'source',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    source: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the scriptdeployment custom type. */
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customportletElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the scriptdeployment custom type. */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -157,65 +129,49 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customsearch = new Ob
   annotations: {
   },
   fields: {
-    savedsearch: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customsearchElemID,
-      'savedsearch',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    savedsearch: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see portlet_customsearch_savedsearch. */
-    resultssize: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customsearchElemID,
-      'resultssize',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see portlet_customsearch_savedsearch. */
+    resultssize: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: The default value is '10'. */
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customsearchElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is '10'. */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    drilldown: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customsearchElemID,
-      'drilldown',
-      enums.portlet_customsearch_drilldown,
-      {
+    }, /* Original description: The default value is F. */
+    drilldown: {
+      type: enums.portlet_customsearch_drilldown,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_customsearch_drilldown.   The default value is 'NEW_PAGE'. */
-    charttheme: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customsearchElemID,
-      'charttheme',
-      enums.portlet_customsearch_charttheme,
-      {
+    }, /* Original description: For information about possible values, see portlet_customsearch_drilldown.   The default value is 'NEW_PAGE'. */
+    charttheme: {
+      type: enums.portlet_customsearch_charttheme,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_customsearch_charttheme.   The default value is 'GLOBAL_THEME'. */
-    backgroundtype: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customsearchElemID,
-      'backgroundtype',
-      enums.portlet_customsearch_backgroundtype,
-      {
+    }, /* Original description: For information about possible values, see portlet_customsearch_charttheme.   The default value is 'GLOBAL_THEME'. */
+    backgroundtype: {
+      type: enums.portlet_customsearch_backgroundtype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_customsearch_backgroundtype.   The default value is 'GLOBAL_BACKGROUND'. */
-    allowinlineediting: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customsearchElemID,
-      'allowinlineediting',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see portlet_customsearch_backgroundtype.   The default value is 'GLOBAL_BACKGROUND'. */
+    allowinlineediting: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T.   If this field appears in the project, you must reference the EXTREMELIST feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. EXTREMELIST must be enabled for this field to appear in your account. */
-    title: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_customsearchElemID,
-      'title',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is T.   If this field appears in the project, you must reference the EXTREMELIST feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. EXTREMELIST must be enabled for this field to appear in your account. */
+    title: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
-    ), /* Original description: This field value can be up to 40 characters long. */
+    }, /* Original description: This field value can be up to 40 characters long. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -229,85 +185,63 @@ const publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicat
   annotations: {
   },
   fields: {
-    kpi: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'kpi',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    kpi: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see the following lists:   snapshot_type_period_range_not_comparable   snapshot_type_period_range_comparable   snapshot_type_date_range_not_comparable   snapshot_type_date_range_comparable   snapshot_type_custom */
-    daterange: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'daterange',
-      enums.report_date_range,
-      {
+    }, /* Original description: For information about possible values, see the following lists:   snapshot_type_period_range_not_comparable   snapshot_type_period_range_comparable   snapshot_type_date_range_not_comparable   snapshot_type_date_range_comparable   snapshot_type_custom */
+    daterange: {
+      type: enums.report_date_range,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see report_date_range. */
-    comparedaterange: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'comparedaterange',
-      enums.report_date_range,
-      {
+    }, /* Original description: For information about possible values, see report_date_range. */
+    comparedaterange: {
+      type: enums.report_date_range,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the compare value is equal to T.   For information about possible values, see report_date_range. */
-    compareperiodrange: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'compareperiodrange',
-      enums.report_period_range,
-      {
+    }, /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the compare value is equal to T.   For information about possible values, see report_date_range. */
+    compareperiodrange: {
+      type: enums.report_period_range,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the compare value is equal to T.   For information about possible values, see report_period_range. */
-    savedsearch: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'savedsearch',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the compare value is equal to T.   For information about possible values, see report_period_range. */
+    savedsearch: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is present in snapshot_type_custom.   This field is mandatory when the kpi value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
-    periodrange: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'periodrange',
-      enums.report_period_range,
-      {
+    }, /* Original description: This field is available when the kpi value is present in snapshot_type_custom.   This field is mandatory when the kpi value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
+    periodrange: {
+      type: enums.report_period_range,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_period_range_not_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_period_range_not_comparable, snapshot_type_custom.   For information about possible values, see report_period_range. */
-    compare: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'compare',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_period_range_not_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_period_range_comparable, snapshot_type_period_range_not_comparable, snapshot_type_custom.   For information about possible values, see report_period_range. */
+    compare: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   The default value is T. */
-    employees: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'employees',
-      enums.portlet_kpi_employees,
-      {
+    }, /* Original description: This field is available when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   This field is mandatory when the kpi value is present in any of the following lists or values: snapshot_type_date_range_comparable, snapshot_type_period_range_comparable, snapshot_type_custom.   The default value is T. */
+    employees: {
+      type: enums.portlet_kpi_employees,
+      annotations: {
       },
-    ), /* Original description: This field is available when the center value is equal to any of the following lists or values: SALESCENTER, SUPPORTCENTER.   For information about possible values, see portlet_kpi_employees.   The default value is 'ME_ONLY'. */
-    headline: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'headline',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is available when the center value is equal to any of the following lists or values: SALESCENTER, SUPPORTCENTER.   For information about possible values, see portlet_kpi_employees.   The default value is 'ME_ONLY'. */
+    headline: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    highlightif: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'highlightif',
-      enums.portlet_kpi_highlightif,
-      {
+    }, /* Original description: The default value is F. */
+    highlightif: {
+      type: enums.portlet_kpi_highlightif,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_kpi_highlightif. */
-    threshold: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpiElemID,
-      'threshold',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: For information about possible values, see portlet_kpi_highlightif. */
+    threshold: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -321,13 +255,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicat
   annotations: {
   },
   fields: {
-    kpi: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpisElemID,
-      'kpi',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpi),
-      {
+    kpi: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis_kpi),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -341,27 +273,21 @@ const publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicat
   annotations: {
   },
   fields: {
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicatorsElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    cacheddata: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicatorsElemID,
-      'cacheddata',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    cacheddata: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    kpis: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicatorsElemID,
-      'kpis',
-      publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis,
-      {
+    }, /* Original description: The default value is F. */
+    kpis: {
+      type: publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators_kpis,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -375,21 +301,17 @@ const publisheddashboard_dashboards_dashboard_centercolumn_kpimeter = new Object
   annotations: {
   },
   fields: {
-    kpi: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_kpimeterElemID,
-      'kpi',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    kpi: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see the following lists:   snapshot_type_period_range_not_comparable   snapshot_type_period_range_comparable   snapshot_type_date_range_not_comparable   snapshot_type_date_range_comparable   snapshot_type_custom   portlet_kpimeter_combined_snapshots */
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_kpimeterElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see the following lists:   snapshot_type_period_range_not_comparable   snapshot_type_period_range_comparable   snapshot_type_date_range_not_comparable   snapshot_type_date_range_comparable   snapshot_type_custom   portlet_kpimeter_combined_snapshots */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -403,36 +325,28 @@ const publisheddashboard_dashboards_dashboard_centercolumn_list = new ObjectType
   annotations: {
   },
   fields: {
-    type: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_listElemID,
-      'type',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    type: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the customrecordtype custom type.   For information about other possible values, see portlet_list_type. */
-    size: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_listElemID,
-      'size',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field accepts references to the customrecordtype custom type.   For information about other possible values, see portlet_list_type. */
+    size: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field value must range from 1 through 50. (inclusive)   The default value is '10'. */
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_listElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field value must range from 1 through 50. (inclusive)   The default value is '10'. */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    allowinlineediting: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_listElemID,
-      'allowinlineediting',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    allowinlineediting: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
+    }, /* Original description: The default value is T. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -446,35 +360,27 @@ const publisheddashboard_dashboards_dashboard_centercolumn_quicksearch = new Obj
   annotations: {
   },
   fields: {
-    searchtype: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_quicksearchElemID,
-      'searchtype',
-      enums.portlet_quicksearch_type,
-      {
+    searchtype: {
+      type: enums.portlet_quicksearch_type,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see portlet_quicksearch_type.   The default value is 'GENERIC'. */
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_quicksearchElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see portlet_quicksearch_type.   The default value is 'GENERIC'. */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    defaultgeneraltype: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_quicksearchElemID,
-      'defaultgeneraltype',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    defaultgeneraltype: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field accepts references to the customrecordtype custom type.   For information about other possible values, see portlet_quicksearch_generic. */
-    defaulttransactiontype: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_quicksearchElemID,
-      'defaulttransactiontype',
-      enums.portlet_quicksearch_transaction,
-      {
+    }, /* Original description: This field accepts references to the customrecordtype custom type.   For information about other possible values, see portlet_quicksearch_generic. */
+    defaulttransactiontype: {
+      type: enums.portlet_quicksearch_transaction,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_quicksearch_transaction. */
+    }, /* Original description: For information about possible values, see portlet_quicksearch_transaction. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -488,21 +394,17 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_re
   annotations: {
   },
   fields: {
-    greaterthanorequalto: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules_ruleElemID,
-      'greaterthanorequalto',
-      BuiltinTypes.NUMBER,
-      {
+    greaterthanorequalto: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field value must range from -9999999 through 99999999. (inclusive) */
-    color: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules_ruleElemID,
-      'color',
-      enums.reminders_highlighting_rules_colors,
-      {
+    }, /* Original description: This field value must range from -9999999 through 99999999. (inclusive) */
+    color: {
+      type: enums.reminders_highlighting_rules_colors,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see reminders_highlighting_rules_colors.   The default value is 'YELLOW'. */
+    }, /* Original description: For information about possible values, see reminders_highlighting_rules_colors.   The default value is 'YELLOW'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -516,13 +418,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_re
   annotations: {
   },
   fields: {
-    rule: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrulesElemID,
-      'rule',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules_rule),
-      {
+    rule: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules_rule),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -536,28 +436,22 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_re
   annotations: {
   },
   fields: {
-    id: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminderElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   reminders_standard_reminders_without_days   reminders_standard_reminders_with_days */
-    days: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminderElemID,
-      'days',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   reminders_standard_reminders_without_days   reminders_standard_reminders_with_days */
+    days: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must range from -9999999 through 99999999. (inclusive)   This field is available when the id value is present in reminders_standard_reminders_with_days.   The default value is '5'. */
-    highlightingrules: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminderElemID,
-      'highlightingrules',
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules,
-      {
+    }, /* Original description: This field value must range from -9999999 through 99999999. (inclusive)   This field is available when the id value is present in reminders_standard_reminders_with_days.   The default value is '5'. */
+    highlightingrules: {
+      type: publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder_highlightingrules,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -571,13 +465,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline = 
   annotations: {
   },
   fields: {
-    reminder: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headlineElemID,
-      'reminder',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder),
-      {
+    reminder: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline_reminder),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -591,21 +483,17 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_remin
   annotations: {
   },
   fields: {
-    greaterthanorequalto: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules_ruleElemID,
-      'greaterthanorequalto',
-      BuiltinTypes.NUMBER,
-      {
+    greaterthanorequalto: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field value must range from -9999999 through 99999999. (inclusive) */
-    color: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules_ruleElemID,
-      'color',
-      enums.reminders_highlighting_rules_colors,
-      {
+    }, /* Original description: This field value must range from -9999999 through 99999999. (inclusive) */
+    color: {
+      type: enums.reminders_highlighting_rules_colors,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see reminders_highlighting_rules_colors.   The default value is 'YELLOW'. */
+    }, /* Original description: For information about possible values, see reminders_highlighting_rules_colors.   The default value is 'YELLOW'. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -619,13 +507,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_remin
   annotations: {
   },
   fields: {
-    rule: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrulesElemID,
-      'rule',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules_rule),
-      {
+    rule: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules_rule),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -639,28 +525,22 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_remin
   annotations: {
   },
   fields: {
-    id: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminderElemID,
-      'id',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    id: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   reminders_standard_reminders_without_days   reminders_standard_reminders_with_days */
-    days: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminderElemID,
-      'days',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see the following lists:   reminders_standard_reminders_without_days   reminders_standard_reminders_with_days */
+    days: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
       },
-    ), /* Original description: This field value must range from -9999999 through 99999999. (inclusive)   This field is available when the id value is present in reminders_standard_reminders_with_days.   The default value is '5'. */
-    highlightingrules: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminderElemID,
-      'highlightingrules',
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules,
-      {
+    }, /* Original description: This field value must range from -9999999 through 99999999. (inclusive)   This field is available when the id value is present in reminders_standard_reminders_with_days.   The default value is '5'. */
+    highlightingrules: {
+      type: publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder_highlightingrules,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -674,13 +554,11 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders_other = new
   annotations: {
   },
   fields: {
-    reminder: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_otherElemID,
-      'reminder',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder),
-      {
+    reminder: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders_other_reminder),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -694,34 +572,26 @@ const publisheddashboard_dashboards_dashboard_centercolumn_reminders = new Objec
   annotations: {
   },
   fields: {
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_remindersElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    showzeroresults: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_remindersElemID,
-      'showzeroresults',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    showzeroresults: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    headline: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_remindersElemID,
-      'headline',
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline,
-      {
+    }, /* Original description: The default value is F. */
+    headline: {
+      type: publisheddashboard_dashboards_dashboard_centercolumn_reminders_headline,
+      annotations: {
       },
-    ),
-    other: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_remindersElemID,
-      'other',
-      publisheddashboard_dashboards_dashboard_centercolumn_reminders_other,
-      {
+    },
+    other: {
+      type: publisheddashboard_dashboards_dashboard_centercolumn_reminders_other,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -735,21 +605,17 @@ const publisheddashboard_dashboards_dashboard_centercolumn_searchform = new Obje
   annotations: {
   },
   fields: {
-    savedsearch: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_searchformElemID,
-      'savedsearch',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    savedsearch: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the savedsearch custom type. */
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_searchformElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the savedsearch custom type. */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
+    }, /* Original description: The default value is F. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -763,93 +629,69 @@ const publisheddashboard_dashboards_dashboard_centercolumn_trendgraph = new Obje
   annotations: {
   },
   fields: {
-    kpi: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'kpi',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    kpi: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see the following lists:   snapshot_type_trendgraph   snapshot_type_custom */
-    trendtype: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'trendtype',
-      enums.portlet_trendgraph_trendtype,
-      {
+    }, /* Original description: For information about possible values, see the following lists:   snapshot_type_trendgraph   snapshot_type_custom */
+    trendtype: {
+      type: enums.portlet_trendgraph_trendtype,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see portlet_trendgraph_trendtype. */
-    movingaverageperiod: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'movingaverageperiod',
-      BuiltinTypes.NUMBER,
-      {
+    }, /* Original description: For information about possible values, see portlet_trendgraph_trendtype. */
+    movingaverageperiod: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field value must range from 1 through 10. (inclusive)   The default value is '2'. */
-    savedsearch: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'savedsearch',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value must range from 1 through 10. (inclusive)   The default value is '2'. */
+    savedsearch: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
       },
-    ), /* Original description: This field is available when the kpi value is present in snapshot_type_custom.   This field is mandatory when the kpi value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
-    isminimized: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'isminimized',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field is available when the kpi value is present in snapshot_type_custom.   This field is mandatory when the kpi value is present in snapshot_type_custom.   This field accepts references to the savedsearch custom type. */
+    isminimized: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    backgroundtype: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'backgroundtype',
-      enums.portlet_trendgraph_backgroundtype,
-      {
+    }, /* Original description: The default value is F. */
+    backgroundtype: {
+      type: enums.portlet_trendgraph_backgroundtype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_trendgraph_backgroundtype.   The default value is 'GLOBAL_BACKGROUND'. */
-    charttheme: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'charttheme',
-      enums.portlet_trendgraph_charttheme,
-      {
+    }, /* Original description: For information about possible values, see portlet_trendgraph_backgroundtype.   The default value is 'GLOBAL_BACKGROUND'. */
+    charttheme: {
+      type: enums.portlet_trendgraph_charttheme,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_trendgraph_charttheme.   The default value is 'GLOBAL_THEME'. */
-    customseriescolor: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'customseriescolor',
-      BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
-      {
+    }, /* Original description: For information about possible values, see portlet_trendgraph_charttheme.   The default value is 'GLOBAL_THEME'. */
+    customseriescolor: {
+      type: BuiltinTypes.STRING /* Original type was rgb   RGB field types must be set to a valid 6–digit hexadecimal value between #000000 and #FFFFFF. The # prefix is optional. */,
+      annotations: {
       },
-    ),
-    defaultcharttype: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'defaultcharttype',
-      enums.portlet_trendgraph_charttype,
-      {
+    },
+    defaultcharttype: {
+      type: enums.portlet_trendgraph_charttype,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see portlet_trendgraph_charttype.   The default value is 'AREA'. */
-    includezeroonyaxis: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'includezeroonyaxis',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see portlet_trendgraph_charttype.   The default value is 'AREA'. */
+    includezeroonyaxis: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    showmovingaverage: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'showmovingaverage',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    showmovingaverage: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
-    showlastdatapoint: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumn_trendgraphElemID,
-      'showlastdatapoint',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is T. */
+    showlastdatapoint: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
+    }, /* Original description: The default value is T. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -863,76 +705,56 @@ const publisheddashboard_dashboards_dashboard_centercolumn = new ObjectType({
   annotations: {
   },
   fields: {
-    calendar: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'calendar',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_calendar),
-      {
+    calendar: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_calendar),
+      annotations: {
       },
-    ),
-    customportlet: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'customportlet',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customportlet),
-      {
+    },
+    customportlet: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customportlet),
+      annotations: {
       },
-    ),
-    customsearch: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'customsearch',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customsearch),
-      {
+    },
+    customsearch: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_customsearch),
+      annotations: {
       },
-    ),
-    keyperformanceindicators: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'keyperformanceindicators',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators),
-      {
+    },
+    keyperformanceindicators: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_keyperformanceindicators),
+      annotations: {
       },
-    ),
-    kpimeter: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'kpimeter',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpimeter),
-      {
+    },
+    kpimeter: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_kpimeter),
+      annotations: {
       },
-    ),
-    list: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'list',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_list),
-      {
+    },
+    list: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_list),
+      annotations: {
       },
-    ),
-    quicksearch: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'quicksearch',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_quicksearch),
-      {
+    },
+    quicksearch: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_quicksearch),
+      annotations: {
       },
-    ),
-    reminders: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'reminders',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders),
-      {
+    },
+    reminders: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_reminders),
+      annotations: {
       },
-    ),
-    searchform: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'searchform',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_searchform),
-      {
+    },
+    searchform: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_searchform),
+      annotations: {
       },
-    ),
-    trendgraph: new Field(
-      publisheddashboard_dashboards_dashboard_centercolumnElemID,
-      'trendgraph',
-      new ListType(publisheddashboard_dashboards_dashboard_centercolumn_trendgraph),
-      {
+    },
+    trendgraph: {
+      type: new ListType(publisheddashboard_dashboards_dashboard_centercolumn_trendgraph),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -974,51 +796,39 @@ const publisheddashboard_dashboards_dashboard = new ObjectType({
   annotations: {
   },
   fields: {
-    centertab: new Field(
-      publisheddashboard_dashboards_dashboardElemID,
-      'centertab',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    centertab: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the centertab custom type.   For information about other possible values, see generic_centertab. */
-    mode: new Field(
-      publisheddashboard_dashboards_dashboardElemID,
-      'mode',
-      enums.dashboard_mode,
-      {
+    }, /* Original description: This field accepts references to the centertab custom type.   For information about other possible values, see generic_centertab. */
+    mode: {
+      type: enums.dashboard_mode,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see dashboard_mode.   The default value is 'UNLOCKED'. */
-    layout: new Field(
-      publisheddashboard_dashboards_dashboardElemID,
-      'layout',
-      enums.dashboard_layout,
-      {
+    }, /* Original description: For information about possible values, see dashboard_mode.   The default value is 'UNLOCKED'. */
+    layout: {
+      type: enums.dashboard_layout,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: For information about possible values, see dashboard_layout.   The default value is 'TWO_COLUMN'. */
-    centercolumn: new Field(
-      publisheddashboard_dashboards_dashboardElemID,
-      'centercolumn',
-      publisheddashboard_dashboards_dashboard_centercolumn,
-      {
+    }, /* Original description: For information about possible values, see dashboard_layout.   The default value is 'TWO_COLUMN'. */
+    centercolumn: {
+      type: publisheddashboard_dashboards_dashboard_centercolumn,
+      annotations: {
       },
-    ),
-    leftcolumn: new Field(
-      publisheddashboard_dashboards_dashboardElemID,
-      'leftcolumn',
-      publisheddashboard_dashboards_dashboard_leftcolumn,
-      {
+    },
+    leftcolumn: {
+      type: publisheddashboard_dashboards_dashboard_leftcolumn,
+      annotations: {
       },
-    ),
-    rightcolumn: new Field(
-      publisheddashboard_dashboards_dashboardElemID,
-      'rightcolumn',
-      publisheddashboard_dashboards_dashboard_rightcolumn,
-      {
+    },
+    rightcolumn: {
+      type: publisheddashboard_dashboards_dashboard_rightcolumn,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -1032,13 +842,11 @@ const publisheddashboard_dashboards = new ObjectType({
   annotations: {
   },
   fields: {
-    dashboard: new Field(
-      publisheddashboard_dashboardsElemID,
-      'dashboard',
-      new ListType(publisheddashboard_dashboards_dashboard),
-      {
+    dashboard: {
+      type: new ListType(publisheddashboard_dashboards_dashboard),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -1052,14 +860,12 @@ const publisheddashboard_roles_role = new ObjectType({
   annotations: {
   },
   fields: {
-    role: new Field(
-      publisheddashboard_roles_roleElemID,
-      'role',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    role: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    }, /* Original description: This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -1073,13 +879,11 @@ const publisheddashboard_roles = new ObjectType({
   annotations: {
   },
   fields: {
-    role: new Field(
-      publisheddashboard_rolesElemID,
-      'role',
-      new ListType(publisheddashboard_roles_role),
-      {
+    role: {
+      type: new ListType(publisheddashboard_roles_role),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })
@@ -1093,68 +897,52 @@ export const publisheddashboard = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custpubdashboard_',
   },
   fields: {
-    scriptid: new Field(
-      publisheddashboardElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpubdashboard’. */
-    name: new Field(
-      publisheddashboardElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custpubdashboard’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
-    ), /* Original description: This field value can be up to 30 characters long. */
-    center: new Field(
-      publisheddashboardElemID,
-      'center',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value can be up to 30 characters long. */
+    center: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the center custom type.   For information about other possible values, see role_centertype. */
-    lockshortcuts: new Field(
-      publisheddashboardElemID,
-      'lockshortcuts',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see role_centertype. */
+    lockshortcuts: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    locknewbar: new Field(
-      publisheddashboardElemID,
-      'locknewbar',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    locknewbar: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    notes: new Field(
-      publisheddashboardElemID,
-      'notes',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: The default value is F. */
+    notes: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 4000,
       },
-    ), /* Original description: This field value can be up to 4000 characters long. */
-    dashboards: new Field(
-      publisheddashboardElemID,
-      'dashboards',
-      publisheddashboard_dashboards,
-      {
+    }, /* Original description: This field value can be up to 4000 characters long. */
+    dashboards: {
+      type: publisheddashboard_dashboards,
+      annotations: {
       },
-    ),
-    roles: new Field(
-      publisheddashboardElemID,
-      'roles',
-      publisheddashboard_roles,
-      {
+    },
+    roles: {
+      type: publisheddashboard_roles,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, publisheddashboardElemID.name],
 })

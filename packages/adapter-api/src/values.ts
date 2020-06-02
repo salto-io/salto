@@ -29,18 +29,28 @@ export interface Values {
 export const calculateStaticFileHash = (content: Buffer): string =>
   hashUtils.toMD5(content)
 
+type HashOrContent = {
+  content: Buffer
+} | {
+  hash: string
+}
+
+
+export type StaticFileParameters = {
+  filepath: string
+} & HashOrContent
+
 export class StaticFile {
+  public readonly filepath: string
   public readonly hash: string
   public readonly content?: Buffer
-  constructor(
-    public readonly filepath: string,
-    contentOrHash: Buffer | string
-  ) {
-    if (contentOrHash instanceof Buffer) {
-      this.content = contentOrHash
+  constructor(params: StaticFileParameters) {
+    this.filepath = params.filepath
+    if ('content' in params) {
+      this.content = params.content
       this.hash = calculateStaticFileHash(this.content)
     } else {
-      this.hash = contentOrHash
+      this.hash = params.hash
     }
   }
 

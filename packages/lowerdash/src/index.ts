@@ -24,6 +24,7 @@ import * as retry from './retry'
 import * as validators from './validators'
 import * as stack from './stack'
 import * as hash from './hash'
+import * as values from './values'
 
 export {
   collections,
@@ -37,4 +38,5 @@ export {
   validators,
   stack,
   hash,
+  values,
 }

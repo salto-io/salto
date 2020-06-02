@@ -25,6 +25,7 @@ import { compareLogLevels, logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import path from 'path'
 import os from 'os'
+import _ from 'lodash'
 
 const log = logger(module)
 
@@ -51,21 +52,30 @@ export const CDATA_TAG_NAME = '__cdata'
 
 const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
+const FILE_SEPARATOR = '.'
+const ADDITIONAL_FILE_PATTERN = '.template.'
 
 const rootCLIPath = path.normalize(path.join(__dirname, ...Array(5).fill('..'), 'node_modules',
   '@salto-io', 'suitecloud-cli', 'src'))
 const baseExecutionPath = os.tmpdir()
 
+type FileContent = {
+  extension: string
+  content: string
+}
+
 export interface CustomizationInfo {
   typeName: string
   values: Values
+  fileContent?: FileContent
 }
 
-export const convertToCustomizationInfo = (xmlContent: string): CustomizationInfo => {
+export const convertToCustomizationInfo = (xmlContent: string, fileContent?: FileContent):
+  CustomizationInfo => {
   const parsedXmlValues = xmlParser.parse(xmlContent,
     { attributeNamePrefix: ATTRIBUTE_PREFIX, ignoreAttributes: false })
   const typeName = Object.keys(parsedXmlValues)[0]
-  return { typeName, values: parsedXmlValues[typeName] }
+  return { typeName, values: parsedXmlValues[typeName], fileContent }
 }
 
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
@@ -130,7 +140,7 @@ export default class NetsuiteClient {
         return await log.time(call, desc)
       } catch (e) {
         log.error('failed to run Netsuite client command on: %o', e)
-        throw e
+        throw _.isObject(e) ? e : new Error(String(e))
       }
     }
   )
@@ -209,27 +219,32 @@ export default class NetsuiteClient {
 
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
     const dirContent = await readDir(objectsDirPath)
-    // Todo: when we'll support more types (e.g. emailTemplates), there might be other file types
-    //  in the directory. remove the below row once these types are supported
-    const xmlFilesInDir = dirContent.filter(filename => filename.endsWith('xml'))
-    return Promise.all(xmlFilesInDir.map(async filename => {
-      const xmlContent = await readFile(path.resolve(objectsDirPath, filename))
-      return convertToCustomizationInfo(xmlContent.toString())
+    const scriptIdToFiles = _.groupBy(dirContent, filename => filename.split(FILE_SEPARATOR)[0])
+    return Promise.all(Object.values(scriptIdToFiles).map(async objectFileNames => {
+      const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
+        filename => filename.includes(ADDITIONAL_FILE_PATTERN))
+      const xmlContent = readFile(path.resolve(objectsDirPath, contentFilename))
+      const fileContent = !_.isUndefined(additionalFilename) ? {
+        content: (await readFile(path.resolve(objectsDirPath, additionalFilename))).toString(),
+        extension: additionalFilename.split(FILE_SEPARATOR)[2],
+      } : undefined
+      return convertToCustomizationInfo((await xmlContent).toString(), fileContent)
     }))
   }
 
   @NetsuiteClient.logDecorator
   async deployCustomObject(filename: string, customizationInfo: CustomizationInfo): Promise<void> {
     const project = await this.initProject()
-    await NetsuiteClient.deploy(path.resolve(NetsuiteClient.getObjectsDirPath(project.projectName),
-      `${filename}.xml`), customizationInfo, project.executor)
-  }
-
-  private static async deploy(filePath: string, customizationInfo: CustomizationInfo,
-    executor: CommandActionExecutor): Promise<void> {
-    await writeFile(filePath, convertToXmlContent(customizationInfo))
-    await NetsuiteClient.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await NetsuiteClient.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {}, executor)
+    const dirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
+    await writeFile(path.resolve(dirPath, `${filename}.xml`), convertToXmlContent(customizationInfo))
+    if (!_.isUndefined(customizationInfo.fileContent)) {
+      await writeFile(path.resolve(dirPath,
+        `${filename}${ADDITIONAL_FILE_PATTERN}${customizationInfo.fileContent.extension}`),
+      customizationInfo.fileContent.content)
+    }
+    await NetsuiteClient.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {},
+      project.executor)
+    await NetsuiteClient.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {}, project.executor)
   }
 
   private static getProjectPath(projectName: string): string {

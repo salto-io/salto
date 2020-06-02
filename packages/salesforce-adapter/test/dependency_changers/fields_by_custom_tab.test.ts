@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, ObjectType, ElemID, INSTANCE_ANNOTATIONS, ReferenceExpression, Field, BuiltinTypes, ChangeDataType, Change, ChangeId, ChangeEntry, DependencyChange, dependencyChange } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, ElemID, INSTANCE_ANNOTATIONS, ReferenceExpression, BuiltinTypes, ChangeDataType, Change, ChangeId, ChangeEntry, DependencyChange, dependencyChange } from '@salto-io/adapter-api'
 import { fieldsByCustomTab, FIELDS_CREATED_BY_CUSTOM_TAB } from '../../src/dependency_changers/fields_by_custom_tab'
 import { SALESFORCE, CUSTOM_TAB_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
 
@@ -32,10 +32,10 @@ describe('fields_by_custom_tab dependency changer', () => {
   const testTypeId = new ElemID(SALESFORCE, 'Test')
   const testType = new ObjectType({
     elemID: testTypeId,
-    fields: _(FIELDS_CREATED_BY_CUSTOM_TAB)
-      .map(name => [name, new Field(testTypeId, name, BuiltinTypes.STRING)])
-      .fromPairs()
-      .value(),
+    fields: Object.assign(
+      {},
+      ...FIELDS_CREATED_BY_CUSTOM_TAB.map(name => ({ [name]: { type: BuiltinTypes.STRING } }))
+    ),
   })
   let tabInstance: InstanceElement
 

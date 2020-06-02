@@ -42,7 +42,7 @@ commands:
 jobs:
   build:
     docker:
-      - image: circleci/node:12.12
+      - image: circleci/node:12.16
 
     resource_class: large
 
@@ -165,7 +165,7 @@ jobs:
 
   publish_on_version_change:
     docker:
-      - image: circleci/node:12.12
+      - image: circleci/node:12.16
 
     steps:
       - attach_workspace:
@@ -185,7 +185,7 @@ jobs:
 
   e2e_test:
     docker:
-      - image: circleci/node:12.12
+      - image: circleci/node:12.16
 
     resource_class: large
 
@@ -212,7 +212,7 @@ jobs:
 
   package_cli:
     docker:
-      - image: circleci/node:12.12
+      - image: circleci/node:12.16
 
     steps:
       - attach_workspace:
@@ -246,7 +246,7 @@ jobs:
 
   test_cli_linux:
     docker:
-      - image: circleci/node:12.12
+      - image: circleci/node:12.16
 
     steps:
       - set_s3_pkg_urls
@@ -280,7 +280,7 @@ jobs:
 
   package_vscode_extension:
     docker:
-      - image: circleci/node:12.12
+      - image: circleci/node:12.16
 
     steps:
       - attach_workspace:
@@ -317,7 +317,7 @@ jobs:
 
   build_and_upload_docs:
     docker:
-      - image: circleci/node:12.12
+      - image: circleci/node:12.16
 
     steps:
       - attach_workspace:

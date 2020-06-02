@@ -16,14 +16,14 @@
 /* eslint-disable @typescript-eslint/camelcase */
 import _ from 'lodash'
 import {
-  ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field,
+  ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField,
 } from 'jsforce'
 import {
   TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field as TypeField, TypeMap, ListType, isField, createRestriction, isPrimitiveValue,
+  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -82,9 +82,13 @@ const fullApiName = (elem: Element): string => {
     : elemMetadataType
 }
 
+export const relativeApiName = (name: string): string => (
+  _.last(name.split(API_NAME_SEPERATOR)) as string
+)
+
 export const apiName = (elem: Element, relative = false): string => {
   const name = fullApiName(elem)
-  return name && relative ? _.last(name.split(API_NAME_SEPERATOR)) as string : name
+  return name && relative ? relativeApiName(name) : name
 }
 
 export const formulaTypeName = (baseTypeName: FIELD_TYPE_NAMES): string =>
@@ -151,18 +155,10 @@ export class Types {
   private static filterItemType = new ObjectType({
     elemID: Types.filterItemElemID,
     fields: {
-      [FILTER_ITEM_FIELDS.FIELD]: new TypeField(
-        Types.filterItemElemID, FILTER_ITEM_FIELDS.FIELD, BuiltinTypes.STRING
-      ),
-      [FILTER_ITEM_FIELDS.OPERATION]: new TypeField(
-        Types.filterItemElemID, FILTER_ITEM_FIELDS.OPERATION, BuiltinTypes.STRING
-      ),
-      [FILTER_ITEM_FIELDS.VALUE_FIELD]: new TypeField(
-        Types.filterItemElemID, FILTER_ITEM_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
-      ),
-      [FILTER_ITEM_FIELDS.VALUE]: new TypeField(
-        Types.filterItemElemID, FILTER_ITEM_FIELDS.VALUE, BuiltinTypes.STRING
-      ),
+      [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.OPERATION]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
     },
     annotations: {
       [API_NAME]: 'FilterItem',
@@ -173,25 +169,12 @@ export class Types {
   private static lookupFilterType = new ObjectType({
     elemID: Types.lookupFilterElemID,
     fields: {
-      [LOOKUP_FILTER_FIELDS.ACTIVE]: new TypeField(
-        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.ACTIVE, BuiltinTypes.BOOLEAN
-      ),
-      [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: new TypeField(
-        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER, BuiltinTypes.STRING
-      ),
-      [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: new TypeField(
-        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.ERROR_MESSAGE, BuiltinTypes.STRING
-      ),
-      [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: new TypeField(
-        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.INFO_MESSAGE, BuiltinTypes.STRING
-      ),
-      [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: new TypeField(
-        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.IS_OPTIONAL, BuiltinTypes.BOOLEAN
-      ),
-      [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: new TypeField(
-        Types.lookupFilterElemID, LOOKUP_FILTER_FIELDS.FILTER_ITEMS,
-        new ListType(Types.filterItemType), {},
-      ),
+      [LOOKUP_FILTER_FIELDS.ACTIVE]: { type: BuiltinTypes.BOOLEAN },
+      [LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: { type: BuiltinTypes.STRING },
+      [LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: { type: BuiltinTypes.STRING },
+      [LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: { type: BuiltinTypes.STRING },
+      [LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: { type: BuiltinTypes.BOOLEAN },
+      [LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: { type: new ListType(Types.filterItemType) },
     },
     annotations: {
       [API_NAME]: 'LookupFilter',
@@ -204,13 +187,10 @@ export class Types {
     fields: {
       // todo: currently this field is populated with the referenced field's API name,
       //  should be modified to elemID reference once we'll use HIL
-      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: new TypeField(
-        Types.valueSettingsElemID, VALUE_SETTINGS_FIELDS.VALUE_NAME, BuiltinTypes.STRING
-      ),
-      [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: new TypeField(
-        Types.valueSettingsElemID, VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE,
-        new ListType(BuiltinTypes.STRING), {},
-      ),
+      [VALUE_SETTINGS_FIELDS.VALUE_NAME]: { type: BuiltinTypes.STRING },
+      [VALUE_SETTINGS_FIELDS.CONTROLLING_FIELD_VALUE]: {
+        type: new ListType(BuiltinTypes.STRING),
+      },
     },
     annotations: {
       [API_NAME]: 'ValueSettings',
@@ -221,26 +201,11 @@ export class Types {
   private static valueSetType = new ObjectType({
     elemID: Types.valueSetElemID,
     fields: {
-      [CUSTOM_VALUE.FULL_NAME]: new TypeField(
-        Types.valueSetElemID, CUSTOM_VALUE.FULL_NAME,
-        BuiltinTypes.STRING,
-      ),
-      [CUSTOM_VALUE.LABEL]: new TypeField(
-        Types.valueSetElemID, CUSTOM_VALUE.LABEL,
-        BuiltinTypes.STRING,
-      ),
-      [CUSTOM_VALUE.DEFAULT]: new TypeField(
-        Types.valueSetElemID, CUSTOM_VALUE.DEFAULT,
-        BuiltinTypes.BOOLEAN,
-      ),
-      [CUSTOM_VALUE.IS_ACTIVE]: new TypeField(
-        Types.valueSetElemID, CUSTOM_VALUE.IS_ACTIVE,
-        BuiltinTypes.BOOLEAN,
-      ),
-      [CUSTOM_VALUE.COLOR]: new TypeField(
-        Types.valueSetElemID, CUSTOM_VALUE.COLOR,
-        BuiltinTypes.STRING,
-      ),
+      [CUSTOM_VALUE.FULL_NAME]: { type: BuiltinTypes.STRING },
+      [CUSTOM_VALUE.LABEL]: { type: BuiltinTypes.STRING },
+      [CUSTOM_VALUE.DEFAULT]: { type: BuiltinTypes.BOOLEAN },
+      [CUSTOM_VALUE.IS_ACTIVE]: { type: BuiltinTypes.BOOLEAN },
+      [CUSTOM_VALUE.COLOR]: { type: BuiltinTypes.STRING },
     },
   })
 
@@ -251,13 +216,8 @@ export class Types {
   private static fieldDependencyType = new ObjectType({
     elemID: Types.fieldDependencyElemID,
     fields: {
-      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: new TypeField(
-        Types.fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD, BuiltinTypes.STRING
-      ),
-      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: new TypeField(
-        Types.fieldDependencyElemID, FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS,
-        new ListType(Types.valueSettingsType), {},
-      ),
+      [FIELD_DEPENDENCY_FIELDS.CONTROLLING_FIELD]: { type: BuiltinTypes.STRING },
+      [FIELD_DEPENDENCY_FIELDS.VALUE_SETTINGS]: { type: new ListType(Types.valueSettingsType) },
     },
   })
 
@@ -297,19 +257,10 @@ export class Types {
   private static rollupSummaryFilterItemsType = new ObjectType({
     elemID: Types.rollupSummaryFilterItemsElemID,
     fields: {
-      [FILTER_ITEM_FIELDS.FIELD]: new TypeField(
-        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.FIELD, BuiltinTypes.STRING
-      ),
-      [FILTER_ITEM_FIELDS.OPERATION]: new TypeField(
-        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.OPERATION,
-        Types.rollupSummaryFilterOperationTypeType
-      ),
-      [FILTER_ITEM_FIELDS.VALUE]: new TypeField(
-        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.VALUE, BuiltinTypes.STRING
-      ),
-      [FILTER_ITEM_FIELDS.VALUE_FIELD]: new TypeField(
-        Types.rollupSummaryFilterItemsElemID, FILTER_ITEM_FIELDS.VALUE_FIELD, BuiltinTypes.STRING
-      ),
+      [FILTER_ITEM_FIELDS.FIELD]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.OPERATION]: { type: Types.rollupSummaryFilterOperationTypeType },
+      [FILTER_ITEM_FIELDS.VALUE]: { type: BuiltinTypes.STRING },
+      [FILTER_ITEM_FIELDS.VALUE_FIELD]: { type: BuiltinTypes.STRING },
     },
   })
 
@@ -644,30 +595,14 @@ export class Types {
     Address: new ObjectType({
       elemID: addressElemID,
       fields: {
-        [ADDRESS_FIELDS.CITY]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.CITY, BuiltinTypes.STRING
-        ),
-        [ADDRESS_FIELDS.COUNTRY]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.COUNTRY, BuiltinTypes.STRING
-        ),
-        [ADDRESS_FIELDS.GEOCODE_ACCURACY]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.GEOCODE_ACCURACY, Types.primitiveDataTypes.Picklist
-        ),
-        [ADDRESS_FIELDS.LATITUDE]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.LATITUDE, BuiltinTypes.NUMBER
-        ),
-        [ADDRESS_FIELDS.LONGITUDE]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.LONGITUDE, BuiltinTypes.NUMBER
-        ),
-        [ADDRESS_FIELDS.POSTAL_CODE]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.POSTAL_CODE, BuiltinTypes.STRING
-        ),
-        [ADDRESS_FIELDS.STATE]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.STATE, BuiltinTypes.STRING
-        ),
-        [ADDRESS_FIELDS.STREET]: new TypeField(
-          addressElemID, ADDRESS_FIELDS.STREET, Types.primitiveDataTypes.TextArea
-        ),
+        [ADDRESS_FIELDS.CITY]: { type: BuiltinTypes.STRING },
+        [ADDRESS_FIELDS.COUNTRY]: { type: BuiltinTypes.STRING },
+        [ADDRESS_FIELDS.GEOCODE_ACCURACY]: { type: Types.primitiveDataTypes.Picklist },
+        [ADDRESS_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
+        [ADDRESS_FIELDS.LONGITUDE]: { type: BuiltinTypes.NUMBER },
+        [ADDRESS_FIELDS.POSTAL_CODE]: { type: BuiltinTypes.STRING },
+        [ADDRESS_FIELDS.STATE]: { type: BuiltinTypes.STRING },
+        [ADDRESS_FIELDS.STREET]: { type: Types.primitiveDataTypes.TextArea },
       },
       annotationTypes: {
         ...Types.commonAnnotationTypes,
@@ -676,15 +611,9 @@ export class Types {
     Name: new ObjectType({
       elemID: nameElemID,
       fields: {
-        [NAME_FIELDS.FIRST_NAME]: new TypeField(
-          nameElemID, NAME_FIELDS.FIRST_NAME, BuiltinTypes.STRING
-        ),
-        [NAME_FIELDS.LAST_NAME]: new TypeField(
-          nameElemID, NAME_FIELDS.LAST_NAME, BuiltinTypes.STRING
-        ),
-        [NAME_FIELDS.SALUTATION]: new TypeField(
-          nameElemID, NAME_FIELDS.SALUTATION, Types.primitiveDataTypes.Picklist
-        ),
+        [NAME_FIELDS.FIRST_NAME]: { type: BuiltinTypes.STRING },
+        [NAME_FIELDS.LAST_NAME]: { type: BuiltinTypes.STRING },
+        [NAME_FIELDS.SALUTATION]: { type: Types.primitiveDataTypes.Picklist },
       },
       annotationTypes: {
         ...Types.commonAnnotationTypes,
@@ -693,12 +622,8 @@ export class Types {
     Location: new ObjectType({
       elemID: geoLocationElemID,
       fields: {
-        [GEOLOCATION_FIELDS.LATITUDE]: new TypeField(
-          geoLocationElemID, GEOLOCATION_FIELDS.LATITUDE, BuiltinTypes.NUMBER
-        ),
-        [GEOLOCATION_FIELDS.LONGITUDE]: new TypeField(
-          geoLocationElemID, GEOLOCATION_FIELDS.LONGITUDE, BuiltinTypes.NUMBER
-        ),
+        [GEOLOCATION_FIELDS.LATITUDE]: { type: BuiltinTypes.NUMBER },
+        [GEOLOCATION_FIELDS.LONGITUDE]: { type: BuiltinTypes.NUMBER },
       },
       annotationTypes: {
         [FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: BuiltinTypes.BOOLEAN,
@@ -766,32 +691,17 @@ export class Types {
     })
   }
 
-  private static fieldMap = (
-    types: Record<string, PrimitiveType>, parentId: ElemID
-  ): Record<string, TypeField> => _.mapValues(
-    types, (type, name) => new TypeField(parentId, name, type)
-  )
-
-  static generateType = (
-    typeName: string, fieldTypes: Record<string, PrimitiveType>, directory: string[]
-  ): TypeElement => {
-    const typeId = new ElemID(SALESFORCE, typeName)
-    return new ObjectType({
-      elemID: typeId,
-      path: [...directory, typeName],
-      fields: Types.fieldMap(fieldTypes, typeId),
-    })
-  }
-
   static generateMissingTypes = (
     missingTypes: Record<string, Record<string, PrimitiveType>>, isSubType = false
-  ): TypeElement[] => _.toArray(
-    _.mapValues(missingTypes, (typeRecords, name) =>
-      Types.generateType(
-        name, typeRecords,
-        isSubType ? [SALESFORCE, TYPES_PATH, SUBTYPES_PATH] : [SALESFORCE, TYPES_PATH]
-      ))
-  )
+  ): ObjectType[] => Object.entries(missingTypes)
+    .map(([typeName, fieldTypes]) => new ObjectType({
+      elemID: new ElemID(SALESFORCE, typeName),
+      fields: Object.assign(
+        {},
+        ...Object.entries(fieldTypes).map(([name, type]) => ({ [name]: { type } }))
+      ),
+      path: [SALESFORCE, TYPES_PATH, ...isSubType ? [SUBTYPES_PATH] : [], typeName],
+    }))
 
   static getAllMissingTypes(): TypeElement[] {
     return ([] as TypeElement[]).concat(
@@ -819,7 +729,7 @@ export class Types {
 }
 
 export const toCustomField = (
-  field: TypeField, fullname = false
+  field: Field, fullname = false
 ): CustomField => {
   const fieldDependency = field.annotations[FIELD_ANNOTATIONS.FIELD_DEPENDENCY]
   const newField = new CustomField(
@@ -909,8 +819,8 @@ export const toCustomObject = (
   return newCustomObject
 }
 
-export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField,
-  knownTypes: Map<string, TypeElement>): TypeField => {
+export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeField,
+  knownTypes: Map<string, TypeElement>): Field => {
   const naclFieldType = (field.name === INSTANCE_FULL_NAME_FIELD)
     ? BuiltinTypes.SERVICE_ID
     : knownTypes.get(field.soapType) || Types.get(field.soapType, false)
@@ -937,7 +847,7 @@ export const getValueTypeFieldElement = (parentID: ElemID, field: ValueTypeField
       annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
     }
   }
-  return new TypeField(parentID, field.name, naclFieldType, annotations)
+  return new Field(parent, field.name, naclFieldType, annotations)
 }
 
 type ConvertXsdTypeFunc = (v: string) => PrimitiveValue
@@ -990,7 +900,7 @@ const valueFromXsdType = (val: DefaultValueWithType): PrimitiveValue => {
   return convertFunc(val._)
 }
 
-const getDefaultValue = (field: Field): PrimitiveValue | undefined => {
+const getDefaultValue = (field: SalesforceField): PrimitiveValue | undefined => {
   if (field.defaultValue === null || field.defaultValue === undefined) {
     return undefined
   }
@@ -1001,8 +911,8 @@ const getDefaultValue = (field: Field): PrimitiveValue | undefined => {
 
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the Nacl file
-export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
-  parentServiceIds: ServiceIds): TypeField => {
+export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceField,
+  parentServiceIds: ServiceIds): Field => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
@@ -1122,7 +1032,7 @@ export const getSObjectFieldElement = (parentElemID: ElemID, field: Field,
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name
-  return new TypeField(parentElemID, fieldName, naclFieldType, annotations)
+  return new Field(parent, fieldName, naclFieldType, annotations)
 }
 
 export const fromMetadataInfo = (info: MetadataInfo): Values => info
@@ -1263,7 +1173,7 @@ export const createMetadataTypeElements = async (
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 
   const fieldElements = enrichedFields.map(field =>
-    getValueTypeFieldElement(element.elemID, field, knownTypes))
+    getValueTypeFieldElement(element, field, knownTypes))
 
   // Set fields on elements
   fieldElements.forEach(field => {
@@ -1272,7 +1182,7 @@ export const createMetadataTypeElements = async (
 
   return _.flatten([element, ...embeddedTypes])
 }
-const lookUpRelative = (field?: TypeField, path?: ElemID): boolean => {
+const lookUpRelative = (field?: Field, path?: ElemID): boolean => {
   const lookUpRelativeTypes = new Map<string, string>(
     [[LAYOUT_TYPE_ID_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE]]
   )
@@ -1280,7 +1190,7 @@ const lookUpRelative = (field?: TypeField, path?: ElemID): boolean => {
   && lookUpRelativeTypes.get(path.typeName) === field.elemID.typeName
 }
 
-export const getLookUpName = (refValue: Value, field?: TypeField, path?: ElemID): Value => {
+export const getLookUpName = (refValue: Value, field?: Field, path?: ElemID): Value => {
   if (isElement(refValue)) {
     const isRelative = lookUpRelative(field, path)
     return apiName(refValue, isRelative)

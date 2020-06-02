@@ -21,9 +21,15 @@ import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, { COMMANDS, CustomizationInfo } from '../../src/client/client'
 
 
+const MOCK_TEMPLATE_CONTENT = 'Template Inner Content'
 jest.mock('@salto-io/file', () => ({
-  readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'c.html']),
-  readFile: jest.fn().mockImplementation(filePath => `<elementName filePath="${filePath}">`),
+  readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
+  readFile: jest.fn().mockImplementation(filePath => {
+    if (filePath.includes('.template.')) {
+      return MOCK_TEMPLATE_CONTENT
+    }
+    return `<elementName filename="${filePath.split('/').pop()}">`
+  }),
   writeFile: jest.fn(),
 }))
 const readFileMock = readFile as unknown as jest.Mock
@@ -177,10 +183,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      const xmlElements = await client.listCustomObjects()
-      expect(readDirMock).toHaveBeenCalledTimes(1)
-      expect(readFileMock).toHaveBeenCalledTimes(2)
-      expect(xmlElements).toHaveLength(2)
+      await client.listCustomObjects()
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
@@ -189,10 +192,28 @@ describe('netsuite client', () => {
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      const xmlElements = await client.listCustomObjects()
+      const customizationInfos = await client.listCustomObjects()
       expect(readDirMock).toHaveBeenCalledTimes(1)
-      expect(readFileMock).toHaveBeenCalledTimes(2)
-      expect(xmlElements).toHaveLength(2)
+      expect(readFileMock).toHaveBeenCalledTimes(3)
+      expect(customizationInfos).toHaveLength(2)
+      expect(customizationInfos).toEqual([{
+        typeName: 'elementName',
+        values: {
+          '@_filename': 'a.xml',
+        },
+        fileContent: {
+          extension: 'html',
+          content: MOCK_TEMPLATE_CONTENT,
+        },
+      },
+      {
+        typeName: 'elementName',
+        values: {
+          '@_filename': 'b.xml',
+        },
+        fileContent: undefined,
+      }])
+
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
@@ -222,15 +243,68 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, deployProjectCommandMatcher)
     })
 
-    it('should succeed', async () => {
+    it('should succeed for customizationInfo without additionalFile', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      await client.deployCustomObject('elementName', {} as CustomizationInfo)
+      const customizationInfo = {
+        typeName: 'typeName',
+        values: {
+          key: 'val',
+        },
+      }
+      const filename = 'filename'
+      await client.deployCustomObject(filename, customizationInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(1)
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${filename}.xml`),
+        '<typeName><key>val</key></typeName>')
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+    })
+
+    it('should succeed for customizationInfo with additionalFile', async () => {
+      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+      const filename = 'filename'
+      const customizationInfo = {
+        typeName: 'typeName',
+        values: {
+          key: 'val',
+        },
+        fileContent: {
+          extension: 'html',
+          content: MOCK_TEMPLATE_CONTENT,
+        },
+      }
+      await client.deployCustomObject(filename, customizationInfo)
+      expect(writeFileMock).toHaveBeenCalledTimes(2)
+      expect(writeFileMock)
+        .toHaveBeenCalledWith(expect.stringContaining(`${filename}.xml`), '<typeName><key>val</key></typeName>')
+      expect(writeFileMock)
+        .toHaveBeenCalledWith(expect.stringContaining(`${filename}.template.html`), MOCK_TEMPLATE_CONTENT)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+      expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+    })
+
+    it('should wrap the thrown string with Error object', async () => {
+      const errorMessage = 'error message'
+      mockExecuteAction.mockImplementation(() => {
+        throw errorMessage
+      })
+      await expect(client.deployCustomObject('elementName', {} as CustomizationInfo)).rejects
+        .toThrow(new Error(errorMessage))
+    })
+
+    it('should throw Error object', async () => {
+      const errorMessage = 'error message'
+      mockExecuteAction.mockImplementation(() => {
+        throw new Error(errorMessage)
+      })
+      await expect(client.deployCustomObject('elementName', {} as CustomizationInfo)).rejects
+        .toThrow(new Error(errorMessage))
     })
   })
 

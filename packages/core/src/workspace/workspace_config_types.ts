@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, CORE_ANNOTATIONS, ObjectType, Field, BuiltinTypes, ListType, InstanceElement,
+  ElemID, CORE_ANNOTATIONS, ObjectType, BuiltinTypes, ListType, InstanceElement,
 } from '@salto-io/adapter-api'
 
 export const WORKSPACE_CONFIG_NAME = 'workspace'
@@ -25,8 +25,8 @@ const envConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME, 'env')
 export const envConfigType = new ObjectType({
   elemID: envConfigElemID,
   fields: {
-    name: new Field(envConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
-    services: new Field(envConfigElemID, 'services', new ListType(BuiltinTypes.STRING)),
+    name: { type: BuiltinTypes.STRING, annotations: requireAnno },
+    services: { type: new ListType(BuiltinTypes.STRING) },
   },
 })
 
@@ -34,11 +34,11 @@ const workspaceConfigElemID = new ElemID(WORKSPACE_CONFIG_NAME)
 export const workspaceConfigType = new ObjectType({
   elemID: workspaceConfigElemID,
   fields: {
-    uid: new Field(workspaceConfigElemID, 'uid', BuiltinTypes.STRING, requireAnno),
-    name: new Field(workspaceConfigElemID, 'name', BuiltinTypes.STRING, requireAnno),
+    uid: { type: BuiltinTypes.STRING, annotations: requireAnno },
+    name: { type: BuiltinTypes.STRING, annotations: requireAnno },
     // Once we have map type we can have here map env name -> env config
-    envs: new Field(workspaceConfigElemID, 'envs', new ListType(envConfigType)),
-    staleStateThresholdMinutes: new Field(workspaceConfigElemID, 'staleStateThresholdMinutes', BuiltinTypes.NUMBER),
+    envs: { type: new ListType(envConfigType) },
+    staleStateThresholdMinutes: { type: BuiltinTypes.NUMBER },
   },
   isSettings: true,
 })
@@ -47,7 +47,7 @@ const userConfigElemID = new ElemID(USER_CONFIG_NAME)
 export const workspaceUserConfigType = new ObjectType({
   elemID: userConfigElemID,
   fields: {
-    currentEnv: new Field(userConfigElemID, 'currentEnv', BuiltinTypes.STRING, requireAnno),
+    currentEnv: { type: BuiltinTypes.STRING, annotations: requireAnno },
   },
   isSettings: true,
 })

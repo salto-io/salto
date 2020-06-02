@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, Element,
+  ElemID, ObjectType, BuiltinTypes, InstanceElement, Element,
   ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
   isVariableExpression, isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
@@ -42,14 +42,14 @@ describe('Test Salto Expressions', () => {
     const base = new ObjectType({
       elemID: baseElemID,
       fields: {
-        simple: new Field(baseElemID, 'simple', BuiltinTypes.STRING, { anno: 'field_anno' }),
-        obj: new Field(baseElemID, 'simple', new ObjectType({
-          elemID: objElemID,
-          fields: {
-            value: new Field(objElemID, 'objField', BuiltinTypes.STRING),
-          },
-        })),
-        arr: new Field(baseElemID, 'arr', new ListType(BuiltinTypes.STRING), {}),
+        simple: { type: BuiltinTypes.STRING, annotations: { anno: 'field_anno' } },
+        obj: {
+          type: new ObjectType({
+            elemID: objElemID,
+            fields: { value: { type: BuiltinTypes.STRING } },
+          }),
+        },
+        arr: { type: new ListType(BuiltinTypes.STRING) },
       },
       annotations: {
         anno: 'base_anno',
@@ -113,9 +113,10 @@ describe('Test Salto Expressions', () => {
     const objectRef = new ObjectType({
       elemID: objectRefID,
       fields: {
-        ref: new Field(baseElemID, 'simple', BuiltinTypes.STRING, {
-          anno: refTo(base, 'attr', 'anno'),
-        }),
+        ref: {
+          type: BuiltinTypes.STRING,
+          annotations: { anno: refTo(base, 'attr', 'anno') },
+        },
       },
       annotations: {
         anno: refTo(base, 'attr', 'anno'),
@@ -127,7 +128,7 @@ describe('Test Salto Expressions', () => {
       several: new TestFuncImpl('several', [false, 123]),
       list: new TestFuncImpl('list', [['aaa', true, 123]]),
       mixed: new TestFuncImpl('mixed', ['aaa', [1, 2, 'aa']]),
-      file: new StaticFile('some/path.ext', 'hash'),
+      file: new StaticFile({ filepath: 'some/path.ext', hash: 'hash' }),
     })
 
     const elements = [

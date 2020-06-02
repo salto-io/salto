@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, ObjectType, BuiltinTypes, Field, CORE_ANNOTATIONS, ListType, createRestriction,
+  ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType, createRestriction,
   StaticFile,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
@@ -46,55 +46,49 @@ const configID = new ElemID('salesforce')
 export const credentialsType = new ObjectType({
   elemID: configID,
   fields: {
-    username: new Field(configID, 'username', BuiltinTypes.STRING),
-    password: new Field(configID, 'password', BuiltinTypes.STRING),
-    token: new Field(configID, 'token', BuiltinTypes.STRING,
-      { message: 'Token (empty if your org uses IP whitelisting)' }),
-    sandbox: new Field(configID, 'sandbox', BuiltinTypes.BOOLEAN),
+    username: { type: BuiltinTypes.STRING },
+    password: { type: BuiltinTypes.STRING },
+    token: {
+      type: BuiltinTypes.STRING,
+      annotations: { message: 'Token (empty if your org uses IP whitelisting)' },
+    },
+    sandbox: { type: BuiltinTypes.BOOLEAN },
   },
 })
 
 export const configType = new ObjectType({
   elemID: configID,
   fields: {
-    [METADATA_TYPES_SKIPPED_LIST]: new Field(
-      configID,
-      METADATA_TYPES_SKIPPED_LIST,
-      new ListType(BuiltinTypes.STRING),
-      {
+    [METADATA_TYPES_SKIPPED_LIST]: {
+      type: new ListType(BuiltinTypes.STRING),
+      annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           'Report', 'ReportType', 'ReportFolder', 'Dashboard', 'DashboardFolder',
         ],
       },
-    ),
-    [INSTANCES_REGEX_SKIPPED_LIST]: new Field(
-      configID,
-      INSTANCES_REGEX_SKIPPED_LIST,
-      new ListType(BuiltinTypes.STRING),
-      {
+    },
+    [INSTANCES_REGEX_SKIPPED_LIST]: {
+      type: new ListType(BuiltinTypes.STRING),
+      annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           '^EmailTemplate.MarketoEmailTemplates',
         ],
       },
-    ),
-    [MAX_CONCURRENT_RETRIEVE_REQUESTS]: new Field(
-      configID,
-      MAX_CONCURRENT_RETRIEVE_REQUESTS,
-      BuiltinTypes.NUMBER,
-      {
+    },
+    [MAX_CONCURRENT_RETRIEVE_REQUESTS]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1, max: 25 }),
       },
-    ),
-    [MAX_ITEMS_IN_RETRIEVE_REQUEST]: new Field(
-      configID,
-      MAX_ITEMS_IN_RETRIEVE_REQUEST,
-      BuiltinTypes.NUMBER,
-      {
+    },
+    [MAX_ITEMS_IN_RETRIEVE_REQUEST]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1000, max: 10000 }),
       },
-    ),
+    },
   },
 })
 

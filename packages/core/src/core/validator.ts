@@ -19,7 +19,7 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression, StaticFile, IllegalReference,
+  isReferenceExpression, StaticFile, isPrimitiveValue, IllegalReference
 } from '@salto-io/adapter-api'
 import { InvalidStaticFile } from '../workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
@@ -68,20 +68,26 @@ export class InvalidValueValidationError extends ValidationError {
   readonly fieldName: string
   readonly expectedValue: unknown
 
-  static formatExpectedValue(expectedValue: unknown): string {
-    return _.isArray(expectedValue)
-      ? `one of: ${(expectedValue as []).map(v => `"${v}"`).join(', ')}`
-      : `"${expectedValue}"`
-  }
-
   constructor(
     { elemID, value, fieldName, expectedValue }:
       { elemID: ElemID; value: Value; fieldName: string; expectedValue: unknown }
   ) {
+    const actualValueStr = JSON.stringify(
+      value,
+      (_key: string, val: Value): unknown => (
+        isPrimitiveValue(val) || _.isPlainObject(val) || _.isArray(val)
+          ? val
+          : val.constructor.name
+      ),
+    )
+    const expectedValueStr = _.isArray(expectedValue)
+      ? `one of: ${(expectedValue as []).map(v => `"${v}"`).join(', ')}`
+      : `"${expectedValue}"`
+
     super({
       elemID,
-      error: `Value ${JSON.stringify(value)} is not valid for field ${fieldName}`
-        + ` expected ${InvalidValueValidationError.formatExpectedValue(expectedValue)}`,
+      error: `Value ${actualValueStr} is not valid for field ${fieldName}`
+        + ` expected ${expectedValueStr}`,
       severity: 'Warning',
     })
     this.value = value

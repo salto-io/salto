@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -31,36 +31,28 @@ const centertab_portlets_portlet = new ObjectType({
   annotations: {
   },
   fields: {
-    scriptid: new Field(
-      centertab_portlets_portletElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long. */
-    portlet: new Field(
-      centertab_portlets_portletElemID,
-      'portlet',
-      enums.generic_portlet,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long. */
+    portlet: {
+      type: enums.generic_portlet,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_portlet. */
-    portletcolumn: new Field(
-      centertab_portlets_portletElemID,
-      'portletcolumn',
-      enums.generic_portletcolumn,
-      {
+    }, /* Original description: For information about possible values, see generic_portlet. */
+    portletcolumn: {
+      type: enums.generic_portletcolumn,
+      annotations: {
       },
-    ), /* Original description: For information about possible values, see generic_portletcolumn. */
-    isportletshown: new Field(
-      centertab_portlets_portletElemID,
-      'isportletshown',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: For information about possible values, see generic_portletcolumn. */
+    isportletshown: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is T. */
+    }, /* Original description: The default value is T. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
 })
@@ -74,13 +66,11 @@ const centertab_portlets = new ObjectType({
   annotations: {
   },
   fields: {
-    portlet: new Field(
-      centertab_portletsElemID,
-      'portlet',
-      new ListType(centertab_portlets_portlet),
-      {
+    portlet: {
+      type: new ListType(centertab_portlets_portlet),
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
 })
@@ -94,80 +84,60 @@ export const centertab = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custcentertab_',
   },
   fields: {
-    scriptid: new Field(
-      centertabElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentertab’. */
-    label: new Field(
-      centertabElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcentertab’. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
       },
-    ),
-    center: new Field(
-      centertabElemID,
-      'center',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    },
+    center: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */
-    allvendors: new Field(
-      centertabElemID,
-      'allvendors',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: This field accepts references to the center custom type.   For information about other possible values, see generic_centertype. */
+    allvendors: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    allroles: new Field(
-      centertabElemID,
-      'allroles',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    allroles: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    allpartners: new Field(
-      centertabElemID,
-      'allpartners',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    allpartners: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
-    allcustomers: new Field(
-      centertabElemID,
-      'allcustomers',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F.   If this field appears in the project, you must reference the CRM feature in the manifest file to avoid project warnings. In the manifest file, you can specify whether this feature is required in your account. CRM must be enabled for this field to appear in your account. */
+    allcustomers: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    allemployees: new Field(
-      centertabElemID,
-      'allemployees',
-      BuiltinTypes.BOOLEAN,
-      {
+    }, /* Original description: The default value is F. */
+    allemployees: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
       },
-    ), /* Original description: The default value is F. */
-    audslctrole: new Field(
-      centertabElemID,
-      'audslctrole',
-      BuiltinTypes.STRING /* Original type was multi-select list */,
-      {
+    }, /* Original description: The default value is F. */
+    audslctrole: {
+      type: BuiltinTypes.STRING /* Original type was multi-select list */,
+      annotations: {
       },
-    ), /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
-    portlets: new Field(
-      centertabElemID,
-      'portlets',
-      centertab_portlets,
-      {
+    }, /* Original description: You can specify multiple values by separating each value with a pipe (|) symbol.   This field accepts references to the role custom type.   For information about other possible values, see generic_role. */
+    portlets: {
+      type: centertab_portlets,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, centertabElemID.name],
 })

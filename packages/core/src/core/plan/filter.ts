@@ -21,6 +21,7 @@ import {
   ChangeError, Change, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement,
   ElemID, ObjectType, ChangeDataType, isRemovalDiff, Element,
 } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import { buildGroupedGraphFromDiffGraph, getOrCreateGroupLevelChange } from './group'
 
 type FilterResult = {
@@ -75,7 +76,7 @@ export const filterInvalidChanges = async (
     const afterFieldNames = afterObj ? Object.keys(afterObj.fields) : []
     const beforeFieldNames = beforeObj ? Object.keys(beforeObj.fields) : []
     const allFieldNames = [...new Set([...beforeFieldNames, ...afterFieldNames])]
-    const validFields = _(allFieldNames)
+    const validFields = allFieldNames
       .map(name => {
         const beforeField = beforeObj?.fields[name]
         const afterField = afterObj?.fields[name]
@@ -83,15 +84,13 @@ export const filterInvalidChanges = async (
         const validField = elemIdFullNamesToOmit.has(elemID.getFullName())
           ? beforeField
           : afterField
-        return validField === undefined ? undefined : [name, validField.clone()]
+        return validField === undefined ? undefined : validField.clone()
       })
-      .filter(field => field !== undefined)
-      .fromPairs()
-      .value()
+      .filter(values.isDefined)
 
     return new ObjectType({
       elemID: afterObj.elemID,
-      fields: validFields,
+      fields: _.keyBy(validFields, field => field.name),
       annotationTypes: _.clone(afterObj.annotationTypes),
       annotations: _.cloneDeep(afterObj.annotations),
     })

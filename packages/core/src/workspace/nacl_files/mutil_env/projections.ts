@@ -69,7 +69,7 @@ const projectField = (src: Field, target: Field): Field | undefined => {
   const annotations = projectValue(src.annotations, target.annotations)
   return _.isEmpty(annotations)
     ? target
-    : new Field(src.parentID, src.name, src.type, annotations)
+    : new Field(target.parent, src.name, src.type, annotations)
 }
 
 const projectInstance = (

@@ -34,8 +34,14 @@ const defaultPath = 'path'
 export const defaultBuffer = Buffer.from(defaultContent)
 export const hashedContent = calculateStaticFileHash(defaultBuffer)
 
-export const exampleStaticFileWithHash = new StaticFile(defaultPath, hashedContent)
-export const exampleStaticFileWithContent = new StaticFile(defaultPath, defaultBuffer)
+export const exampleStaticFileWithHash = new StaticFile({
+  filepath: defaultPath,
+  hash: hashedContent,
+})
+export const exampleStaticFileWithContent = new StaticFile({
+  filepath: defaultPath,
+  content: defaultBuffer,
+})
 
 
 describe('Static Files Common', () => {

@@ -27,6 +27,9 @@ IS_LIST = 'is_list'
 TYPE = 'type'
 DESCRIPTION = 'description'
 
+INNER_TYPE_NAME_TO_DEF = 'inner_type_name_to_def'
+TYPE_DEF = 'type_def'
+
 LICENSE_HEADER = '''/*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -51,7 +54,7 @@ field_types_import = '''import { fieldTypes } from '../field_types'
 '''
 
 import_statements_for_type_def_template = '''import {{
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,{list_type_import}
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,{list_type_import}
 }} from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 {enums_import}{field_types_import}
@@ -122,13 +125,11 @@ type_template = '''
 
 type_path_template = '[constants.NETSUITE, constants.TYPES_PATH, {type_name}ElemID.name]'
 
-field_template = '''    {field_name}: new Field(
-      {type_name}ElemID,
-      '{field_name}',
-      {field_type},
-      {{{annotations}
+field_template = '''    {field_name}: {{
+      type: {field_type},
+      annotations: {{{annotations}
       }},
-    ),'''
+    }},'''
 
 field_annotation_template = '''
         {annotation_name}: {annotation_value},'''
@@ -269,7 +270,9 @@ def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_ty
             # we don't have anything interesting to extract here
             continue
         if fields_section_headline == 'Additional Files':
-            annotations['[constants.ADDITIONAL_FILE_SUFFIX]'] = fields_table.find_element_by_xpath('.//ul/li/p/strong').text[len('Object-Script-ID'):]
+            additional_file_suffix = fields_table.find_element_by_xpath('.//ul/li/p/strong').text[len('Object-Script-ID.template.'):]
+            field_definitions.append({ NAME: 'content', TYPE: 'fieldTypes.fileContent',
+                ANNOTATIONS: {'[constants.ADDITIONAL_FILE_SUFFIX]': "'{0}'".format(additional_file_suffix)}, IS_LIST: False })
             continue
         if fields_section_headline == 'Structured Fields':
             inner_structured_field_name_to_link = { inner_structured_field.text : inner_structured_field.get_attribute('href')
@@ -295,7 +298,7 @@ def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_ty
         for field_row in fields_table.find_elements_by_xpath('.//tbody/tr'):
             cells = field_row.find_elements_by_xpath('.//td')
             if is_attribute and cells[0].text == SCRIPT_ID_FIELD_NAME and not is_inner_type:
-                # extract script_id for top level types from the description since the script_ids prefixes aren't accurate in https://5635669.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1537555588.html
+                # extract script_id for top level types from the description since the script_ids prefixes aren't accurate in https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1537555588.html
                 script_id_prefix_from_description = extract_script_id_prefix_from_description(cells)
                 annotations['[constants.SCRIPT_ID_PREFIX]'] = script_id_prefix_from_description if script_id_prefix_from_description is not None else script_id_prefix
 
@@ -324,7 +327,7 @@ def parse_types_definitions(account_id, type_name_to_script_id_prefix):
             script_id_prefix = get_script_id_prefix(type_name)
             inner_type_name_to_def = {}
             type_def = parse_type(type_name, script_id_prefix, inner_type_name_to_def)
-            type_name_to_types_defs[type_name] = { 'type_def': type_def, 'inner_type_name_to_def': inner_type_name_to_def }
+            type_name_to_types_defs[type_name] = { TYPE_DEF: type_def, INNER_TYPE_NAME_TO_DEF: inner_type_name_to_def }
         except Exception as e:
             logging.error('Failed to parse type: ' + type_name + '. Error: ', sys.exc_info())
     return type_name_to_types_defs
@@ -345,7 +348,7 @@ def login(username, password, secret_key_2fa):
     webpage.find_element_by_xpath('/html/body/form/table/tbody/tr[2]/td/table/tbody/tr[2]/td[2]/input').send_keys(password)
     webpage.find_element_by_xpath('//*[@id="rememberme"]').click()
     webpage.find_element_by_xpath('//*[@id="Submit"]').click()
-    time.sleep(1)
+    time.sleep(2)
 
     # generate 2FA token and submit
     token2fa = pyotp.TOTP(secret_key_2fa).now()
@@ -430,10 +433,45 @@ def format_inner_types_defs(top_level_type_name, inner_type_name_to_def):
     return ''.join(inner_types_defs)
 
 
+# in addressForm, entryForm and transactionForm the order of the fields matters in the sent XML to SDF
+# and thus we order it on the type definition so the adapter will be able to sort the values based on that order
+def order_types_fields(type_name_to_types_defs):
+    type_name_to_fields_order = {
+        'addressForm': ['scriptid', 'standard', 'name', 'mainFields', 'addressTemplate', 'countries'],
+        'addressForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
+        'entryForm': ['scriptid', 'standard', 'name', 'recordType', 'inactive', 'preferred',
+            'storedWithRecord', 'mainFields', 'tabs', 'quickViewFields', 'actionbar', 'useForPopup',
+             'editingInList'], # customCode & buttons fields are intentionally omitted as it seems that they do not exist and if they are sent to SDF they cause errors no matter in which order
+        'entryForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
+        'entryForm_tabs_tab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
+        'entryForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
+        'transactionForm': ['scriptid', 'standard', 'name', 'recordType', 'inactive', 'preferred',
+            'storedWithRecord', 'mainFields', 'tabs', 'quickViewFields', 'actionbar', 'disclaimer',
+            'address', 'allowAddMultiple', 'printingType'], # customCode & buttons fields are intentionally omitted as it seems that they do not exist and if they are sent to SDF they cause errors no matter in which order
+        'transactionForm_mainFields': ['fieldGroup', 'defaultFieldGroup'],
+        'transactionForm_tabs_tab_fieldGroups': ['fieldGroup', 'defaultFieldGroup'],
+        'transactionForm_tabs_tab_subItems_subTab_fieldGroups': ['fieldGroup', 'defaultFieldGroup']
+    }
+
+    for type_name, fields_order in type_name_to_fields_order.items():
+        top_level_type_name = type_name.split('_')[0]
+        type_defs = type_name_to_types_defs[top_level_type_name]
+        type_def = type_defs[INNER_TYPE_NAME_TO_DEF][type_name] if top_level_type_name != type_name else type_defs[TYPE_DEF]
+        type_def_fields = type_def[FIELDS]
+        if len(fields_order) != len(type_def_fields):
+            logging.warning('Mismatch in the order of {0} type fields! len(fields_order)={1} len(type_def_fields)={2}'.format(type_name, len(fields_order), len(type_def_fields)))
+        field_name_to_def = dict((field[NAME], field) for field in type_def_fields)
+        ordered_fields = []
+        for field_name in fields_order:
+            ordered_fields.append(field_name_to_def[field_name])
+        type_def[FIELDS] = ordered_fields
+
+
 def generate_file_per_type(type_name_to_types_defs):
+    order_types_fields(type_name_to_types_defs)
     for type_name, type_defs in type_name_to_types_defs.items():
-        inner_type_name_to_def = type_defs['inner_type_name_to_def']
-        type_def = type_defs['type_def']
+        inner_type_name_to_def = type_defs[INNER_TYPE_NAME_TO_DEF]
+        type_def = type_defs[TYPE_DEF]
         elem_id_def = type_elem_id_template.format(type_name = type_name)
         formatted_type_def = format_type_def(type_name, type_def)
         file_data = type_inner_types_array_template.format(type_name = type_name) + elem_id_def + format_inner_types_defs(type_name, inner_type_name_to_def) + formatted_type_def
@@ -621,5 +659,9 @@ main()
 # script_id is not always padded with '_'
 # we mark SCRIPT_ID_FIELD_NAME as not required ONLY for top level types so the adapter will add defaults in case it's missing
 # we set the type of SCRIPT_ID_FIELD_NAME as BuiltinTypes.SERVICE_ID
+# emailtemplate & advancedpdftemplate types have an additional file containing the template data. We add the file's extension as an annotation to the type and added a 'content' field to the type.
 # there are fields that suppose to have a certain type but in fact they have another type, handled using field_name_to_type_name
 # every top level type has its own IS_NAME field, we set it manually using top_level_type_name_to_name_field
+# in addressForm, entryForm and transactionForm the order of the fields matters in the sent XML to SDF (https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html)
+#    we order it manually in order_types_fields.
+# in addressForm and transactionForm, customCode & buttons fields are intentionally omitted as it seems that they do not exist and if they are sent to SDF they cause errors no matter in which order

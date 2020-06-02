@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  AdapterCreator, BuiltinTypes, ElemID, Field, InstanceElement, ObjectType,
+  AdapterCreator, BuiltinTypes, ElemID, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import HubspotClient, { Credentials } from './client/client'
 import HubspotAdapter from './adapter'
@@ -24,9 +24,7 @@ const configID = new ElemID('hubspot')
 
 const credentialsType = new ObjectType({
   elemID: configID,
-  fields: {
-    apiKey: new Field(configID, 'apiKey', BuiltinTypes.STRING),
-  },
+  fields: { apiKey: { type: BuiltinTypes.STRING } },
   annotationTypes: {},
   annotations: {},
 })

@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { fieldTypes } from '../field_types'
@@ -31,14 +31,12 @@ const dataset_dependencies = new ObjectType({
   annotations: {
   },
   fields: {
-    dependency: new Field(
-      dataset_dependenciesElemID,
-      'dependency',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    dependency: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customtransactiontype   customsegment   customrecordcustomfield   customrecordtype   crmcustomfield */
+    }, /* Original description: This field accepts references to the following custom types:   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customtransactiontype   customsegment   customrecordcustomfield   customrecordtype   crmcustomfield */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, datasetElemID.name],
 })
@@ -52,39 +50,31 @@ export const dataset = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custdataset_',
   },
   fields: {
-    scriptid: new Field(
-      datasetElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custdataset’. */
-    name: new Field(
-      datasetElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custdataset’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 50,
       },
-    ), /* Original description: This field value can be up to 50 characters long. */
-    definition: new Field(
-      datasetElemID,
-      'definition',
-      fieldTypes.cdata,
-      {
+    }, /* Original description: This field value can be up to 50 characters long. */
+    definition: {
+      type: fieldTypes.cdata,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    dependencies: new Field(
-      datasetElemID,
-      'dependencies',
-      dataset_dependencies,
-      {
+    },
+    dependencies: {
+      type: dataset_dependencies,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, datasetElemID.name],
 })

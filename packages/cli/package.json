@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/cli",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "license": "Apache-2.0",
   "description": "cli on top of salto core",
   "repository": {
@@ -35,15 +35,15 @@
     "package": "node ./package_native.js"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.15",
-    "@salto-io/adapter-utils": "0.1.15",
-    "@salto-io/core": "0.1.15",
-    "@salto-io/dag": "0.1.15",
-    "@salto-io/e2e-credentials-store": "0.1.15",
-    "@salto-io/file": "0.1.15",
-    "@salto-io/logging": "0.1.15",
-    "@salto-io/lowerdash": "0.1.15",
-    "@salto-io/salesforce-adapter": "0.1.15",
+    "@salto-io/adapter-api": "0.1.16",
+    "@salto-io/adapter-utils": "0.1.16",
+    "@salto-io/core": "0.1.16",
+    "@salto-io/dag": "0.1.16",
+    "@salto-io/e2e-credentials-store": "0.1.16",
+    "@salto-io/file": "0.1.16",
+    "@salto-io/logging": "0.1.16",
+    "@salto-io/lowerdash": "0.1.16",
+    "@salto-io/salesforce-adapter": "0.1.16",
     "chalk": "^2.4.2",
     "figlet": "^1.2.4",
     "glob": "^7.1.6",
@@ -76,13 +76,13 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^24.0.0",
+    "jest": "^24.9.0",
     "jest-junit": "^6.4.0",
     "memory-streams": "^0.1.3",
     "nexe": "4.0.0-beta.4",
     "source-map-loader": "^0.2.4",
     "tmp-promise": "^2.0.2",
-    "typescript": "3.8.3",
+    "typescript": "3.9.3",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.10"
   }

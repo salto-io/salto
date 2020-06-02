@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS,
+  ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction,
 } from '@salto-io/adapter-api'
 import {
@@ -103,10 +103,10 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: mockElemID,
           fields: {
-            username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
-            password: new Field(mockElemID, 'password', BuiltinTypes.STRING),
-            token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
-            sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
+            username: { type: BuiltinTypes.STRING },
+            password: { type: BuiltinTypes.STRING },
+            token: { type: BuiltinTypes.STRING },
+            sandbox: { type: BuiltinTypes.BOOLEAN },
           },
           annotationTypes: {},
           annotations: { [constants.METADATA_TYPE]: 'Flow' },
@@ -181,24 +181,20 @@ describe('SalesforceAdapter CRUD', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         fields: {
-          description: new Field(
-            mockElemID,
-            'description',
-            stringType,
-            {
+          description: {
+            type: stringType,
+            annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               [constants.LABEL]: 'test label',
             },
-          ),
-          formula: new Field(
-            mockElemID,
-            'formula',
-            stringType,
-            {
+          },
+          formula: {
+            type: stringType,
+            annotations: {
               [constants.LABEL]: 'formula field',
               [constants.FORMULA]: 'my formula',
             },
-          ),
+          },
         },
       })
 
@@ -240,11 +236,9 @@ describe('SalesforceAdapter CRUD', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         fields: {
-          state: new Field(
-            mockElemID,
-            'state',
-            Types.primitiveDataTypes.Picklist,
-            {
+          state: {
+            type: Types.primitiveDataTypes.Picklist,
+            annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               label: 'test label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
@@ -252,7 +246,7 @@ describe('SalesforceAdapter CRUD', () => {
                 createValueSetEntry('OLD'),
               ],
             },
-          ),
+          },
         },
       })
 
@@ -280,7 +274,10 @@ describe('SalesforceAdapter CRUD', () => {
       })
 
       it('should return the created element', () => {
-        expect(result).toMatchObject(element)
+        expect(result).toMatchObject({
+          ...element,
+          fields: _.mapValues(element.fields, f => _.omit(f, 'parent')),
+        })
         expect(result.annotations).toBeDefined()
       })
     })
@@ -289,77 +286,61 @@ describe('SalesforceAdapter CRUD', () => {
       const element = new ObjectType({
         elemID: mockElemID,
         fields: {
-          alpha: new Field(
-            mockElemID,
-            'currency',
-            Types.primitiveDataTypes.Currency,
-            {
+          currency: {
+            type: Types.primitiveDataTypes.Currency,
+            annotations: {
               [constants.LABEL]: 'Currency description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
               [constants.FIELD_ANNOTATIONS.PRECISION]: 18,
             },
-          ),
-          bravo: new Field(
-            mockElemID,
-            'auto',
-            Types.primitiveDataTypes.AutoNumber,
-            {
+          },
+          auto: {
+            type: Types.primitiveDataTypes.AutoNumber,
+            annotations: {
               [constants.LABEL]: 'Autonumber description label',
               [constants.FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'ZZZ-{0000}',
             },
-          ),
-          charlie: new Field(
-            mockElemID,
-            'date',
-            Types.primitiveDataTypes.Date,
-            {
+          },
+          date: {
+            type: Types.primitiveDataTypes.Date,
+            annotations: {
               [constants.LABEL]: 'Date description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Today() + 7',
             },
-          ),
-          delta: new Field(
-            mockElemID,
-            'time',
-            Types.primitiveDataTypes.Time,
-            {
+          },
+          time: {
+            type: Types.primitiveDataTypes.Time,
+            annotations: {
               [constants.LABEL]: 'Time description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'TIMENOW() + 5',
             },
-          ),
-          echo: new Field(
-            mockElemID,
-            'datetime',
-            Types.primitiveDataTypes.DateTime,
-            {
+          },
+          datetime: {
+            type: Types.primitiveDataTypes.DateTime,
+            annotations: {
               [constants.LABEL]: 'DateTime description label',
               [constants.DEFAULT_VALUE_FORMULA]: 'Now() + 7',
             },
-          ),
-          foxtrot: new Field(
-            mockElemID,
-            'email',
-            Types.primitiveDataTypes.Email,
-            {
+          },
+          email: {
+            type: Types.primitiveDataTypes.Email,
+            annotations: {
               [constants.LABEL]: 'Email description label',
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
               [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
             },
-          ),
-          golf: new Field(
-            mockElemID,
-            'location',
-            Types.compoundDataTypes.Location,
-            {
+          },
+          location: {
+            type: Types.compoundDataTypes.Location,
+            annotations: {
               [constants.LABEL]: 'Location description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 2,
               [constants.FIELD_ANNOTATIONS.DISPLAY_LOCATION_IN_DECIMAL]: true,
             },
-          ),
-          hotel: new Field(
-            mockElemID,
-            'multipicklist',
-            Types.primitiveDataTypes.MultiselectPicklist,
-            {
+          },
+          multipicklist: {
+            type: Types.primitiveDataTypes.MultiselectPicklist,
+            annotations: {
               [constants.LABEL]: 'Multipicklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
                 createValueSetEntry('DO'),
@@ -372,75 +353,59 @@ describe('SalesforceAdapter CRUD', () => {
               ],
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 4,
             },
-          ),
-          india: new Field(
-            mockElemID,
-            'percent',
-            Types.primitiveDataTypes.Percent,
-            {
+          },
+          percent: {
+            type: Types.primitiveDataTypes.Percent,
+            annotations: {
               [constants.LABEL]: 'Percent description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 3,
               [constants.FIELD_ANNOTATIONS.PRECISION]: 12,
             },
-          ),
-          juliett: new Field(
-            mockElemID,
-            'phone',
-            Types.primitiveDataTypes.Phone,
-            {
+          },
+          phone: {
+            type: Types.primitiveDataTypes.Phone,
+            annotations: {
               [constants.LABEL]: 'Phone description label',
             },
-          ),
-          kilo: new Field(
-            mockElemID,
-            'longtextarea',
-            Types.primitiveDataTypes.LongTextArea,
-            {
+          },
+          longtextarea: {
+            type: Types.primitiveDataTypes.LongTextArea,
+            annotations: {
               [constants.LABEL]: 'LongTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 5,
             },
-          ),
-          lima: new Field(
-            mockElemID,
-            'richtextarea',
-            Types.primitiveDataTypes.Html,
-            {
+          },
+          richtextarea: {
+            type: Types.primitiveDataTypes.Html,
+            annotations: {
               [constants.LABEL]: 'RichTextArea description label',
               [constants.FIELD_ANNOTATIONS.VISIBLE_LINES]: 27,
             },
-          ),
-          mike: new Field(
-            mockElemID,
-            'textarea',
-            Types.primitiveDataTypes.TextArea,
-            {
+          },
+          textarea: {
+            type: Types.primitiveDataTypes.TextArea,
+            annotations: {
               [constants.LABEL]: 'TextArea description label',
             },
-          ),
-          november: new Field(
-            mockElemID,
-            'encryptedtext',
-            Types.primitiveDataTypes.EncryptedText,
-            {
+          },
+          encryptedtext: {
+            type: Types.primitiveDataTypes.EncryptedText,
+            annotations: {
               [constants.LABEL]: 'EncryptedText description label',
               [constants.FIELD_ANNOTATIONS.MASK_TYPE]: 'creditCard',
               [constants.FIELD_ANNOTATIONS.MASK_CHAR]: 'X',
               [constants.FIELD_ANNOTATIONS.LENGTH]: 35,
             },
-          ),
-          oscar: new Field(
-            mockElemID,
-            'url',
-            Types.primitiveDataTypes.Url,
-            {
+          },
+          url: {
+            type: Types.primitiveDataTypes.Url,
+            annotations: {
               [constants.LABEL]: 'Url description label',
             },
-          ),
-          papa: new Field(
-            mockElemID,
-            'picklist',
-            Types.primitiveDataTypes.Picklist,
-            {
+          },
+          picklist: {
+            type: Types.primitiveDataTypes.Picklist,
+            annotations: {
               [constants.LABEL]: 'Picklist description label',
               [constants.FIELD_ANNOTATIONS.VALUE_SET]: [
                 createValueSetEntry('DO', true),
@@ -452,12 +417,10 @@ describe('SalesforceAdapter CRUD', () => {
                 createValueSetEntry('SI'),
               ],
             },
-          ),
-          quebec: new Field(
-            mockElemID,
-            'text',
-            Types.primitiveDataTypes.Text,
-            {
+          },
+          text: {
+            type: Types.primitiveDataTypes.Text,
+            annotations: {
               [constants.LABEL]: 'Text description label',
               [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
                 values: ['DO', 'RE', 'MI', 'FA', 'SOL', 'LA', 'SI'],
@@ -466,27 +429,23 @@ describe('SalesforceAdapter CRUD', () => {
               [constants.FIELD_ANNOTATIONS.CASE_SENSITIVE]: true,
               [constants.FIELD_ANNOTATIONS.LENGTH]: 90,
             },
-          ),
-          Romeo: new Field(
-            mockElemID,
-            'number',
-            Types.primitiveDataTypes.Number,
-            {
+          },
+          number: {
+            type: Types.primitiveDataTypes.Number,
+            annotations: {
               [constants.LABEL]: 'Number description label',
               [constants.FIELD_ANNOTATIONS.SCALE]: 12,
               [constants.FIELD_ANNOTATIONS.PRECISION]: 8,
               [constants.FIELD_ANNOTATIONS.UNIQUE]: true,
             },
-          ),
-          quest: new Field(
-            mockElemID,
-            'checkbox',
-            Types.primitiveDataTypes.Checkbox,
-            {
+          },
+          checkbox: {
+            type: Types.primitiveDataTypes.Checkbox,
+            annotations: {
               [constants.LABEL]: 'Checkbox description label',
               [constants.FIELD_ANNOTATIONS.DEFAULT_VALUE]: true,
             },
-          ),
+          },
         },
       })
 
@@ -647,12 +606,11 @@ describe('SalesforceAdapter CRUD', () => {
           new ObjectType({
             elemID: mockElemID,
             fields: {
-              username: new Field(mockElemID, 'username', BuiltinTypes.STRING),
-              password: new Field(mockElemID, 'password', BuiltinTypes.STRING),
-              token: new Field(mockElemID, 'token', BuiltinTypes.STRING),
-              sandbox: new Field(mockElemID, 'sandbox', BuiltinTypes.BOOLEAN),
-              [constants.INSTANCE_FULL_NAME_FIELD]:
-                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
+              username: { type: BuiltinTypes.STRING },
+              password: { type: BuiltinTypes.STRING },
+              token: { type: BuiltinTypes.STRING },
+              sandbox: { type: BuiltinTypes.BOOLEAN },
+              [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
             },
             annotationTypes: {},
             annotations: { [constants.METADATA_TYPE]: 'Flow' },
@@ -675,11 +633,7 @@ describe('SalesforceAdapter CRUD', () => {
         const element = new ObjectType({
           elemID: mockElemID,
           fields: {
-            description: new Field(
-              mockElemID,
-              'description',
-              stringType,
-            ),
+            description: { type: stringType },
           },
           annotations: {
             [constants.API_NAME]: 'Test__c',
@@ -753,8 +707,7 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: mockElemID,
           fields: {
-            [constants.INSTANCE_FULL_NAME_FIELD]:
-              new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
+            [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
           },
           annotationTypes: {},
           annotations: {
@@ -764,26 +717,12 @@ describe('SalesforceAdapter CRUD', () => {
         { [constants.INSTANCE_FULL_NAME_FIELD]: mockInstanceName },
       )
 
-      const newElement = new InstanceElement(
-        mockInstanceName,
-        new ObjectType({
-          elemID: mockElemID,
-          fields: {
-            [constants.INSTANCE_FULL_NAME_FIELD]:
-              new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
-          },
-          annotationTypes: {},
-          annotations: {
-            [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
-          },
-        }),
-        { [constants.INSTANCE_FULL_NAME_FIELD]: 'wrong' },
-      )
-
       describe('when the request fails because fullNames are not the same', () => {
         let result: Promise<Element>
 
         beforeEach(() => {
+          const newElement = oldElement.clone()
+          newElement.value[constants.INSTANCE_FULL_NAME_FIELD] = 'wrong'
           result = adapter.update(oldElement, newElement, [])
           result.catch(_err => undefined) // prevent Unhandled promise rejection message
         })
@@ -804,23 +743,18 @@ describe('SalesforceAdapter CRUD', () => {
           const mockAssignmentRulesObjectType = new ObjectType({
             elemID: mockElemID,
             fields: {
-              [constants.INSTANCE_FULL_NAME_FIELD]:
-                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
-              [assignmentRuleFieldName]:
-                new Field(mockElemID, assignmentRuleFieldName, new ObjectType({
+              [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+              [assignmentRuleFieldName]: {
+                type: new ObjectType({
                   elemID: mockElemID,
                   fields: {
-                    [constants.INSTANCE_FULL_NAME_FIELD]:
-                      new Field(
-                        mockElemID,
-                        constants.INSTANCE_FULL_NAME_FIELD,
-                        BuiltinTypes.SERVICE_ID
-                      ),
+                    [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
                   },
                   annotations: {
                     [constants.METADATA_TYPE]: 'AssignmentRule',
                   },
-                })),
+                }),
+              },
             },
             annotationTypes: {},
             annotations: {
@@ -865,23 +799,18 @@ describe('SalesforceAdapter CRUD', () => {
           const mockCustomLabelsObjectType = new ObjectType({
             elemID: mockElemID,
             fields: {
-              [constants.INSTANCE_FULL_NAME_FIELD]:
-                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
-              [customLabelsFieldName]:
-                new Field(mockElemID, customLabelsFieldName, new ObjectType({
+              [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+              [customLabelsFieldName]: {
+                type: new ObjectType({
                   elemID: mockElemID,
                   fields: {
-                    [constants.INSTANCE_FULL_NAME_FIELD]:
-                      new Field(
-                        mockElemID,
-                        constants.INSTANCE_FULL_NAME_FIELD,
-                        BuiltinTypes.SERVICE_ID
-                      ),
+                    [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
                   },
                   annotations: {
                     [constants.METADATA_TYPE]: 'CustomLabel',
                   },
-                })),
+                }),
+              },
             },
             annotationTypes: {},
             annotations: {
@@ -925,33 +854,9 @@ describe('SalesforceAdapter CRUD', () => {
 
     describe('for a type element', () => {
       const oldElement = new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE, 'test2'),
-        fields: {
-          description: new Field(
-            mockElemID,
-            'description',
-            stringType,
-          ),
-        },
-        annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          label: 'test label',
-          [constants.API_NAME]: 'Test2__c',
-        },
-      })
-
-      const newElement = new ObjectType({
         elemID: mockElemID,
-        fields: {
-          address: new Field(
-            mockElemID,
-            'address',
-            stringType,
-          ),
-        },
         annotations: {
-          [CORE_ANNOTATIONS.REQUIRED]: false,
-          label: 'test2 label',
+          [constants.API_NAME]: 'Test__c',
         },
       })
 
@@ -959,6 +864,8 @@ describe('SalesforceAdapter CRUD', () => {
         let result: Promise<Element>
 
         beforeEach(() => {
+          const newElement = oldElement.clone()
+          newElement.annotations[constants.API_NAME] = 'Test2__c'
           result = adapter.update(oldElement, newElement, [])
           result.catch(_err => undefined) // prevent Unhandled promise rejection message
         })
@@ -978,19 +885,19 @@ describe('SalesforceAdapter CRUD', () => {
       let result: Element
 
       describe('for an instance element', () => {
+        const mockProfileType = new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            [constants.INSTANCE_FULL_NAME_FIELD]: { type: BuiltinTypes.SERVICE_ID },
+          },
+          annotationTypes: {},
+          annotations: {
+            [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
+          },
+        })
         const oldElement = new InstanceElement(
           mockInstanceName,
-          new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              [constants.INSTANCE_FULL_NAME_FIELD]:
-                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
-            },
-            annotationTypes: {},
-            annotations: {
-              [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
-            },
-          }),
+          mockProfileType,
           {
             tabVisibilities: [
               {
@@ -1022,17 +929,7 @@ describe('SalesforceAdapter CRUD', () => {
 
         const newElement = new InstanceElement(
           mockInstanceName,
-          new ObjectType({
-            elemID: mockElemID,
-            fields: {
-              [constants.INSTANCE_FULL_NAME_FIELD]:
-                new Field(mockElemID, constants.INSTANCE_FULL_NAME_FIELD, BuiltinTypes.SERVICE_ID),
-            },
-            annotationTypes: {},
-            annotations: {
-              [constants.METADATA_TYPE]: constants.PROFILE_METADATA_TYPE,
-            },
-          }),
+          mockProfileType,
           {
             userPermissions: [
               {
@@ -1117,11 +1014,7 @@ describe('SalesforceAdapter CRUD', () => {
           const oldElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              description: new Field(
-                mockElemID,
-                'description',
-                stringType,
-              ),
+              description: { type: stringType },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1133,14 +1026,7 @@ describe('SalesforceAdapter CRUD', () => {
           const newElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: new Field(
-                mockElemID,
-                'address',
-                stringType,
-                {
-                  label: 'test2 label',
-                },
-              ),
+              address: { type: stringType, annotations: { label: 'test2 label' } },
             },
             annotations: {
               label: 'test2 label',
@@ -1175,16 +1061,8 @@ describe('SalesforceAdapter CRUD', () => {
           const oldElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: new Field(
-                mockElemID,
-                'address',
-                stringType,
-              ),
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-              ),
+              address: { type: stringType },
+              banana: { type: stringType },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1196,32 +1074,11 @@ describe('SalesforceAdapter CRUD', () => {
           const newElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: new Field(
-                mockElemID,
-                'address',
-                stringType,
-              ),
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-              ),
-              description: new Field(
-                mockElemID,
-                'description',
-                stringType,
-              ),
-              apple: new Field(
-                mockElemID,
-                'apple',
-                stringType,
-              ),
+              ...oldElement.fields,
+              description: { type: stringType },
+              apple: { type: stringType },
             },
-            annotations: {
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              label: 'test label',
-              [constants.API_NAME]: 'Test__c',
-            },
+            annotations: oldElement.annotations,
           })
 
           beforeEach(async () => {
@@ -1254,30 +1111,24 @@ describe('SalesforceAdapter CRUD', () => {
           const oldElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: new Field(
-                mockElemID,
-                'address',
-                stringType,
-                {
+              address: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Address__c',
                 },
-              ),
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-                {
+              },
+              banana: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Banana__c',
                 },
-              ),
-              description: new Field(
-                mockElemID,
-                'description',
-                stringType,
-                {
+              },
+              description: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Description__c',
                 },
-              ),
+              },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1288,16 +1139,7 @@ describe('SalesforceAdapter CRUD', () => {
 
           const newElement = new ObjectType({
             elemID: mockElemID,
-            fields: {
-              description: new Field(
-                mockElemID,
-                'description',
-                stringType,
-                {
-                  [constants.API_NAME]: 'Test__c.Description__c',
-                },
-              ),
-            },
+            fields: _.pick(oldElement.fields, 'description'),
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
               label: 'test2 label',
@@ -1332,22 +1174,18 @@ describe('SalesforceAdapter CRUD', () => {
           const oldElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: new Field(
-                mockElemID,
-                'address',
-                stringType,
-                {
+              address: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Address__c',
                 },
-              ),
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-                {
+              },
+              banana: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Banana__c',
                 },
-              ),
+              },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1359,19 +1197,8 @@ describe('SalesforceAdapter CRUD', () => {
           const newElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-                {
-                  [constants.API_NAME]: 'Test__c.Banana__c',
-                }
-              ),
-              description: new Field(
-                mockElemID,
-                'description',
-                stringType,
-              ),
+              ..._.pick(oldElement.fields, 'banana'),
+              description: { type: stringType },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1420,11 +1247,7 @@ describe('SalesforceAdapter CRUD', () => {
           const oldElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              description: new Field(
-                mockElemID,
-                'description',
-                stringType,
-              ),
+              description: { type: stringType },
             },
             annotations: {
               label: 'test label',
@@ -1434,13 +1257,7 @@ describe('SalesforceAdapter CRUD', () => {
 
           const newElement = new ObjectType({
             elemID: mockElemID,
-            fields: {
-              description: new Field(
-                mockElemID,
-                'description',
-                stringType,
-              ),
-            },
+            fields: oldElement.fields,
             annotations: {
               label: 'test2 label',
               [constants.API_NAME]: 'Test__c',
@@ -1474,33 +1291,27 @@ describe('SalesforceAdapter CRUD', () => {
           const oldElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: new Field(
-                mockElemID,
-                'address',
-                stringType,
-                {
+              address: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Address__c',
                   [constants.LABEL]: 'Address',
                 },
-              ),
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-                {
+              },
+              banana: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Banana__c',
                   [constants.LABEL]: 'Banana',
                 },
-              ),
-              cat: new Field(
-                mockElemID,
-                'cat',
-                stringType,
-                {
+              },
+              cat: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Cat__c',
                   [constants.LABEL]: 'Cat',
                 },
-              ),
+              },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1512,33 +1323,18 @@ describe('SalesforceAdapter CRUD', () => {
           const newElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-                {
-                  [constants.API_NAME]: 'Test__c.Banana__c',
-                  [constants.LABEL]: 'Banana Split',
-                },
-              ),
-              cat: new Field(
-                mockElemID,
-                'cat',
-                stringType,
-                {
-                  [constants.API_NAME]: 'Test__c.Cat__c',
-                  [constants.LABEL]: 'Cat',
-                },
-              ),
-              description: new Field(
-                mockElemID,
-                'description',
-                stringType,
-                {
+              banana: oldElement.fields.banana.clone({
+                [constants.API_NAME]: 'Test__c.Banana__c',
+                [constants.LABEL]: 'Banana Split',
+              }),
+              cat: oldElement.fields.cat,
+              description: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Description__c',
                   [constants.LABEL]: 'Description',
                 },
-              ),
+              },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1592,16 +1388,8 @@ describe('SalesforceAdapter CRUD', () => {
           const oldElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: new Field(
-                mockElemID,
-                'address',
-                stringType,
-              ),
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-              ),
+              address: { type: stringType },
+              banana: { type: stringType },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1613,22 +1401,8 @@ describe('SalesforceAdapter CRUD', () => {
           const newElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              address: new Field(
-                mockElemID,
-                'address',
-                stringType,
-                {
-                  [constants.API_NAME]: 'Test__c.Address__c',
-                },
-              ),
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-                {
-                  [constants.API_NAME]: 'Test__c.Banana__c',
-                },
-              ),
+              address: oldElement.fields.address.clone({ [constants.API_NAME]: 'Test__c.Address__c' }),
+              banana: oldElement.fields.banana.clone({ [constants.API_NAME]: 'Test__c.Banana__c' }),
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1656,14 +1430,12 @@ describe('SalesforceAdapter CRUD', () => {
           const oldElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-                {
+              banana: {
+                type: stringType,
+                annotations: {
                   [constants.API_NAME]: 'Test__c.Banana__c',
                 },
-              ),
+              },
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1675,15 +1447,10 @@ describe('SalesforceAdapter CRUD', () => {
           const newElement = new ObjectType({
             elemID: mockElemID,
             fields: {
-              banana: new Field(
-                mockElemID,
-                'banana',
-                stringType,
-                {
-                  [constants.LABEL]: 'Banana Split',
-                  [constants.API_NAME]: 'Test__c.Banana__c',
-                },
-              ),
+              banana: oldElement.fields.banana.clone({
+                [constants.LABEL]: 'Banana Split',
+                [constants.API_NAME]: 'Test__c.Banana__c',
+              }),
             },
             annotations: {
               [CORE_ANNOTATIONS.REQUIRED]: false,
@@ -1743,24 +1510,19 @@ describe('SalesforceAdapter CRUD', () => {
           [constants.METADATA_TYPE]: 'AssignmentRules',
         },
         fields: {
-          dummy: new Field(deployTypeId, 'dummy', BuiltinTypes.STRING),
+          dummy: { type: BuiltinTypes.STRING },
         },
       })
-      const origBefore = new InstanceElement(
-        'deploy_inst',
-        deployType,
-        { dummy: 'before' },
-      )
 
       let before: InstanceElement
       let after: InstanceElement
       beforeEach(() => {
-        before = _.cloneDeep(origBefore)
-        after = new InstanceElement(
-          before.elemID.name,
-          before.type,
-          _.cloneDeep(before.value),
+        before = new InstanceElement(
+          'deploy_inst',
+          deployType.clone(),
+          { dummy: 'before' },
         )
+        after = before.clone()
         after.value.dummy = 'after'
       })
 

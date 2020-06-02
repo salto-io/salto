@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  PrimitiveType, PrimitiveTypes, ElemID, Field, isInstanceElement, ListType,
+  PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
   VariableExpression, StaticFile,
 } from '@salto-io/adapter-api'
@@ -49,11 +49,13 @@ describe('State/cache serialization', () => {
 
   const model = new ObjectType({
     elemID: new ElemID('salesforce', 'test'),
+    fields: {
+      name: { type: strType, annotations: { label: 'Name' } },
+      file: { type: strType, annotations: { label: 'File' } },
+      num: { type: numType },
+      list: { type: strListType },
+    },
   })
-  model.fields.name = new Field(model.elemID, 'name', strType, { label: 'Name' })
-  model.fields.file = new Field(model.elemID, 'file', strType, { label: 'File' })
-  model.fields.num = new Field(model.elemID, 'num', numType)
-  model.fields.list = new Field(model.elemID, 'list', strListType, {})
 
   model.annotate({
     LeadConvertSettings: {
@@ -126,7 +128,7 @@ describe('State/cache serialization', () => {
     'also_me_function',
     model,
     {
-      file: new StaticFile('some/path.ext', 'hash'),
+      file: new StaticFile({ filepath: 'some/path.ext', hash: 'hash' }),
       singleparam: new TestFuncImpl('funcadelic', ['aaa']),
       multipleparams: new TestFuncImpl('george', [false, 321]),
       withlist: new TestFuncImpl('washington', ['ZOMG', [3, 2, 1]]),
@@ -258,7 +260,7 @@ describe('State/cache serialization', () => {
       const serialized = serialize(elementsToSerialize)
       const funcElement = (await deserialize(
         serialized,
-        x => Promise.resolve(new StaticFile(x.filepath, 'ZOMGZOMGZOMG'))
+        x => Promise.resolve(new StaticFile({ filepath: x.filepath, hash: 'ZOMGZOMGZOMG' }))
       ))[0] as InstanceElement
 
       expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'ZOMGZOMGZOMG' })

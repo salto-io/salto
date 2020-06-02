@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/hubspot-adapter",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "license": "Apache-2.0",
   "description": "Salto Hubspot adapter",
   "repository": {
@@ -32,12 +32,12 @@
     "lint-fix": "yarn run lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.15",
-    "@salto-io/adapter-utils": "0.1.15",
-    "@salto-io/logging": "0.1.15",
-    "@salto-io/lowerdash": "0.1.15",
+    "@salto-io/adapter-api": "0.1.16",
+    "@salto-io/adapter-utils": "0.1.16",
+    "@salto-io/logging": "0.1.16",
+    "@salto-io/lowerdash": "0.1.16",
     "hubspot": "^2.3.8",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "request-promise": "^4.2.5",
     "requestretry": "^4.0.2"
   },
@@ -46,8 +46,8 @@
     "@types/lodash": "^4.14.133",
     "@types/node": "^12.7.1",
     "@types/request-promise": "^4.1.45",
-    "@typescript-eslint/eslint-plugin": "2.21.0",
-    "@typescript-eslint/parser": "2.21.0",
+    "@typescript-eslint/eslint-plugin": "2.31.0",
+    "@typescript-eslint/parser": "2.31.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-header": "^3.0.0",
@@ -56,12 +56,12 @@
     "eslint-plugin-jsx-a11y": "^6.2.1",
     "eslint-plugin-react": "^7.14.3",
     "eslint-plugin-react-hooks": "^1.7.0",
-    "jest": "^24.0.0",
+    "jest": "^24.9.0",
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
     "request": "^2.88.0",
     "ts-cleaner": "^1.0.3",
     "tsc-watch": "^2.2.1",
-    "typescript": "3.8.3"
+    "typescript": "3.9.3"
   }
 }

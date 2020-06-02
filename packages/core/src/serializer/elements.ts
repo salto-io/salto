@@ -180,7 +180,7 @@ export const deserialize = async (
       v.innerType
     ),
     Field: v => new Field(
-      reviveElemID(v.parentID),
+      new ObjectType({ elemID: reviveElemID(v.elemID).createParentID() }),
       v.name,
       v.type,
       v.annotations,
@@ -195,7 +195,7 @@ export const deserialize = async (
       new VariableExpression(reviveElemID(v.elemId))
     ),
     StaticFile: v => {
-      const staticFile = new StaticFile(v.filepath, v.hash)
+      const staticFile = new StaticFile({ filepath: v.filepath, hash: v.hash })
       staticFiles[staticFile.filepath] = staticFile
       return staticFile
     },

@@ -15,11 +15,12 @@
 */
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, TypeElement, isType, ElemID, Element,
+  isObjectType, Field, Values, TypeElement, isType, ElemID,
   TypeMap,
   BuiltinTypes,
   PrimitiveType,
   ListType,
+  ObjectType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { SALESFORCE } from '../constants'
@@ -123,7 +124,7 @@ export const makeFilter = (
       .fromPairs()
       .value()
 
-    const addMissingField = (elem: Element) => (f: MissingField): Field | undefined => {
+    const addMissingField = (elem: ObjectType) => (f: MissingField): Field | undefined => {
       const type = isType(f.type) ? f.type : typeMap[f.type.getFullName()]
       if (type === undefined) {
         log.warn('Failed to find type %s, omitting field %s', (f.type as ElemID).getFullName(), f.name)
@@ -131,7 +132,7 @@ export const makeFilter = (
       }
 
       const updatedType = f.isList ? new ListType(type) : type
-      return new Field(elem.elemID, f.name, updatedType, f.annotations)
+      return new Field(elem, f.name, updatedType, f.annotations)
     }
 
     // Add missing fields to types

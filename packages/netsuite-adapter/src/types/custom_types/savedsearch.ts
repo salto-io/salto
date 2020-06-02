@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 
@@ -30,14 +30,12 @@ const savedsearch_dependencies = new ObjectType({
   annotations: {
   },
   fields: {
-    dependency: new Field(
-      savedsearch_dependenciesElemID,
-      'dependency',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    dependency: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field only accepts references to any custom type. */
+    }, /* Original description: This field only accepts references to any custom type. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
 })
@@ -51,30 +49,24 @@ export const savedsearch = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'customsearch_',
   },
   fields: {
-    scriptid: new Field(
-      savedsearchElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
         [constants.IS_NAME]: true,
       },
-    ), /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */
-    definition: new Field(
-      savedsearchElemID,
-      'definition',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */
+    definition: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ),
-    dependencies: new Field(
-      savedsearchElemID,
-      'dependencies',
-      savedsearch_dependencies,
-      {
+    },
+    dependencies: {
+      type: savedsearch_dependencies,
+      annotations: {
       },
-    ),
+    },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, savedsearchElemID.name],
 })

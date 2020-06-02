@@ -19,7 +19,7 @@ import * as path from 'path'
 import uuidv4 from 'uuid/v4'
 import {
   CORE_ANNOTATIONS, BuiltinTypes,
-  Field, ObjectType, ElemID, InstanceElement,
+  ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
@@ -88,9 +88,12 @@ const requireAnno = { [CORE_ANNOTATIONS.REQUIRED]: true }
 export const saltoAppConfigType = new ObjectType({
   elemID: saltoConfigElemID,
   fields: {
-    installationID: new Field(saltoConfigElemID, 'installationID', BuiltinTypes.STRING, requireAnno),
-    telemetry: new Field(saltoConfigElemID, 'telemetry', BuiltinTypes.JSON, requireAnno),
-    command: new Field(saltoConfigElemID, 'command', BuiltinTypes.JSON, { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG }),
+    installationID: { type: BuiltinTypes.STRING, annotations: requireAnno },
+    telemetry: { type: BuiltinTypes.JSON, annotations: requireAnno },
+    command: {
+      type: BuiltinTypes.JSON,
+      annotations: { [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_COMMAND_CONFIG },
+    },
   },
   annotationTypes: {},
   annotations: {},

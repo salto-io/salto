@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 
@@ -30,57 +30,45 @@ export const cmscontenttype = new ObjectType({
     [constants.SCRIPT_ID_PREFIX]: 'custcontenttype_',
   },
   fields: {
-    scriptid: new Field(
-      cmscontenttypeElemID,
-      'scriptid',
-      BuiltinTypes.SERVICE_ID,
-      {
+    scriptid: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
         [constants.IS_ATTRIBUTE]: true,
       },
-    ), /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcontenttype’. */
-    name: new Field(
-      cmscontenttypeElemID,
-      'name',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcontenttype’. */
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    label: new Field(
-      cmscontenttypeElemID,
-      'label',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    label: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 18,
       },
-    ), /* Original description: This field value can be up to 18 characters long. */
-    customrecordid: new Field(
-      cmscontenttypeElemID,
-      'customrecordid',
-      BuiltinTypes.STRING /* Original type was single-select list */,
-      {
+    }, /* Original description: This field value can be up to 18 characters long. */
+    customrecordid: {
+      type: BuiltinTypes.STRING /* Original type was single-select list */,
+      annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
-    ), /* Original description: This field accepts references to the customrecordtype custom type. */
-    description: new Field(
-      cmscontenttypeElemID,
-      'description',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field accepts references to the customrecordtype custom type. */
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
-    iconimagepath: new Field(
-      cmscontenttypeElemID,
-      'iconimagepath',
-      BuiltinTypes.STRING,
-      {
+    }, /* Original description: This field value can be up to 999 characters long. */
+    iconimagepath: {
+      type: BuiltinTypes.STRING,
+      annotations: {
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 999,
       },
-    ), /* Original description: This field value can be up to 999 characters long. */
+    }, /* Original description: This field value can be up to 999 characters long. */
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, cmscontenttypeElemID.name],
 })

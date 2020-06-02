@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Element, Field, BuiltinTypes, CORE_ANNOTATIONS, ListType,
+  ObjectType, ElemID, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS, ListType,
   createRestriction,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -32,26 +32,30 @@ describe('convert types filter', () => {
   const mockType = new ObjectType({
     elemID: mockObjId,
     fields: {
-      strAsStr: new Field(mockObjId, 'strAsStr', BuiltinTypes.STRING),
-      strAsNum: new Field(mockObjId, 'strAsNum', BuiltinTypes.STRING),
-      boolAsBool: new Field(mockObjId, 'boolAsBool', BuiltinTypes.BOOLEAN),
-      boolAsStr: new Field(mockObjId, 'boolAsStr', BuiltinTypes.BOOLEAN),
-      numAsNum: new Field(mockObjId, 'numAsNum', BuiltinTypes.NUMBER),
-      numAsStr: new Field(mockObjId, 'numAsStr', BuiltinTypes.NUMBER),
-      nullStr: new Field(mockObjId, 'nullStr', BuiltinTypes.STRING),
-      values: new Field(mockObjId, 'values', new ListType(new ObjectType({
-        elemID: mockObjId,
-        fields: {
-          field: new Field(mockObjId, 'field', BuiltinTypes.STRING),
-          value: new Field(mockObjId, 'value', BuiltinTypes.STRING),
-        },
-      })), {}),
-      numArray: new Field(mockObjId, 'numArray', new ListType(BuiltinTypes.NUMBER), {}),
-      picklist: new Field(mockObjId, 'picklist', BuiltinTypes.STRING,
-        {
+      strAsStr: { type: BuiltinTypes.STRING },
+      strAsNum: { type: BuiltinTypes.STRING },
+      boolAsBool: { type: BuiltinTypes.BOOLEAN },
+      boolAsStr: { type: BuiltinTypes.BOOLEAN },
+      numAsNum: { type: BuiltinTypes.NUMBER },
+      numAsStr: { type: BuiltinTypes.NUMBER },
+      nullStr: { type: BuiltinTypes.STRING },
+      values: {
+        type: new ListType(new ObjectType({
+          elemID: mockObjId,
+          fields: {
+            field: { type: BuiltinTypes.STRING },
+            value: { type: BuiltinTypes.STRING },
+          },
+        })),
+      },
+      numArray: { type: new ListType(BuiltinTypes.NUMBER) },
+      picklist: {
+        type: BuiltinTypes.STRING,
+        annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['a', 'b', 'c'] }),
-        }),
-      refToStr: new Field(mockObjId, 'ref', BuiltinTypes.STRING),
+        },
+      },
+      refToStr: { type: BuiltinTypes.STRING },
     },
   })
   type XsdValueType = { _: string; $: { 'xsi:type': string }}

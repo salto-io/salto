@@ -58,7 +58,7 @@ describe('Dependency changer utility functions', () => {
   })
   describe('change entry filter functions', () => {
     const testType = new ObjectType({ elemID: new ElemID('', 'test') })
-    const testField = new Field(testType.elemID, 'field', testType)
+    const testField = new Field(testType, 'field', testType)
     const testInst = new InstanceElement('inst', testType)
     const toChangeEntry = <T>(elem: T): ChangeEntry<T> => (
       [1, { action: 'add', data: { after: elem } }]

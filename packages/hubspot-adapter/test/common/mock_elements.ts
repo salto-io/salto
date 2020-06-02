@@ -69,6 +69,115 @@ const g1PropReference = new ReferenceExpression(
   g1PropInstance
 )
 
+export const formInstance = new InstanceElement(
+  'mockForm',
+  Types.hubspotObjects[OBJECTS_NAMES.FORM],
+  {
+    portalId: 6774238,
+    guid: 'guid',
+    name: 'formName',
+    action: '',
+    method: 'POST',
+    cssClass: '',
+    editable: true,
+    deletable: false,
+    createdAt: 1500588456053,
+    redirect: 'google.com',
+    submitText: '',
+    cloneable: false,
+    captchaEnabled: true,
+    formFieldGroups: [
+      {
+        fields: [
+          {
+            name: 'g1',
+            label: 'g1!',
+            type: 'string',
+            fieldType: 'text',
+            description: 'g1 property',
+            required: false,
+            hidden: false,
+            displayOrder: 1,
+            defaultValue: '',
+            isSmartField: false,
+            selectedOptions: [],
+            options: [],
+            dependentFieldFilters: [
+              {
+                filters: [
+                  {
+                    operator: 'EQ',
+                    strValue: 'em@salto.io',
+                    boolValue: false,
+                    numberValue: 0,
+                    strValues: [],
+                    numberValues: [],
+                  },
+                ],
+                dependentFormField: {
+                  name: 'date_of_birth',
+                  label: 'Date of birth override',
+                  type: 'string',
+                  fieldType: 'text',
+                  description: 'l',
+                  groupName: 'contactinformation',
+                  displayOrder: 1,
+                  required: false,
+                  selectedOptions: [],
+                  options: [],
+                  enabled: true,
+                  hidden: false,
+                  isSmartField: false,
+                  unselectedLabel: 'unselected',
+                  placeholder: 'place',
+                  dependentFieldFilters: [],
+                  labelHidden: false,
+                  propertyObjectType: 'CONTACT',
+                  metaData: [],
+                },
+                formFieldAction: 'DISPLAY',
+              },
+            ],
+          },
+        ],
+        default: true,
+        isSmartGroup: false,
+      },
+      {
+        fields: [
+          {
+            name: 'value',
+            label: 'Value',
+            type: 'string',
+            fieldType: 'text',
+            description: '',
+            required: false,
+            hidden: false,
+            defaultValue: '',
+            isSmartField: false,
+            displayOrder: 1,
+            selectedOptions: ['val1'],
+            options: [
+              {
+                label: 'opt1',
+                value: 'val1',
+                hidden: true,
+                readOnly: true,
+              },
+            ],
+          },
+        ],
+        default: true,
+        isSmartGroup: false,
+      },
+    ],
+    ignoreCurrentValues: false,
+    inlineMessage: 'inline',
+    themeName: 'theme',
+    notifyRecipients: '',
+  },
+)
+
 export const datePropInstance = new InstanceElement(
   'date_of_birth',
   Types.hubspotObjects[OBJECTS_NAMES.CONTACT_PROPERTY],

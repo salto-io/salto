@@ -18,7 +18,7 @@ import {
   getDeepInnerType,
 } from '../src/utils'
 import {
-  Field, ObjectType, ListType, isElement, isField, isListType,
+  ObjectType, ListType, isElement, isField, isListType,
 } from '../src/elements'
 import {
   ElemID,
@@ -29,15 +29,12 @@ import {
 
 describe('Test utils.ts & isXXX in elements.ts', () => {
   const mockElemID = new ElemID('test-utils', 'obj')
-  const mockField = new Field(mockElemID, 'num_field', BuiltinTypes.NUMBER)
-  const mockListField = new Field(mockElemID, 'list_field', new ListType(BuiltinTypes.NUMBER))
-  const mockListOfListsField = new Field(mockElemID, 'list_of_list_field', new ListType(new ListType(BuiltinTypes.NUMBER)))
   const mockObjectType = new ObjectType({
     elemID: mockElemID,
     fields: {
-      fieldTest: mockField,
-      listFieldTest: mockListField,
-      listOfListFieldTest: mockListOfListsField,
+      fieldTest: { type: BuiltinTypes.NUMBER },
+      listFieldTest: { type: new ListType(BuiltinTypes.NUMBER) },
+      listOfListFieldTest: { type: new ListType(new ListType(BuiltinTypes.NUMBER)) },
     },
     annotationTypes: {},
     annotations: {},

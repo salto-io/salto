@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 
-import { RemovalDiff, ModificationDiff, AdditionDiff, NodeId, Group } from '@salto-io/dag'
+import { NodeId, Group } from '@salto-io/dag'
 import {
   ChangeDataType, Values, Value, ElemID, Change, isEqualElements, isEqualValues, getChangeElement,
   Element, isField, isInstanceElement, isObjectType, isPrimitiveType, ObjectType, PrimitiveType,
@@ -25,7 +25,7 @@ import {
 import { getOrCreateGroupLevelChange } from './group'
 
 export type DetailedChange<T = ChangeDataType | Values | Value> =
-  (AdditionDiff<T> | ModificationDiff<T> | RemovalDiff<T>) & {
+  Change<T> & {
     id: ElemID
     path?: string[]
   }

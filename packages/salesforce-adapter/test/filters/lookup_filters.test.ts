@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ElemID, Field, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes,
+  ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/lookup_filters'
@@ -32,33 +32,32 @@ describe('lookup filters filter', () => {
 
   describe('on add', () => {
     let mockObject: ObjectType
-    const lookupField = new Field(objectTypeElemId, 'lookup_field', lookupType,
-      {
-        [constants.API_NAME]: lookupFieldApiName,
-        [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
-          [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
-          [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: '1 OR 2',
-          [constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'This is the Error message',
-          [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'This is the Info message',
-          [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: false,
-          [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [{
-            [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
-            [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-            [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
-          },
-          {
-            [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
-            [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
-            [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
-          }],
-        },
-      })
 
     const origMockObject = new ObjectType({
       elemID: objectTypeElemId,
-      fields: {
-        lookup: lookupField,
-      },
+      fields: { lookup: {
+        type: lookupType,
+        annotations: {
+          [constants.API_NAME]: lookupFieldApiName,
+          [constants.FIELD_ANNOTATIONS.LOOKUP_FILTER]: {
+            [constants.LOOKUP_FILTER_FIELDS.ACTIVE]: true,
+            [constants.LOOKUP_FILTER_FIELDS.BOOLEAN_FILTER]: '1 OR 2',
+            [constants.LOOKUP_FILTER_FIELDS.ERROR_MESSAGE]: 'This is the Error message',
+            [constants.LOOKUP_FILTER_FIELDS.INFO_MESSAGE]: 'This is the Info message',
+            [constants.LOOKUP_FILTER_FIELDS.IS_OPTIONAL]: false,
+            [constants.LOOKUP_FILTER_FIELDS.FILTER_ITEMS]: [{
+              [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.OwnerId',
+              [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+              [constants.FILTER_ITEM_FIELDS.VALUE_FIELD]: '$User.Id',
+            },
+            {
+              [constants.FILTER_ITEM_FIELDS.FIELD]: 'Case.ParentId',
+              [constants.FILTER_ITEM_FIELDS.OPERATION]: 'equals',
+              [constants.FILTER_ITEM_FIELDS.VALUE]: 'ParentIdValue',
+            }],
+          },
+        },
+      } },
       annotations: {
         label: 'test label',
         [constants.API_NAME]: mockObjectApiName,
@@ -135,16 +134,11 @@ describe('lookup filters filter', () => {
       }],
     }
 
-    const lookupField = new Field(objectTypeElemId, 'lookup_field', lookupType,
-      {
-        [constants.API_NAME]: lookupFieldApiName,
-      })
-
     const origBeforeObject = new ObjectType({
       elemID: objectTypeElemId,
-      fields: {
-        lookup: lookupField,
-      },
+      fields: { lookup: {
+        type: lookupType, annotations: { [constants.API_NAME]: lookupFieldApiName },
+      } },
       annotations: {
         label: 'test label',
         [constants.API_NAME]: mockObjectApiName,

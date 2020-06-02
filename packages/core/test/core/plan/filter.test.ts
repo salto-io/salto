@@ -81,10 +81,14 @@ describe('filterInvalidChanges', () => {
   })
 
   it('should have onAdd change errors and omit invalid object & instance addition', async () => {
-    const newInvalidObj = new ObjectType({ elemID: new ElemID('salto', 'new_invalid_obj') })
-    newInvalidObj.fields.valid = new Field(newInvalidObj.elemID, 'valid', BuiltinTypes.STRING)
-    newInvalidObj.fields.invalid = new Field(newInvalidObj.elemID, 'invalid', BuiltinTypes.STRING)
-    newInvalidObj.annotations.value = 'value'
+    const newInvalidObj = new ObjectType({
+      elemID: new ElemID('salto', 'new_invalid_obj'),
+      fields: {
+        valid: { type: BuiltinTypes.STRING },
+        invalid: { type: BuiltinTypes.STRING },
+      },
+      annotations: { value: 'value' },
+    })
     const newInvalidInst = new InstanceElement('new_invalid_inst', newInvalidObj, {})
     const planResult = await getPlan(allElements, [...allElements, newInvalidObj, newInvalidInst],
       { salto: mockChangeValidator })
@@ -98,10 +102,14 @@ describe('filterInvalidChanges', () => {
   })
 
   it('should have onAdd change errors and omit invalid object & insatance additionaaaaa', async () => {
-    const newValidObj = new ObjectType({ elemID: new ElemID('salto', 'new_valid_obj') })
-    newValidObj.fields.valid = new Field(newValidObj.elemID, 'valid', BuiltinTypes.STRING)
-    newValidObj.fields.invalid = new Field(newValidObj.elemID, 'invalid', BuiltinTypes.STRING)
-    newValidObj.annotations.value = 'value'
+    const newValidObj = new ObjectType({
+      elemID: new ElemID('salto', 'new_valid_obj'),
+      fields: {
+        valid: { type: BuiltinTypes.STRING },
+        invalid: { type: BuiltinTypes.STRING },
+      },
+      annotations: { value: 'value' },
+    })
     const planResult = await getPlan(allElements, [...allElements, newValidObj],
       { salto: mockChangeValidator })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -120,7 +128,7 @@ describe('filterInvalidChanges', () => {
   it('should have onUpdate change errors when all changes are invalid', async () => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
-    saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
+    saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
     const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
@@ -132,8 +140,8 @@ describe('filterInvalidChanges', () => {
   it('should have onUpdate change errors when only some field addition are invalid', async () => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
-    saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
-    saltoOffice.fields.valid = new Field(saltoOffice.elemID, 'valid', BuiltinTypes.STRING)
+    saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
+    saltoOffice.fields.valid = new Field(saltoOffice, 'valid', BuiltinTypes.STRING)
     const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
@@ -154,7 +162,7 @@ describe('filterInvalidChanges', () => {
     const afterInvalidObj = beforeInvalidObj.clone()
     afterInvalidObj.annotations.new = 'value'
     afterInvalidObj.annotationTypes.new = BuiltinTypes.STRING
-    afterInvalidObj.fields.valid = new Field(invalidObjElemId, 'valid', BuiltinTypes.STRING)
+    afterInvalidObj.fields.valid = new Field(afterInvalidObj, 'valid', BuiltinTypes.STRING)
     const planResult = await getPlan([...allElements, beforeInvalidObj],
       [...allElements, afterInvalidObj], { salto: mockChangeValidator })
     expect(planResult.changeErrors).toHaveLength(1)
@@ -170,8 +178,8 @@ describe('filterInvalidChanges', () => {
   it('should have onUpdate change errors when only some field removals are invalid', async () => {
     const beforeElements = mock.getAllElements()
     const saltoOffice = beforeElements[2] as ObjectType
-    saltoOffice.fields.invalid = new Field(saltoOffice.elemID, 'invalid', BuiltinTypes.STRING)
-    saltoOffice.fields.valid = new Field(saltoOffice.elemID, 'valid', BuiltinTypes.STRING)
+    saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
+    saltoOffice.fields.valid = new Field(saltoOffice, 'valid', BuiltinTypes.STRING)
     const planResult = await getPlan(beforeElements, allElements, { salto: mockChangeValidator })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
@@ -189,11 +197,11 @@ describe('filterInvalidChanges', () => {
   it('should have onUpdate change errors when having invalid field modification', async () => {
     const beforeElements = mock.getAllElements()
     const beforeSaltoOffice = beforeElements[2] as ObjectType
-    beforeSaltoOffice.fields.invalid = new Field(beforeSaltoOffice.elemID, 'invalid',
+    beforeSaltoOffice.fields.invalid = new Field(beforeSaltoOffice, 'invalid',
       BuiltinTypes.STRING)
     const afterElements = mock.getAllElements()
     const afterSaltoOffice = afterElements[2] as ObjectType
-    afterSaltoOffice.fields.invalid = new Field(afterSaltoOffice.elemID, 'invalid',
+    afterSaltoOffice.fields.invalid = new Field(afterSaltoOffice, 'invalid',
       BuiltinTypes.STRING, { label: 'dummy annotation' })
     const planResult = await getPlan(beforeElements, afterElements,
       { salto: mockChangeValidator })
@@ -206,7 +214,7 @@ describe('filterInvalidChanges', () => {
 
   it('should have onRemove change errors', async () => {
     const beforeInvalidObj = new ObjectType({ elemID: new ElemID('salto', 'before_invalid_obj') })
-    beforeInvalidObj.fields.invalid = new Field(beforeInvalidObj.elemID, 'invalid',
+    beforeInvalidObj.fields.invalid = new Field(beforeInvalidObj, 'invalid',
       BuiltinTypes.STRING)
     const beforeInvalidInst = new InstanceElement('before_invalid_inst', beforeInvalidObj, {})
     const planResult = await getPlan([...allElements, beforeInvalidObj, beforeInvalidInst],

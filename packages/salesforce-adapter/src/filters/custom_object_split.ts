@@ -31,15 +31,6 @@ const getObjectDirectoryPath = (obj: ObjectType, namespace?: string): string[] =
   return [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
 }
 
-const createAnnotationsObject = (customObject: ObjectType, namespace?: string): ObjectType =>
-  (new ObjectType({
-    elemID: customObject.elemID,
-    annotationTypes: customObject.annotationTypes,
-    annotations: customObject.annotations,
-    path: [...getObjectDirectoryPath(customObject, namespace),
-      annotationsFileName(customObject.elemID.name)],
-  }))
-
 const createCustomFieldsObjects = (
   customObject: ObjectType,
   objNamespace?: string
@@ -88,7 +79,13 @@ const createCustomFieldsObjects = (
 
 const customObjectToSplittedElements = (customObject: ObjectType): ObjectType[] => {
   const namespace = getNamespace(customObject)
-  const annotationsObject = createAnnotationsObject(customObject, namespace)
+  const annotationsObject = new ObjectType({
+    elemID: customObject.elemID,
+    annotationTypes: customObject.annotationTypes,
+    annotations: customObject.annotations,
+    path: [...getObjectDirectoryPath(customObject, namespace),
+      annotationsFileName(customObject.elemID.name)],
+  })
   const standardFieldsObject = new ObjectType({
     elemID: customObject.elemID,
     fields: _.pickBy(customObject.fields, (f: Field) => !isCustom(f.elemID.getFullName())),

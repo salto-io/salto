@@ -99,7 +99,7 @@ export const allMissingTypes = {
   ChatterAnswerSettings: CHATTER_ANSWERS_SETTINGS,
   caseClassificationSettings: CASE_CLASSIFICATION_SETTINGS,
   ChatterEmailMdSettings: CHATTER_EMAIL_MDSETTINGS,
-  IotSettings: IOT_SETTINGS,
+  IoTSettings: IOT_SETTINGS,
   MapAndLocationSettings: MAP_AND_LOCATION_SETTINGS,
   ObjectLinkingSettings: OBJECT_LINKING_SETTINGS,
   PredictionBuiderSettings: PREDICTION_BUILDER_SETTINGS,

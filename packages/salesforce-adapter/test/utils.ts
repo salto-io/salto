@@ -24,7 +24,7 @@ import JSZip from 'jszip'
 import * as constants from '../src/constants'
 import {
   annotationsFileName, customFieldsFileName, standardFieldsFileName,
-} from '../src/filters/custom_objects'
+} from '../src/filters/custom_object_split'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,

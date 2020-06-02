@@ -30,7 +30,7 @@ describe('Test layout filter', () => {
 
   const mockSObject = new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'test'),
-    annotations: {},
+    annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
   })
 
   const filter = makeFilter({ client }) as FilterWith<'onFetch'>

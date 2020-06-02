@@ -104,6 +104,9 @@ describe('Custom Objects filter', () => {
         pluralLabel: { type: BuiltinTypes.STRING },
         enableFeeds: { type: BuiltinTypes.BOOLEAN },
       },
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_OBJECT,
+      },
     })
   }
 
@@ -154,9 +157,6 @@ describe('Custom Objects filter', () => {
         ))
     }
 
-    const findLeadAnnotationsObject = (): ObjectType =>
-      result.find(o => o.elemID.name === 'Lead' && o.annotations[API_NAME]) as ObjectType
-
     it('should fetch sobject with primitive types, validate type, label, required and default annotations', async () => {
       mockSingleSObject('Lead', [
         {
@@ -204,37 +204,33 @@ describe('Custom Objects filter', () => {
       ])
       await filter().onFetch(result)
       const leadElements = findElements(result, 'Lead')
-      expect(leadElements).toHaveLength(3)
+      expect(leadElements).toHaveLength(1)
       // Standard fields
-      const leadStandardFieldsObj = leadElements
-        .find(elem => elem.path?.slice(-1)[0] === 'LeadStandardFields') as ObjectType
-      expect(leadStandardFieldsObj).toBeDefined()
-      expect(leadStandardFieldsObj.fields.LastName.type.elemID.name).toBe('Text')
-      expect(leadStandardFieldsObj.fields.LastName.annotations.label).toBe('Last Name')
+      const leadObj = leadElements
+        .find(elem => elem.path?.slice(-1)[0] === 'Lead') as ObjectType
+      expect(leadObj).toBeDefined()
+      expect(leadObj.fields.LastName.type.elemID.name).toBe('Text')
+      expect(leadObj.fields.LastName.annotations.label).toBe('Last Name')
       // Test Required true and false
-      expect(leadStandardFieldsObj.fields.LastName.annotations[CORE_ANNOTATIONS.REQUIRED])
+      expect(leadObj.fields.LastName.annotations[CORE_ANNOTATIONS.REQUIRED])
         .toBe(true)
-      expect(leadStandardFieldsObj.fields.FirstName.annotations[CORE_ANNOTATIONS.REQUIRED])
+      expect(leadObj.fields.FirstName.annotations[CORE_ANNOTATIONS.REQUIRED])
         .toBe(false)
       // Default string and boolean
-      expect(leadStandardFieldsObj.fields.LastName.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE])
+      expect(leadObj.fields.LastName.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE])
         .toBe('BLABLA')
-      expect(leadStandardFieldsObj.fields.IsDeleted.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE])
+      expect(leadObj.fields.IsDeleted.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE])
         .toBe(false)
 
-      // Custom fields
-      const leadCustomFieldsObj = leadElements
-        .find(elem => elem.path?.slice(-1)[0] === 'LeadCustomFields') as ObjectType
-      expect(leadCustomFieldsObj).toBeDefined()
       // Custom type
-      expect(leadCustomFieldsObj.fields.Custom__c).not.toBeUndefined()
-      expect(leadCustomFieldsObj.fields.Custom__c.annotations[API_NAME]).toBe('Lead.Custom__c')
-      expect(leadCustomFieldsObj.fields.Custom__c.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE])
+      expect(leadObj.fields.Custom__c).not.toBeUndefined()
+      expect(leadObj.fields.Custom__c.annotations[API_NAME]).toBe('Lead.Custom__c')
+      expect(leadObj.fields.Custom__c.annotations[FIELD_ANNOTATIONS.DEFAULT_VALUE])
         .toBe(false)
       // Formula field
-      expect(leadCustomFieldsObj.fields.Formula__c).toBeDefined()
-      expect(leadCustomFieldsObj.fields.Formula__c.type.elemID.name).toBe('FormulaText')
-      expect(leadCustomFieldsObj.fields.Formula__c.annotations[FORMULA]).toBe('my formula')
+      expect(leadObj.fields.Formula__c).toBeDefined()
+      expect(leadObj.fields.Formula__c.type.elemID.name).toBe('FormulaText')
+      expect(leadObj.fields.Formula__c.annotations[FORMULA]).toBe('my formula')
     })
 
     it('should fetch sobject with picklist field', async () => {
@@ -305,19 +301,18 @@ describe('Custom Objects filter', () => {
     it('should fetch sobject with apiName and metadataType service ids', async () => {
       mockSingleSObject('Lead', [])
       await filter().onFetch(result)
-
-      const leadAnnotationsObj = findLeadAnnotationsObject()
-      expect(leadAnnotationsObj.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
-      expect(leadAnnotationsObj.annotationTypes[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
-      expect(leadAnnotationsObj.annotations[API_NAME]).toEqual('Lead')
-      expect(leadAnnotationsObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
+      const lead = findElements(result, 'Lead').pop() as ObjectType
+      expect(lead.annotationTypes[API_NAME]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(lead.annotationTypes[METADATA_TYPE]).toEqual(BuiltinTypes.SERVICE_ID)
+      expect(lead.annotations[API_NAME]).toEqual('Lead')
+      expect(lead.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
     })
 
     it('should fetch sobject with label', async () => {
       mockSingleSObject('Lead', [], false, true, false, 'Lead Label')
       await filter().onFetch(result)
-      const leadAnnotationsObj = findLeadAnnotationsObject()
-      expect(leadAnnotationsObj.annotations[LABEL]).toEqual('Lead Label')
+      const lead = findElements(result, 'Lead').pop() as ObjectType
+      expect(lead.annotations[LABEL]).toEqual('Lead Label')
     })
 
     it('should use existing elemID when fetching custom object', async () => {
@@ -411,42 +406,6 @@ describe('Custom Objects filter', () => {
         .annotations[FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
     })
 
-    it('should split customizations to different elements', async () => {
-      mockSingleSObject('Test', [
-        {
-          name: 'dummy', label: 'dummy', type: 'string',
-        },
-        {
-          name: 'CustomField__c', label: 'custom field', type: 'string', custom: true,
-        },
-      ])
-
-      await filter().onFetch(result)
-
-      const testElements = findElements(result, 'Test') as ObjectType[]
-      expect(testElements).toHaveLength(3)
-      const annotationsObj = testElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Test', 'TestAnnotations'])) as ObjectType
-      expect(annotationsObj).toBeDefined()
-      expect(annotationsObj.annotations[API_NAME]).toBeDefined()
-      expect(annotationsObj.fields.dummy).toBeUndefined()
-      expect(annotationsObj.fields.CustomField__c).toBeUndefined()
-
-      const standardFieldsObj = testElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Test', 'TestStandardFields'])) as ObjectType
-      expect(standardFieldsObj).toBeDefined()
-      expect(standardFieldsObj.fields.dummy).toBeDefined()
-      expect(standardFieldsObj.fields.CustomField__c).toBeUndefined()
-      expect(standardFieldsObj.annotations[API_NAME]).toBeUndefined()
-
-      const customFieldsObj = testElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Test', 'TestCustomFields'])) as ObjectType
-      expect(customFieldsObj).toBeDefined()
-      expect(customFieldsObj.fields.dummy).toBeUndefined()
-      expect(customFieldsObj.fields.CustomField__c).toBeDefined()
-      expect(customFieldsObj.annotations[API_NAME]).toBeUndefined()
-    })
-
     it('should filter (inner) SObjects that are not custom objects', async () => {
       mockSingleSObject('Test', [
         {
@@ -481,36 +440,17 @@ describe('Custom Objects filter', () => {
       await filter().onFetch(result)
 
       const testElements = findElements(result, 'namespaceName__Test__c') as ObjectType[]
-      expect(testElements).toHaveLength(3)
-      const annotationsObj = testElements.find(obj =>
+      expect(testElements).toHaveLength(1)
+      const object = testElements.find(obj =>
         _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, namespaceName, OBJECTS_PATH,
-          'namespaceName__Test__c', 'namespaceName__Test__cAnnotations'])) as ObjectType
-      expect(annotationsObj).toBeDefined()
-      expect(annotationsObj.annotations[API_NAME]).toBeDefined()
-      expect(annotationsObj.fields.dummy).toBeUndefined()
-      expect(annotationsObj.fields.CustomField__c).toBeUndefined()
-      expect(annotationsObj.fields[fieldWithNamespaceName]).toBeUndefined()
-
-      const standardFieldsObj = testElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, namespaceName, OBJECTS_PATH,
-          'namespaceName__Test__c', 'namespaceName__Test__cStandardFields'])) as ObjectType
-      expect(standardFieldsObj).toBeDefined()
-      expect(standardFieldsObj.fields.dummy).toBeDefined()
-      expect(standardFieldsObj.fields.CustomField__c).toBeUndefined()
-      expect(standardFieldsObj.fields[fieldWithNamespaceName]).toBeUndefined()
-      expect(standardFieldsObj.annotations[API_NAME]).toBeUndefined()
-
-      const customFieldsObj = testElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, namespaceName, OBJECTS_PATH,
-          'namespaceName__Test__c', 'namespaceName__Test__cCustomFields'])) as ObjectType
-      expect(customFieldsObj).toBeDefined()
-      expect(customFieldsObj.fields.dummy).toBeUndefined()
-      expect(customFieldsObj.fields.CustomField__c).toBeDefined()
-      expect(customFieldsObj.fields[fieldWithNamespaceName]).toBeDefined()
-      expect(customFieldsObj.annotations[API_NAME]).toBeUndefined()
+          'namespaceName__Test__c', 'namespaceName__Test__c'])) as ObjectType
+      expect(object).toBeDefined()
+      expect(object.annotations[API_NAME]).toBeDefined()
+      expect(object.fields.dummy).toBeDefined()
+      expect(object.fields[fieldWithNamespaceName]).toBeDefined()
     })
 
-    it('should fetch standard sobject with packaged and not packaged custom field', async () => {
+    it('should fetch sobject with packaged and not packaged custom field', async () => {
       const namespaceName = 'namespaceName'
       mockSingleSObject('Lead', [
         {
@@ -527,39 +467,13 @@ describe('Custom Objects filter', () => {
       await filter().onFetch(result)
 
       const leadElements = findElements(result, 'Lead') as ObjectType[]
-      expect(leadElements).toHaveLength(4)
-      const annotationsObj = leadElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'LeadAnnotations'])) as ObjectType
-      expect(annotationsObj).toBeDefined()
-      expect(annotationsObj.annotations[API_NAME]).toBeDefined()
-      expect(annotationsObj.fields.dummy).toBeUndefined()
-      expect(annotationsObj.fields.CustomField__c).toBeUndefined()
-      expect(annotationsObj.fields.namespaceName__PackagedField__c).toBeUndefined()
-
-      const standardFieldsObj = leadElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'LeadStandardFields'])) as ObjectType
-      expect(standardFieldsObj).toBeDefined()
-      expect(standardFieldsObj.fields.dummy).toBeDefined()
-      expect(standardFieldsObj.fields.CustomField__c).toBeUndefined()
-      expect(standardFieldsObj.fields.namespaceName__PackagedField__c).toBeUndefined()
-      expect(standardFieldsObj.annotations[API_NAME]).toBeUndefined()
-
-      const customFieldsObj = leadElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'LeadCustomFields'])) as ObjectType
-      expect(customFieldsObj).toBeDefined()
-      expect(customFieldsObj.fields.dummy).toBeUndefined()
-      expect(customFieldsObj.fields.namespaceName__PackagedField__c).toBeUndefined()
-      expect(customFieldsObj.fields.CustomField__c).toBeDefined()
-      expect(customFieldsObj.annotations[API_NAME]).toBeUndefined()
-
-      const packagedCustomFieldsObj = leadElements.find(obj =>
-        _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, namespaceName, OBJECTS_PATH,
-          'Lead', 'LeadCustomFields'])) as ObjectType
-      expect(packagedCustomFieldsObj).toBeDefined()
-      expect(packagedCustomFieldsObj.fields.dummy).toBeUndefined()
-      expect(packagedCustomFieldsObj.fields.CustomField__c).toBeUndefined()
-      expect(packagedCustomFieldsObj.fields.namespaceName__PackagedField__c).toBeDefined()
-      expect(packagedCustomFieldsObj.annotations[API_NAME]).toBeUndefined()
+      expect(leadElements).toHaveLength(1)
+      const object = leadElements.find(obj =>
+        _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
+      expect(object).toBeDefined()
+      expect(object.annotations[API_NAME]).toBeDefined()
+      expect(object.fields.CustomField__c).toBeDefined()
+      expect(object.fields.namespaceName__PackagedField__c).toBeDefined()
     })
 
     it('should not fetch SObjects that conflict with metadata types', async () => {
@@ -585,7 +499,10 @@ describe('Custom Objects filter', () => {
 
     describe('Merge elements', () => {
       const testInstanceElement = new InstanceElement('Lead', new ObjectType(
-        { elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT) }
+        {
+          elemID: mockGetElemIdFunc(SALESFORCE, {}, CUSTOM_OBJECT),
+          annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+        }
       ),
       { fields: [
         {
@@ -852,7 +769,7 @@ describe('Custom Objects filter', () => {
         })
 
         describe('when instance exist but no object returned from soap API', () => {
-          it('should create custom fields from a custom object instance', async () => {
+          it('should create custom object from a custom object instance with custom fields', async () => {
             const leadInstanceWithCustomFields = testInstanceElement.clone()
             leadInstanceWithCustomFields.value.fields = {
               [INSTANCE_FULL_NAME_FIELD]: 'MyAutoNumber__c',
@@ -864,61 +781,40 @@ describe('Custom Objects filter', () => {
             await filter().onFetch(result)
 
             const leadElements = result.filter(o => o.elemID.name === 'Lead')
-            expect(leadElements).toHaveLength(2)
-            const leadCustomFieldsObj = leadElements.find(obj =>
-              _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'LeadCustomFields'])) as ObjectType
-            expect(leadCustomFieldsObj).toBeDefined()
-            expect(leadCustomFieldsObj.fields.MyAutoNumber__c
+            expect(leadElements).toHaveLength(1)
+            const leadObj = leadElements.find(obj =>
+              _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
+            expect(leadObj).toBeDefined()
+            expect(leadObj.fields.MyAutoNumber__c
               .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
           })
 
-          it('should create standard fields from a custom object instance', async () => {
+          it('should create custom object from a custom object instance with standard fields', async () => {
             result.push(testInstanceElement)
             await filter().onFetch(result)
 
             const leadElements = result.filter(o => o.elemID.name === 'Lead')
-            expect(leadElements).toHaveLength(2)
+            expect(leadElements).toHaveLength(1)
             const leadStandardFieldsObj = leadElements.find(obj =>
-              _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'LeadStandardFields'])) as ObjectType
+              _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
             expect(leadStandardFieldsObj).toBeDefined()
             expect(leadStandardFieldsObj.fields.MyAutoNumber
               .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
           })
 
-          it('should create packaged custom fields from a custom object instance', async () => {
-            const leadInstanceWithCustomFields = testInstanceElement.clone()
-            leadInstanceWithCustomFields.value.fields = {
-              [INSTANCE_FULL_NAME_FIELD]: 'myNamespace__MyAutoNumber__c',
-              [INSTANCE_TYPE_FIELD]: 'AutoNumber',
-              [FIELD_ANNOTATIONS.DISPLAY_FORMAT]: 'A-{0000}',
-              [INSTANCE_REQUIRED_FIELD]: 'false',
-            }
-            result.push(leadInstanceWithCustomFields)
-            await filter().onFetch(result)
-
-            const leadElements = result.filter(o => o.elemID.name === 'Lead')
-            expect(leadElements).toHaveLength(2)
-            const leadCustomFieldsObj = leadElements.find(obj =>
-              _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'myNamespace', OBJECTS_PATH,
-                'Lead', 'LeadCustomFields'])) as ObjectType
-            expect(leadCustomFieldsObj).toBeDefined()
-            expect(leadCustomFieldsObj.fields.myNamespace__MyAutoNumber__c
-              .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
-          })
-
-          it('should create standard fields from a packaged custom object instance', async () => {
+          it('should create custom object from a packaged custom object instance', async () => {
             const leadInstanceWithCustomFields = testInstanceElement.clone()
             leadInstanceWithCustomFields.value[INSTANCE_FULL_NAME_FIELD] = 'myNamespace__Lead__c'
             result.push(leadInstanceWithCustomFields)
             await filter().onFetch(result)
 
             const leadElements = result.filter(o => o.elemID.name === 'myNamespace__Lead__c')
-            expect(leadElements).toHaveLength(2)
-            const leadStandardFieldsObj = leadElements.find(obj =>
+            expect(leadElements).toHaveLength(1)
+            const leadObj = leadElements.find(obj =>
               _.isEqual(obj.path, [SALESFORCE, INSTALLED_PACKAGES_PATH, 'myNamespace', OBJECTS_PATH,
-                'myNamespace__Lead__c', 'myNamespace__Lead__cStandardFields'])) as ObjectType
-            expect(leadStandardFieldsObj).toBeDefined()
-            expect(leadStandardFieldsObj.fields.MyAutoNumber
+                'myNamespace__Lead__c', 'myNamespace__Lead__c'])) as ObjectType
+            expect(leadObj).toBeDefined()
+            expect(leadObj.fields.MyAutoNumber
               .annotations[FIELD_ANNOTATIONS.DISPLAY_FORMAT]).toBe('A-{0000}')
           })
         })
@@ -962,7 +858,7 @@ describe('Custom Objects filter', () => {
           mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
           result.push(customObjectInstance)
           await filter().onFetch(result)
-          expect(result).toHaveLength(3)
+          expect(result).toHaveLength(2)
           const resultFullNames = result.map(elem => elem.elemID.getFullName())
           expect(resultFullNames).not.toContain(customObjectInstance.elemID.getFullName())
           expect(resultFullNames).not.toContain(customObjectType.elemID.getFullName())
@@ -973,10 +869,12 @@ describe('Custom Objects filter', () => {
           const articleTypeObj = new ObjectType({ elemID: new ElemID(SALESFORCE, 'ArticleType'),
             annotations: {
               [API_NAME]: 'ArticleType__kav',
+              [METADATA_TYPE]: CUSTOM_OBJECT,
             } })
           const platformEventObj = new ObjectType({ elemID: new ElemID(SALESFORCE, 'PlatformEvent'),
             annotations: {
               [API_NAME]: 'PlatformEvent__e',
+              [METADATA_TYPE]: CUSTOM_OBJECT,
             } })
           const articleTypeChannelDisplayTypeObj = new ObjectType(
             {
@@ -1020,31 +918,31 @@ describe('Custom Objects filter', () => {
           mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
           result.push(customObjectInstance)
           await filter().onFetch(result)
-          const leadAnnotationsObj = findLeadAnnotationsObject()
-          expect(leadAnnotationsObj.annotationTypes.enableFeeds).toBeDefined()
-          expect(leadAnnotationsObj.annotations.enableFeeds).toBeTruthy()
-          expect(leadAnnotationsObj.annotationTypes.pluralLabel).toBeUndefined()
-          expect(leadAnnotationsObj.annotations.pluralLabel).toBeUndefined()
+          const lead = findElements(result, 'Lead').pop() as ObjectType
+          expect(lead.annotationTypes.enableFeeds).toBeDefined()
+          expect(lead.annotations.enableFeeds).toBeTruthy()
+          expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+          expect(lead.annotations.pluralLabel).toBeUndefined()
         })
 
         it('should merge regular instance element annotations into the custom-custom object type', async () => {
           mockSingleSObject('Lead', [], false, true, true, 'Instance Label')
           result.push(customObjectInstance)
           await filter().onFetch(result)
-          const leadAnnotationsObj = findLeadAnnotationsObject()
-          expect(leadAnnotationsObj.annotationTypes.enableFeeds).toBeDefined()
-          expect(leadAnnotationsObj.annotations.enableFeeds).toBeTruthy()
-          expect(leadAnnotationsObj.annotationTypes.pluralLabel).toBeDefined()
-          expect(leadAnnotationsObj.annotations.pluralLabel).toEqual('Leads')
+          const lead = findElements(result, 'Lead').pop() as ObjectType
+          expect(lead.annotationTypes.enableFeeds).toBeDefined()
+          expect(lead.annotations.enableFeeds).toBeTruthy()
+          expect(lead.annotationTypes.pluralLabel).toBeDefined()
+          expect(lead.annotations.pluralLabel).toEqual('Leads')
         })
 
         it('should not merge nested instances into lead objects', async () => {
           mockSingleSObject('Lead', [], false, true, false, 'Instance Label')
           result.push(customObjectInstance)
           await filter().onFetch(result)
-          const leadAnnotationsObj = findLeadAnnotationsObject()
-          expect(leadAnnotationsObj.annotationTypes.listViews).toBeUndefined()
-          expect(leadAnnotationsObj.annotations.listViews).toBeUndefined()
+          const lead = findElements(result, 'Lead').pop() as ObjectType
+          expect(lead.annotationTypes.listViews).toBeUndefined()
+          expect(lead.annotations.listViews).toBeUndefined()
         })
 
         it('should create instance element for nested instances of custom object', async () => {
@@ -1097,19 +995,19 @@ describe('Custom Objects filter', () => {
           it('should merge regular instance element annotations into the object type', async () => {
             result.push(customObjectInstance)
             await filter().onFetch(result)
-            const leadAnnotationsObj = findLeadAnnotationsObject()
-            expect(leadAnnotationsObj.annotationTypes.enableFeeds).toBeDefined()
-            expect(leadAnnotationsObj.annotations.enableFeeds).toBeTruthy()
-            expect(leadAnnotationsObj.annotationTypes.pluralLabel).toBeUndefined()
-            expect(leadAnnotationsObj.annotations.pluralLabel).toBeUndefined()
+            const lead = findElements(result, 'Lead').pop() as ObjectType
+            expect(lead.annotationTypes.enableFeeds).toBeDefined()
+            expect(lead.annotations.enableFeeds).toBeTruthy()
+            expect(lead.annotationTypes.pluralLabel).toBeUndefined()
+            expect(lead.annotations.pluralLabel).toBeUndefined()
           })
 
           it('should not merge nested instances into lead object', async () => {
             result.push(customObjectInstance)
             await filter().onFetch(result)
-            const leadAnnotationsObj = findLeadAnnotationsObject()
-            expect(leadAnnotationsObj.annotationTypes.listViews).toBeUndefined()
-            expect(leadAnnotationsObj.annotations.listViews).toBeUndefined()
+            const lead = findElements(result, 'Lead').pop() as ObjectType
+            expect(lead.annotationTypes.listViews).toBeUndefined()
+            expect(lead.annotations.listViews).toBeUndefined()
           })
 
           it('should create instance element for nested instances of custom object', async () => {

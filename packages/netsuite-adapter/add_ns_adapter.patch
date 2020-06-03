@@ -1,5 +1,5 @@
 diff --git a/packages/core/package.json b/packages/core/package.json
-index 70e6ac1a..5f8473f2 100644
+index c26b0e63..a6c0a302 100644
 --- a/packages/core/package.json
 +++ b/packages/core/package.json
 @@ -39,6 +39,7 @@
@@ -28,7 +28,7 @@ index d07a7fad..ac0ee196 100644
  
  export default adapterCreators
 diff --git a/packages/core/tsconfig.json b/packages/core/tsconfig.json
-index 22cc9ff7..7b7af175 100644
+index 5bae48d6..630039de 100644
 --- a/packages/core/tsconfig.json
 +++ b/packages/core/tsconfig.json
 @@ -8,6 +8,9 @@
@@ -41,3 +41,11 @@ index 22cc9ff7..7b7af175 100644
              ]
          },
          "lib": [
+@@ -26,6 +29,7 @@
+         { "path": "../file" },
+         { "path": "../file" },
+         { "path": "../hubspot-adapter" },
++        { "path": "../netsuite-adapter" },
+         { "path": "../logging" },
+         { "path": "../lowerdash" },
+         { "path": "../salesforce-adapter" },

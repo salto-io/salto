@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, StaticFile } from '@salto-io/adapt
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, getAllTypes } from '../src/types'
-import { ENTITY_CUSTOM_FIELD, NETSUITE, SCRIPT_ID } from '../src/constants'
+import { ENTITY_CUSTOM_FIELD, NETSUITE, SCRIPT_ID, SAVED_SEARCH } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { convertToCustomizationInfo } from '../src/client/client'
 
@@ -56,6 +56,16 @@ describe('Adapter', () => {
         + '  <label>elementName</label>'
         + '</unknowntype>'
       const customizationInfo = convertToCustomizationInfo(xmlContent)
+      client.listCustomObjects = jest.fn().mockImplementation(async () => [customizationInfo])
+      const { elements } = await netsuiteAdapter.fetch()
+      expect(elements).toHaveLength(getAllTypes().length)
+    })
+
+    it('should ignore instances from customTypesToSkip', async () => {
+      const customizationInfo = {
+        typeName: SAVED_SEARCH,
+        values: {},
+      }
       client.listCustomObjects = jest.fn().mockImplementation(async () => [customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
@@ -106,6 +116,11 @@ describe('Adapter', () => {
           new ObjectType({ elemID: new ElemID(NETSUITE, 'UnsupportedType') }))
         await expect(netsuiteAdapter.add(instWithUnsupportedType)).rejects.toThrow()
       })
+
+      it('should throw error when trying to add a customTypesToSkip instance', async () => {
+        const shouldSkipInst = new InstanceElement('skip', customTypes[SAVED_SEARCH])
+        await expect(netsuiteAdapter.add(shouldSkipInst)).rejects.toThrow()
+      })
     })
 
     describe('update', () => {
@@ -147,6 +162,12 @@ describe('Adapter', () => {
         await expect(
           netsuiteAdapter.update(instWithUnsupportedType, instWithUnsupportedType.clone())
         ).rejects.toThrow()
+      })
+
+      it('should throw error when trying to update a customTypesToSkip instance', async () => {
+        const shouldSkipInst = new InstanceElement('skip', customTypes[SAVED_SEARCH])
+        await expect(netsuiteAdapter.update(shouldSkipInst, shouldSkipInst.clone()))
+          .rejects.toThrow()
       })
     })
   })

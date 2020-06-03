@@ -26,6 +26,7 @@ export const ADDRESS_FORM = 'addressForm'
 export const ENTRY_FORM = 'entryForm'
 export const TRANSACTION_FORM = 'transactionForm'
 export const EMAIL_TEMPLATE = 'emailtemplate'
+export const SAVED_SEARCH = 'savedsearch'
 
 // Type Annotations
 export const SCRIPT_ID_PREFIX = 'scriptIdPrefix'

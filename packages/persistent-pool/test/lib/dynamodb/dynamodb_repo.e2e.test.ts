@@ -93,13 +93,9 @@ describe('when there are existing leases', () => {
   })
 
   describe('clear', () => {
-    beforeAll(async () => {
-      await pool.clear()
-    })
+    beforeAll(() => pool.clear())
 
-    afterAll(async () => {
-      await fillPool()
-    })
+    afterAll(fillPool, 30000)
 
     it('should clear the instances', async () => {
       expect(await asyncToArray(pool)).toHaveLength(0)

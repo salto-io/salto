@@ -24,12 +24,14 @@ import {
   createInstanceElement, getCustomObjectLookUpName, toCustomizationInfo,
 } from './transformer'
 import { customTypes, isCustomType, getAllTypes } from './types'
-import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from './constants'
+import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX, SAVED_SEARCH } from './constants'
 
 const log = logger(module)
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
+  // Types that we skip their deployment and fetch
+  customTypesToSkip?: string[]
 }
 
 const validateServiceIds = (before: InstanceElement, after: InstanceElement): void => {
@@ -58,9 +60,16 @@ const addDefaults = (instance: InstanceElement): void => {
 
 export default class NetsuiteAdapter {
   private readonly client: NetsuiteClient
+  private readonly customTypesToSkip: string[]
 
-  public constructor({ client }: NetsuiteAdapterParams) {
+  public constructor({
+    client,
+    customTypesToSkip = [
+      SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch
+    ],
+  }: NetsuiteAdapterParams) {
     this.client = client
+    this.customTypesToSkip = customTypesToSkip
   }
 
   /**
@@ -74,13 +83,22 @@ export default class NetsuiteAdapter {
     })
     const instances = customObjects.map(customObject => {
       const type = customTypes[customObject.typeName]
-      return type ? createInstanceElement(customObject, type) : undefined
+      return type && !this.shouldSkipType(type)
+        ? createInstanceElement(customObject, type)
+        : undefined
     }).filter(isInstanceElement)
     return { elements: [...getAllTypes(), ...instances] }
   }
 
+  private shouldSkipType(type: ObjectType): boolean {
+    return this.customTypesToSkip.includes(type.elemID.name)
+  }
+
   public async add(instance: InstanceElement): Promise<InstanceElement> {
     if (isCustomType(instance.type)) {
+      if (this.shouldSkipType(instance.type)) {
+        throw Error(`Salto skips adding ${instance.type.elemID.name} instances`)
+      }
       const resolved = resolveValues(instance, getCustomObjectLookUpName)
       addDefaults(resolved)
       await this.addOrUpdateCustomTypeInstance(resolved)
@@ -96,6 +114,9 @@ export default class NetsuiteAdapter {
 
   public async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
     if (isCustomType(after.type)) {
+      if (this.shouldSkipType(after.type)) {
+        throw Error(`Salto skips updating ${after.type.elemID.name} instances`)
+      }
       const resBefore = resolveValues(before, getCustomObjectLookUpName)
       const resAfter = resolveValues(after, getCustomObjectLookUpName)
       validateServiceIds(resBefore, resAfter)

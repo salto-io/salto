@@ -68,16 +68,12 @@ export const localState = (filePath: string): State => {
     list: async (): Promise<ElemID[]> =>
       Object.keys((await stateData()).elements).map(n => ElemID.fromFullName(n)),
     get: async (id: ElemID): Promise<Element> => ((await stateData()).elements[id.getFullName()]),
-    set: async (element: Element | Element []): Promise<void> => {
-      makeArray(element).forEach(async e => {
-        (await stateData()).elements[e.elemID.getFullName()] = e
-      })
+    set: async (element: Element): Promise<void> => {
+      (await stateData()).elements[element.elemID.getFullName()] = element
       dirty = true
     },
-    remove: async (id: ElemID | ElemID[]): Promise<void> => {
-      makeArray(id).forEach(async i => {
-        delete (await stateData()).elements[i.getFullName()]
-      })
+    remove: async (id: ElemID): Promise<void> => {
+      delete (await stateData()).elements[id.getFullName()]
       dirty = true
     },
     rename: async (name: string): Promise<void> => {

@@ -17,10 +17,14 @@
 import { ElemID, InstanceElement, ObjectType, StaticFile } from '@salto-io/adapter-api'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
-import { customTypes, getAllTypes } from '../src/types'
-import { ENTITY_CUSTOM_FIELD, NETSUITE, SCRIPT_ID } from '../src/constants'
+import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
+import {
+  ENTITY_CUSTOM_FIELD, NETSUITE, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH,
+} from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import { convertToCustomizationInfo } from '../src/client/client'
+import {
+  convertToCustomizationInfo, FileCustomizationInfo, FolderCustomizationInfo,
+} from '../src/client/client'
 
 describe('Adapter', () => {
   const client = createClient()
@@ -28,25 +32,50 @@ describe('Adapter', () => {
 
   describe('fetch', () => {
     it('should fetch all types and instances', async () => {
+      const folderCustomizationInfo: FolderCustomizationInfo = {
+        typeName: FOLDER,
+        values: {
+        },
+        path: ['a', 'b'],
+      }
+
+      const fileCustomizationInfo: FileCustomizationInfo = {
+        typeName: FILE,
+        values: {
+        },
+        path: ['a', 'b'],
+        fileContent: 'Dummy content',
+      }
+
       const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
         + '  <label>elementName</label>'
         + '</entitycustomfield>'
       const customizationInfo = convertToCustomizationInfo(xmlContent)
-      client.listCustomObjects = jest.fn().mockImplementation(async () => [customizationInfo])
+      client.importFileCabinet = jest.fn()
+        .mockResolvedValue([folderCustomizationInfo, fileCustomizationInfo])
+      client.listCustomObjects = jest.fn().mockResolvedValue([customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
-      expect(elements).toHaveLength(getAllTypes().length + 1)
+      expect(elements).toHaveLength(getAllTypes().length + 3)
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
       expect(elements)
         .toContainEqual(createInstanceElement(customizationInfo, customFieldType))
+      expect(elements)
+        .toContainEqual(createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE]))
+      expect(elements)
+        .toContainEqual(createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER]))
     })
 
     it('should handle exceptions during listCustomObjects', async () => {
-      const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
-        + '  <label>elementName</label>'
-        + '</entitycustomfield>'
-      convertToCustomizationInfo(xmlContent)
+      client.importFileCabinet = jest.fn().mockResolvedValue([])
       client.listCustomObjects = jest.fn().mockImplementation(async () => Promise.reject())
+      const { elements } = await netsuiteAdapter.fetch()
+      expect(elements).toHaveLength(getAllTypes().length)
+    })
+
+    it('should handle exceptions during importFileCabinet', async () => {
+      client.importFileCabinet = jest.fn().mockImplementation(async () => Promise.reject())
+      client.listCustomObjects = jest.fn().mockResolvedValue([])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
     })
@@ -56,6 +85,17 @@ describe('Adapter', () => {
         + '  <label>elementName</label>'
         + '</unknowntype>'
       const customizationInfo = convertToCustomizationInfo(xmlContent)
+      client.importFileCabinet = jest.fn().mockResolvedValue([])
+      client.listCustomObjects = jest.fn().mockResolvedValue([customizationInfo])
+      const { elements } = await netsuiteAdapter.fetch()
+      expect(elements).toHaveLength(getAllTypes().length)
+    })
+
+    it('should ignore instances from typesToSkip', async () => {
+      const customizationInfo = {
+        typeName: SAVED_SEARCH,
+        values: {},
+      }
       client.listCustomObjects = jest.fn().mockImplementation(async () => [customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
@@ -77,9 +117,11 @@ describe('Adapter', () => {
     beforeEach(() => {
       instance = origInstance.clone()
       client.deployCustomObject = jest.fn().mockImplementation(() => Promise.resolve())
+      client.deployFile = jest.fn().mockImplementation(() => Promise.resolve())
+      client.deployFolder = jest.fn().mockImplementation(() => Promise.resolve())
     })
     describe('add', () => {
-      it('should add instance', async () => {
+      it('should add custom type instance', async () => {
         const post = await netsuiteAdapter.add(instance)
 
         const expectedResolvedInstance = instance.clone()
@@ -87,6 +129,24 @@ describe('Adapter', () => {
         expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_my_script_id',
           toCustomizationInfo(expectedResolvedInstance))
         expect(post.isEqual(instance)).toBe(true)
+      })
+
+      it('should add file instance', async () => {
+        const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+        })
+        const post = await netsuiteAdapter.add(fileInstance)
+        expect(client.deployFile).toHaveBeenCalledWith(toCustomizationInfo(fileInstance))
+        expect(post.isEqual(fileInstance)).toBe(true)
+      })
+
+      it('should add folder instance', async () => {
+        const folderInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
+          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
+        })
+        const post = await netsuiteAdapter.add(folderInstance)
+        expect(client.deployFolder).toHaveBeenCalledWith(toCustomizationInfo(folderInstance))
+        expect(post.isEqual(folderInstance)).toBe(true)
       })
 
       it('should add default SCRIPT_ID to custom type instance', async () => {
@@ -101,15 +161,20 @@ describe('Adapter', () => {
           toCustomizationInfo(expectedResolvedInstance))
       })
 
-      it('should throw error when trying to add a non custom type instance', async () => {
+      it('should throw error when trying to add a non custom type or file cabinet instance', async () => {
         const instWithUnsupportedType = new InstanceElement('unsupported',
           new ObjectType({ elemID: new ElemID(NETSUITE, 'UnsupportedType') }))
         await expect(netsuiteAdapter.add(instWithUnsupportedType)).rejects.toThrow()
       })
+
+      it('should throw error when trying to add a typesToSkip instance', async () => {
+        const shouldSkipInst = new InstanceElement('skip', customTypes[SAVED_SEARCH])
+        await expect(netsuiteAdapter.add(shouldSkipInst)).rejects.toThrow()
+      })
     })
 
     describe('update', () => {
-      it('should update instance', async () => {
+      it('should update custom type instance', async () => {
         const post = await netsuiteAdapter.update(instance, instance.clone())
 
         const expectedResolvedInstance = instance.clone()
@@ -117,6 +182,24 @@ describe('Adapter', () => {
         expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_my_script_id',
           toCustomizationInfo(expectedResolvedInstance))
         expect(post).toEqual(instance)
+      })
+
+      it('should update file instance', async () => {
+        const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+        })
+        const post = await netsuiteAdapter.update(fileInstance, fileInstance.clone())
+        expect(client.deployFile).toHaveBeenCalledWith(toCustomizationInfo(fileInstance))
+        expect(post).toEqual(fileInstance)
+      })
+
+      it('should update folder instance', async () => {
+        const folderInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
+          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
+        })
+        const post = await netsuiteAdapter.update(folderInstance, folderInstance.clone())
+        expect(client.deployFolder).toHaveBeenCalledWith(toCustomizationInfo(folderInstance))
+        expect(post).toEqual(folderInstance)
       })
 
       it('should restore static file', async () => {
@@ -134,19 +217,35 @@ describe('Adapter', () => {
         expect(post).toEqual(after)
       })
 
-      it('should throw an error if service id has been modified', async () => {
+      it('should throw an error if custom type service id has been modified', async () => {
         const after = instance.clone()
         after.value[SCRIPT_ID] = 'modified'
         await expect(netsuiteAdapter.update(instance, after)).rejects.toThrow()
         expect(client.deployCustomObject).not.toHaveBeenCalled()
       })
 
-      it('should throw error when trying to update a non custom type instance', async () => {
+      it('should throw an error if file cabinet type service id has been modified', async () => {
+        const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+        })
+        const after = fileInstance.clone()
+        after.value[PATH] = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content2.html'
+        await expect(netsuiteAdapter.update(fileInstance, after)).rejects.toThrow()
+        expect(client.deployFile).not.toHaveBeenCalled()
+      })
+
+      it('should throw error when trying to update a non custom type or file cabinet instance', async () => {
         const instWithUnsupportedType = new InstanceElement('unsupported',
           new ObjectType({ elemID: new ElemID(NETSUITE, 'UnsupportedType') }))
         await expect(
           netsuiteAdapter.update(instWithUnsupportedType, instWithUnsupportedType.clone())
         ).rejects.toThrow()
+      })
+
+      it('should throw error when trying to update a typesToSkip instance', async () => {
+        const shouldSkipInst = new InstanceElement('skip', customTypes[SAVED_SEARCH])
+        await expect(netsuiteAdapter.update(shouldSkipInst, shouldSkipInst.clone()))
+          .rejects.toThrow()
       })
     })
   })

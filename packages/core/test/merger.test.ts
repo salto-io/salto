@@ -17,6 +17,7 @@ import {
   ObjectType, ElemID, BuiltinTypes, InstanceElement, PrimitiveType,
   PrimitiveTypes, TypeElement, Variable,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import {
   mergeElements,
   DuplicateAnnotationTypeError, DuplicateVariableNameError, ConflictingFieldTypesError,
@@ -377,6 +378,50 @@ describe('merger', () => {
       const element = merged[2] as ObjectType
       expect(element.fields.prim.type).toEqual(strType)
       expect(element.fields.base.type).toEqual(base)
+    })
+  })
+
+  describe('merging settings', () => {
+    const settingElemID = new ElemID('salto', 'settingObj')
+    const setting1 = new ObjectType({
+      isSettings: true,
+      elemID: settingElemID,
+      fields: {
+        setting1: { type: BuiltinTypes.STRING },
+      },
+    })
+    const setting2 = new ObjectType({
+      isSettings: true,
+      elemID: settingElemID,
+      fields: {
+        setting2: { type: BuiltinTypes.STRING },
+      },
+    })
+    const mergedSetting = new ObjectType({
+      isSettings: true,
+      elemID: settingElemID,
+      fields: {
+        setting1: { type: BuiltinTypes.STRING },
+        setting2: { type: BuiltinTypes.STRING },
+      },
+    })
+    const badSettingType = new ObjectType({
+      isSettings: false,
+      elemID: settingElemID,
+    })
+
+    it('should merge settings types', () => {
+      const elements = [setting1, setting2]
+      const { merged, errors } = mergeElements(elements)
+      expect(_.isEmpty(errors)).toBeTruthy()
+      expect(merged).toHaveLength(1)
+      expect(merged[0]).toEqual(mergedSetting)
+    })
+    it('should raise an error for isSettingType mismatch', () => {
+      const elements = [setting1, badSettingType]
+      const { errors } = mergeElements(elements)
+      expect(errors).toHaveLength(1)
+      expect(errors[0].message).toEqual('Error merging salto.settingObj: conflicting is settings definitions')
     })
   })
 })

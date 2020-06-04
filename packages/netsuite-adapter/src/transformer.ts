@@ -23,15 +23,21 @@ import {
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH,
-  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX,
+  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH,
 } from './constants'
-import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo } from './client/client'
+import {
+  ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo, TemplateCustomizationInfo,
+  isTemplateCustomizationInfo, isFileCustomizationInfo, FileCustomizationInfo,
+  FolderCustomizationInfo, isFolderCustomizationInfo,
+} from './client/client'
 import { fieldTypes } from './types/field_types'
-import { customTypes } from './types'
+import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
 
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
+
+const FILE_CABINET_PATH_SEPARATOR = '/'
 
 const castToListRecursively = (
   type: ObjectType,
@@ -50,12 +56,23 @@ const castToListRecursively = (
 export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType):
   InstanceElement => {
   const getInstanceName = (transformedValues: Values): string => {
-    const nameField = Object.values(type.fields)
-      .find(f => f.annotations[IS_NAME]) as Field
-    // fallback to SCRIPT_ID since sometimes the IS_NAME field is not mandatory
-    // (e.g. customrecordtype of customsegment)
-    return naclCase(transformedValues[nameField.name] ?? transformedValues[SCRIPT_ID])
+    if (!isCustomType(type) && !isFileCabinetType(type)) {
+      throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
+    }
+    if (isCustomType(type)) {
+      const nameField = Object.values(type.fields)
+        .find(f => f.annotations[IS_NAME]) as Field
+      // fallback to SCRIPT_ID since sometimes the IS_NAME field is not mandatory
+      // (e.g. customrecordtype of customsegment)
+      return naclCase(transformedValues[nameField.name] ?? transformedValues[SCRIPT_ID])
+    }
+    return naclCase(transformedValues[PATH])
   }
+
+  const getInstancePath = (instanceName: string): string[] =>
+    (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)
+      ? [NETSUITE, FILE_CABINET_PATH, ...customizationInfo.path]
+      : [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
 
   const transformPrimitive: TransformFunc = ({ value, field }) => {
     const fieldType = field?.type
@@ -83,13 +100,25 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
 
   const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values,
     transformAttributeKey)
-  const instanceName = getInstanceName(valuesWithTransformedAttrs)
+
   const fileContentField = Object.values(type.fields)
     .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
-  if (fileContentField && customizationInfo.fileContent) {
+
+  if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
+    valuesWithTransformedAttrs[PATH] = customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
+    if (isFileCustomizationInfo(customizationInfo)) {
+      valuesWithTransformedAttrs[(fileContentField as Field).name] = new StaticFile({
+        filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${valuesWithTransformedAttrs[PATH]}`,
+        content: Buffer.from(customizationInfo.fileContent),
+      })
+    }
+  }
+
+  const instanceName = getInstanceName(valuesWithTransformedAttrs)
+  if (fileContentField && isTemplateCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
-      filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.fileContent.extension}`,
-      content: Buffer.from(customizationInfo.fileContent.content),
+      filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.fileExtension}`,
+      content: Buffer.from(customizationInfo.fileContent),
     })
   }
 
@@ -99,8 +128,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     transformFunc: transformPrimitive,
   }) as Values
   castToListRecursively(type, transformedValues)
-  return new InstanceElement(instanceName, type, transformedValues,
-    [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
+  return new InstanceElement(instanceName, type, transformedValues, getInstancePath(instanceName))
 }
 
 export const restoreAttributes = (values: Values, type: ObjectType, instancePath: ElemID):
@@ -185,19 +213,36 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     : transformedValues
 
   const values = restoreAttributes(sortedValues, instance.type, instance.elemID)
-  const customizationInfo: CustomizationInfo = { typeName, values }
 
   const fileContentField = Object.values(instance.type.fields)
     .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
-  if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])) {
-    customizationInfo.fileContent = {
-      extension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
-      content: values[fileContentField.name],
-    }
+
+  // Template Custom Type
+  if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
+    && isCustomType(instance.type)) {
+    const fileContent = values[fileContentField.name]
     delete values[fileContentField.name]
+    return {
+      typeName,
+      values,
+      fileContent,
+      fileExtension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
+    } as TemplateCustomizationInfo
   }
-  return customizationInfo
+
+  if (isFileCabinetType(instance.type)) {
+    const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR)
+    delete values[PATH]
+    if (instance.type.elemID.isEqual(fileCabinetTypes[FILE].elemID)) {
+      const contentFieldName = (fileContentField as Field).name
+      const fileContent = values[contentFieldName]
+      delete values[contentFieldName]
+      return { typeName, values, fileContent, path } as FileCustomizationInfo
+    }
+    return { typeName, values, path } as FolderCustomizationInfo
+  }
+  return { typeName, values }
 }
 
 // todo add support for references!
-export const getCustomObjectLookUpName = (refValue: Value): Value => refValue
+export const getLookUpName = (refValue: Value): Value => refValue

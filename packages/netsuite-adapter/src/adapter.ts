@@ -19,17 +19,23 @@ import {
 import { naclCase, resolveValues, restoreValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import NetsuiteClient, { CustomizationInfo } from './client/client'
+import NetsuiteClient, {
+  CustomizationInfo, isFileCustomizationInfo, isFolderCustomizationInfo,
+} from './client/client'
 import {
-  createInstanceElement, getCustomObjectLookUpName, toCustomizationInfo,
+  createInstanceElement, getLookUpName, toCustomizationInfo,
 } from './transformer'
-import { customTypes, isCustomType, getAllTypes } from './types'
-import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX } from './constants'
+import {
+  customTypes, isCustomType, getAllTypes, fileCabinetTypes, isFileCabinetType,
+} from './types'
+import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX, SAVED_SEARCH } from './constants'
 
 const log = logger(module)
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
+  // Types that we skip their deployment and fetch
+  typesToSkip?: string[]
 }
 
 const validateServiceIds = (before: InstanceElement, after: InstanceElement): void => {
@@ -47,7 +53,7 @@ const validateServiceIds = (before: InstanceElement, after: InstanceElement): vo
 const nameField = (type: ObjectType): Field =>
   Object.values(type.fields).find(field => field.annotations[IS_NAME]) as Field
 
-const addDefaults = (instance: InstanceElement): void => {
+const addCustomTypeDefaults = (instance: InstanceElement): void => {
   if (_.isUndefined(instance.value[SCRIPT_ID])) {
     const { type } = instance
     const scriptIdPrefix = type.annotations[SCRIPT_ID_PREFIX]
@@ -58,9 +64,16 @@ const addDefaults = (instance: InstanceElement): void => {
 
 export default class NetsuiteAdapter {
   private readonly client: NetsuiteClient
+  private readonly typesToSkip: string[]
 
-  public constructor({ client }: NetsuiteAdapterParams) {
+  public constructor({
+    client,
+    typesToSkip = [
+      SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch
+    ],
+  }: NetsuiteAdapterParams) {
     this.client = client
+    this.typesToSkip = typesToSkip
   }
 
   /**
@@ -68,25 +81,41 @@ export default class NetsuiteAdapter {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<FetchResult> {
-    const customObjects = await this.client.listCustomObjects().catch(e => {
-      log.error('failed to list custom objects reason: %o', e)
+    const customObjects = this.client.listCustomObjects().catch(e => {
+      log.error('failed to list custom objects. reason: %o', e)
       return [] as CustomizationInfo[]
     })
-    const instances = customObjects.map(customObject => {
-      const type = customTypes[customObject.typeName]
-      return type ? createInstanceElement(customObject, type) : undefined
+    const fileCabinetContent = this.client.importFileCabinet().catch(e => {
+      log.error('failed to import file cabinet content. reason: %o', e)
+      return [] as CustomizationInfo[]
+    })
+    const customizationInfos = _.flatten(await Promise.all([customObjects, fileCabinetContent]))
+    const instances = customizationInfos.map(customizationInfo => {
+      const type = customTypes[customizationInfo.typeName]
+        ?? fileCabinetTypes[customizationInfo.typeName]
+      return type && !this.shouldSkipType(type)
+        ? createInstanceElement(customizationInfo, type) : undefined
     }).filter(isInstanceElement)
     return { elements: [...getAllTypes(), ...instances] }
   }
 
+  private shouldSkipType(type: ObjectType): boolean {
+    return this.typesToSkip.includes(type.elemID.name)
+  }
+
   public async add(instance: InstanceElement): Promise<InstanceElement> {
-    if (isCustomType(instance.type)) {
-      const resolved = resolveValues(instance, getCustomObjectLookUpName)
-      addDefaults(resolved)
-      await this.addOrUpdateCustomTypeInstance(resolved)
-      return restoreValues(instance, resolved, getCustomObjectLookUpName)
+    if (!isCustomType(instance.type) && !isFileCabinetType(instance.type)) {
+      throw Error('Salto currently supports adding instances of customTypes and fileCabinet only')
     }
-    throw Error('Salto currently supports adding instances of customTypes only')
+    if (this.shouldSkipType(instance.type)) {
+      throw Error(`Salto skips adding ${instance.type.elemID.name} instances`)
+    }
+    const resolved = resolveValues(instance, getLookUpName)
+    if (isCustomType(instance.type)) {
+      addCustomTypeDefaults(resolved)
+    }
+    await this.addOrUpdateCustomizationInstance(resolved)
+    return restoreValues(instance, resolved, getLookUpName)
   }
 
   public async remove(_element: Element): Promise<void> { // todo: implement
@@ -95,18 +124,27 @@ export default class NetsuiteAdapter {
   }
 
   public async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
-    if (isCustomType(after.type)) {
-      const resBefore = resolveValues(before, getCustomObjectLookUpName)
-      const resAfter = resolveValues(after, getCustomObjectLookUpName)
-      validateServiceIds(resBefore, resAfter)
-      await this.addOrUpdateCustomTypeInstance(resAfter)
-      return restoreValues(after, resAfter, getCustomObjectLookUpName)
+    if (!isCustomType(after.type) && !isFileCabinetType(after.type)) {
+      throw Error('Salto currently supports updating instances of customTypes and fileCabinet only')
     }
-    throw Error('Salto currently supports updating instances of customTypes only')
+    if (this.shouldSkipType(after.type)) {
+      throw Error(`Salto skips updating ${after.type.elemID.name} instances`)
+    }
+    const resBefore = resolveValues(before, getLookUpName)
+    const resAfter = resolveValues(after, getLookUpName)
+    validateServiceIds(resBefore, resAfter)
+    await this.addOrUpdateCustomizationInstance(resAfter)
+    return restoreValues(after, resAfter, getLookUpName)
   }
 
-  private async addOrUpdateCustomTypeInstance(instance: InstanceElement): Promise<void> {
+  private async addOrUpdateCustomizationInstance(instance: InstanceElement): Promise<void> {
     const customizationInfo = toCustomizationInfo(instance)
+    if (isFileCustomizationInfo(customizationInfo)) {
+      return this.client.deployFile(customizationInfo)
+    }
+    if (isFolderCustomizationInfo(customizationInfo)) {
+      return this.client.deployFolder(customizationInfo)
+    }
     return this.client.deployCustomObject(instance.value[SCRIPT_ID], customizationInfo)
   }
 }

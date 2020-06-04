@@ -93,6 +93,7 @@ export const filterInvalidChanges = async (
       fields: _.keyBy(validFields, field => field.name),
       annotationTypes: _.clone(afterObj.annotationTypes),
       annotations: _.cloneDeep(afterObj.annotations),
+      isSettings: afterObj.isSettings,
     })
   }
 

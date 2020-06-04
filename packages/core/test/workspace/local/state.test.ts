@@ -60,7 +60,7 @@ describe('local state', () => {
 
     it('should override state successfully, retrieve it and get the same result', async () => {
       const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
-      state.set([newElem])
+      state.set(newElem)
       await state.override([mockElement])
       const retrievedState = await state.getAll()
       expect(retrievedState.length).toBe(1)
@@ -69,7 +69,7 @@ describe('local state', () => {
     })
 
     it('should set state successfully, retrieve it and get the same result', async () => {
-      await state.set([mockElement])
+      await state.set(mockElement)
       const retrievedState = await state.getAll()
       expect(retrievedState.length).toBe(1)
       const retrievedStateObjectType = retrievedState[0] as ObjectType
@@ -77,21 +77,21 @@ describe('local state', () => {
     })
 
     it('should update state', async () => {
-      await state.set([mockElement])
+      await state.set(mockElement)
       const clone = mockElement.clone()
       const newField = Object.values(mockElement.fields)[0]
       newField.name = 'new_field'
       clone.fields.newfield = newField
-      state.set([clone])
+      state.set(clone)
 
       const fromState = await state.get(mockElement.elemID) as ObjectType
       expect(fromState.fields.newfield).toBeDefined()
     })
 
     it('should add to state', async () => {
-      await state.set([mockElement])
+      await state.set(mockElement)
       const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
-      state.set([newElem])
+      state.set(newElem)
 
       const fromState = await state.getAll()
       expect(fromState.length).toBe(2)
@@ -99,7 +99,7 @@ describe('local state', () => {
     })
 
     it('should remove from state', async () => {
-      await state.set([mockElement])
+      await state.set(mockElement)
       let fromState = await state.getAll()
       expect(fromState.length).toBe(1)
 
@@ -125,7 +125,7 @@ describe('local state', () => {
 
   it('should write file on flush', async () => {
     const state = localState('on-flush')
-    await state.set([mockElement])
+    await state.set(mockElement)
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush')
     expect(onFlush).toBeDefined()
@@ -187,18 +187,18 @@ describe('local state', () => {
       readTextFileMock.mockResolvedValueOnce(mockStateStr)
       const state = localState('filename')
 
-      await state.set([mockElement])
+      await state.set(mockElement)
       const overrideDate = await state.getServicesUpdateDates()
       expect(overrideDate.salto).toEqual(saltoModificationDate)
       expect(overrideDate.hubspot).toEqual(hubspotModificationDate)
-      await state.remove([mockElement.elemID])
+      await state.remove(mockElement.elemID)
       expect(overrideDate.salto).toEqual(saltoModificationDate)
       expect(overrideDate.hubspot).toEqual(hubspotModificationDate)
     })
     it('should ignore built in types in set ops', async () => {
       mockExists.mockResolvedValueOnce(true)
       const state = localState('empty')
-      await state.set([BuiltinTypes.STRING])
+      await state.set(BuiltinTypes.STRING)
       const overrideDate = await state.getServicesUpdateDates()
       expect(overrideDate).toEqual({})
     })

@@ -16,6 +16,7 @@
 import { InstanceElement } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import { afterFormInstanceValuesMock } from '../common/mock_elements'
+import { toChangeGroup } from '../common/mock_changes'
 import formFieldValidator from '../../src/change_validators/form_field'
 import { OBJECTS_NAMES } from '../../src/constants'
 
@@ -38,13 +39,13 @@ describe('form field change validator', () => {
     })
 
     it('should work when contactProperty are instances', async () => {
-      const changeErrors = await formFieldValidator.onAdd(addInstance)
+      const changeErrors = await formFieldValidator(toChangeGroup({ after: addInstance }))
       expect(changeErrors).toHaveLength(0)
     })
 
     it('should have errors when not instance at field level', async () => {
       addInstance.value.formFieldGroups[0].fields[0].contactProperty = notInstanceStr
-      const changeErrors = await formFieldValidator.onAdd(addInstance)
+      const changeErrors = await formFieldValidator(toChangeGroup({ after: addInstance }))
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(addInstance.elemID)
@@ -53,7 +54,7 @@ describe('form field change validator', () => {
     it('should have errors when not instance in dependent fields', async () => {
       addInstance.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
         .dependentFormField.contactProperty = notInstanceStr
-      const changeErrors = await formFieldValidator.onAdd(addInstance)
+      const changeErrors = await formFieldValidator(toChangeGroup({ after: addInstance }))
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(addInstance.elemID)
@@ -66,18 +67,12 @@ describe('form field change validator', () => {
       after = formInstance.clone()
     })
     it('should work when contactProperty are instances', async () => {
-      const changeErrors = await formFieldValidator.onUpdate([{
-        action: 'modify',
-        data: { after, before: formInstance },
-      }])
+      const changeErrors = await formFieldValidator(toChangeGroup({ before: formInstance, after }))
       expect(changeErrors).toHaveLength(0)
     })
     it('should have errors when not instance at field level', async () => {
       after.value.formFieldGroups[0].fields[0].contactProperty = notInstanceStr
-      const changeErrors = await formFieldValidator.onUpdate([{
-        action: 'modify',
-        data: { after, before: formInstance },
-      }])
+      const changeErrors = await formFieldValidator(toChangeGroup({ before: formInstance, after }))
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(after.elemID)
@@ -86,10 +81,7 @@ describe('form field change validator', () => {
     it('should have errors when not instance in dependent fields', async () => {
       after.value.formFieldGroups[0].fields[0].dependentFieldFilters[0]
         .dependentFormField.contactProperty = notInstanceStr
-      const changeErrors = await formFieldValidator.onUpdate([{
-        action: 'modify',
-        data: { after, before: formInstance },
-      }])
+      const changeErrors = await formFieldValidator(toChangeGroup({ before: formInstance, after }))
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(after.elemID)

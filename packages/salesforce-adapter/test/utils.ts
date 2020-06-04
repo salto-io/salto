@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, ElemID, Values, ObjectType,
+  Element, ElemID, Values, ObjectType, ChangeDataType, Change, ChangeGroup, getChangeElement,
 } from '@salto-io/adapter-api'
 import {
   findElements as findElementsByID,
@@ -81,4 +81,27 @@ export const findAnnotationsObject = (elements: Element[], name: string): Object
   const customObjects = findElements(elements, name) as ObjectType[]
   return customObjects
     .find(obj => obj.path?.slice(-1)[0] === annotationsFileName(name)) as ObjectType
+}
+
+// TODO: export to common test utils package
+export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
+export const toChange = ({ before, after }: ChangeParams): Change => {
+  if (before !== undefined && after !== undefined) {
+    return { action: 'modify', data: { before, after } }
+  }
+  if (before !== undefined) {
+    return { action: 'remove', data: { before } }
+  }
+  if (after !== undefined) {
+    return { action: 'add', data: { after } }
+  }
+  throw new Error('must provide before or after')
+}
+
+export const toChangeGroup = (...params: ChangeParams[]): ChangeGroup => {
+  const changes = params.map(toChange)
+  return {
+    groupID: getChangeElement(changes[0]).elemID.getFullName(),
+    changes,
+  }
 }

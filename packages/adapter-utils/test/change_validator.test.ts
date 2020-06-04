@@ -14,39 +14,49 @@
 * limitations under the License.
 */
 
-import { Element } from '@salto-io/adapter-api'
+import { ChangeValidator, ChangeError, ObjectType, ElemID, ChangeGroup } from '@salto-io/adapter-api'
 import { createChangeValidator } from '../src/change_validator'
+import { mockFunction, MockFunction, toChangeGroup } from './common'
 
 describe('change_validator', () => {
-  const mockOnUpdate = jest.fn()
-  const mockOnAdd = jest.fn()
-  const mockOnRemove = jest.fn()
+  const testElem = new ObjectType({ elemID: new ElemID('test', 'type') })
 
-  const mockSingleChangeValidator = {
-    onUpdate: mockOnUpdate,
-    onAdd: mockOnAdd,
-    onRemove: mockOnRemove,
-  }
+  let mockValidators: MockFunction<ChangeValidator>[]
+  let changes: ChangeGroup
+  let errors: ChangeError[]
+  let result: ReadonlyArray<ChangeError>
 
-  beforeEach(() => {
-    jest.clearAllMocks()
+  beforeEach(async () => {
+    errors = [
+      {
+        elemID: testElem.elemID,
+        severity: 'Error',
+        message: 'test',
+        detailedMessage: 'test',
+      },
+      {
+        elemID: testElem.elemID,
+        severity: 'Error',
+        message: 'test2',
+        detailedMessage: 'test2',
+      },
+    ]
+    mockValidators = [
+      mockFunction<ChangeValidator>().mockResolvedValue(errors.slice(0, 1)),
+      mockFunction<ChangeValidator>().mockResolvedValue(errors.slice(1)),
+    ]
+    changes = toChangeGroup({ after: testElem })
+    const mainValidator = createChangeValidator(mockValidators)
+    result = await mainValidator(changes)
   })
 
-  it('onAdd', async () => {
-    const changeValidator = createChangeValidator([mockSingleChangeValidator])
-    await changeValidator.onAdd({} as Element)
-    expect(mockOnAdd).toHaveBeenCalled()
+  it('should call all validators', () => {
+    mockValidators.forEach(
+      validator => expect(validator).toHaveBeenCalledWith(changes)
+    )
   })
 
-  it('onUpdate', async () => {
-    const changeValidator = createChangeValidator([mockSingleChangeValidator])
-    await changeValidator.onUpdate([])
-    expect(mockOnUpdate).toHaveBeenCalled()
-  })
-
-  it('onRemove', async () => {
-    const changeValidator = createChangeValidator([mockSingleChangeValidator])
-    await changeValidator.onRemove({} as Element)
-    expect(mockOnRemove).toHaveBeenCalled()
+  it('should return errors from all validators', () => {
+    expect(result).toEqual(errors)
   })
 })

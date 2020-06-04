@@ -18,8 +18,8 @@ import {
 } from './elements'
 import { ElemID } from './element_id'
 import { Change } from './change'
-import { ChangeValidator } from './change_validators'
 import { DependencyChanger } from './dependency_changer'
+import { SaltoElementError } from './error'
 
 type ChangeGroupID = string
 
@@ -48,6 +48,12 @@ export type AdapterOperationsContext = {
   config?: InstanceElement
   getElemIdFunc?: ElemIdGetter
 }
+
+export type ChangeError = SaltoElementError & {
+  detailedMessage: string
+}
+
+export type ChangeValidator = (changes: ChangeGroup) => Promise<ReadonlyArray<ChangeError>>
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

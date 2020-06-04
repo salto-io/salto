@@ -13,34 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, Element } from '@salto-io/adapter-api'
+import { ChangeValidator } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { types } from '@salto-io/lowerdash'
 
-export const runOnUpdateValidators = async (changes: ReadonlyArray<Change>,
-  changeValidators: Partial<ChangeValidator>[]): Promise<ReadonlyArray<ChangeError>> =>
-  _.flatten(await Promise.all(
-    types.filterHasMember('onUpdate', changeValidators)
-      .map(v => v.onUpdate(changes))
-  ))
-
-export const runOnAddValidators = async (after: Element,
-  changeValidators: Partial<ChangeValidator>[]): Promise<ReadonlyArray<ChangeError>> =>
-  _.flatten(await Promise.all(
-    types.filterHasMember('onAdd', changeValidators)
-      .map(v => v.onAdd(after))
-  ))
-
-export const runOnRemoveValidators = async (before: Element,
-  changeValidators: Partial<ChangeValidator>[]): Promise<ReadonlyArray<ChangeError>> =>
-  _.flatten(await Promise.all(
-    types.filterHasMember('onRemove', changeValidators)
-      .map(v => v.onRemove(before))
-  ))
-
-export const createChangeValidator = (changeValidators: Partial<ChangeValidator>[]):
-  ChangeValidator => ({
-  onUpdate: (changes: ReadonlyArray<Change>) => runOnUpdateValidators(changes, changeValidators),
-  onAdd: (after: Element) => runOnAddValidators(after, changeValidators),
-  onRemove: (before: Element) => runOnRemoveValidators(before, changeValidators),
-})
+export const createChangeValidator = (
+  changeValidators: ReadonlyArray<ChangeValidator>
+): ChangeValidator => async changes => (
+  _.flatten(await Promise.all(changeValidators.map(validator => validator(changes))))
+)

@@ -19,7 +19,7 @@ import jsonTypeValidator from './change_validators/json_type'
 import formFieldsValidator from './change_validators/form_field'
 import readonlyValidator from './change_validators/readonly'
 
-const changeValidators: Partial<ChangeValidator>[] = [
+const changeValidators: ChangeValidator[] = [
   readonlyValidator,
   jsonTypeValidator,
   formFieldsValidator,

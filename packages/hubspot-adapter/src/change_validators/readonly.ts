@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ChangeError, Change, isInstanceElement, getChangeElement, isModificationDiff, InstanceElement,
-} from '@salto-io/adapter-api'
+import { ChangeError, isModificationDiff, InstanceElement, ChangeValidator, isInstanceChange } from '@salto-io/adapter-api'
+import { values } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { getLookUpName } from '../transformers/transformer'
 import { OBJECTS_NAMES, FORM_FIELDS, MARKETING_EMAIL_FIELDS, CONTACT_PROPERTY_FIELDS } from '../constants'
@@ -49,27 +48,19 @@ const getReadonlyValidationError = async (before: InstanceElement, after: Instan
           severity: 'Error',
           message: `Unable to edit ${after.elemID.typeName}.${field.name} because it is a read-only field.`,
           detailedMessage: `Unable to edit ${field.name} inside ${before.elemID.getFullName()} because it is a read-only field.`,
-        }
+        } as ChangeError
       }
       return undefined
-    }).filter(v => !_.isUndefined(v)) as ChangeError[]
+    }).filter(values.isDefined)
 }
 
-export const changeValidator = {
-  onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> => {
-    const getChangeError = async (change: Change): Promise<ReadonlyArray<ChangeError>> => {
-      const changeElement = getChangeElement(change)
-      if (isInstanceElement(changeElement) && isModificationDiff(change)
-        && isInstanceElement(change.data.before)) {
-        return getReadonlyValidationError(
-          change.data.before as InstanceElement,
-          change.data.after as InstanceElement
-        )
-      }
-      return []
-    }
-    return _.flatten(await Promise.all(changes.map(change => getChangeError(change))))
-  },
-}
+const changeValidator: ChangeValidator = async changes => (
+  _.flatten(await Promise.all(
+    changes.changes
+      .filter(isInstanceChange)
+      .filter(isModificationDiff)
+      .map(change => getReadonlyValidationError(change.data.before, change.data.after))
+  ))
+)
 
 export default changeValidator

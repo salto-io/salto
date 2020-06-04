@@ -13,10 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  Change, Element, Field, getChangeElement, InstanceElement, isAdditionDiff, isField,
-  isInstanceElement, isModificationDiff, isObjectType, isRemovalDiff, ChangeError,
-} from '@salto-io/adapter-api'
+import { Element, getChangeElement, InstanceElement, isAdditionDiff, isModificationDiff, isObjectType, isRemovalDiff, ChangeError, ChangeValidator, ActionName, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { apiName, isCustom, metadataType } from '../transformers/transformer'
 import { NAMESPACE_SEPARATOR } from '../constants'
@@ -36,108 +33,59 @@ export const hasNamespace = (customElement: Element): boolean => {
 export const getNamespace = (customElement: Element): string =>
   apiName(customElement, true).split(NAMESPACE_SEPARATOR)[0]
 
-export const PACKAGE_VERSION_NUMBER_FIELD_NAME = 'version_number'
+export const PACKAGE_VERSION_FIELD_NAME = 'version_number'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 
-const generateAddPackageMessage = (namespace: string): string =>
-  `You cannot install a package using Salto. Package namespace: ${namespace}`
+const packageChangeError = (
+  action: ActionName,
+  element: Element,
+  detailedMessage = `Cannot ${action} ${element.elemID.idType} because it is part of a package`,
+): ChangeError => ({
+  elemID: element.elemID,
+  severity: 'Error',
+  message: `Cannot change a managed package using Salto. Package namespace: ${getNamespace(element)}`,
+  detailedMessage,
+})
 
-const generateRemovePackageMessage = (namespace: string): string =>
-  `You cannot remove a package using Salto. Package namespace: ${namespace}`
+const isInstalledPackageVersionChange = (
+  { before, after }: { before: InstanceElement; after: InstanceElement }
+): boolean => (
+  metadataType(after) === INSTALLED_PACKAGE_METADATA
+  && before.value[PACKAGE_VERSION_FIELD_NAME] !== after.value[PACKAGE_VERSION_FIELD_NAME]
+)
 
-const generateModifyPackageVersionMessage = (namespace: string): string =>
-  `You cannot modify the version of a package using Salto. Package namespace: ${namespace}`
+const changeValidator: ChangeValidator = async changes => {
+  const addRemoveErrors = changes.changes
+    .filter(change => isAdditionDiff(change) || isRemovalDiff(change))
+    .filter(change => hasNamespace(getChangeElement(change)))
+    .map(change => packageChangeError(change.action, getChangeElement(change)))
 
-export const changeValidator = {
-  onAdd: async (after: Element): Promise<ReadonlyArray<ChangeError>> => {
-    if ((isInstanceElement(after) || isObjectType(after)) && hasNamespace(after)) {
-      return [{
-        elemID: after.elemID,
-        severity: 'Error',
-        message: generateAddPackageMessage(getNamespace(after)),
-        detailedMessage: 'You cannot add an Instance or an Object to a package',
-      }]
-    }
-    if (isObjectType(after)) {
-      return Object.values(after.fields)
-        .filter(hasNamespace)
-        .map(field => ({
-          elemID: field.elemID,
-          severity: 'Error',
-          message: generateAddPackageMessage(getNamespace(field)),
-          detailedMessage: 'You cannot add or remove a field that is a part of a package',
-        }))
-    }
-    return []
-  },
+  const removeObjectWithPackageFieldsErrors = changes.changes
+    .filter(isRemovalDiff)
+    .map(getChangeElement)
+    .filter(isObjectType)
+    .filter(obj => !hasNamespace(obj) && _.some(Object.values(obj.fields).map(hasNamespace)))
+    .map(obj => packageChangeError(
+      'remove',
+      obj,
+      'Cannot remove type because some of its fields belong to a managed package',
+    ))
 
-  onRemove: async (before: Element): Promise<ReadonlyArray<ChangeError>> => {
-    if ((isInstanceElement(before) || isObjectType(before)) && hasNamespace(before)) {
-      return [{
-        elemID: before.elemID,
-        severity: 'Error',
-        message: generateRemovePackageMessage(getNamespace(before)),
-        detailedMessage: 'You cannot remove an Instance or an Object that are a part of a package',
-      }]
-    }
-    if (isObjectType(before)) {
-      const fieldErrors = Object.values(before.fields)
-        .filter(hasNamespace)
-        .map(field => ({
-          elemID: field.elemID,
-          severity: 'Error',
-          message: generateRemovePackageMessage(getNamespace(field)),
-          detailedMessage: 'You cannot add or remove a field that is a part of a package',
-        })) as ChangeError[]
-      if (fieldErrors.length > 0) {
-        return fieldErrors.concat({
-          elemID: before.elemID,
-          severity: 'Error',
-          message: fieldErrors[0].message,
-          detailedMessage: 'You cannot remove an object that contains fields from a package',
-        })
-      }
-    }
-    return []
-  },
+  const packageVersionChangeErrors = changes.changes
+    .filter(isInstanceChange)
+    .filter(isModificationDiff)
+    .filter(change => isInstalledPackageVersionChange(change.data))
+    .map(change => packageChangeError(
+      change.action,
+      getChangeElement(change),
+      'Cannot change installed package version',
+    ))
 
-  onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> => {
-    const isInstalledPackageVersionChange = (change: Change): boolean =>
-      isInstanceElement(getChangeElement(change))
-        && metadataType(getChangeElement(change)) === INSTALLED_PACKAGE_METADATA
-        && isModificationDiff(change)
-        && (change.data.before as InstanceElement).value[PACKAGE_VERSION_NUMBER_FIELD_NAME]
-        !== (change.data.after as InstanceElement).value[PACKAGE_VERSION_NUMBER_FIELD_NAME]
-
-    const isAddOrRemovePackageFieldChange = (change: Change): boolean => {
-      const changeElement = getChangeElement(change)
-      return isField(changeElement)
-        && (isAdditionDiff(change) || isRemovalDiff(change))
-        && hasNamespace(changeElement)
-    }
-
-    const installedPackageVersionChange = changes.find(isInstalledPackageVersionChange)
-    if (installedPackageVersionChange) {
-      return [{
-        elemID: getChangeElement(installedPackageVersionChange).elemID,
-        severity: 'Error',
-        message: generateModifyPackageVersionMessage(
-          getNamespace(getChangeElement(installedPackageVersionChange) as InstanceElement)
-        ),
-        detailedMessage: 'You cannot modify the version number of an InstalledPackage instance element',
-      }]
-    }
-    return changes
-      .filter(isAddOrRemovePackageFieldChange)
-      .map(change => ({
-        elemID: getChangeElement(change).elemID,
-        severity: 'Error',
-        message: isAdditionDiff(change)
-          ? generateAddPackageMessage(getNamespace(change.data.after as Field))
-          : generateRemovePackageMessage(getNamespace(change.data.before as Field)),
-        detailedMessage: 'You cannot add or remove a field that is a part of a package',
-      }))
-  },
+  return [
+    ...addRemoveErrors,
+    ...removeObjectWithPackageFieldsErrors,
+    ...packageVersionChangeErrors,
+  ]
 }
 
 export default changeValidator

@@ -14,10 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import {
-  ChangeError, Change, getChangeElement, isInstanceElement, Element,
-  isModificationDiff, InstanceElement, Value, isReferenceExpression,
-} from '@salto-io/adapter-api'
+import { ChangeError, InstanceElement, Value, isReferenceExpression, ChangeValidator, isInstanceChange, isAdditionOrModificationDiff } from '@salto-io/adapter-api'
 import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
 import { isFormInstance } from '../filters/form_field'
 import {
@@ -62,23 +59,13 @@ const getFormInstanceFieldErrorsFromAfter = async (after: InstanceElement):
   })) as ChangeError[]
 }
 
-export const changeValidator = {
-  onAdd: async (after: Element): Promise<ReadonlyArray<ChangeError>> => {
-    if (!isInstanceElement(after)) {
-      return []
-    }
-    return getFormInstanceFieldErrorsFromAfter(after)
-  },
-  onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> => {
-    const getChangeError = async (change: Change): Promise<ReadonlyArray<ChangeError>> => {
-      const changeElement = getChangeElement(change)
-      if (isInstanceElement(changeElement) && isModificationDiff(change)) {
-        return getFormInstanceFieldErrorsFromAfter(change.data.after as InstanceElement)
-      }
-      return []
-    }
-    return _.flatten(await Promise.all(changes.map(change => getChangeError(change))))
-  },
-}
+const changeValidator: ChangeValidator = async changes => (
+  _.flatten(await Promise.all(
+    changes.changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationDiff)
+      .map(change => getFormInstanceFieldErrorsFromAfter(change.data.after))
+  ))
+)
 
 export default changeValidator

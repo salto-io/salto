@@ -30,9 +30,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
 } from '../src/utils'
-
-export const mockFunction = <T extends (...args: never[]) => unknown>():
-jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
+import { mockFunction } from './common'
 
 describe('Test utils.ts', () => {
   const mockStrType = new PrimitiveType({

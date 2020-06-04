@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import { ChangeError, Element, isInstanceElement } from '@salto-io/adapter-api'
-import { isCustomType } from '../types'
+import { isCustomType, isFileCabinetType } from '../types'
 
 export const changeValidator = {
   onRemove: async (before: Element): Promise<ReadonlyArray<ChangeError>> => {
-    if (isInstanceElement(before) && isCustomType(before.type)) {
+    if (isInstanceElement(before)
+      && (isCustomType(before.type) || isFileCabinetType(before.type))) {
       return [{
         elemID: before.elemID,
         severity: 'Error',
-        message: 'Removing a custom object is not supported using Salto. You can remove it in NetSuite UI',
-        detailedMessage: `Removing a custom object (${before.elemID.name}) is not supported using Salto. You can remove it in NetSuite UI`,
+        message: 'Removing a custom object or file cabinet content is not supported using Salto. You can remove it in NetSuite UI',
+        detailedMessage: `Removing a custom object or file cabinet content (${before.elemID.name}) is not supported using Salto. You can remove it in NetSuite UI`,
       }]
     }
     return []

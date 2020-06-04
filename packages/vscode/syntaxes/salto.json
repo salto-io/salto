@@ -212,7 +212,7 @@
       "include": "#strings"
     },
     {
-      "include": "#heredoc"
+      "include": "#multilineString"
     }
   ],
   "repository": {
@@ -315,21 +315,18 @@
         }
       ]
     },
-    "heredoc": {
-      "begin": "(?>\\s*<<\\s?(\\w+))",
+    "multilineString": {
+      "begin": "'''",
       "beginCaptures": {
         "0": {
           "name": "string.salto punctuation.definition.string.begin.salto"
-        },
-        "1": {
-          "name": "keyword.operator.heredoc.salto"
         }
       },
-      "comment": "Heredoc",
-      "end": "\\1$",
+      "comment": "Strings",
+      "end": "'''",
       "endCaptures": {
         "0": {
-          "name": "string.salto punctuation.definition.string.end.salto keyword.operator.heredoc.salto"
+          "name": "string.salto punctuation.definition.string.end.salto"
         }
       },
       "patterns": [

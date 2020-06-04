@@ -56,6 +56,11 @@ const { makeArray } = collections.array
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
 
+const unsupportedSystemFields = [
+  'LastReferencedDate',
+  'LastViewedDate',
+]
+
 export const NESTED_INSTANCE_VALUE_NAME = {
   WEB_LINKS: 'webLinks',
   VALIDATION_RULES: 'validationRules',
@@ -392,6 +397,17 @@ const removeIrrelevantElements = (elements: Element[]): void => {
     && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(metadataType(elem))))
 }
 
+const removeUnsupportedFields = (elements: Element[], unsupportedSystemFieldsA: string[]): void => {
+  elements.forEach((element: Element): void => {
+    if (!isObjectType(element)) {
+      return
+    }
+    unsupportedSystemFieldsA.forEach(fieldName => {
+      delete element.fields[fieldName]
+    })
+  })
+}
+
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
 const workflowDependentMetadataTypes = new Set([WORKFLOW_METADATA_TYPE,
   ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
@@ -526,8 +542,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     newElements
       .filter(newElem => !elementFullNames.has(id(newElem)))
       .forEach(newElem => elements.push(newElem))
-
     fixDependentInstancesPathAndSetParent(elements)
+    removeUnsupportedFields(elements, unsupportedSystemFields)
   },
 })
 

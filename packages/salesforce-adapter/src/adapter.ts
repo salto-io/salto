@@ -180,6 +180,10 @@ export interface SalesforceAdapterParams {
   // System fields that salesforce may add to custom objects - to be ignored when creating objects
   systemFields?: string[]
 
+  // Unsupported System fields that salesforce may add to custom objects
+  // to not be fetched and managed
+  // unsupportedSystemFields?: string[]
+
   config: SalesforceConfig
 }
 

@@ -20,7 +20,6 @@ import {
 } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials, validateCredentials } from './client/client'
 import changeValidator from './change_validator'
-import { dependencyChanger } from './dependency_changer'
 import SalesforceAdapter from './adapter'
 import { configType, credentialsType, SalesforceConfig } from './types'
 
@@ -63,5 +62,4 @@ export const creator: AdapterCreator = {
   credentialsType,
   configType,
   changeValidator,
-  dependencyChanger,
 }

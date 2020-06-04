@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { EditorRange, PositionContext } from './context'
+import { isIndexPathPart } from '@salto-io/adapter-api'
 
 export enum SaltoSymbolKind {
   File,
@@ -35,7 +36,7 @@ export interface SaltoSymbol {
 const getSaltoSymbolName = (context: PositionContext): string => {
   if (context.ref) {
     const fullName = _.last(context.ref.path) || context.ref.element.elemID.name
-    return Number.isNaN(Number(fullName)) ? fullName : `[${fullName}]`
+    return isIndexPathPart(fullName) ? `[${fullName}]` : fullName
   }
   return 'global'
 }

@@ -56,6 +56,12 @@ export class ConflictingFieldTypesError extends FieldDefinitionMergeError {
   }
 }
 
+export class ConflictingIsSettingError extends MergeError {
+  constructor(elemID: ElemID) {
+    super({ elemID, error: 'conflicting is settings definitions' })
+  }
+}
+
 export class DuplicateAnnotationTypeError extends MergeError {
   readonly key: string
 
@@ -130,17 +136,24 @@ const mergeObjectDefinitions = (
     key => new DuplicateAnnotationError({ elemID, key }),
   )
 
+  const refIsSettings = objects[0].isSettings
+  const isSettingsErrors = _.every(objects, obj => obj.isSettings === refIsSettings)
+    ? []
+    : [new ConflictingIsSettingError(objects[0].elemID)]
+
   return {
     merged: new ObjectType({
       elemID,
       fields: _.mapValues(fieldsMergeResults, r => r.merged),
       annotationTypes: annotationTypesMergeResults.merged,
       annotations: annotationsMergeResults.merged,
+      isSettings: refIsSettings,
     }),
     errors: _.flatten([
       ...Object.values(fieldsMergeResults).map(r => r.errors),
       ...annotationTypesMergeResults.errors,
       ...annotationsMergeResults.errors,
+      ...isSettingsErrors,
     ]),
   }
 }

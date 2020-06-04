@@ -79,6 +79,7 @@ const createObjectTypeFromNestedAdditions = (
     annotationTypes: {},
     annotations: {},
     path: additions[0].path,
+    isSettings: commonObjectType.isSettings,
   }))
 
 const createInstanceElementFromNestedAdditions = (

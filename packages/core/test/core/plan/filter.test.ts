@@ -19,6 +19,7 @@ import {
   ChangeError, isObjectType, Change, getChangeElement, ChangeValidator, ObjectType, ElemID,
   InstanceElement, Field, BuiltinTypes, Element,
 } from '@salto-io/adapter-api'
+import wu from 'wu'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
 import { getPlan } from '../../../src/core/plan'
@@ -74,10 +75,24 @@ describe('filterInvalidChanges', () => {
   it('should have no change errors when having only valid changes', async () => {
     const newValidObj = new ObjectType({ elemID: new ElemID('salto', 'new_valid_obj') })
     const newValidInst = new InstanceElement('new_valid_inst', newValidObj, {})
-    const planResult = await getPlan(allElements, [...allElements, newValidObj, newValidInst],
-      { salto: mockChangeValidator })
+    const newValidSetting = new ObjectType({
+      elemID: new ElemID('salto', 'new_valid_obj'),
+      isSettings: true,
+    })
+    const newElements = [newValidObj, newValidInst, newValidSetting]
+    const planResult = await getPlan(
+      allElements,
+      [...allElements, ...newElements],
+      { salto: mockChangeValidator }
+    )
     expect(planResult.changeErrors).toHaveLength(0)
     expect(planResult.size).toBe(2)
+    newElements.forEach(element => {
+      const oldElement = wu(planResult.itemsByEvalOrder())
+        .map(item => getChangeElement(item.parent()))
+        .find(changeElement => element.elemID.isEqual(changeElement.elemID))
+      expect(oldElement).toBeDefined()
+    })
   })
 
   it('should have onAdd change errors and omit invalid object & instance addition', async () => {

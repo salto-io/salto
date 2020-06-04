@@ -166,6 +166,7 @@ export const deserialize = async (
       fields: v.fields,
       annotationTypes: v.annotationTypes,
       annotations: v.annotations,
+      isSettings: v.isSettings,
     }),
     Variable: v => (
       new Variable(reviveElemID(v.elemID), v.value)

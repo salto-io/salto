@@ -146,9 +146,14 @@ describe('State/cache serialization', () => {
     { name: 'other', num: 5 },
   )
 
+  const settings = new ObjectType({
+    elemID: new ElemID('salto', 'settingObj'),
+    isSettings: true,
+  })
+
   const elements = [strType, numType, boolType, model, strListType, variable, instance,
     subInstance, refInstance, refInstance2, refInstance3, templateRefInstance, functionRefInstance,
-    config]
+    settings, config]
 
   it('should serialize and deserialize all element types', async () => {
     const serialized = serialize(elements)

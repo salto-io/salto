@@ -119,7 +119,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const settingsTypesNames = settingsList.map(set => set.fullName)
 
     // Create all settings types
-    const settingsTypes = await createSettingsTypes(client, config ?? {}, settingsTypesNames)
+    const settingsTypes = await createSettingsTypes(client, config, settingsTypesNames)
 
     // Add all settings types to elements
     const knownTypesNames = new Set<string>(
@@ -130,7 +130,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       .forEach(e => elements.push(e))
 
     // Create all settings instances
-    const settingsInstances = await createSettingsInstances(client, config ?? {}, settingsTypes)
+    const settingsInstances = await createSettingsInstances(client, config, settingsTypes)
 
     settingsInstances.elements.forEach(e => elements.push(e))
     return settingsInstances.configChanges

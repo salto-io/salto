@@ -26,7 +26,7 @@ import { mergeElements, MergeError } from '../../core/merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate,
 } from './nacl_file_update'
-import { mergeSourceMaps, parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
+import { parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
 import { DetailedChange } from '../../core/plan'
@@ -214,7 +214,11 @@ const buildNaclFilesSource = (
           await getSourceMap(ParsedNaclFiles[naclFile].filename)]),
       CACHE_READ_CONCURRENCY)
     )
-    const mergedSourceMap = mergeSourceMaps(Object.values(changedFileToSourceMap))
+    const mergedSourceMap = Object.values(changedFileToSourceMap).reduce((acc, sourceMap) => {
+      acc.merge(sourceMap)
+      return acc
+    }, new SourceMap())
+
     const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)

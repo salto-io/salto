@@ -13,63 +13,26 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
-  TypeElement, ElemID, ObjectType, PrimitiveType, PrimitiveTypes, Values,
-  Element, InstanceElement, SaltoError, INSTANCE_ANNOTATIONS, ListType, Variable, Value,
+  Element, SaltoError, SaltoErrorSeverity,
 } from '@salto-io/adapter-api'
-import { promises } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
 import {
   SourceRange as InternalSourceRange,
-  ParsedHclBlock, HclParseError, HclAttribute,
+  HclParseError,
 } from './internal/types'
-import { parse as hclParse } from './internal/parse'
-import evaluate from './expressions'
-import { Keywords } from './language'
+import { parseBuffer, filterErrors, generateErrorContext, restoreErrorOrigRanges } from './internal/parse'
 import {
   Functions,
 } from './functions'
 import { SourceMap } from './source_map'
 
-const { object: { mapValuesAsync } } = promises
-
-const INSTANCE_ANNOTATIONS_ATTRS: string[] = Object.values(INSTANCE_ANNOTATIONS)
+export { parseElemID } from './internal/converter/elements'
+export { IllegalReference } from './internal/converter/values'
 
 // Re-export these types because we do not want code outside the parser to import hcl
 export type SourceRange = InternalSourceRange
 export type ParseError = HclParseError & SaltoError
-
-export const mergeSourceMaps = (sourceMaps: SourceMap[]): SourceMap => {
-  const result = new SourceMap()
-  sourceMaps.forEach(sourceMap => {
-    sourceMap.forEach((ranges, key) => {
-      result.push(key, ...ranges)
-    })
-  })
-  return result
-}
-
-export const parseElemID = (fullname: string): ElemID => {
-  const separatorIdx = fullname.indexOf(Keywords.NAMESPACE_SEPARATOR)
-  const adapter = (separatorIdx >= 0) ? fullname.slice(0, separatorIdx) : ''
-  const name = fullname.slice(separatorIdx + Keywords.NAMESPACE_SEPARATOR.length)
-  return new ElemID(adapter, name)
-}
-
-/**
- * @param typeName Type name in HCL syntax
- * @returns Primitive type identifier
- */
-const primitiveType = (typeName: string): PrimitiveTypes => {
-  if (typeName === Keywords.TYPE_STRING) {
-    return PrimitiveTypes.STRING
-  }
-  if (typeName === Keywords.TYPE_NUMBER) {
-    return PrimitiveTypes.NUMBER
-  }
-  return PrimitiveTypes.BOOLEAN
-}
 
 export type ParseResult = {
   elements: Element[]
@@ -90,186 +53,19 @@ export const parse = async (
   filename: string,
   functions: Functions = {},
 ): Promise<ParseResult> => {
-  const { body, errors: parseErrors } = hclParse(naclFile, filename)
-  const sourceMap = new SourceMap()
-  const listElements: Map<string, ListType> = new Map<string, ListType>()
-
-  const annotationTypes = (block: ParsedHclBlock, annotationTypesId: ElemID):
-    Record <string, TypeElement> =>
-    block.blocks
-      .filter(b => b.type === Keywords.ANNOTATIONS_DEFINITION)
-      .map(annoTypesBlk => {
-        sourceMap.push(annotationTypesId.getFullName(), annoTypesBlk.source)
-        return _(annoTypesBlk.blocks)
-          .map(innerBlock => {
-            sourceMap.push(annotationTypesId.createNestedID(innerBlock.labels[0]).getFullName(),
-              innerBlock.source)
-            return [innerBlock.labels[0], new ObjectType({ elemID: parseElemID(innerBlock.type) })]
-          })
-          .fromPairs()
-          .value()
-      }).pop() || {}
-
-  const attrValue = (attr: HclAttribute, elemID: ElemID): Promise<Value> => {
-    const exp = attr.expressions[0]
-    // Use attribute source as expression source so it includes the key as well
-    return evaluate(
-      { ...exp, source: attr.source },
-      functions,
-      elemID,
-      sourceMap,
-    )
-  }
-
-  const attrValues = async (block: ParsedHclBlock, parentId: ElemID): Promise<Values> => {
-    const attrs = await mapValuesAsync(
-      block.attrs,
-      (val, key) => attrValue(val, parentId.createNestedID(key)),
-    )
-
-    return _.omitBy(attrs, _.isUndefined)
-  }
-
-  const parseType = async (typeBlock: ParsedHclBlock, isSettings = false): Promise<TypeElement> => {
-    const isFieldBlock = (block: ParsedHclBlock): boolean =>
-      block.labels.length === 1
-
-    const createFieldType = (blockType: string): TypeElement => {
-      if (blockType.startsWith(Keywords.LIST_PREFIX)
-        && blockType.endsWith(Keywords.GENERICS_SUFFIX)) {
-        const listType = new ListType(createFieldType(
-          blockType.substring(
-            Keywords.LIST_PREFIX.length,
-            blockType.length - Keywords.GENERICS_SUFFIX.length
-          )
-        ))
-        listElements.set(listType.elemID.getFullName(), listType)
-        return listType
-      }
-      return new ObjectType({ elemID: parseElemID(blockType) })
-    }
-
-    const [typeName] = typeBlock.labels
-    const elemID = parseElemID(typeName)
-
-    const fields = await Promise.all(typeBlock.blocks
-      .filter(isFieldBlock)
-      .map(async block => {
-        const name = block.labels[0]
-        const fieldId = elemID.createNestedID('field', name)
-        const type = createFieldType(block.type)
-        const annotations = await attrValues(block, fieldId)
-        sourceMap.push(fieldId.getFullName(), block)
-        return { name, type, annotations }
-      }))
-
-    // TODO: add error if there are any unparsed blocks
-
-    const typeObj = new ObjectType(
-      {
-        elemID,
-        fields: Object.assign({}, ...fields.map(field => ({ [field.name]: field }))),
-        annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
-        annotations: await attrValues(typeBlock, elemID.createNestedID('attr')),
-        isSettings,
-      }
-    )
-    sourceMap.push(typeObj.elemID.getFullName(), typeBlock.source)
-
-    return typeObj
-  }
-
-  const parsePrimitiveType = async (typeBlock: ParsedHclBlock): Promise<TypeElement> => {
-    const [typeName, kw, baseType] = typeBlock.labels
-    if (kw !== Keywords.TYPE_INHERITANCE_SEPARATOR) {
-      throw new Error(`expected keyword ${Keywords.TYPE_INHERITANCE_SEPARATOR}. found ${kw}`)
-    }
-
-    if (baseType === Keywords.TYPE_OBJECT) {
-      // There is currently no difference between an object type and a model
-      return parseType(typeBlock)
-    }
-
-    const elemID = parseElemID(typeName)
-    const typeObj = new PrimitiveType({
-      elemID,
-      primitive: primitiveType(baseType),
-      annotationTypes: annotationTypes(typeBlock, elemID.createNestedID('annotation')),
-      annotations: await attrValues(typeBlock, elemID.createNestedID('attr')),
-    })
-    sourceMap.push(typeObj.elemID.getFullName(), typeBlock)
-    return typeObj
-  }
-
-  const parseInstance = async (instanceBlock: ParsedHclBlock): Promise<Element> => {
-    let typeID = parseElemID(instanceBlock.type)
-    if (_.isEmpty(typeID.adapter) && typeID.name.length > 0) {
-      // In this case if there is just a single name we have to assume it is actually the adapter
-      typeID = new ElemID(typeID.name)
-    }
-    const name = instanceBlock.labels[0] || ElemID.CONFIG_NAME
-    const attrs = await attrValues(instanceBlock, typeID.createNestedID('instance', name))
-
-    const inst = new InstanceElement(
-      name,
-      new ObjectType({
-        elemID: typeID,
-        isSettings: instanceBlock.labels.length === 0 && !typeID.isConfig(),
-      }),
-      _.omit(attrs, INSTANCE_ANNOTATIONS_ATTRS),
-      undefined,
-      _.pick(attrs, INSTANCE_ANNOTATIONS_ATTRS),
-    )
-    sourceMap.push(inst.elemID.getFullName(), instanceBlock)
-    return inst
-  }
-
-  const parseVariable = async (name: string, varAttribute: HclAttribute): Promise<Element> => {
-    const elemID = new ElemID(ElemID.VARIABLES_NAMESPACE, name)
-    const value = await attrValue(varAttribute, elemID)
-    const variable = new Variable(elemID, value)
-    sourceMap.push(variable.elemID.getFullName(), varAttribute)
-    return variable
-  }
-
-  const parseVariablesBlock = (variablesBlock: ParsedHclBlock): Promise<Element[]> =>
-    Promise.all(_.values(
-      _(variablesBlock.attrs).mapValues((v, k) => parseVariable(k, v)).value()
-    ))
-
-  const elements = _.flatten(
-    await Promise.all(
-      body.blocks.map((value: ParsedHclBlock): Promise<Element | Element[]> => {
-        if (value.type === Keywords.TYPE_DEFINITION && value.labels.length > 1) {
-          return parsePrimitiveType(value)
-        }
-        if (value.type === Keywords.TYPE_DEFINITION) {
-          return parseType(value)
-        }
-        if (value.type === Keywords.SETTINGS_DEFINITION) {
-          return parseType(value, true)
-        }
-        if (value.type === Keywords.VARIABLES_DEFINITION) {
-          return Promise.resolve(parseVariablesBlock(value))
-        }
-        if (value.labels.length === 0 || value.labels.length === 1) {
-          return parseInstance(value)
-        }
-        // Without this exception the linter won't allow us to end the function
-        // without a return value
-        throw new Error('unsupported block')
-      })
-    )
+  const srcString = naclFile.toString()
+  const [patchedSrc, elements, sourceMap, errors] = await parseBuffer(
+    srcString,
+    filename,
+    functions
   )
-  const errors: ParseError[] = parseErrors.map(err =>
-  ({ ...err,
-    ...{
-      severity: 'Error',
-      message: err.detail,
-    } }) as ParseError)
+  const fixedErrors = filterErrors(errors, patchedSrc)
+    .map(error => generateErrorContext(srcString, error))
+    .map(error => restoreErrorOrigRanges(patchedSrc, error))
+    .map(error => ({ severity: 'Error' as SaltoErrorSeverity, ...error }))
   return {
-    elements: _.concat(elements, [...listElements.values()]).map(flattenElementStr),
-    errors,
+    elements: elements.map(flattenElementStr),
     sourceMap,
+    errors: fixedErrors,
   }
 }

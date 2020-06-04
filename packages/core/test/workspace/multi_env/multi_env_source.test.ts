@@ -63,7 +63,6 @@ const commonErrors = new Errors({
   parse: [{
     severity: 'Error',
     summary: 'common error',
-    detail: 'common error',
     subject: commonSourceRange,
     message: 'common error',
     context: commonSourceRange,
@@ -86,7 +85,6 @@ const envErrors = new Errors({
   parse: [{
     severity: 'Error',
     summary: 'env error',
-    detail: 'env error',
     subject: envSourceRange,
     message: 'env error',
     context: envSourceRange,
@@ -116,7 +114,6 @@ const inactiveErrors = new Errors({
   parse: [{
     severity: 'Error',
     summary: 'inactive error',
-    detail: 'inactive error',
     subject: inactiveSourceRange,
     message: 'inactive error',
     context: inactiveSourceRange,

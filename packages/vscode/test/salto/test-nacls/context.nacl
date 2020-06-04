@@ -40,7 +40,7 @@ salto.complex inst {
 }
 
 type salto.complex {
-	list str arr {
+	"List<salto.str>" arr {
 
 	}
 }

@@ -50,7 +50,7 @@ export type DumpedHclBlock = HclBlock<Values> & {
 // TODO: include expression and bubble up error message detail
 export interface HclParseError {
   summary: string
-  detail: string
+  message: string
   subject: SourceRange
   context: SourceRange
 }

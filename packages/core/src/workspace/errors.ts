@@ -35,7 +35,7 @@ export class Errors extends types.Bean<Readonly<{
 
   strings(): ReadonlyArray<string> {
     return [
-      ...this.parse.map(error => error.detail),
+      ...this.parse.map(error => error.message),
       ...this.merge.map(error => error.error),
       ...this.validation.map(error => error.error),
     ]

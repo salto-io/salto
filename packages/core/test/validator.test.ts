@@ -26,8 +26,7 @@ import {
   InvalidStaticFileError,
 } from '../src/core/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
-
-import { IllegalReference } from '../src/parser/expressions'
+import { IllegalReference } from '../src/parser/parse'
 
 describe('Elements validation', () => {
   const baseElemID = new ElemID('salto', 'simple')
@@ -370,7 +369,9 @@ describe('Elements validation', () => {
       }
     )
 
-    circularRefInst.value.bool = new ReferenceExpression(circularRefInst2.elemID.createNestedID('bool'))
+    circularRefInst.value.bool = new ReferenceExpression(
+      circularRefInst2.elemID.createNestedID('bool')
+    )
 
     const wrongRefInst = new InstanceElement(
       'unresolved',

@@ -18,8 +18,6 @@ import { StaticFile, Value } from '@salto-io/adapter-api'
 import { Functions } from '../../../src/parser/functions'
 import { getStaticFilesFunctions } from '../../../src/workspace/static_files/functions'
 import { StaticFilesSource } from '../../../src/workspace/static_files/common'
-
-import { getHclFunc } from '../../parser/functions.test'
 import { mockStaticFilesSource } from './common.test'
 
 describe('Functions', () => {
@@ -36,7 +34,7 @@ describe('Functions', () => {
   it('should not identify for other values', () =>
     expect(functions.file.isSerializedAsFunction('a' as Value)).toBeFalsy())
   it('should convert valid function expression to valid static metadata', async () => {
-    await functions.file.parse(getHclFunc('file', ['aa']))
+    await functions.file.parse(['aa'])
     expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledTimes(1)
     expect(mockedStaticFilesSource.getStaticFile).toHaveBeenCalledWith('aa')
   })

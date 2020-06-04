@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, Element, ElemID, Variable,
-  isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable, isType, ListType,
+  isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable, isType,
 } from '@salto-io/adapter-api'
 import {
   registerTestFunction,
@@ -48,7 +48,7 @@ describe('Salto parser', () => {
       type salesforce.boolean is boolean {
       }
 
-      type salesforce.obj is object {
+      type salesforce.obj {
         salesforce.number num {}
       }
 
@@ -203,13 +203,9 @@ describe('Salto parser', () => {
     })
 
     describe('list type', () => {
-      let listType: ListType
-      beforeEach(() => {
-        expect(isListType(elements[elements.length - 1])).toBeTruthy()
-        listType = elements[elements.length - 1] as ListType
-      })
       it('should have the correct inner type', () => {
-        expect(listType.innerType.elemID).toEqual(new ElemID('salesforce', 'string'))
+        const listType = elements.find(isListType)
+        expect(listType?.innerType.elemID).toEqual(new ElemID('salesforce', 'string'))
       })
     })
 
@@ -302,7 +298,7 @@ describe('Salto parser', () => {
       let inst: InstanceElement
       beforeAll(() => {
         instType = elements[4] as ObjectType
-        inst = elements[5] as InstanceElement
+        inst = elements[6] as InstanceElement
       })
       it('should have the right id', () => {
         expect(inst.elemID).toEqual(instType.elemID.createNestedID('instance', 'inst'))
@@ -329,7 +325,7 @@ describe('Salto parser', () => {
       const configTypeId = new ElemID('salesforce')
       let config: InstanceElement
       beforeAll(() => {
-        config = elements[6] as InstanceElement
+        config = elements[7] as InstanceElement
       })
       it('should have the right id', () => {
         expect(config.elemID).toEqual(
@@ -350,8 +346,8 @@ describe('Salto parser', () => {
 
     describe('updates', () => {
       it('parse update fields', async () => {
-        const orig = elements[7] as ObjectType
-        const update = elements[8] as ObjectType
+        const orig = elements[8] as ObjectType
+        const update = elements[9] as ObjectType
         expect(orig.elemID).toEqual(update.elemID)
         expect(update.fields.num.type.elemID.name).toBe('update')
       })
@@ -360,7 +356,7 @@ describe('Salto parser', () => {
     describe('field type', () => {
       let numberType: PrimitiveType
       beforeAll(() => {
-        numberType = elements[9] as PrimitiveType
+        numberType = elements[10] as PrimitiveType
       })
       it('should have the correct type', () => {
         expect(numberType.primitive).toBe(PrimitiveTypes.NUMBER)
@@ -377,7 +373,7 @@ describe('Salto parser', () => {
       let settingsType: ObjectType
 
       beforeAll(() => {
-        settingsType = elements[10] as ObjectType
+        settingsType = elements[11] as ObjectType
       })
 
       it('should have the correct id', () => {
@@ -393,8 +389,8 @@ describe('Salto parser', () => {
       let settingsInstance: InstanceElement
 
       beforeAll(() => {
-        settingsType = elements[10] as ObjectType
-        settingsInstance = elements[11] as InstanceElement
+        settingsType = elements[11] as ObjectType
+        settingsInstance = elements[12] as InstanceElement
       })
 
       it('should have the correct id', () => {
@@ -432,7 +428,7 @@ describe('Salto parser', () => {
         )
       })
       it('should have all definitions of a field', () => {
-        const updatedType = elements[7] as ObjectType
+        const updatedType = elements[8] as ObjectType
         const updatedField = Object.values(updatedType.fields)[0]
         const fieldSource = sourceMap.get(updatedField.elemID.getFullName())
         expect(fieldSource).toHaveLength(2)
@@ -465,7 +461,7 @@ describe('Salto parser', () => {
       let instanceWithFunctions: InstanceElement
 
       beforeAll(() => {
-        instanceWithFunctions = elements[12] as InstanceElement
+        instanceWithFunctions = elements[13] as InstanceElement
       })
 
       describe('parameters', () => {
@@ -550,10 +546,10 @@ describe('Salto parser', () => {
       let variable2: Variable
 
       beforeAll(() => {
-        expect(isVariable(elements[13])).toBeTruthy()
-        variable1 = elements[13] as Variable
         expect(isVariable(elements[14])).toBeTruthy()
-        variable2 = elements[14] as Variable
+        variable1 = elements[14] as Variable
+        expect(isVariable(elements[15])).toBeTruthy()
+        variable2 = elements[15] as Variable
       })
 
       it('should have the correct value', () => {
@@ -565,7 +561,7 @@ describe('Salto parser', () => {
     describe('multiline strings', () => {
       let multilineObject: ObjectType
       beforeAll(() => {
-        multilineObject = elements[15] as ObjectType
+        multilineObject = elements[16] as ObjectType
       })
       it('should have a multiline string field', () => {
         expect(multilineObject.annotations).toHaveProperty('data')
@@ -643,7 +639,6 @@ describe('Salto parser', () => {
       expect(error.context.end.col).toEqual(8)
       expect(error.context.end.byte).toEqual(428)
       expect(error.context.filename).toEqual('none')
-      expect(error.detail).toEqual('Expected = token but found instead: e.')
       expect(error.message).toEqual('Expected = token but found instead: e.')
       expect(error.summary).toEqual('Unexpected token: e')
       expect(error.severity).toEqual('Error')
@@ -664,8 +659,7 @@ describe('Salto parser', () => {
       expect(error.context.end.col).toEqual(25)
       expect(error.context.end.byte).toEqual(517)
       expect(error.context.filename).toEqual('none')
-      expect(error.detail).toEqual('Expected newline, ws, newline, ws or } token but found instead: e.')
-      expect(error.message).toEqual('Expected newline, ws, newline, ws or } token but found instead: e.')
+      expect(error.message).toEqual('Expected ws, ws or } token but found instead: e.')
       expect(error.summary).toEqual('Unexpected token: e')
       expect(error.severity).toEqual('Error')
     })

@@ -91,7 +91,6 @@ export class EditorWorkspace {
   }
 
   private async runAggregatedSetOperation(): Promise<void> {
-    // No async ops here so the switch is atomic. Thanks JS!
     if (this.hasPendingUpdates()) {
       const opDeletes = this.pendingDeletes
       const opNaclFiles = this.pendingSets

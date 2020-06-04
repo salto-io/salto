@@ -42,6 +42,12 @@ export const isInsertText = (value: any): value is InsertText => (
   value.label !== undefined && value.insertText !== undefined
 )
 
+const getRefPathWithAttr = (attrName: string, ref: ContextReference): string[] => (
+  _.last(ref.path) !== attrName && !ref.isList
+    ? [...ref.path, attrName]
+    : ref.path
+)
+
 const getRestrictionValues = (annotatingElem: TypeElement|Field, valueType: TypeElement):
 ReadonlyArray<Value>|undefined =>
   getRestriction(annotatingElem).values ?? getRestriction(valueType).values
@@ -200,9 +206,7 @@ export const fieldSuggestions = (params: SuggestionsParams): Suggestions => {
 export const fieldValueSuggestions = (params: SuggestionsParams): Suggestions => {
   if (!(params.ref && isInstanceElement(params.ref.element))) return []
   const attrName = params.tokens[0]
-  const refPathWithAttr = _.last(params.ref.path) !== attrName && !params.ref.isList
-    ? [...params.ref.path, attrName]
-    : params.ref.path
+  const refPathWithAttr = getRefPathWithAttr(attrName, params.ref)
   const valueField = getField(params.ref.element.type, refPathWithAttr)?.field
   const valueFieldType = getFieldType(params.ref.element.type, refPathWithAttr)
   const valueToken = _.last(params.tokens) || ''
@@ -235,9 +239,7 @@ export const annoValueSuggestions = (params: SuggestionsParams): Suggestions => 
   if (!params.ref) return []
 
   const attrName = params.tokens[0]
-  const refPathWithAttr = _.last(params.ref.path) !== attrName && !params.ref.isList
-    ? [...params.ref.path, attrName]
-    : params.ref.path
+  const refPathWithAttr = getRefPathWithAttr(attrName, params.ref)
   const [annoName, ...refPath] = refPathWithAttr
 
   const annoType = isField(params.ref.element)

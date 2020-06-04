@@ -18,7 +18,7 @@ import { SaveResult, UpsertResult } from 'jsforce-types'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import SalesforceClient from './client/client'
-import { ConfigChangeSuggestion } from './types'
+import { ConfigChangeSuggestion, FilterContext } from './types'
 
 // Filter interface, filters will be activated upon adapter fetch, add, update and remove
 // operations. The filter will be responsible for specific business logic.
@@ -32,12 +32,14 @@ export type Filter = Partial<{
 
 export type FilterWith<M extends keyof Filter> = types.HasMember<Filter, M>
 
-export type FilterCreator = (opts: { client: SalesforceClient }) => Filter
+export type FilterCreator = (opts: { client: SalesforceClient; config: FilterContext })
+  => Filter
 
 export const filtersRunner = (client: SalesforceClient,
+  config: FilterContext,
   filterCreators: ReadonlyArray<FilterCreator>): Required<Filter> => {
   const filtersWith = <M extends keyof Filter>(m: M): FilterWith<M>[] =>
-    types.filterHasMember<Filter, M>(m, filterCreators.map(f => f({ client })))
+    types.filterHasMember<Filter, M>(m, filterCreators.map(f => f({ client, config })))
 
   const runFiltersInParallel = async <M extends keyof Filter>(m: M,
     run: (f: FilterWith<M>) => Promise<SaveResult[]>): Promise<SaveResult[]> =>

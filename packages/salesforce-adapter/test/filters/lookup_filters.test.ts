@@ -65,7 +65,7 @@ describe('lookup filters filter', () => {
       },
     })
     const { client } = mockClient()
-    const filter = filterCreator({ client }) as FilterWith<'onAdd'>
+    const filter = filterCreator({ client, config: {} }) as FilterWith<'onAdd'>
 
     const updateSpy = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
     beforeEach(() => {
@@ -150,7 +150,7 @@ describe('lookup filters filter', () => {
       .annotations[constants.FIELD_ANNOTATIONS.LOOKUP_FILTER] = lookupFilter
 
     const { client } = mockClient()
-    const filter = filterCreator({ client }) as FilterWith<'onUpdate'>
+    const filter = filterCreator({ client, config: {} }) as FilterWith<'onUpdate'>
     const updateSpy = jest.spyOn(client, 'update').mockImplementation(() => Promise.resolve([]))
     beforeEach(() => {
       beforeObject = origBeforeObject.clone()

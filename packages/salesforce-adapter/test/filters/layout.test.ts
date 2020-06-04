@@ -33,7 +33,7 @@ describe('Test layout filter', () => {
     annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
   })
 
-  const filter = makeFilter({ client }) as FilterWith<'onFetch'>
+  const filter = makeFilter({ client, config: {} }) as FilterWith<'onFetch'>
 
   describe('Test layout fetch', () => {
     const fetch = async (apiName: string, opts = { fixedName: true }): Promise<void> => {

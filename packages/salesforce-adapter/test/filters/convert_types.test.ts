@@ -110,7 +110,7 @@ describe('convert types filter', () => {
 
   let testElements: Element[]
 
-  const filter = makeFilter({ client }) as FilterWith<'onFetch'>
+  const filter = makeFilter({ client, config: {} }) as FilterWith<'onFetch'>
 
   describe('on fetch', () => {
     describe('convert', () => {

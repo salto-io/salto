@@ -48,7 +48,7 @@ describe('Custom Objects filter', () => {
     ElemID => new ElemID(adapterName, name)
 
   type FilterType = FilterWith<'onFetch'>
-  const filter = (): FilterType => filterCreator({ client }) as FilterType
+  const filter = (): FilterType => filterCreator({ client, config: {} }) as FilterType
   let result: Element[]
 
   const generateCustomObjectType = (): ObjectType => {
@@ -330,7 +330,7 @@ describe('Custom Objects filter', () => {
         },
       ])
 
-      const newFilter = (): FilterType => filterCreator({ client }) as FilterType
+      const newFilter = (): FilterType => filterCreator({ client, config: {} }) as FilterType
       await newFilter().onFetch(result)
 
       const custom = result.filter(o => o.elemID.name === 'Custom').pop() as ObjectType

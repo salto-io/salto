@@ -56,7 +56,7 @@ export class ConflictingFieldTypesError extends FieldDefinitionMergeError {
   }
 }
 
-export class ConflictingIsSettingError extends MergeError {
+export class ConflictingSettingError extends MergeError {
   constructor(elemID: ElemID) {
     super({ elemID, error: 'conflicting is settings definitions' })
   }
@@ -139,7 +139,7 @@ const mergeObjectDefinitions = (
   const refIsSettings = objects[0].isSettings
   const isSettingsErrors = _.every(objects, obj => obj.isSettings === refIsSettings)
     ? []
-    : [new ConflictingIsSettingError(objects[0].elemID)]
+    : [new ConflictingSettingError(objects[0].elemID)]
 
   return {
     merged: new ObjectType({

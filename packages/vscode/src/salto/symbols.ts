@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { EditorRange, PositionContext } from './context'
 import { isIndexPathPart } from '@salto-io/adapter-api'
+import { EditorRange, PositionContext } from './context'
 
 export enum SaltoSymbolKind {
   File,

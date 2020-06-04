@@ -53,7 +53,7 @@ export const getSubElement = (
     return undefined
   }
 
-  const [curPart, ...restOfParts] = pathParts// .filter(p => Number.isNaN(Number(p)))
+  const [curPart, ...restOfParts] = pathParts
   const nextBase = getChildElement(baseType, curPart)
   if (_.isUndefined(nextBase)) {
     return undefined
@@ -107,8 +107,7 @@ export const getFieldType = (baseType: TypeElement, path: string[]):
     return undefined
   }
   const fieldData = getField(baseType, path)
-  const r = fieldData?.field && getFieldInternalType(fieldData.field.type, fieldData.path)
-  return r
+  return fieldData?.field && getFieldInternalType(fieldData.field.type, fieldData.path)
 }
 
 export const getFieldNames = (refType: ObjectType, path: string[]): string[] => {

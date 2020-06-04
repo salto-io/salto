@@ -32,7 +32,6 @@ describe('diagnostics', () => {
       [{ severity: 'Error', message: 'Blabla' }],
       [{
         message: 'parse',
-        detail: 'parse detail',
         context: {
           start: { col: 1, line: 1, byte: 1 },
           end: { col: 2, line: 1, byte: 2 },

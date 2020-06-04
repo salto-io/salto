@@ -14,7 +14,6 @@ SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../src/')
 TYPES_DIR = os.path.join(SRC_DIR, 'types/')
 CUSTOM_TYPES_DIR = os.path.join(TYPES_DIR, 'custom_types/')
-FILE_CABINET_TYPES_DIR = os.path.join(TYPES_DIR, 'file_cabinet/')
 
 enums_link_template = 'https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=SDFxml_2405618192.html'
 script_ids_prefix_link_template = 'https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1537555588.html&whence='
@@ -179,110 +178,6 @@ export const getAllTypes = (): TypeElement[] => [
   ...Object.values(fileCabinetTypes),
   ...Object.values(fieldTypes),
 ]
-'''
-
-FILE_TYPE_DEF = HEADER_FOR_DEFS + '''
-import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
-} from '@salto-io/adapter-api'
-import * as constants from '../../constants'
-import { fieldTypes } from '../field_types'
-
-const fileElemID = new ElemID(constants.NETSUITE, 'file')
-
-export const file = new ObjectType({
-  elemID: fileElemID,
-  annotations: {
-  },
-  fields: {
-    path: {
-      type: BuiltinTypes.SERVICE_ID,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
-    content: {
-      type: fieldTypes.fileContent,
-      annotations: {
-      },
-    },
-    availablewithoutlogin: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    },
-    bundleable: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    },
-    description: {
-      type: BuiltinTypes.STRING,
-      annotations: {
-      },
-    },
-    generateurltimestamp: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    },
-    hideinbundle: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    },
-    isinactive: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    },
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, fileElemID.name],
-})
-'''
-
-FOLDER_TYPE_DEF = HEADER_FOR_DEFS + '''
-import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
-} from '@salto-io/adapter-api'
-import * as constants from '../../constants'
-
-const folderElemID = new ElemID(constants.NETSUITE, 'folder')
-
-export const folder = new ObjectType({
-  elemID: folderElemID,
-  annotations: {
-  },
-  fields: {
-    path: {
-      type: BuiltinTypes.SERVICE_ID,
-      annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
-      },
-    },
-    bundleable: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    },
-    description: {
-      type: BuiltinTypes.STRING,
-      annotations: {
-      },
-    },
-    isinactive: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    },
-    isprivate: {
-      type: BuiltinTypes.BOOLEAN,
-      annotations: {
-      },
-    },
-  },
-  path: [constants.NETSUITE, constants.TYPES_PATH, folderElemID.name],
-})
 '''
 
 default_value_pattern = re.compile("[\s\S]*The default value is '?‘?([-|#\w]*)’?'?\.[\s\S]*") # e.g. ‘MIDDLE’, 'NORMAL', T, '|', '#000000', 'windows-1252'
@@ -583,14 +478,6 @@ def order_types_fields(type_name_to_types_defs):
         type_def[FIELDS] = ordered_fields
 
 
-# we create the file & folder type defs manually as they differ a lot from the other types documentation page and it doesn't worth the effort
-def write_file_cabinet_types():
-    with open(FILE_CABINET_TYPES_DIR + 'file' + '.ts', 'w') as file:
-        file.write(FILE_TYPE_DEF)
-    with open(FILE_CABINET_TYPES_DIR + 'folder' + '.ts', 'w') as file:
-        file.write(FOLDER_TYPE_DEF)
-
-
 def generate_file_per_type(type_name_to_types_defs):
     order_types_fields(type_name_to_types_defs)
     for type_name, type_defs in type_name_to_types_defs.items():
@@ -606,7 +493,6 @@ def generate_file_per_type(type_name_to_types_defs):
         type_def_file_content = HEADER_FOR_DEFS + import_statements + file_data
         with open(CUSTOM_TYPES_DIR + type_name + '.ts', 'w') as file:
             file.write(type_def_file_content)
-    write_file_cabinet_types()
 
 
 should_not_be_list = {
@@ -772,6 +658,7 @@ def main():
     create_types_file(type_name_to_types_defs.keys())
     logging.info('Generated Types file')
     logging.info('Done!')
+    logging.info('VALIDATE file & folder TYPES THEY WERE NOT GENERATED USING THE SCRIPT!')
 
 
 main()
@@ -790,4 +677,4 @@ main()
 # in addressForm, entryForm and transactionForm the order of the fields matters in the sent XML to SDF (https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html)
 #    we order it manually in order_types_fields.
 # in addressForm and transactionForm, customCode & buttons fields are intentionally omitted as it seems that they do not exist and if they are sent to SDF they cause errors no matter in which order
-# file cabinet types (file & folder) are generated manually and should be validated when generating types for new Netsuite API version
+# file cabinet types (file & folder) are not generated by the script and should be validated when generating types for new Netsuite API version

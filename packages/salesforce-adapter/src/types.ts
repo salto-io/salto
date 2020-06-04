@@ -21,6 +21,7 @@ import { MetadataInfo } from 'jsforce'
 import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
+export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -28,6 +29,7 @@ export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: RegExp[]
+  [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
 }
 
 export type SalesforceConfig = {

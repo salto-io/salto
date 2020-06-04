@@ -27,6 +27,7 @@ import {
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
+import { UNSUPPORTED_SYSTEM_FIELDS } from '../types'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
@@ -55,11 +56,6 @@ const { makeArray } = collections.array
 
 export const INSTANCE_REQUIRED_FIELD = 'required'
 export const INSTANCE_TYPE_FIELD = 'type'
-
-const unsupportedSystemFields = [
-  'LastReferencedDate',
-  'LastViewedDate',
-]
 
 export const NESTED_INSTANCE_VALUE_NAME = {
   WEB_LINKS: 'webLinks',
@@ -461,7 +457,7 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
  * Custom objects filter.
  * Fetches the custom objects via the soap api and adds them to the elements
  */
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const sObjects = await fetchSObjects(client).catch(e => {
       log.error('failed to fetch sobjects reason: %o', e)
@@ -543,7 +539,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .filter(newElem => !elementFullNames.has(id(newElem)))
       .forEach(newElem => elements.push(newElem))
     fixDependentInstancesPathAndSetParent(elements)
-    removeUnsupportedFields(elements, unsupportedSystemFields)
+    removeUnsupportedFields(elements, config[UNSUPPORTED_SYSTEM_FIELDS] ?? [])
   },
 })
 

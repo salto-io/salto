@@ -48,7 +48,7 @@ describe('Custom Objects filter', () => {
     ElemID => new ElemID(adapterName, name)
 
   type FilterType = FilterWith<'onFetch'>
-  const filter = (): FilterType => filterCreator({ client, config: {} }) as FilterType
+  const filter = (): FilterType => filterCreator({ client, config: { unsupportedSystemFields: ['UnsupportedField'] } }) as FilterType
   let result: Element[]
 
   const generateCustomObjectType = (): ObjectType => {
@@ -512,7 +512,7 @@ describe('Custom Objects filter', () => {
           [INSTANCE_REQUIRED_FIELD]: 'false',
         },
         {
-          [INSTANCE_FULL_NAME_FIELD]: 'LastViewedDate',
+          [INSTANCE_FULL_NAME_FIELD]: 'UnsupportedField',
           [INSTANCE_TYPE_FIELD]: 'DateTime',
           [INSTANCE_REQUIRED_FIELD]: 'false',
         },
@@ -816,7 +816,7 @@ describe('Custom Objects filter', () => {
             const leadStandardFieldsObj = leadElements.find(obj =>
               _.isEqual(obj.path, [SALESFORCE, OBJECTS_PATH, 'Lead', 'Lead'])) as ObjectType
             expect(leadStandardFieldsObj).toBeDefined()
-            expect(leadStandardFieldsObj.fields.LastViewedDate).toBeUndefined()
+            expect(leadStandardFieldsObj.fields.UnsupportedField).toBeUndefined()
           })
 
           it('should create custom object from a packaged custom object instance', async () => {

@@ -182,7 +182,7 @@ export interface SalesforceAdapterParams {
 
   // Unsupported System fields that salesforce may add to custom objects
   // to not be fetched and managed
-  // unsupportedSystemFields?: string[]
+  unsupportedSystemFields?: string[]
 
   config: SalesforceConfig
 }
@@ -290,6 +290,10 @@ export default class SalesforceAdapter {
       'SystemModstamp',
       'OwnerId',
     ],
+    unsupportedSystemFields = [
+      'LastReferencedDate',
+      'LastViewedDate',
+    ],
     config,
   }: SalesforceAdapterParams) {
     this.metadataTypesSkippedList = metadataTypesSkippedList
@@ -312,6 +316,7 @@ export default class SalesforceAdapter {
       {
         instancesRegexSkippedList: this.instancesRegexSkippedList,
         metadataTypesSkippedList: this.metadataTypesSkippedList,
+        unsupportedSystemFields,
       },
       filterCreators
     )

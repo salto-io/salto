@@ -104,18 +104,18 @@ export default class NetsuiteAdapter {
   }
 
   public async add(instance: InstanceElement): Promise<InstanceElement> {
-    if (isCustomType(instance.type) || isFileCabinetType(instance.type)) {
-      if (this.shouldSkipType(instance.type)) {
-        throw Error(`Salto skips adding ${instance.type.elemID.name} instances`)
-      }
-      const resolved = resolveValues(instance, getLookUpName)
-      if (isCustomType(instance.type)) {
-        addCustomTypeDefaults(resolved)
-      }
-      await this.addOrUpdateCustomizationInstance(resolved)
-      return restoreValues(instance, resolved, getLookUpName)
+    if (!isCustomType(instance.type) && !isFileCabinetType(instance.type)) {
+      throw Error('Salto currently supports adding instances of customTypes and fileCabinet only')
     }
-    throw Error('Salto currently supports adding instances of customTypes and fileCabinet only')
+    if (this.shouldSkipType(instance.type)) {
+      throw Error(`Salto skips adding ${instance.type.elemID.name} instances`)
+    }
+    const resolved = resolveValues(instance, getLookUpName)
+    if (isCustomType(instance.type)) {
+      addCustomTypeDefaults(resolved)
+    }
+    await this.addOrUpdateCustomizationInstance(resolved)
+    return restoreValues(instance, resolved, getLookUpName)
   }
 
   public async remove(_element: Element): Promise<void> { // todo: implement
@@ -124,17 +124,17 @@ export default class NetsuiteAdapter {
   }
 
   public async update(before: InstanceElement, after: InstanceElement): Promise<InstanceElement> {
-    if (isCustomType(after.type) || isFileCabinetType(after.type)) {
-      if (this.shouldSkipType(after.type)) {
-        throw Error(`Salto skips updating ${after.type.elemID.name} instances`)
-      }
-      const resBefore = resolveValues(before, getLookUpName)
-      const resAfter = resolveValues(after, getLookUpName)
-      validateServiceIds(resBefore, resAfter)
-      await this.addOrUpdateCustomizationInstance(resAfter)
-      return restoreValues(after, resAfter, getLookUpName)
+    if (!isCustomType(after.type) && !isFileCabinetType(after.type)) {
+      throw Error('Salto currently supports updating instances of customTypes and fileCabinet only')
     }
-    throw Error('Salto currently supports updating instances of customTypes and fileCabinet only')
+    if (this.shouldSkipType(after.type)) {
+      throw Error(`Salto skips updating ${after.type.elemID.name} instances`)
+    }
+    const resBefore = resolveValues(before, getLookUpName)
+    const resAfter = resolveValues(after, getLookUpName)
+    validateServiceIds(resBefore, resAfter)
+    await this.addOrUpdateCustomizationInstance(resAfter)
+    return restoreValues(after, resAfter, getLookUpName)
   }
 
   private async addOrUpdateCustomizationInstance(instance: InstanceElement): Promise<void> {

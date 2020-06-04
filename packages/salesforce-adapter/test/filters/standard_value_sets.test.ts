@@ -79,7 +79,9 @@ describe('Standard Value Sets filter', () => {
 
 
   const filterCreator = (sfClient: SalesforceClient): FilterType =>
-    makeFilter(new Set<string>(['Simpsons', 'Numbers']))({ client: sfClient }) as FilterType
+    makeFilter(
+      new Set<string>(['Simpsons', 'Numbers'])
+    )({ client: sfClient, config: {} }) as FilterType
 
   let filter: FilterType
 

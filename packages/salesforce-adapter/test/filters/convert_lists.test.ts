@@ -201,7 +201,7 @@ describe('convert lists filter', () => {
   let testElements: Element[]
 
   const filter = makeFilter(unorderedListFields, unorderedListAnnotations,
-    hardcodedLists)({ client }) as FilterWith<'onFetch'>
+    hardcodedLists)({ client, config: {} }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     const typeClone = mockType.clone()

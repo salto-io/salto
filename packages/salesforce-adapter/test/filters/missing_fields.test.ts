@@ -50,7 +50,7 @@ describe('missing fields filter', () => {
         type: new ElemID('test', 'none'),
       },
     ],
-  })({ client }) as FilterWith<'onFetch'>
+  })({ client, config: {} }) as FilterWith<'onFetch'>
 
   let testElements: ObjectType[]
 

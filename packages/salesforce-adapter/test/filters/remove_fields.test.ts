@@ -41,7 +41,7 @@ describe('remove fields filter', () => {
   const { client } = mockClient()
   const filter = makeFilter({
     [mockObjId.getFullName()]: ['test'],
-  })({ client }) as FilterWith<'onFetch'>
+  })({ client, config: {} }) as FilterWith<'onFetch'>
 
   let testElements: ObjectType[]
 

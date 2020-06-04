@@ -27,7 +27,7 @@ import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
 import { createInstanceElement, metadataType, apiName, createMetadataTypeElements } from '../src/transformers/transformer'
-import { ConfigChangeSuggestion } from '../src/types'
+import { ConfigChangeSuggestion, FilterContext } from '../src/types'
 
 const { makeArray } = collections.array
 
@@ -130,6 +130,7 @@ export const removeElementAndVerify = async (adapter: SalesforceAdapter, client:
   expect(await getMetadataFromElement(client, element)).toBeUndefined()
 }
 
-export const runFiltersOnFetch = async (client: SalesforceClient, fetchResult: Element[]):
-Promise<void | ConfigChangeSuggestion[]> =>
-  filtersRunner(client, DEFAULT_FILTERS).onFetch(fetchResult)
+export const runFiltersOnFetch = async (
+  client: SalesforceClient, config: FilterContext, fetchResult: Element[]
+): Promise<void | ConfigChangeSuggestion[]> =>
+  filtersRunner(client, config, DEFAULT_FILTERS).onFetch(fetchResult)

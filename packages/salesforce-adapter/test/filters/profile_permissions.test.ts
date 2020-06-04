@@ -49,7 +49,7 @@ describe('Object Permissions filter', () => {
   let mockUpdate: jest.Mock
 
   type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
-  const filter = (): FilterType => filterCreator({ client }) as FilterType
+  const filter = (): FilterType => filterCreator({ client, config: {} }) as FilterType
 
   const verifyUpdateCall = (objectName: string, fieldNames: string[],
     shouldUpdateObjectPermissions = true): void => {

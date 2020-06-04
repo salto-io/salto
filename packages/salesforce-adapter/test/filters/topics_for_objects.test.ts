@@ -65,7 +65,7 @@ describe('Field Permissions filter', () => {
   let mockUpdate: jest.Mock
 
   type FilterType = FilterWith<'onFetch' | 'onAdd' | 'onUpdate'>
-  const filter = (): FilterType => filterCreator({ client }) as FilterType
+  const filter = (): FilterType => filterCreator({ client, config: {} }) as FilterType
 
   const verifyUpdateCall = (object: string, enableTopics: boolean): void => {
     expect(mockUpdate.mock.calls.length).toBe(1)

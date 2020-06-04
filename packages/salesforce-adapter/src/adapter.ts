@@ -212,7 +212,7 @@ export default class SalesforceAdapter {
   private filtersRunner: Required<Filter>
   private client: SalesforceClient
   private systemFields: string[]
-  private config: SalesforceConfig
+  private userConfig: SalesforceConfig
 
   public constructor({
     metadataTypesSkippedList = [
@@ -297,13 +297,20 @@ export default class SalesforceAdapter {
       ?? maxConcurrentRetrieveRequests
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
-    this.config = config
+    this.userConfig = config
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
-    this.filtersRunner = filtersRunner(this.client, filterCreators)
+    this.filtersRunner = filtersRunner(
+      this.client,
+      {
+        instancesRegexSkippedList: this.instancesRegexSkippedList,
+        metadataTypesSkippedList: this.metadataTypesSkippedList,
+      },
+      filterCreators
+    )
     this.systemFields = systemFields
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
@@ -340,7 +347,7 @@ export default class SalesforceAdapter {
 
     const config = getConfigFromConfigChanges(
       Array.from(new Set([...metadataInstancesConfigInstances, ...filtersConfigChanges])),
-      this.config,
+      this.userConfig,
     )
     if (_.isUndefined(config)) {
       return { elements }

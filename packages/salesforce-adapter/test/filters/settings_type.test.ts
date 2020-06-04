@@ -26,7 +26,9 @@ import SalesforceClient from '../../src/client/client'
 describe('Test Settings Type', () => {
   const { client } = mockClient()
 
-  const filter = filterCreator({ client }) as FilterWith<'onFetch'>
+  const filter = filterCreator(
+    { client, config: { metadataTypesSkippedList: ['CaseSettings'] } }
+  ) as FilterWith<'onFetch'>
 
   const mockElemID = new ElemID(constants.SALESFORCE, 'settingsTest')
 
@@ -42,7 +44,7 @@ describe('Test Settings Type', () => {
   const mockInstance = new InstanceElement(
     'lead',
     new ObjectType({
-      elemID: new ElemID(constants.SALESFORCE, 'ass'),
+      elemID: new ElemID(constants.SALESFORCE, 'inst'),
     }),
     {
       [constants.INSTANCE_FULL_NAME_FIELD]: 'Lead',
@@ -69,7 +71,7 @@ describe('Test Settings Type', () => {
 
     beforeEach(() => {
       mockListMetadataObjects = jest.fn()
-        .mockImplementationOnce(async () => ({ result: [{ fullName: 'Macro' }] }))
+        .mockImplementationOnce(async () => ({ result: [{ fullName: 'Macro' }, { fullName: 'Case' }] }))
 
       mockDescribeMetadata = jest.fn().mockImplementationOnce(async () => [
         {

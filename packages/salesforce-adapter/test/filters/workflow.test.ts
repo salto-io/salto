@@ -36,7 +36,7 @@ const { makeArray } = collections.array
 
 describe('Workflow filter', () => {
   const { client } = mockClient()
-  const filter = filterCreator({ client }) as FilterWith<'onFetch'> & FilterWith<'onAdd'>
+  const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'> & FilterWith<'onAdd'>
     & FilterWith<'onUpdate'> & FilterWith<'onRemove'>
 
   const workflowInstanceName = 'Account'

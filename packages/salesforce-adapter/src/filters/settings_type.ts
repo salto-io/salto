@@ -26,7 +26,7 @@ import {
 } from '../transformers/transformer'
 import SalesforceClient from '../client/client'
 import { id } from './utils'
-import { FetchElements, ConfigChangeSuggestion } from '../types'
+import { FetchElements, ConfigChangeSuggestion, FilterContext } from '../types'
 import { createSkippedListConfigChange } from '../config_change'
 
 const log = logger(module)
@@ -48,13 +48,15 @@ const createSettingsType = async (
 
 const createSettingsTypes = async (
   client: SalesforceClient,
+  config: FilterContext,
   settingsTypesNames: string[]): Promise<ObjectType[]> => {
   const knownTypes = new Map<string, TypeElement>()
   return _.flatten(await Promise.all(settingsTypesNames
     .map(settingsName => settingsName.concat(SETTINGS_METADATA_TYPE))
-    .map(settingsTypesName => createSettingsType(client, settingsTypesName, knownTypes)
+    .filter(typeName => !(config.metadataTypesSkippedList ?? []).includes(typeName))
+    .map(typeName => createSettingsType(client, typeName, knownTypes)
       .catch(e => {
-        log.error('failed to fetch settings type %s reason: %o', settingsTypesName, e)
+        log.error('failed to fetch settings type %s reason: %o', typeName, e)
         return []
       }))))
 }
@@ -82,10 +84,13 @@ const createSettingsInstance = async (
 
 const createSettingsInstances = async (
   client: SalesforceClient,
+  config: FilterContext,
   settingsTypes: ObjectType[]
 ): Promise<FetchElements<InstanceElement[]>> => {
   const settingInstances = await Promise.all((settingsTypes)
     .filter(s => s.isSettings)
+    .filter(s => !((config.instancesRegexSkippedList ?? [])
+      .some(re => re.test(`${apiName(s)}.${extractSettingName(apiName(s))}`))))
     .map(s => createSettingsInstance(client, s)))
   return {
     elements: _.flatten(settingInstances.map(ins => ins.elements)),
@@ -96,7 +101,7 @@ const createSettingsInstances = async (
 /**
  * Add settings type
  */
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   /**
    * Add all settings types and instances as filter.
    *
@@ -114,7 +119,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     const settingsTypesNames = settingsList.map(set => set.fullName)
 
     // Create all settings types
-    const settingsTypes = await createSettingsTypes(client, settingsTypesNames)
+    const settingsTypes = await createSettingsTypes(client, config, settingsTypesNames)
 
     // Add all settings types to elements
     const knownTypesNames = new Set<string>(
@@ -125,7 +130,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       .forEach(e => elements.push(e))
 
     // Create all settings instances
-    const settingsInstances = await createSettingsInstances(client, settingsTypes)
+    const settingsInstances = await createSettingsInstances(client, config, settingsTypes)
 
     settingsInstances.elements.forEach(e => elements.push(e))
     return settingsInstances.configChanges

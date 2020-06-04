@@ -390,6 +390,7 @@ Salto supports various annotations whose semantic is enforced by the tool itself
     - **min** For number fields, the smallest allowed value
     - **max** For number fields, the greatest allowed value
     - **enforce_value** A boolean specifying whether the restriction should be enforced. when set to true, restriction violations will create warnings (this is the default behavior), when set to `false` a violation of this restriction will be ignored (the restriction is essentially disabled)
+    - **regex** A regular expression that the value should match (e.g. "^[a-z]*$" for lowercase values)
 - **\_depends\_on** Can be used to explicitly define dependencies between blocks. Its value is a list of references, each reference marks that this block depends on the reference target
 - **_parent** Can be used to explicitly define a relationship between blocks. Its value is a list of references, each reference marks that this block is a child of the reference target, unlike _depends_on, a parent relationship means the child block is assumed to be deleted automatically (by the service) when the parent is removed
 

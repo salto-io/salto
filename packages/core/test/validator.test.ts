@@ -23,7 +23,7 @@ import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
   UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
-  InvalidStaticFileError,
+  InvalidStaticFileError, RegexMismatchValidationError,
 } from '../src/core/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 
@@ -87,6 +87,14 @@ describe('Elements validation', () => {
     },
   })
 
+  const restrictedRegexOnlyLowerType = new PrimitiveType({
+    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRegexOnlyLowerType'),
+    primitive: PrimitiveTypes.STRING,
+    annotations: {
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^[a-z]*$' }),
+    },
+  })
+
   const restrictedAnnotation = new PrimitiveType({
     elemID: new ElemID('salto', 'simple', 'type', 'restrictedAnnotation'),
     primitive: PrimitiveTypes.STRING,
@@ -95,6 +103,7 @@ describe('Elements validation', () => {
       range: restrictedRangeType,
       rangeNoMin: restrictedRangeNoMinType,
       rangeNoMax: restrictedRangeNoMaxType,
+      regexOnlyLower: restrictedRegexOnlyLowerType,
     },
   })
 
@@ -133,6 +142,22 @@ describe('Elements validation', () => {
           }),
         },
       },
+      restrictStringRegex: {
+        type: BuiltinTypes.STRING,
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            regex: '^[a-z0-9]*$',
+          }),
+        },
+      },
+      restrictNumberRegex: {
+        type: BuiltinTypes.NUMBER,
+        annotations: {
+          [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+            regex: '^1[0-9]*$',
+          }),
+        },
+      },
       restrictedAnnotation: {
         type: restrictedAnnotation,
         annotations: {
@@ -140,6 +165,7 @@ describe('Elements validation', () => {
           range: 5,
           rangeNoMin: 5,
           rangeNoMax: 5,
+          regexOnlyLower: 'abc',
         },
       },
       reqNested: { type: simpleType },
@@ -584,6 +610,17 @@ describe('Elements validation', () => {
           )
         })
 
+        it('should return an error when annotations value does not match regex restriction', () => {
+          extType.fields.restrictedAnnotation.annotations.regexOnlyLower = 'ABC'
+          const errors = validateElements([extType])
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
+          expect(errors[0].message)
+            .toMatch('Value "ABC" is not valid for field regexOnlyLower. expected value to match "^[a-z]*$" regular expression')
+          expect(errors[0].elemID)
+            .toEqual(extType.elemID.createNestedID('field', 'restrictedAnnotation', 'regexOnlyLower'))
+        })
+
         it('should return an error when list fields values do not match restriction values', () => {
           extType.fields.list.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
             values: ['restriction'],
@@ -591,6 +628,36 @@ describe('Elements validation', () => {
           extInst.type = extType
 
           expect(validateElements([extInst])).toHaveLength(2)
+        })
+
+        it('should succeed when string value matches regex', () => {
+          extInst.value.restrictStringRegex = 'aaa123'
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(0)
+        })
+
+        it('should return an error when string value does not match regex restriction', () => {
+          extInst.value.restrictStringRegex = 'AAA_123'
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
+          expect(errors[0].message).toMatch('Value "AAA_123" is not valid for field restrictStringRegex. expected value to match "^[a-z0-9]*$" regular expression')
+          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictStringRegex'))
+        })
+
+        it('should succeed when number value matches regex', () => {
+          extInst.value.restrictNumberRegex = 111
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(0)
+        })
+
+        it('should return an error when number value does not match regex restriction', () => {
+          extInst.value.restrictNumberRegex = 211
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(1)
+          expect(errors[0]).toBeInstanceOf(RegexMismatchValidationError)
+          expect(errors[0].message).toMatch('Value "211" is not valid for field restrictNumberRegex. expected value to match "^1[0-9]*$" regular expression')
+          expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('restrictNumberRegex'))
         })
       })
     })

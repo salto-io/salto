@@ -47,11 +47,11 @@ describe('Types', () => {
     it('should have at most 1 fileContent field with ADDITIONAL_FILE_SUFFIX annotation', () => {
       Object.values(customTypes)
         .forEach(typeDef => {
-          const additionalFileFields = Object.values(typeDef.fields)
+          const fileContentFields = Object.values(typeDef.fields)
             .filter(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
-          expect(additionalFileFields.length).toBeLessThanOrEqual(1)
-          if (!_.isEmpty(additionalFileFields)) {
-            expect(additionalFileFields[0].annotations[ADDITIONAL_FILE_SUFFIX]).toBeDefined()
+          expect(fileContentFields.length).toBeLessThanOrEqual(1)
+          if (!_.isEmpty(fileContentFields)) {
+            expect(fileContentFields[0].annotations[ADDITIONAL_FILE_SUFFIX]).toBeDefined()
           }
         })
     })

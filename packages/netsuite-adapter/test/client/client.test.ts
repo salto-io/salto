@@ -25,7 +25,7 @@ import NetsuiteClient, {
   COMMANDS,
   CustomizationInfo,
   FileCustomizationInfo,
-  FOLDER_ATTRIBUTES_FILE_SUFFIX, FolderCustomizationInfo,
+  FOLDER_ATTRIBUTES_FILE_SUFFIX, FolderCustomizationInfo, TemplateCustomizationInfo,
 } from '../../src/client/client'
 
 
@@ -227,8 +227,8 @@ describe('netsuite client', () => {
         values: {
           '@_filename': 'a.xml',
         },
-        additionalFileContent: MOCK_TEMPLATE_CONTENT,
-        additionalFileExtension: 'html',
+        fileContent: MOCK_TEMPLATE_CONTENT,
+        fileExtension: 'html',
       },
       {
         typeName: 'elementName',
@@ -376,14 +376,14 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, deployProjectCommandMatcher)
     })
 
-    it('should succeed for customizationInfo without additionalFile', async () => {
+    it('should succeed for CustomizationInfo', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
       const customizationInfo = {
         typeName: 'typeName',
         values: {
           key: 'val',
         },
-      }
+      } as CustomizationInfo
       const filename = 'filename'
       await client.deployCustomObject(filename, customizationInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(1)
@@ -396,7 +396,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
     })
 
-    it('should succeed for customizationInfo with additionalFile', async () => {
+    it('should succeed for TemplateCustomizationInfo', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
       const filename = 'filename'
       const customizationInfo = {
@@ -404,9 +404,9 @@ describe('netsuite client', () => {
         values: {
           key: 'val',
         },
-        additionalFileContent: MOCK_TEMPLATE_CONTENT,
-        additionalFileExtension: 'html',
-      }
+        fileContent: MOCK_TEMPLATE_CONTENT,
+        fileExtension: 'html',
+      } as TemplateCustomizationInfo
       await client.deployCustomObject(filename, customizationInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(2)
       expect(writeFileMock)

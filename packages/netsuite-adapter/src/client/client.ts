@@ -72,8 +72,8 @@ export interface CustomizationInfo {
 }
 
 export interface TemplateCustomizationInfo extends CustomizationInfo {
-  additionalFileExtension: string
-  additionalFileContent: string
+  fileExtension: string
+  fileContent: string
 }
 
 export interface FileCustomizationInfo extends CustomizationInfo {
@@ -93,11 +93,11 @@ export const convertToCustomizationInfo = (xmlContent: string):
   return { typeName, values: parsedXmlValues[typeName] }
 }
 
-export const convertToTemplateCustomizationInfo = (xmlContent: string,
-  additionalFileExtension: string, additionalFileContent: string): TemplateCustomizationInfo =>
+export const convertToTemplateCustomizationInfo = (xmlContent: string, fileExtension: string,
+  fileContent: string): TemplateCustomizationInfo =>
   Object.assign(
     convertToCustomizationInfo(xmlContent),
-    { additionalFileExtension, additionalFileContent }
+    { fileExtension, fileContent }
   )
 
 export const convertToFileCustomizationInfo = (xmlContent: string, path: string[],
@@ -115,7 +115,7 @@ export const convertToFolderCustomizationInfo = (xmlContent: string, path: strin
   )
 
 export const isTemplateCustomizationInfo = (customizationInfo: CustomizationInfo):
-  customizationInfo is TemplateCustomizationInfo => 'additionalFileContent' in customizationInfo
+  customizationInfo is TemplateCustomizationInfo => 'fileExtension' in customizationInfo
 
 export const isFileCustomizationInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is FileCustomizationInfo =>
@@ -357,8 +357,8 @@ export default class NetsuiteClient {
     await writeFile(osPath.resolve(dirPath, `${filename}.xml`), convertToXmlContent(customizationInfo))
     if (isTemplateCustomizationInfo(customizationInfo)) {
       await writeFile(osPath.resolve(dirPath,
-        `${filename}${ADDITIONAL_FILE_PATTERN}${customizationInfo.additionalFileExtension}`),
-      customizationInfo.additionalFileContent)
+        `${filename}${ADDITIONAL_FILE_PATTERN}${customizationInfo.fileExtension}`),
+      customizationInfo.fileContent)
     }
     await NetsuiteClient.runDeployCommands(project)
   }

@@ -56,6 +56,9 @@ const castToListRecursively = (
 export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType):
   InstanceElement => {
   const getInstanceName = (transformedValues: Values): string => {
+    if (!isCustomType(type) && !isFileCabinetType(type)) {
+      throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
+    }
     if (isCustomType(type)) {
       const nameField = Object.values(type.fields)
         .find(f => f.annotations[IS_NAME]) as Field
@@ -63,10 +66,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
       // (e.g. customrecordtype of customsegment)
       return naclCase(transformedValues[nameField.name] ?? transformedValues[SCRIPT_ID])
     }
-    if (isFileCabinetType(type)) {
-      return naclCase(transformedValues[PATH])
-    }
-    throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
+    return naclCase(transformedValues[PATH])
   }
 
   const getInstancePath = (instanceName: string): string[] =>
@@ -117,8 +117,8 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
   if (fileContentField && isTemplateCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
-      filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.additionalFileExtension}`,
-      content: Buffer.from(customizationInfo.additionalFileContent),
+      filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.fileExtension}`,
+      content: Buffer.from(customizationInfo.fileContent),
     })
   }
 
@@ -220,13 +220,13 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
   // Template Custom Type
   if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
     && isCustomType(instance.type)) {
-    const additionalFileContent = values[fileContentField.name]
+    const fileContent = values[fileContentField.name]
     delete values[fileContentField.name]
     return {
       typeName,
       values,
-      additionalFileContent,
-      additionalFileExtension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
+      fileContent,
+      fileExtension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
     } as TemplateCustomizationInfo
   }
 

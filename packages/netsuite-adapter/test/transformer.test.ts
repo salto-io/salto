@@ -249,7 +249,7 @@ describe('Transformer', () => {
       expect(result.value.unknownfield).toBeUndefined()
     })
 
-    it('should add content value with additionalFile content as static file', () => {
+    it('should add content value with fileContent as static file', () => {
       const emailTemplateContent = 'Email template content'
       const emailTemplateCustomizationInfo = {
         typeName: EMAIL_TEMPLATE,
@@ -257,8 +257,8 @@ describe('Transformer', () => {
           name: 'email template name',
           [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         },
-        additionalFileContent: emailTemplateContent,
-        additionalFileExtension: 'html',
+        fileContent: emailTemplateContent,
+        fileExtension: 'html',
       }
       const result = createInstanceElement(
         emailTemplateCustomizationInfo,
@@ -274,7 +274,7 @@ describe('Transformer', () => {
       })
     })
 
-    it('should not add content value when there is no additionalFile', () => {
+    it('should not add content value when there is no fileContent', () => {
       const emailTemplateCustomizationInfo = {
         typeName: EMAIL_TEMPLATE,
         values: {
@@ -541,7 +541,7 @@ describe('Transformer', () => {
         + '</transactionForm>\n'))
     })
 
-    it('should transform additionalFile content', () => {
+    it('should transform TemplateCustomizationInfo EMAIL_TEMPLATE', () => {
       const emailTemplateContent = 'email template content'
       const elementName = 'elementName'
       const emailTemplateInstance = new InstanceElement(elementName,
@@ -555,12 +555,12 @@ describe('Transformer', () => {
         values: {
           name: elementName,
         },
-        additionalFileContent: emailTemplateContent,
-        additionalFileExtension: 'html',
+        fileContent: emailTemplateContent,
+        fileExtension: 'html',
       })
     })
 
-    it('should not transform additionalFile content when content is undefined', () => {
+    it('should transform CustomizationInfo EMAIL_TEMPLATE', () => {
       const elementName = 'elementName'
       const emailTemplateInstance = new InstanceElement(elementName,
         customTypes[EMAIL_TEMPLATE], {

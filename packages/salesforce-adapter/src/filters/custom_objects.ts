@@ -394,7 +394,7 @@ const removeIrrelevantElements = (elements: Element[]): void => {
 }
 
 const removeUnsupportedFields = (elements: Element[], unsupportedSystemFieldsA: string[]): void => {
-  elements.forEach((element: Element): void => {
+  elements.forEach(element => {
     if (!isObjectType(element)) {
       return
     }

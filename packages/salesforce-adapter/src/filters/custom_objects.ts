@@ -27,6 +27,7 @@ import {
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
+import { UNSUPPORTED_SYSTEM_FIELDS } from '../types'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
@@ -392,6 +393,17 @@ const removeIrrelevantElements = (elements: Element[]): void => {
     && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(metadataType(elem))))
 }
 
+const removeUnsupportedFields = (elements: Element[], unsupportedSystemFieldsA: string[]): void => {
+  elements.forEach(element => {
+    if (!isObjectType(element)) {
+      return
+    }
+    unsupportedSystemFieldsA.forEach(fieldName => {
+      delete element.fields[fieldName]
+    })
+  })
+}
+
 // Instances metadataTypes that should be under the customObject folder and have a PARENT reference
 const workflowDependentMetadataTypes = new Set([WORKFLOW_METADATA_TYPE,
   ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
@@ -445,7 +457,7 @@ const fixDependentInstancesPathAndSetParent = (elements: Element[]): void => {
  * Custom objects filter.
  * Fetches the custom objects via the soap api and adds them to the elements
  */
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
     const sObjects = await fetchSObjects(client).catch(e => {
       log.error('failed to fetch sobjects reason: %o', e)
@@ -526,8 +538,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
     newElements
       .filter(newElem => !elementFullNames.has(id(newElem)))
       .forEach(newElem => elements.push(newElem))
-
     fixDependentInstancesPathAndSetParent(elements)
+    removeUnsupportedFields(elements, config[UNSUPPORTED_SYSTEM_FIELDS] ?? [])
   },
 })
 

@@ -223,6 +223,7 @@ export default class SalesforceAdapter {
       'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)
       'AssignmentRule', 'EscalationRule',
+      'KnowledgeSettings',
     ],
     instancesRegexSkippedList = [],
     maxConcurrentRetrieveRequests = constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,

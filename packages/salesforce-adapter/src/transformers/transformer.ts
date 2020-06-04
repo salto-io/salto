@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue,
+  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, isObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -1159,6 +1159,11 @@ export const createMetadataTypeElements = async (
       false,
     ))))
 
+  const fieldTypeHasFields = (field: ValueTypeField): boolean => {
+    const fieldType = knownTypes.get(field.soapType)
+    return isObjectType(fieldType) && !_.isEmpty(fieldType.fields)
+  }
+
   // Enum fields sometimes show up with a type name that is not primitive but also does not
   // have fields (so we won't create an embedded type for it). it seems like these "empty" types
   // are always supposed to be a string with some restriction so we map all non primitive "empty"
@@ -1166,6 +1171,7 @@ export const createMetadataTypeElements = async (
   enrichedFields
     .filter(field => _.isEmpty(field.fields))
     .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
+    .filter(field => !fieldTypeHasFields(field))
     .filter(field => field.soapType !== objectName)
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 

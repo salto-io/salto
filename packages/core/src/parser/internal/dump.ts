@@ -96,7 +96,9 @@ const dumpArray = (arr: Value, indentationLevel = 0): string[] => {
 }
 
 const dumpExpression = (exp: Value, indentationLevel = 0): string[] => {
-  if (exp instanceof ReferenceExpression) return [exp.traversalParts.join('.')]
+  if (exp instanceof ReferenceExpression) {
+    return [`${createIndentation(indentationLevel)}${[exp.traversalParts.join('.')]}`]
+  }
   const { parts } = exp as TemplateExpression
   return [
     dumpString(

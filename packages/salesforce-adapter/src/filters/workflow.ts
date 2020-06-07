@@ -15,7 +15,7 @@
 */
 import {
   Element, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression,
-  ObjectType, Values, BuiltinTypes, ListType,
+  ObjectType, BuiltinTypes, ListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -56,18 +56,6 @@ export const isWorkflowType = (type: ObjectType): boolean => type.elemID.isEqual
 export const isWorkflowInstance = (instance: InstanceElement): boolean =>
   isWorkflowType(instance.type)
 
-type SubInstanceTransformer = (workflowApiName: string, value: Values) => Values
-const subInstancetransformers: Record<string, SubInstanceTransformer> = {
-  [WORKFLOW_RULES_FIELD]: (workflowApiName: string, rule: Values): Values => {
-    makeArray(rule.actions).forEach(action => {
-      if (action.name) {
-        action.name = fullApiName(workflowApiName, action.name)
-      }
-    })
-    return rule
-  },
-}
-
 const filterCreator: FilterCreator = () => ({
   /**
    * Upon fetch, modify the full_names of the inner types of the workflow to contain
@@ -86,13 +74,7 @@ const filterCreator: FilterCreator = () => ({
           .map(innerValue => {
             innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName(apiName(workflowInstance),
               innerValue[INSTANCE_FULL_NAME_FIELD])
-            const transformer = subInstancetransformers[fieldName]
-            return createInstanceElementFromValues(
-              _.isUndefined(transformer)
-                ? innerValue
-                : transformer(apiName(workflowInstance), innerValue),
-              objType
-            )
+            return createInstanceElementFromValues(innerValue, objType)
           })
         if (!_.isEmpty(innerInstances)) {
           workflowInstance.value[fieldName] = innerInstances

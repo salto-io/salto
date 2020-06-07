@@ -155,6 +155,9 @@ export interface SalesforceAdapterParams {
   // types from the API
   metadataTypesSkippedList?: string[]
 
+  // Determine whether hide type folder
+  hideTypesInNacls?: boolean
+
   // Metadata types that we have to fetch using the retrieve API endpoint and add update or remove
   // using the deploy API endpoint
   metadataToRetrieveAndDeploy?: Record<string, string | undefined>
@@ -204,6 +207,7 @@ type RetrieveMember = {
 }
 
 export default class SalesforceAdapter {
+  private hideTypesInNacls: boolean
   private metadataTypesSkippedList: string[]
   private instancesRegexSkippedList: RegExp[]
   private maxConcurrentRetrieveRequests: number
@@ -219,6 +223,7 @@ export default class SalesforceAdapter {
   private userConfig: SalesforceConfig
 
   public constructor({
+    hideTypesInNacls = constants.DEFAULT_HIDE_TYPES_IN_NACLS,
     metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
       'Settings',
@@ -297,6 +302,7 @@ export default class SalesforceAdapter {
     ],
     config,
   }: SalesforceAdapterParams) {
+    this.hideTypesInNacls = config.hideTypesInNacls ?? hideTypesInNacls
     this.metadataTypesSkippedList = metadataTypesSkippedList
       .concat(makeArray(config.metadataTypesSkippedList))
     this.instancesRegexSkippedList = instancesRegexSkippedList
@@ -338,7 +344,11 @@ export default class SalesforceAdapter {
     const missingTypes = Types.getAllMissingTypes()
     const annotationTypes = Types.getAnnotationTypes()
     const metadataTypeNames = this.listMetadataTypes()
-    const metadataTypes = this.fetchMetadataTypes(metadataTypeNames, annotationTypes)
+    const metadataTypes = this.fetchMetadataTypes(
+      metadataTypeNames,
+      annotationTypes,
+      this.hideTypesInNacls,
+    )
     const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
 
     const elements = _.flatten(
@@ -654,8 +664,11 @@ export default class SalesforceAdapter {
   }
 
   @logDuration('fetching metadata types')
-  private async fetchMetadataTypes(typeNamesPromise: Promise<string[]>,
-    knownMetadataTypes: TypeElement[]): Promise<TypeElement[]> {
+  private async fetchMetadataTypes(
+    typeNamesPromise: Promise<string[]>,
+    knownMetadataTypes: TypeElement[],
+    _hideTypesInNacls: boolean, // Will be use in the next PR
+  ): Promise<TypeElement[]> {
     const typeNames = await typeNamesPromise
     const knownTypes = new Map<string, TypeElement>(
       knownMetadataTypes.map(mdType => [apiName(mdType), mdType])

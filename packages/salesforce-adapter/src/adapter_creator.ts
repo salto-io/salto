@@ -40,6 +40,7 @@ SalesforceConfig => {
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
     maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
+    hideTypesInNacls: config?.value?.hideTypesInNacls,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

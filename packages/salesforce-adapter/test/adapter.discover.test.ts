@@ -26,8 +26,11 @@ import { createEncodedZipContent, findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import { id } from '../src/filters/utils'
 import * as constants from '../src/constants'
-import { INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST,
-  MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
+import {
+  INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST,
+  MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  HIDE_TYPES_IN_NACLS,
+} from '../src/types'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
 describe('SalesforceAdapter fetch', () => {
@@ -37,6 +40,7 @@ describe('SalesforceAdapter fetch', () => {
   const defaultInstancesRegexSkippedList = ['Test2.instance1', 'SkippedList$', '^Report.skip$']
   const defaultMaxConcurrentRetrieveRequests = 4
   const defaultMaxItemsInRetrieveRequest = 3000
+  const defaultHideTypesInNacls = true
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)
@@ -51,6 +55,7 @@ describe('SalesforceAdapter fetch', () => {
           instancesRegexSkippedList: defaultInstancesRegexSkippedList,
           maxConcurrentRetrieveRequests: defaultMaxConcurrentRetrieveRequests,
           maxItemsInRetrieveRequest: defaultMaxItemsInRetrieveRequest,
+          hideTypesInNacls: defaultHideTypesInNacls,
         },
       },
     }))
@@ -867,6 +872,7 @@ describe('SalesforceAdapter fetch', () => {
               .concat(defaultMetadataTypesSkippedList),
             [MAX_CONCURRENT_RETRIEVE_REQUESTS]: defaultMaxConcurrentRetrieveRequests,
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: defaultMaxItemsInRetrieveRequest,
+            [HIDE_TYPES_IN_NACLS]: defaultHideTypesInNacls,
           }
         )
       })

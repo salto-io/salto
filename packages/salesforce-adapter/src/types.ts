@@ -25,6 +25,7 @@ export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
+export const HIDE_TYPES_IN_NACLS = 'hideTypesInNacls'
 
 export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
@@ -37,6 +38,7 @@ export type SalesforceConfig = {
   [INSTANCES_REGEX_SKIPPED_LIST]?: string[]
   [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
+  [HIDE_TYPES_IN_NACLS]?: boolean
 }
 
 export type ConfigChangeSuggestion = {
@@ -94,6 +96,12 @@ export const configType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1000, max: 10000 }),
+      },
+    },
+    [HIDE_TYPES_IN_NACLS]: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_HIDE_TYPES_IN_NACLS,
       },
     },
   },

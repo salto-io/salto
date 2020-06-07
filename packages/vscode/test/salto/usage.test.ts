@@ -76,4 +76,15 @@ describe('Test go to definitions', () => {
     const defs = await provideWorkspaceReferences(workspace, token, context)
     expect(getRefLines(defs)).toEqual([32, 47, 64, 75, 81, 127, 136, 193, 197])
   })
+
+  it('should give annotation attr usage for annotation def', async () => {
+    const token = 'loan'
+    const pos = {
+      line: 203,
+      col: 19,
+    }
+    const context = await getPositionContext(workspace, 'all.nacl', pos)
+    const defs = await provideWorkspaceReferences(workspace, token, context)
+    expect(getRefLines(defs)).toEqual([208])
+  })
 })

@@ -13,8 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, isPrimitiveType } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes, CORE_ANNOTATIONS, getRestriction, isPrimitiveType,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import { ADDITIONAL_FILE_SUFFIX, IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX, PATH } from '../src/constants'
 import { fieldTypes } from '../src/types/field_types'
@@ -71,6 +74,20 @@ describe('Types', () => {
         expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))
           .toBe(true)
       })
+
+      it('should have correct path regex restriction', () => {
+        expect(Object.keys(fileCabinetTypes.file.fields)).toContain(PATH)
+        const pathField = fileCabinetTypes.file.fields[PATH]
+        const { regex } = getRestriction(pathField)
+        expect(values.isDefined(regex)).toBe(true)
+        const regExpObj = new RegExp(regex as string)
+        expect(regExpObj.test('/Templates/file.html')).toBe(false)
+        expect(regExpObj.test('Templates/file')).toBe(false)
+        expect(regExpObj.test('Templates/.html')).toBe(false)
+        expect(regExpObj.test('file.html')).toBe(false)
+        expect(regExpObj.test('/file.html')).toBe(false)
+        expect(regExpObj.test('Templates/file.html')).toBe(true)
+      })
     })
 
     describe('should have service_id path field', () => {
@@ -79,6 +96,18 @@ describe('Types', () => {
         const pathFieldType = fileCabinetTypes.folder.fields[PATH].type
         expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))
           .toBe(true)
+      })
+
+      it('should have correct path regex restriction', () => {
+        expect(Object.keys(fileCabinetTypes.folder.fields)).toContain(PATH)
+        const pathField = fileCabinetTypes.folder.fields[PATH]
+        const { regex } = getRestriction(pathField)
+        expect(values.isDefined(regex)).toBe(true)
+        const regExpObj = new RegExp(regex as string)
+        expect(regExpObj.test('/Templates/FolderName')).toBe(false)
+        expect(regExpObj.test('Templates/')).toBe(false)
+        expect(regExpObj.test('FolderName')).toBe(false)
+        expect(regExpObj.test('Templates/FolderName')).toBe(true)
       })
     })
   })

@@ -15,13 +15,17 @@
 */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ObjectType,
 } from '@salto-io/adapter-api'
-import * as constants from '../../constants'
-import { fieldTypes } from '../field_types'
+import * as constants from '../constants'
+import { fieldTypes } from './field_types'
+import {
+  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME,
+} from '../client/client'
+
+const baseFolderRegex = `^(${TEMPLATES_FOLDER_NAME}|${SUITE_SCRIPTS_FOLDER_NAME}|${WEB_SITE_HOSTING_FILES_FOLDER_NAME})\\/`
 
 const fileElemID = new ElemID(constants.NETSUITE, 'file')
-
 export const file = new ObjectType({
   elemID: fileElemID,
   annotations: {
@@ -31,6 +35,9 @@ export const file = new ObjectType({
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          regex: `${baseFolderRegex}.+\\..+`,
+        }),
       },
     },
     content: {
@@ -70,4 +77,44 @@ export const file = new ObjectType({
     },
   },
   path: [constants.NETSUITE, constants.TYPES_PATH, fileElemID.name],
+})
+
+
+const folderElemID = new ElemID(constants.NETSUITE, 'folder')
+export const folder = new ObjectType({
+  elemID: folderElemID,
+  annotations: {
+  },
+  fields: {
+    path: {
+      type: BuiltinTypes.SERVICE_ID,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          regex: `${baseFolderRegex}.+`,
+        }),
+      },
+    },
+    bundleable: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    description: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+      },
+    },
+    isinactive: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+    isprivate: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+      },
+    },
+  },
+  path: [constants.NETSUITE, constants.TYPES_PATH, folderElemID.name],
 })

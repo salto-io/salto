@@ -145,8 +145,7 @@ type_inner_types_vars_template = '''  ...{type_name}InnerTypes,
 
 types_file_template = LICENSE_HEADER + '''import {{ ObjectType, TypeElement }} from '@salto-io/adapter-api'
 import _ from 'lodash'
-import {{ file }} from './types/file_cabinet/file'
-import {{ folder }} from './types/file_cabinet/folder'
+import {{ file, folder }} from './types/file_cabinet_types'
 {import_types_statements}import {{ fieldTypes }} from './types/field_types'
 import {{ enums }} from './types/enums'
 

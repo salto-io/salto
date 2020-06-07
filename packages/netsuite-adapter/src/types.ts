@@ -15,8 +15,7 @@
 */
 import { ObjectType, TypeElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { file } from './types/file_cabinet/file'
-import { folder } from './types/file_cabinet/folder'
+import { file, folder } from './types/file_cabinet_types'
 import { addressForm, addressFormInnerTypes } from './types/custom_types/addressForm'
 import { advancedpdftemplate, advancedpdftemplateInnerTypes } from './types/custom_types/advancedpdftemplate'
 import { bankstatementparserplugin, bankstatementparserpluginInnerTypes } from './types/custom_types/bankstatementparserplugin'

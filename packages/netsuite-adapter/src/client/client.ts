@@ -62,6 +62,10 @@ const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 
+export const SUITE_SCRIPTS_FOLDER_NAME = 'SuiteScripts'
+export const TEMPLATES_FOLDER_NAME = 'Templates'
+export const WEB_SITE_HOSTING_FILES_FOLDER_NAME = 'Web Site Hosting Files'
+
 const rootCLIPath = osPath.normalize(osPath.join(__dirname, ...Array(5).fill('..'), 'node_modules',
   '@salto-io', 'suitecloud-cli', 'src'))
 const baseExecutionPath = os.tmpdir()
@@ -291,7 +295,8 @@ export default class NetsuiteClient {
   }
 
   private static async listFilePaths(executor: CommandActionExecutor): Promise<string[]> {
-    const TOP_LEVEL_FOLDER_NAMES = [`${osPath.sep}SuiteScripts`, `${osPath.sep}Templates`, `${osPath.sep}Web Site Hosting Files`]
+    const TOP_LEVEL_FOLDER_NAMES = [`${osPath.sep}${SUITE_SCRIPTS_FOLDER_NAME}`,
+      `${osPath.sep}${TEMPLATES_FOLDER_NAME}`, `${osPath.sep}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`]
     const operationResults = _.flatten(await Promise.all(
       TOP_LEVEL_FOLDER_NAMES.map(async folderName =>
         NetsuiteClient.executeProjectAction(COMMANDS.LIST_FILES, { folder: folderName }, executor))

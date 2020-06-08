@@ -1,0 +1,25 @@
+env: envname
+triggers:
+  - name: exampleAlert
+    title: super cool title
+    element_id_regex:
+      - .*test.*
+notifications:
+  - type: email
+    subject: Salto | New Alert
+    from: alerts@salto.io
+    to:
+      - a@b.com
+    triggers:
+      - exampleAlert
+smtp:
+  ssl: True
+  host: smtp.gmail.com
+  port: 465
+  auth: True
+  username: username@gmail.com
+  password: password
+logging:
+    format: "%(asctime)s %(filename)s %(lineno)s %(process)d %(levelname)s: %(message)s"
+    level: "INFO"
+    file_path: "/tmp/salto.log"

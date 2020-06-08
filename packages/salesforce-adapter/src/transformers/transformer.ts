@@ -42,6 +42,7 @@ import {
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
   LAYOUT_ITEM_METADATA_TYPE,
+  COMPOUND_FIELDS_SOAP_TYPE_NAMES,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
@@ -1012,10 +1013,15 @@ export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceFiel
       annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
     }
   // Compound Fields
-  } else if (!_.isUndefined(Types.compoundDataTypes[field.name as COMPOUND_FIELD_TYPE_NAMES])) {
-    naclFieldType = objCompoundFieldNames.includes(field.name)
-      ? Types.compoundDataTypes[field.name as COMPOUND_FIELD_TYPE_NAMES]
-      : getFieldType(FIELD_TYPE_NAMES.TEXT)
+  } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
+    // Only fields that are compound in this object get compound type, otherwise default to text
+    if (objCompoundFieldNames.includes(field.name)) {
+      naclFieldType = field.nameField
+        ? Types.compoundDataTypes.Name
+        : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
+    } else {
+      naclFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
+    }
   }
 
   if (!_.isEmpty(naclFieldType.annotationTypes)) {

@@ -62,6 +62,13 @@ export enum COMPOUND_FIELD_TYPE_NAMES {
   LOCATION = 'Location',
 }
 
+export const COMPOUND_FIELDS_SOAP_TYPE_NAMES:
+  Record<string, COMPOUND_FIELD_TYPE_NAMES> = {
+    address: COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
+    location: COMPOUND_FIELD_TYPE_NAMES.LOCATION,
+    // name is handled differently with nameField
+  }
+
 export const FIELD_SOAP_TYPE_NAMES:
 Record<string, FIELD_TYPE_NAMES> = {
   anyType: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type

@@ -186,7 +186,7 @@ describe('Adapter', () => {
         expect(result.errors).toHaveLength(1)
       })
 
-      it('should fail when trying to add a customTypesToSkip instance', async () => {
+      it('should fail when trying to add a typesToSkip instance', async () => {
         const shouldSkipInst = new InstanceElement('skip', customTypes[SAVED_SEARCH])
         const result = await adapterAdd(shouldSkipInst)
         expect(result.appliedChanges).toHaveLength(0)

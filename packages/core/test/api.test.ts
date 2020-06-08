@@ -98,7 +98,7 @@ describe('api.ts', () => {
   const mockAdapterOps = {
     fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
     deploy: mockFunction<AdapterOperations['deploy']>().mockImplementation(
-      changes => Promise.resolve({ errors: [], appliedChanges: changes.changes })
+      changeGroup => Promise.resolve({ errors: [], appliedChanges: changeGroup.changes })
     ),
   }
   const mockAdapter = {

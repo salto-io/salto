@@ -376,9 +376,9 @@ export default class SalesforceAdapter implements AdapterOperations {
     return { elements, updatedConfig: { config, message: STOP_MANAGING_ITEMS_MSG } }
   }
 
-  async deploy(changes: ChangeGroup): Promise<DeployResult> {
+  async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
     const changeByElem = _.groupBy(
-      changes.changes,
+      changeGroup.changes,
       change => getChangeElement(change).elemID.createTopLevelParentID().parent.getFullName(),
     )
     const results = await Promise.all(

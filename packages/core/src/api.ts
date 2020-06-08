@@ -29,7 +29,7 @@ import {
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises } from '@salto-io/lowerdash'
+import { promises, collections } from '@salto-io/lowerdash'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
@@ -137,7 +137,7 @@ export const deploy = async (
       })
     }
 
-    const postDeploy = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
+    const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
       await promises.array.series(appliedChanges.map(change => async () => {
         const updatedElement = await getUpdatedElement(change)
         const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
@@ -147,7 +147,7 @@ export const deploy = async (
         changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
       }))
     }
-    const errors = await deployActions(actionPlan, adapters, reportProgress, postDeploy)
+    const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
 
     // Remove hidden Types and hidden values inside instances
     const elementsAfterHiddenRemoval = removeHiddenValuesAndHiddenTypes(changedElements.values())
@@ -164,10 +164,7 @@ export const deploy = async (
       elementsAfterHiddenRemoval,
       workspaceElements
     )).map(change => ({ change, serviceChange: change }))
-      .map(toChangesWithPath(name => {
-        const elem = changedElements.get(name)
-        return elem === undefined ? [] : [elem]
-      }))
+      .map(toChangesWithPath(name => collections.array.makeArray(changedElements.get(name))))
       .flatten()
     const errored = errors.length > 0
     return {

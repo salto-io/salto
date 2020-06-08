@@ -22,9 +22,9 @@ export type ChangeOperations = {
 }
 
 export const deployInstance = async (
-  operations: ChangeOperations, changes: ChangeGroup
+  operations: ChangeOperations, changeGroup: ChangeGroup
 ): Promise<DeployResult> => {
-  const change = changes.changes[0]
+  const change = changeGroup.changes[0]
   if (!isInstanceChange(change)) {
     return {
       appliedChanges: [],

@@ -40,7 +40,7 @@ export type DeployResult = {
 
 export type AdapterOperations = {
   fetch: () => Promise<FetchResult>
-  deploy: (changes: ChangeGroup) => Promise<DeployResult>
+  deploy: (changeGroup: ChangeGroup) => Promise<DeployResult>
 }
 
 export type AdapterOperationsContext = {

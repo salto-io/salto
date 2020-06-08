@@ -159,13 +159,13 @@ export default class HubspotAdapter implements AdapterOperations {
     )
   }
 
-  public async deploy(changes: ChangeGroup): Promise<DeployResult> {
+  public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
     const operations = {
       add: this.add.bind(this),
       remove: this.remove.bind(this),
       update: this.update.bind(this),
     }
-    return deployInstance(operations, changes)
+    return deployInstance(operations, changeGroup)
   }
 
   private async runFiltersOnFetch(elements: Element[]): Promise<void> {

@@ -15,7 +15,7 @@
 */
 import {
   ObjectType, PrimitiveType, PrimitiveTypes, ElemID, TypeElement, InstanceElement,
-  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType,
+  BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import * as TestHelpers from '../common/helpers'
 import { parse } from '../../src/parser/parse'
@@ -138,6 +138,23 @@ describe('Salto Dump', () => {
     }
   )
 
+  const instanceWithArray = new InstanceElement(
+    'arr_inst',
+    model,
+    {
+      arr: [
+        'only',
+        1,
+        true,
+        { priate: 'can say' },
+        [],
+        new ReferenceExpression(new ElemID('salto', 'ref')),
+        'Hello I am multiline\nstring.',
+        new TestFuncImpl(funcName, ['foo']),
+      ],
+    }
+  )
+
   describe('dump elements', () => {
     let body: string
 
@@ -145,7 +162,7 @@ describe('Salto Dump', () => {
       body = await dumpElements([
         strType, numType, boolType,
         fieldType, model, instance, config,
-        instanceStartsWithNumber, instanceWithFunctions,
+        instanceStartsWithNumber, instanceWithFunctions, instanceWithArray,
       ], functions)
     })
 
@@ -222,6 +239,56 @@ describe('Salto Dump', () => {
         )
       })
     })
+
+    describe('indentation', () => {
+      it('should indent attributes', () => {
+        expect(body).toMatch(
+          /LeadConvertSettings = {\s*\n {4}account = \[\s*\n {6}{\s*\n {8}input/m,
+        )
+      })
+      it('shoud indent annotation blocks', () => {
+        expect(body).toMatch(/type salesforce.field is number {.*?\n {2}annotations/s)
+      })
+      it('should indent field type annontations', () => {
+        expect(body).toMatch(/type salesforce.field is number {.*?annotations {.*?\n {4}string jerry {/s)
+      })
+      it('should indent type annontations', () => {
+        expect(body).toMatch(/type salesforce.test {.*?\n {2}annotations/s)
+      })
+      it('should indent primitive types', () => {
+        expect(body).toMatch(/^type salesforce.string/m)
+      })
+      it('should indent instances', () => {
+        expect(body).toMatch(/^salesforce.test functions/m)
+      })
+      it('should indent model types', () => {
+        expect(body).toMatch(/^type salesforce.test/m)
+      })
+      it('should indent fields', () => {
+        expect(body).toMatch(/\n {2}salesforce.string name/m)
+      })
+      it('should indent all types in array', () => {
+        // number
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}1/ms)
+        // string
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}"only"/ms)
+        // boolean
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}true/ms)
+        // object
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}{/ms)
+        // array
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n'''/ms)
+        // reference
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}salto\.ref/ms)
+        // multilinestring
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}'''/ms)
+        expect(body).toMatch(/arr.*?=.*?\[.*?\nHello/ms)
+        expect(body).toMatch(/arr.*?=.*?\[.*?\nstring/ms)
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n'''/ms)
+        // function
+        expect(body).toMatch(/arr.*?=.*?\[.*?\n {4}ZOMG/ms)
+      })
+    })
     it('dumped instance with name that starts with number', () => {
       expect(body).toMatch(/salesforce.test "3me"/)
     })
@@ -229,7 +296,7 @@ describe('Salto Dump', () => {
       const result = await parse(Buffer.from(body), 'none', functions)
       const { elements, errors } = result
       expect(errors).toHaveLength(0)
-      expect(elements).toHaveLength(10)
+      expect(elements).toHaveLength(11)
       expect(elements[0]).toEqual(strType)
       expect(elements[1]).toEqual(numType)
       expect(elements[2]).toEqual(boolType)

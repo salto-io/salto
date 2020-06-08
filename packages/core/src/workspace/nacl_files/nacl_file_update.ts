@@ -182,11 +182,11 @@ export const updateNaclFileData = async (
     const elem = change.action === 'remove' ? undefined : change.data.after
     let newData: string
     let indentationLevel = (change.location.start.col - 1) / 2
-    /* When adding need to increase one level of indentation because we get the placement
-    * of the closing brace of the next line. The closing brace will be indented one line
-    * less then wanted change
+    /* When adding a nested change we need to increase one level of indentation because
+    * we get the placement of the closing brace of the next line. The closing brace will
+    * be indented one line less then wanted change.
     */
-    if (change.action === 'add') {
+    if (change.action === 'add' && !change.id.isTopLevel()) {
       indentationLevel += 1
     }
     if (elem !== undefined) {

@@ -13,58 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { AdditionDiff, ModificationDiff } from '@salto-io/dag'
 import {
-  ChangeError, isObjectType, Change, getChangeElement, ChangeValidator, ObjectType, ElemID,
-  InstanceElement, Field, BuiltinTypes, Element,
+  getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
 import { getPlan } from '../../../src/core/plan'
+import { mockFunction } from '../../common/helpers'
 
 
 describe('filterInvalidChanges', () => {
   const allElements = mock.getAllElements()
 
-  const generateChangeErrorForInvalidElements = async (element: Element):
-    Promise<ChangeError[]> => {
-    if (element.elemID.name.includes('invalid')) {
-      return [{
-        elemID: element.elemID,
-        severity: 'Error',
-        message: 'message',
-        detailedMessage: 'detailedMessage',
-      }] as ChangeError[]
-    }
-    if (isObjectType(element)) {
-      return Object.values(element.fields)
-        .filter(field => field.elemID.name.includes('invalid'))
-        .map(field => ({
-          elemID: field.elemID,
-          severity: 'Error',
-          message: 'message',
-          detailedMessage: 'detailedMessage',
-        }))
-    }
-    return []
-  }
 
-  const mockOnAdd = generateChangeErrorForInvalidElements
-  const mockOnRemove = generateChangeErrorForInvalidElements
-  const mockOnUpdate = async (changes: ReadonlyArray<Change>): Promise<ChangeError[]> =>
-    _.flatten(await Promise.all(
-      _(changes)
-        .map(change => generateChangeErrorForInvalidElements(getChangeElement(change)))
-        .value()
-    ))
-
-  const mockChangeValidator: ChangeValidator = {
-    onAdd: mockOnAdd,
-    onUpdate: mockOnUpdate,
-    onRemove: mockOnRemove,
-  }
+  const mockChangeValidator = mockFunction<ChangeValidator>().mockImplementation(
+    async changes => changes.changes
+      .map(getChangeElement)
+      .filter(elem => elem.elemID.name.includes('invalid'))
+      .map(({ elemID }) => ({ elemID, severity: 'Error', message: 'msg', detailedMessage: '' }))
+  )
 
   it('should have no change errors when having no diffs', async () => {
     const planResult = await getPlan(allElements, allElements, { salto: mockChangeValidator })
@@ -107,8 +76,10 @@ describe('filterInvalidChanges', () => {
     const newInvalidInst = new InstanceElement('new_invalid_inst', newInvalidObj, {})
     const planResult = await getPlan(allElements, [...allElements, newInvalidObj, newInvalidInst],
       { salto: mockChangeValidator })
-    expect(planResult.changeErrors).toHaveLength(2)
+    expect(planResult.changeErrors).toHaveLength(3)
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.elemID)))
+      .toBeTruthy()
+    expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.fields.invalid.elemID)))
       .toBeTruthy()
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidInst.elemID)))
       .toBeTruthy()
@@ -116,7 +87,7 @@ describe('filterInvalidChanges', () => {
     expect(planResult.size).toBe(0)
   })
 
-  it('should have onAdd change errors and omit invalid object & insatance additionaaaaa', async () => {
+  it('should have onAdd change errors and omit invalid fields', async () => {
     const newValidObj = new ObjectType({
       elemID: new ElemID('salto', 'new_valid_obj'),
       fields: {
@@ -228,14 +199,20 @@ describe('filterInvalidChanges', () => {
   })
 
   it('should have onRemove change errors', async () => {
-    const beforeInvalidObj = new ObjectType({ elemID: new ElemID('salto', 'before_invalid_obj') })
-    beforeInvalidObj.fields.invalid = new Field(beforeInvalidObj, 'invalid',
-      BuiltinTypes.STRING)
+    const beforeInvalidObj = new ObjectType({
+      elemID: new ElemID('salto', 'before_invalid_obj'),
+      fields: {
+        invalid: { type: BuiltinTypes.STRING },
+      },
+    })
+    const beforeInvalidField = beforeInvalidObj.fields.invalid
     const beforeInvalidInst = new InstanceElement('before_invalid_inst', beforeInvalidObj, {})
     const planResult = await getPlan([...allElements, beforeInvalidObj, beforeInvalidInst],
       allElements, { salto: mockChangeValidator })
-    expect(planResult.changeErrors).toHaveLength(2)
+    expect(planResult.changeErrors).toHaveLength(3)
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidObj.elemID)))
+      .toBeTruthy()
+    expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidField.elemID)))
       .toBeTruthy()
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidInst.elemID)))
       .toBeTruthy()

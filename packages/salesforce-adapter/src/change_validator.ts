@@ -19,7 +19,7 @@ import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 
 
-const changeValidators: Partial<ChangeValidator>[] = [
+const changeValidators: ChangeValidator[] = [
   packageValidator,
   picklistStandardFieldValidator,
 ]

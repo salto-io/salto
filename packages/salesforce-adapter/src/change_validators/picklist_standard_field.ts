@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Change, ChangeDataType, ChangeError, ElemID, Field, getChangeElement, isModificationDiff,
+  ChangeDataType, ChangeError, Field, getChangeElement, isModificationDiff, ChangeValidator,
 } from '@salto-io/adapter-api'
 import { apiName, isCustom } from '../transformers/transformer'
 import { isPicklistField, isStandardValueSetPicklistField } from '../filters/value_set'
@@ -23,25 +23,23 @@ const shouldCreateChangeError = (changeElement: ChangeDataType): changeElement i
   isPicklistField(changeElement) && !isCustom(apiName(changeElement))
   && !isStandardValueSetPicklistField(changeElement)
 
-const createChangeError = (elemID: ElemID, fieldName: string): ChangeError =>
+const createChangeError = (field: Field): ChangeError =>
   ({
-    elemID,
+    elemID: field.elemID,
     severity: 'Error',
-    message: `You cannot define picklist, globalPicklist, or valueSet on a standard field. Use StandardValueSet instead. Field: ${fieldName}`,
+    message: `You cannot define picklist, globalPicklist, or valueSet on a standard field. Use StandardValueSet instead. Field: ${field.name}`,
     detailedMessage: 'You cannot define picklist, globalPicklist, or valueSet on a standard field. Use StandardValueSet instead.',
   })
 
 /**
  * It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed.
  */
-export const changeValidator = {
-  onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> =>
-    changes
-      .filter(isModificationDiff)
-      .filter(change => shouldCreateChangeError(getChangeElement(change)))
-      .map(change => createChangeError(
-        getChangeElement(change).elemID,
-        (getChangeElement(change) as Field).name
-      )),
-}
+const changeValidator: ChangeValidator = async changes => (
+  changes.changes
+    .filter(isModificationDiff)
+    .map(getChangeElement)
+    .filter(shouldCreateChangeError)
+    .map(createChangeError)
+)
+
 export default changeValidator

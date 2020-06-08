@@ -18,6 +18,7 @@ import readonlyValidator from '../../src/change_validators/readonly'
 import { Types } from '../../src/transformers/transformer'
 import { OBJECTS_NAMES } from '../../src/constants'
 import { contactPropertyMock } from '../common/mock_elements'
+import { toChangeGroup } from '../common/mock_changes'
 
 describe('readonly change validator', () => {
   describe('onUpdate', () => {
@@ -36,26 +37,23 @@ describe('readonly change validator', () => {
     describe('change value of name in ContactProperty', () => {
       it('should have an error when different string', async () => {
         after.value.name = 'abc'
-        changeErrors = await readonlyValidator.onUpdate([{
-          action: 'modify',
-          data: { after, before: contactPropertyInstance },
-        }])
+        changeErrors = await readonlyValidator(
+          toChangeGroup({ before: contactPropertyInstance, after })
+        )
       })
 
       it('should have an error on static file with diff value', async () => {
         after.value.name = new StaticFile({ filepath: 'path', content: Buffer.from('abc') })
-        changeErrors = await readonlyValidator.onUpdate([{
-          action: 'modify',
-          data: { after, before: contactPropertyInstance },
-        }])
+        changeErrors = await readonlyValidator(
+          toChangeGroup({ before: contactPropertyInstance, after })
+        )
       })
 
       it('should have an error on reference with diff value', async () => {
         after.value.name = new ReferenceExpression(new ElemID('hubspot', 'str'), 'abc')
-        changeErrors = await readonlyValidator.onUpdate([{
-          action: 'modify',
-          data: { after, before: contactPropertyInstance },
-        }])
+        changeErrors = await readonlyValidator(
+          toChangeGroup({ before: contactPropertyInstance, after })
+        )
       })
 
       afterEach(() => {
@@ -68,26 +66,23 @@ describe('readonly change validator', () => {
     describe('keep resolved value of name in ContactProperty', () => {
       it('should not have an error when replacing name with static file with same value', async () => {
         after.value.name = new StaticFile({ filepath: 'path', content: Buffer.from(contactPropertyMock.name) })
-        changeErrors = await readonlyValidator.onUpdate([{
-          action: 'modify',
-          data: { after, before: contactPropertyInstance },
-        }])
+        changeErrors = await readonlyValidator(
+          toChangeGroup({ before: contactPropertyInstance, after })
+        )
       })
 
       it('should not have an error when replacing name with reference to the same value', async () => {
         after.value.name = new ReferenceExpression(new ElemID('hubspot', 'str'), contactPropertyMock.name)
-        changeErrors = await readonlyValidator.onUpdate([{
-          action: 'modify',
-          data: { after, before: contactPropertyInstance },
-        }])
+        changeErrors = await readonlyValidator(
+          toChangeGroup({ before: contactPropertyInstance, after })
+        )
       })
 
       it('should not have an error when modyfing other non-readonly value', async () => {
         after.value.label = 'new label'
-        changeErrors = await readonlyValidator.onUpdate([{
-          action: 'modify',
-          data: { after, before: contactPropertyInstance },
-        }])
+        changeErrors = await readonlyValidator(
+          toChangeGroup({ before: contactPropertyInstance, after })
+        )
       })
 
       afterEach(() => {

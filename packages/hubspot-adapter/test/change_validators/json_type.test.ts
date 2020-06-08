@@ -15,6 +15,7 @@
 */
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, StaticFile, ChangeError } from '@salto-io/adapter-api'
 import jsonTypeValidator from '../../src/change_validators/json_type'
+import { toChangeGroup } from '../common/mock_changes'
 
 const invalidJSON = '{'
 const validJSON = '{ "a": "bba" }'
@@ -51,7 +52,7 @@ describe('json type change validator', () => {
       })
 
       afterEach(async () => {
-        changeErrors = await jsonTypeValidator.onAdd(instance)
+        changeErrors = await jsonTypeValidator(toChangeGroup({ after: instance }))
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -68,7 +69,7 @@ describe('json type change validator', () => {
       })
 
       afterEach(async () => {
-        changeErrors = await jsonTypeValidator.onAdd(instance)
+        changeErrors = await jsonTypeValidator(toChangeGroup({ after: instance }))
         expect(changeErrors).toHaveLength(0)
       })
     })
@@ -90,10 +91,7 @@ describe('json type change validator', () => {
       })
 
       afterEach(async () => {
-        changeErrors = await jsonTypeValidator.onUpdate([{
-          action: 'modify',
-          data: { after, before: instance },
-        }])
+        changeErrors = await jsonTypeValidator(toChangeGroup({ before: instance, after }))
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -111,10 +109,7 @@ describe('json type change validator', () => {
       })
 
       afterEach(async () => {
-        changeErrors = await jsonTypeValidator.onUpdate([{
-          action: 'modify',
-          data: { after, before: instance },
-        }])
+        changeErrors = await jsonTypeValidator(toChangeGroup({ before: instance, after }))
         expect(changeErrors).toHaveLength(0)
       })
     })

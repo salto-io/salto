@@ -44,16 +44,7 @@ export const filterInvalidChanges = async (
     if (_.isUndefined(changeValidator)) {
       return []
     }
-    switch (groupLevelChange.action) {
-      case 'modify':
-        return changeValidator.onUpdate([...group.items.values()])
-      case 'remove':
-        return changeValidator.onRemove(getChangeElement(groupLevelChange))
-      case 'add':
-        return changeValidator.onAdd(getChangeElement(groupLevelChange))
-      default:
-        throw new Error('Unknown action type')
-    }
+    return changeValidator({ groupID: group.groupKey, changes: [...group.items.values()] })
   }
 
   const createValidTopLevelElem = (beforeTopLevelElem: TopLevelElement,

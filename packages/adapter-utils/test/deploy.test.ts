@@ -13,37 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeDataType, Change, ObjectType, ElemID, InstanceElement, DeployResult, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeElement } from '@salto-io/adapter-api'
 import { deployInstance, ChangeOperations } from '../src/deploy'
-import { mockFunction } from './utils.test'
+import { mockFunction, toChangeGroup } from './common'
 
 type MockInterface<T extends { [key: string]: (...args: never[]) => unknown }> = {
   [k in keyof T]: jest.Mock<ReturnType<T[k]>, Parameters<T[k]>>
 }
 
 describe('deployInstance', () => {
-  type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
-  const toChange = ({ before, after }: ChangeParams): Change => {
-    if (before !== undefined && after !== undefined) {
-      return { action: 'modify', data: { before, after } }
-    }
-    if (before !== undefined) {
-      return { action: 'remove', data: { before } }
-    }
-    if (after !== undefined) {
-      return { action: 'add', data: { after } }
-    }
-    throw new Error('must provide before or after')
-  }
-
-  const toChangeGroup = (params: ChangeParams): ChangeGroup => {
-    const change = toChange(params)
-    return {
-      groupID: getChangeElement(change).elemID.getFullName(),
-      changes: [change],
-    }
-  }
-
   const testType = new ObjectType({ elemID: new ElemID('test', 'type') })
   const testInst = new InstanceElement('test', testType, { val: 'some value' })
 

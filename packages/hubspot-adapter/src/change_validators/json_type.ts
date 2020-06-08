@@ -14,16 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeError, Change, isInstanceElement, Element,
-  BuiltinTypes, getChangeElement, isModificationDiff, InstanceElement, isPrimitiveType } from '@salto-io/adapter-api'
+import { ChangeError, BuiltinTypes, InstanceElement, isPrimitiveType, isInstanceChange, ChangeValidator, isAdditionOrModificationDiff } from '@salto-io/adapter-api'
 import { resolveValues } from '@salto-io/adapter-utils'
 import { getLookUpName } from '../transformers/transformer'
 
-const getJsonValidationErrorsFromAfter = async (after: Element):
+const getJsonValidationErrorsFromAfter = async (after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {
-  if (!isInstanceElement(after)) {
-    return []
-  }
   const resolvedAfter = resolveValues(after, getLookUpName)
   const errors = Object.values(_.pickBy(_.mapValues(resolvedAfter.value, (val, key) => {
     const field = after.type.fields[key]
@@ -45,19 +41,13 @@ const getJsonValidationErrorsFromAfter = async (after: Element):
   return errors
 }
 
-export const changeValidator = {
-  onAdd: async (after: Element): Promise<ReadonlyArray<ChangeError>> =>
-    getJsonValidationErrorsFromAfter(after),
-  onUpdate: async (changes: ReadonlyArray<Change>): Promise<ReadonlyArray<ChangeError>> => {
-    const getChangeError = async (change: Change): Promise<ReadonlyArray<ChangeError>> => {
-      const changeElement = getChangeElement(change)
-      if (isInstanceElement(changeElement) && isModificationDiff(change)) {
-        return getJsonValidationErrorsFromAfter(change.data.after as InstanceElement)
-      }
-      return []
-    }
-    return _.flatten(await Promise.all(changes.map(change => getChangeError(change))))
-  },
-}
+const changeValidator: ChangeValidator = async changes => (
+  _.flatten(await Promise.all(
+    changes.changes
+      .filter(isInstanceChange)
+      .filter(isAdditionOrModificationDiff)
+      .map(change => getJsonValidationErrorsFromAfter(change.data.after))
+  ))
+)
 
 export default changeValidator

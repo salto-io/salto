@@ -16,13 +16,14 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Field, InstanceElement, isType, getChangeElement, ChangeEntry, isFieldChange, isInstanceChange,
-  DependencyChanger, DependencyChange, addReferenceDependency, isDependentAction,
+  Field, InstanceElement, isType, getChangeElement, ChangeEntry, isFieldChangeEntry,
+  isInstanceChangeEntry, DependencyChanger, DependencyChange, addReferenceDependency,
+  isDependentAction,
 } from '@salto-io/adapter-api'
 
 type FieldOrInstanceChange = ChangeEntry<Field | InstanceElement>
 const isFieldOrInstanceChange = (entry: ChangeEntry): entry is FieldOrInstanceChange => (
-  isFieldChange(entry) || isInstanceChange(entry)
+  isFieldChangeEntry(entry) || isInstanceChangeEntry(entry)
 )
 
 export const addTypeDependency: DependencyChanger = async changes => {

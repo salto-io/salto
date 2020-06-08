@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, InstanceElement } from '../src/elements'
+import { ObjectType, InstanceElement, PrimitiveType, PrimitiveTypes, Field } from '../src/elements'
 import { ElemID } from '../src/element_id'
 import { BuiltinTypes } from '../src/builtins'
-import { getChangeElement } from '../src/change'
+import { getChangeElement, Change, isInstanceChange, isObjectTypeChange, isFieldChange } from '../src/change'
 
 describe('change.ts', () => {
   const objElemID = new ElemID('adapter', 'type')
@@ -49,5 +49,66 @@ describe('change.ts', () => {
       data: { before: field, after: field },
     })
     expect(elem).toBe(field)
+  })
+
+  describe('isChange Functions', () => {
+    let instChange: Change<InstanceElement>
+    let objChange: Change<ObjectType>
+    let fieldChange: Change<Field>
+    let typeChange: Change<PrimitiveType>
+
+    beforeEach(() => {
+      const primType = new PrimitiveType({
+        elemID: new ElemID('test', 'prim'),
+        primitive: PrimitiveTypes.STRING,
+      })
+      const objType = new ObjectType({
+        elemID: new ElemID('test', 'type'),
+        fields: { field: { type: primType } },
+      })
+      const instance = new InstanceElement('inst', objType)
+      const createChange = <T>(elem: T): Change<T> => ({ action: 'add', data: { after: elem } })
+
+      instChange = createChange(instance)
+      objChange = createChange(objType)
+      fieldChange = createChange(objType.fields.field)
+      typeChange = createChange(primType)
+    })
+
+    describe('isInstanceChange', () => {
+      it('should return true for changes of instance elements', () => {
+        expect(isInstanceChange(instChange)).toBeTruthy()
+      })
+
+      it('should return false for changes of non instance elements', () => {
+        [objChange, fieldChange, typeChange].forEach(
+          change => expect(isInstanceChange(change)).toBeFalsy()
+        )
+      })
+    })
+
+    describe('isObjectTypeChange', () => {
+      it('should return true for changes of object type elements', () => {
+        expect(isObjectTypeChange(objChange)).toBeTruthy()
+      })
+
+      it('should return false for changes of non object type elements', () => {
+        [instChange, fieldChange, typeChange].forEach(
+          change => expect(isObjectTypeChange(change)).toBeFalsy()
+        )
+      })
+    })
+
+    describe('isFieldChange', () => {
+      it('should return true for changes of field elements', () => {
+        expect(isFieldChange(fieldChange)).toBeTruthy()
+      })
+
+      it('should return false for changes of non field elements', () => {
+        [objChange, instChange, typeChange].forEach(
+          change => expect(isFieldChange(change)).toBeFalsy()
+        )
+      })
+    })
   })
 })

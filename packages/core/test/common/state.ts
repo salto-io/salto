@@ -13,20 +13,45 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { Element } from '@salto-io/adapter-api'
 import State from '../../src/workspace/state'
+import { mockFunction } from './helpers'
 
-const mockState = (services: string[] = []): State => ({
-  list: jest.fn().mockImplementation(() => Promise.resolve([])),
-  get: jest.fn().mockImplementation(() => Promise.resolve()),
-  getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
-  set: jest.fn().mockImplementation(() => Promise.resolve()),
-  remove: jest.fn().mockImplementation(() => Promise.resolve()),
-  clear: jest.fn().mockImplementation(() => Promise.resolve()),
-  rename: jest.fn().mockImplementation(() => Promise.resolve()),
-  override: jest.fn().mockImplementation(() => Promise.resolve()),
-  flush: jest.fn().mockImplementation(() => Promise.resolve()),
-  getServicesUpdateDates: jest.fn().mockImplementation(() => Promise.resolve()),
-  existingServices: jest.fn().mockImplementation(() => Promise.resolve(services)),
-})
+const mockState = (services: string[] = [], elements: Element[] = []): State => {
+  const state = new Map(elements.map(elem => [elem.elemID.getFullName(), elem]))
+  return {
+    list: mockFunction<State['list']>().mockImplementation(
+      () => Promise.resolve(Object.values(state).map(elem => elem.elemID))
+    ),
+    get: mockFunction<State['get']>().mockImplementation(
+      id => Promise.resolve(state.get(id.getFullName()))
+    ),
+    getAll: mockFunction<State['getAll']>().mockImplementation(
+      () => Promise.resolve(Object.values(state))
+    ),
+    set: mockFunction<State['set']>().mockImplementation(
+      async elem => { state.set(elem.elemID.getFullName(), elem) }
+    ),
+    remove: mockFunction<State['remove']>().mockImplementation(
+      async id => { state.delete(id.getFullName()) }
+    ),
+    clear: mockFunction<State['clear']>().mockImplementation(
+      async () => state.clear()
+    ),
+    rename: mockFunction<State['rename']>().mockResolvedValue(),
+    override: mockFunction<State['override']>().mockImplementation(
+      async overrideElements => {
+        state.clear()
+        const elemList = Array.isArray(overrideElements) ? overrideElements : [overrideElements]
+        elemList.forEach(elem => state.set(elem.elemID.getFullName(), elem))
+      }
+    ),
+    flush: mockFunction<State['flush']>().mockResolvedValue(),
+    getServicesUpdateDates: mockFunction<State['getServicesUpdateDates']>().mockResolvedValue(
+      Object.assign({}, ...services.map(service => ({ [service]: Date.now() })))
+    ),
+    existingServices: mockFunction<State['existingServices']>().mockResolvedValue(services),
+  }
+}
 
 export default mockState

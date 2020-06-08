@@ -17,8 +17,8 @@ import { getChangeElement, ElemID, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises } from '@salto-io/lowerdash'
-import { ElementsSource } from 'src/workspace/elements_source'
 import { resolvePath, filterByID } from '@salto-io/adapter-utils'
+import { ElementsSource } from '../../elements_source'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'

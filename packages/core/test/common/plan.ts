@@ -14,41 +14,42 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import _ from 'lodash'
 import {
   Change, ObjectType, isObjectType, ElemID, getChangeElement,
 } from '@salto-io/adapter-api'
-import { GroupedNodeMap } from '@salto-io/dag'
-import { Plan, PlanItem } from '../../src/core/plan'
+import { GroupedNodeMap, Group } from '@salto-io/dag'
+import { Plan, PlanItem, PlanItemId } from '../../src/core/plan'
 import { getAllElements } from './elements'
 
-export const getPlan = (): Plan => {
-  const result = new GroupedNodeMap<Change>()
-
-  const elem = getAllElements().find(isObjectType) as ObjectType
-  const change: Change = { action: 'add', data: { after: elem } }
-  const elemFullName = elem.elemID.getFullName()
-
-  const planItem: PlanItem = {
-    groupKey: elemFullName,
-    items: new Map<string, Change>([[elemFullName, change]]),
-    parent: () => change,
-    changes: () => [change],
-    detailedChanges: () => [],
-    getElementName: () => elemFullName,
-  }
-
-  result.addNode(_.uniqueId(elemFullName), [], planItem)
-
-  Object.assign(result, {
-    itemsByEvalOrder(): Iterable<PlanItem> {
-      return [planItem]
-    },
-    getItem(_id: string): PlanItem {
-      return planItem
-    },
+export const createPlan = (changeGroups: Change[][]): Plan => {
+  const toGroup = (changes: Change[]): Group<Change> => ({
+    groupKey: getChangeElement(changes[0]).elemID.createTopLevelParentID().parent.getFullName(),
+    items: new Map(changes.map((change, idx) => [`${idx}`, change])),
   })
-  return result as Plan
+  const toPlanItem = (group: Group<Change>): PlanItem => ({
+    ...group,
+    parent: () => group.items.values().next().value, // This might be a lie
+    changes: () => group.items.values(),
+    detailedChanges: () => [], // This might be a lie
+    getElementName: () => group.groupKey, // This might be a lie
+  })
+  const graph = new GroupedNodeMap<Change>(
+    changeGroups.map((_changes, idx) => [`${idx}`, new Set()]),
+    new Map(changeGroups.map((changes, idx) => [`${idx}`, toGroup(changes)])),
+  )
+  return Object.assign(
+    graph,
+    {
+      itemsByEvalOrder: () => wu(graph.keys()).map(id => graph.getData(id)).map(toPlanItem),
+      getItem: (id: PlanItemId) => toPlanItem(graph.getData(id)),
+      changeErrors: [],
+    }
+  )
+}
+
+export const getPlan = (): Plan => {
+  const elem = getAllElements().find(isObjectType) as ObjectType
+  return createPlan([[{ action: 'add', data: { after: elem } }]])
 }
 
 export const getFirstPlanItem = (plan: Plan): PlanItem =>

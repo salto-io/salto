@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  AdapterCreator, BuiltinTypes, ElemID, InstanceElement, ObjectType,
+  Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import changeValidator from './change_validator'
 import NetsuiteClient, { Credentials } from './client/client'
@@ -42,14 +42,16 @@ const clientFromCredentials = (credentials: InstanceElement): NetsuiteClient =>
     credentials: netsuiteCredentialsFromCredentials(credentials),
   })
 
-export const creator: AdapterCreator = {
-  create: opts => new NetsuiteAdapter({
-    client: clientFromCredentials(opts.credentials),
+export const adapter: Adapter = {
+  operations: context => new NetsuiteAdapter({
+    client: clientFromCredentials(context.credentials),
   }),
   validateCredentials: config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)
   },
   credentialsType,
-  changeValidator,
+  deployModifiers: {
+    changeValidator,
+  },
 }

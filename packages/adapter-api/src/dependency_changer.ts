@@ -58,12 +58,16 @@ export const addParentDependency = (
 ): DependencyChange => dependencyChange('add', src, target)
 
 export type ChangeEntry<T = ChangeDataType> = [ChangeId, Change<T>]
-export const isFieldChange = (entry: ChangeEntry): entry is ChangeEntry<Field> => (
+export const isFieldChangeEntry = (entry: ChangeEntry): entry is ChangeEntry<Field> => (
   isField(getChangeElement(entry[1]))
 )
-export const isInstanceChange = (entry: ChangeEntry): entry is ChangeEntry<InstanceElement> => (
+export const isInstanceChangeEntry = (
+  entry: ChangeEntry
+): entry is ChangeEntry<InstanceElement> => (
   isInstanceElement(getChangeElement(entry[1]))
 )
-export const isObjectTypeChange = (entry: ChangeEntry): entry is ChangeEntry<ObjectType> => (
+export const isObjectTypeChangeEntry = (
+  entry: ChangeEntry
+): entry is ChangeEntry<ObjectType> => (
   isObjectType(getChangeElement(entry[1]))
 )

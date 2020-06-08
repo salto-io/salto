@@ -42,5 +42,5 @@ export { SALTO_HOME_VAR, AppConfig, configFromDisk, CommandConfig } from './src/
 export {
   telemetrySender, Telemetry, TelemetryEvent,
   CountEvent, StackEvent, Tags, isCountEvent,
-  isStackEvent,
+  isStackEvent, EVENT_TYPES,
 } from './src/telemetry'

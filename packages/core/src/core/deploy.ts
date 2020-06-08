@@ -14,34 +14,31 @@
 * limitations under the License.
 */
 import {
-  Element, Adapter, getChangeElement, ActionName,
+  AdapterOperations, getChangeElement, Change,
 } from '@salto-io/adapter-api'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { Plan, PlanItem, PlanItemId } from './plan'
 
 const deployAction = async (
   planItem: PlanItem,
-  adapters: Record<string, Adapter>
-): Promise<Element> => {
-  const parent = planItem.parent()
-  const { elemID } = getChangeElement(parent)
-  const adapterName = elemID && elemID.adapter as string
+  adapters: Record<string, AdapterOperations>
+): Promise<ReadonlyArray<Change>> => {
+  const { elemID } = getChangeElement(planItem.parent())
+  const adapterName = elemID.adapter
   const adapter = adapters[adapterName]
 
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }
-  switch (parent.action) {
-    case 'add':
-      return adapter.add(parent.data.after)
-    case 'remove':
-      await adapter.remove(parent.data.before)
-      return Promise.resolve(parent.data.before)
-    case 'modify':
-      return adapter.update(parent.data.before, parent.data.after, [...planItem.changes()])
-    default:
-      throw new Error('Unknown action type')
+  const result = await adapter.deploy(
+    { groupID: planItem.groupKey, changes: [...planItem.changes()] }
+  )
+  if (result.errors.length > 0) {
+    throw new Error(
+      `Failed to deploy ${planItem.groupKey} with errors:\n${result.errors.join('\n')}`
+    )
   }
+  return result.appliedChanges
 }
 
 export class DeployError extends Error {
@@ -59,18 +56,18 @@ export type StepEvents = {
 
 export const deployActions = async (
   deployPlan: Plan,
-  adapters: Record<string, Adapter>,
+  adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  postApplyAction: (action: ActionName, element: Element) => Promise<void>
+  postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
 ): Promise<DeployError[]> => {
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
       reportProgress(item, 'started')
       try {
-        const deployActionResult = await deployAction(item, adapters)
+        const appliedChanges = await deployAction(item, adapters)
         reportProgress(item, 'finished')
-        await postApplyAction(item.parent().action, deployActionResult)
+        await postDeployAction(appliedChanges)
       } catch (error) {
         reportProgress(item, 'error', error.message ?? String(error))
         throw error

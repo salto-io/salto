@@ -18,7 +18,7 @@ import {
   Element, isType, isField, isInstanceElement, getChangeElement, Value, ElemID,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { DetailedChange } from 'src/core/plan'
+import { DetailedChange } from '../../../core/plan'
 import { ElementsSource } from '../../elements_source'
 
 export class InvalidProjectionError extends Error {

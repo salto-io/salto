@@ -22,7 +22,7 @@ import { CUSTOM_OBJECT } from './src/constants'
 import { CustomObject as tCustomObject } from './src/client/types'
 
 export { default } from './src/adapter'
-export { creator } from './src/adapter_creator'
+export { adapter } from './src/adapter_creator'
 export { default as changeValidator } from './src/change_validator'
 export { default as SalesforceClient } from './src/client/client'
 export { Credentials } from './src/client/client'

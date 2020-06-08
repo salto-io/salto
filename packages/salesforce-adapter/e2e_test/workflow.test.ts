@@ -249,8 +249,10 @@ describe('workflow filter', () => {
         ]
         newAlert.value.template = 'unfiled$public/SupportCaseResponse'
 
-        await adapter.update(oldAlert, newAlert,
-          [{ action: 'modify', data: { before: oldAlert, after: newAlert } }])
+        await adapter.deploy({
+          groupID: newAlert.elemID.getFullName(),
+          changes: [{ action: 'modify', data: { before: oldAlert, after: newAlert } }],
+        })
 
         const postUpdate = await getMetadata(client, alertType, newInstanceName)
         expect(postUpdate).toBeDefined()
@@ -304,8 +306,10 @@ describe('workflow filter', () => {
         newInstance.value.operation = 'PreviousValue'
         newInstance.value.reevaluateOnChange = false
 
-        await adapter.update(old, newInstance,
-          [{ action: 'modify', data: { before: old, after: newInstance } }])
+        await adapter.deploy({
+          groupID: newInstance.elemID.getFullName(),
+          changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+        })
 
         const workflowFieldUpdateInfo = await getMetadata(client, fieldUpdateType,
           newInstanceName)
@@ -352,8 +356,10 @@ describe('workflow filter', () => {
         const old = newInstance.clone()
         newInstance.value.description = 'My Updated Workflow Task'
 
-        await adapter.update(old, newInstance,
-          [{ action: 'modify', data: { before: old, after: newInstance } }])
+        await adapter.deploy({
+          groupID: newInstance.elemID.getFullName(),
+          changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+        })
 
         const workflowTaskInfo = await getMetadata(client, taskType, newInstanceName)
         expect(workflowTaskInfo).toBeDefined()
@@ -436,8 +442,10 @@ describe('workflow filter', () => {
           },
         ]
 
-        await adapter.update(old, newInstance,
-          [{ action: 'modify', data: { before: old, after: newInstance } }])
+        await adapter.deploy({
+          groupID: newInstance.elemID.getFullName(),
+          changes: [{ action: 'modify', data: { before: old, after: newInstance } }],
+        })
 
         const workflowRuleInfo = await getMetadata(client, rulesType, newInstanceName)
         expect(workflowRuleInfo).toBeDefined()

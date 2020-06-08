@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { dependencyChange, isDependentAction, addReferenceDependency, addParentDependency, isFieldChange, ChangeEntry, isInstanceChange, isObjectTypeChange } from '../src/dependency_changer'
+import { dependencyChange, isDependentAction, addReferenceDependency, addParentDependency, isFieldChangeEntry, ChangeEntry, isInstanceChangeEntry, isObjectTypeChangeEntry } from '../src/dependency_changer'
 import { Change } from '../src/change'
 import { Field, ObjectType, InstanceElement } from '../src/elements'
 import { ElemID } from '../src/element_id'
@@ -63,19 +63,19 @@ describe('Dependency changer utility functions', () => {
     const toChangeEntry = <T>(elem: T): ChangeEntry<T> => (
       [1, { action: 'add', data: { after: elem } }]
     )
-    describe('isFieldChange', () => {
+    describe('isFieldChangeEntry', () => {
       it('should return true for field change entry', () => {
-        expect(isFieldChange(toChangeEntry(testField))).toBeTruthy()
+        expect(isFieldChangeEntry(toChangeEntry(testField))).toBeTruthy()
       })
     })
-    describe('isInstanceChange', () => {
+    describe('isInstanceChangeEntry', () => {
       it('should return true for instance change entry', () => {
-        expect(isInstanceChange(toChangeEntry(testInst))).toBeTruthy()
+        expect(isInstanceChangeEntry(toChangeEntry(testInst))).toBeTruthy()
       })
     })
-    describe('isObjectTypeChange', () => {
+    describe('isObjectTypeChangeEntry', () => {
       it('should return true for object type change entry', () => {
-        expect(isObjectTypeChange(toChangeEntry(testType))).toBeTruthy()
+        expect(isObjectTypeChangeEntry(toChangeEntry(testType))).toBeTruthy()
       })
     })
   })

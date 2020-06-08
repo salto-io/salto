@@ -14,7 +14,9 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import { DependencyChanger, getChangeElement, AdapterCreator } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
+import { DependencyChanger, getChangeElement, Adapter } from '@salto-io/adapter-api'
 import adapterCreators from './creators'
 
 type AdapterDependencyChanger = (name: string, changer: DependencyChanger) => DependencyChanger
@@ -32,12 +34,12 @@ const adapterDependencyChanger: AdapterDependencyChanger = (name, changer) => (c
 }
 
 export const getAdapterDependencyChangers = (
-  creators: Record<string, AdapterCreator> = adapterCreators,
+  creators: Record<string, Adapter> = adapterCreators,
 ): ReadonlyArray<DependencyChanger> => (
-  Object.entries(creators)
-    .map(([name, { dependencyChanger }]) => ({ name, dependencyChanger }))
-    .filter(({ dependencyChanger }) => dependencyChanger !== undefined)
-    .map(({ name, dependencyChanger }) => (
-      adapterDependencyChanger(name, dependencyChanger as DependencyChanger)
-    ))
+  _(creators)
+    .mapValues(({ deployModifiers }) => deployModifiers?.dependencyChanger)
+    .pickBy(values.isDefined)
+    .mapValues((changer, name) => adapterDependencyChanger(name, changer))
+    .values()
+    .value()
 )

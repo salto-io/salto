@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
   CORE_ANNOTATIONS, Element, InstanceElement,
@@ -130,7 +131,8 @@ export const removeHiddenFieldsValues = (elem: Element):
   return elem
 }
 
-export const removeHiddenValuesAndHiddenTypes = (elements: ReadonlyArray<Element>):
-  Element[] => elements
+export const removeHiddenValuesAndHiddenTypes = (elements: Iterable<Element>):
+  Element[] => wu(elements)
   .filter(e => !isHiddenType(e))
   .map(elem => removeHiddenFieldsValues(elem))
+  .toArray()

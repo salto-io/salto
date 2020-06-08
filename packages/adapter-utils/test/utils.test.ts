@@ -31,7 +31,7 @@ import {
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
 } from '../src/utils'
 
-const mockFunction = <T extends (...args: never[]) => unknown>():
+export const mockFunction = <T extends (...args: never[]) => unknown>():
 jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 
 describe('Test utils.ts', () => {

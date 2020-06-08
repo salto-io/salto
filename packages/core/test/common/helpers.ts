@@ -71,3 +71,6 @@ export const expectInstancesToMatch = (
 export const expectToContainAllItems = <T>(arr: T[], items: T[]): void => {
   items.forEach(item => expect(arr).toContain(item))
 }
+
+export const mockFunction = <T extends (...args: never[]) => unknown>():
+jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()

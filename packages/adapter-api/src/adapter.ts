@@ -21,22 +21,43 @@ import { Change } from './change'
 import { ChangeValidator } from './change_validators'
 import { DependencyChanger } from './dependency_changer'
 
+type ChangeGroupID = string
+
+export type ChangeGroup = {
+  groupID: ChangeGroupID
+  changes: ReadonlyArray<Change>
+}
+
 export interface FetchResult {
   elements: Element[]
   updatedConfig?: { config: InstanceElement; message: string }
 }
 
-export interface Adapter {
-  fetch(): Promise<FetchResult>
-  add(element: Element): Promise<Element>
-  remove(element: Element): Promise<void>
-  update(before: Element, after: Element, changes: Iterable<Change>): Promise<Element>
+export type DeployResult = {
+  appliedChanges: ReadonlyArray<Change>
+  errors: ReadonlyArray<Error>
 }
 
-export type AdapterCreatorOpts = {
+export type AdapterOperations = {
+  fetch: () => Promise<FetchResult>
+  deploy: (changeGroup: ChangeGroup) => Promise<DeployResult>
+}
+
+export type AdapterOperationsContext = {
   credentials: InstanceElement
   config?: InstanceElement
   getElemIdFunc?: ElemIdGetter
+}
+
+export type Adapter = {
+  operations: (context: AdapterOperationsContext) => AdapterOperations
+  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
+  credentialsType: ObjectType
+  configType?: ObjectType
+  deployModifiers?: {
+    changeValidator?: ChangeValidator
+    dependencyChanger?: DependencyChanger
+  }
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'
@@ -46,13 +67,3 @@ export const toServiceIdsString = (serviceIds: ServiceIds): string =>
   Object.entries(serviceIds).sort().toString()
 export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
 export type AccountId = string
-
-export type AdapterCreator = {
-  create: (opts: AdapterCreatorOpts) => Adapter
-  // Return a unique identifier for the account which the credentials point to.
-  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
-  credentialsType: ObjectType
-  configType?: ObjectType
-  changeValidator?: ChangeValidator
-  dependencyChanger?: DependencyChanger
-}

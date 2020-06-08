@@ -17,11 +17,11 @@ import SalesforceAdapter, {
   SalesforceClient,
   testHelpers as salesforceTestHelpers,
   testTypes as salesforceTestTypes,
-  creator as salesforceAdapterCreator,
+  adapter as salesforceAdapter,
   Credentials,
 } from '@salto-io/salesforce-adapter'
 import _ from 'lodash'
-import { InstanceElement, ElemID, Element } from '@salto-io/adapter-api'
+import { InstanceElement, ElemID, ObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
 
 export const naclNameToSFName = (objName: string): string => `${objName}__c`
 export const objectExists = async (client: SalesforceClient, name: string, fields: string[] = [],
@@ -62,7 +62,7 @@ export const getSalesforceCredsInstance = (creds: Credentials): InstanceElement 
     token: creds.apiToken ?? '',
     sandbox: creds.isSandbox,
   }
-  const { credentialsType } = salesforceAdapterCreator
+  const { credentialsType } = salesforceAdapter
 
   return new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -71,19 +71,34 @@ export const getSalesforceCredsInstance = (creds: Credentials): InstanceElement 
   )
 }
 
-export const addElements = async (
+export const addElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,
-  elements: Element[]
-): Promise<Element[]> => {
+  elements: T[]
+): Promise<T[]> => {
   const adapter = new SalesforceAdapter({ client, config: {} })
-  const updatedElements = await Promise.all(elements.map(element => adapter.add(element)))
-  return updatedElements
+  const changeGroup: ChangeGroup = {
+    groupID: elements[0].elemID.getFullName(),
+    changes: elements.map(e => ({ action: 'add', data: { after: e } })),
+  }
+  const deployResult = await adapter.deploy(changeGroup)
+  if (deployResult.errors.length > 0) {
+    throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
+  }
+  const updatedElements = deployResult.appliedChanges.map(getChangeElement)
+  return updatedElements as T[]
 }
 
-export const removeElements = async (
+export const removeElements = async <T extends InstanceElement | ObjectType>(
   client: SalesforceClient,
-  elements: Element[]
+  elements: T[]
 ): Promise<void> => {
   const adapter = new SalesforceAdapter({ client, config: {} })
-  await Promise.all(elements.map(element => adapter.remove(element)))
+  const changeGroup: ChangeGroup = {
+    groupID: elements[0].elemID.getFullName(),
+    changes: elements.map(e => ({ action: 'remove', data: { before: e } })),
+  }
+  const deployResult = await adapter.deploy(changeGroup)
+  if (deployResult.errors.length > 0) {
+    throw new Error(`Failed to remove elements with: ${deployResult.errors.join('\n')}`)
+  }
 }

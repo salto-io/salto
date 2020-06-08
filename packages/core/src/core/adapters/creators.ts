@@ -16,10 +16,12 @@
 import { Adapter } from '@salto-io/adapter-api'
 import { adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
 import { adapter as hubspotAdapter } from '@salto-io/hubspot-adapter'
+import { adapter as netsuiteAdapter } from '@salto-io/netsuite-adapter'
 
 const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
   hubspot: hubspotAdapter,
+  netsuite: netsuiteAdapter,
 }
 
 export default adapterCreators

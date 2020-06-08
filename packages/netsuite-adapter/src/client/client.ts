@@ -13,11 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  AuthenticationService, CLIConfigurationService, CommandActionExecutor, CommandInstanceFactory,
-  CommandOptionsValidator, CommandOutputHandler, CommandsMetadataService, SDKOperationResultUtils,
+import type {
+  AuthenticationService as AuthenticationServiceType,
+  CommandsMetadataService as CommandsMetadataServiceType,
+  CommandActionExecutor as CommandActionExecutorType,
+  CommandInstanceFactory as CommandInstanceFactoryType,
+  CLIConfigurationService as CLIConfigurationServiceType,
+  CommandOptionsValidator as CommandOptionsValidatorType,
+  CommandOutputHandler as CommandOutputHandlerType,
+  SDKOperationResultUtils as SDKOperationResultUtilsType,
   OperationResult,
 } from '@salto-io/suitecloud-cli'
+
 import { collections, decorators, hash } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile } from '@salto-io/file'
@@ -29,6 +36,33 @@ import _ from 'lodash'
 
 const { makeArray } = collections.array
 const log = logger(module)
+
+let AuthenticationService: typeof AuthenticationServiceType
+let CommandsMetadataService: typeof CommandsMetadataServiceType
+let CommandActionExecutor: typeof CommandActionExecutorType
+let CommandInstanceFactory: typeof CommandInstanceFactoryType
+let CLIConfigurationService: typeof CLIConfigurationServiceType
+let CommandOptionsValidator: typeof CommandOptionsValidatorType
+let CommandOutputHandler: typeof CommandOutputHandlerType
+let SDKOperationResultUtils: typeof SDKOperationResultUtilsType
+
+try {
+  // eslint-disable-next-line max-len
+  // eslint-disable-next-line import/no-extraneous-dependencies,@typescript-eslint/no-var-requires,global-require
+  const module = require('@salto-io/suitecloud-cli')
+  AuthenticationService = module.AuthenticationService
+  CommandsMetadataService = module.CommandsMetadataService
+  CommandActionExecutor = module.CommandActionExecutor
+  CommandInstanceFactory = module.CommandInstanceFactory
+  CLIConfigurationService = module.CLIConfigurationService
+  CommandOptionsValidator = module.CommandOptionsValidator
+  CommandOutputHandler = module.CommandOutputHandler
+  SDKOperationResultUtils = module.SDKOperationResultUtils
+} catch (e) {
+  // TODO: this is a temp solution as we can't distribute salto with suitecloud-cli
+  log.debug('Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing')
+  log.debug('If you want to use Netsuite adapter follow the instructions in the README file')
+}
 
 export type Credentials = {
   accountId: string
@@ -152,7 +186,7 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
 
 type Project = {
   projectName: string
-  executor: CommandActionExecutor
+  executor: CommandActionExecutorType
 }
 
 export default class NetsuiteClient {
@@ -171,7 +205,7 @@ export default class NetsuiteClient {
     return Promise.resolve(credentials.accountId)
   }
 
-  private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
+  private static initCommandActionExecutor(executionPath: string): CommandActionExecutorType {
     const commandsMetadataService = new CommandsMetadataService(rootCLIPath)
     commandsMetadataService.initializeCommandsMetadata()
     return new CommandActionExecutor({
@@ -222,7 +256,7 @@ export default class NetsuiteClient {
   }
 
   private static async executeProjectAction(commandName: string, commandArguments: Values,
-    projectCommandActionExecutor: CommandActionExecutor): Promise<OperationResult> {
+    projectCommandActionExecutor: CommandActionExecutorType): Promise<OperationResult> {
     const operationResult = await projectCommandActionExecutor.executeAction({
       commandName,
       runInInteractiveMode: false,
@@ -232,7 +266,9 @@ export default class NetsuiteClient {
     return operationResult
   }
 
-  protected async setupAccount(projectCommandActionExecutor: CommandActionExecutor): Promise<void> {
+  protected async setupAccount(
+    projectCommandActionExecutor: CommandActionExecutorType
+  ): Promise<void> {
     // Todo: use the correct implementation and not Salto's temporary solution after:
     //  https://github.com/oracle/netsuite-suitecloud-sdk/issues/81 is resolved
     const setupAccountUsingExistingAuthID = async (): Promise<void> => {
@@ -290,7 +326,7 @@ export default class NetsuiteClient {
     }))
   }
 
-  private static async listFilePaths(executor: CommandActionExecutor): Promise<string[]> {
+  private static async listFilePaths(executor: CommandActionExecutorType): Promise<string[]> {
     const TOP_LEVEL_FOLDER_NAMES = [`${osPath.sep}SuiteScripts`, `${osPath.sep}Templates`, `${osPath.sep}Web Site Hosting Files`]
     const operationResults = _.flatten(await Promise.all(
       TOP_LEVEL_FOLDER_NAMES.map(async folderName =>

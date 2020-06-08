@@ -63,4 +63,13 @@ describe('Test go to definitions', () => {
     const defs = await provideWorkspaceDefinition(workspace, ctx, token)
     expect(defs.length).toBe(0)
   })
+
+  it('should give annotation definition for annotation values', async () => {
+    const pos = { line: 208, col: 8 }
+    const ctx = await getPositionContext(workspace, naclFileName, pos)
+    const token = 'loan'
+    const defs = await provideWorkspaceDefinition(workspace, ctx, token)
+    expect(defs.length).toBe(1)
+    expect(defs[0].range.start.line).toBe(203)
+  })
 })

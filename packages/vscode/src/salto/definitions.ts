@@ -31,6 +31,12 @@ export const provideWorkspaceDefinition = async (
       return field ? getLocations(workspace, field.elemID.getFullName()) : []
     }
   }
+  if (context.ref && context.type === 'type') {
+    return getLocations(
+      workspace,
+      context.ref?.element.elemID.createNestedID('annotation', token).getFullName()
+    )
+  }
   // We are not in instance field, so we can just look the current token
   try {
     return getLocations(workspace, token)

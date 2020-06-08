@@ -61,12 +61,21 @@ const getUsages = async (
   )
 }
 
+const getSearchElementFullName = (context: PositionContext, token: string): string => {
+  if (context.ref !== undefined) {
+    return !_.isEmpty(context.ref.path) && context.type === 'type'
+      ? context.ref?.element.elemID.createNestedID('attr', token).getFullName()
+      : context.ref?.element.elemID.getFullName()
+  }
+  return token
+}
+
 export const provideWorkspaceReferences = async (
   workspace: EditorWorkspace,
   token: string,
   context: PositionContext
 ): Promise<SaltoElemLocation[]> => {
-  const fullName = context.ref?.element.elemID.getFullName() ?? token
+  const fullName = getSearchElementFullName(context, token)
   return [
     ..._.flatten(await Promise.all(
       (await workspace.elements).map(e => getUsages(workspace, e, fullName))

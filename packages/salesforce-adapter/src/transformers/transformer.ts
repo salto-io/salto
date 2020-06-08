@@ -42,6 +42,7 @@ import {
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
   LAYOUT_ITEM_METADATA_TYPE,
+  COMPOUND_FIELDS_SOAP_TYPE_NAMES,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
@@ -909,7 +910,7 @@ const getDefaultValue = (field: SalesforceField): PrimitiveValue | undefined => 
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the Nacl file
 export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceField,
-  parentServiceIds: ServiceIds): Field => {
+  parentServiceIds: ServiceIds, objCompoundFieldNames: string[] = []): Field => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
@@ -920,7 +921,6 @@ export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceFiel
   const getFieldType = (typeName: string): TypeElement => (
     Types.get(typeName, true, false, serviceIds)
   )
-
   let naclFieldType = getFieldType(FIELD_SOAP_TYPE_NAMES[field.type])
   const annotations: Values = {
     [API_NAME]: fieldApiName,
@@ -1012,10 +1012,18 @@ export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceFiel
       // will be populated in the lookup_filter filter
       annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
     }
-    // Name Field
-  } else if (field.nameField) {
-    naclFieldType = Types.compoundDataTypes.Name
+  // Compound Fields
+  } else if (!_.isUndefined(COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]) || field.nameField) {
+    // Only fields that are compound in this object get compound type, otherwise default to text
+    if (objCompoundFieldNames.includes(field.name)) {
+      naclFieldType = field.nameField
+        ? Types.compoundDataTypes.Name
+        : Types.compoundDataTypes[COMPOUND_FIELDS_SOAP_TYPE_NAMES[field.type]]
+    } else {
+      naclFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
+    }
   }
+
   if (!_.isEmpty(naclFieldType.annotationTypes)) {
     // Get the rest of the annotations if their name matches exactly the API response
     // and they are not already assigned

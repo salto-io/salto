@@ -408,6 +408,66 @@ describe('transformer', () => {
       })
     })
 
+    describe('address (compound) field transformation', () => {
+      const origSalesforceAddressField: SalesforceField = {
+        aggregatable: true,
+        cascadeDelete: false,
+        dependentPicklist: false,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: false,
+        byteLength: 363,
+        calculated: false,
+        caseSensitive: false,
+        createable: false,
+        custom: false,
+        defaultedOnCreate: false,
+        deprecatedAndHidden: false,
+        digits: 0,
+        filterable: true,
+        groupable: true,
+        idLookup: false,
+        label: 'Other Address',
+        length: 121,
+        name: 'OtherAddress',
+        nameField: false,
+        namePointing: false,
+        nillable: false,
+        permissionable: false,
+        polymorphicForeignKey: false,
+        precision: 0,
+        queryByDistance: false,
+        restrictedPicklist: false,
+        scale: 0,
+        searchPrefilterable: false,
+        soapType: 'xsd:string',
+        sortable: true,
+        type: 'address',
+        unique: false,
+        updateable: false,
+      }
+
+      let salesforceAddressField: SalesforceField
+      beforeEach(() => {
+        salesforceAddressField = _.cloneDeep(origSalesforceAddressField)
+      })
+
+      it('should fetch address field with the object type when object has it as compound field', async () => {
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceAddressField, serviceIds, ['OtherAddress'])
+        expect(fieldElement.type).toEqual(Types.compoundDataTypes.Address)
+      })
+
+      it('should fetch name field as text type when no name compound field in object', async () => {
+        const fieldElement = getSObjectFieldElement(
+          dummyElem,
+          salesforceAddressField,
+          serviceIds,
+          []
+        )
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Text)
+      })
+    })
+
     describe('name field transformation', () => {
       const origSalesforceNameField: SalesforceField = {
         aggregatable: true,

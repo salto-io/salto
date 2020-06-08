@@ -62,10 +62,8 @@ export enum COMPOUND_FIELD_TYPE_NAMES {
   LOCATION = 'Location',
 }
 
-
 export const FIELD_SOAP_TYPE_NAMES:
-Record<string, FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES> = {
-  address: COMPOUND_FIELD_TYPE_NAMES.ADDRESS,
+Record<string, FIELD_TYPE_NAMES> = {
   anyType: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   base64: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   boolean: FIELD_TYPE_NAMES.CHECKBOX,
@@ -80,7 +78,6 @@ Record<string, FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES> = {
   id: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
   int: FIELD_TYPE_NAMES.NUMBER,
   json: FIELD_TYPE_NAMES.TEXT, // TODO: define specific type
-  location: COMPOUND_FIELD_TYPE_NAMES.LOCATION,
   multipicklist: FIELD_TYPE_NAMES.MULTIPICKLIST,
   percent: FIELD_TYPE_NAMES.PERCENT,
   phone: FIELD_TYPE_NAMES.PHONE,
@@ -90,6 +87,8 @@ Record<string, FIELD_TYPE_NAMES | COMPOUND_FIELD_TYPE_NAMES> = {
   textarea: FIELD_TYPE_NAMES.TEXTAREA,
   time: FIELD_TYPE_NAMES.TIME,
   url: FIELD_TYPE_NAMES.URL,
+  // address, location & name: returned from the SOAP api
+  // but have special treatment (compound fields)
 }
 
 export enum ANNOTATION_TYPE_NAMES {

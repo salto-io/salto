@@ -453,9 +453,14 @@ describe('transformer', () => {
         salesforceNameField = _.cloneDeep(origSalesforceNameField)
       })
 
-      it('should fetch name field with the right type', async () => {
-        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds)
+      it('should fetch name field with the object type when object has it as compound field', async () => {
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, ['Name'])
         expect(fieldElement.type).toEqual(Types.compoundDataTypes.Name)
+      })
+
+      it('should fetch name field as text type when no name compound field in object', async () => {
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceNameField, serviceIds, [])
+        expect(fieldElement.type).toEqual(Types.primitiveDataTypes.Text)
       })
     })
   })

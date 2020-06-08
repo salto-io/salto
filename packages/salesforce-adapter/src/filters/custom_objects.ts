@@ -302,9 +302,14 @@ const createObjectType = (name: string, label: string, fields?: SObjField[]): Ob
   addLabel(object, label)
   object.path = [...getObjectDirectoryPath(object, getNamespace(object)), object.elemID.name]
   if (!_.isUndefined(fields)) {
+    // Only fields with "child's" refering to a field as it's compoundField
+    // should be regarded as compound.
+    const objCompoundFieldNames = _.keys(
+      _.groupBy(fields.filter(field => field.compoundFieldName), f => f.compoundFieldName)
+    )
     fields
       .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields
-      .map(f => getSObjectFieldElement(object, f, serviceIds))
+      .map(f => getSObjectFieldElement(object, f, serviceIds, objCompoundFieldNames))
       .forEach(field => {
         object.fields[field.name] = field
       })

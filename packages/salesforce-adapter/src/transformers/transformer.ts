@@ -909,7 +909,7 @@ const getDefaultValue = (field: SalesforceField): PrimitiveValue | undefined => 
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the Nacl file
 export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceField,
-  parentServiceIds: ServiceIds): Field => {
+  parentServiceIds: ServiceIds, objCompoundFieldNames: string[] = []): Field => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
@@ -920,7 +920,6 @@ export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceFiel
   const getFieldType = (typeName: string): TypeElement => (
     Types.get(typeName, true, false, serviceIds)
   )
-
   let naclFieldType = getFieldType(FIELD_SOAP_TYPE_NAMES[field.type])
   const annotations: Values = {
     [API_NAME]: fieldApiName,
@@ -1012,10 +1011,13 @@ export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceFiel
       // will be populated in the lookup_filter filter
       annotations[FIELD_ANNOTATIONS.LOOKUP_FILTER] = {}
     }
-    // Name Field
-  } else if (field.nameField) {
-    naclFieldType = Types.compoundDataTypes.Name
+  // Compound Fields
+  } else if (!_.isUndefined(Types.compoundDataTypes[field.name as COMPOUND_FIELD_TYPE_NAMES])) {
+    naclFieldType = objCompoundFieldNames.includes(field.name)
+      ? Types.compoundDataTypes[field.name as COMPOUND_FIELD_TYPE_NAMES]
+      : getFieldType(FIELD_TYPE_NAMES.TEXT)
   }
+
   if (!_.isEmpty(naclFieldType.annotationTypes)) {
     // Get the rest of the annotations if their name matches exactly the API response
     // and they are not already assigned

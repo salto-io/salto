@@ -12,7 +12,7 @@
         "theme": "dark"
     },
     "engines": {
-        "vscode": "^1.37.0"
+        "vscode": "^1.36.0"
     },
     "publisher": "salto-io",
     "repository": {
@@ -132,7 +132,7 @@
         "@types/glob": "^7.1.1",
         "@types/jest-cli": "^23.6.0",
         "@types/node": "^12.7.1",
-        "@types/vscode": "1.37",
+        "@types/vscode": "^1.36",
         "eslint-plugin-header": "^3.0.0",
         "jest-circus": "^24.9.0",
         "jest-cli": "^24.8.0",

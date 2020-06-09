@@ -24,6 +24,7 @@ export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
   Workspace, WorkspaceError, SourceFragment, StateRecency, loadWorkspace, EnvironmentsSources,
+  initWorkspace,
 } from './src/workspace/workspace'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources,

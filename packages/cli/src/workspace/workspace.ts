@@ -142,6 +142,12 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   return { workspace, errored: status === 'Error' }
 }
 
+export const updateStateOnly = async (ws: Workspace,
+  changes: readonly FetchChange[]): Promise<void> => {
+  log.info('applying %d changes to state only', changes.length)
+  await ws.flush()
+}
+
 export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   changes: readonly FetchChange[], isolated = false): Promise<boolean> => {
   if (changes.length > 0) {

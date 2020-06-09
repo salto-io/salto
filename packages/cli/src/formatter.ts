@@ -571,3 +571,9 @@ export const formatApproveIsolatedModePrompt = (
       formatWordsSeries(oldServices)
     )
 }
+
+export const formatStateChanges = (
+  changes: readonly FetchChange[]
+): string => (changes.length > 0
+  ? Prompts.STATE_ONLY_UPDATE_START(changes)
+  : Prompts.STATE_NO_CHANGES)

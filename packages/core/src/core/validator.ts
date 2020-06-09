@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types, collections } from '@salto-io/lowerdash'
+import { types, collections, values } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
@@ -196,7 +196,8 @@ const validateAnnotationsValue = (
     const validateValueInsideRange = (): ValidationError[] => {
       const minValue = restrictions.min
       const maxValue = restrictions.max
-      if ((minValue && (val < minValue)) || (maxValue && (val > maxValue))) {
+      if ((values.isDefined(minValue) && (!_.isNumber(val) || (val < minValue)))
+        || (values.isDefined(maxValue) && (!_.isNumber(val) || (val > maxValue)))) {
         return [
           new InvalidValueRangeValidationError(
             { elemID, value, fieldName: elemID.name, minValue, maxValue }

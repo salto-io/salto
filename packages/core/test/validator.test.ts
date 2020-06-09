@@ -19,6 +19,7 @@ import {
   ReferenceExpression, PrimitiveType, PrimitiveTypes,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
@@ -127,7 +128,7 @@ describe('Elements validation', () => {
         type: BuiltinTypes.NUMBER,
         annotations: {
           [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
-            min: 1,
+            min: 0,
             max: 10,
           }),
         },
@@ -488,16 +489,31 @@ describe('Elements validation', () => {
           expect(validateElements([extInst])).toHaveLength(0)
         })
 
-        it('should fail when value is not inside the range', () => {
-          extInst.value.restrictNumber = 0
+        it('should return an error when value is not inside the range', () => {
+          extInst.value.restrictNumber = -1
           const errors = validateElements([extInst])
           expect(errors).toHaveLength(1)
           expect(errors[0]).toBeInstanceOf(InvalidValueRangeValidationError)
-          expect(errors[0].message).toMatch('Value "0" is not valid')
-          expect(errors[0].message).toMatch('bigger than 1 and smaller than 10')
+          expect(errors[0].message).toMatch('Value "-1" is not valid')
+          expect(errors[0].message).toMatch('bigger than 0 and smaller than 10')
           expect(errors[0].elemID).toEqual(
             extInst.elemID.createNestedID('restrictNumber')
           )
+        })
+
+        it('should return an error when value is not a number and field has min-max restriction', () => {
+          extInst.value.restrictNumber = 'Not A Number'
+          const errors = validateElements([extInst])
+          expect(errors).toHaveLength(2)
+          const [[typeForRangeValidation], [valueTypeValidation]] = _.partition(errors,
+            error => error instanceof InvalidValueRangeValidationError)
+          expect(valueTypeValidation).toBeInstanceOf(InvalidValueTypeValidationError)
+          const restrictedNumberElemID = extInst.elemID.createNestedID('restrictNumber')
+          expect(valueTypeValidation.elemID).toEqual(restrictedNumberElemID)
+          expect(typeForRangeValidation).toBeInstanceOf(InvalidValueRangeValidationError)
+          expect(typeForRangeValidation.message).toMatch('Value "Not A Number" is not valid')
+          expect(typeForRangeValidation.message).toMatch('bigger than 0 and smaller than 10')
+          expect(typeForRangeValidation.elemID).toEqual(restrictedNumberElemID)
         })
 
         const testValuesAreNotListedButEnforced = (): void => {

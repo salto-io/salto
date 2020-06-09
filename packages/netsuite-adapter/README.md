@@ -16,6 +16,6 @@ JDK - https://www.oracle.com/java/technologies/javase-jdk11-downloads.html
 ### Build instructions
 ```
 yarn
+yarn add -W @salto-io/suitecloud-cli
 yarn run build
-yarn add -W @salto-io/suitecloud-cli (from salto root)
 ```

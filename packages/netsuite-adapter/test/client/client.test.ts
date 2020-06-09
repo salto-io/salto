@@ -77,7 +77,7 @@ jest.mock('@salto-io/suitecloud-cli', () => ({
   CommandActionExecutor: jest.fn().mockImplementation(() => ({
     executeAction: mockExecuteAction,
   })),
-}))
+}), { virtual: true })
 
 describe('netsuite client', () => {
   const createProjectCommandMatcher = expect

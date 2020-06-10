@@ -33,6 +33,7 @@ export const command = (
   spinnerCreator: SpinnerCreator,
   inputServices: string[],
   force = false,
+  detailed = false,
   inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
@@ -60,7 +61,8 @@ export const command = (
       stdout.write(header(Prompts.PLAN_STEPS_HEADER_PREVIEW))
       const formattedPlanOutput = formatExecutionPlan(
         workspacePlan,
-        planWorkspaceErrors
+        planWorkspaceErrors,
+        detailed
       )
       stdout.write(formattedPlanOutput)
       cliTelemetry.success(workspaceTags)
@@ -76,6 +78,7 @@ export const command = (
 
 type PreviewArgs = {
   force: boolean
+  detailed: boolean
 } & ServicesArgs
 type PreviewParsedCliInput = ParsedCliInput<PreviewArgs>
 
@@ -87,6 +90,13 @@ const previewBuilder = createCommandBuilder({
       force: {
         alias: ['f'],
         describe: 'Do not ask for approval if there are warnings in the workspace',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
+      detailed: {
+        alias: ['d'],
+        describe: 'Detailed preview that includes value changes',
         boolean: true,
         default: false,
         demandOption: false,
@@ -103,6 +113,7 @@ const previewBuilder = createCommandBuilder({
       spinnerCreator,
       input.args.services,
       input.args.force,
+      input.args.detailed,
       input.args.env,
     )
   },

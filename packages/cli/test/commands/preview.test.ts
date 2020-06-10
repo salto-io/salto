@@ -78,32 +78,46 @@ describe('preview command', () => {
   })
 
   describe('when the workspace loads successfully', () => {
-    beforeEach(async () => {
-      await command('', mockCliTelemetry, cliOutput, spinnerCreator, services, undefined, '').execute()
+    describe('without detailed change', () => {
+      beforeEach(async () => {
+        await command('', mockCliTelemetry, cliOutput, spinnerCreator, services, false, false, '').execute()
+      })
+
+      it('should find instance change', async () => {
+        expect(cliOutput.stdout.content).toMatch(/M.*name/)
+      })
+
+      it('should not find detailed value change', () => {
+        expect(cliOutput.stdout.content.search('name: "FirstEmployee" => "PostChange"')).toEqual(-1)
+      })
     })
 
-    it('should load the workspace', async () => {
+    describe('with detailed change', () => {
+      beforeEach(async () => {
+        await command('', mockCliTelemetry, cliOutput, spinnerCreator, services, false, true, '').execute()
+      })
+
+      it('should find a detailed value instance change', async () => {
+        expect(cliOutput.stdout.content).toMatch(/M.*name: "FirstEmployee" => "PostChange"/)
+      })
+    })
+
+    afterEach(async () => {
+      // should load the workspace
       expect(mockLoadWorkspace).toHaveBeenCalled()
       expect(mockTelemetry.getEvents()).toHaveLength(2)
       expect(mockTelemetry.getEventsMap()[eventsNames.start]).not.toBeUndefined()
       expect(mockTelemetry.getEventsMap()[eventsNames.success]).not.toBeUndefined()
-    })
 
-    it('should print summary', async () => {
+      // should print summary
       expect(cliOutput.stdout.content).toMatch(/Impacts.*2 types and 1 instance/)
-    })
 
-    it('should find all elements', async () => {
+      // should find all elements
       expect(cliOutput.stdout.content).toContain('lead')
       expect(cliOutput.stdout.content).toContain('account')
       expect(cliOutput.stdout.content).toContain('salto.employee.instance.test')
-    })
 
-    it('should find instance change', async () => {
-      expect(cliOutput.stdout.content).toMatch(/M.*name/)
-    })
-
-    it('should have started spinner and it should succeed (and not fail)', async () => {
+      // should have started spinner and it should succeed (and not fail)
       expect(spinnerCreator).toHaveBeenCalled()
       expect(spinners[0].fail).not.toHaveBeenCalled()
       expect(spinners[0].succeed).toHaveBeenCalled()
@@ -114,7 +128,7 @@ describe('preview command', () => {
   describe('when the workspace fails to load', () => {
     let result: number
     beforeEach(async () => {
-      result = await command('errdir', mockCliTelemetry, cliOutput, spinnerCreator, services, undefined, '').execute()
+      result = await command('errdir', mockCliTelemetry, cliOutput, spinnerCreator, services, false, false, '').execute()
     })
 
     it('should fail', () => {
@@ -153,7 +167,8 @@ describe('preview command', () => {
         cliOutput,
         spinnerCreator,
         services,
-        undefined,
+        false,
+        false,
         withEnvironmentParam
       ).execute()
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)

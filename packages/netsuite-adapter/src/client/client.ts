@@ -34,6 +34,9 @@ import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
 import { rootCLIPath } from './sdf_root_cli_path'
+import {
+  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME,
+} from '../constants'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -97,10 +100,6 @@ const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 export const SDF_PATH_SEPARATOR = '/'
-
-export const SUITE_SCRIPTS_FOLDER_NAME = 'SuiteScripts'
-export const TEMPLATES_FOLDER_NAME = 'Templates'
-export const WEB_SITE_HOSTING_FILES_FOLDER_NAME = 'Web Site Hosting Files'
 
 const baseExecutionPath = os.tmpdir()
 

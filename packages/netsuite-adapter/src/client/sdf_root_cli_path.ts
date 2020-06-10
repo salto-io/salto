@@ -15,6 +15,8 @@
 */
 import osPath from 'path'
 
+// TODO this variable is here since require.resolve() function is not mockable.
+//  once solving the packaging issue of SDF we can move this var back to client.ts
 export const rootCLIPath = osPath.normalize(
   osPath.join(require.resolve('@salto-io/suitecloud-cli'), '..', 'src')
 )

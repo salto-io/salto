@@ -22,7 +22,6 @@ import { customTypes, fileCabinetTypes } from '../src/types'
 import { ADDITIONAL_FILE_SUFFIX, IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX, PATH } from '../src/constants'
 import { fieldTypes } from '../src/types/field_types'
 
-jest.mock('../src/client/sdf_root_cli_path', () => 'path/to/cli')
 
 describe('Types', () => {
   describe('CustomTypes', () => {

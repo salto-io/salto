@@ -33,7 +33,7 @@ import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
-import { rootCLIPath } from './sdf_root_cli_path'
+import { getRootCLIPath } from './sdf_root_cli_path'
 import {
   SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME,
 } from '../constants'
@@ -195,11 +195,13 @@ type Project = {
 export default class NetsuiteClient {
   private readonly credentials: Credentials
   private readonly authId: string
+  private readonly rootCLIPath: string
 
   constructor({ credentials }: NetsuiteClientOpts) {
     this.credentials = credentials
     this.authId = hash.toMD5(this.credentials.tokenId)
     setSdfLogLevel()
+    this.rootCLIPath = getRootCLIPath()
   }
 
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
@@ -208,8 +210,8 @@ export default class NetsuiteClient {
     return Promise.resolve(credentials.accountId)
   }
 
-  private static initCommandActionExecutor(executionPath: string): CommandActionExecutorType {
-    const commandsMetadataService = new CommandsMetadataService(rootCLIPath)
+  private initCommandActionExecutor(executionPath: string): CommandActionExecutorType {
+    const commandsMetadataService = new CommandsMetadataService(this.rootCLIPath)
     commandsMetadataService.initializeCommandsMetadata()
     return new CommandActionExecutor({
       executionPath,
@@ -236,16 +238,16 @@ export default class NetsuiteClient {
     }
   )
 
-  private static async createProject(): Promise<string> {
+  private async createProject(): Promise<string> {
     const projectName = `TempProject${String(Date.now()).substring(8)}`
-    const operationResult = await NetsuiteClient.initCommandActionExecutor(baseExecutionPath)
+    const operationResult = await this.initCommandActionExecutor(baseExecutionPath)
       .executeAction({
         commandName: COMMANDS.CREATE_PROJECT,
         runInInteractiveMode: false,
         arguments: {
           projectname: projectName,
           type: 'ACCOUNTCUSTOMIZATION',
-          parentdirectory: rootCLIPath,
+          parentdirectory: this.rootCLIPath,
         },
       })
     NetsuiteClient.verifySuccessfulOperation(operationResult)
@@ -296,9 +298,8 @@ export default class NetsuiteClient {
   }
 
   private async initProject(): Promise<Project> {
-    const projectName = await NetsuiteClient.createProject()
-    const executor = NetsuiteClient
-      .initCommandActionExecutor(NetsuiteClient.getProjectPath(projectName))
+    const projectName = await this.createProject()
+    const executor = this.initCommandActionExecutor(NetsuiteClient.getProjectPath(projectName))
     await this.setupAccount(executor)
     return { projectName, executor }
   }

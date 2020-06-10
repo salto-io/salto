@@ -18,7 +18,6 @@ import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 
 jest.mock('../src/client/client')
-jest.mock('../src/client/sdf_root_cli_path', () => 'path/to/cli')
 
 describe('NetsuiteAdapter creator', () => {
   const credentials = new InstanceElement(

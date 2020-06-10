@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types, collections } from '@salto-io/lowerdash'
+import { types, collections, values } from '@salto-io/lowerdash'
 import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
@@ -126,6 +126,25 @@ export class InvalidValueRangeValidationError extends ValidationError {
   }
 }
 
+export class RegexMismatchValidationError extends ValidationError {
+  readonly value: Value
+  readonly fieldName: string
+  readonly regex: string
+
+  constructor({ elemID, value, fieldName, regex }:
+    { elemID: ElemID; value: Value; fieldName: string; regex: string }) {
+    super({
+      elemID,
+      error: `Value "${value}" is not valid for field ${fieldName}.`
+        + ` expected value to match "${regex}" regular expression`,
+      severity: 'Warning',
+    })
+    this.value = value
+    this.fieldName = fieldName
+    this.regex = regex
+  }
+}
+
 export class MissingRequiredFieldValidationError extends ValidationError {
   readonly fieldName: string
 
@@ -196,7 +215,8 @@ const validateAnnotationsValue = (
     const validateValueInsideRange = (): ValidationError[] => {
       const minValue = restrictions.min
       const maxValue = restrictions.max
-      if ((minValue && (val < minValue)) || (maxValue && (val > maxValue))) {
+      if ((values.isDefined(minValue) && (!_.isNumber(val) || (val < minValue)))
+        || (values.isDefined(maxValue) && (!_.isNumber(val) || (val > maxValue)))) {
         return [
           new InvalidValueRangeValidationError(
             { elemID, value, fieldName: elemID.name, minValue, maxValue }
@@ -221,7 +241,20 @@ const validateAnnotationsValue = (
       return []
     }
 
-    const restrictionValidations = [validateValueInsideRange, validateValueInList]
+    const validateRegexMatches = (): ValidationError[] => {
+      if (!_.isUndefined(restrictions.regex) && !new RegExp(restrictions.regex).test(val)) {
+        return [new RegexMismatchValidationError(
+          { elemID, value, fieldName: elemID.name, regex: restrictions.regex }
+        )]
+      }
+      return []
+    }
+
+    const restrictionValidations = [
+      validateValueInsideRange,
+      validateValueInList,
+      validateRegexMatches,
+    ]
     return _.flatten(restrictionValidations.map(validation => validation()))
   }
 

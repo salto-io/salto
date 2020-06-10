@@ -66,6 +66,7 @@ const restrictionType = new ObjectType({
     values: { type: BuiltinTypes.STRING },
     min: { type: BuiltinTypes.NUMBER },
     max: { type: BuiltinTypes.NUMBER },
+    regex: { type: BuiltinTypes.STRING },
   },
 })
 
@@ -74,6 +75,7 @@ type RestrictionAnnotationType = Partial<{
   values: ReadonlyArray<unknown>
   min: number
   max: number
+  regex: string
 }>
 
 export const CoreAnnotationTypes: TypeMap = {

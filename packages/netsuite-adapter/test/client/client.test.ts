@@ -20,12 +20,9 @@ import { logger } from '@salto-io/logging'
 import osPath from 'path'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, {
-  ATTRIBUTES_FILE_SUFFIX,
-  ATTRIBUTES_FOLDER_NAME,
-  COMMANDS,
-  CustomizationInfo,
-  FileCustomizationInfo,
-  FOLDER_ATTRIBUTES_FILE_SUFFIX, FolderCustomizationInfo, TemplateCustomizationInfo,
+  ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, CustomizationInfo,
+  FileCustomizationInfo, FOLDER_ATTRIBUTES_FILE_SUFFIX, FolderCustomizationInfo, SDF_PATH_SEPARATOR,
+  TemplateCustomizationInfo,
 } from '../../src/client/client'
 
 
@@ -296,7 +293,7 @@ describe('netsuite client', () => {
           MOCK_FILE_PATH,
         ]
         if (context.commandName === COMMANDS.LIST_FILES
-          && context.arguments.folder === `${osPath.sep}Templates`) {
+          && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
           return Promise.resolve({
             status: 'SUCCESS',
             data: filesPathResult,

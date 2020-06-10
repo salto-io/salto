@@ -33,6 +33,7 @@ import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
+import { rootCLIPath } from './sdf_root_cli_path'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -101,9 +102,6 @@ export const SUITE_SCRIPTS_FOLDER_NAME = 'SuiteScripts'
 export const TEMPLATES_FOLDER_NAME = 'Templates'
 export const WEB_SITE_HOSTING_FILES_FOLDER_NAME = 'Web Site Hosting Files'
 
-const rootCLIPath = osPath.normalize(
-  osPath.join(require.resolve('@salto-io/suitecloud-cli'), '..', 'src')
-)
 const baseExecutionPath = os.tmpdir()
 
 export interface CustomizationInfo {

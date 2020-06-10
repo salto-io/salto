@@ -29,6 +29,8 @@ import {
   isFolderCustomizationInfo,
 } from '../src/client/client'
 
+jest.mock('../src/client/sdf_root_cli_path', () => 'path/to/cli')
+
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 
 describe('Transformer', () => {

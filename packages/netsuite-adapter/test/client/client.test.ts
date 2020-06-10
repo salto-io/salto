@@ -57,6 +57,8 @@ const mkdirpMock = mkdirp as jest.Mock
 
 const mockExecuteAction = jest.fn()
 
+jest.mock('../../src/client/sdf_root_cli_path', () => 'path/to/cli')
+
 jest.mock('@salto-io/suitecloud-cli', () => ({
   SDKOperationResultUtils: {
     hasErrors: jest.fn().mockImplementation((operationResult: OperationResult) =>

@@ -18,6 +18,7 @@ import removeCustomizationValidator from '../../src/change_validators/remove_cus
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD } from '../../src/constants'
 
+jest.mock('../../src/client/sdf_root_cli_path', () => 'path/to/cli')
 
 // TODO: export to common test utils package
 export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }

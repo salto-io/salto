@@ -73,6 +73,8 @@ export const configType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           'Report', 'ReportType', 'ReportFolder', 'Dashboard', 'DashboardFolder',
+          // These currently do not work, remove these once SALTO-800 is resolved
+          'Territory2Type', 'Territory2Model', 'Territory2Rule', 'Territory2',
         ],
       },
     },

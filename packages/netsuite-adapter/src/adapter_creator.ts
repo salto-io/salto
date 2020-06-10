@@ -21,7 +21,6 @@ import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter from './adapter'
 import { NETSUITE } from './constants'
 
-
 const configID = new ElemID(NETSUITE)
 
 const credentialsType = new ObjectType({
@@ -47,14 +46,7 @@ export const adapter: Adapter = {
   operations: context => new NetsuiteAdapter({
     client: clientFromCredentials(context.credentials),
   }),
-  validateCredentials: async config => {
-    try {
-      // eslint-disable-next-line global-require,import/no-extraneous-dependencies
-      require('@salto-io/suitecloud-cli')
-    } catch (e) {
-      // TODO: this is a temp solution as we can't distribute salto with suitecloud-cli
-      throw new Error('Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing')
-    }
+  validateCredentials: config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)
   },

@@ -31,18 +31,11 @@ describe('NetsuiteAdapter creator', () => {
   )
   describe('validateCredentials', () => {
     beforeEach(async () => {
-      jest.clearAllMocks()
+      await adapter.validateCredentials(credentials)
     })
 
     it('should call validateCredentials with the correct credentials', async () => {
-      jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
-      await adapter.validateCredentials(credentials)
       expect(NetsuiteClient.validateCredentials).toHaveBeenCalledWith(credentials.value)
-    })
-
-    it('should fail when suitecloud-cli dependency does not exist', async () => {
-      jest.mock('@salto-io/suitecloud-cli', () => { throw Error('') }, { virtual: true })
-      await expect(adapter.validateCredentials(credentials)).rejects.toThrow()
     })
   })
 

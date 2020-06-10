@@ -39,7 +39,6 @@
     "@salto-io/dag": "0.1.17",
     "@salto-io/file": "0.1.17",
     "@salto-io/hubspot-adapter": "0.1.17",
-    "@salto-io/netsuite-adapter": "0.1.17",
     "@salto-io/logging": "0.1.17",
     "@salto-io/lowerdash": "0.1.17",
     "@salto-io/salesforce-adapter": "0.1.17",

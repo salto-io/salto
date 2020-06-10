@@ -53,6 +53,10 @@ type ZipPropsMap = {
   Dashboard: ZipProps
   DashboardFolder: ZipProps
   SharingRules: ZipProps
+  Territory2: ZipProps
+  Territory2Rule: ZipProps
+  Territory2Model: ZipProps
+  Territory2Type: ZipProps
 }
 
 const zipPropsMap: ZipPropsMap = {
@@ -127,6 +131,26 @@ const zipPropsMap: ZipPropsMap = {
   SharingRules: {
     dirName: 'sharingRules',
     fileSuffix: '.sharingRules',
+    isMetadataWithContent: false,
+  },
+  Territory2: {
+    dirName: 'territory2Models',
+    fileSuffix: '.territory2',
+    isMetadataWithContent: false,
+  },
+  Territory2Rule: {
+    dirName: 'territory2Models',
+    fileSuffix: '.territory2Rule',
+    isMetadataWithContent: false,
+  },
+  Territory2Model: {
+    dirName: 'territory2Models',
+    fileSuffix: '.territory2Model',
+    isMetadataWithContent: false,
+  },
+  Territory2Type: {
+    dirName: 'territory2Types',
+    fileSuffix: '.territory2Type',
     isMetadataWithContent: false,
   },
 }

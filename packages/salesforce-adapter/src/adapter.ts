@@ -250,6 +250,10 @@ export default class SalesforceAdapter implements AdapterOperations {
       Report: 'ReportFolder',
       Dashboard: 'DashboardFolder',
       SharingRules: undefined, // upsert does not work for creating rules
+      Territory2: undefined, // All Territory2 types do not support CRUD
+      Territory2Rule: undefined, // All Territory2 types do not support CRUD
+      Territory2Model: undefined, // All Territory2 types do not support CRUD
+      Territory2Type: undefined, // All Territory2 types do not support CRUD
     },
     metadataAdditionalTypes = [
       'ProfileUserPermission',

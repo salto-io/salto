@@ -28,7 +28,7 @@
     "test": "jest",
     "e2e-test": "RUN_E2E_TESTS=1 jest",
     "clean": "rm -rf ./dist ./pkg",
-    "build-ts": "tsc -b",
+    "build-ts": "tsc",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
     "lint-fix": "yarn lint --fix",

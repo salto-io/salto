@@ -573,7 +573,7 @@ export const formatApproveIsolatedModePrompt = (
 }
 
 export const formatStateChanges = (
-  changes: readonly FetchChange[]
-): string => (changes.length > 0
-  ? Prompts.STATE_ONLY_UPDATE_START(changes)
+  numOfChanges: number
+): string => (numOfChanges > 0
+  ? Prompts.STATE_ONLY_UPDATE_START(numOfChanges)
   : Prompts.STATE_NO_CHANGES)

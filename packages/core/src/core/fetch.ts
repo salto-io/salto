@@ -60,7 +60,7 @@ export type FetchProgressEvents = {
   changesWillBeFetched: (stepProgress: StepEmitter, adapterNames: string[]) => void
   diffWillBeCalculated: (stepProgress: StepEmitter) => void
   workspaceWillBeUpdated: (stepProgress: StepEmitter, changes: number, approved: number) => void
-  stateWillBeUpdated: (stepProgress: StepEmitter, changes: readonly FetchChange[]) => void
+  stateWillBeUpdated: (stepProgress: StepEmitter, changes: number) => void
 }
 
 export type MergeErrorWithElements = {

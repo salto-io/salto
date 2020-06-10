@@ -15,7 +15,6 @@
 */
 import chalk from 'chalk'
 import moment from 'moment'
-import { FetchChange } from '@salto-io/core'
 
 export default class Prompts {
   public static readonly SHOULD_EXECUTE_PLAN = 'Do you want to perform these actions?'
@@ -189,12 +188,12 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Would you like to switch to isolated mode and fetch ${newServicesNames}? (Answer No to continue without switching)`
 
   public static readonly STATE_ONLY_UPDATE_START = (
-    changes: readonly FetchChange[]
-  ): string => `Going to apply ${changes.length} changes to state. Workspace will not be updated.`
+    numOfChanges: number
+  ): string => `Applying ${numOfChanges} changes to the state. Workspace will not be updated.`
 
   public static readonly STATE_NO_CHANGES = 'No changes found, state is up to date.'
   public static readonly STATE_ONLY_UPDATE_END = 'Applied changes.'
   public static readonly STATE_ONLY_UPDATE_FAILED = (
-    changes: readonly FetchChange[]
-  ): string => `Failed to apply ${changes.length} changes to state.`
+    numOfChanges: number
+  ): string => `Failed to apply ${numOfChanges} changes to state.`
 }

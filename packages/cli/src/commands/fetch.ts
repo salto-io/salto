@@ -175,11 +175,11 @@ export const fetchCommand = async (
 
   fetchProgress.on('stateWillBeUpdated', (
     progress: StepEmitter,
-    changes: readonly FetchChange[]
+    numOfChanges: number
   ) => progressOutputer(
-    formatStateChanges(changes),
+    formatStateChanges(numOfChanges),
     Prompts.STATE_ONLY_UPDATE_END,
-    Prompts.STATE_ONLY_UPDATE_FAILED(changes)
+    Prompts.STATE_ONLY_UPDATE_FAILED(numOfChanges)
   )(progress))
 
   fetchProgress.on('changesWillBeFetched', (progress: StepEmitter, adapters: string[]) => progressOutputer(
@@ -204,6 +204,7 @@ export const fetchCommand = async (
     allChanges: FetchChange[],
     isIsolated: boolean
   ): Promise<boolean> => {
+    // If the workspace starts empty there is no point in showing a huge amount of changes
     const changesToApply = force || (await workspace.isEmpty())
       ? allChanges
       : await getApprovedChanges(allChanges, interactive)
@@ -227,10 +228,14 @@ export const fetchCommand = async (
 
   const applyChangesToState = async (allChanges: readonly FetchChange[]): Promise<boolean> => {
     const updatingStateEmitter = new StepEmitter()
-    fetchProgress.emit('stateWillBeUpdated', updatingStateEmitter, allChanges)
-    await updateStateOnly(workspace, allChanges)
-    updatingStateEmitter.emit('completed')
-    return true
+    fetchProgress.emit('stateWillBeUpdated', updatingStateEmitter, allChanges.length)
+    const success = await updateStateOnly(workspace, allChanges)
+    if (success) {
+      updatingStateEmitter.emit('completed')
+      return true
+    }
+    updatingStateEmitter.emit('failed')
+    return false
   }
 
   const { services, isolated } = await getRelevantServicesAndIsolatedMode(
@@ -295,7 +300,6 @@ export const fetchCommand = async (
   const updatingWsSucceeded = stateOnly
     ? await applyChangesToState(changes)
     : await applyChangesToWorkspace(changes, isolated)
-  // If the workspace starts empty there is no point in showing a huge amount of changes
   if (updatingWsSucceeded) {
     outputLine(formatFetchFinish())
     cliTelemetry.success(workspaceTags)
@@ -359,7 +363,7 @@ type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 const fetchBuilder = createCommandBuilder({
   options: {
     command: 'fetch',
-    description: 'Syncs this workspace\'s NaCl files with the services\' current state',
+    description: 'Syncs this workspace with the services\' current state',
     keyed: {
       force: {
         alias: ['f'],
@@ -384,7 +388,7 @@ const fetchBuilder = createCommandBuilder({
         demandOption: false,
       },
       'state-only': {
-        alias: ['o'],
+        alias: ['st'],
         describe: 'Fetch remote changes to the state file without mofifying the NaCL files. ',
         boolean: true,
         default: false,

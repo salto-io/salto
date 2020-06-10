@@ -54,10 +54,12 @@ describe('fetch command', () => {
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockLoadWorkspace = mockCliWorkspace.loadWorkspace as jest.Mock
   const mockUpdateWorkspace = mockCliWorkspace.updateWorkspace as jest.Mock
+  const mockUpdateStateOnly = mockCliWorkspace.updateStateOnly as jest.Mock
   mockUpdateWorkspace.mockImplementation(ws =>
     Promise.resolve(ws.name !== 'exist-on-error'))
   const findWsUpdateCalls = (name: string): unknown[][][] =>
     mockUpdateWorkspace.mock.calls.filter(args => args[0].name === name)
+  mockUpdateStateOnly.mockResolvedValue(true)
 
   beforeEach(() => {
     cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
@@ -364,29 +366,62 @@ describe('fetch command', () => {
         describe('when called with state only', () => {
           const workspaceName = 'with-state-only'
           let workspace: Workspace
-          beforeEach(async () => {
-            mockTelemetry = mocks.getMockTelemetry()
-            workspace = mockWorkspace(undefined, workspaceName)
-            result = await fetchCommand({
-              workspace,
-              force: true,
-              interactive: false,
-              inputServices: services,
-              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
-              output: cliOutput,
-              fetch: mockFetchWithChanges,
-              getApprovedChanges: mockEmptyApprove,
-              inputIsolated: true,
-              shouldUpdateConfig: mockUpdateConfig,
-              shouldCalcTotalSize: true,
-              approveIsolatedMode: mockApproveIsolatedModeTrue,
-              stateOnly: true,
+          describe('when state is updated', () => {
+            beforeAll(async () => {
+              mockTelemetry = mocks.getMockTelemetry()
+              workspace = mockWorkspace(undefined, workspaceName)
+              result = await fetchCommand({
+                workspace,
+                force: true,
+                interactive: false,
+                inputServices: services,
+                cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
+                output: cliOutput,
+                fetch: mockFetchWithChanges,
+                getApprovedChanges: mockEmptyApprove,
+                inputIsolated: true,
+                shouldUpdateConfig: mockUpdateConfig,
+                shouldCalcTotalSize: true,
+                approveIsolatedMode: mockApproveIsolatedModeTrue,
+                stateOnly: true,
+              })
             })
-            expect(result).toBe(CliExitCode.Success)
+            it('should return OK status when state is updated', () => {
+              expect(result).toBe(CliExitCode.Success)
+            })
+            it('should not apply any changes', async () => {
+              const calls = findWsUpdateCalls(workspaceName)
+              expect(calls).toHaveLength(0)
+            })
           })
-          it('should not apply any changes', () => {
-            const calls = findWsUpdateCalls(workspaceName)
-            expect(calls).toHaveLength(0)
+          describe('when state failed to update', () => {
+            beforeAll(async () => {
+              mockUpdateStateOnly.mockResolvedValueOnce(false)
+              mockTelemetry = mocks.getMockTelemetry()
+              workspace = mockWorkspace(undefined, workspaceName)
+              result = await fetchCommand({
+                workspace,
+                force: true,
+                interactive: false,
+                inputServices: services,
+                cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
+                output: cliOutput,
+                fetch: mockFetchWithChanges,
+                getApprovedChanges: mockEmptyApprove,
+                inputIsolated: true,
+                shouldUpdateConfig: mockUpdateConfig,
+                shouldCalcTotalSize: true,
+                approveIsolatedMode: mockApproveIsolatedModeTrue,
+                stateOnly: true,
+              })
+            })
+            it('should return AppError status when state is updated', () => {
+              expect(result).toBe(CliExitCode.AppError)
+            })
+            it('should not apply any changes', async () => {
+              const calls = findWsUpdateCalls(workspaceName)
+              expect(calls).toHaveLength(0)
+            })
           })
         })
         describe('when initial workspace is empty', () => {

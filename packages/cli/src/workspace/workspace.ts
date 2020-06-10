@@ -88,6 +88,21 @@ const printWorkspaceErrors = async (
   stream.write(`\n${errorsStr}\n`)
 }
 
+const logWorkspaceUpdates = async (
+  ws: Workspace,
+  changes: readonly FetchChange[]
+): Promise<void> => {
+  if (!await ws.isEmpty(true)) {
+    log.info('going to update workspace with %d changes', changes.length)
+    if (changes.length > MAX_DETAIL_CHANGES_TO_LOG) {
+      log.info('going to log only %d changes', MAX_DETAIL_CHANGES_TO_LOG)
+    }
+    formatDetailedChanges([changes.slice(0, MAX_DETAIL_CHANGES_TO_LOG).map(c => c.change)])
+      .split('\n')
+      .forEach(s => log.info(s))
+  }
+}
+
 export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   { force = false,
     printStateRecency = false,
@@ -142,19 +157,23 @@ export const loadWorkspace = async (workingDir: string, cliOutput: CliOutput,
   return { workspace, errored: status === 'Error' }
 }
 
+export const updateStateOnly = async (ws: Workspace,
+  changes: readonly FetchChange[]): Promise<boolean> => {
+  try {
+    log.info('applying %d changes to state only', changes.length)
+    await logWorkspaceUpdates(ws, changes)
+    await ws.flush()
+    return true
+  } catch (e) {
+    log.error(e)
+    return false
+  }
+}
+
 export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
   changes: readonly FetchChange[], isolated = false): Promise<boolean> => {
   if (changes.length > 0) {
-    if (!await ws.isEmpty(true)) {
-      log.info('going to update workspace with %d changes', changes.length)
-      if (changes.length > MAX_DETAIL_CHANGES_TO_LOG) {
-        log.info('going to log only %d changes', MAX_DETAIL_CHANGES_TO_LOG)
-      }
-      formatDetailedChanges([changes.slice(0, MAX_DETAIL_CHANGES_TO_LOG).map(c => c.change)])
-        .split('\n')
-        .forEach(s => log.info(s))
-    }
-
+    await logWorkspaceUpdates(ws, changes)
     await ws.updateNaclFiles(
       changes.map(c => c.change),
       isolated ? 'isolated' : undefined

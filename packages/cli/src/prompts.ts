@@ -70,6 +70,7 @@ Be sure to go over the preview output when invoking the deploy command.`
   public static readonly DID_YOU_MEAN = 'Did you mean'
   public static readonly DESCRIBE_NOT_FOUND = 'Unknown element type.'
 
+
   public static initFailed(msg: string): string {
     return `Could not initiate workspace: ${msg}\n`
   }
@@ -185,4 +186,14 @@ ${Prompts.SERVICE_ADD_HELP}`
   public static readonly APPROVE_ISOLATED_RECOMMENDATION = (
     newServicesNames: string
   ): string => `Would you like to switch to isolated mode and fetch ${newServicesNames}? (Answer No to continue without switching)`
+
+  public static readonly STATE_ONLY_UPDATE_START = (
+    numOfChanges: number
+  ): string => `Applying ${numOfChanges} changes to the state. Workspace will not be updated.`
+
+  public static readonly STATE_NO_CHANGES = 'No changes found, state is up to date.'
+  public static readonly STATE_ONLY_UPDATE_END = 'Applied changes.'
+  public static readonly STATE_ONLY_UPDATE_FAILED = (
+    numOfChanges: number
+  ): string => `Failed to apply ${numOfChanges} changes to state.`
 }

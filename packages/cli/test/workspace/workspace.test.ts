@@ -18,7 +18,7 @@ import moment from 'moment'
 import inquirer from 'inquirer'
 import { Workspace, FetchChange, DetailedChange } from '@salto-io/core'
 import { Spinner } from '../../src/types'
-import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG } from '../../src/workspace/workspace'
+import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly } from '../../src/workspace/workspace'
 import { MockWriteStream, dummyChanges, detailedChange, mockErrors, mockFunction } from '../mocks'
 
 const mockWsFunctions = {
@@ -214,6 +214,21 @@ describe('workspace', () => {
       expect(result).toBe(false)
       expect(mockWs.updateNaclFiles).toHaveBeenCalledWith(dummyChanges, undefined)
       expect(mockWs.flush).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('updateStateOnly', () => {
+    it('should return true if ws flush goes without errors', async () => {
+      const res = await updateStateOnly(mockWs, [])
+      expect(mockWsFunctions.flush).toHaveBeenCalledTimes(1)
+      expect(res).toBe(true)
+    })
+
+    it('should return false if workspace flush causes an error', async () => {
+      mockWsFunctions.flush.mockRejectedValue('err')
+      const res = await updateStateOnly(mockWs, [])
+      expect(mockWsFunctions.flush).toHaveBeenCalledTimes(1)
+      expect(res).toBeFalsy()
     })
   })
 })

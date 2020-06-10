@@ -40,11 +40,12 @@ import {
   formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
   formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
   formatApproveIsolatedModePrompt,
+  formatStateChanges,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
   shouldUpdateConfig as cliShouldUpdateConfig,
   cliApproveIsolatedMode } from '../callbacks'
-import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
+import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly } from '../workspace/workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
@@ -82,6 +83,7 @@ export type FetchCommandArgs = {
   shouldUpdateConfig: ShouldUpdateConfigFunc
   approveIsolatedMode: ApproveIsolatedModeFunc
   shouldCalcTotalSize: boolean
+  stateOnly: boolean
   inputServices?: string[]
 }
 
@@ -143,12 +145,12 @@ const getRelevantServicesAndIsolatedMode = async (
   return { services: inputServices, isolated: inputIsolated }
 }
 
-
 export const fetchCommand = async (
   {
     workspace, force, interactive, inputIsolated = false,
     getApprovedChanges, shouldUpdateConfig, inputServices,
     cliTelemetry, output, fetch, approveIsolatedMode, shouldCalcTotalSize,
+    stateOnly,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
   const progressOutputer = (
@@ -171,6 +173,15 @@ export const fetchCommand = async (
     outputLine(formatFetchHeader())
   })
 
+  fetchProgress.on('stateWillBeUpdated', (
+    progress: StepEmitter,
+    numOfChanges: number
+  ) => progressOutputer(
+    formatStateChanges(numOfChanges),
+    Prompts.STATE_ONLY_UPDATE_END,
+    Prompts.STATE_ONLY_UPDATE_FAILED(numOfChanges)
+  )(progress))
+
   fetchProgress.on('changesWillBeFetched', (progress: StepEmitter, adapters: string[]) => progressOutputer(
     Prompts.FETCH_GET_CHANGES_START(adapters),
     Prompts.FETCH_GET_CHANGES_FINISH(adapters),
@@ -188,6 +199,44 @@ export const fetchCommand = async (
       Prompts.FETCH_UPDATE_WORKSPACE_SUCCESS,
       Prompts.FETCH_UPDATE_WORKSPACE_FAIL
     )(progress))
+
+  const applyChangesToWorkspace = async (
+    allChanges: FetchChange[],
+    isIsolated: boolean
+  ): Promise<boolean> => {
+    // If the workspace starts empty there is no point in showing a huge amount of changes
+    const changesToApply = force || (await workspace.isEmpty())
+      ? allChanges
+      : await getApprovedChanges(allChanges, interactive)
+
+    cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
+    const updatingWsEmitter = new StepEmitter()
+    fetchProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, allChanges.length, changesToApply.length)
+    const success = await updateWorkspace(workspace, output, changesToApply, isIsolated)
+    if (success) {
+      updatingWsEmitter.emit('completed')
+      if (shouldCalcTotalSize) {
+        const totalSize = await workspace.getTotalSize()
+        log.debug(`Total size of the workspace is ${totalSize} bytes`)
+        cliTelemetry.workspaceSize(totalSize, workspaceTags)
+      }
+      return true
+    }
+    updatingWsEmitter.emit('failed')
+    return false
+  }
+
+  const applyChangesToState = async (allChanges: readonly FetchChange[]): Promise<boolean> => {
+    const updatingStateEmitter = new StepEmitter()
+    fetchProgress.emit('stateWillBeUpdated', updatingStateEmitter, allChanges.length)
+    const success = await updateStateOnly(workspace, allChanges)
+    if (success) {
+      updatingStateEmitter.emit('completed')
+      return true
+    }
+    updatingStateEmitter.emit('failed')
+    return false
+  }
 
   const { services, isolated } = await getRelevantServicesAndIsolatedMode(
     inputServices || [...workspace.services()],
@@ -247,34 +296,17 @@ export const fetchCommand = async (
   // Unpack changes to array so we can iterate on them more than once
   const changes = [...fetchResult.changes]
   cliTelemetry.changes(changes.length, workspaceTags)
-  // If the workspace starts empty there is no point in showing a huge amount of changes
-  const changesToApply = force || (await workspace.isEmpty())
-    ? changes
-    : await getApprovedChanges(changes, interactive)
 
-  cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
-  const updatingWsEmitter = new StepEmitter()
-  fetchProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
-  const updatingWsSucceeded = await updateWorkspace(workspace, output, changesToApply, isolated)
+  const updatingWsSucceeded = stateOnly
+    ? await applyChangesToState(changes)
+    : await applyChangesToWorkspace(changes, isolated)
   if (updatingWsSucceeded) {
-    updatingWsEmitter.emit('completed')
-    if (shouldCalcTotalSize) {
-      const totalSize = await workspace.getTotalSize()
-      log.debug(`Total size of the workspace is ${totalSize} bytes`)
-      cliTelemetry.workspaceSize(totalSize, workspaceTags)
-    }
     outputLine(formatFetchFinish())
-  } else {
-    updatingWsEmitter.emit('failed')
-  }
-  if (updatingWsSucceeded) {
     cliTelemetry.success(workspaceTags)
-  } else {
-    cliTelemetry.failure(workspaceTags)
+    return CliExitCode.Success
   }
-  return updatingWsSucceeded
-    ? CliExitCode.Success
-    : CliExitCode.AppError
+  cliTelemetry.failure(workspaceTags)
+  return CliExitCode.AppError
 }
 
 export const command = (
@@ -288,6 +320,7 @@ export const command = (
   shouldCalcTotalSize: boolean,
   inputServices?: string[],
   inputEnvironment?: string,
+  stateOnly = false
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
@@ -314,6 +347,7 @@ export const command = (
       inputServices,
       inputIsolated,
       shouldCalcTotalSize,
+      stateOnly,
     })
   },
 })
@@ -322,13 +356,14 @@ type FetchArgs = {
   force: boolean
   interactive: boolean
   isolated: boolean
+  stateOnly: boolean
 } & ServicesArgs & EnvironmentArgs
 type FetchParsedCliInput = ParsedCliInput<FetchArgs>
 
 const fetchBuilder = createCommandBuilder({
   options: {
     command: 'fetch',
-    description: 'Syncs this workspace\'s NaCl files with the services\' current state',
+    description: 'Syncs this workspace with the services\' current state',
     keyed: {
       force: {
         alias: ['f'],
@@ -352,6 +387,13 @@ const fetchBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      'state-only': {
+        alias: ['st'],
+        describe: 'Fetch remote changes to the state file without mofifying the NaCL files. ',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
     },
   },
 
@@ -369,6 +411,7 @@ const fetchBuilder = createCommandBuilder({
       input.config.shouldCalcTotalSize,
       input.args.services,
       input.args.env,
+      input.args.stateOnly
     )
   },
 })

@@ -262,7 +262,8 @@ export const formatChangeErrors = (
 
 export const formatExecutionPlan = (
   plan: Plan,
-  workspaceErrors: ReadonlyArray<ChangeWorkspaceError>
+  workspaceErrors: ReadonlyArray<ChangeWorkspaceError>,
+  detailed = false,
 ): string => {
   const formattedPlanChangeErrors: string = formatChangeErrors(
     workspaceErrors
@@ -283,7 +284,7 @@ export const formatExecutionPlan = (
   }
   const actionCount = formatCountPlanItemTypes(plan)
   const planSteps = formatDetailedChanges(
-    wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
+    wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges()), detailed
   )
   return [
     emptyLine(),

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFile, StaticFileParameters } from '@salto-io/adapter-api'
+import { StaticFile } from '@salto-io/adapter-api'
 
 import { SyncDirectoryStore } from '../dir_store'
 import { StaticFilesCache } from './cache'
@@ -22,21 +22,20 @@ import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from './common'
 
-type LazyFileGetter = () => Buffer | undefined
-type LazyStaticFileParams = StaticFileParameters & {
-  lazyFileGetter: LazyFileGetter
-}
 class LazyStaticFile extends StaticFile {
-  private lazyGetter: LazyFileGetter
+  private dirStore: SyncDirectoryStore
 
-  constructor(params: LazyStaticFileParams) {
-    super(params)
-    this.lazyGetter = params.lazyFileGetter
+  constructor(filepath: string, hash:string, dirStore: SyncDirectoryStore) {
+    super({filepath, hash})
+    this.dirStore = dirStore
   }
 
   get content(): Buffer | undefined {
     if (this.internalContent === undefined) {
-      this.internalContent = this.lazyGetter()
+      const file = this.dirStore.getSync(this.filepath)
+      if (file !== undefined) {
+        this.internalContent = Buffer.from(file.buffer)
+      }
     }
     return this.internalContent
   }
@@ -82,14 +81,11 @@ export const buildStaticFilesSource = (
         })
         return staticFileWithHashAndContent
       }
-      return new LazyStaticFile({
+      return new LazyStaticFile(
         filepath,
-        hash: cachedResult.hash,
-        lazyFileGetter: () => {
-          const buffer = staticFilesDirStore.getSync(filepath)?.buffer
-          return buffer ? Buffer.from(buffer) : undefined
-        },
-      })
+        cachedResult.hash,
+        staticFilesDirStore
+      )
     },
     getContent: async (
       filepath: string

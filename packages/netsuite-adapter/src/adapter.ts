@@ -15,9 +15,7 @@
 */
 import {
   BuiltinTypes, Element, FetchResult, Field, InstanceElement, isInstanceElement, ObjectType,
-  AdapterOperations,
-  DeployResult,
-  ChangeGroup,
+  AdapterOperations, DeployResult, ChangeGroup, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import { naclCase, resolveValues, restoreValues, deployInstance } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -39,6 +37,8 @@ export interface NetsuiteAdapterParams {
   client: NetsuiteClient
   // Types that we skip their deployment and fetch
   typesToSkip?: string[]
+  // callback function to get an existing elemId or create a new one by the ServiceIds values
+  getElemIdFunc?: ElemIdGetter
 }
 
 const validateServiceIds = (before: InstanceElement, after: InstanceElement): void => {
@@ -68,15 +68,18 @@ const addCustomTypeDefaults = (instance: InstanceElement): void => {
 export default class NetsuiteAdapter implements AdapterOperations {
   private readonly client: NetsuiteClient
   private readonly typesToSkip: string[]
+  private getElemIdFunc?: ElemIdGetter
 
   public constructor({
     client,
     typesToSkip = [
       SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch
     ],
+    getElemIdFunc,
   }: NetsuiteAdapterParams) {
     this.client = client
     this.typesToSkip = typesToSkip
+    this.getElemIdFunc = getElemIdFunc
   }
 
   /**
@@ -97,7 +100,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       const type = customTypes[customizationInfo.typeName]
         ?? fileCabinetTypes[customizationInfo.typeName]
       return type && !this.shouldSkipType(type)
-        ? createInstanceElement(customizationInfo, type) : undefined
+        ? createInstanceElement(customizationInfo, type, this.getElemIdFunc) : undefined
     }).filter(isInstanceElement)
     return { elements: [...getAllTypes(), ...instances] }
   }

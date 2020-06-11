@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, StaticFile } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ServiceIds, StaticFile } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
   ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID, TRANSACTION_FORM,
@@ -30,6 +31,10 @@ import {
 } from '../src/client/client'
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
+
+const NAME_FROM_GET_ELEM_ID = 'nameFromGetElemId_'
+const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
+  ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
 
 describe('Transformer', () => {
   const XML_TEMPLATES = {
@@ -120,17 +125,18 @@ describe('Transformer', () => {
   describe('createInstanceElement', () => {
     const transformCustomFieldRecord = (xmlContent: string): InstanceElement => {
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
-      return createInstanceElement(convertToCustomizationInfo(xmlContent), customFieldType)
+      return createInstanceElement(convertToCustomizationInfo(xmlContent), customFieldType,
+        mockGetElemIdFunc)
     }
 
     it('should create instance name correctly', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LABEL)
-      expect(result.elemID.name).toEqual('elementName')
+      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}elementName`)
     })
 
     it('should create instance path correctly for custom type instance', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LABEL)
-      expect(result.path).toEqual([NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, 'elementName'])
+      expect(result.path).toEqual([NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, result.elemID.name])
     })
 
     it('should create instance name correctly when name field is an attribute', () => {
@@ -139,18 +145,16 @@ describe('Transformer', () => {
       + '</savedsearch>\n'
       const savedSearchType = customTypes.savedsearch
       const result = createInstanceElement(convertToCustomizationInfo(savedSearchXmlContent),
-        savedSearchType)
-      expect(result.elemID.name).toEqual('customsearch_my_search_script_id')
+        savedSearchType, mockGetElemIdFunc)
+      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}customsearch_my_search_script_id`)
     })
 
     it('should create instance name correctly when name field is undefined', () => {
       const customRecordTypeXmlContent = '<customrecordtype scriptid="customrecord__my_record_script_id">\n'
       + '</customrecordtype>\n'
-      const result = createInstanceElement(
-        convertToCustomizationInfo(customRecordTypeXmlContent),
-        customTypes[CUSTOM_RECORD_TYPE]
-      )
-      expect(result.elemID.name).toEqual('customrecord__my_record_script_id')
+      const result = createInstanceElement(convertToCustomizationInfo(customRecordTypeXmlContent),
+        customTypes[CUSTOM_RECORD_TYPE], mockGetElemIdFunc)
+      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}customrecord__my_record_script_id`)
     })
 
     it('should transform attributes', () => {
@@ -160,10 +164,8 @@ describe('Transformer', () => {
 
     it('should transform nested attributes', () => {
       const customRecordTypeXmlContent = XML_TEMPLATES.WITH_NESTED_ATTRIBUTE
-      const result = createInstanceElement(
-        convertToCustomizationInfo(customRecordTypeXmlContent),
-        customTypes[CUSTOM_RECORD_TYPE]
-      )
+      const result = createInstanceElement(convertToCustomizationInfo(customRecordTypeXmlContent),
+        customTypes[CUSTOM_RECORD_TYPE], mockGetElemIdFunc)
       expect(result.value[SCRIPT_ID]).toEqual('customrecord_my_script_id')
       const { customrecordcustomfields } = result.value
       expect(customrecordcustomfields).toBeDefined()
@@ -260,15 +262,13 @@ describe('Transformer', () => {
         fileContent: emailTemplateContent,
         fileExtension: 'html',
       }
-      const result = createInstanceElement(
-        emailTemplateCustomizationInfo,
-        customTypes[EMAIL_TEMPLATE]
-      )
+      const result = createInstanceElement(emailTemplateCustomizationInfo,
+        customTypes[EMAIL_TEMPLATE], mockGetElemIdFunc)
       expect(result.value).toEqual({
         name: 'email template name',
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         content: new StaticFile({
-          filepath: 'netsuite/emailtemplate/email_template_name.html',
+          filepath: `netsuite/emailtemplate/${NAME_FROM_GET_ELEM_ID}email_template_name.html`,
           content: Buffer.from(emailTemplateContent),
         }),
       })
@@ -282,10 +282,8 @@ describe('Transformer', () => {
           [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         },
       }
-      const result = createInstanceElement(
-        emailTemplateCustomizationInfo,
-        customTypes[EMAIL_TEMPLATE]
-      )
+      const result = createInstanceElement(emailTemplateCustomizationInfo,
+        customTypes[EMAIL_TEMPLATE], mockGetElemIdFunc)
       expect(result.value).toEqual({
         name: 'email template name',
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
@@ -310,28 +308,38 @@ describe('Transformer', () => {
         path: ['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder'],
       }
 
+      it('should create instance name correctly for file instance', () => {
+        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+          mockGetElemIdFunc)
+        expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${naclCase(fileCustomizationInfo.path.join('/'))}`)
+      })
+
       it('should create instance path correctly for file instance', () => {
-        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE])
+        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+          mockGetElemIdFunc)
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
             'Inner EmailTemplates Folder', 'content.html'])
       })
 
       it('should create instance path correctly for folder instance', () => {
-        const result = createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER])
+        const result = createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER],
+          mockGetElemIdFunc)
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
             'Inner EmailTemplates Folder'])
       })
 
       it('should transform path field correctly', () => {
-        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE])
+        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+          mockGetElemIdFunc)
         expect(result.value[PATH])
           .toEqual('Templates/E-mail Templates/Inner EmailTemplates Folder/content.html')
       })
 
       it('should set file content in the content field for file instance', () => {
-        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE])
+        const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
+          mockGetElemIdFunc)
         expect(result.value.content).toEqual(new StaticFile({
           filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
           content: Buffer.from('dummy file content'),

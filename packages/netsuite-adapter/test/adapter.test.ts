@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType, StaticFile, ChangeDataType, DeployResult, getChangeElement } from '@salto-io/adapter-api'
+import {
+  ElemID, InstanceElement, ObjectType, StaticFile, ChangeDataType, DeployResult, getChangeElement,
+  ServiceIds,
+} from '@salto-io/adapter-api'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
@@ -30,9 +33,12 @@ jest.mock('../src/client/sdf_root_cli_path', () => ({
   getRootCLIPath: jest.fn().mockResolvedValue('path/to/cli'),
 }))
 
+const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
+  ElemID => new ElemID(adapterName, name)
+
 describe('Adapter', () => {
   const client = createClient()
-  const netsuiteAdapter = new NetsuiteAdapter({ client })
+  const netsuiteAdapter = new NetsuiteAdapter({ client, getElemIdFunc: mockGetElemIdFunc })
 
   describe('fetch', () => {
     it('should fetch all types and instances', async () => {
@@ -62,12 +68,15 @@ describe('Adapter', () => {
       expect(elements).toHaveLength(getAllTypes().length + 3)
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
-      expect(elements)
-        .toContainEqual(createInstanceElement(customizationInfo, customFieldType))
-      expect(elements)
-        .toContainEqual(createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE]))
-      expect(elements)
-        .toContainEqual(createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER]))
+      expect(elements).toContainEqual(
+        createInstanceElement(customizationInfo, customFieldType, mockGetElemIdFunc)
+      )
+      expect(elements).toContainEqual(
+        createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE], mockGetElemIdFunc)
+      )
+      expect(elements).toContainEqual(
+        createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER], mockGetElemIdFunc)
+      )
     })
 
     it('should handle exceptions during listCustomObjects', async () => {

@@ -19,7 +19,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, ElemIdGetter,
+  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
@@ -359,10 +359,6 @@ export const fetchChanges = async (
 }
 
 const id = (elemID: ElemID): string => elemID.getFullName()
-
-const OBJECT_NAME = 'object_name'
-const FIELD_NAME = 'field_name'
-const INSTANCE_NAME = 'instance_name'
 
 const getServiceIdsFromAnnotations = (annotationTypes: TypeMap, annotations: Values,
   elemID: ElemID): ServiceIds =>

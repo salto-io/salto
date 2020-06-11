@@ -33,3 +33,7 @@ export type DirectoryStore = {
   getTotalSize(): Promise<number>
   clone(): DirectoryStore
 }
+
+export type SyncDirectoryStore = DirectoryStore & {
+  getSync(filename: string): File | undefined
+}

@@ -18,10 +18,11 @@ import path from 'path'
 import { Stats } from 'fs'
 import _ from 'lodash'
 import {
-  stat, readTextFile, exists, rm, mkdirp, replaceContents, isEmptyDir, isSubDirectory, rename,
+  stat, readTextFile, exists, rm, mkdirp, replaceContents, isEmptyDir, isSubDirectory,
+  rename, existsSync, readTextFileSync, statSync,
 } from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
-import { DirectoryStore, File } from '../dir_store'
+import { File, SyncDirectoryStore } from '../dir_store'
 
 const { withLimitedConcurrency, series } = promises.array
 
@@ -40,7 +41,7 @@ const buildLocalDirectoryStore = (
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap,
   initDeleted? : string[],
-): DirectoryStore => {
+): SyncDirectoryStore => {
   let currentBaseDir = baseDir
   let updated: FileMap = initUpdated || {}
   let deleted: string[] = initDeleted || []
@@ -78,6 +79,17 @@ const buildLocalDirectoryStore = (
         filename,
         buffer: await readTextFile(absFileName),
         timestamp: (await stat(absFileName) as Stats).mtimeMs,
+      }
+      : undefined
+  }
+
+  const readFileSync = (filename: string): File | undefined => {
+    const absFileName = getAbsFileName(filename)
+    return existsSync(absFileName)
+      ? {
+        filename,
+        buffer: readTextFileSync(absFileName),
+        timestamp: (statSync(absFileName) as Stats).mtimeMs,
       }
       : undefined
   }
@@ -130,6 +142,11 @@ const buildLocalDirectoryStore = (
     return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
   }
 
+  const getSync = (filename: string): File | undefined => {
+    const relFilename = getRelativeFileName(filename)
+    return (updated[relFilename] ? updated[relFilename] : readFileSync(relFilename))
+  }
+
   const list = async (): Promise<string[]> =>
     _(await listDirFiles())
       .concat(Object.keys(updated))
@@ -154,7 +171,7 @@ const buildLocalDirectoryStore = (
   return {
     list,
     get,
-
+    getSync,
     set: async (file: File): Promise<void> => {
       let relFilename: string
       try {
@@ -244,6 +261,6 @@ export const localDirectoryStore = (
   baseDir: string,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
-): DirectoryStore => buildLocalDirectoryStore(
+): SyncDirectoryStore => buildLocalDirectoryStore(
   baseDir, fileFilter, directoryFilter,
 )

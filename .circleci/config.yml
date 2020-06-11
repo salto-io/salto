@@ -44,7 +44,7 @@ jobs:
     docker:
       - image: circleci/node:12.16
 
-    resource_class: xlarge
+    resource_class: large
 
     steps:
       - restore_cache:

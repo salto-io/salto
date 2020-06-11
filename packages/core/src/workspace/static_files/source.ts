@@ -25,8 +25,8 @@ import {
 class LazyStaticFile extends StaticFile {
   private dirStore: SyncDirectoryStore
 
-  constructor(filepath: string, hash:string, dirStore: SyncDirectoryStore) {
-    super({filepath, hash})
+  constructor(filepath: string, hash: string, dirStore: SyncDirectoryStore) {
+    super({ filepath, hash })
     this.dirStore = dirStore
   }
 

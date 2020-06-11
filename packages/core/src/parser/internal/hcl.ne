@@ -15,7 +15,7 @@ main -> _ elements _ {% d => d[1] %}
 	| _ {%d => [] %}
 elements ->
 	  element
-    | elements %ws element {% d => d[0].concat(d[2]) %}
+    | elements __ element {% d => d[0].concat(d[2]) %}
 element -> blockLabels %ws oObj _ blockItems _ cObj {% d => elementConverters.converTopLevelBlock(d[0], d[4], d[6]) %}
 	| blockLabels %ws oObj _ cObj {% d => elementConverters.converTopLevelBlock(d[0], [], d[4]) %}
 blockLabels ->
@@ -76,6 +76,5 @@ oObj -> "{" {% id %} | %wildcard {% id %}
 cObj -> "}" {% id %} | %wildcard {% id %}
 eq -> "=" {% id %} | %wildcard {% id %}
 comma -> "," {% id %} | %wildcard {% id %}
-_ ->
-	null {% () => null %}
-	| %ws {% () => null %}
+_ -> (%ws | %comment):* {% () => null %}
+__ -> (%ws | %comment):+ {% () => null %}

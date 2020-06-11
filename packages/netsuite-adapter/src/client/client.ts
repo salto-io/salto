@@ -33,6 +33,10 @@ import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
+import { getRootCLIPath } from './sdf_root_cli_path'
+import {
+  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME,
+} from '../constants'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -95,13 +99,8 @@ const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
 const ADDITIONAL_FILE_PATTERN = '.template.'
+export const SDF_PATH_SEPARATOR = '/'
 
-export const SUITE_SCRIPTS_FOLDER_NAME = 'SuiteScripts'
-export const TEMPLATES_FOLDER_NAME = 'Templates'
-export const WEB_SITE_HOSTING_FILES_FOLDER_NAME = 'Web Site Hosting Files'
-
-const rootCLIPath = osPath.normalize(osPath.join(__dirname, ...Array(5).fill('..'), 'node_modules',
-  '@salto-io', 'suitecloud-cli', 'src'))
 const baseExecutionPath = os.tmpdir()
 
 export interface CustomizationInfo {
@@ -210,7 +209,7 @@ export default class NetsuiteClient {
   }
 
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutorType {
-    const commandsMetadataService = new CommandsMetadataService(rootCLIPath)
+    const commandsMetadataService = new CommandsMetadataService(getRootCLIPath())
     commandsMetadataService.initializeCommandsMetadata()
     return new CommandActionExecutor({
       executionPath,
@@ -246,7 +245,7 @@ export default class NetsuiteClient {
         arguments: {
           projectname: projectName,
           type: 'ACCOUNTCUSTOMIZATION',
-          parentdirectory: rootCLIPath,
+          parentdirectory: getRootCLIPath(),
         },
       })
     NetsuiteClient.verifySuccessfulOperation(operationResult)
@@ -308,7 +307,7 @@ export default class NetsuiteClient {
   async listCustomObjects(): Promise<CustomizationInfo[]> {
     const project = await this.initProject()
     await NetsuiteClient.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
-      destinationfolder: `${osPath.sep}${OBJECTS_DIR}`,
+      destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
       type: 'ALL',
       scriptid: 'ALL',
       excludefiles: true,
@@ -331,8 +330,8 @@ export default class NetsuiteClient {
   }
 
   private static async listFilePaths(executor: CommandActionExecutorType): Promise<string[]> {
-    const TOP_LEVEL_FOLDER_NAMES = [`${osPath.sep}${SUITE_SCRIPTS_FOLDER_NAME}`,
-      `${osPath.sep}${TEMPLATES_FOLDER_NAME}`, `${osPath.sep}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`]
+    const TOP_LEVEL_FOLDER_NAMES = [`${SDF_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
+      `${SDF_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`, `${SDF_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`]
     const operationResults = _.flatten(await Promise.all(
       TOP_LEVEL_FOLDER_NAMES.map(async folderName =>
         NetsuiteClient.executeProjectAction(COMMANDS.LIST_FILES, { folder: folderName }, executor))
@@ -346,7 +345,7 @@ export default class NetsuiteClient {
       fileCabinetDirPath: string): Promise<CustomizationInfo[]> => {
       const filePathToAttrsPath = _.fromPairs(
         fileAttrsPaths.map(fileAttrsPath => {
-          const fileName = fileAttrsPath.split(osPath.sep).slice(-1)[0]
+          const fileName = fileAttrsPath.split(SDF_PATH_SEPARATOR).slice(-1)[0]
             .slice(0, -ATTRIBUTES_FILE_SUFFIX.length)
           const folderName = fileAttrsPath.split(ATTRIBUTES_FOLDER_NAME)[0]
           return [`${folderName}${fileName}`, fileAttrsPath]
@@ -355,8 +354,8 @@ export default class NetsuiteClient {
       return Promise.all(filePaths.map(async filePath => {
         const attrsPath = filePathToAttrsPath[filePath]
         const xmlContent = readFile(osPath.resolve(fileCabinetDirPath,
-          ...attrsPath.split(osPath.sep)))
-        const filePathParts = filePath.split(osPath.sep)
+          ...attrsPath.split(SDF_PATH_SEPARATOR)))
+        const filePathParts = filePath.split(SDF_PATH_SEPARATOR)
         const fileContent = readFile(osPath.resolve(fileCabinetDirPath, ...filePathParts))
         return convertToFileCustomizationInfo((await xmlContent).toString(),
           filePathParts.slice(1), (await fileContent).toString())
@@ -366,7 +365,7 @@ export default class NetsuiteClient {
     const transformFolders = (folderAttrsPaths: string[], fileCabinetDirPath: string):
       Promise<CustomizationInfo[]> =>
       Promise.all(folderAttrsPaths.map(async attrsPath => {
-        const folderPathParts = attrsPath.split(osPath.sep)
+        const folderPathParts = attrsPath.split(SDF_PATH_SEPARATOR)
         const xmlContent = readFile(osPath.resolve(fileCabinetDirPath, ...folderPathParts))
         return convertToFolderCustomizationInfo((await xmlContent).toString(),
           folderPathParts.slice(1, -2))
@@ -420,7 +419,7 @@ export default class NetsuiteClient {
 
     const filename = fileCustomizationInfo.path.slice(-1)[0]
     const fileFolderPath = osPath.resolve(fileCabinetDirPath,
-      fileCustomizationInfo.path.slice(0, -1).join(osPath.sep))
+      ...fileCustomizationInfo.path.slice(0, -1))
 
     await Promise.all([
       writeFileInFolder(fileFolderPath, filename, fileCustomizationInfo.fileContent),

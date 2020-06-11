@@ -26,6 +26,10 @@ import {
   convertToCustomizationInfo, FileCustomizationInfo, FolderCustomizationInfo,
 } from '../src/client/client'
 
+jest.mock('../src/client/sdf_root_cli_path', () => ({
+  getRootCLIPath: jest.fn().mockResolvedValue('path/to/cli'),
+}))
+
 describe('Adapter', () => {
   const client = createClient()
   const netsuiteAdapter = new NetsuiteAdapter({ client })

@@ -22,6 +22,7 @@ import { customTypes, fileCabinetTypes } from '../src/types'
 import { ADDITIONAL_FILE_SUFFIX, IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX, PATH } from '../src/constants'
 import { fieldTypes } from '../src/types/field_types'
 
+
 describe('Types', () => {
   describe('CustomTypes', () => {
     it('should have single name field for all custom types', () => {

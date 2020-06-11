@@ -19,11 +19,8 @@ import {
 } from '@salto-io/adapter-api'
 import * as constants from '../constants'
 import { fieldTypes } from './field_types'
-import {
-  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME,
-} from '../client/client'
 
-const baseFolderRegex = `^(${TEMPLATES_FOLDER_NAME}|${SUITE_SCRIPTS_FOLDER_NAME}|${WEB_SITE_HOSTING_FILES_FOLDER_NAME})\\/`
+const baseFolderRegex = `^(${constants.TEMPLATES_FOLDER_NAME}|${constants.SUITE_SCRIPTS_FOLDER_NAME}|${constants.WEB_SITE_HOSTING_FILES_FOLDER_NAME})\\/`
 
 const fileElemID = new ElemID(constants.NETSUITE, 'file')
 export const file = new ObjectType({

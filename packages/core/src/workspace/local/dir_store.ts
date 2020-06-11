@@ -247,7 +247,7 @@ const buildLocalDirectoryStore = (
       return _.sum(await Promise.all(allFiles.map(async filePath => (await stat(filePath)).size)))
     },
 
-    clone: () => buildLocalDirectoryStore(
+    clone: (): SyncDirectoryStore => buildLocalDirectoryStore(
       currentBaseDir,
       fileFilter,
       directoryFilter,

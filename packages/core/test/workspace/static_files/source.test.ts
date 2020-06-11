@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DirectoryStore } from '../../../src/workspace/dir_store'
+import { StaticFile } from '@salto-io/adapter-api'
+import { SyncDirectoryStore } from '../../../src/workspace/dir_store'
 import { buildStaticFilesSource } from '../../../src/workspace/static_files/source'
 
 import {
@@ -31,7 +32,7 @@ import {
 
 describe('Static Files Source', () => {
   let staticFilesSource: StaticFilesSource
-  let mockDirStore: DirectoryStore
+  let mockDirStore: SyncDirectoryStore
   let mockCacheStore: StaticFilesCache
   beforeEach(() => {
     mockCacheStore = {
@@ -56,6 +57,7 @@ describe('Static Files Source', () => {
       mtimestamp: jest.fn().mockImplementation(() => Promise.resolve(undefined)),
       getTotalSize: () => Promise.resolve(0),
       clone: () => mockDirStore,
+      getSync: jest.fn(),
     }
     staticFilesSource = buildStaticFilesSource(
       mockDirStore,
@@ -103,6 +105,9 @@ describe('Static Files Source', () => {
       it('should not hash if in cache and file not modified', async () => {
         const filepathFromCache = 'filepathfromcache'
         mockDirStore.get = jest.fn().mockResolvedValue(undefined)
+        mockDirStore.getSync = jest.fn().mockReturnValue({
+          buffer: 'ZOMG',
+        })
         mockDirStore.mtimestamp = jest.fn(
           (filepath: string): Promise<number | undefined> =>
             Promise.resolve(
@@ -118,7 +123,11 @@ describe('Static Files Source', () => {
         })
         const result = await staticFilesSource.getStaticFile('bb')
         expect(mockDirStore.get).toHaveBeenCalledTimes(0)
-        return expect(result).toHaveProperty('hash', 'aaa')
+        expect(result).toHaveProperty('hash', 'aaa')
+        expect(mockDirStore.getSync).not.toHaveBeenCalled()
+        const staticFileRes = result as StaticFile
+        expect(staticFileRes.content).toEqual(Buffer.from('ZOMG'))
+        expect(mockDirStore.getSync).toHaveBeenCalled()
       })
       it('should hash if in cache and file modified is newer', async () => {
         const filepathFromCache = 'filepathfromcache'

@@ -16,7 +16,8 @@
 import * as path from 'path'
 import readdirp from 'readdirp'
 import {
-  stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory, rename, existsSync, readTextFileSync, statSync,
+  stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
+  rename, existsSync, readTextFileSync, statSync,
 } from '@salto-io/file'
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
 
@@ -106,7 +107,7 @@ describe('localDirectoryStore', () => {
       const dir = 'not-exists'
       const naclFileName = 'blabla/notexist.nacl'
       mockFileSyncExists.mockReturnValue(false)
-      const naclFile =  localDirectoryStore(dir).getSync(naclFileName)
+      const naclFile = localDirectoryStore(dir).getSync(naclFileName)
       expect(naclFile).toBeUndefined()
       expect(mockFileSyncExists.mock.calls[0][0]).toMatch(path.join(dir, naclFileName))
       expect(mockReadFileSync).not.toHaveBeenCalled()
@@ -123,7 +124,7 @@ describe('localDirectoryStore', () => {
       expect(naclFile?.buffer).toBe(content)
       expect(mockFileSyncExists.mock.calls[0][0]).toMatch(path.join(dir, naclFileName))
       expect(mockReadFileSync.mock.calls[0][0]).toMatch(path.join(dir, naclFileName))
-    })   
+    })
   })
 
   describe('set', () => {

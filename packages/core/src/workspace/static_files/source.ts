@@ -13,17 +13,37 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { StaticFile } from '@salto-io/adapter-api'
+import { StaticFile, StaticFileParameters } from '@salto-io/adapter-api'
 
-import { DirectoryStore } from '../dir_store'
+import { SyncDirectoryStore } from '../dir_store'
 import { StaticFilesCache } from './cache'
 
 import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from './common'
 
+type LazyFileGetter = () => Buffer | undefined
+type LazyStaticFileParams = StaticFileParameters & {
+  lazyFileGetter: LazyFileGetter
+}
+class LazyStaticFile extends StaticFile {
+  private lazyGetter: LazyFileGetter
+
+  constructor(params: LazyStaticFileParams) {
+    super(params)
+    this.lazyGetter = params.lazyFileGetter
+  }
+
+  get content(): Buffer | undefined {
+    if (this.internalContent === undefined) {
+      this.internalContent = this.lazyGetter()
+    }
+    return this.internalContent
+  }
+}
+
 export const buildStaticFilesSource = (
-  staticFilesDirStore: DirectoryStore,
+  staticFilesDirStore: SyncDirectoryStore,
   staticFilesCache: StaticFilesCache,
 ): StaticFilesSource => {
   const staticFilesSource: StaticFilesSource = {
@@ -50,7 +70,6 @@ export const buildStaticFilesSource = (
         if (file === undefined) {
           return new MissingStaticFile(filepath)
         }
-
         const staticFileBuffer = Buffer.from(file.buffer)
         const staticFileWithHashAndContent = new StaticFile({
           filepath,
@@ -63,10 +82,13 @@ export const buildStaticFilesSource = (
         })
         return staticFileWithHashAndContent
       }
-
-      return new StaticFile({
+      return new LazyStaticFile({
         filepath,
         hash: cachedResult.hash,
+        lazyFileGetter: () => {
+          const buffer = staticFilesDirStore.getSync(filepath)?.buffer
+          return buffer ? Buffer.from(buffer) : undefined
+        },
       })
     },
     getContent: async (
@@ -103,7 +125,7 @@ export const buildStaticFilesSource = (
     },
     getTotalSize: staticFilesDirStore.getTotalSize,
     clone: (): StaticFilesSource => buildStaticFilesSource(
-      staticFilesDirStore.clone(),
+      staticFilesDirStore.clone() as SyncDirectoryStore,
       staticFilesCache.clone(),
     ),
   }

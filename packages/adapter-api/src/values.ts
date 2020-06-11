@@ -43,15 +43,19 @@ export type StaticFileParameters = {
 export class StaticFile {
   public readonly filepath: string
   public readonly hash: string
-  public readonly content?: Buffer
+  protected internalContent?: Buffer
   constructor(params: StaticFileParameters) {
     this.filepath = params.filepath
     if ('content' in params) {
-      this.content = params.content
-      this.hash = calculateStaticFileHash(this.content)
+      this.internalContent = params.content
+      this.hash = calculateStaticFileHash(this.internalContent)
     } else {
       this.hash = params.hash
     }
+  }
+
+  get content(): Buffer | undefined {
+    return this.internalContent
   }
 
   public isEqual(other: StaticFile): boolean {

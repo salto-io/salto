@@ -53,8 +53,8 @@ const buildLocalDirectoryStore = (
     const base = dir || currentBaseDir
     const isAbsolute = path.isAbsolute(filename)
     if (
-      (isAbsolute || filename.includes('..'))
-        && path.relative(base, filename).startsWith('..')
+      (isAbsolute || filename.split(path.sep).includes('..'))
+        && path.relative(base, filename).startsWith(`..${path.sep}`)
     ) {
       throw new Error(`Filepath not contained in dir store base dir: ${filename}`)
     }

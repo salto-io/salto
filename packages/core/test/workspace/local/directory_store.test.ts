@@ -264,6 +264,8 @@ describe('localDirectoryStore', () => {
       fileStore.mtimestamp('something/bla/../../../dev/null')
         .catch(err =>
           expect(err.message).toEqual('Filepath not contained in dir store base dir: something/bla/../../../dev/null')))
+    it('should succeed for paths that contain ".." as part of the parts names', () =>
+      expect(fileStore.get('..relatively../..fabulous../..bla..jsonl')).resolves.not.toThrow())
   })
   describe('getTotalSize', () => {
     const baseDir = '/base'

@@ -83,16 +83,16 @@ describe('Types', () => {
         expect(values.isDefined(regex)).toBe(true)
         const regExpObj = new RegExp(regex as string)
         expect(regExpObj.test('/Templates/file.html')).toBe(false)
-        expect(regExpObj.test('Templates/file')).toBe(false)
-        expect(regExpObj.test('Templates/.html')).toBe(false)
+        expect(regExpObj.test('Templates/file')).toBe(true)
+        expect(regExpObj.test('Templates/.html')).toBe(true)
         expect(regExpObj.test('file.html')).toBe(false)
         expect(regExpObj.test('/file.html')).toBe(false)
         expect(regExpObj.test('Templates/file.html')).toBe(true)
       })
     })
 
-    describe('should have service_id path field', () => {
-      it('should have path field', () => {
+    describe('folder type definition', () => {
+      it('should have service_id path field', () => {
         expect(Object.keys(fileCabinetTypes.folder.fields)).toContain(PATH)
         const pathFieldType = fileCabinetTypes.folder.fields[PATH].type
         expect(isPrimitiveType(pathFieldType) && pathFieldType.isEqual(BuiltinTypes.SERVICE_ID))

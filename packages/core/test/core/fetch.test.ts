@@ -17,9 +17,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   ElemID, Field, BuiltinTypes, ObjectType, getChangeElement, AdapterOperations, Element,
   PrimitiveType, PrimitiveTypes, ADAPTER, OBJECT_SERVICE_ID, InstanceElement, CORE_ANNOTATIONS,
-  isModificationDiff,
-  ListType,
-  FieldDefinition,
+  isModificationDiff, ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import {
@@ -571,11 +569,11 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(2)
         const objectServiceId = Object.entries(serviceIdToStateElemId)[1][0]
         expect(objectServiceId)
-          .toEqual(`${ADAPTER},${obj.elemID.adapter},object_name,${obj.elemID.getFullName()}`)
+          .toEqual(`${ADAPTER},${obj.elemID.adapter},${OBJECT_NAME},${obj.elemID.getFullName()}`)
         expect(Object.entries(serviceIdToStateElemId)[1][1]).toEqual(obj.elemID)
 
         expect(Object.entries(serviceIdToStateElemId)[0][0])
-          .toEqual(`${ADAPTER},${regularField.elemID.adapter},field_name,${regularField.elemID.getFullName()},${OBJECT_SERVICE_ID},${objectServiceId}`)
+          .toEqual(`${ADAPTER},${regularField.elemID.adapter},${FIELD_NAME},${regularField.elemID.getFullName()},${OBJECT_SERVICE_ID},${objectServiceId}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(regularField.elemID)
       })
       it('should generate for InstanceElement with no SERVICE_ID value', () => {
@@ -611,7 +609,7 @@ describe('fetch', () => {
         expect(Object.entries(serviceIdToStateElemId)).toHaveLength(1)
         const expectedObjectServiceId = `${ADAPTER},${obj.elemID.adapter},${SERVICE_ID_ANNOTATION},${obj.annotations[SERVICE_ID_ANNOTATION]}`
         expect(Object.entries(serviceIdToStateElemId)[0][0])
-          .toEqual(`${ADAPTER},${instance.elemID.adapter},instance_name,${instance.elemID.getFullName()},${OBJECT_SERVICE_ID},${expectedObjectServiceId}`)
+          .toEqual(`${ADAPTER},${instance.elemID.adapter},${INSTANCE_NAME},${instance.elemID.getFullName()},${OBJECT_SERVICE_ID},${expectedObjectServiceId}`)
         expect(Object.entries(serviceIdToStateElemId)[0][1]).toEqual(instance.elemID)
       })
     })

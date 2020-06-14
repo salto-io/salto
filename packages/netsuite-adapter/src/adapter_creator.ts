@@ -21,7 +21,6 @@ import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter from './adapter'
 import { NETSUITE } from './constants'
 
-
 const configID = new ElemID(NETSUITE)
 
 const credentialsType = new ObjectType({
@@ -46,6 +45,7 @@ const clientFromCredentials = (credentials: InstanceElement): NetsuiteClient =>
 export const adapter: Adapter = {
   operations: context => new NetsuiteAdapter({
     client: clientFromCredentials(context.credentials),
+    getElemIdFunc: context.getElemIdFunc,
   }),
   validateCredentials: async config => {
     try {

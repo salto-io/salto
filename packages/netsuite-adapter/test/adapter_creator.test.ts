@@ -13,11 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ServiceIds } from '@salto-io/adapter-api'
 import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
+import NetsuiteAdapter from '../src/adapter'
 
 jest.mock('../src/client/client')
+jest.mock('../src/adapter')
 
 describe('NetsuiteAdapter creator', () => {
   const credentials = new InstanceElement(
@@ -51,6 +53,19 @@ describe('NetsuiteAdapter creator', () => {
       adapter.operations({ credentials })
       expect(NetsuiteClient).toHaveBeenCalledWith({
         credentials: credentials.value,
+      })
+    })
+  })
+
+  describe('adapter creation', () => {
+    const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
+      ElemID => new ElemID(adapterName, name)
+
+    it('should create the adapter correctly', () => {
+      adapter.operations({ credentials, getElemIdFunc: mockGetElemIdFunc })
+      expect(NetsuiteAdapter).toHaveBeenCalledWith({
+        client: expect.any(Object),
+        getElemIdFunc: mockGetElemIdFunc,
       })
     })
   })

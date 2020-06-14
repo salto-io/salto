@@ -15,7 +15,8 @@
 */
 import {
   ElemID, Field, InstanceElement, isListType, isPrimitiveType, ObjectType, PrimitiveType,
-  PrimitiveTypes, Value, Values, isObjectType, isPrimitiveValue, StaticFile,
+  PrimitiveTypes, Value, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
+  ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
 } from '@salto-io/adapter-api'
 import {
   applyRecursive, MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
@@ -53,20 +54,35 @@ const castToListRecursively = (
   applyRecursive(type, values, castLists)
 }
 
-export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType):
-  InstanceElement => {
+export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType,
+  getElemIdFunc?: ElemIdGetter): InstanceElement => {
   const getInstanceName = (transformedValues: Values): string => {
     if (!isCustomType(type) && !isFileCabinetType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
-    if (isCustomType(type)) {
-      const nameField = Object.values(type.fields)
-        .find(f => f.annotations[IS_NAME]) as Field
-      // fallback to SCRIPT_ID since sometimes the IS_NAME field is not mandatory
-      // (e.g. customrecordtype of customsegment)
-      return naclCase(transformedValues[nameField.name] ?? transformedValues[SCRIPT_ID])
+    const serviceIdFieldName = isCustomType(type) ? SCRIPT_ID : PATH
+    const getDesiredName = (): string => {
+      if (isCustomType(type)) {
+        const nameField = Object.values(type.fields)
+          .find(f => f.annotations[IS_NAME]) as Field
+        // fallback to SCRIPT_ID since sometimes the IS_NAME field is not mandatory
+        // (e.g. customrecordtype of customsegment)
+        return naclCase(transformedValues[nameField.name] ?? transformedValues[serviceIdFieldName])
+      }
+      return naclCase(transformedValues[serviceIdFieldName])
     }
-    return naclCase(transformedValues[PATH])
+
+    const serviceIds: ServiceIds = {
+      [ADAPTER]: NETSUITE,
+      [serviceIdFieldName]: transformedValues[serviceIdFieldName],
+      [OBJECT_SERVICE_ID]: toServiceIdsString({
+        [ADAPTER]: NETSUITE,
+        [OBJECT_NAME]: type.elemID.getFullName(),
+      }),
+    }
+
+    const desiredName = getDesiredName()
+    return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 
   const getInstancePath = (instanceName: string): string[] =>

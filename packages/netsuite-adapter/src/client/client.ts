@@ -373,7 +373,9 @@ export default class NetsuiteClient {
       paths: listFilePathsResult,
     }, project.executor)
     // folder attributes file is returned multiple times
-    const paths = _.uniq(makeArray(importResult.data.results).map(result => result.path))
+    const paths = _.uniq(makeArray(importResult.data.results)
+      .filter(result => result.loaded)
+      .map(result => result.path))
     const [attributesPaths, filePaths] = _.partition(paths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,

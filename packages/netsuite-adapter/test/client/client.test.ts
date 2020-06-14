@@ -318,15 +318,19 @@ describe('netsuite client', () => {
               results: [
                 {
                   path: MOCK_FILE_PATH,
+                  loaded: true,
                 },
                 {
                   path: MOCK_FILE_ATTRS_PATH,
+                  loaded: true,
                 },
                 {
                   path: MOCK_FOLDER_ATTRS_PATH,
+                  loaded: true,
                 },
                 {
                   path: MOCK_FOLDER_ATTRS_PATH,
+                  loaded: true,
                 },
               ],
             },
@@ -359,6 +363,54 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
+    })
+
+    it('should return only loaded files', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const filesPathResult = [
+          MOCK_FILE_PATH,
+        ]
+        if (context.commandName === COMMANDS.LIST_FILES
+          && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: filesPathResult,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES
+          && _.isEqual(context.arguments.paths, filesPathResult)) {
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: {
+              results: [
+                {
+                  path: MOCK_FILE_PATH,
+                  loaded: false,
+                },
+                {
+                  path: MOCK_FILE_ATTRS_PATH,
+                  loaded: false,
+                },
+                {
+                  path: MOCK_FOLDER_ATTRS_PATH,
+                  loaded: true,
+                },
+              ],
+            },
+          })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      const customizationInfos = await client.importFileCabinet()
+      expect(readFileMock).toHaveBeenCalledTimes(1)
+      expect(customizationInfos).toHaveLength(1)
+      expect(customizationInfos).toEqual([{
+        typeName: 'folder',
+        values: {
+          description: 'folder description',
+        },
+        path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+      }])
     })
   })
 

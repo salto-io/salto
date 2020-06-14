@@ -194,7 +194,8 @@ export default class NetsuiteClient {
       // accountId must be uppercased as decribed in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
       accountId: credentials.accountId.toUpperCase(),
     }
-    this.authId = hash.toMD5(this.credentials.tokenId)
+    this.authId = hash
+      .toMD5(this.credentials.accountId + this.credentials.tokenId + this.credentials.tokenSecret)
   }
 
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {

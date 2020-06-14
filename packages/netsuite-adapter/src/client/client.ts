@@ -189,14 +189,18 @@ export default class NetsuiteClient {
   private readonly authId: string
 
   constructor({ credentials }: NetsuiteClientOpts) {
-    this.credentials = credentials
+    this.credentials = {
+      ...credentials,
+      // accountId must be uppercased as decribed in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
+      accountId: credentials.accountId.toUpperCase(),
+    }
     this.authId = hash.toMD5(this.credentials.tokenId)
   }
 
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
     const netsuiteClient = new NetsuiteClient({ credentials })
     await netsuiteClient.initProject()
-    return Promise.resolve(credentials.accountId)
+    return Promise.resolve(netsuiteClient.credentials.accountId)
   }
 
   private static initCommandActionExecutor(executionPath: string): CommandActionExecutorType {

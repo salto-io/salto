@@ -80,12 +80,13 @@ jest.mock('@salto-io/suitecloud-cli', () => ({
 }), { virtual: true })
 
 describe('netsuite client', () => {
+  const uppercasedAccountId = DUMMY_CREDENTIALS.accountId.toUpperCase()
   const createProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
   const reuseAuthIdCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SETUP_ACCOUNT,
     arguments: expect.not.objectContaining({
-      accountid: DUMMY_CREDENTIALS.accountId,
+      accountid: uppercasedAccountId,
       tokenid: DUMMY_CREDENTIALS.tokenId,
       tokensecret: DUMMY_CREDENTIALS.tokenSecret,
     }),
@@ -93,7 +94,7 @@ describe('netsuite client', () => {
   const saveTokenCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SETUP_ACCOUNT,
     arguments: expect.objectContaining({
-      accountid: DUMMY_CREDENTIALS.accountId,
+      accountid: uppercasedAccountId,
       tokenid: DUMMY_CREDENTIALS.tokenId,
       tokensecret: DUMMY_CREDENTIALS.tokenSecret,
     }),
@@ -140,7 +141,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
-      expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
+      expect(accountId).toEqual(uppercasedAccountId)
     })
 
     it('should succeed', async () => {
@@ -149,7 +150,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
-      expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
+      expect(accountId).toEqual(uppercasedAccountId)
     })
   })
 

@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { OperationResult } from '@salto-io/suitecloud-cli'
 import _ from 'lodash'
 import { readFile, readDir, writeFile, mkdirp } from '@salto-io/file'
 import osPath from 'path'
@@ -54,6 +53,13 @@ const readDirMock = readDir as jest.Mock
 const writeFileMock = writeFile as jest.Mock
 const mkdirpMock = mkdirp as jest.Mock
 
+jest.mock('@salto-io/lowerdash', () => ({
+  ...jest.requireActual('@salto-io/lowerdash'),
+  hash: {
+    toMD5: jest.fn().mockImplementation(input => input),
+  },
+}))
+
 const mockExecuteAction = jest.fn()
 
 jest.mock('../../src/client/sdf_root_cli_path', () => ({
@@ -62,7 +68,7 @@ jest.mock('../../src/client/sdf_root_cli_path', () => ({
 
 jest.mock('@salto-io/suitecloud-cli', () => ({
   SDKOperationResultUtils: {
-    hasErrors: jest.fn().mockImplementation((operationResult: OperationResult) =>
+    hasErrors: jest.fn().mockImplementation(operationResult =>
       operationResult.status === 'ERROR'),
     getErrorMessagesString: jest.fn().mockReturnValue('Error message'),
   },
@@ -83,21 +89,22 @@ describe('netsuite client', () => {
   const uppercasedAccountId = DUMMY_CREDENTIALS.accountId.toUpperCase()
   const createProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
+  const expectedAuthId = uppercasedAccountId + DUMMY_CREDENTIALS.tokenId
+    + DUMMY_CREDENTIALS.tokenSecret
   const reuseAuthIdCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SETUP_ACCOUNT,
-    arguments: expect.not.objectContaining({
-      accountid: uppercasedAccountId,
-      tokenid: DUMMY_CREDENTIALS.tokenId,
-      tokensecret: DUMMY_CREDENTIALS.tokenSecret,
-    }),
+    arguments: {
+      authid: expectedAuthId,
+    },
   })
   const saveTokenCommandMatcher = expect.objectContaining({
     commandName: COMMANDS.SETUP_ACCOUNT,
-    arguments: expect.objectContaining({
+    arguments: {
       accountid: uppercasedAccountId,
       tokenid: DUMMY_CREDENTIALS.tokenId,
       tokensecret: DUMMY_CREDENTIALS.tokenSecret,
-    }),
+      authid: expectedAuthId,
+    },
   })
   const importObjectsCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })

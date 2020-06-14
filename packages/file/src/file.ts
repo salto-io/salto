@@ -49,6 +49,7 @@ export const notFoundAsUndefined = <
   }
 
 export const stat = (filename: string): Promise<fs.Stats> => statP(filename)
+export const { statSync } = fs
 
 stat.notFoundAsUndefined = notFoundAsUndefined(stat)
 
@@ -68,10 +69,15 @@ export const isEmptyDir = async (
   dirPath: string
 ): Promise<boolean> => (await readDir(dirPath)).length === 0
 
+export const { existsSync } = fs
 
 export const exists = async (
   filename: string
 ): Promise<boolean> => (await stat.notFoundAsUndefined(filename)) !== undefined
+
+export const readTextFileSync = (
+  filename: string,
+): string => fs.readFileSync(filename, 'utf8')
 
 export const readTextFile = (
   filename: string,

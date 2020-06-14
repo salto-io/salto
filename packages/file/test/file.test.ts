@@ -52,6 +52,22 @@ describe('file', () => {
     })
   })
 
+  describe('stat sync', () => {
+    describe('when the file does not exist', () => {
+      it('should throw an exception', () => {
+        expect(() => file.statSync('nosuchfile')).toThrow()
+      })
+    })
+
+    describe('when the file exists', () => {
+      it('should return its stats', () => {
+        // can't compare all stats since aTime and aTimeMs might differ slightly
+        const r = (file.statSync(__filename)).ctime
+        expect(r).toEqual((fs.statSync(__filename)).ctime)
+      })
+    })
+  })
+
   describe('stat.notFoundAsUndefined', () => {
     describe('when the file does not exist', () => {
       it('should return undefined', async () => {
@@ -88,6 +104,20 @@ describe('file', () => {
     describe('when the file exists', () => {
       it('should return true', async () => {
         expect(await file.exists(__filename)).toBe(true)
+      })
+    })
+  })
+
+  describe('exists sync', () => {
+    describe('when the file does not exist', () => {
+      it('should return false', () => {
+        expect(file.existsSync('nosuchfile')).toBe(false)
+      })
+    })
+
+    describe('when the file exists', () => {
+      it('should return true', () => {
+        expect(file.existsSync(__filename)).toBe(true)
       })
     })
   })
@@ -134,6 +164,21 @@ describe('file', () => {
       it('should return its contents', async () => {
         const r = await file.readTextFile(__filename)
         expect(r).toEqual(await fs.promises.readFile(__filename, { encoding: 'utf8' }))
+      })
+    })
+  })
+
+  describe('readTextFileSync', () => {
+    describe('when the file does not exist', () => {
+      it('should throw an error', () => {
+        expect(() => file.readTextFileSync('nosuchfile')).toThrow()
+      })
+    })
+
+    describe('when the file exists', () => {
+      it('should return its contents', () => {
+        const r = file.readTextFileSync(__filename)
+        expect(r).toEqual(fs.readFileSync(__filename, { encoding: 'utf8' }))
       })
     })
   })

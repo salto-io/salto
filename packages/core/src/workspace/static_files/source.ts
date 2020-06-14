@@ -15,15 +15,34 @@
 */
 import { StaticFile } from '@salto-io/adapter-api'
 
-import { DirectoryStore } from '../dir_store'
+import { SyncDirectoryStore } from '../dir_store'
 import { StaticFilesCache } from './cache'
 
 import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from './common'
 
+class LazyStaticFile extends StaticFile {
+  private dirStore: SyncDirectoryStore
+
+  constructor(filepath: string, hash: string, dirStore: SyncDirectoryStore) {
+    super({ filepath, hash })
+    this.dirStore = dirStore
+  }
+
+  get content(): Buffer | undefined {
+    if (this.internalContent === undefined) {
+      const file = this.dirStore.getSync(this.filepath)
+      if (file !== undefined) {
+        this.internalContent = Buffer.from(file.buffer)
+      }
+    }
+    return this.internalContent
+  }
+}
+
 export const buildStaticFilesSource = (
-  staticFilesDirStore: DirectoryStore,
+  staticFilesDirStore: SyncDirectoryStore,
   staticFilesCache: StaticFilesCache,
 ): StaticFilesSource => {
   const staticFilesSource: StaticFilesSource = {
@@ -50,7 +69,6 @@ export const buildStaticFilesSource = (
         if (file === undefined) {
           return new MissingStaticFile(filepath)
         }
-
         const staticFileBuffer = Buffer.from(file.buffer)
         const staticFileWithHashAndContent = new StaticFile({
           filepath,
@@ -63,11 +81,11 @@ export const buildStaticFilesSource = (
         })
         return staticFileWithHashAndContent
       }
-
-      return new StaticFile({
+      return new LazyStaticFile(
         filepath,
-        hash: cachedResult.hash,
-      })
+        cachedResult.hash,
+        staticFilesDirStore
+      )
     },
     getContent: async (
       filepath: string
@@ -103,7 +121,7 @@ export const buildStaticFilesSource = (
     },
     getTotalSize: staticFilesDirStore.getTotalSize,
     clone: (): StaticFilesSource => buildStaticFilesSource(
-      staticFilesDirStore.clone(),
+      staticFilesDirStore.clone() as SyncDirectoryStore,
       staticFilesCache.clone(),
     ),
   }

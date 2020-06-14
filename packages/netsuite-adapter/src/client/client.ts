@@ -28,7 +28,7 @@ import type {
 import { collections, decorators, hash } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile } from '@salto-io/file'
-import { compareLogLevels, logger } from '@salto-io/logging'
+import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import os from 'os'
@@ -172,14 +172,6 @@ export const convertToXmlContent = (customizationInfo: CustomizationInfo): strin
     cdataTagName: CDATA_TAG_NAME,
   }).parse({ [customizationInfo.typeName]: customizationInfo.values })
 
-const setSdfLogLevel = (): void => {
-  const isSaltoLogVerbose = (): boolean => {
-    const saltoLogLevel = logger.config.minLevel
-    return saltoLogLevel !== 'none' && compareLogLevels(saltoLogLevel, 'debug') >= 0
-  }
-  process.env.IS_SDF_VERBOSE = isSaltoLogVerbose() ? 'true' : 'false'
-}
-
 const writeFileInFolder = async (folderPath: string, filename: string, content: string):
   Promise<void> => {
   await mkdirp(folderPath)
@@ -199,7 +191,6 @@ export default class NetsuiteClient {
   constructor({ credentials }: NetsuiteClientOpts) {
     this.credentials = credentials
     this.authId = hash.toMD5(this.credentials.tokenId)
-    setSdfLogLevel()
   }
 
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {

@@ -16,7 +16,6 @@
 import { OperationResult } from '@salto-io/suitecloud-cli'
 import _ from 'lodash'
 import { readFile, readDir, writeFile, mkdirp } from '@salto-io/file'
-import { logger } from '@salto-io/logging'
 import osPath from 'path'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, {
@@ -498,26 +497,6 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
-    })
-  })
-
-  describe('setSdfLogLevel', () => {
-    it('should set SDF_VERBOSE_LOG env variable to true', () => {
-      logger.configure({ minLevel: 'debug' })
-      mockClient()
-      expect(process.env.IS_SDF_VERBOSE).toEqual('true')
-    })
-
-    it('should set SDF_VERBOSE_LOG env variable to false when salto log is none', () => {
-      logger.configure({ minLevel: 'none' })
-      mockClient()
-      expect(process.env.IS_SDF_VERBOSE).toEqual('false')
-    })
-
-    it('should set SDF_VERBOSE_LOG env variable to false when salto log is lower than debug', () => {
-      logger.configure({ minLevel: 'warn' })
-      mockClient()
-      expect(process.env.IS_SDF_VERBOSE).toEqual('false')
     })
   })
 })

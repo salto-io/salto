@@ -47,15 +47,17 @@ describe('Salto parser', () => {
 
       type salesforce.boolean is boolean {
       }
-
+      // comment between top level blocks
       type salesforce.obj {
+        // comments inside a block
         salesforce.number num {}
       }
 
       type salesforce.test {
-        salesforce.string name {
+        salesforce.string name { // comment after block def line end
+          // comment inside a field
           label = "Name"
-          _required = true
+          _required = true //comment after attribute
         }
 
         "List<salesforce.string>" nicknames {
@@ -66,12 +68,14 @@ describe('Salto parser', () => {
             all_profiles = {
               visible = false
               read_only = false
+              //comment inside an object
             }
           }
         }
 
         LeadConvertSettings = {
           account = [
+            // comment inside an array
             {
               input = "bla"
               output = "foo"
@@ -80,6 +84,7 @@ describe('Salto parser', () => {
         }
 
         annotations {
+          //comment inside an annotation block
           salesforce.LeadConvertSettings convertSettings {}
         }
       }
@@ -419,8 +424,8 @@ describe('Salto parser', () => {
         const modelSource = sourceMap.get(model.elemID.getFullName()) as SourceRange[]
         expect(modelSource).toBeDefined()
         expect(modelSource).toHaveLength(1)
-        expect(modelSource[0].start.line).toBe(15)
-        expect(modelSource[0].end.line).toBe(45)
+        expect(modelSource[0].start.line).toBe(16)
+        expect(modelSource[0].end.line).toBe(50)
       })
       it('should contain fields', () => {
         Object.values(model.fields).forEach(
@@ -639,7 +644,7 @@ describe('Salto parser', () => {
       expect(error.context.end.col).toEqual(8)
       expect(error.context.end.byte).toEqual(428)
       expect(error.context.filename).toEqual('none')
-      expect(error.message).toEqual('Expected = token but found instead: e.')
+      expect(error.message).toEqual('Expected ws, comment or = token but found instead: e.')
       expect(error.summary).toEqual('Unexpected token: e')
       expect(error.severity).toEqual('Error')
     })
@@ -659,7 +664,7 @@ describe('Salto parser', () => {
       expect(error.context.end.col).toEqual(25)
       expect(error.context.end.byte).toEqual(517)
       expect(error.context.filename).toEqual('none')
-      expect(error.message).toEqual('Expected ws, ws or } token but found instead: e.')
+      expect(error.message).toEqual('Expected ws, ws, comment or } token but found instead: e.')
       expect(error.summary).toEqual('Unexpected token: e')
       expect(error.severity).toEqual('Error')
     })

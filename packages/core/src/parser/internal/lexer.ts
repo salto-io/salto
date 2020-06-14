@@ -33,8 +33,8 @@ export const rules: Record<string, moo.Rules> = {
     oCurly: '{',
     eq: '=',
     word: /[a-zA-Z_][\w.]*(?!\*\*\*\*dynamic\*\*\*\*)/s,
-    ws: { match: /[ \t\r\n]+/, lineBreaks: true },
     comment: /\/\/[^\r\n]*/,
+    ws: { match: /[ \t\r\n]+/, lineBreaks: true },
     invalidSyntax: { match: /[^ ]+/, error: true },
   },
   string: {

@@ -39,7 +39,7 @@ const centertab_portlets_portlet = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 40 characters long. */
     portlet: {
-      type: enums.generic_portlet,
+      type: BuiltinTypes.STRING /* Original type was enums.generic_portlet but it can also be ACCOUNTCENTER */,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_portlet. */

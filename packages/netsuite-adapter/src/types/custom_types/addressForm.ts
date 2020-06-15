@@ -112,7 +112,7 @@ const addressForm_mainFields_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      type: addressForm_mainFields_defaultFieldGroup_fields,
+      type: new ListType(addressForm_mainFields_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -237,7 +237,7 @@ const addressForm_mainFields_fieldGroup = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: addressForm_mainFields_fieldGroup_fields,
+      type: new ListType(addressForm_mainFields_fieldGroup_fields),
       annotations: {
       },
     },

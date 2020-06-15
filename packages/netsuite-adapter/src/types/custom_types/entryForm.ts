@@ -32,7 +32,7 @@ const entryForm_actionbar_buttons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.entryform_buttonid,
+      type: BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be SAVEBASELINE */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -168,7 +168,7 @@ const entryForm_actionbar_menu_menuitem = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.entryform_buttonid,
+      type: BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be ADDMATRIX */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -249,7 +249,7 @@ const entryForm_buttons_standardButtons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.entryform_buttonid,
+      type: BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be APPROVERETURN */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -421,7 +421,7 @@ const entryForm_mainFields_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      type: entryForm_mainFields_defaultFieldGroup_fields,
+      type: new ListType(entryForm_mainFields_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -551,7 +551,7 @@ const entryForm_mainFields_fieldGroup = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: entryForm_mainFields_fieldGroup_fields,
+      type: new ListType(entryForm_mainFields_fieldGroup_fields),
       annotations: {
       },
     },
@@ -713,7 +713,7 @@ const entryForm_tabs_tab_fieldGroups_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      type: entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields,
+      type: new ListType(entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -843,7 +843,7 @@ const entryForm_tabs_tab_fieldGroups_fieldGroup = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: entryForm_tabs_tab_fieldGroups_fieldGroup_fields,
+      type: new ListType(entryForm_tabs_tab_fieldGroups_fieldGroup_fields),
       annotations: {
       },
     },
@@ -1046,7 +1046,7 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup = new Obj
   },
   fields: {
     fields: {
-      type: entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields,
+      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -1176,7 +1176,7 @@ const entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup = new ObjectType
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields,
+      type: new ListType(entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields),
       annotations: {
       },
     },
@@ -1344,9 +1344,10 @@ export const entryForm = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
     standard: {
-      type: enums.entryform_standard,
+      type: BuiltinTypes.STRING /* Original type was enums.entryform_standard but it can also be STANDARDCUSTOMRECORD_2663_ENTITY_BANK_DETAILSFORM */,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
+        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see entryform_standard. */
     name: {

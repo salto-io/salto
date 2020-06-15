@@ -1677,10 +1677,10 @@
   resolved "https://registry.yarnpkg.com/@types/uuid/-/uuid-3.4.9.tgz#fcf01997bbc9f7c09ae5f91383af076d466594e1"
   integrity sha512-XDwyIlt/47l2kWLTzw/mtrpLdB+GPSskR2n/PIcPn+VYhVO77rGhRncIR5GPU0KRzXuqkDO+J5qqrG0Y8P6jzQ==
 
-"@types/vscode@1.37":
-  version "1.37.0"
-  resolved "https://registry.yarnpkg.com/@types/vscode/-/vscode-1.37.0.tgz#fb26ffabfabcd50ba70e8b454122a91b84548080"
-  integrity sha512-PRfeuqYuzk3vjf+puzxltIUWC+AhEGYpFX29/37w30DQSQnpf5AgMVf7GDBAdmTbWTBou+EMFz/Ne6XCM/KxzQ==
+"@types/vscode@^1.36":
+  version "1.46.0"
+  resolved "https://registry.yarnpkg.com/@types/vscode/-/vscode-1.46.0.tgz#53f2075986e901ed25cd1ec5f3ffa5db84a111b3"
+  integrity sha512-8m9wPEB2mcRqTWNKs9A9Eqs8DrQZt0qNFO8GkxBOnyW6xR//3s77SoMgb/nY1ctzACsZXwZj3YRTDsn4bAoaUw==
 
 "@types/wu@^2.1.40":
   version "2.1.42"

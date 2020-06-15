@@ -116,11 +116,13 @@ const filterObjectTypes = (elements: Element[], namespaces: string[]): ObjectTyp
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
-    if (_.isUndefined(config.namespacesToFetchInstancesFor)
-      || config.namespacesToFetchInstancesFor === []) {
+    const relevantObjectTypes = filterObjectTypes(
+      elements,
+      config.namespacesToFetchInstancesFor || []
+    )
+    if (relevantObjectTypes.length === 0) {
       return
     }
-    const relevantObjectTypes = filterObjectTypes(elements, config.namespacesToFetchInstancesFor)
     const instances = await getObjectTypesInstances(client, relevantObjectTypes)
     elements.push(...instances)
   },

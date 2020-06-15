@@ -462,18 +462,18 @@ export default class SalesforceClient {
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
   public async *queryAll(queryString: string): AsyncIterable<salesforceRecord[]> {
-    const doesHasMore = (results: QueryResult<Value>): boolean =>
+    const hadMore = (results: QueryResult<Value>): boolean =>
       !_.isUndefined(results.nextRecordsUrl)
 
     let results = await this.conn.query(queryString)
     yield results.records as salesforceRecord[]
 
-    let hasMore = doesHasMore(results)
+    let hasMore = hadMore(results)
     while (hasMore) {
       // eslint-disable-next-line no-await-in-loop
       results = await this.conn.queryMore(results.nextRecordsUrl as string)
       yield results.records as salesforceRecord[]
-      hasMore = doesHasMore(results)
+      hasMore = hadMore(results)
     }
   }
 }

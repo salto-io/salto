@@ -26,7 +26,7 @@ import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
-import { CompleteSaveResult, SfError } from './types'
+import { CompleteSaveResult, SfError, salesforceRecord } from './types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -461,18 +461,18 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
-  public async *queryAll(queryString: string): AsyncIterable<Value[]> {
+  public async *queryAll(queryString: string): AsyncIterable<salesforceRecord[]> {
     const doesHasMore = (results: QueryResult<Value>): boolean =>
       !_.isUndefined(results.nextRecordsUrl)
 
     let results = await this.conn.query(queryString)
-    yield results.records as Value[]
+    yield results.records as salesforceRecord[]
 
     let hasMore = doesHasMore(results)
     while (hasMore) {
       // eslint-disable-next-line no-await-in-loop
       results = await this.conn.queryMore(results.nextRecordsUrl as string)
-      yield results.records as Value[]
+      yield results.records as salesforceRecord[]
       hasMore = doesHasMore(results)
     }
   }

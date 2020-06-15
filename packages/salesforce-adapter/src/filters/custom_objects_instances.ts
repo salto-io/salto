@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, ObjectType, Element, isObjectType, Field, Values } from '@salto-io/adapter-api'
+import { salesforceRecord } from 'src/client/types'
+import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
 import { SalesforceClient } from 'index'
 import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH } from '../constants'
 import { FilterCreator } from '../filter'
@@ -58,8 +59,8 @@ const getObjectInstances = async (
   client: SalesforceClient,
   object: ObjectType
 ): Promise<Array<InstanceElement>> => {
-  const recordsToInstances = (records: Values[]): InstanceElement[] => {
-    const recordToInstance = (record: Values): InstanceElement => {
+  const recordsToInstances = (records: salesforceRecord[]): InstanceElement[] => {
+    const recordToInstance = (record: salesforceRecord): InstanceElement => {
       const getInstancePath = (instanceName: string): string[] => {
         const objectNamespace = getNamespace(object)
         if (objectNamespace) {
@@ -79,13 +80,14 @@ const getObjectInstances = async (
     }
 
     // Name sub-fields are returned at top level -> move them to the nameField
-    const transformNameValues = (values: Values[]): Values[] => {
+    const transformNameValues = (values: salesforceRecord[]): salesforceRecord[] => {
       const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
       // We assume there's only one Name field
       const nameFieldName = Object.keys(_.pickBy(object.fields, isNameField))[0]
       return values.map(value => ({
         ..._.omit(value, nameSubFields),
         ...nameFieldName !== undefined ? { [nameFieldName]: _.pick(value, nameSubFields) } : {},
+        Id: value.Id,
       }))
     }
 

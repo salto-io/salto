@@ -15,6 +15,7 @@
 */
 import { MetadataInfo, SaveResult } from 'jsforce'
 import _ from 'lodash'
+import { Value } from '@salto-io/adapter-api'
 import { FIELD_TYPE_NAMES } from '../constants'
 
 export type JSONBool = boolean | 'true' | 'false'
@@ -293,4 +294,9 @@ export interface CompleteSaveResult extends SaveResult {
   success: boolean
   fullName: string
   errors: SfError | SfError[]
+}
+
+export type salesforceRecord = {
+  Id: string
+  [attr: string]: Value
 }

@@ -84,11 +84,13 @@ const getObjectInstances = async (
       const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
       // We assume there's only one Name field
       const nameFieldName = Object.keys(_.pickBy(object.fields, isNameField))[0]
-      return values.map(value => ({
-        ..._.omit(value, nameSubFields),
-        ...nameFieldName !== undefined ? { [nameFieldName]: _.pick(value, nameSubFields) } : {},
-        Id: value.Id,
-      }))
+      return _.isUndefined(nameFieldName)
+        ? values
+        : values.map(value => ({
+          ..._.omit(value, nameSubFields),
+          [nameFieldName]: _.pick(value, nameSubFields),
+          Id: value.Id,
+        }))
     }
 
     const instanceValues = transformNameValues(records)

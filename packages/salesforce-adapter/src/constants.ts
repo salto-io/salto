@@ -199,14 +199,14 @@ export const FILTER_ITEM_FIELDS = {
 }
 
 export const ADDRESS_FIELDS = {
-  CITY: 'City',
-  COUNTRY: 'Country',
-  GEOCODE_ACCURACY: 'GeocodeAccuracy',
-  LATITUDE: 'Latitude',
-  LONGITUDE: 'Longitude',
-  POSTAL_CODE: 'PostalCode',
-  STATE: 'State',
-  STREET: 'Street',
+  CITY: 'city',
+  COUNTRY: 'country',
+  GEOCODE_ACCURACY: 'geocodeAccuracy',
+  LATITUDE: 'latitude',
+  LONGITUDE: 'longitude',
+  POSTAL_CODE: 'postalCode',
+  STATE: 'state',
+  STREET: 'street',
 }
 
 export const NAME_FIELDS = {
@@ -216,8 +216,8 @@ export const NAME_FIELDS = {
 }
 
 export const GEOLOCATION_FIELDS = {
-  LATITUDE: 'Latitude',
-  LONGITUDE: 'Longitude',
+  LATITUDE: 'latitude',
+  LONGITUDE: 'longitude',
 }
 
 export const TOPICS_FOR_OBJECTS_FIELDS = {

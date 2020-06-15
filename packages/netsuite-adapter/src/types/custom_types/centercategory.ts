@@ -32,7 +32,7 @@ const centercategory_links_link = new ObjectType({
   },
   fields: {
     linkid: {
-      type: enums.generic_task,
+      type: BuiltinTypes.STRING /* Original type was enums.generic_task but it can also be REPO_324 */,
       annotations: {
       },
     }, /* Original description: This field is mandatory when the linkobject value is not defined.   For information about possible values, see generic_task. */

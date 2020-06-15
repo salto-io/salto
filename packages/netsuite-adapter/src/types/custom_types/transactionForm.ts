@@ -32,7 +32,7 @@ const transactionForm_actionbar_buttons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.transactionform_buttonid,
+      type: BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -168,7 +168,7 @@ const transactionForm_actionbar_menu_menuitem = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.transactionform_buttonid,
+      type: BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -249,7 +249,7 @@ const transactionForm_buttons_standardButtons_button = new ObjectType({
   },
   fields: {
     id: {
-      type: enums.transactionform_buttonid,
+      type: BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
@@ -426,7 +426,7 @@ const transactionForm_mainFields_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      type: transactionForm_mainFields_defaultFieldGroup_fields,
+      type: new ListType(transactionForm_mainFields_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -561,7 +561,7 @@ const transactionForm_mainFields_fieldGroup = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: transactionForm_mainFields_fieldGroup_fields,
+      type: new ListType(transactionForm_mainFields_fieldGroup_fields),
       annotations: {
       },
     },
@@ -797,7 +797,7 @@ const transactionForm_tabs_tab_fieldGroups_defaultFieldGroup = new ObjectType({
   },
   fields: {
     fields: {
-      type: transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields,
+      type: new ListType(transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -932,7 +932,7 @@ const transactionForm_tabs_tab_fieldGroups_fieldGroup = new ObjectType({
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: transactionForm_tabs_tab_fieldGroups_fieldGroup_fields,
+      type: new ListType(transactionForm_tabs_tab_fieldGroups_fieldGroup_fields),
       annotations: {
       },
     },
@@ -1191,7 +1191,7 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup = n
   },
   fields: {
     fields: {
-      type: transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields,
+      type: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields),
       annotations: {
       },
     },
@@ -1326,7 +1326,7 @@ const transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup = new Obje
       },
     }, /* Original description: The default value is F. */
     fields: {
-      type: transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields,
+      type: new ListType(transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields),
       annotations: {
       },
     },
@@ -1494,9 +1494,10 @@ export const transactionForm = new ObjectType({
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custform’. */
     standard: {
-      type: enums.transactionform_standard,
+      type: BuiltinTypes.STRING /* Original type was enums.transactionform_standard but it can also be STANDARDOPPORTUNITY */,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
+        // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 99,
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   For information about possible values, see transactionform_standard. */
     name: {

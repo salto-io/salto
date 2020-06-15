@@ -210,14 +210,19 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type):
                     return "enums.{0}".format(enum_name)
         return 'BuiltinTypes.STRING /* Original type was {0} */'.format('   '.join(netsuite_field_type.splitlines()))
 
+    def is_required(is_required_from_doc, field_name):
+     # we don't set SCRIPT_ID_FIELD_NAME as required ONLY for top level types so the adapter will generate default in case it's missing to ease Salto user's add operation
+        field_full_name = type_name + '_' + field_name
+        return is_required_from_doc and (field_name != SCRIPT_ID_FIELD_NAME or is_inner_type) and not (field_full_name in should_not_be_required)
+
     field_name = cells[0].text
     description = cells[3].text
     field_type = to_field_type(field_name, cells[1].text, description)
-    is_required = cells[2].text.lower() == 'required'
+    is_required_from_doc = cells[2].text.lower() == 'required'
     has_length_limitations = 'value can be up to' in description and 'BuiltinTypes.STRING' in field_type
     is_name_field = type_name in top_level_type_name_to_name_field and top_level_type_name_to_name_field[type_name] == field_name
     annotations = {}
-    if is_required and (field_name != SCRIPT_ID_FIELD_NAME or is_inner_type): # we don't set SCRIPT_ID_FIELD_NAME as required ONLY for top level types so the adapter will generate default in case it's missing to ease Salto user's add operation
+    if is_required(is_required_from_doc, field_name):
         annotations['[CORE_ANNOTATIONS.REQUIRED]'] = 'true'
     if is_attribute:
         annotations['[constants.IS_ATTRIBUTE]'] = 'true'
@@ -494,23 +499,17 @@ def generate_file_per_type(type_name_to_types_defs):
             file.write(type_def_file_content)
 
 
+should_not_be_required = {
+    'publisheddashboard_dashboards_dashboard_centercolumn_customsearch_savedsearch',
+    'publisheddashboard_dashboards_dashboard_centercolumn_customportlet_source',
+    'publisheddashboard_dashboards_dashboard_centercolumn_list_type',
+    'workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailaction_recipientfield',
+    'workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendcampaignemailaction_recipientfield',
+}
+
 should_not_be_list = {
-    'addressForm_mainFields_fieldGroup_fields',
-    'addressForm_mainFields_defaultFieldGroup_fields',
-    'entryForm_mainFields_fieldGroup_fields',
-    'entryForm_mainFields_defaultFieldGroup_fields',
-    'entryForm_tabs_tab_fieldGroups_fieldGroup_fields',
-    'entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields',
-    'entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields',
-    'entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields',
-    'transactionForm_mainFields_fieldGroup_fields',
-    'transactionForm_mainFields_defaultFieldGroup_fields',
     'transactionForm_printingType_advanced',
     'transactionForm_printingType_basic',
-    'transactionForm_tabs_tab_fieldGroups_fieldGroup_fields',
-    'transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields',
-    'transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields',
-    'transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields',
 }
 
 should_be_list = {
@@ -610,6 +609,16 @@ field_name_to_type_name = {
     'othercustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'transactionbodycustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'transactioncolumncustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'centertab_portlets_portlet_portlet': 'BuiltinTypes.STRING /* Original type was enums.generic_portlet but it can also be ACCOUNTCENTER */',
+    'centercategory_links_link_linkid': 'BuiltinTypes.STRING /* Original type was enums.generic_task but it can also be REPO_324 */',
+    'entryForm_standard': 'BuiltinTypes.STRING /* Original type was enums.entryform_standard but it can also be STANDARDCUSTOMRECORD_2663_ENTITY_BANK_DETAILSFORM */',
+    'entryForm_actionbar_menu_menuitem_id': 'BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be ADDMATRIX */',
+    'entryForm_actionbar_buttons_button_id': 'BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be SAVEBASELINE */',
+    'entryForm_buttons_standardButtons_button_id': 'BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be APPROVERETURN */',
+    'transactionForm_standard': 'BuiltinTypes.STRING /* Original type was enums.transactionform_standard but it can also be STANDARDOPPORTUNITY */',
+    'transactionForm_actionbar_buttons_button_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */',
+    'transactionForm_actionbar_menu_menuitem_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */',
+    'transactionForm_buttons_standardButtons_button_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */',
     'transactionForm_tabs_tab_subItems_subList_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */',
     'transactionForm_tabs_tab_subItems_subLists_subList_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */',
     'addressForm_addressTemplate': 'fieldTypes.cdata',

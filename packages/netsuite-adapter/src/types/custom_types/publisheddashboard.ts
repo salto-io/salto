@@ -108,7 +108,6 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customportlet = new O
     source: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the scriptdeployment custom type. */
     isminimized: {
@@ -132,7 +131,6 @@ const publisheddashboard_dashboards_dashboard_centercolumn_customsearch = new Ob
     savedsearch: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the savedsearch custom type.   For information about other possible values, see portlet_customsearch_savedsearch. */
     resultssize: {
@@ -328,7 +326,6 @@ const publisheddashboard_dashboards_dashboard_centercolumn_list = new ObjectType
     type: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the customrecordtype custom type.   For information about other possible values, see portlet_list_type. */
     size: {

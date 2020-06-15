@@ -2810,7 +2810,6 @@ const workflow_workflowstates_workflowstate_workflowactions_sendcampaignemailact
     recipientfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     eventtypes: {
@@ -5190,7 +5189,6 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_
     recipientfield: {
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     }, /* Original description: This field accepts references to the following custom types:   workflowstatecustomfield   workflowcustomfield   transactioncolumncustomfield   transactionbodycustomfield   othercustomfield   itemoptioncustomfield   itemnumbercustomfield   itemcustomfield   entitycustomfield   customrecordcustomfield   crmcustomfield   For information about other possible values, see generic_standard_field. */
     isinactive: {

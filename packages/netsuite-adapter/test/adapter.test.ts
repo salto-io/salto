@@ -176,21 +176,6 @@ describe('Adapter', () => {
         expect(post.isEqual(folderInstance)).toBe(true)
       })
 
-      it('should add default SCRIPT_ID to custom type instance', async () => {
-        delete instance.value[SCRIPT_ID]
-        const result = await adapterAdd(instance)
-        expect(result.errors).toHaveLength(0)
-        expect(result.appliedChanges).toHaveLength(1)
-        const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-
-        const expectedResolvedInstance = instance.clone()
-        expectedResolvedInstance.value.description = 'description value'
-        expectedResolvedInstance.value[SCRIPT_ID] = 'custentity_elementname'
-        expect(post.value[SCRIPT_ID]).toEqual('custentity_elementname')
-        expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_elementname',
-          toCustomizationInfo(expectedResolvedInstance))
-      })
-
       it('should fail when trying to add a non custom type or file cabinet instance', async () => {
         const instWithUnsupportedType = new InstanceElement('unsupported',
           new ObjectType({ elemID: new ElemID(NETSUITE, 'UnsupportedType') }))

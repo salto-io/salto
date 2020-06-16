@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import {
-  BuiltinTypes, Element, FetchResult, Field, InstanceElement, isInstanceElement, ObjectType,
+  BuiltinTypes, Element, FetchResult, InstanceElement, isInstanceElement, ObjectType,
   AdapterOperations, DeployResult, ChangeGroup, ElemIdGetter,
 } from '@salto-io/adapter-api'
-import { naclCase, resolveValues, restoreValues, deployInstance } from '@salto-io/adapter-utils'
+import { resolveValues, restoreValues, deployInstance } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import NetsuiteClient, {
@@ -29,7 +29,7 @@ import {
 import {
   customTypes, isCustomType, getAllTypes, fileCabinetTypes, isFileCabinetType,
 } from './types'
-import { IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX, SAVED_SEARCH } from './constants'
+import { SCRIPT_ID, SAVED_SEARCH } from './constants'
 
 const log = logger(module)
 
@@ -51,18 +51,6 @@ const validateServiceIds = (before: InstanceElement, after: InstanceElement): vo
       )
     }
   })
-}
-
-const nameField = (type: ObjectType): Field =>
-  Object.values(type.fields).find(field => field.annotations[IS_NAME]) as Field
-
-const addCustomTypeDefaults = (instance: InstanceElement): void => {
-  if (_.isUndefined(instance.value[SCRIPT_ID])) {
-    const { type } = instance
-    const scriptIdPrefix = type.annotations[SCRIPT_ID_PREFIX]
-    const name = naclCase(instance.value[nameField(type).name]).toLowerCase()
-    instance.value[SCRIPT_ID] = `${scriptIdPrefix}${name}`
-  }
 }
 
 export default class NetsuiteAdapter implements AdapterOperations {
@@ -117,9 +105,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       throw Error(`Salto skips adding ${instance.type.elemID.name} instances`)
     }
     const resolved = resolveValues(instance, getLookUpName)
-    if (isCustomType(instance.type)) {
-      addCustomTypeDefaults(resolved)
-    }
     await this.addOrUpdateCustomizationInstance(resolved)
     return restoreValues(instance, resolved, getLookUpName)
   }

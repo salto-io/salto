@@ -38,11 +38,7 @@ const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: s
 
 describe('Transformer', () => {
   const XML_TEMPLATES = {
-    WITH_LABEL: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
-      + '</entitycustomfield>\n',
-    WITH_ATTRIBUTE: '<entitycustomfield scriptid="custentity_my_script_id">\n'
-      + '  <label>elementName</label>\n'
+    WITH_SCRIPT_ID: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '</entitycustomfield>\n',
     WITH_NESTED_ATTRIBUTE: '<customrecordtype scriptid="customrecord_my_script_id">\n'
       + '  <customrecordcustomfields>\n'
@@ -50,27 +46,24 @@ describe('Transformer', () => {
       + '    </customrecordcustomfield>\n'
       + '  </customrecordcustomfields>\n'
       + '</customrecordtype>\n',
-    WITH_UNKNOWN_ATTRIBUTE: '<entitycustomfield unknownattr="val">\n'
+    WITH_UNKNOWN_ATTRIBUTE: '<entitycustomfield scriptid="custentity_my_script_id" unknownattr="val">\n'
+      + '</entitycustomfield>\n',
+    WITH_STRING_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <label>elementName</label>\n'
       + '</entitycustomfield>\n',
-    WITH_TRUE_FIELD: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_TRUE_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <checkspelling>T</checkspelling>\n'
       + '</entitycustomfield>\n',
-    WITH_FALSE_FIELD: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_FALSE_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <checkspelling>F</checkspelling>\n'
       + '</entitycustomfield>\n',
-    WITH_NUMBER_FIELD: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_NUMBER_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <displayheight>123</displayheight>\n'
       + '</entitycustomfield>\n',
-    WITH_UNDEFINED_PRIMITIVE_FIELD: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_UNDEFINED_PRIMITIVE_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <description></description>\n'
       + '</entitycustomfield>\n',
-    WITH_LIST_OF_OBJECTS: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_LIST_OF_OBJECTS: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <roleaccesses>\n'
       + '    <roleaccess>\n'
       + '      <accesslevel>1</accesslevel>\n'
@@ -84,8 +77,7 @@ describe('Transformer', () => {
       + '    </roleaccess>\n'
       + '  </roleaccesses>\n'
       + '</entitycustomfield>\n',
-    WITH_LIST_OF_SINGLE_OBJECT: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_LIST_OF_SINGLE_OBJECT: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <roleaccesses>\n'
       + '    <roleaccess>\n'
       + '      <accesslevel>1</accesslevel>\n'
@@ -94,15 +86,13 @@ describe('Transformer', () => {
       + '    </roleaccess>\n'
       + '  </roleaccesses>\n'
       + '</entitycustomfield>\n',
-    WITH_UNDEFINED_LIST_FIELD: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_UNDEFINED_LIST_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <roleaccesses>\n'
       + '    <roleaccess>\n'
       + '    </roleaccess>\n'
       + '  </roleaccesses>\n'
       + '</entitycustomfield>\n',
-    WITH_UNDEFINED_OBJECT_INNER_FIELDS: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_UNDEFINED_OBJECT_INNER_FIELDS: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <roleaccesses>\n'
       + '    <roleaccess>\n'
       + '      <accesslevel></accesslevel>\n'
@@ -111,13 +101,11 @@ describe('Transformer', () => {
       + '    </roleaccess>\n'
       + '  </roleaccesses>\n'
       + '</entitycustomfield>\n',
-    WITH_UNDEFINED_OBJECT_FIELD: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_UNDEFINED_OBJECT_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <roleaccesses>\n'
       + '  </roleaccesses>\n'
       + '</entitycustomfield>\n',
-    WITH_UNKNOWN_FIELD: '<entitycustomfield>\n'
-      + '  <label>elementName</label>\n'
+    WITH_UNKNOWN_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <unknownfield>unknownVal</unknownfield>\n'
       + '</entitycustomfield>\n',
   }
@@ -130,35 +118,17 @@ describe('Transformer', () => {
     }
 
     it('should create instance name correctly', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LABEL)
-      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}elementName`)
+      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
+      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}custentity_my_script_id`)
     })
 
     it('should create instance path correctly for custom type instance', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LABEL)
+      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
       expect(result.path).toEqual([NETSUITE, RECORDS_PATH, ENTITY_CUSTOM_FIELD, result.elemID.name])
     })
 
-    it('should create instance name correctly when name field is an attribute', () => {
-      const savedSearchXmlContent = '<savedsearch scriptid="customsearch_my_search_script_id">\n'
-      + '  <definition>BLA</definition>\n'
-      + '</savedsearch>\n'
-      const savedSearchType = customTypes.savedsearch
-      const result = createInstanceElement(convertToCustomizationInfo(savedSearchXmlContent),
-        savedSearchType, mockGetElemIdFunc)
-      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}customsearch_my_search_script_id`)
-    })
-
-    it('should create instance name correctly when name field is undefined', () => {
-      const customRecordTypeXmlContent = '<customrecordtype scriptid="customrecord__my_record_script_id">\n'
-      + '</customrecordtype>\n'
-      const result = createInstanceElement(convertToCustomizationInfo(customRecordTypeXmlContent),
-        customTypes[CUSTOM_RECORD_TYPE], mockGetElemIdFunc)
-      expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}customrecord__my_record_script_id`)
-    })
-
     it('should transform attributes', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_ATTRIBUTE)
+      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_SCRIPT_ID)
       expect(result.value[SCRIPT_ID]).toEqual('custentity_my_script_id')
     })
 
@@ -195,7 +165,7 @@ describe('Transformer', () => {
     })
 
     it('should transform string primitive field', () => {
-      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_LABEL)
+      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_STRING_FIELD)
       expect(result.value.label).toEqual('elementName')
     })
 
@@ -268,7 +238,7 @@ describe('Transformer', () => {
         name: 'email template name',
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         content: new StaticFile({
-          filepath: `netsuite/emailtemplate/${NAME_FROM_GET_ELEM_ID}email_template_name.html`,
+          filepath: `netsuite/emailtemplate/${NAME_FROM_GET_ELEM_ID}custemailtmpl_my_script_id.html`,
           content: Buffer.from(emailTemplateContent),
         }),
       })
@@ -351,7 +321,7 @@ describe('Transformer', () => {
   describe('toCustomizationInfo', () => {
     const origInstance = new InstanceElement('elementName',
       customTypes[ENTITY_CUSTOM_FIELD], {
-        label: 'elementName',
+        [SCRIPT_ID]: 'custentity_my_script_id',
       })
     let instance: InstanceElement
     beforeEach(() => {
@@ -359,9 +329,10 @@ describe('Transformer', () => {
     })
 
     it('should transform string primitive field', () => {
+      instance.value.label = 'elementName'
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_STRING_FIELD))
     })
 
     it('should transform boolean primitive field when is true', () => {
@@ -412,10 +383,9 @@ describe('Transformer', () => {
     })
 
     it('should transform attribute field', () => {
-      instance.value[SCRIPT_ID] = 'custentity_my_script_id'
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_ATTRIBUTE))
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
     it('should transform nested attribute field', () => {
@@ -437,7 +407,7 @@ describe('Transformer', () => {
       instance.value.unknownfield = 'unknownValue'
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
     it('should transform list field', () => {
@@ -464,14 +434,14 @@ describe('Transformer', () => {
       }
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
     it('should transform empty object field', () => {
       instance.value.roleaccesses = {}
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
     it('should ignore list field with incompatible type', () => {
@@ -480,14 +450,14 @@ describe('Transformer', () => {
       }
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
     it('should ignore object field with incompatible type', () => {
       instance.value.roleaccesses = ['not an object']
       const customizationInfo = toCustomizationInfo(instance)
       const xmlContent = convertToXmlContent(customizationInfo)
-      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_LABEL))
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
     it('should transform ordered values for forms', () => {

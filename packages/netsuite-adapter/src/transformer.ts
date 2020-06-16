@@ -23,7 +23,7 @@ import {
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
-  ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, IS_NAME, NETSUITE, RECORDS_PATH,
+  ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH,
 } from './constants'
 import {
@@ -61,17 +61,6 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
     const serviceIdFieldName = isCustomType(type) ? SCRIPT_ID : PATH
-    const getDesiredName = (): string => {
-      if (isCustomType(type)) {
-        const nameField = Object.values(type.fields)
-          .find(f => f.annotations[IS_NAME]) as Field
-        // fallback to SCRIPT_ID since sometimes the IS_NAME field is not mandatory
-        // (e.g. customrecordtype of customsegment)
-        return naclCase(transformedValues[nameField.name] ?? transformedValues[serviceIdFieldName])
-      }
-      return naclCase(transformedValues[serviceIdFieldName])
-    }
-
     const serviceIds: ServiceIds = {
       [ADAPTER]: NETSUITE,
       [serviceIdFieldName]: transformedValues[serviceIdFieldName],
@@ -80,8 +69,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
         [OBJECT_NAME]: type.elemID.getFullName(),
       }),
     }
-
-    const desiredName = getDesiredName()
+    const desiredName = naclCase(transformedValues[serviceIdFieldName])
     return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 

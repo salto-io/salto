@@ -109,6 +109,10 @@ describe('Custom Object Instances filter', () => {
   let basicQueryImplementation: jest.Mock
 
   const testNamespace = 'TestNamespace'
+  const disabledNamespace = 'DisabledNamespace'
+  const anotherNamespace = 'AnotherNamespace'
+  const includeObjectName = 'IncludeThisObject'
+  const excludeObjectName = 'TestNamespace__ExcludeMe__c'
 
   beforeEach(() => {
     ({ connection, client } = mockAdapter({
@@ -116,7 +120,32 @@ describe('Custom Object Instances filter', () => {
       },
     }))
     filter = filterCreator(
-      { client, config: { namespacesToFetchInstancesFor: [testNamespace] } }
+      { client,
+        config: {
+          recordsManagement: [
+            {
+              name: 'enabledWithNamespace',
+              enabled: true,
+              includeNamespaces: [testNamespace],
+            },
+            {
+              name: 'disabledWithNamespace',
+              enabled: false,
+              includeNamespaces: [disabledNamespace],
+            },
+            {
+              name: 'enabledWithNamespaceAndObject',
+              enabled: true,
+              includeNamespaces: [anotherNamespace],
+              includeObjects: [includeObjectName],
+            },
+            {
+              name: 'enabledWithExcludeObject',
+              enabled: true,
+              excludeObjects: [excludeObjectName],
+            },
+          ],
+        } }
     ) as FilterType
     basicQueryImplementation = jest.fn().mockImplementation(async () => (
       {
@@ -127,41 +156,97 @@ describe('Custom Object Instances filter', () => {
     connection.query = basicQueryImplementation
   })
 
-  describe('When all CustomObjects not from namespace', () => {
+  describe('Config filtering logic', () => {
     let elements: Element[]
-    const firstObjName = 'NotInNameSpaceA'
-    const firstElement = createCustomObject(firstObjName)
-    const secondObjName = 'NotInNameSpaceB'
-    const secondElement = createCustomObject(secondObjName)
+    const notConfiguredObjName = 'NotInNameSpace'
+    const notConfiguredObj = createCustomObject(notConfiguredObjName)
+
+    const includedNamespaceObjName = `${testNamespace}__Included__c`
+    const includedNameSpaceObj = createCustomObject(includedNamespaceObjName)
+
+    const includedInAnotherNamespaceObjName = `${anotherNamespace}__Included__c`
+    const includedInAnotherNamespaceObj = createCustomObject(includedInAnotherNamespaceObjName)
+
+    const includedObject = createCustomObject(includeObjectName)
+    const excludedObject = createCustomObject(excludeObjectName)
     beforeEach(async () => {
-      elements = [firstElement, secondElement]
+      elements = [
+        notConfiguredObj, includedNameSpaceObj, includedInAnotherNamespaceObj,
+        includedObject, excludedObject,
+      ]
       await filter.onFetch(elements)
     })
 
-    it('should not add elements', () => {
-      expect(elements.length).toEqual(2)
+    it('should add instances per configured object', () => {
+      // 2 new instances per namespaced object because of TestCustomRecords's length
+      expect(elements.length).toEqual(11)
+      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(6)
+
+      const notConfiguredObjInstances = elements.filter(
+        e => isInstanceElement(e) && e.type === notConfiguredObj
+      ) as InstanceElement[]
+      expect(notConfiguredObjInstances.length).toEqual(0)
+
+      const includedNameSpaceObjInstances = elements.filter(
+        e => isInstanceElement(e) && e.type === includedNameSpaceObj
+      ) as InstanceElement[]
+      expect(includedNameSpaceObjInstances.length).toEqual(2)
+
+      const includedInAnotherNamespaceObjInstances = elements.filter(
+        e => isInstanceElement(e) && e.type === includedInAnotherNamespaceObj
+      ) as InstanceElement[]
+      expect(includedInAnotherNamespaceObjInstances.length).toEqual(2)
+
+      const includedObjectInstances = elements.filter(
+        e => isInstanceElement(e) && e.type === includedObject
+      ) as InstanceElement[]
+      expect(includedObjectInstances.length).toEqual(2)
+
+      const excludedObjectInstances = elements.filter(
+        e => isInstanceElement(e) && e.type === excludedObject
+      ) as InstanceElement[]
+      expect(excludedObjectInstances.length).toEqual(0)
     })
 
-    it('should not change existing elements', () => {
-      const first = elements.filter(e => e.annotations[API_NAME] === firstObjName)[0]
-      expect(first).toBeDefined()
-      expect(first).toEqual(firstElement)
-      const second = elements.filter(e => e.annotations[API_NAME] === secondObjName)[0]
-      expect(second).toBeDefined()
-      expect(second).toEqual(secondElement)
+    it('should not change custom object elements', () => {
+      const notConfiguredAfterFilter = elements
+        .filter(e => e.annotations[API_NAME] === notConfiguredObjName)[0]
+      expect(notConfiguredAfterFilter).toBeDefined()
+      expect(notConfiguredAfterFilter).toEqual(notConfiguredObj)
+
+      const includedNameSpaceObjFilter = elements
+        .filter(e => e.annotations[API_NAME] === includedNamespaceObjName)[0]
+      expect(includedNameSpaceObjFilter).toBeDefined()
+      expect(includedNameSpaceObjFilter).toEqual(includedNameSpaceObj)
+
+      const includedInAnotherNamespaceObjFilter = elements
+        .filter(e => e.annotations[API_NAME] === includedInAnotherNamespaceObjName)[0]
+      expect(includedInAnotherNamespaceObjFilter).toBeDefined()
+      expect(includedInAnotherNamespaceObjFilter).toEqual(includedInAnotherNamespaceObj)
+
+      const includedObjectFilter = elements
+        .filter(e => e.annotations[API_NAME] === includeObjectName)[0]
+      expect(includedObjectFilter).toBeDefined()
+      expect(includedObjectFilter).toEqual(includedObject)
+
+
+      const excludedObjectFilter = elements
+        .filter(e => e.annotations[API_NAME] === excludeObjectName)[0]
+      expect(excludedObjectFilter).toBeDefined()
+      expect(excludedObjectFilter).toEqual(excludedObject)
     })
   })
 
   describe('When some CustomObjects are from the namespace', () => {
     let elements: Element[]
-    const simpleName = 'TestNamespace__simple__c'
+    const simpleName = `${testNamespace}__simple__c`
     const simpleObject = createCustomObject(simpleName)
 
-    const withNameName = 'TestNamespace__withCompoundName__c'
+    const withNameName = `${testNamespace}__withCompoundName__c`
     const objWithNameField = createCustomObject(withNameName)
     objWithNameField.fields.Name.type = Types.compoundDataTypes.Name
 
-    const withAddressName = 'TestNamespace__withAddress__c'
+    const withAddressName = `${testNamespace}__withAddress__c`
     const objWithAddressField = createCustomObject(withAddressName, {
       OtherAddress: {
         type: Types.compoundDataTypes.Address,

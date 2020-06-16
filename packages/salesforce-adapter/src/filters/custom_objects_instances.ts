@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { salesforceRecord } from 'src/client/types'
 import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
 import { SalesforceClient } from 'index'
@@ -21,6 +22,9 @@ import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types } from '../transformers/transformer'
 import { getNamespace } from './utils'
+import { RecordsManegementConfig } from '../types'
+
+const { makeArray } = collections.array
 
 const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
@@ -107,20 +111,43 @@ const getObjectTypesInstances = async (
 ): Promise<InstanceElement[]> =>
   (_.flatten(await Promise.all(objects.map(o => getObjectInstances(client, o)))))
 
-const filterObjectTypes = (elements: Element[], namespaces: string[]): ObjectType[] =>
-  (elements
+const filterObjectTypes = (
+  elements: Element[],
+  recordsManagementConfigs: RecordsManegementConfig[]
+): ObjectType[] => {
+  const groupedIncludeNamespaces = _.flatten(
+    recordsManagementConfigs
+      .filter(config => config.enabled)
+      .map(config => makeArray(config.includeNamespaces))
+  )
+  const groupedIncludeObjects = _.flatten(
+    recordsManagementConfigs
+      .filter(config => config.enabled)
+      .map(config => makeArray(config.includeObjects))
+  )
+  const groupedExcludeObjects = _.flatten(
+    recordsManagementConfigs
+      .filter(config => config.enabled)
+      .map(config => makeArray(config.excludeObjects))
+  )
+  return elements
     .filter(isObjectType)
     .filter(isCustomObject)
     .filter(e => {
       const namespace = getNamespace(e)
-      return namespace !== undefined && namespaces.includes(namespace)
-    }))
+      const elementApiName = apiName(e, true)
+      return ((!_.isUndefined(namespace)
+        && groupedIncludeNamespaces.includes(namespace))
+        || groupedIncludeObjects.includes(elementApiName))
+        && !groupedExcludeObjects.includes(elementApiName)
+    })
+}
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     const relevantObjectTypes = filterObjectTypes(
       elements,
-      config.namespacesToFetchInstancesFor || []
+      config.recordsManagement || []
     )
     if (relevantObjectTypes.length === 0) {
       return

@@ -31,9 +31,6 @@ export const SAVED_SEARCH = 'savedsearch'
 export const FILE = 'file'
 export const FOLDER = 'folder'
 
-// Type Annotations
-export const SCRIPT_ID_PREFIX = 'scriptIdPrefix'
-
 // Fields
 export const SCRIPT_ID = 'scriptid'
 export const PATH = 'path'

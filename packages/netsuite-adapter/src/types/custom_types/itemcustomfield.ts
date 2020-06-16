@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -149,13 +149,14 @@ itemcustomfieldInnerTypes.push(itemcustomfield_roleaccesses)
 export const itemcustomfield = new ObjectType({
   elemID: itemcustomfieldElemID,
   annotations: {
-    [constants.SCRIPT_ID_PREFIX]: 'custitem_',
   },
   fields: {
     scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custitem[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘custitem’. */
     fieldtype: {

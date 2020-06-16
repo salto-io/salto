@@ -19,25 +19,20 @@ import {
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { customTypes, fileCabinetTypes } from '../src/types'
-import { ADDITIONAL_FILE_SUFFIX, SCRIPT_ID, SCRIPT_ID_PREFIX, PATH } from '../src/constants'
+import { ADDITIONAL_FILE_SUFFIX, SCRIPT_ID, PATH } from '../src/constants'
 import { fieldTypes } from '../src/types/field_types'
 
 
 describe('Types', () => {
   describe('CustomTypes', () => {
-    it('should have SCRIPT_ID_PREFIX defined correctly for all custom types', () => {
-      Object.values(customTypes)
-        .forEach(typeDef => {
-          expect(typeDef.annotations[SCRIPT_ID_PREFIX]).toBeDefined()
-          expect(typeDef.annotations[SCRIPT_ID_PREFIX]).toMatch(/_$/)
-        })
-    })
-
-    it('should have a not required SCRIPT_ID field for all custom types', () => {
+    it('should have a required SCRIPT_ID field with regex restriction for all custom types', () => {
       Object.values(customTypes)
         .forEach(typeDef => {
           expect(typeDef.fields[SCRIPT_ID]).toBeDefined()
-          expect(typeDef.fields[SCRIPT_ID].annotations[CORE_ANNOTATIONS.REQUIRED]).toBeUndefined()
+          expect(typeDef.fields[SCRIPT_ID].annotations[CORE_ANNOTATIONS.REQUIRED]).toBe(true)
+          expect(typeDef.fields[SCRIPT_ID].annotations[CORE_ANNOTATIONS.RESTRICTION]).toBeDefined()
+          expect(typeDef.fields[SCRIPT_ID].annotations[CORE_ANNOTATIONS.RESTRICTION].regex)
+            .toBeDefined()
         })
     })
 

@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { fieldTypes } from '../field_types'
@@ -47,13 +47,14 @@ workbookInnerTypes.push(workbook_dependencies)
 export const workbook = new ObjectType({
   elemID: workbookElemID,
   annotations: {
-    [constants.SCRIPT_ID_PREFIX]: 'custworkbook_',
   },
   fields: {
     scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custworkbook[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custworkbook’. */
     name: {

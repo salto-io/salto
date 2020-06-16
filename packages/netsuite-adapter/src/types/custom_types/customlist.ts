@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 
@@ -81,13 +81,14 @@ customlistInnerTypes.push(customlist_customvalues)
 export const customlist = new ObjectType({
   elemID: customlistElemID,
   annotations: {
-    [constants.SCRIPT_ID_PREFIX]: 'customlist_',
   },
   fields: {
     scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customlist[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 38 characters long.   The default value is ‘customlist’. */
     name: {

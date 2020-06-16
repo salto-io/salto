@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 
@@ -27,13 +27,14 @@ const cmscontenttypeElemID = new ElemID(constants.NETSUITE, 'cmscontenttype')
 export const cmscontenttype = new ObjectType({
   elemID: cmscontenttypeElemID,
   annotations: {
-    [constants.SCRIPT_ID_PREFIX]: 'custcontenttype_',
   },
   fields: {
     scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custcontenttype[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custcontenttype’. */
     name: {

@@ -27,6 +27,7 @@ import {
   Variable,
   Adapter,
   isObjectType,
+  DetailedChange,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
 import * as workspace from '../src/workspace/workspace'
@@ -221,7 +222,7 @@ describe('api.ts', () => {
 
     const mockedGetDetailedChanges = fetch.getDetailedChanges as jest.Mock
     const elem = mockElements.getAllElements()[2]
-    const mockedGetDetailedChangesResult: plan.DetailedChange = {
+    const mockedGetDetailedChangesResult: DetailedChange = {
       action: 'add',
       data: { after: elem },
       id: elem.elemID,

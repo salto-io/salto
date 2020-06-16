@@ -14,4 +14,4 @@
 * limitations under the License.
 */
 export { Plan, getPlan } from './plan'
-export { PlanItem, DetailedChange, PlanItemId } from './plan_item'
+export { PlanItem, PlanItemId } from './plan_item'

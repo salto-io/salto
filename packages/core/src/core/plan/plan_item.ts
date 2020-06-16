@@ -18,17 +18,11 @@ import wu from 'wu'
 
 import { NodeId, Group } from '@salto-io/dag'
 import {
-  ChangeDataType, Values, Value, ElemID, Change, isEqualElements, isEqualValues, getChangeElement,
+  ChangeDataType, Value, ElemID, Change, isEqualElements, isEqualValues, getChangeElement,
   Element, isField, isInstanceElement, isObjectType, isPrimitiveType, ObjectType, PrimitiveType,
-  isListType,
+  isListType, DetailedChange,
 } from '@salto-io/adapter-api'
 import { getOrCreateGroupLevelChange } from './group'
-
-export type DetailedChange<T = ChangeDataType | Values | Value> =
-  Change<T> & {
-    id: ElemID
-    path?: string[]
-  }
 
 export type PlanItemId = NodeId
 export type PlanItem = Group<Change> & {

@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import path from 'path'
-import { Workspace, NaclFile, DetailedChange, WorkspaceError, SourceMap,
+import { Workspace, NaclFile, WorkspaceError, SourceMap,
   SourceRange, Errors } from '@salto-io/core'
-import { Element, SaltoError, ElemID } from '@salto-io/adapter-api'
+import { Element, SaltoError, ElemID, DetailedChange } from '@salto-io/adapter-api'
 import wu from 'wu'
 
 export class EditorWorkspace {

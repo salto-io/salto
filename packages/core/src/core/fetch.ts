@@ -19,14 +19,14 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter,
+  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { StepEvents } from './deploy'
-import { getPlan, DetailedChange, Plan } from './plan'
+import { getPlan, Plan } from './plan'
 import { mergeElements, MergeError } from './merger'
 import {
   removeHiddenValuesAndHiddenTypes,

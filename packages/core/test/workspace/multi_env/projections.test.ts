@@ -15,11 +15,11 @@
 */
 import {
   ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType,
+  DetailedChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { DetailedChange } from '../../../src/core/plan'
 import { projectChange } from '../../../src/workspace/nacl_files/mutil_env/projections'
 
 describe('projections', () => {

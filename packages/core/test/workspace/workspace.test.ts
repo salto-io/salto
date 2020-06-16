@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import wu from 'wu'
 import {
-  Element, ObjectType, ElemID, Field,
+  Element, ObjectType, ElemID, Field, DetailedChange,
   BuiltinTypes, InstanceElement, ListType, Values, CORE_ANNOTATIONS, isListType,
 } from '@salto-io/adapter-api'
 import {
@@ -41,7 +41,6 @@ import {
   UnknownEnvError,
   EnvDuplicationError,
 } from '../../src/workspace/workspace'
-import { DetailedChange } from '../../src/core/plan'
 
 import { StaticFilesSource } from '../../src/workspace/static_files/common'
 

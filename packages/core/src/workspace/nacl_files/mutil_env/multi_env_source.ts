@@ -16,7 +16,8 @@
 import _ from 'lodash'
 import path from 'path'
 
-import { Element, ElemID, getChangeElement, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { Element, ElemID, getChangeElement, isInstanceElement, Value,
+  DetailedChange } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { ValidationError } from 'src/core/validator'
@@ -24,7 +25,6 @@ import wu from 'wu'
 import { ParseError, SourceRange } from '../../../parser/parse'
 import { SourceMap } from '../../../parser/source_map'
 import { mergeElements, MergeError } from '../../../core/merger'
-import { DetailedChange } from '../../../core/plan'
 import { routeChanges } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
 import { Errors } from '../../errors'

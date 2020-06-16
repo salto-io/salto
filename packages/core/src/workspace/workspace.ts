@@ -17,10 +17,10 @@ import _ from 'lodash'
 import path from 'path'
 import {
   Element, SaltoError, SaltoElementError, ElemID, InstanceElement, isObjectType, isInstanceElement,
+  DetailedChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { DetailedChange } from '../core/plan'
 import { validateElements } from '../core/validator'
 import { SourceRange, ParseError } from '../parser/parse'
 import { SourceMap } from '../parser/source_map'

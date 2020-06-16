@@ -17,12 +17,12 @@ import wu from 'wu'
 import { GroupedNodeMap } from '@salto-io/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
-  ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType,
+  ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
-  DetailedChange, Plan, PlanItem, SearchResult, Workspace, EVENT_TYPES,
-  DeployResult, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, CommandConfig,
+  Plan, PlanItem, SearchResult, Workspace, EVENT_TYPES, DeployResult,
+  telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, CommandConfig,
 } from '@salto-io/core'
 import * as workspace from '../src/workspace/workspace'
 import realCli from '../src/cli'

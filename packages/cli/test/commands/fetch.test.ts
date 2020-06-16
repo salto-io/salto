@@ -15,12 +15,10 @@
 */
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
-import { ElemID, ObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
-import {
-  Workspace, fetch, FetchChange,
-  DetailedChange, FetchProgressEvents,
-  StepEmitter, FetchFunc,
-} from '@salto-io/core'
+import { ElemID, ObjectType, Element, InstanceElement,
+  DetailedChange } from '@salto-io/adapter-api'
+import { Workspace, fetch, FetchChange, FetchProgressEvents, StepEmitter,
+  FetchFunc } from '@salto-io/core'
 import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
 import { command, fetchCommand, FetchCommandArgs } from '../../src/commands/fetch'
 import * as mocks from '../mocks'

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, ElementMap, Value,
+  Element, ElemID, ElementMap, Value, DetailedChange,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -29,7 +29,6 @@ import {
 import { parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
-import { DetailedChange } from '../../core/plan'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files/common'

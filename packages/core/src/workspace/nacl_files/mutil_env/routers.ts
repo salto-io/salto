@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ElemID, Value } from '@salto-io/adapter-api'
+import { getChangeElement, ElemID, Value, DetailedChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises } from '@salto-io/lowerdash'
@@ -22,7 +22,6 @@ import { ElementsSource } from '../../elements_source'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
-import { DetailedChange } from '../../../core/plan'
 import { wrapAdditions, DetailedAddition } from '../addition_wrapper'
 import { NaclFilesSource, FILE_EXTENSION, RoutingMode } from '../nacl_files_source'
 

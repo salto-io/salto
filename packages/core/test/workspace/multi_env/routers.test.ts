@@ -13,11 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { RemovalDiff, ModificationDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { DetailedChange } from '../../../src/core/plan'
 import { routeChanges } from '../../../src/workspace/nacl_files/mutil_env/routers'
 
 const objectElemID = new ElemID('salto', 'object')

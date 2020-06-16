@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { ElemID, BuiltinTypes, ObjectType } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes, ObjectType, DetailedChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
@@ -23,7 +23,6 @@ import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/core/validator'
 import { MergeError } from '../../../src/core/merger/internal/common'
 import { expectToContainAllItems } from '../../common/helpers'
-import { DetailedChange } from '../../../src/core/plan'
 
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual('@salto-io/adapter-utils'),

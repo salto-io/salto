@@ -16,7 +16,7 @@
 import * as ErrorTypes from './src/errors'
 
 export { ErrorTypes }
-export { Plan, PlanItem, DetailedChange } from './src/core/plan'
+export { Plan, PlanItem } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'
 export { FoundSearchResult, SearchResult } from './src/core/search'

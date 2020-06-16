@@ -19,10 +19,10 @@ import wu from 'wu'
 import {
   Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
-  ActionName, ChangeError, SaltoError, isElement, TypeMap,
+  ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange,
 } from '@salto-io/adapter-api'
 import {
-  Plan, PlanItem, DetailedChange, WorkspaceError,
+  Plan, PlanItem, WorkspaceError,
   SourceFragment, FetchChange, FetchResult, SourceRange,
 } from '@salto-io/core'
 import Prompts from './prompts'

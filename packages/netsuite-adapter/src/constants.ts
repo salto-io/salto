@@ -40,7 +40,6 @@ export const PATH = 'path'
 
 // Field Annotations
 export const IS_ATTRIBUTE = 'isAttribute'
-export const IS_NAME = 'isName'
 export const ADDITIONAL_FILE_SUFFIX = 'additionalFileSuffix'
 
 // SDF FileCabinet top level folders

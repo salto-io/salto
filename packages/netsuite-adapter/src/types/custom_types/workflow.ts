@@ -7396,7 +7396,6 @@ export const workflow = new ObjectType({
       type: BuiltinTypes.STRING /* Original type was single-select list */,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_NAME]: true,
       },
     }, /* Original description: This field accepts references to the string custom type. */
     recordtypes: {

@@ -904,7 +904,6 @@ export const publisheddashboard = new ObjectType({
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 30,
       },
     }, /* Original description: This field value can be up to 30 characters long. */

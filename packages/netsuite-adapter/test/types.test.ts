@@ -19,19 +19,12 @@ import {
 import _ from 'lodash'
 import { values } from '@salto-io/lowerdash'
 import { customTypes, fileCabinetTypes } from '../src/types'
-import { ADDITIONAL_FILE_SUFFIX, IS_NAME, SCRIPT_ID, SCRIPT_ID_PREFIX, PATH } from '../src/constants'
+import { ADDITIONAL_FILE_SUFFIX, SCRIPT_ID, SCRIPT_ID_PREFIX, PATH } from '../src/constants'
 import { fieldTypes } from '../src/types/field_types'
 
 
 describe('Types', () => {
   describe('CustomTypes', () => {
-    it('should have single name field for all custom types', () => {
-      Object.values(customTypes)
-        .forEach(typeDef =>
-          expect(Object.values(typeDef.fields)
-            .filter(field => field.annotations[IS_NAME])).toHaveLength(1))
-    })
-
     it('should have SCRIPT_ID_PREFIX defined correctly for all custom types', () => {
       Object.values(customTypes)
         .forEach(typeDef => {

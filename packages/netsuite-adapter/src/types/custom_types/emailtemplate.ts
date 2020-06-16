@@ -42,7 +42,6 @@ export const emailtemplate = new ObjectType({
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 60,
       },
     }, /* Original description: This field value can be up to 60 characters long. */

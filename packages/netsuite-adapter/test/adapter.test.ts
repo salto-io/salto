@@ -113,6 +113,14 @@ describe('Adapter', () => {
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
     })
+
+    it('should call listCustomObjects only with types that are not in typesToSkip', async () => {
+      await netsuiteAdapter.fetch()
+      expect(client.listCustomObjects)
+        .toHaveBeenCalledWith(expect.arrayContaining([ENTITY_CUSTOM_FIELD]))
+      expect(client.listCustomObjects)
+        .not.toHaveBeenCalledWith(expect.arrayContaining([SAVED_SEARCH]))
+    })
   })
 
   describe('add & update', () => {

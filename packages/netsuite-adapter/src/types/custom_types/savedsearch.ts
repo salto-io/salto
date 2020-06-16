@@ -53,7 +53,6 @@ export const savedsearch = new ObjectType({
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
         [constants.IS_ATTRIBUTE]: true,
-        [constants.IS_NAME]: true,
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘customsearch’. */
     definition: {

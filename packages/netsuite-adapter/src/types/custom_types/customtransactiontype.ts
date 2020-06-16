@@ -211,7 +211,6 @@ export const customtransactiontype = new ObjectType({
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 96,
       },
     }, /* Original description: This field value can be up to 96 characters long. */

@@ -660,7 +660,6 @@ export const customrecordtype = new ObjectType({
     recordname: {
       type: BuiltinTypes.STRING,
       annotations: {
-        [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 40,
       },
     }, /* Original description: This field value can be up to 40 characters long.   This field is available when the customsegment value is equal to   This field is mandatory when the customsegment value is equal to */

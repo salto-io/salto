@@ -47,7 +47,6 @@ export const cmscontenttype = new ObjectType({
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_NAME]: true,
         // [CORE_ANNOTATIONS.LENGTH_LIMIT]: 18,
       },
     }, /* Original description: This field value can be up to 18 characters long. */

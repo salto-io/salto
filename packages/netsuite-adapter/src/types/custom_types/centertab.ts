@@ -94,7 +94,6 @@ export const centertab = new ObjectType({
       type: BuiltinTypes.STRING,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
-        [constants.IS_NAME]: true,
       },
     },
     center: {

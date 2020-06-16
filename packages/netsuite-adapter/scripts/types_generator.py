@@ -220,14 +220,11 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type):
     field_type = to_field_type(field_name, cells[1].text, description)
     is_required_from_doc = cells[2].text.lower() == 'required'
     has_length_limitations = 'value can be up to' in description and 'BuiltinTypes.STRING' in field_type
-    is_name_field = type_name in top_level_type_name_to_name_field and top_level_type_name_to_name_field[type_name] == field_name
     annotations = {}
     if is_required(is_required_from_doc, field_name):
         annotations['[CORE_ANNOTATIONS.REQUIRED]'] = 'true'
     if is_attribute:
         annotations['[constants.IS_ATTRIBUTE]'] = 'true'
-    if is_name_field:
-        annotations['[constants.IS_NAME]'] = 'true'
     if has_length_limitations:
       regex_matches = re.match("[\s\S]*value can be up to (\d*) characters long\.[\s\S]*", description)
       length_limit = regex_matches.groups()[0]
@@ -545,60 +542,6 @@ should_be_list = {
     'workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup',
 }
 
-top_level_type_name_to_name_field = {
-    'addressForm': 'name',
-    'advancedpdftemplate': 'title',
-    'bankstatementparserplugin': 'name',
-    'bundleinstallationscript': 'name',
-    'center': 'label',
-    'centercategory': 'label',
-    'centertab': 'label',
-    'clientscript': 'name',
-    'cmscontenttype': 'label',
-    'crmcustomfield': 'label',
-    'customglplugin': 'name',
-    'customlist': 'name',
-    'customrecordtype': 'recordname',
-    'customsegment': 'label',
-    'customtransactiontype': 'name',
-    'dataset': 'name',
-    'emailcaptureplugin': 'name',
-    'emailtemplate': 'name',
-    'entitycustomfield': 'label',
-    'entryForm': 'name',
-    'ficonnectivityplugin': 'name',
-    'itemcustomfield': 'label',
-    'itemnumbercustomfield': 'label',
-    'itemoptioncustomfield': 'label',
-    'kpiscorecard': 'name',
-    'mapreducescript': 'name',
-    'massupdatescript': 'name',
-    'othercustomfield': 'label',
-    'pluginimplementation': 'name',
-    'plugintype': 'name',
-    'portlet': 'name',
-    'promotionsplugin': 'name',
-    'publisheddashboard': 'name',
-    'restlet': 'name',
-    'role': 'name',
-    'savedcsvimport': 'importname',
-    'savedsearch': 'scriptid',
-    'scheduledscript': 'name',
-    'sdfinstallationscript': 'name',
-    'sspapplication': 'name',
-    'sublist': 'label',
-    'subtab': 'title',
-    'suitelet': 'name',
-    'transactionForm': 'name',
-    'transactionbodycustomfield': 'label',
-    'transactioncolumncustomfield': 'label',
-    'translationcollection': 'name',
-    'usereventscript': 'name',
-    'workbook': 'name',
-    'workflow': 'name',
-    'workflowactionscript': 'name',
-}
-
 field_name_to_type_name = {
     'crmcustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'customrecordtype_customrecordcustomfields_customrecordcustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
@@ -681,7 +624,6 @@ main()
 # we set the type of SCRIPT_ID_FIELD_NAME as BuiltinTypes.SERVICE_ID
 # emailtemplate & advancedpdftemplate types have an additional file containing the template data. We add the file's extension as an annotation to the type and added a 'content' field to the type.
 # there are fields that suppose to have a certain type but in fact they have another type, handled using field_name_to_type_name
-# every top level type has its own IS_NAME field, we set it manually using top_level_type_name_to_name_field
 # in addressForm, entryForm and transactionForm the order of the fields matters in the sent XML to SDF (https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1497980303.html)
 #    we order it manually in order_types_fields.
 # in addressForm and transactionForm, customCode & buttons fields are intentionally omitted as it seems that they do not exist and if they are sent to SDF they cause errors no matter in which order

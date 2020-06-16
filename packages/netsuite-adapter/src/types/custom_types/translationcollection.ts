@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, ListType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction, ListType,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -79,13 +79,14 @@ translationcollectionInnerTypes.push(translationcollection_strings)
 export const translationcollection = new ObjectType({
   elemID: translationcollectionElemID,
   annotations: {
-    [constants.SCRIPT_ID_PREFIX]: 'custcollection_',
   },
   fields: {
     scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custcollection[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 60 characters long.   The default value is ‘custcollection’. */
     name: {

@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -28,13 +28,14 @@ const subtabElemID = new ElemID(constants.NETSUITE, 'subtab')
 export const subtab = new ObjectType({
   elemID: subtabElemID,
   annotations: {
-    [constants.SCRIPT_ID_PREFIX]: 'custtab_',
   },
   fields: {
     scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custtab[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 40 characters long.   The default value is ‘custtab’. */
     title: {

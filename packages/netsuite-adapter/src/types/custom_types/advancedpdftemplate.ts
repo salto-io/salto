@@ -16,7 +16,7 @@
 /* eslint-disable max-len */
 /* eslint-disable @typescript-eslint/camelcase */
 import {
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,
 } from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 import { enums } from '../enums'
@@ -29,13 +29,14 @@ const advancedpdftemplateElemID = new ElemID(constants.NETSUITE, 'advancedpdftem
 export const advancedpdftemplate = new ObjectType({
   elemID: advancedpdftemplateElemID,
   annotations: {
-    [constants.SCRIPT_ID_PREFIX]: 'custtmpl_',
   },
   fields: {
     scriptid: {
       type: BuiltinTypes.SERVICE_ID,
       annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custtmpl[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 98 characters long.   The default value is ‘custtmpl’. */
     standard: {

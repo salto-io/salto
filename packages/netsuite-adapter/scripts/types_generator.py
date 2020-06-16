@@ -54,7 +54,7 @@ field_types_import = '''import { fieldTypes } from '../field_types'
 '''
 
 import_statements_for_type_def_template = '''import {{
-  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType,{list_type_import}
+  BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType, createRestriction,{list_type_import}
 }} from '@salto-io/adapter-api'
 import * as constants from '../../constants'
 {enums_import}{field_types_import}
@@ -188,7 +188,7 @@ def extract_default_value_from_field_description(description):
         return regex_matches.groups()[0]
     return None
 
-def parse_field_def(type_name, cells, is_attribute, is_inner_type):
+def parse_field_def(type_name, cells, is_attribute, is_inner_type, script_id_prefix):
     def to_field_type(field_name, netsuite_field_type, description):
         field_full_name = type_name + '_' + field_name
         if field_full_name in field_name_to_type_name:
@@ -211,9 +211,18 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type):
         return 'BuiltinTypes.STRING /* Original type was {0} */'.format('   '.join(netsuite_field_type.splitlines()))
 
     def is_required(is_required_from_doc, field_name):
-     # we don't set SCRIPT_ID_FIELD_NAME as required ONLY for top level types so the adapter will generate default in case it's missing to ease Salto user's add operation
         field_full_name = type_name + '_' + field_name
-        return is_required_from_doc and (field_name != SCRIPT_ID_FIELD_NAME or is_inner_type) and not (field_full_name in should_not_be_required)
+        return is_required_from_doc and not (field_full_name in should_not_be_required)
+
+    def create_script_id_regex(description):
+        def remove_script_id_underscore_suffix(script_id_prefix):
+            return script_id_prefix[:-1] if script_id_prefix.endswith('_') else script_id_prefix
+
+        # extract script_id for top level types from the description since the script_ids prefixes aren't accurate in https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1537555588.html
+        script_id_prefix_from_description = extract_default_value_from_field_description(description)
+        script_id_prefix_from_doc = remove_script_id_underscore_suffix(script_id_prefix_from_description if script_id_prefix_from_description is not None else script_id_prefix)
+        correct_script_id_prefix = type_name_to_special_script_id_prefix[type_name] if (type_name in type_name_to_special_script_id_prefix) else script_id_prefix_from_doc
+        return '^{0}[0-9a-z_]+'.format(correct_script_id_prefix)
 
     field_name = cells[0].text
     description = cells[3].text
@@ -225,6 +234,8 @@ def parse_field_def(type_name, cells, is_attribute, is_inner_type):
         annotations['[CORE_ANNOTATIONS.REQUIRED]'] = 'true'
     if is_attribute:
         annotations['[constants.IS_ATTRIBUTE]'] = 'true'
+        if field_name == SCRIPT_ID_FIELD_NAME and not is_inner_type:
+            annotations['[CORE_ANNOTATIONS.RESTRICTION]'] = "createRestriction({{ regex: '{0}' }})".format(create_script_id_regex(description))
     if has_length_limitations:
       regex_matches = re.match("[\s\S]*value can be up to (\d*) characters long\.[\s\S]*", description)
       length_limit = regex_matches.groups()[0]
@@ -258,14 +269,6 @@ def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_ty
         top_level_type_name = type_name
 
     is_inner_type = type_name != top_level_type_name
-
-    def extract_script_id_prefix_from_description(field_cells):
-        script_id_prefix_from_description = extract_default_value_from_field_description(field_cells[3].text)
-        if script_id_prefix_from_description:
-            padded_script_id_prefix_from_description = pad_script_id_prefix_with_underscore(script_id_prefix_from_description)
-            if padded_script_id_prefix_from_description != script_id_prefix:
-                return padded_script_id_prefix_from_description
-        return None
 
     def is_structured_list_field(fields_tables_len, structured_fields_len):
         type_description_sections = webpage.find_elements_by_xpath('//*[@id="nshelp"]/div[2]/div/p')
@@ -309,24 +312,17 @@ def parse_type(type_name, script_id_prefix, inner_type_name_to_def, top_level_ty
 
         for field_row in fields_table.find_elements_by_xpath('.//tbody/tr'):
             cells = field_row.find_elements_by_xpath('.//td')
-            if is_attribute and cells[0].text == SCRIPT_ID_FIELD_NAME and not is_inner_type:
-                # extract script_id for top level types from the description since the script_ids prefixes aren't accurate in https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=subsect_1537555588.html
-                script_id_prefix_from_description = extract_script_id_prefix_from_description(cells)
-                annotations['[constants.SCRIPT_ID_PREFIX]'] = script_id_prefix_from_description if script_id_prefix_from_description is not None else script_id_prefix
-
-            field_def = parse_field_def(type_name, cells, is_attribute, is_inner_type)
+            field_def = parse_field_def(type_name, cells, is_attribute, is_inner_type, script_id_prefix)
             field_def[IS_LIST] = False
             field_definitions.append(field_def)
 
     return { NAME: type_name, ANNOTATIONS: annotations, FIELDS: field_definitions }
 
-def pad_script_id_prefix_with_underscore(script_id_prefix):
-    return (script_id_prefix + '_') if not script_id_prefix.endswith('_') else script_id_prefix
 
 def parse_types_definitions(account_id, type_name_to_script_id_prefix):
     def get_script_id_prefix(type_name):
         if type_name.lower() in type_name_to_script_id_prefix:
-            return pad_script_id_prefix_with_underscore(type_name_to_script_id_prefix[type_name.lower()])
+            return type_name_to_script_id_prefix[type_name.lower()]
         return "'FIX_ME!'"
 
     webpage.get(sdf_xml_definitions_link_template.format(account_id = account_id))
@@ -597,6 +593,11 @@ field_name_to_type_name = {
     'workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_formula': 'fieldTypes.cdata',
 }
 
+type_name_to_special_script_id_prefix = {
+    'customtransactiontype': '(customtransaction|customsale|custompurchase)', # https://{account_id}.app.netsuite.com/app/help/helpcenter.nl?fid=section_1520439377.html
+    'kpiscorecard': '(custkpiscorecard|kpiscorecard)', # The kpiscorecard prefix appeared when fetching the Extended Dev account
+}
+
 
 webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
 def main():
@@ -618,9 +619,8 @@ main()
 
 # --- known issues that were handled in the script: ---
 # lists are not identified correctly -> should use also manual mappings (should_be_list, should_not_be_list)
-# script_ids table is not accurate and not complete -> we are calculating also from the scriptid field's description column
-# script_id is not always padded with '_'
-# we mark SCRIPT_ID_FIELD_NAME as not required ONLY for top level types so the adapter will add defaults in case it's missing
+# script_id prefixes table is not accurate and not complete -> we are calculating it also from the scriptid field's description column
+#    we add a regex restriction for the scriptid field handling also special cases in type_name_to_special_script_id_prefix
 # we set the type of SCRIPT_ID_FIELD_NAME as BuiltinTypes.SERVICE_ID
 # emailtemplate & advancedpdftemplate types have an additional file containing the template data. We add the file's extension as an annotation to the type and added a 'content' field to the type.
 # there are fields that suppose to have a certain type but in fact they have another type, handled using field_name_to_type_name

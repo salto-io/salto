@@ -398,12 +398,12 @@ const removeIrrelevantElements = (elements: Element[]): void => {
     && ['ArticleTypeChannelDisplay', 'ArticleTypeTemplate'].includes(metadataType(elem))))
 }
 
-const removeUnsupportedFields = (elements: Element[], unsupportedSystemFieldsA: string[]): void => {
+const removeUnsupportedFields = (elements: Element[], unsupportedSystemFields: string[]): void => {
   elements.forEach(element => {
     if (!isObjectType(element)) {
       return
     }
-    unsupportedSystemFieldsA.forEach(fieldName => {
+    unsupportedSystemFields.forEach(fieldName => {
       delete element.fields[fieldName]
     })
   })

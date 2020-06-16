@@ -40,6 +40,7 @@ import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_tra
 import layoutFilter from './filters/layouts'
 import customObjectsFilter from './filters/custom_objects'
 import customObjectsSplitFilter from './filters/custom_object_split'
+import customObjectsInstancesFilter from './filters/custom_objects_instances'
 import profilePermissionsFilter from './filters/profile_permissions'
 import convertListsFilter from './filters/convert_lists'
 import convertTypeFilter from './filters/convert_types'
@@ -77,6 +78,8 @@ export const DEFAULT_FILTERS = [
   workflowFilter,
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   customObjectsFilter,
+  // customObjectsInstancesFilter depends on customObjectsFilter
+  customObjectsInstancesFilter,
   removeFieldsFilter,
   layoutFilter,
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
@@ -325,6 +328,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         instancesRegexSkippedList: this.instancesRegexSkippedList,
         metadataTypesSkippedList: this.metadataTypesSkippedList,
         unsupportedSystemFields,
+        namespacesToFetchInstancesFor: config.namespacesToFetchInstancesFor,
       },
       filterCreators
     )

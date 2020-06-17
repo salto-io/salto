@@ -33,7 +33,7 @@ import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
   metadataType, createMetadataTypeElements,
-  defaultApiName, getLookUpName,
+  defaultApiName, getLookUpName, isCustomObject, instancesToCreateRecords, instancesToUpdateRecords,
 } from './transformers/transformer'
 import { toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -460,7 +460,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     const post = element.clone()
     const type = metadataType(post)
     addInstanceDefaults(post)
-    if (this.metadataToDeploy.includes(type)) {
+    if (isCustomObject(post.type)) {
+      await this.client.bulkLoadOperation(
+        apiName(post.type),
+        'insert',
+        instancesToCreateRecords([post]),
+      )
+    } else if (this.metadataToDeploy.includes(type)) {
       await this.deployInstance(post)
     } else if (!this.metadataTypesToSkipMutation.includes(metadataType(post))) {
       await this.client.upsert(type, toMetadataInfo(apiName(post), post.value))
@@ -486,9 +492,18 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async remove(element: Element): Promise<void> {
     const resolved = resolveValues(element, getLookUpName)
     const type = metadataType(resolved)
-    if (isInstanceElement(resolved) && this.metadataToDeploy.includes(type)) {
-      await this.deployInstance(resolved, true)
-    } else if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
+    if (isInstanceElement(resolved)) {
+      if (isCustomObject(resolved.type)) {
+        await this.client.bulkLoadOperation(
+          apiName(resolved.type),
+          'delete',
+          [{ Id: resolved.value.Id }],
+        )
+      } else if (this.metadataToDeploy.includes(type)) {
+        await this.deployInstance(resolved, true)
+      }
+    }
+    if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(resolved))
     }
     await this.filtersRunner.onRemove(resolved)
@@ -627,7 +642,13 @@ export default class SalesforceAdapter implements AdapterOperations {
           ))
     }
 
-    if (this.metadataToDeploy.includes(typeName)) {
+    if (isCustomObject(newInstance.type)) {
+      await this.client.bulkLoadOperation(
+        apiName(newInstance.type),
+        'update',
+        instancesToUpdateRecords([newInstance])
+      )
+    } else if (this.metadataToDeploy.includes(typeName)) {
       await this.deployInstance(newInstance)
     } else if (this.metadataTypesToUseUpsertUponUpdate.includes(typeName)) {
       await this.client.upsert(typeName, toMetadataInfo(apiName(newInstance), newInstance.value))

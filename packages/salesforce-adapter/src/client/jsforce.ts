@@ -16,9 +16,10 @@
 import { Stream } from 'stream'
 import {
   MetadataObject, DescribeValueTypeResult, MetadataInfo, SaveResult, UpsertResult,
-  ListMetadataQuery, FileProperties, DescribeSObjectResult,
+  ListMetadataQuery, FileProperties, DescribeSObjectResult, BulkOptions, BulkLoadOperation,
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator, DeployResult,
-  RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo, QueryResult,
+  RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo, QueryResult, Batch,
+  Record as SfRecord,
 } from 'jsforce'
 import { Value } from '@salto-io/adapter-api'
 
@@ -62,10 +63,15 @@ export type Limits = {
   DailyApiRequests: Limit
 }
 
+export interface Bulk {
+  load(type: string, operation: BulkLoadOperation, options?: BulkOptions, input?: SfRecord[]): Batch
+}
+
 export default interface Connection {
   login(user: string, password: string): Promise<UserInfo>
   metadata: Metadata
   soap: Soap
+  bulk: Bulk
   describeGlobal(): Promise<Global>
   query(soql: string): Promise<QueryResult<Value>>
   queryMore(locator: string): Promise<QueryResult<Value>>

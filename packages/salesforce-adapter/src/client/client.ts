@@ -21,6 +21,7 @@ import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
   MetadataInfo, SaveResult, DescribeSObjectResult, DeployResult, RetrieveRequest, RetrieveResult,
   ListMetadataQuery, UpsertResult, QueryResult, DescribeValueTypeResult,
+  BatchResultInfo, BulkLoadOperation,
 } from 'jsforce'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -113,6 +114,18 @@ const validateDeployResult = decorators.wrapMethodWith(
       .map(failure => `${failure.componentType}.${failure.fullName}: ${failure.problem}`)
       .value()
 
+    throw new Error(errors.join('\n'))
+  }
+)
+
+const validateLoadResult = decorators.wrapMethodWith(
+  async (original: decorators.OriginalCall): Promise<unknown> => {
+    const result = await original.call() as BatchResultInfo[]
+    const resultsWithErrors = result.filter(r => !r.success)
+    if (resultsWithErrors.length === 0) {
+      return result
+    }
+    const errors = _.flatten(resultsWithErrors.map(r => r.errors))
     throw new Error(errors.join('\n'))
   }
 )
@@ -475,5 +488,26 @@ export default class SalesforceClient {
       yield results.records as salesforceRecord[]
       hasMore = hadMore(results)
     }
+  }
+
+  @SalesforceClient.logDecorator
+  @validateLoadResult
+  @SalesforceClient.requiresLogin
+  public async bulkLoadOperation(
+    type: string,
+    operation: BulkLoadOperation,
+    records: salesforceRecord[]
+  ):
+    Promise<BatchResultInfo[]> {
+    const batch = this.conn.bulk.load(
+      type,
+      operation,
+      { extIdField: 'Id', concurrencyMode: 'Parallel' },
+      records
+    )
+    const { job } = batch
+    await new Promise(resolve => job.on('close', resolve))
+    const result = await batch.then() as BatchResultInfo[]
+    return flatValues(result)
   }
 }

@@ -29,7 +29,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   naclCase, GetLookupNameFunc, TransformFunc,
 } from '@salto-io/adapter-utils'
-import { CustomObject, CustomField } from '../client/types'
+import { CustomObject, CustomField, salesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
@@ -731,6 +731,30 @@ export class Types {
       })
   }
 }
+
+export const instancesToUpdateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+  instances.map(instance =>
+    Object.assign(
+      _.pickBy(
+        instance.value,
+        (_v, k) => instance.type.fields[k].annotations[FIELD_ANNOTATIONS.UPDATEABLE]
+      ),
+      {
+        Id: instance.value.Id,
+      }
+    ))
+
+export const instancesToCreateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+  instances.map(instance =>
+    Object.assign(
+      _.pickBy(
+        instance.value,
+        (_v, k) => instance.type.fields[k].annotations[FIELD_ANNOTATIONS.CREATABLE]
+      ),
+      {
+        Id: instance.value.Id,
+      }
+    ))
 
 export const toCustomField = (
   field: Field, fullname = false

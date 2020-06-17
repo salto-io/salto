@@ -308,7 +308,7 @@ const customrecordtype_customrecordcustomfields_customrecordcustomfield = new Ob
       },
     }, /* Original description: The default value is F. */
     sourcefilterby: {
-      type: enums.generic_standard_field,
+      type: BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */,
       annotations: {
       },
     }, /* Original description: For information about possible values, see generic_standard_field. */

@@ -349,7 +349,7 @@ export const kpiscorecard = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.IS_ATTRIBUTE]: true,
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^custkpiscorecard[0-9a-z_]+' }),
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^(custkpiscorecard|kpiscorecard)[0-9a-z_]+' }),
       },
     }, /* Original description: This attribute value can be up to 99 characters long.   The default value is ‘custkpiscorecard’. */
     name: {

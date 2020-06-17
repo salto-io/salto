@@ -22,7 +22,7 @@ import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
-export const NAMESPACES_TO_FETCH_INSTANCES_FOR = 'namespacesToFetchInstancesFor'
+export const DATA_MANAGEMENT = 'dataManagement'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -32,7 +32,15 @@ export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: RegExp[]
   [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
-  [NAMESPACES_TO_FETCH_INSTANCES_FOR]?: string[]
+  [DATA_MANAGEMENT]?: DataManegementConfig[]
+}
+
+export type DataManegementConfig = {
+  name: string
+  enabled: boolean
+  includeNamespaces?: string[]
+  includeObjects?: string[]
+  excludeObjects?: string[]
 }
 
 export type SalesforceConfig = {
@@ -41,7 +49,7 @@ export type SalesforceConfig = {
   [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [HIDE_TYPES_IN_NACLS]?: boolean
-  [NAMESPACES_TO_FETCH_INSTANCES_FOR]?: string[]
+  [DATA_MANAGEMENT]?: DataManegementConfig[]
 }
 
 export type ConfigChangeSuggestion = {
@@ -65,6 +73,27 @@ export const credentialsType = new ObjectType({
       annotations: { message: 'Token (empty if your org uses IP whitelisting)' },
     },
     sandbox: { type: BuiltinTypes.BOOLEAN },
+  },
+})
+
+const dataManagementType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, DATA_MANAGEMENT),
+  fields: {
+    name: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    enabled: {
+      type: BuiltinTypes.BOOLEAN,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    includeNamespaces: { type: new ListType(BuiltinTypes.STRING) },
+    includeObjects: { type: new ListType(BuiltinTypes.STRING) },
+    excludeObjects: { type: new ListType(BuiltinTypes.STRING) },
   },
 })
 
@@ -109,10 +138,18 @@ export const configType = new ObjectType({
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_HIDE_TYPES_IN_NACLS,
       },
     },
-    [NAMESPACES_TO_FETCH_INSTANCES_FOR]: {
-      type: new ListType(BuiltinTypes.STRING),
+    [DATA_MANAGEMENT]: {
+      type: new ListType(dataManagementType),
       annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: [],
+        [CORE_ANNOTATIONS.DEFAULT]: [
+          {
+            name: 'CPQ',
+            enabled: false,
+            includeNamespaces: ['SBQQ'],
+            includeObjects: ['Product2'],
+            excludeObjects: ['SBQQ__Quote__c'],
+          },
+        ],
       },
     },
   },

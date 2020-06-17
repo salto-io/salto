@@ -41,7 +41,7 @@ SalesforceConfig => {
     maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
     hideTypesInNacls: config?.value?.hideTypesInNacls,
-    namespacesToFetchInstancesFor: config?.value?.namespacesToFetchInstancesFor,
+    dataManagement: config?.value?.dataManagement,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

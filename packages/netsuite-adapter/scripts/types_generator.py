@@ -539,14 +539,23 @@ should_be_list = {
 }
 
 field_name_to_type_name = {
+    'crmcustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'crmcustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'customrecordtype_customrecordcustomfields_customrecordcustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'customrecordtype_customrecordcustomfields_customrecordcustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'entitycustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'entitycustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'itemcustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'itemcustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'itemnumbercustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'itemnumbercustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'itemoptioncustomfield_ssourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'itemoptioncustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'othercustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'othercustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'transactionbodycustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'transactionbodycustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
+    'transactioncolumncustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'transactioncolumncustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
     'centertab_portlets_portlet_portlet': 'BuiltinTypes.STRING /* Original type was enums.generic_portlet but it can also be ACCOUNTCENTER */',
     'centercategory_links_link_linkid': 'BuiltinTypes.STRING /* Original type was enums.generic_task but it can also be REPO_324 */',

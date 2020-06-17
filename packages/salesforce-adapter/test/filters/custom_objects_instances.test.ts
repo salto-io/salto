@@ -113,6 +113,7 @@ describe('Custom Object Instances filter', () => {
   const anotherNamespace = 'AnotherNamespace'
   const includeObjectName = 'IncludeThisObject'
   const excludeObjectName = 'TestNamespace__ExcludeMe__c'
+  const excludeOverrideObjectName = 'ExcludeOverrideObject'
 
   beforeEach(() => {
     ({ connection, client } = mockAdapter({
@@ -122,11 +123,12 @@ describe('Custom Object Instances filter', () => {
     filter = filterCreator(
       { client,
         config: {
-          recordsManagement: [
+          dataManagement: [
             {
               name: 'enabledWithNamespace',
               enabled: true,
               includeNamespaces: [testNamespace],
+              excludeObjects: [excludeObjectName],
             },
             {
               name: 'disabledWithNamespace',
@@ -137,12 +139,12 @@ describe('Custom Object Instances filter', () => {
               name: 'enabledWithNamespaceAndObject',
               enabled: true,
               includeNamespaces: [anotherNamespace],
-              includeObjects: [includeObjectName],
+              includeObjects: [includeObjectName, excludeOverrideObjectName],
             },
             {
               name: 'enabledWithExcludeObject',
               enabled: true,
-              excludeObjects: [excludeObjectName],
+              excludeObjects: [excludeOverrideObjectName],
             },
           ],
         } }
@@ -169,43 +171,57 @@ describe('Custom Object Instances filter', () => {
 
     const includedObject = createCustomObject(includeObjectName)
     const excludedObject = createCustomObject(excludeObjectName)
+    const excludeOverrideObject = createCustomObject(excludeOverrideObjectName)
     beforeEach(async () => {
       elements = [
         notConfiguredObj, includedNameSpaceObj, includedInAnotherNamespaceObj,
-        includedObject, excludedObject,
+        includedObject, excludedObject, excludeOverrideObject,
       ]
       await filter.onFetch(elements)
     })
 
-    it('should add instances per configured object', () => {
-      // 2 new instances per namespaced object because of TestCustomRecords's length
-      expect(elements.length).toEqual(11)
-      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(6)
+    describe('should add instances per configured object', () => {
+      it('should not fetch for non-configured objects', () => {
+        const notConfiguredObjInstances = elements.filter(
+          e => isInstanceElement(e) && e.type === notConfiguredObj
+        ) as InstanceElement[]
+        expect(notConfiguredObjInstances.length).toEqual(0)
+      })
 
-      const notConfiguredObjInstances = elements.filter(
-        e => isInstanceElement(e) && e.type === notConfiguredObj
-      ) as InstanceElement[]
-      expect(notConfiguredObjInstances.length).toEqual(0)
+      it('should fetch for namespace configured objects', () => {
+        const includedNameSpaceObjInstances = elements.filter(
+          e => isInstanceElement(e) && e.type === includedNameSpaceObj
+        ) as InstanceElement[]
+        expect(includedNameSpaceObjInstances.length).toEqual(2)
+      })
 
-      const includedNameSpaceObjInstances = elements.filter(
-        e => isInstanceElement(e) && e.type === includedNameSpaceObj
-      ) as InstanceElement[]
-      expect(includedNameSpaceObjInstances.length).toEqual(2)
+      it('should fetch for namespace configured objects in another conf object', () => {
+        const includedInAnotherNamespaceObjInstances = elements.filter(
+          e => isInstanceElement(e) && e.type === includedInAnotherNamespaceObj
+        ) as InstanceElement[]
+        expect(includedInAnotherNamespaceObjInstances.length).toEqual(2)
+      })
 
-      const includedInAnotherNamespaceObjInstances = elements.filter(
-        e => isInstanceElement(e) && e.type === includedInAnotherNamespaceObj
-      ) as InstanceElement[]
-      expect(includedInAnotherNamespaceObjInstances.length).toEqual(2)
+      it('should fetch for object included specifically configured', () => {
+        const includedObjectInstances = elements.filter(
+          e => isInstanceElement(e) && e.type === includedObject
+        ) as InstanceElement[]
+        expect(includedObjectInstances.length).toEqual(2)
+      })
 
-      const includedObjectInstances = elements.filter(
-        e => isInstanceElement(e) && e.type === includedObject
-      ) as InstanceElement[]
-      expect(includedObjectInstances.length).toEqual(2)
+      it('should not fetch for object from a configured namespace whose excluded specifically', () => {
+        const excludedObjectInstances = elements.filter(
+          e => isInstanceElement(e) && e.type === excludedObject
+        ) as InstanceElement[]
+        expect(excludedObjectInstances.length).toEqual(0)
+      })
 
-      const excludedObjectInstances = elements.filter(
-        e => isInstanceElement(e) && e.type === excludedObject
-      ) as InstanceElement[]
-      expect(excludedObjectInstances.length).toEqual(0)
+      it('should not fetch for object from a configured as excluded even if it was included by object', () => {
+        const excludeOverrideObjectInstances = elements.filter(
+          e => isInstanceElement(e) && e.type === excludeOverrideObject
+        ) as InstanceElement[]
+        expect(excludeOverrideObjectInstances.length).toEqual(0)
+      })
     })
 
     it('should not change custom object elements', () => {
@@ -229,11 +245,15 @@ describe('Custom Object Instances filter', () => {
       expect(includedObjectFilter).toBeDefined()
       expect(includedObjectFilter).toEqual(includedObject)
 
-
       const excludedObjectFilter = elements
         .filter(e => e.annotations[API_NAME] === excludeObjectName)[0]
       expect(excludedObjectFilter).toBeDefined()
       expect(excludedObjectFilter).toEqual(excludedObject)
+
+      const excludeOverrideObjectFilter = elements
+        .filter(e => e.annotations[API_NAME] === excludeOverrideObjectName)[0]
+      expect(excludeOverrideObjectFilter).toBeDefined()
+      expect(excludeOverrideObjectFilter).toEqual(excludeOverrideObject)
     })
   })
 

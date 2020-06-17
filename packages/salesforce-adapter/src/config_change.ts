@@ -79,7 +79,7 @@ export const getConfigFromConfigChanges = (
       maxConcurrentRetrieveRequests: currentConfig.maxConcurrentRetrieveRequests,
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
       hideTypesInNacls: currentConfig.hideTypesInNacls,
-      recordsManagement: currentConfig.recordsManagement,
+      dataManagement: currentConfig.dataManagement,
     }
   )
 }

@@ -22,7 +22,7 @@ import * as constants from './constants'
 
 export const METADATA_TYPES_SKIPPED_LIST = 'metadataTypesSkippedList'
 export const UNSUPPORTED_SYSTEM_FIELDS = 'unsupportedSystemFields'
-export const RECORDS_MANAGEÂENT = 'recordsManagement'
+export const DATA_MANAGEMENT = 'dataManagement'
 export const INSTANCES_REGEX_SKIPPED_LIST = 'instancesRegexSkippedList'
 export const MAX_CONCURRENT_RETRIEVE_REQUESTS = 'maxConcurrentRetrieveRequests'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -32,10 +32,10 @@ export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: RegExp[]
   [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
-  [RECORDS_MANAGEÂENT]?: RecordsManegementConfig[]
+  [DATA_MANAGEMENT]?: DataManegementConfig[]
 }
 
-export type RecordsManegementConfig = {
+export type DataManegementConfig = {
   name: string
   enabled: boolean
   includeNamespaces?: string[]
@@ -49,7 +49,7 @@ export type SalesforceConfig = {
   [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [HIDE_TYPES_IN_NACLS]?: boolean
-  [RECORDS_MANAGEÂENT]?: RecordsManegementConfig[]
+  [DATA_MANAGEMENT]?: DataManegementConfig[]
 }
 
 export type ConfigChangeSuggestion = {
@@ -76,8 +76,8 @@ export const credentialsType = new ObjectType({
   },
 })
 
-const recordManagementType = new ObjectType({
-  elemID: new ElemID('salesforce', 'recordsManagement'),
+const dataManagementType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, DATA_MANAGEMENT),
   fields: {
     name: {
       type: BuiltinTypes.STRING,
@@ -138,8 +138,8 @@ export const configType = new ObjectType({
         [CORE_ANNOTATIONS.DEFAULT]: constants.DEFAULT_HIDE_TYPES_IN_NACLS,
       },
     },
-    [RECORDS_MANAGEÂENT]: {
-      type: new ListType(recordManagementType),
+    [DATA_MANAGEMENT]: {
+      type: new ListType(dataManagementType),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: [
           {

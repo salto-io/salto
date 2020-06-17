@@ -22,7 +22,7 @@ import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types } from '../transformers/transformer'
 import { getNamespace } from './utils'
-import { RecordsManegementConfig } from '../types'
+import { DataManegementConfig } from '../types'
 
 const { makeArray } = collections.array
 
@@ -113,21 +113,19 @@ const getObjectTypesInstances = async (
 
 const filterObjectTypes = (
   elements: Element[],
-  recordsManagementConfigs: RecordsManegementConfig[]
+  dataManagementConfigs: DataManegementConfig[]
 ): ObjectType[] => {
+  const enabledConfigs = dataManagementConfigs
+    .filter(config => config.enabled)
   const groupedIncludeNamespaces = _.flatten(
-    recordsManagementConfigs
-      .filter(config => config.enabled)
-      .map(config => makeArray(config.includeNamespaces))
+    enabledConfigs.map(config => makeArray(config.includeNamespaces))
   )
   const groupedIncludeObjects = _.flatten(
-    recordsManagementConfigs
-      .filter(config => config.enabled)
+    enabledConfigs
       .map(config => makeArray(config.includeObjects))
   )
   const groupedExcludeObjects = _.flatten(
-    recordsManagementConfigs
-      .filter(config => config.enabled)
+    enabledConfigs
       .map(config => makeArray(config.excludeObjects))
   )
   return elements
@@ -136,10 +134,10 @@ const filterObjectTypes = (
     .filter(e => {
       const namespace = getNamespace(e)
       const elementApiName = apiName(e, true)
-      return ((!_.isUndefined(namespace)
-        && groupedIncludeNamespaces.includes(namespace))
-        || groupedIncludeObjects.includes(elementApiName))
-        && !groupedExcludeObjects.includes(elementApiName)
+      return (
+        (!_.isUndefined(namespace) && groupedIncludeNamespaces.includes(namespace))
+          || groupedIncludeObjects.includes(elementApiName)
+      ) && !groupedExcludeObjects.includes(elementApiName)
     })
 }
 
@@ -147,7 +145,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     const relevantObjectTypes = filterObjectTypes(
       elements,
-      config.recordsManagement || []
+      config.dataManagement || []
     )
     if (relevantObjectTypes.length === 0) {
       return

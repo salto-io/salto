@@ -328,7 +328,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         instancesRegexSkippedList: this.instancesRegexSkippedList,
         metadataTypesSkippedList: this.metadataTypesSkippedList,
         unsupportedSystemFields,
-        recordsManagement: config.recordsManagement,
+        dataManagement: config.dataManagement,
       },
       filterCreators
     )

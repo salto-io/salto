@@ -45,6 +45,8 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'WorkflowActionReference', 'field', 'name'), 'WorkflowAlert'],
   [new ElemID(SALESFORCE, 'WorkflowEmailRecipient', 'field', 'recipient'), 'Role'],
   [new ElemID(SALESFORCE, 'FilterItem', 'field', 'field'), CUSTOM_FIELD],
+  [new ElemID(SALESFORCE, 'DashboardComponent', 'field', 'report'), 'Report'],
+  [new ElemID(SALESFORCE, 'Report', 'field', 'reportType'), CUSTOM_OBJECT],
 ]
 
 export const fieldToTypeMapping = new Map(

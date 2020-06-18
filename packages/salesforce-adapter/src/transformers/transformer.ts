@@ -767,9 +767,17 @@ export const toCustomField = (
     FIELD_ANNOTATIONS.REFERENCE_TO,
     FIELD_ANNOTATIONS.SUMMARY_FILTER_ITEMS,
   ]
+
+  // Annotations that are used by the adapter but do not exist in the CustomObject
+  const internalUseAnnotations = [
+    API_NAME,
+    FIELD_ANNOTATIONS.CREATABLE,
+    FIELD_ANNOTATIONS.UPDATEABLE,
+  ]
+
   const annotationsToSkip = [
     ...annotationsHandledInCtor,
-    API_NAME, // used to mark the SERVICE_ID but does not exist in the CustomObject
+    ...internalUseAnnotations,
     FIELD_ANNOTATIONS.FIELD_DEPENDENCY, // handled in field_dependencies filter
     FIELD_ANNOTATIONS.LOOKUP_FILTER, // handled in lookup_filters filter
   ]

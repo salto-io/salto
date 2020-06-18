@@ -24,8 +24,7 @@ import {
   removeEdges,
 } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { resolve } from '../expressions'
-import { createElementsMap } from '../search'
+import { resolve, createElementsMap } from '@salto-io/workspace'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, findGroupLevelChange } from './group'
 import { filterInvalidChanges } from './filter'

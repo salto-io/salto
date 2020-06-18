@@ -23,10 +23,8 @@ import {
   findElement,
 } from '@salto-io/adapter-utils'
 import { ConfigSource } from '../../src/workspace/config_source'
-import { adapterCreators } from '../../src/core/adapters'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files/nacl_files_source'
-import State from '../../src/workspace/state'
-import mockState from '../common/state'
+import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource } from './static_files/common.test'
 import { DirectoryStore } from '../../src/workspace/dir_store'
@@ -113,11 +111,11 @@ const createWorkspace = async (
         },
         default: {
           naclFiles: createMockNaclFileSource([]),
-          state: state || mockState(['salesforce']),
+          state: state || {} as unknown as State,
         },
         sec: {
           naclFiles: createMockNaclFileSource([]),
-          state: state || mockState(['hubspot']),
+          state: state || {} as unknown as State,
         },
       },
     })
@@ -682,7 +680,7 @@ describe('workspace', () => {
       beforeAll(async () => {
         confSource = mockConfigSource()
         credSource = mockCredentialsSource()
-        state = mockState()
+        state = { clear: jest.fn() } as unknown as State
         naclFiles = createMockNaclFileSource([])
         workspace = await createWorkspace(undefined, undefined, confSource, credSource,
           undefined, { inactive: { naclFiles, state } })
@@ -734,7 +732,7 @@ describe('workspace', () => {
       beforeEach(async () => {
         confSource = mockConfigSource()
         credSource = mockCredentialsSource()
-        state = mockState()
+        state = { rename: jest.fn() } as unknown as State
         naclFiles = createMockNaclFileSource([])
       })
 
@@ -841,8 +839,11 @@ describe('workspace', () => {
   describe('updateServiceCredentials', () => {
     let credsSource: ConfigSource
     let workspace: Workspace
-    const newCreds = new InstanceElement(services[0], adapterCreators[services[0]].credentialsType,
-      { user: 'username', password: 'pass' })
+    const newCreds = new InstanceElement(
+      services[0],
+      new ObjectType({ elemID: new ElemID(services[0]) }),
+      { user: 'username', password: 'pass' },
+    )
 
     beforeEach(async () => {
       credsSource = mockCredentialsSource()
@@ -863,7 +864,7 @@ describe('workspace', () => {
     let confSource: ConfigSource
     let workspace: Workspace
     const newConf = new InstanceElement(services[0],
-      adapterCreators[services[0]].configType as ObjectType, { conf1: 'val1' })
+      new ObjectType({ elemID: new ElemID(services[0]) }), { conf1: 'val1' })
 
     beforeEach(async () => {
       confSource = mockConfigSource()
@@ -887,7 +888,7 @@ describe('workspace', () => {
     beforeEach(async () => {
       credsSource = {
         get: jest.fn().mockResolvedValue(
-          new InstanceElement(services[0], adapterCreators[services[0]].credentialsType,
+          new InstanceElement(services[0], new ObjectType({ elemID: new ElemID(services[0]) }),
             { usename: 'default', password: 'default', currentEnv: 'default' })
         ),
         set: jest.fn(),

@@ -13,5 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const mockFunction = <T extends (...args: never[]) => unknown>():
-jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
+const deepMerge = require('../../build_utils/deep_merge')
+
+module.exports = deepMerge(
+  require('../../jest.base.config.js'),
+  {
+    name: 'salto-workspace',
+    displayName: 'salto-workspace',
+    rootDir: `${__dirname}`,
+    collectCoverageFrom: [
+      '!**/hcl.js', // Generated parser file
+      '!<rootDir>/dist/index.js',
+    ],
+    coverageThreshold: {
+      // Slowly start increasing here, never decrease!
+      global: {
+        branches: 83.22,
+        functions: 88.79,
+        lines: 85,
+        statements: 90,
+      },
+    },
+  }
+)
+

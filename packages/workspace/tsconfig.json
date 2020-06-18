@@ -1,0 +1,37 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "baseUrl": ".",
+        "declaration": true,
+        "declarationMap": true,
+        "paths": {
+            "jsforce": [
+                "../../node_modules/jsforce-types"
+            ],
+            "@salto-io/suitecloud-cli": [
+              "../netsuite-adapter/types/suitecloud-cli"
+            ]
+        },
+        "lib": [
+            "esnext.asynciterable"
+          ]
+    },
+    "include": [
+        "src/**/*",
+        "test/**/*",
+        "index.ts"
+    ],
+    "references": [
+        { "path": "../adapter-api" },
+        { "path": "../adapter-utils" },
+        { "path": "../dag" },
+        { "path": "../file" },
+        { "path": "../file" },
+        { "path": "../hubspot-adapter" },
+        { "path": "../netsuite-adapter" },
+        { "path": "../logging" },
+        { "path": "../lowerdash" },
+        { "path": "../salesforce-adapter" },
+    ]
+}

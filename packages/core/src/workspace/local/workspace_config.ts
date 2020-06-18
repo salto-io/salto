@@ -18,10 +18,10 @@ import _ from 'lodash'
 import path from 'path'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { configSource, ConfigSource } from '../config_source'
+import { configSource, ConfigSource, WORKSPACE_CONFIG_NAME,
+  workspaceUserConfigType } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../../app_config'
-import { WORKSPACE_CONFIG_NAME, workspaceUserConfigType } from '../workspace_config_types'
 
 const { makeArray } = collections.array
 

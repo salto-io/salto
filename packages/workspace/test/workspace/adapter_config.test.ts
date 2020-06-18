@@ -20,7 +20,7 @@ import { DirectoryStore } from '../../src/workspace/dir_store'
 import { dumpElements } from '../../src/parser/dump'
 import { configSource } from '../../src/workspace/config_source'
 
-jest.mock('../../../src/workspace/local/dir_store')
+jest.mock('../../../src/workspace/dir_store')
 describe('configs', () => {
   const adapter = 'mockadapter'
   const configID = new ElemID(adapter)

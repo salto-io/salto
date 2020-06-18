@@ -13,8 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-describe('Test example', () => {
-  it('should pass', () => {
-    expect(true).toBeTruthy()
-  })
-})
+const deepMerge = require('../../build_utils/deep_merge')
+
+module.exports = deepMerge(
+  require('../../eslintrc.js'),
+  {
+    parserOptions: {
+      tsconfigRootDir: __dirname,
+    },
+  },
+)
+

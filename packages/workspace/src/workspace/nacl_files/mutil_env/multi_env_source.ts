@@ -15,13 +15,13 @@
 */
 import _ from 'lodash'
 import path from 'path'
+import wu from 'wu'
 
 import { Element, ElemID, getChangeElement, isInstanceElement, Value,
   DetailedChange } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
-import { ValidationError } from 'src/core/validator'
-import wu from 'wu'
+import { ValidationError } from '../../../core/validator'
 import { ParseError, SourceRange } from '../../../parser/parse'
 import { SourceMap } from '../../../parser/source_map'
 import { mergeElements, MergeError } from '../../../core/merger'

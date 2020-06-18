@@ -21,9 +21,7 @@ import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from '../../../src/workspace/static_files/common'
 
-import {
-  StaticFilesCache,
-} from '../../../src/workspace/static_files/cache'
+import { StaticFilesCache } from '../../../src/workspace/static_files/cache'
 
 import {
   hashedContent, exampleStaticFileWithHash,

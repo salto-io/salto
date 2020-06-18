@@ -25,12 +25,9 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { mergeElements, MergeError, removeHiddenValuesAndHiddenTypes } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
-import { mergeElements, MergeError } from './merger'
-import {
-  removeHiddenValuesAndHiddenTypes,
-} from '../workspace/hidden_values'
 
 const log = logger(module)
 

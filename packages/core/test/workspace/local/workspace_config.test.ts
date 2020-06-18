@@ -15,15 +15,14 @@
 */
 import path from 'path'
 import { InstanceElement } from '@salto-io/adapter-api'
-import { getSaltoHome } from '../../../src/app_config'
 import {
   WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigType,
-  workspaceUserConfigType,
-} from '../../../src/workspace/workspace_config_types'
+  workspaceUserConfigType, DirectoryStore,
+} from '@salto-io/workspace'
+import { getSaltoHome } from '../../../src/app_config'
 import {
   workspaceConfigSource, WorkspaceConfigSource,
 } from '../../../src/workspace/local/workspace_config'
-import { DirectoryStore } from '../../../src/workspace/dir_store'
 import * as mockDirStore from '../../../src/workspace/local/dir_store'
 
 jest.mock('../../../src/workspace/local/dir_store')

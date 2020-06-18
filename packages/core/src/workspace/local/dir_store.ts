@@ -22,7 +22,7 @@ import {
   rename, existsSync, readTextFileSync, statSync,
 } from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
-import { File, SyncDirectoryStore } from '../dir_store'
+import { File, SyncDirectoryStore } from '@salto-io/workspace'
 
 const { withLimitedConcurrency, series } = promises.array
 

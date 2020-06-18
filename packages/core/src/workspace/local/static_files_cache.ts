@@ -15,7 +15,7 @@
 */
 import path from 'path'
 import { readTextFile, exists, mkdirp, replaceContents, rm, rename } from '@salto-io/file'
-import { StaticFilesCache, StaticFilesCacheResult } from '../static_files/cache'
+import { StaticFilesCache, StaticFilesCacheResult } from '@salto-io/workspace'
 
 export const CACHE_FILENAME = 'static-file-cache'
 

@@ -30,16 +30,14 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
+import { findElement, SearchResult, Workspace, addHiddenValuesAndHiddenTypes,
+  removeHiddenValuesAndHiddenTypes } from '@salto-io/workspace'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
   getAdapterDependencyChangers, getDefaultAdapterConfig, initAdapters, getAdaptersCreatorConfigs,
 } from './core/adapters'
 import { getPlan, Plan, PlanItem } from './core/plan'
-import {
-  findElement,
-  SearchResult,
-} from './core/search'
 import {
   createElemIdGetter,
   FatalFetchMergeError,
@@ -50,12 +48,7 @@ import {
   MergeErrorWithElements,
   toChangesWithPath,
 } from './core/fetch'
-import { Workspace } from './workspace/workspace'
 import { defaultDependencyChangers } from './core/plan/plan'
-import {
-  addHiddenValuesAndHiddenTypes,
-  removeHiddenValuesAndHiddenTypes,
-} from './workspace/hidden_values'
 
 const log = logger(module)
 

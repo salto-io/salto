@@ -17,11 +17,8 @@ import * as path from 'path'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { stat, mkdirp, replaceContents, readTextFile, exists } from '@salto-io/file'
 import wu from 'wu'
+import { parseResultCache, SourceMap, StaticFilesSource } from '@salto-io/workspace'
 import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
-import { parseResultCache } from '../../../src/workspace/cache'
-import { SourceMap } from '../../../src/parser/source_map'
-import { mockStaticFilesSource } from '../static_files/common.test'
-import * as elementsModule from '../../../src/serializer/elements'
 
 
 jest.mock('@salto-io/file', () => ({
@@ -33,16 +30,21 @@ jest.mock('@salto-io/file', () => ({
   mkdirp: jest.fn(),
 }))
 
+jest.mock('@salto-io/workspace', () => ({
+  ...jest.requireActual('@salto-io/workspace'),
+  serialize: jest.fn(),
+}))
+
 describe('localParseResultCache', () => {
   const mockBaseDirPath = '.salto/local/cache'
   stat.notFoundAsUndefined = jest.fn()
-  const mockStateNotFoundAsUndefine = stat.notFoundAsUndefined as unknown as jest.Mock
-  const mockState = stat as unknown as jest.Mock
+  const mockStatNotFoundAsUndefined = stat.notFoundAsUndefined as unknown as jest.Mock
+  const mockStat = stat as unknown as jest.Mock
   const mockFileExists = exists as jest.Mock
   const mockReadFile = readTextFile as unknown as jest.Mock
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
-  const mockedStaticFilesSource = mockStaticFilesSource()
+  const mockedStaticFilesSource = { clone: jest.fn() } as unknown as StaticFilesSource
   const cache = parseResultCache(localDirectoryStore(mockBaseDirPath), mockedStaticFilesSource)
   const sourceMap = new SourceMap()
   const dummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
@@ -70,8 +72,8 @@ describe('localParseResultCache', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockStateNotFoundAsUndefine.mockResolvedValue({ mtimeMs: 1000 })
-    mockState.mockResolvedValue({ mtimeMs: 1000 })
+    mockStatNotFoundAsUndefined.mockResolvedValue({ mtimeMs: 1000 })
+    mockStat.mockResolvedValue({ mtimeMs: 1000 })
     mockFileExists.mockResolvedValue(false)
     mockReadFile.mockResolvedValue(mockSerializedCacheFile)
     mockReplaceContents.mockResolvedValue(true)
@@ -91,17 +93,6 @@ describe('localParseResultCache', () => {
       expect(replaceContents).toHaveBeenLastCalledWith(
         path.resolve(mockBaseDirPath, 'blabla/blurprint.jsonl'), mockSerializedCacheFile
       )
-    })
-
-    it('serializes with cache mode', async () => {
-      jest.spyOn(elementsModule, 'serialize')
-      await cache.put({
-        filename: 'blabla/blurprint.nacl',
-        lastModified: 0,
-      }, parseResult)
-      const mockSerialize = elementsModule.serialize as jest.Mock
-      expect(mockSerialize.mock.calls.length).toBe(1)
-      expect(mockSerialize.mock.calls[0][1]).toEqual('keepRef')
     })
   })
   describe('get', () => {

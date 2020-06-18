@@ -20,18 +20,13 @@ import {
   isModificationDiff, ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
+import * as ws from '@salto-io/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
 } from '../../src/core/fetch'
-import * as merger from '../../src/core/merger'
 import { getPlan, Plan } from '../../src/core/plan'
-import {
-  removeHiddenFieldsValues,
-} from '../../src/workspace/hidden_values'
 import { mockFunction } from '../common/helpers'
-
-const { DuplicateAnnotationError } = merger
 
 jest.mock('pietile-eventemitter')
 jest.mock('@salto-io/adapter-utils', () => ({
@@ -40,8 +35,6 @@ jest.mock('@salto-io/adapter-utils', () => ({
 }))
 
 describe('fetch', () => {
-  const mockMergeResult = (mockResult: merger.MergeResult): jest.SpyInstance =>
-    jest.spyOn(merger, 'mergeElements').mockImplementation(() => mockResult)
   const testID = new ElemID('dummy', 'elem')
   const typeWithField = new ObjectType({
     elemID: testID,
@@ -82,7 +75,7 @@ describe('fetch', () => {
   })
 
   // Workspace elements should not contains hidden values
-  const workspaceInstance = removeHiddenFieldsValues(hiddenInstance)
+  const workspaceInstance = ws.removeHiddenFieldsValues(hiddenInstance)
 
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,
@@ -101,8 +94,6 @@ describe('fetch', () => {
       ext: { type: BuiltinTypes.STRING },
     },
   })
-
-  beforeEach(() => jest.spyOn(merger, 'mergeElements').mockRestore())
 
   describe('fetchChanges', () => {
     const mockAdapters = {
@@ -179,18 +170,25 @@ describe('fetch', () => {
       })
     })
     describe('when merge elements returns errors', () => {
+      const dupTypeID = new ElemID('dummy', 'dup')
+      const dupTypeBase = new ObjectType({
+        elemID: dupTypeID,
+        fields: {},
+        annotations: { bla: 'bla' },
+      })
+      const dupTypeBase2 = new ObjectType({
+        elemID: dupTypeID,
+        fields: {},
+        annotations: { bla: 'blu' },
+      })
       describe('when state', () => {
         describe('contains elements with errored elem ids', () => {
           it('should throw an exception', async () => {
-            mockMergeResult({
-              merged: [newTypeBase],
-              errors: [
-                new DuplicateAnnotationError({ elemID: newTypeBase.elemID, key: 'bla' }),
-              ],
-            })
-
             try {
-              await fetchChanges({}, [], [newTypeBase], [])
+              mockAdapters.dummy.fetch.mockResolvedValueOnce(
+                Promise.resolve({ elements: [dupTypeBase, dupTypeBase2] })
+              )
+              await fetchChanges(mockAdapters, [], [dupTypeBase], [])
               expect(false).toBeTruthy()
             } catch (e) {
               expect(e.message).toMatch(/.*duplicate annotation.*/)
@@ -198,39 +196,18 @@ describe('fetch', () => {
             }
           })
         })
-        describe('contains no element elements with errors ', () => {
-          let fetchChangesResult: FetchChangesResult
-          beforeEach(async () => {
-            mockMergeResult({
-              merged: [newTypeBase, typeWithField],
-              errors: [
-                new DuplicateAnnotationError({ elemID: newTypeBase.elemID, key: 'blu' }),
-              ],
-            })
-
-            fetchChangesResult = await fetchChanges({}, [], [], [])
-          })
-          it('should return errors', async () => {
-            expect(fetchChangesResult.mergeErrors).toHaveLength(1)
-          })
-          it('should drop elements', async () => {
-            expect(fetchChangesResult.elements).toHaveLength(1)
-          })
-        })
       })
-      describe('when instance parent type elements have merge errors', () => {
+      describe('when instance type has merge error', () => {
         let fetchChangesResult: FetchChangesResult
         beforeEach(async () => {
-          const instance = new InstanceElement('instance_elem_id_name', newTypeBase, { fname: 'fvalue' })
+          const instance = new InstanceElement('instance_elem_id_name', dupTypeBase, { fname: 'fvalue' })
           const instance2 = new InstanceElement('instance_elem_id_name2', typeWithField, { fname: 'fvalue2' })
-
-          mockMergeResult({
-            merged: [newTypeBase, typeWithField, instance, instance2],
-            errors: [
-              new DuplicateAnnotationError({ elemID: newTypeBase.elemID, key: 'bla' }),
-            ],
-          })
-          fetchChangesResult = await fetchChanges({}, [], [], [])
+          mockAdapters.dummy.fetch.mockResolvedValueOnce(
+            Promise.resolve(
+              { elements: [instance, instance2, dupTypeBase, dupTypeBase2, typeWithField] }
+            )
+          )
+          fetchChangesResult = await fetchChanges(mockAdapters, [], [], [])
         })
         it('should return errors', async () => {
           expect(fetchChangesResult.mergeErrors).toHaveLength(1)

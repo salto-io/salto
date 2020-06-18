@@ -21,8 +21,7 @@ import { logger } from '@salto-io/logging'
 import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
-import { serialize, deserialize } from '../../serializer/elements'
-import State from '../state'
+import { serialize, deserialize, State } from '@salto-io/workspace'
 
 const { makeArray } = collections.array
 

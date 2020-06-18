@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import path from 'path'
 import * as file from '@salto-io/file'
 
-import { StaticFilesCache } from '../../../src/workspace/static_files/cache'
+import { StaticFilesCache } from '@salto-io/workspace'
 
 import {
   buildLocalStaticFilesCache, CACHE_FILENAME,
@@ -95,6 +96,7 @@ describe('Static Files Cache', () => {
   it('clones', async () => {
     await staticFilesCache.put(expectedResult)
     const staticFilesCacheClone = staticFilesCache.clone()
-    return expect(staticFilesCacheClone.get(baseMetaData.filepath)).resolves.toEqual(expectedResult)
+    return expect(staticFilesCacheClone.get(baseMetaData.filepath))
+      .resolves.toEqual(expectedResult)
   })
 })

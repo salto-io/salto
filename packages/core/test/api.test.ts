@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import wu from 'wu'
 import {
   AdapterOperations,
   BuiltinTypes,
@@ -29,8 +30,7 @@ import {
   isObjectType,
   DetailedChange,
 } from '@salto-io/adapter-api'
-import wu from 'wu'
-import * as workspace from '../src/workspace/workspace'
+import * as workspace from '@salto-io/workspace'
 import * as api from '../src/api'
 
 import * as plan from '../src/core/plan'
@@ -85,15 +85,17 @@ const mockWorkspace = (elements: Element[] = [], name?: string): workspace.Works
 
 jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
-
-jest.spyOn(workspace, 'initWorkspace').mockImplementation(
-  (
-    _baseDir: string,
-    _defaultEnvName: string,
-    workspaceName?: string
-  ):
-    Promise<workspace.Workspace> => Promise.resolve(mockWorkspace([], workspaceName))
-)
+jest.mock('@salto-io/workspace', () => ({
+  ...jest.requireActual('@salto-io/workspace'),
+  initWorkspace: jest.fn().mockImplementation(
+    (
+      _baseDir: string,
+      _defaultEnvName: string,
+      workspaceName?: string
+    ):
+      Promise<workspace.Workspace> => Promise.resolve(mockWorkspace([], workspaceName))
+  ),
+}))
 
 describe('api.ts', () => {
   const mockAdapterOps = {

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element, ObjectType } from '@salto-io/adapter-api'
-import { findElement, FoundSearchResult } from '@salto-io/workspace'
+import { findElement, FoundSearchResult } from '../../src/core/search'
 import { getAllElements } from '../common/elements'
 
 describe('findElement', () => {

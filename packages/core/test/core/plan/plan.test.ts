@@ -19,7 +19,6 @@ import {
   ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType,
   PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isInstanceElement,
 } from '@salto-io/adapter-api'
-import * as expressions from '../../../src/core/expressions'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
 import { getPlan, Plan } from '../../../src/core/plan'
@@ -139,16 +138,6 @@ describe('getPlan', () => {
   it('should create empty plan', async () => {
     const plan = await getPlan(allElements, allElements)
     expect(plan.size).toBe(0)
-  })
-
-  it('should call resolve with additional context', async () => {
-    jest.spyOn(expressions, 'resolve')
-    const mockResolve = expressions.resolve as jest.Mock
-    const allElementsClone = _.cloneDeep(allElements)
-    await getPlan(allElements, allElements, {}, [], allElementsClone)
-    expect(mockResolve.mock.calls.length).toBe(2)
-    expect(mockResolve.mock.calls[0][1]).toBe(allElementsClone)
-    expect(mockResolve.mock.calls[1][1]).toBe(allElementsClone)
   })
 
   it('should create plan with add change', async () => {

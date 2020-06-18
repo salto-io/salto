@@ -346,6 +346,8 @@ export class Types {
     [BUSINESS_STATUS]: Types.BusinessStatusType,
     [SECURITY_CLASSIFICATION]: Types.SecurityClassificationType,
     [COMPLIANCE_GROUP]: BuiltinTypes.STRING,
+    [FIELD_ANNOTATIONS.CREATABLE]: BuiltinTypes.BOOLEAN,
+    [FIELD_ANNOTATIONS.UPDATEABLE]: BuiltinTypes.BOOLEAN,
   }
 
   // Type mapping for custom objects

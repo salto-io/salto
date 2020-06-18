@@ -151,6 +151,8 @@ export const FIELD_ANNOTATIONS = {
   VALUE_SET: 'valueSet',
   DEFAULT_VALUE: 'defaultValue',
   FORMULA_TREAT_BLANKS_AS: 'formulaTreatBlanksAs',
+  CREATABLE: 'createable',
+  UPDATEABLE: 'updateable',
 }
 
 export const VALUE_SET_FIELDS = {

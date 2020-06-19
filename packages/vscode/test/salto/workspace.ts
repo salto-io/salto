@@ -14,14 +14,11 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { Workspace, parse, Errors, SourceMap } from '@salto-io/core'
+import _ from 'lodash'
+import { Workspace, parse, Errors, SourceMap,
+  mergeElements, ConfigSource, ParseError, ParseResult } from '@salto-io/core'
 import { readTextFile } from '@salto-io/file'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { ParseError, ParseResult } from '@salto-io/core/dist/src/parser/parse'
-import { mergeElements } from '@salto-io/core/dist/src/core/merger'
-
-import { ConfigSource } from '@salto-io/core/dist/src/workspace/config_source'
 
 const SERVICES = ['salesforce']
 

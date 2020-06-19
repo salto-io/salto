@@ -17,12 +17,12 @@
 import { ErrorTypes, FoundSearchResult, SearchResult, Workspace, WorkspaceError, SourceFragment,
   StateRecency, loadWorkspace, EnvironmentsSources, initWorkspace, ConfigSource, Errors,
   NaclFile, FILE_EXTENSION, parse, SourceRange, parseElemID, SourceMap, dumpElements,
-  dumpElemID } from '@salto-io/workspace'
+  dumpElemID, ParseError, ParseResult, mergeElements } from '@salto-io/workspace'
 
 export { ErrorTypes, FoundSearchResult, SearchResult, Workspace, WorkspaceError, SourceFragment,
   StateRecency, loadWorkspace, EnvironmentsSources, initWorkspace, ConfigSource, Errors,
   NaclFile, FILE_EXTENSION, parse, SourceRange, parseElemID, SourceMap, dumpElements,
-  dumpElemID }
+  dumpElemID, ParseError, ParseResult, mergeElements }
 export { Plan, PlanItem } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'

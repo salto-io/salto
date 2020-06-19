@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace } from '@salto-io/core'
-import { ParseError } from '@salto-io/core/dist/src/parser/parse'
 import _ from 'lodash'
+import { Workspace, ParseError } from '@salto-io/core'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getDiagnostics } from '../../src/salto/diagnostics'
 import { mockWorkspace, mockErrors, mockFunction } from './workspace'

@@ -28,7 +28,7 @@ export { ConfigSource, configSource } from './src/workspace/config_source'
 export { Errors } from './src/workspace/errors'
 export { NaclFile, FILE_EXTENSION, NaclFilesSource,
   naclFilesSource } from './src/workspace/nacl_files/nacl_files_source'
-export { parse, SourceRange, parseElemID } from './src/parser/parse'
+export { parse, SourceRange, parseElemID, ParseError, ParseResult } from './src/parser/parse'
 export { serialize, deserialize } from './src/serializer/elements'
 export { SourceMap } from './src/parser/source_map'
 export { dumpElements, dumpElemID } from './src/parser/dump'

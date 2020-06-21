@@ -19,19 +19,19 @@ import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
 import { Config, mergeConfigs } from '../../src/internal/config'
 import { loggerRepo, Logger, LoggerRepo } from '../../src/internal/logger'
-import { loggerRepo as winstonLoggerRepo } from '../../src/internal/winston'
+import { loggerRepo as pinoLoggerRepo } from '../../src/internal/pino'
 import '../matchers'
 
 const TIMESTAMP_REGEX = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z/
 
-describe('winston based logger', () => {
+describe('pino based logger', () => {
   let consoleStream: MockWritableStream
   let initialConfig: Config
   const NAMESPACE = 'my-namespace'
   let repo: LoggerRepo
 
   const createRepo = (): LoggerRepo => loggerRepo(
-    winstonLoggerRepo({ consoleStream }, initialConfig),
+    pinoLoggerRepo({ consoleStream }, initialConfig),
     initialConfig,
   )
 
@@ -56,6 +56,19 @@ describe('winston based logger', () => {
     [line] = consoleStream.contents().split('\n')
   }
 
+  describe('sanity', () => {
+    beforeEach(() => {
+      logger = createLogger()
+      logger.warn('hello world')
+    })
+
+    afterEach(() => repo.end())
+
+    it('logs', () => {
+      expect(consoleStream.contents()).toContain('hello world')
+    })
+  })
+
   describe('initial configuration', () => {
     describe('filename', () => {
       describe('when set', () => {
@@ -70,6 +83,7 @@ describe('winston based logger', () => {
           initialConfig.filename = filename
           logger = createLogger()
           await logLine()
+          // await new Promise(res => setTimeout(res, 200))
           const fileContents = readFileContent();
           [line] = fileContents.split('\n')
         })
@@ -405,7 +419,7 @@ describe('winston based logger', () => {
       })
 
       it('should write the message with the child namespace as string', () => {
-        expect(line).toContain('logging/test/internal/winston_logger.test')
+        expect(line).toContain('logging/test/internal/pino_logger.test')
       })
 
       describe('when getting the same logger again', () => {
@@ -422,11 +436,11 @@ describe('winston based logger', () => {
     })
   })
 
-  describe('configure', () => {
+  describe('setMinLevel', () => {
     describe('when a partial config is specified', () => {
       beforeEach(async () => {
         logger = createLogger()
-        repo.configure({ minLevel: 'debug' })
+        repo.setMinLevel('debug')
         await logLine({ level: 'debug' })
       })
 
@@ -441,10 +455,18 @@ describe('winston based logger', () => {
   describe('logging Error instances', () => {
     let error: Error
 
-    class MyError extends Error {}
+    class MyError extends Error {
+      readonly customProp1: string
+      readonly customProp2: { aNumber: number }
+      constructor(message: string, customProp1: string, customProp2: { aNumber: number }) {
+        super(message)
+        this.customProp1 = customProp1
+        this.customProp2 = customProp2
+      }
+    }
 
     beforeEach(() => {
-      error = new MyError('testing 123')
+      error = new MyError('testing 123', 'customVal1', { aNumber: 42 })
     })
 
     describe('when format is "text"', () => {
@@ -459,52 +481,56 @@ describe('winston based logger', () => {
 
       it('should log the error message and stack in multiple lines', () => {
         expect(line1).toContain('Error: testing 123') // message
+        // expect(line1).toContain('testing 123') // message
         expect(line2).toContain(' at ') // stack
+        expect(consoleStream.contents())
+          // custom props
+          .toContain("customProp1: 'customVal1', customProp2: { aNumber: 42 }")
       })
     })
 
     describe('when format is "json"', () => {
       beforeEach(() => {
+        initialConfig.format = 'json'
         logger = createLogger()
-        repo.configure({ format: 'json' })
         logger.log('warn', error)
         const [line1] = consoleStream.contents().split('\n')
         jsonLine = JSON.parse(line1)
       })
 
       it('should log the error message and stack as JSON on a single line', () => {
-        expect(jsonLine.timestamp).toMatch(TIMESTAMP_REGEX)
-        expect(jsonLine.level).toEqual('warn')
-        expect(jsonLine.message).toEqual('Error: testing 123')
-        expect(jsonLine.stack).toEqual(error.stack)
-      })
-
-      it('should log only the expected properties', () => {
-        expect(Object.keys(jsonLine).sort()).toEqual([
-          'level', 'message', 'namespace', 'stack', 'timestamp',
-        ])
+        expect(jsonLine).toMatchObject({
+          time: expect.stringMatching(TIMESTAMP_REGEX),
+          level: 'warn',
+          message: 'testing 123',
+          stack: error.stack,
+          customProp1: 'customVal1',
+          customProp2: { aNumber: 42 },
+        })
       })
     })
   })
 
   describe('JSON format', () => {
     beforeEach(async () => {
+      initialConfig.format = 'json'
       logger = createLogger()
-      repo.configure({ format: 'json' })
       await logLine({ level: 'warn' })
       jsonLine = JSON.parse(line)
     })
 
-    it('should log the error message and stack as JSON on a single line', () => {
-      expect(jsonLine.timestamp).toMatch(TIMESTAMP_REGEX)
-      expect(jsonLine.level).toEqual('warn')
-      expect(jsonLine.message).toEqual('hello { world: true }')
-      expect(jsonLine.extra).toEqual('stuff')
+    it('should log the props as JSON', () => {
+      expect(jsonLine).toMatchObject({
+        time: expect.stringMatching(TIMESTAMP_REGEX),
+        level: 'warn',
+        message: 'hello { world: true }',
+        extra: 'stuff',
+      })
     })
 
     it('should log only the expected properties', () => {
       expect(Object.keys(jsonLine).sort()).toEqual([
-        'extra', 'level', 'message', 'namespace', 'timestamp',
+        'extra', 'level', 'message', 'name', 'time',
       ])
     })
 
@@ -515,8 +541,8 @@ describe('winston based logger', () => {
 
   describe('retrieving the logger config', () => {
     beforeEach(() => {
+      initialConfig.format = 'json'
       logger = createLogger()
-      repo.configure({ format: 'json' })
     })
 
     it('should return a Config instance', () => {

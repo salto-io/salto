@@ -48,7 +48,6 @@
     "lodash": "^4.17.15",
     "requestretry": "^4.0.2",
     "stream": "0.0.2",
-    "winston": "^3.2.1",
     "wu": "^2.1.0"
   },
   "devDependencies": {

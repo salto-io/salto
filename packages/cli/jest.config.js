@@ -27,16 +27,16 @@ module.exports = deepMerge(
       '!<rootDir>/package_native.js',
       '!<rootDir>/dist/bundle.js'
     ],
-    testEnvironment: process.env.RUN_E2E_TESTS	
+    testEnvironment: process.env.RUN_E2E_TESTS
       ? '@salto-io/cli/dist/e2e_test/jest_environment'
       : undefined,
     coverageThreshold: {
       // Slowly start increasing here, never decrease!
       global: {
-        branches: 77.53,
-        functions: 88.31,
-        lines: 85,
-        statements: 90,
+        branches: 81.73,
+        functions: 91.67,
+        lines: 95.98,
+        statements: 95.67,
       },
     },
   }

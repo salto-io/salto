@@ -195,15 +195,15 @@ describe('cli', () => {
   })
 
   describe('when called with --verbose', () => {
-    let configure: jest.SpyInstance
+    let setMinLevel: jest.SpyInstance
 
     beforeEach(async () => {
-      configure = jest.spyOn(logger, 'configure')
+      setMinLevel = jest.spyOn(logger, 'setMinLevel')
       await mocks.cli({ args: 'deploy --force --verbose' })
     })
 
     it('configures the logging to level debug', () => {
-      expect(configure).toHaveBeenCalledWith({ minLevel: 'debug' })
+      expect(setMinLevel).toHaveBeenCalledWith('debug')
     })
   })
 

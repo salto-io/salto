@@ -34,7 +34,7 @@ const increaseLoggingLogLevel = (): void => {
     || compareLogLevels(currentLogLevel, VERBOSE_LOG_LEVEL) < 0
 
   if (isCurrentLogLevelLower) {
-    logger.configure({ minLevel: VERBOSE_LOG_LEVEL })
+    logger.setMinLevel(VERBOSE_LOG_LEVEL)
   }
 }
 

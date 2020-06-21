@@ -53,9 +53,7 @@
                 "${workspaceRoot}/node_modules/.bin/jest",
                 "--runInBand",
                 "--config",
-                "${workspaceRoot}/jest.config.js",
-                "-t",
-                "'should set updated top level element to state'"
+                "${workspaceRoot}/jest.config.js"
             ],
             "windows": {
                 "args": [

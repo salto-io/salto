@@ -13,17 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Value, Values, StaticFile } from '@salto-io/adapter-api'
-import { basename } from 'path'
 import _ from 'lodash'
-import { MetadataInfo, RetrieveResult } from 'jsforce'
-import JSZip, { JSZipObject } from 'jszip'
 import parser from 'fast-xml-parser'
+import { MetadataInfo, RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
+import JSZip from 'jszip'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { Value, Values, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { API_VERSION, METADATA_NAMESPACE } from '../client/client'
 import { toMetadataInfo } from './transformer'
 import { MetadataWithContent } from '../client/types'
-import { MetadataInfoWithStaticFile } from '../types'
+import { INSTANCE_FULL_NAME_FIELD, METADATA_CONTENT_FIELD } from '../constants'
+
+const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
@@ -53,6 +55,10 @@ type ZipPropsMap = {
   Dashboard: ZipProps
   DashboardFolder: ZipProps
   SharingRules: ZipProps
+  Territory2: ZipProps
+  Territory2Rule: ZipProps
+  Territory2Model: ZipProps
+  Territory2Type: ZipProps
 }
 
 const zipPropsMap: ZipPropsMap = {
@@ -129,88 +135,93 @@ const zipPropsMap: ZipPropsMap = {
     fileSuffix: '.sharingRules',
     isMetadataWithContent: false,
   },
+  Territory2: {
+    dirName: 'territory2Models',
+    fileSuffix: '.territory2',
+    isMetadataWithContent: false,
+  },
+  Territory2Rule: {
+    dirName: 'territory2Models',
+    fileSuffix: '.territory2Rule',
+    isMetadataWithContent: false,
+  },
+  Territory2Model: {
+    dirName: 'territory2Models',
+    fileSuffix: '.territory2Model',
+    isMetadataWithContent: false,
+  },
+  Territory2Type: {
+    dirName: 'territory2Types',
+    fileSuffix: '.territory2Type',
+    isMetadataWithContent: false,
+  },
 }
 
 const isSupportedType = (typeName: string): boolean => Object.keys(zipPropsMap).includes(typeName)
 
-export const fromRetrieveResult = async (retrieveResult: RetrieveResult,
-  metadataTypes: string[]): Promise<Record<string, MetadataInfo[]>> => {
-  const BASE_64 = 'base64'
+export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): RetrieveRequest => ({
+  apiVersion: API_VERSION,
+  singlePackage: false,
+  [PACKAGE]: {
+    types: _(files)
+      .groupBy(file => file.type)
+      .entries()
+      .map(([type, typeFiles]) => ({ name: type, members: typeFiles.map(file => file.fullName) }))
+      .value(),
+  },
+})
 
-  const fromMetadataXml = async (zip: JSZip, zipProps: ZipProps, xmlMetadataType: string):
-    Promise<MetadataInfo[]> => {
-    const decodeContent = async (fileName: string): Promise<string> =>
-      zip.file(fileName).async(BASE_64)
-        .then(data => Buffer.from(data, BASE_64).toString())
+export type MetadataValues = MetadataInfo & Values
 
-    const getPathPrefix = (): string => `${PACKAGE}/${zipProps.dirName}/`
+export const fromRetrieveResult = async (
+  result: RetrieveResult,
+  fileProps: ReadonlyArray<FileProperties>,
+  typesWithMetaFile: Set<string>,
+  typesWithContent: Set<string>,
+): Promise<{ file: FileProperties; values: MetadataValues}[]> => {
+  const fromZip = async (
+    zip: JSZip, file: FileProperties,
+  ): Promise<MetadataValues | undefined> => {
+    const getFileData = (name: string): Promise<Buffer | undefined> => {
+      const zipFile = zip.file(`${PACKAGE}/${name}`)
+      return zipFile === null
+        ? Promise.resolve(undefined)
+        : zipFile.async('nodebuffer')
+    }
 
-    const getFullName = (file: JSZip.JSZipObject): string =>
-      file.name.split(getPathPrefix())[1].split(zipProps.fileSuffix)[0]
-
-    const decodeFileWithContent = async (file: JSZipObject):
-      Promise<MetadataInfo> => {
-      const metadataXmlContent = await decodeContent(`${file.name}${METADATA_XML_SUFFIX}`)
-      const parsedResult = parser.parse(metadataXmlContent)[xmlMetadataType]
-      const metadataInfo: MetadataInfo = parsedResult === '' ? {} : parsedResult
-      metadataInfo.fullName = getFullName(file)
-      const content = await decodeContent(file.name)
-      if (content === HIDDEN_CONTENT_VALUE) {
-        return {
-          ...metadataInfo,
-          ...{
-            content,
-          },
-        } as MetadataWithContent
+    const instanceFilename = typesWithMetaFile.has(file.type)
+      ? `${file.fileName}${METADATA_XML_SUFFIX}`
+      : file.fileName
+    const instanceData = await getFileData(instanceFilename)
+    if (instanceData === undefined) {
+      return undefined
+    }
+    const parsedResult = parser.parse(instanceData.toString())[file.type]
+    const metadataInfo = _.isEmpty(parsedResult) ? {} : parsedResult
+    metadataInfo[INSTANCE_FULL_NAME_FIELD] = file.fullName
+    if (typesWithContent.has(file.type)) {
+      const content = await getFileData(file.fileName)
+      if (content === undefined) {
+        return undefined
       }
-      return {
-        ...metadataInfo,
-        ...{
-          content: new StaticFile({
-            filepath: `salesforce/${zipProps.dirName}/${basename(file.name)}`,
-            content: Buffer.from(content),
-          }),
-        },
-      } as MetadataInfoWithStaticFile
+      metadataInfo[METADATA_CONTENT_FIELD] = content.toString() === HIDDEN_CONTENT_VALUE
+        ? content.toString()
+        : new StaticFile({
+          filepath: `salesforce/${file.fileName}`,
+          content,
+        })
     }
-
-    const decodeFile = async (file: JSZipObject):
-      Promise<MetadataInfo> => {
-      const metadataXmlContent = await decodeContent(file.name)
-      const parsedResult = parser.parse(metadataXmlContent)[xmlMetadataType]
-      const metadataInfo: MetadataInfo = parsedResult === '' ? {} : parsedResult
-      metadataInfo.fullName = getFullName(file)
-      return metadataInfo
-    }
-
-    const files = Object.values(zip.files)
-      .filter(file => file.name.startsWith(getPathPrefix()))
-      .filter(file => file.name.endsWith(zipProps.fileSuffix))
-      .filter(file => !zipProps.folderType || file.name.split('/').length === 3)
-
-    if (zipProps.isMetadataWithContent) {
-      return Promise.all(files.map(file => decodeFileWithContent(file)))
-    }
-    return Promise.all(files.map(file => decodeFile(file)))
+    return metadataInfo
   }
 
-  const loadZip = async (zip: string): Promise<JSZip> =>
-    new JSZip().loadAsync(Buffer.from(zip, BASE_64))
-
-  const zip = await loadZip(retrieveResult.zipFile)
-
-  const types = metadataTypes
-    .filter(typeName => {
-      if (!isSupportedType(typeName)) {
-        log.warn('Retrieving instances of type %s is not supported', typeName)
-        return false
-      }
-      return true
-    })
-  return Promise.all(types
-    .map(async type =>
-      [type, await fromMetadataXml(zip, zipPropsMap[type as keyof ZipPropsMap], type)]))
-    .then(res => _(res).fromPairs().value())
+  const zip = await new JSZip().loadAsync(Buffer.from(result.zipFile, 'base64'))
+  const instances = await Promise.all(fileProps.map(
+    async file => {
+      const values = await fromZip(zip, file)
+      return values === undefined ? undefined : { file, values }
+    }
+  ))
+  return instances.filter(isDefined)
 }
 
 const toMetadataXml = (name: string, val: Value, inner = false): string => {

@@ -23,20 +23,19 @@ import {
   resolveValues, restoreValues,
 } from '@salto-io/adapter-utils'
 import {
-  SaveResult, MetadataInfo, FileProperties, ListMetadataQuery,
-  UpsertResult, RetrieveResult, RetrieveRequest,
+  SaveResult, MetadataInfo, FileProperties, UpsertResult, MetadataObject,
 } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { decorators, collections, promises } from '@salto-io/lowerdash'
-import SalesforceClient, { API_VERSION } from './client/client'
+import { decorators, collections } from '@salto-io/lowerdash'
+import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
   metadataType, createMetadataTypeElements,
   defaultApiName, getLookUpName,
 } from './transformers/transformer'
-import { fromRetrieveResult, toMetadataPackageZip } from './transformers/xml_transformer'
+import { toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFilter from './filters/custom_objects'
 import customObjectsSplitFilter from './filters/custom_object_split'
@@ -61,13 +60,14 @@ import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
-  createRetrieveConfigChange, getConfigFromConfigChanges,
+  getConfigFromConfigChanges,
   STOP_MANAGING_ITEMS_MSG } from './config_change'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
+import { retrieveMetadataInstances } from './fetch'
+import { IS_FOLDER } from './constants'
 
 const { makeArray } = collections.array
-const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
 export const DEFAULT_FILTERS = [
@@ -162,9 +162,11 @@ export interface SalesforceAdapterParams {
   // Determine whether hide type folder
   hideTypesInNacls?: boolean
 
-  // Metadata types that we have to fetch using the retrieve API endpoint and add update or remove
-  // using the deploy API endpoint
-  metadataToRetrieveAndDeploy?: Record<string, string | undefined>
+  // Metadata types that we have to fetch using the retrieve API
+  metadataToRetrieve?: string[]
+
+  // Metadata types that we have to add update or remove using the deploy API endpoint
+  metadataToDeploy?: string[]
 
   // Metadata types that we should not create, update or delete in the main adapter code
   metadataTypesToSkipMutation?: string[]
@@ -205,10 +207,28 @@ const logDuration = (message?: string): decorators.InstanceMethodDecorator =>
   )
 
 type NamespaceAndInstances = { namespace?: string; instanceInfo: MetadataInfo }
-type RetrieveMember = {
-  type: string
-  name: string
-}
+
+const metadataToRetrieveAndDeploy = [
+  'ApexClass', // readMetadata is not supported, contains encoded zip content
+  'ApexTrigger', // readMetadata is not supported, contains encoded zip content
+  'ApexPage', // contains encoded zip content
+  'ApexComponent', // contains encoded zip content
+  'AssignmentRules',
+  'InstalledPackage', // listMetadataObjects of this types returns duplicates
+  'EmailTemplate', // contains encoded zip content, is under a folder
+  'EmailFolder',
+  'ReportType',
+  'Report', // contains encoded zip content, is under a folder
+  'ReportFolder',
+  'Dashboard', // contains encoded zip content, is under a folder
+  'DashboardFolder',
+  'Document', // contains encoded zip content, is under a folder
+  'DocumentFolder',
+  'Territory2', // All Territory2 types do not support CRUD
+  'Territory2Rule', // All Territory2 types do not support CRUD
+  'Territory2Model', // All Territory2 types do not support CRUD
+  'Territory2Type', // All Territory2 types do not support CRUD
+]
 
 export default class SalesforceAdapter implements AdapterOperations {
   private hideTypesInNacls: boolean
@@ -216,7 +236,8 @@ export default class SalesforceAdapter implements AdapterOperations {
   private instancesRegexSkippedList: RegExp[]
   private maxConcurrentRetrieveRequests: number
   private maxItemsInRetrieveRequest: number
-  private metadataToRetrieveAndDeploy: Record<string, string | undefined>
+  private metadataToDeploy: string[]
+  private metadataToRetrieve: string[]
   private metadataAdditionalTypes: string[]
   private metadataTypesToSkipMutation: string[]
   private metadataTypesToUseUpsertUponUpdate: string[]
@@ -241,24 +262,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     instancesRegexSkippedList = [],
     maxConcurrentRetrieveRequests = constants.DEFAULT_MAX_CONCURRENT_RETRIEVE_REQUESTS,
     maxItemsInRetrieveRequest = constants.DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
-    metadataToRetrieveAndDeploy = {
-      ApexClass: undefined, // readMetadata is not supported, contains encoded zip content
-      ApexTrigger: undefined, // readMetadata is not supported, contains encoded zip content
-      ApexPage: undefined, // contains encoded zip content
-      ApexComponent: undefined, // contains encoded zip content
-      AssignmentRules: undefined,
-      InstalledPackage: undefined, // listMetadataObjects of this types returns duplicates
-      EmailTemplate: 'EmailFolder', // contains encoded zip content, is under a folder
-      ReportType: undefined,
-      Report: 'ReportFolder',
-      Dashboard: 'DashboardFolder',
-      SharingRules: undefined, // upsert does not work for creating rules
-    },
+    metadataToRetrieve = metadataToRetrieveAndDeploy,
+    metadataToDeploy = [
+      ...metadataToRetrieveAndDeploy,
+      'SharingRules', // upsert does not work for creating rules, gets fetched via custom objects
+    ],
     metadataAdditionalTypes = [
       'ProfileUserPermission',
-      'EmailFolder',
-      'ReportFolder',
-      'DashboardFolder',
       'WorkflowAlert',
       'WorkflowFieldUpdate',
       'WorkflowFlowAction',
@@ -315,7 +325,8 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.maxConcurrentRetrieveRequests = config.maxConcurrentRetrieveRequests
       ?? maxConcurrentRetrieveRequests
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
-    this.metadataToRetrieveAndDeploy = metadataToRetrieveAndDeploy
+    this.metadataToRetrieve = metadataToRetrieve
+    this.metadataToDeploy = metadataToDeploy
     this.userConfig = config
     this.metadataAdditionalTypes = metadataAdditionalTypes
     this.metadataTypesToSkipMutation = metadataTypesToSkipMutation
@@ -349,13 +360,13 @@ export default class SalesforceAdapter implements AdapterOperations {
     const fieldTypes = Types.getAllFieldTypes()
     const missingTypes = Types.getAllMissingTypes()
     const annotationTypes = Types.getAnnotationTypes()
-    const metadataTypeNames = this.listMetadataTypes()
+    const metadataTypeInfos = this.listMetadataTypes()
     const metadataTypes = this.fetchMetadataTypes(
-      metadataTypeNames,
+      metadataTypeInfos,
       annotationTypes,
       this.hideTypesInNacls,
     )
-    const metadataInstances = this.fetchMetadataInstances(metadataTypeNames, metadataTypes)
+    const metadataInstances = this.fetchMetadataInstances(metadataTypeInfos, metadataTypes)
 
     const elements = _.flatten(
       await Promise.all([annotationTypes, fieldTypes, missingTypes,
@@ -446,7 +457,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const post = element.clone()
     const type = metadataType(post)
     addInstanceDefaults(post)
-    if (this.isMetadataTypeToRetrieveAndDeploy(type)) {
+    if (this.metadataToDeploy.includes(type)) {
       await this.deployInstance(post)
     } else if (!this.metadataTypesToSkipMutation.includes(metadataType(post))) {
       await this.client.upsert(type, toMetadataInfo(apiName(post), post.value))
@@ -472,8 +483,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async remove(element: Element): Promise<void> {
     const resolved = resolveValues(element, getLookUpName)
     const type = metadataType(resolved)
-    if (isInstanceElement(resolved)
-      && this.isMetadataTypeToRetrieveAndDeploy(type)) {
+    if (isInstanceElement(resolved) && this.metadataToDeploy.includes(type)) {
       await this.deployInstance(resolved, true)
     } else if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(resolved))
@@ -614,7 +624,7 @@ export default class SalesforceAdapter implements AdapterOperations {
           ))
     }
 
-    if (this.isMetadataTypeToRetrieveAndDeploy(typeName)) {
+    if (this.metadataToDeploy.includes(typeName)) {
       await this.deployInstance(newInstance)
     } else if (this.metadataTypesToUseUpsertUponUpdate.includes(typeName)) {
       await this.client.upsert(typeName, toMetadataInfo(apiName(newInstance), newInstance.value))
@@ -737,169 +747,80 @@ export default class SalesforceAdapter implements AdapterOperations {
     }
   }
 
-  private async listMetadataTypes(): Promise<string[]> {
-    return this.client.listMetadataTypes().then(
-      types => types
-        .map(x => x.xmlName)
-        .concat(this.metadataAdditionalTypes)
-        .filter(name => !this.metadataTypesSkippedList.includes(name))
-    )
+  private async listMetadataTypes(): Promise<MetadataObject[]> {
+    return [
+      ...await this.client.listMetadataTypes(),
+      ...this.metadataAdditionalTypes.map(xmlName => ({
+        xmlName,
+        childXmlNames: [],
+        directoryName: '',
+        inFolder: false,
+        metaFile: false,
+        suffix: '',
+      })),
+    ].filter(info => !this.metadataTypesSkippedList.includes(info.xmlName))
   }
 
   @logDuration('fetching metadata types')
   private async fetchMetadataTypes(
-    typeNamesPromise: Promise<string[]>,
+    typeInfoPromise: Promise<MetadataObject[]>,
     knownMetadataTypes: TypeElement[],
     _hideTypesInNacls: boolean, // Will be use in the next PR
   ): Promise<TypeElement[]> {
-    const typeNames = await typeNamesPromise
+    const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(
       knownMetadataTypes.map(mdType => [apiName(mdType), mdType])
     )
-    return _.flatten(await Promise.all((typeNames)
-      .map(typeName => this.fetchMetadataType(typeName, knownTypes, new Set(typeNames)))))
+    return _.flatten(await Promise.all((typeInfos).map(typeInfo => this.fetchMetadataType(
+      typeInfo, knownTypes, new Set(typeInfos.map(type => type.xmlName)),
+    ))))
   }
 
   private async fetchMetadataType(
-    objectName: string,
+    typeInfo: MetadataObject,
     knownTypes: Map<string, TypeElement>,
     baseTypeNames: Set<string>
   ): Promise<TypeElement[]> {
-    const fields = await this.client.describeMetadataType(objectName)
-    return createMetadataTypeElements(objectName, fields, knownTypes, baseTypeNames, this.client)
-  }
-
-  private async retrieveMetadata(metadataTypes: string[]):
-  Promise<FetchElements<Record<string, NamespaceAndInstances[]>>> {
-    const getFolders = async (typeToRetrieve: string):
-    Promise<FetchElements<FileProperties[]>> => {
-      const folderType = this.metadataToRetrieveAndDeploy[typeToRetrieve]
-      if (folderType) {
-        const { errors, result } = await this.client.listMetadataObjects({ type: folderType })
-        return {
-          elements: result,
-          configChanges: errors.map(createListMetadataObjectsConfigChange),
-        }
-      }
-      return { elements: [], configChanges: [] }
-    }
-
-    const isFolder = (type: string): boolean =>
-      Object.values(this.metadataToRetrieveAndDeploy).includes(type)
-
-    const retrieveMetadataTypes = metadataTypes
-      .filter(type => !isFolder(type))
-      .filter(type => !this.metadataTypesSkippedList.includes(type))
-    const retrieveTypeAndFiles = await Promise.all(
-      retrieveMetadataTypes
-        .map(async type => {
-          const { elements: folders, configChanges } = await getFolders(type)
-          let listMetadataQuery: ListMetadataQuery | ListMetadataQuery[]
-          if (_.isEmpty(folders)) {
-            listMetadataQuery = { type }
-          } else {
-            listMetadataQuery = folders
-              .filter(folder => !instanceNameMatchRegex(
-                `${type}.${folder.fullName}`,
-                this.instancesRegexSkippedList
-              ))
-              .map(folder => ({ type, folder: folder.fullName }))
-          }
-          const { result: objs, errors } = await this.client.listMetadataObjects(listMetadataQuery)
-          return {
-            configChanges: _.flatten([
-              configChanges,
-              errors.map(createListMetadataObjectsConfigChange),
-            ]),
-            retrieveTypeAndFiles: [type, [...objs, ...folders]],
-          }
-        })
-    )
-    const listTypesConfigChanges = _.flatten(retrieveTypeAndFiles.map(r => r.configChanges))
-    const retrieveTypeToFiles: Record<string, FileProperties[]> = _
-      .fromPairs(retrieveTypeAndFiles.map(r => r.retrieveTypeAndFiles))
-
-    const retrieveMembers: RetrieveMember[] = _(retrieveTypeToFiles)
-      .entries()
-      .map(([type, files]) => _(files)
-        .map(constants.INSTANCE_FULL_NAME_FIELD)
-        .uniq()
-        .filter(name => !instanceNameMatchRegex(`${type}.${name}`, this.instancesRegexSkippedList))
-        .map(name => ({ type, name }))
-        .value())
-      .flatten()
-      .value()
-
-    const { elements: typeToInstanceInfos, configChanges } = await this.retrieveChunked(
-      retrieveMembers, metadataTypes
-    )
-    const fullNameToNamespace: Record<string, string> = _(Object.values(retrieveTypeToFiles))
-      .flatten()
-      .map(file => [file.fullName, file.namespacePrefix])
-      .fromPairs()
-      .value()
-    return {
-      elements: _(Object.entries(typeToInstanceInfos))
-        .map(([type, instanceInfos]) =>
-          [type, instanceInfos.map(instanceInfo =>
-            ({ namespace: fullNameToNamespace[instanceInfo.fullName], instanceInfo }))])
-        .fromPairs()
-        .value(),
-      configChanges: [...configChanges, ...listTypesConfigChanges],
-    }
-  }
-
-  private async retrieveChunked(retrieveMembers: RetrieveMember[], metadataTypes: string[]):
-    Promise<FetchElements<Record<string, MetadataInfo[]>>> {
-    const fromRetrieveResults = async (retrieveResults: RetrieveResult[]):
-      Promise<Record<string, MetadataInfo[]>> => {
-      const typesToInstances = await Promise.all(retrieveResults
-        .map(async retrieveResult => fromRetrieveResult(retrieveResult, metadataTypes)))
-      return _.mergeWith({}, ...typesToInstances,
-        (objValue: MetadataInfo[], srcValue: MetadataInfo[]) =>
-          _.concat(makeArray(objValue), srcValue))
-    }
-
-    const createRetrieveRequest = (membersChunk: RetrieveMember[]): RetrieveRequest => {
-      const typeToMembers = _.groupBy(membersChunk, retrieveMember => retrieveMember.type)
-      return {
-        apiVersion: API_VERSION,
-        singlePackage: false,
-        unpackaged: {
-          types: Object.entries(typeToMembers).map(([type, members]) =>
-            ({
-              name: type,
-              members: members.map(member => member.name),
-            })),
-        },
-      }
-    }
-
-    const chunkedRetrieveMembers = _.chunk(retrieveMembers, this.maxItemsInRetrieveRequest)
-    const retrieveResults = _.flatten(
-      await withLimitedConcurrency(chunkedRetrieveMembers.map(
-        retrieveChunk => () => this.client.retrieve(createRetrieveRequest(retrieveChunk))
-      ), this.maxConcurrentRetrieveRequests)
-    )
-
-    return {
-      elements: await fromRetrieveResults(retrieveResults),
-      configChanges: _.flatten(retrieveResults.map(createRetrieveConfigChange)),
-    }
+    const typeDesc = await this.client.describeMetadataType(typeInfo.xmlName)
+    const folderType = typeInfo.inFolder ? typeDesc.parentField?.foreignKeyDomain : undefined
+    const mainTypes = await createMetadataTypeElements({
+      name: typeInfo.xmlName,
+      fields: typeDesc.valueTypeFields,
+      knownTypes,
+      baseTypeNames,
+      client: this.client,
+      annotations: { hasMetaFile: typeInfo.metaFile ? true : undefined, folderType },
+    })
+    const folderTypes = folderType === undefined
+      ? []
+      : await createMetadataTypeElements({
+        name: folderType,
+        fields: (await this.client.describeMetadataType(folderType)).valueTypeFields,
+        knownTypes,
+        baseTypeNames,
+        client: this.client,
+        annotations: { hasMetaFile: true, isFolder: true },
+      })
+    return [...mainTypes, ...folderTypes]
   }
 
   @logDuration('fetching instances')
-  private async fetchMetadataInstances(typeNames: Promise<string[]>, types: Promise<TypeElement[]>):
-    Promise<FetchElements<InstanceElement[]>> {
-    type TypeAndInstances = { type: ObjectType; namespaceAndInstances: NamespaceAndInstances[] }
+  private async fetchMetadataInstances(
+    typeInfoPromise: Promise<MetadataObject[]>, types: Promise<TypeElement[]>
+  ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypesToRead: ObjectType[]):
-      Promise<FetchElements<TypeAndInstances[]>> => {
+      Promise<FetchElements<InstanceElement[]>> => {
       const result = await Promise.all(metadataTypesToRead
         // Just fetch metadata instances of the types that we receive from the describe call
         .filter(type => !this.metadataAdditionalTypes.includes(apiName(type)))
         .map(async type => {
           const { elements, configChanges } = await this.listMetadataInstances(apiName(type))
-          return { elements: { type, namespaceAndInstances: elements }, configChanges }
+          return {
+            elements: elements
+              .filter(elem => !_.isEmpty(elem.instanceInfo))
+              .map(elem => createInstanceElement(elem.instanceInfo, type, elem.namespace)),
+            configChanges,
+          }
         }))
       return {
         elements: _.flatten(result.map(r => r.elements)),
@@ -907,53 +828,31 @@ export default class SalesforceAdapter implements AdapterOperations {
       }
     }
 
-    const retrieveInstances = async (metadataTypesToRetrieve: ObjectType[]):
-      Promise<FetchElements<TypeAndInstances[]>> => {
-      const nameToType: Record<string, ObjectType> = _(metadataTypesToRetrieve)
-        .map(t => [apiName(t), t])
-        .fromPairs()
-        .value()
-      const { elements: typeNameToNamespaceAndInfos, configChanges } = await this.retrieveMetadata(
-        Object.keys(nameToType)
-      )
-      return {
-        elements: Object.entries(typeNameToNamespaceAndInfos)
-          .map(([typeName, namespaceAndInstances]) =>
-            ({ type: nameToType[typeName], namespaceAndInstances })),
-        configChanges,
-      }
-    }
-
-    const topLevelTypeNames = await typeNames
+    const typeInfos = await typeInfoPromise
+    const topLevelTypeNames = typeInfos.map(info => info.xmlName)
     const topLevelTypes = (await types)
       .filter(isObjectType)
-      .filter(t => topLevelTypeNames.includes(apiName(t)))
+      .filter(t => topLevelTypeNames.includes(apiName(t)) || t.annotations[IS_FOLDER] === true)
 
     const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(
       topLevelTypes,
-      t => this.isMetadataTypeToRetrieveAndDeploy(metadataType(t)),
+      t => this.metadataToRetrieve.includes(apiName(t)),
     )
 
-    const [retrievedInstances, instances] = await Promise.all(
-      [retrieveInstances(metadataTypesToRetrieve), readInstances(metadataTypesToRead)]
-    )
-    const typesAndInstances = _.flatten([retrievedInstances.elements, instances.elements])
+    const allInstances = await Promise.all([
+      retrieveMetadataInstances({
+        client: this.client,
+        types: metadataTypesToRetrieve,
+        instancesRegexSkippedList: this.instancesRegexSkippedList,
+        maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
+        maxConcurrentRetrieveRequests: this.maxConcurrentRetrieveRequests,
+      }),
+      readInstances(metadataTypesToRead),
+    ])
     return {
-      elements: _(typesAndInstances)
-        .map(typeAndInstances => typeAndInstances.namespaceAndInstances
-          .filter(namespaceAndInstance => !_.isEmpty(namespaceAndInstance))
-          .filter(namespaceAndInstance => namespaceAndInstance.instanceInfo.fullName !== undefined)
-          .map(namespaceAndInstance => createInstanceElement(namespaceAndInstance.instanceInfo,
-            typeAndInstances.type, namespaceAndInstance.namespace)))
-        .flatten()
-        .value(),
-      configChanges: _.flatten([instances.configChanges, retrievedInstances.configChanges]),
+      elements: _.flatten(allInstances.map(instances => instances.elements)),
+      configChanges: _.flatten(allInstances.map(instances => instances.configChanges)),
     }
-  }
-
-  private isMetadataTypeToRetrieveAndDeploy(type: string): boolean {
-    return [...Object.keys(this.metadataToRetrieveAndDeploy),
-      ...Object.values(this.metadataToRetrieveAndDeploy)].includes(type)
   }
 
   /**

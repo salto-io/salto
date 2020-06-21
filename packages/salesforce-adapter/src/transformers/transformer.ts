@@ -25,7 +25,7 @@ import {
   isElement, PrimitiveValue,
   Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   naclCase, TransformFunc,
 } from '@salto-io/adapter-utils'
@@ -43,11 +43,15 @@ import {
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
   LAYOUT_ITEM_METADATA_TYPE,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES,
+  FOLDER_TYPE,
+  HAS_META_FILE,
+  IS_FOLDER,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
 
 const { makeArray } = collections.array
+const { isDefined } = lowerDashValues
 
 export const metadataType = (element: Element): string => {
   if (isInstanceElement(element)) {
@@ -1082,7 +1086,7 @@ export const toMetadataInfo = (fullName: string, values: Values):
     ...values,
   })
 
-export const createInstanceElementFromValues = (values: Values, type: ObjectType,
+export const createInstanceElement = (values: Values, type: ObjectType,
   namespacePrefix?: string): InstanceElement => {
   const fullName = values[INSTANCE_FULL_NAME_FIELD]
   const getPackagePath = (): string[] => {
@@ -1129,35 +1133,51 @@ export const createInstanceElementFromValues = (values: Values, type: ObjectType
   )
 }
 
-export const createInstanceElement = (value: Values, type: ObjectType,
-  namespacePrefix?: string): InstanceElement =>
-  createInstanceElementFromValues(value, type, namespacePrefix)
+type MetadataTypeAnnotations = {
+  [METADATA_TYPE]: string
+  [HAS_META_FILE]?: boolean
+  [FOLDER_TYPE]?: string
+  [IS_FOLDER]?: boolean
+}
 
-export const createMetadataTypeElements = async (
-  objectName: string,
-  fields: ValueTypeField[],
-  knownTypes: Map<string, TypeElement>,
-  baseTypeNames: Set<string>,
-  client: SalesforceClient,
-  isSettings = false,
-): Promise<ObjectType[]> => {
-  if (knownTypes.has(objectName)) {
+const metadataAnnotationTypes = {
+  [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
+  [HAS_META_FILE]: BuiltinTypes.BOOLEAN,
+  [FOLDER_TYPE]: BuiltinTypes.STRING,
+  [IS_FOLDER]: BuiltinTypes.BOOLEAN,
+}
+
+type CreateMetadataTypeParams = {
+  name: string
+  fields: ValueTypeField[]
+  knownTypes?: Map<string, TypeElement>
+  baseTypeNames: Set<string>
+  client: SalesforceClient
+  isSettings?: boolean
+  annotations?: Partial<MetadataTypeAnnotations>
+}
+export const createMetadataTypeElements = async ({
+  name, fields, knownTypes = new Map(), baseTypeNames, client,
+  isSettings = false, annotations = {},
+}: CreateMetadataTypeParams): Promise<ObjectType[]> => {
+  if (knownTypes.has(name)) {
     // Already created this type, no new types to return here
     return []
   }
 
-  const element = Types.get(objectName, false, isSettings) as ObjectType
-  knownTypes.set(objectName, element)
-  element.annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
+  const element = Types.get(name, false, isSettings) as ObjectType
+  knownTypes.set(name, element)
+  const isTopLevelType = baseTypeNames.has(name) || annotations[IS_FOLDER]
+  element.annotationTypes = _.clone(metadataAnnotationTypes)
   element.annotate({
-    [METADATA_TYPE]: objectName,
+    ..._.pickBy(annotations, isDefined),
+    [METADATA_TYPE]: name,
     [CORE_ANNOTATIONS.HIDDEN]: true,
   })
-
   element.path = [
     SALESFORCE,
     TYPES_PATH,
-    ...(baseTypeNames.has(objectName) ? [] : [SUBTYPES_PATH]),
+    ...isTopLevelType ? [] : [SUBTYPES_PATH],
     element.elemID.name,
   ]
   if (!fields || _.isEmpty(fields)) {
@@ -1188,21 +1208,20 @@ export const createMetadataTypeElements = async (
     if (shouldEnrichFieldValue(field)) {
       const innerFields = await client.describeMetadataType(field.soapType)
       return { ...field,
-        fields: innerFields }
+        fields: innerFields.valueTypeFields }
     }
     return field
   }))
 
   const embeddedTypes = await Promise.all(_.flatten(enrichedFields
     .filter(field => !_.isEmpty(field.fields))
-    .map(field => createMetadataTypeElements(
-      field.soapType,
-      makeArray(field.fields),
+    .map(field => createMetadataTypeElements({
+      name: field.soapType,
+      fields: makeArray(field.fields),
       knownTypes,
       baseTypeNames,
       client,
-      false,
-    ))))
+    }))))
 
   // Enum fields sometimes show up with a type name that is not primitive but also does not
   // have fields (so we won't create an embedded type for it). it seems like these "empty" types
@@ -1213,7 +1232,7 @@ export const createMetadataTypeElements = async (
     .filter(field => _.isEmpty(field.fields))
     .filter(field => !isPrimitiveType(Types.get(field.soapType, false)))
     .filter(field => !knownTypes.has(field.soapType))
-    .filter(field => field.soapType !== objectName)
+    .filter(field => field.soapType !== name)
     .forEach(field => knownTypes.set(field.soapType, BuiltinTypes.STRING))
 
   const fieldElements = enrichedFields.map(field =>

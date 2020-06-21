@@ -18,7 +18,7 @@ import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType }
 
 export const GLOBAL_ADAPTER = ''
 
-export const BuiltinTypes: Record<string, PrimitiveType> = {
+export const BuiltinTypes = {
   STRING: new PrimitiveType({
     elemID: new ElemID(GLOBAL_ADAPTER, 'string'),
     primitive: PrimitiveTypes.STRING,

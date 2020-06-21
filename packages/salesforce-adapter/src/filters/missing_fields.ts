@@ -71,8 +71,12 @@ type MissingField = {
   isList?: boolean
 }
 
+const isBuiltinTypeName = (name: string): name is keyof typeof BuiltinTypes => (
+  name in BuiltinTypes
+)
+
 const generateType = (typeName: string): PrimitiveType | ElemID => {
-  if (Object.keys(BuiltinTypes).includes(typeName)) {
+  if (isBuiltinTypeName(typeName)) {
     return BuiltinTypes[typeName]
   }
   return new ElemID(SALESFORCE, typeName)

@@ -35,7 +35,6 @@ const TARGET_PLATFORMS = {
 
 const resources = [
   ...fontFiles.values(),
-  path.join(__dirname, '..', 'salto', 'dist', 'hcl.wasm')
 ]
 
 const BASE_NEXE_CONFIG = {

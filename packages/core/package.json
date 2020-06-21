@@ -43,6 +43,7 @@
     "@salto-io/netsuite-adapter": "0.1.18",
     "@salto-io/salesforce-adapter": "0.1.18",
     "@salto-io/workspace": "0.1.18",
+    "axios": "^0.19.2",
     "lodash": "^4.17.15",
     "pietile-eventemitter": "^1.0.0",
     "readdirp": "^3.1.1",

@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -22,10 +23,6 @@ import {
 import {
   transformElement, TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
-import _ from 'lodash'
-import {
-  createElementsMap,
-} from '../core/search'
 
 const isHiddenType = (element: Element): boolean => isType(element)
   && (element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
@@ -34,7 +31,7 @@ export const addHiddenValuesAndHiddenTypes = (
   workspaceElements: ReadonlyArray<Element>,
   stateElements: ReadonlyArray<Element>,
 ): Element[] => {
-  const stateElementsMap = createElementsMap(stateElements)
+  const stateElementsMap = _.keyBy(stateElements, e => e.elemID.getFullName())
 
   const returnHiddenTypeForInstance = (instance: InstanceElement): ObjectType => {
     const stateType = stateElementsMap[instance.type.elemID.getFullName()]

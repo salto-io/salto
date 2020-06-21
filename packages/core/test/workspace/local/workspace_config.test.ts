@@ -22,10 +22,10 @@ import {
 import { getSaltoHome } from '../../../src/app_config'
 import {
   workspaceConfigSource, WorkspaceConfigSource,
-} from '../../../src/workspace/local/workspace_config'
-import * as mockDirStore from '../../../src/workspace/local/dir_store'
+} from '../../../src/local-workspace/workspace_config'
+import * as mockDirStore from '../../../src/local-workspace/dir_store'
 
-jest.mock('../../../src/workspace/local/dir_store')
+jest.mock('../../../src/local-workspace/dir_store')
 describe('workspace local config', () => {
   const mockDirStoreInstance = (key: string, buffer: string): DirectoryStore => ({
     get: jest.fn().mockImplementation(name => (name.startsWith(key) ? ({ buffer, filename: '' }) : undefined)),

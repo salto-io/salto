@@ -39,7 +39,7 @@ import adapterCreators from '../src/core/adapters/creators'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
-import mockState from './common/state'
+import { mockState } from './common/state'
 import { mockFunction } from './common/helpers'
 
 const mockService = 'salto'

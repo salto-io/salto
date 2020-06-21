@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { validateElements } from '../core/validator'
+import { validateElements } from '../validator'
 import { SourceRange, ParseError } from '../parser/parse'
 import { SourceMap } from '../parser/source_map'
 import { ConfigSource } from './config_source'

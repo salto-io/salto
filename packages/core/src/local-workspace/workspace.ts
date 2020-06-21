@@ -19,9 +19,9 @@ import uuidv4 from 'uuid/v4'
 import { exists } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, NaclFilesSource,
   FILE_EXTENSION, naclFilesSource, parseResultCache, configSource, ConfigSource,
-  buildStaticFilesSource, STATIC_RESOURCES_FOLDER } from '@salto-io/workspace'
+  buildStaticFilesSource } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome } from '../../app_config'
+import { getSaltoHome } from '../app_config'
 import { localState, STATE_EXTENSION } from './state'
 import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
@@ -31,6 +31,7 @@ export const ENVS_PREFIX = 'envs'
 export const STATES_DIR_NAME = 'states'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
 export const CACHE_DIR_NAME = 'cache'
+export const STATIC_RESOURCES_FOLDER = 'static-resources'
 
 export class NotAnEmptyWorkspaceError extends Error {
   constructor(exsitingPathes: string[]) {

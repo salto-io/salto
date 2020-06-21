@@ -18,7 +18,7 @@ import {
   DetailedChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag'
+import type { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { projectChange } from '../../../src/workspace/nacl_files/mutil_env/projections'
 

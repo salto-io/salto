@@ -24,7 +24,7 @@ import {
 } from '../parser/functions.test'
 
 import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
-import { resolve } from '../../src/core/expressions'
+import { resolve } from '../../src/expressions'
 
 describe('State/cache serialization', () => {
   const strType = new PrimitiveType({

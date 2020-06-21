@@ -20,9 +20,9 @@ import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
   loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH,
   loadLocalElementsSources,
-} from '../../../src/workspace/local/workspace'
+} from '../../../src/local-workspace/workspace'
 import { getSaltoHome } from '../../../src/app_config'
-import * as mockDirStore from '../../../src/workspace/local/dir_store'
+import * as mockDirStore from '../../../src/local-workspace/dir_store'
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -33,7 +33,7 @@ jest.mock('@salto-io/workspace', () => ({
   initWorkspace: jest.fn(),
   loadWorkspace: jest.fn(),
 }))
-jest.mock('../../../src/workspace/local/dir_store')
+jest.mock('../../../src/local-workspace/dir_store')
 describe('local workspace', () => {
   const mockExists = exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock

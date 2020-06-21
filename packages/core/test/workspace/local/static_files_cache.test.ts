@@ -21,7 +21,7 @@ import { StaticFilesCache } from '@salto-io/workspace'
 
 import {
   buildLocalStaticFilesCache, CACHE_FILENAME,
-} from '../../../src/workspace/local/static_files_cache'
+} from '../../../src/local-workspace/static_files_cache'
 
 jest.mock('@salto-io/file')
 describe('Static Files Cache', () => {

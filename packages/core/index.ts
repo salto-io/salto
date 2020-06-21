@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ErrorTypes, FoundSearchResult, SearchResult, Workspace, WorkspaceError, SourceFragment,
+import { ErrorTypes, Workspace, WorkspaceError, SourceFragment,
   StateRecency, loadWorkspace, EnvironmentsSources, initWorkspace, ConfigSource, Errors,
   NaclFile, FILE_EXTENSION, parse, SourceRange, parseElemID, SourceMap, dumpElements,
   dumpElemID, ParseError, ParseResult, mergeElements } from '@salto-io/workspace'
 
-export { ErrorTypes, FoundSearchResult, SearchResult, Workspace, WorkspaceError, SourceFragment,
+export { ErrorTypes, Workspace, WorkspaceError, SourceFragment,
   StateRecency, loadWorkspace, EnvironmentsSources, initWorkspace, ConfigSource, Errors,
   NaclFile, FILE_EXTENSION, parse, SourceRange, parseElemID, SourceMap, dumpElements,
   dumpElemID, ParseError, ParseResult, mergeElements }
@@ -30,11 +30,11 @@ export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources,
-} from './src/workspace/local/workspace'
+} from './src/local-workspace/workspace'
 export {
   workspaceConfigSource as localWorkspaceConfigSource,
   WorkspaceConfigSource as LocalWorkspaceConfigSource,
-} from './src/workspace/local/workspace_config'
+} from './src/local-workspace/workspace_config'
 export { SALTO_HOME_VAR, AppConfig, configFromDisk, CommandConfig } from './src/app_config'
 export {
   telemetrySender, Telemetry, TelemetryEvent,

@@ -13,5 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { ValidationError, UnresolvedReferenceValidationError } from './core/validator'
+export { ValidationError, UnresolvedReferenceValidationError } from './validator'
 export { WorkspaceError } from './workspace/workspace'

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionDiff } from '@salto-io/dag'
+import type { AdditionDiff } from '@salto-io/dag'
 import {
   Element, ElemID, ObjectType, InstanceElement, getChangeElement, Value,
   isObjectType, isInstanceElement, PrimitiveType, isField, FieldDefinition, Field,

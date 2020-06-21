@@ -31,12 +31,12 @@
     "build-parser": "yarn run nearleyc src/parser/internal/hcl.ne -o dist/src/parser/internal/hcl.js",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint --fix"
+    "lint-fix": "yarn run lint --fix",
+    "package": "node ./package_native.js"
   },
   "dependencies": {
     "@salto-io/adapter-api": "0.1.18",
     "@salto-io/adapter-utils": "0.1.18",
-    "@salto-io/dag": "0.1.18",
     "@salto-io/logging": "0.1.18",
     "@salto-io/lowerdash": "0.1.18",
     "fuse.js": "^3.4.5",
@@ -46,6 +46,7 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@salto-io/dag": "0.1.18",
     "@types/jest": "^24.0.0",
     "@types/lodash": "^4.14.133",
     "@types/moo": "^0.5.0",

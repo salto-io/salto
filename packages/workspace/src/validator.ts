@@ -21,9 +21,9 @@ import {
   ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
   isReferenceExpression, StaticFile, isPrimitiveValue,
 } from '@salto-io/adapter-api'
-import { InvalidStaticFile } from '../workspace/static_files/common'
+import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
-import { IllegalReference } from '../parser/parse'
+import { IllegalReference } from './parser/parse'
 
 const { makeArray } = collections.array
 

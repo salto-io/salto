@@ -16,8 +16,8 @@
 import wu from 'wu'
 import { types } from '@salto-io/lowerdash'
 import { SaltoError } from '@salto-io/adapter-api'
-import { MergeError } from '../core/merger'
-import { ValidationError } from '../core/validator'
+import { MergeError } from '../merger'
+import { ValidationError } from '../validator'
 import { ParseError } from '../parser/parse'
 
 export class Errors extends types.Bean<Readonly<{

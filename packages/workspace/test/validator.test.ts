@@ -25,7 +25,7 @@ import {
   InvalidValueRangeValidationError, IllegalReferenceValidationError,
   UnresolvedReferenceValidationError, InvalidValueTypeValidationError,
   InvalidStaticFileError, RegexMismatchValidationError,
-} from '../src/core/validator'
+} from '../src/validator'
 import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/static_files/common'
 import { IllegalReference } from '../src/parser/parse'
 

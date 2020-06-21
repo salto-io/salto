@@ -20,8 +20,8 @@ import * as utils from '@salto-io/adapter-utils'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
 import { multiEnvSource } from '../../../src/workspace/nacl_files/mutil_env/multi_env_source'
 import { Errors } from '../../../src/workspace/errors'
-import { ValidationError } from '../../../src/core/validator'
-import { MergeError } from '../../../src/core/merger/internal/common'
+import { ValidationError } from '../../../src/validator'
+import { MergeError } from '../../../src/merger/internal/common'
 import { expectToContainAllItems } from '../../common/helpers'
 
 jest.mock('@salto-io/adapter-utils', () => ({

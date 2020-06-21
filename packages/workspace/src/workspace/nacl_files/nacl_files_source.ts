@@ -22,7 +22,7 @@ import {
   resolvePath,
 } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
-import { mergeElements, MergeError } from '../../core/merger'
+import { mergeElements, MergeError } from '../../merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate,
 } from './nacl_file_update'

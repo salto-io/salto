@@ -17,7 +17,7 @@ import { EOL } from 'os'
 import { replaceContents, exists, readTextFile, rm, rename } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { State, serialize } from '@salto-io/workspace'
-import { localState } from '../../../src/workspace/local/state'
+import { localState } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
 
 jest.mock('@salto-io/file', () => ({

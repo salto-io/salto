@@ -1,5 +1,3 @@
-*.wasm
-
 # Coverage reports
 coverage
 /reports

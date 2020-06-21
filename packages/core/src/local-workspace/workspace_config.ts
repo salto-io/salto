@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import { configSource, ConfigSource, WORKSPACE_CONFIG_NAME,
   workspaceUserConfigType } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome } from '../../app_config'
+import { getSaltoHome } from '../app_config'
 
 const { makeArray } = collections.array
 

@@ -18,7 +18,7 @@ import path from 'path'
 import {
   getChangeElement, isElement, ObjectType, ElemID, Element, isType, isAdditionDiff, DetailedChange,
 } from '@salto-io/adapter-api'
-import { AdditionDiff, ActionName } from '@salto-io/dag'
+import type { AdditionDiff, ActionName } from '@salto-io/dag'
 import { SourceRange } from '../../parser/parse'
 import { SourceMap } from '../../parser/source_map'
 import {

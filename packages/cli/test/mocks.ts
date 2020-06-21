@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import {
-  Plan, PlanItem, SearchResult, Workspace, EVENT_TYPES, DeployResult,
+  Plan, PlanItem, Workspace, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, CommandConfig,
 } from '@salto-io/core'
 import * as workspace from '../src/workspace/workspace'
@@ -482,14 +482,6 @@ export const deploy = async (
     errors: [],
   }
 }
-
-export const describe = async (_searchWords: string[]):
-  Promise<SearchResult> =>
-  ({
-    key: 'salto.office',
-    element: elements()[2],
-    isGuess: false,
-  })
 
 export const createMockEnvNameGetter = (
   newEnvName = 'default'

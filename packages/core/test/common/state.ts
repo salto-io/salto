@@ -17,7 +17,7 @@ import { Element } from '@salto-io/adapter-api'
 import { State } from '@salto-io/workspace'
 import { mockFunction } from './helpers'
 
-const mockState = (services: string[] = [], elements: Element[] = []): State => {
+export const mockState = (services: string[] = [], elements: Element[] = []): State => {
   const state = new Map(elements.map(elem => [elem.elemID.getFullName(), elem]))
   return {
     list: mockFunction<State['list']>().mockImplementation(
@@ -53,5 +53,3 @@ const mockState = (services: string[] = [], elements: Element[] = []): State => 
     existingServices: mockFunction<State['existingServices']>().mockResolvedValue(services),
   }
 }
-
-export default mockState

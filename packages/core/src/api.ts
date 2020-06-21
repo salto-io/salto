@@ -30,7 +30,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { findElement, SearchResult, Workspace, addHiddenValuesAndHiddenTypes,
+import { Workspace, addHiddenValuesAndHiddenTypes,
   removeHiddenValuesAndHiddenTypes } from '@salto-io/workspace'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -239,12 +239,6 @@ export const fetch: FetchFunc = async (
     throw error
   }
 }
-
-export const describeElement = async (
-  workspace: Workspace,
-  searchWords: string[],
-): Promise<SearchResult> =>
-  findElement(searchWords, await workspace.elements())
 
 export const addAdapter = async (
   workspace: Workspace,

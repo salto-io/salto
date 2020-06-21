@@ -15,8 +15,6 @@
 */
 import { StaticFile, Value } from '@salto-io/adapter-api'
 
-export const STATIC_RESOURCES_FOLDER = 'static-resources'
-
 export type StaticFilesSource = {
   getStaticFile: (filepath: string) =>
     Promise<StaticFile | InvalidStaticFile>

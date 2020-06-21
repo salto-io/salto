@@ -18,7 +18,7 @@ import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { stat, mkdirp, replaceContents, readTextFile, exists } from '@salto-io/file'
 import wu from 'wu'
 import { parseResultCache, SourceMap, StaticFilesSource } from '@salto-io/workspace'
-import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
+import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
 
 jest.mock('@salto-io/file', () => ({

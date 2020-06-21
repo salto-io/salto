@@ -4,3 +4,4 @@
 coverage
 src/tools/
 /src/parser/internal/ts_plugin/hcl.js
+/package_native.js

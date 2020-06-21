@@ -22,7 +22,7 @@ import {
 import {
   TestFuncImpl,
 } from '../parser/functions.test'
-import { resolve, UnresolvedReference, CircularReference } from '../../src/core/expressions'
+import { resolve, UnresolvedReference, CircularReference } from '../../src/expressions'
 
 describe('Test Salto Expressions', () => {
   const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (

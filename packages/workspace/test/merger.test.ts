@@ -23,7 +23,7 @@ import {
   DuplicateAnnotationTypeError, DuplicateVariableNameError, ConflictingFieldTypesError,
   DuplicateAnnotationError, DuplicateAnnotationFieldDefinitionError, DuplicateInstanceKeyError,
   MultiplePrimitiveTypesUnsupportedError,
-} from '../src/core/merger'
+} from '../src/merger'
 
 describe('merger', () => {
   const baseElemID = new ElemID('salto', 'base')

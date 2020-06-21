@@ -89,7 +89,7 @@ const main = async (): Promise<number> => {
     const config: Config = await readNaclConfigFile(args.config as string)
 
     log.info('Loading workspace')
-    const ws = await loadLocalWorkspace(args.workspace as string)
+    let ws = await loadLocalWorkspace(args.workspace as string)
 
     validateEnvironmentName(ws, args.env as string)
     await validateGitRepo(args.workspace as string)
@@ -110,6 +110,7 @@ const main = async (): Promise<number> => {
 
     log.info('Overriding the state with previous state file')
     writeFileSync(saltoStateFilePath, previousState)
+    ws = await loadLocalWorkspace(args.workspace as string)
 
     log.info('Find changes using salto preview')
     const plan = await preview(ws)

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Workspace } from '@salto-io/core'
+import { Workspace } from '@salto-io/workspace'
 import * as mocks from '../mocks'
 import { command } from '../../src/commands/init'
 import { buildEventName, getCliTelemetry } from '../../src/telemetry'

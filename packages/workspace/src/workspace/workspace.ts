@@ -29,7 +29,9 @@ import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { multiEnvSource } from './nacl_files/mutil_env/multi_env_source'
 import { Errors } from './errors'
-import { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig, WorkspaceUserConfig, EnvConfig, workspaceConfigInstance, workspaceUserConfigInstance } from './workspace_config_types'
+import { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig,
+  WorkspaceUserConfig, EnvConfig, workspaceConfigInstance,
+  workspaceUserConfigInstance } from './workspace_config_types'
 
 const log = logger(module)
 

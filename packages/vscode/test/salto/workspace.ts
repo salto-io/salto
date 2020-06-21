@@ -16,7 +16,7 @@
 import * as path from 'path'
 import _ from 'lodash'
 import { Workspace, parse, Errors, SourceMap,
-  mergeElements, ConfigSource, ParseError, ParseResult } from '@salto-io/core'
+  mergeElements, ConfigSource, ParseError, ParseResult } from '@salto-io/workspace'
 import { readTextFile } from '@salto-io/file'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 

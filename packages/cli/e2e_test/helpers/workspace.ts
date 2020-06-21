@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Plan, Workspace, telemetrySender, parse } from '@salto-io/core'
+import { Plan, telemetrySender } from '@salto-io/core'
+import { Workspace, parse } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
 import glob from 'glob'

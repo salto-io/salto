@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import wu from 'wu'
+import _ from 'lodash'
 import { GroupedNodeMap } from '@salto-io/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import {
-  Plan, PlanItem, Workspace, EVENT_TYPES, DeployResult,
-  telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, CommandConfig,
+  Plan, PlanItem, EVENT_TYPES, DeployResult,
+  telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
+import { Workspace, Errors } from '@salto-io/workspace'
 import * as workspace from '../src/workspace/workspace'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'

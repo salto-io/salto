@@ -15,7 +15,8 @@
 */
 import { SalesforceClient, testHelpers as salesforceTestHelpers, Credentials } from '@salto-io/salesforce-adapter'
 import path from 'path'
-import { Plan, dumpElements } from '@salto-io/core'
+import { Plan } from '@salto-io/core'
+import { dumpElements } from '@salto-io/workspace'
 import { strings } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'

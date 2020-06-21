@@ -17,7 +17,8 @@ import {
   ObjectType, InstanceElement, ElemID, ChangeError, SaltoError, PrimitiveType,
   PrimitiveTypes, BuiltinTypes,
 } from '@salto-io/adapter-api'
-import { WorkspaceError, FetchChange } from '@salto-io/core'
+import { FetchChange } from '@salto-io/core'
+import { WorkspaceError } from '@salto-io/workspace'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
   formatChangeErrors, formatConfigChangeNeeded } from '../src/formatter'

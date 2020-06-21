@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace, loadLocalWorkspace } from '@salto-io/core'
+import { loadLocalWorkspace } from '@salto-io/core'
+import { Workspace } from '@salto-io/workspace'
 import { CliCommand, CliExitCode, ParsedCliInput, CliOutput } from '../types'
 
 import { createCommandBuilder } from '../command_builder'

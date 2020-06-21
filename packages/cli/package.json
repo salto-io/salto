@@ -44,6 +44,7 @@
     "@salto-io/logging": "0.1.18",
     "@salto-io/lowerdash": "0.1.18",
     "@salto-io/salesforce-adapter": "0.1.18",
+    "@salto-io/workspace": "0.1.18",
     "chalk": "^2.4.2",
     "figlet": "^1.2.4",
     "glob": "^7.1.6",

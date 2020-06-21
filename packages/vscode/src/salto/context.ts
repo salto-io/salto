@@ -21,7 +21,7 @@ import {
 import {
   findElement, resolvePath,
 } from '@salto-io/adapter-utils'
-import { SourceMap } from '@salto-io/core'
+import { SourceMap } from '@salto-io/workspace'
 import { EditorWorkspace } from './workspace'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'

@@ -15,7 +15,7 @@
 */
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { FILE_EXTENSION } from '@salto-io/core'
+import { FILE_EXTENSION } from '@salto-io/workspace'
 import { readTextFile } from '@salto-io/file'
 import _ from 'lodash'
 import { EditorWorkspace } from './salto/workspace'

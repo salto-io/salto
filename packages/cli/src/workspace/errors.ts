@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ErrorTypes } from '@salto-io/core'
+import { ErrorTypes } from '@salto-io/workspace'
 import { ElemID, SaltoError, SaltoElementError, SaltoErrorSeverity } from '@salto-io/adapter-api'
 
 

@@ -13,16 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ErrorTypes, Workspace, WorkspaceError, SourceFragment,
-  StateRecency, loadWorkspace, EnvironmentsSources, initWorkspace, ConfigSource, Errors,
-  NaclFile, FILE_EXTENSION, parse, SourceRange, parseElemID, SourceMap, dumpElements,
-  dumpElemID, ParseError, ParseResult, mergeElements } from '@salto-io/workspace'
-
-export { ErrorTypes, Workspace, WorkspaceError, SourceFragment,
-  StateRecency, loadWorkspace, EnvironmentsSources, initWorkspace, ConfigSource, Errors,
-  NaclFile, FILE_EXTENSION, parse, SourceRange, parseElemID, SourceMap, dumpElements,
-  dumpElemID, ParseError, ParseResult, mergeElements }
-
 export { Plan, PlanItem } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ErrorTypes } from '@salto-io/core'
+import { ErrorTypes } from '@salto-io/workspace'
 import { SaltoError, ElemID } from '@salto-io/adapter-api'
 import { groupRelatedErrors, UnresolvedReferenceGroupError } from '../../src/workspace/errors'
 

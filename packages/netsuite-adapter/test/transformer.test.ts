@@ -32,7 +32,7 @@ import {
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
 
-const NAME_FROM_GET_ELEM_ID = 'nameFromGetElemId_'
+const NAME_FROM_GET_ELEM_ID = 'nameFromGetElemId'
 const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
   ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
 
@@ -304,7 +304,7 @@ describe('Transformer', () => {
         const result = createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE],
           mockGetElemIdFunc)
         expect(result.value[PATH])
-          .toEqual('Templates/E-mail Templates/Inner EmailTemplates Folder/content.html')
+          .toEqual('/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html')
       })
 
       it('should set file content in the content field for file instance', () => {
@@ -556,7 +556,7 @@ describe('Transformer', () => {
     describe('file cabinet types', () => {
       it('should transform file instance', () => {
         const fileInstance = new InstanceElement('elementName', fileCabinetTypes[FILE], {
-          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+          [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
           content: 'dummy file content',
           description: 'file description',
         })
@@ -572,7 +572,7 @@ describe('Transformer', () => {
 
       it('should transform folder instance', () => {
         const folder = new InstanceElement('elementName', fileCabinetTypes[FOLDER], {
-          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
+          [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder',
           description: 'folder description',
         })
         const customizationInfo = toCustomizationInfo(folder)

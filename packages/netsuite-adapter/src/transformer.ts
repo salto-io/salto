@@ -69,7 +69,8 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
         [OBJECT_NAME]: type.elemID.getFullName(),
       }),
     }
-    const desiredName = naclCase(transformedValues[serviceIdFieldName])
+    const desiredName = naclCase(transformedValues[serviceIdFieldName]
+      .slice(isCustomType(type) ? 0 : FILE_CABINET_PATH_SEPARATOR.length))
     return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 
@@ -109,10 +110,11 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
 
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
-    valuesWithTransformedAttrs[PATH] = customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
+    valuesWithTransformedAttrs[PATH] = FILE_CABINET_PATH_SEPARATOR
+      + customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
     if (isFileCustomizationInfo(customizationInfo)) {
       valuesWithTransformedAttrs[(fileContentField as Field).name] = new StaticFile({
-        filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${valuesWithTransformedAttrs[PATH]}`,
+        filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.join('/')}`,
         content: Buffer.from(customizationInfo.fileContent),
       })
     }
@@ -235,7 +237,7 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
   }
 
   if (isFileCabinetType(instance.type)) {
-    const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR)
+    const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)
     delete values[PATH]
     if (instance.type.elemID.isEqual(fileCabinetTypes[FILE].elemID)) {
       const contentFieldName = (fileContentField as Field).name

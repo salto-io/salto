@@ -20,7 +20,7 @@ import {
 import * as constants from '../constants'
 import { fieldTypes } from './field_types'
 
-const pathRegex = `^(${constants.TEMPLATES_FOLDER_NAME}|${constants.SUITE_SCRIPTS_FOLDER_NAME}|${constants.WEB_SITE_HOSTING_FILES_FOLDER_NAME})\\/.+`
+const pathRegex = `^/(${constants.TEMPLATES_FOLDER_NAME}|${constants.SUITE_SCRIPTS_FOLDER_NAME}|${constants.WEB_SITE_HOSTING_FILES_FOLDER_NAME})\\/.+`
 
 const fileElemID = new ElemID(constants.NETSUITE, 'file')
 export const file = new ObjectType({

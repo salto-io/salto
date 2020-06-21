@@ -83,7 +83,6 @@ describe('pino based logger', () => {
           initialConfig.filename = filename
           logger = createLogger()
           await logLine()
-          // await new Promise(res => setTimeout(res, 200))
           const fileContents = readFileContent();
           [line] = fileContents.split('\n')
         })
@@ -481,7 +480,6 @@ describe('pino based logger', () => {
 
       it('should log the error message and stack in multiple lines', () => {
         expect(line1).toContain('Error: testing 123') // message
-        // expect(line1).toContain('testing 123') // message
         expect(line2).toContain(' at ') // stack
         expect(consoleStream.contents())
           // custom props

@@ -146,6 +146,7 @@ const toFetchChanges = (
 export type FetchChangesResult = {
   changes: Iterable<FetchChange>
   elements: Element[]
+  unmergedElements: Element[]
   mergeErrors: MergeErrorWithElements[]
   configChanges: Plan
   adapterNameToConfigMessage: Record<string, string>
@@ -352,6 +353,7 @@ export const fetchChanges = async (
   return {
     changes,
     elements: processErrorsResult.keptElements,
+    unmergedElements: serviceElements,
     mergeErrors: processErrorsResult.errorsWithDroppedElements,
     configChanges,
     adapterNameToConfigMessage,

@@ -129,7 +129,11 @@ describe('local state', () => {
     await state.flush()
     const onFlush = findReplaceContentCall('on-flush')
     expect(onFlush).toBeDefined()
-    expect(onFlush[1]).toEqual([serialize([mockElement]), JSON.stringify({})].join(EOL))
+    expect(onFlush[1]).toEqual([
+      serialize([mockElement]),
+      JSON.stringify({}),
+      JSON.stringify([]),
+    ].join(EOL))
   })
 
   it('shouldn\'t write file if state was not loaded on flush', async () => {

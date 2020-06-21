@@ -211,7 +211,7 @@ export const fetch: FetchFunc = async (
   }
   try {
     const {
-      changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage,
+      changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       adapters,
       filterElementsByServices(await workspace.elements(), fetchServices),
@@ -220,7 +220,9 @@ export const fetch: FetchFunc = async (
       progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    await workspace.state().override(elements)
+    const state = await workspace.state()
+    state.override(elements)
+    state.overridePathIndex(unmergedElements)
     log.debug(`finish to override state with ${elements.length} elements`)
     return {
       changes,

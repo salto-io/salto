@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
-import { State } from '@salto-io/workspace'
+import { State, pathIndex } from '@salto-io/workspace'
 import { mockFunction } from './helpers'
 
 export const mockState = (services: string[] = [], elements: Element[] = []): State => {
@@ -51,5 +51,9 @@ export const mockState = (services: string[] = [], elements: Element[] = []): St
       Object.assign({}, ...services.map(service => ({ [service]: Date.now() })))
     ),
     existingServices: mockFunction<State['existingServices']>().mockResolvedValue(services),
+    overridePathIndex: mockFunction<State['overridePathIndex']>(),
+    getPathIndex: mockFunction<State['getPathIndex']>().mockResolvedValue(
+      new pathIndex.PathIndex()
+    ),
   }
 }

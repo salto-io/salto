@@ -31,7 +31,7 @@ export type BaseLogger = {
 export type BaseLoggerMaker = (namespace: Namespace) => BaseLogger
 
 export type BaseLoggerRepo = BaseLoggerMaker & {
-  configure(config: Readonly<Config>): void
+  setMinLevel(level: LogLevel): void
   end(): Promise<void>
 }
 
@@ -108,7 +108,7 @@ export const logger = (
 }
 
 export type LoggerRepo = ((namespace: NamespaceOrModule) => Logger) & {
-  configure(config: Readonly<Partial<Config>>): void
+  setMinLevel(level: LogLevel): void
   readonly config: Readonly<Config>
   end(): Promise<void>
 }
@@ -132,11 +132,9 @@ export const loggerRepo = (
   ): Logger => loggers.get(namespaceNormalizer(namespace))
 
   const result = Object.assign(getLogger, {
-    configure(
-      newConfig: Readonly<Partial<Config>>,
-    ): void {
-      config = Object.freeze(resolveConfig(mergeConfigs(config, newConfig)))
-      baseLoggerRepo.configure(config)
+    setMinLevel(level: LogLevel): void {
+      baseLoggerRepo.setMinLevel(level)
+      config = Object.freeze(resolveConfig(mergeConfigs(config, { minLevel: level })))
     },
     async end(): Promise<void> { await baseLoggerRepo.end() },
   })

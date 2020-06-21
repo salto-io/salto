@@ -75,9 +75,19 @@ log.error('This message has extra', { extra: true })
 
 ## Configuring the loggers
 
+The configuration can be changed via env vars.
+
+Variables containing empty string values are treated as undefined.
+
 All the loggers share a single configuration with the following properties:
 
 ### `minLevel: 'info' | 'debug' | 'warn' | 'error' | 'none'`
+
+Environment variable:
+
+```bash
+SALTO_LOG_LEVEL=info
+```
 
 Log calls below the specified level will be ignored.
 
@@ -87,13 +97,25 @@ Default: `none`
 
 ### `filename: string | null`
 
+Environment variable:
+
+```bash
+SALTO_LOG_FILE=/tmp/my-package.log
+```
+
 Write the logs to the specified file.
 
-If `null` is specified, logs will be written to stdout.
+If an empty value is specified, logs will be written to stdout.
 
-Default: `null` (write to stdout)
+Default: `''` (write to stdout)
 
 ### `format: 'text' | 'json'`
+
+Environment variable:
+
+```bash
+SALTO_LOG_FORMAT=json
+```
 
 `'text'`: Write logs as text lines.
 
@@ -107,50 +129,34 @@ Default: `'text'`
 
 ### `namespaceFilter: string | () => boolean`
 
+Environment variable:
+
+```bash
+SALTO_LOG_NS='mypackage*'
+```
+
 If a string is specified, it is parsed as a [glob](https://en.wikipedia.org/wiki/Glob_%28programming%29) - only logs having matching namespaces will be written.
 
 When configuring the logger using the [`.configure` API call](#configure_API), a function accepting the string namespace and returning boolean may be specified.
 
-Default: `undefined` (no filtering)
+Default: `''` (no filtering)
 
 ### `colorize: boolean | null`
 
-Override colorization in output.
-
-Default: `null` - colorize if writing to stdout and the stream supports color.
-
-## Configuration using environment variables
-
-The initial configuration can be changed via env vars.
-
-One or more of the following can be specified:
+Environment variable:
 
 ```bash
-SALTO_LOG_LEVEL=info
-SALTO_LOG_FILE=path/to/myfile
-SALTO_LOG_FORMAT=text
-SALTO_LOG_NS=myns*
 SALTO_LOG_COLOR=true
 ```
 
-Variables containing empty string values are treated as undefined.
+Override colorization in output.
 
-## <a name="configure_API"></a>Configuration using the programmatic API
+Default: `''` - colorize if writing to stdout and the stream supports color.
 
-`logger.configure` accepts a `Partial<Config>` object to change the configuration.
-
-All the properties are optional. Undefined properties will not change the configuration.
-
-To remove an existing definition (e.g, `namespaceFilter` or `filename`), specify a `null` value.
+## <a name="configure_API"></a>setting the logging from the programmatic API
 
 ```typescript
-logger.configure({
-  minLevel: 'info',
-  filename: 'path/to/myfile',
-  format: 'text',
-  namespaceFilter: ns => ns.startsWith('myNS') // or 'myNS*'
-  colorize: false,
-})
+logger.setMinLevel('info')
 ```
 
 ## Testing for log calls

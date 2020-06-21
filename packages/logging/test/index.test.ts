@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as winston from '../src/internal/winston'
+import * as pino from '../src/internal/pino'
 import * as env from '../src/internal/env'
 import * as logger from '../src/internal/logger'
 import * as config from '../src/internal/config'
@@ -23,12 +23,12 @@ const INDEX_PATH = '../src/index'
 describe('index', () => {
   const mockConfig = { ...config.DEFAULT_CONFIG }
   let mergeConfigs: jest.SpyInstance
-  let winstonLoggerRepo: jest.SpyInstance
+  let pinoLoggerRepo: jest.SpyInstance
   let loggerRepo: jest.SpyInstance
 
   beforeEach(() => {
     mergeConfigs = jest.spyOn(config, 'mergeConfigs')
-    winstonLoggerRepo = jest.spyOn(winston, 'loggerRepo')
+    pinoLoggerRepo = jest.spyOn(pino, 'loggerRepo')
     loggerRepo = jest.spyOn(logger, 'loggerRepo')
 
     jest.spyOn(env, 'config').mockImplementation(() => mockConfig)
@@ -42,9 +42,9 @@ describe('index', () => {
     expect(mergeConfigs).toHaveBeenCalledWith(mockConfig)
   })
 
-  it('calls winston.loggerRepo correctly', () => {
-    expect(winstonLoggerRepo).toHaveBeenCalled()
-    expect(winstonLoggerRepo.mock.calls[0][0]).toMatchObject({
+  it('calls pino.loggerRepo correctly', () => {
+    expect(pinoLoggerRepo).toHaveBeenCalled()
+    expect(pinoLoggerRepo.mock.calls[0][0]).toMatchObject({
       env: process.env,
       consoleStream: process.stdout,
     })
@@ -53,5 +53,11 @@ describe('index', () => {
   it('calls repo.loggerRepo correctly', () => {
     expect(loggerRepo).toHaveBeenCalled()
     expect(loggerRepo.mock.calls[0][1]).toEqual(mockConfig)
+  })
+
+  test('compareLogLevels', () => {
+    // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
+    const { compareLogLevels } = require('../src')
+    expect(compareLogLevels('info', 'debug')).toBeLessThan(0)
   })
 })

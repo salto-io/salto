@@ -25,6 +25,7 @@ const getFromPath = <T>(
   data: TreeMapEntry<T>,
   path: string[],
   createIfMissing = false,
+  returnPartial = false
 ): TreeMapEntry<T> | undefined => {
   if (_.isEmpty(path)) {
     return data
@@ -33,12 +34,10 @@ const getFromPath = <T>(
   if (data.children[key] === undefined && createIfMissing) {
     data.children[key] = { children: {}, value: [] }
   }
-  if (_.isEmpty(restOfPath)) {
-    return data.children[key]
+  if (data.children[key]) {
+    return getFromPath(data.children[key], restOfPath, createIfMissing, returnPartial)
   }
-  return data.children[key]
-    ? getFromPath(data.children[key], restOfPath, createIfMissing)
-    : undefined
+  return returnPartial ? data : undefined
 }
 
 const mergeEntries = <T>(src: TreeMapEntry<T>, target: TreeMapEntry<T>): void => {
@@ -79,7 +78,7 @@ export class TreeMap<T> implements Map<string, T[]> {
   protected data: TreeMapEntry<T> = { children: {}, value: [] }
 
   constructor(entries: Iterable<[string, T[]]> = [], public seperator = '.') {
-    wu(entries).forEach(([key, value]) => this.set(key, value))
+    wu(entries).forEach(([key, value]) => this.push(key, ...value))
   }
 
   private iterEntry<T>(
@@ -167,5 +166,31 @@ export class TreeMap<T> implements Map<string, T[]> {
     callbackfn: (value: T[], key: string, map: Map<string, T[]>) => void,
   ): void {
     this.iterEntry(this.data).forEach(([key, value]) => callbackfn(value, key, this))
+  }
+}
+
+export class PartialTreeMap<T> extends TreeMap<T> {
+  constructor(entries: Iterable<[string, T[]]>, seperator: string) {
+    super(entries, seperator)
+  }
+
+  get(id: string): T[] | undefined {
+    const path = id.split(this.seperator)
+    const entry = getFromPath(this.data, path, false, true)
+    return entry?.value
+  }
+
+  compact(): void {
+    const compactEntry = (entry: TreeMapEntry<T>): TreeMapEntry<T> => {
+      const shouldDrop = (child: TreeMapEntry<T>): boolean => (
+        _.isEmpty(child.children) && _.isEqual(entry.value, child.value)
+      )
+      const newChildren = _(entry.children)
+        .mapValues(compactEntry)
+        .omitBy(shouldDrop)
+        .value() as Record<string, TreeMapEntry<T>>
+      return { value: entry.value, children: newChildren }
+    }
+    this.data = compactEntry(this.data)
   }
 }

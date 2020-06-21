@@ -28,7 +28,7 @@ import * as parser from './src/parser'
 import * as merger from './src/merger'
 import * as expressions from './src/expressions'
 import * as serialization from './src/serializer/elements'
-
+import * as pathIndex from './src/workspace/path_index'
 
 export {
   errors,
@@ -43,6 +43,7 @@ export {
   staticFiles,
   expressions,
   nacl,
+  pathIndex,
   // Workspace exports
   Workspace,
   SourceFragment,

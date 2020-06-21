@@ -32,6 +32,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
+    "@salto-io/adapter-api": "0.1.18",
     "@salto-io/core": "0.1.18",
     "@types/hogan.js": "^3.0.0",
     "@types/node": "^12.7.1",

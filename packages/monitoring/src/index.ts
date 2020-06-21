@@ -15,12 +15,12 @@
 */
 import sourceMapSupport from 'source-map-support'
 import { loadLocalWorkspace, fetch, preview, Workspace, DetailedChange, FetchChange } from '@salto-io/core'
+import { ElemID } from '@salto-io/adapter-api'
 import yargs from 'yargs'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import simpleGit from 'simple-git'
 import wu from 'wu'
-import { ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { Trigger, TriggerConfig, checkTriggers } from './trigger'
 import { createPlanDiff, renderDiffView } from './diff'

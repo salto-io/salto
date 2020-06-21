@@ -16,28 +16,25 @@
 import * as ErrorTypes from './src/errors'
 
 export { ErrorTypes }
-export { FoundSearchResult, SearchResult, createElementsMap, findElement } from './src/core/search'
-export { mergeElements, MergeError,
-  DuplicateAnnotationError, MergeResult } from './src/core/merger'
-export * from './src/workspace/hidden_values'
-export {
-  Workspace, WorkspaceError, SourceFragment, StateRecency, loadWorkspace, EnvironmentsSources,
-  initWorkspace,
-} from './src/workspace/workspace'
-export { ConfigSource, configSource } from './src/workspace/config_source'
 export { Errors } from './src/workspace/errors'
+export { Workspace, WorkspaceError, SourceFragment, StateRecency, loadWorkspace,
+  EnvironmentsSources, initWorkspace } from './src/workspace/workspace'
+export * from './src/workspace/hidden_values'
+export { ConfigSource, configSource } from './src/workspace/config_source'
 export { NaclFile, FILE_EXTENSION, NaclFilesSource,
   naclFilesSource } from './src/workspace/nacl_files/nacl_files_source'
-export { parse, SourceRange, parseElemID, ParseError, ParseResult } from './src/parser/parse'
-export { serialize, deserialize } from './src/serializer/elements'
-export { SourceMap } from './src/parser/source_map'
-export { dumpElements, dumpElemID } from './src/parser/dump'
 export { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigType,
   workspaceUserConfigType } from './src/workspace/workspace_config_types'
 export { State } from './src/workspace/state'
 export { File, SyncDirectoryStore, DirectoryStore } from './src/workspace/dir_store'
-export { resolve } from './src/core/expressions'
 export { parseResultCache } from './src/workspace/cache'
 export { StaticFilesCache, StaticFilesCacheResult } from './src/workspace/static_files/cache'
 export { buildStaticFilesSource } from './src/workspace/static_files/source'
 export { STATIC_RESOURCES_FOLDER, StaticFilesSource } from './src/workspace/static_files/common'
+export { parse, SourceRange, parseElemID, ParseError, ParseResult } from './src/parser/parse'
+export { dumpElements, dumpElemID } from './src/parser/dump'
+export { SourceMap } from './src/parser/source_map'
+export { FoundSearchResult, SearchResult, createElementsMap, findElement } from './src/core/search'
+export { mergeElements, MergeError, DuplicateAnnotationError, MergeResult } from './src/core/merger'
+export { resolve } from './src/core/expressions'
+export { serialize, deserialize } from './src/serializer/elements'

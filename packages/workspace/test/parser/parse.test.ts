@@ -576,12 +576,24 @@ describe('Salto parser', () => {
   })
 
   describe('simple error tests', () => {
-    it('fails on invalid inheritance syntax', () => {
+    it('fails on invalid inheritance syntax', async () => {
       const body = `
       type salesforce.string string {}
       `
-      return parse(Buffer.from(body), 'none', functions)
-        .catch(e => expect(e.message).toEqual('expected keyword is. found string'))
+      const result = await parse(Buffer.from(body), 'none', functions)
+      expect(result.errors).not.toHaveLength(0)
+      expect(result.errors[0].summary).toEqual('expected keyword is. found string')
+    })
+
+    it('fails on invalid syntax', async () => {
+      const body = `
+      salto {
+        test: "Test"
+      }
+      `
+      const result = await parse(Buffer.from(body), 'none', functions)
+      expect(result.errors).not.toHaveLength(0)
+      expect(result.errors[0].summary).toEqual('Unexpected token: :')
     })
   })
 

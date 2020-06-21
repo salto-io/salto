@@ -28,6 +28,34 @@
     ]
   },
   {
+    "id": "ReportFilterItem",
+    "fields": [
+      {
+        "name": "operator",
+        "type": "STRING",
+        "annotations": {
+          "_values": [
+            "equals",
+            "notEqual",
+            "lessThan",
+            "greaterThan",
+            "lessOrEqual",
+            "greaterOrEqual",
+            "contains",
+            "notContain",
+            "startsWith",
+            "includes",
+            "excludes",
+            "within"
+          ],
+          "_restrictions": {
+            "enforceValue": true
+          }
+        }
+      }
+    ]
+  },
+  {
     "id": "LeadConvertSettings",
     "fields": [
       {

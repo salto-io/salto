@@ -19,7 +19,7 @@ import {
   CORE_ANNOTATIONS, ReferenceExpression, InstanceElement, getRestriction, ListType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { Field as SalesforceField, ValueTypeField } from 'jsforce'
+import { Field as SalesforceField } from 'jsforce'
 import {
   restoreValues, resolveValues,
 } from '@salto-io/adapter-utils'
@@ -45,9 +45,11 @@ import {
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
+import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
-import { createValueSetEntry } from '../utils'
+import { createValueSetEntry, MockInterface } from '../utils'
 import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
+import { mockValueTypeField, mockDescribeValueResult } from '../connection'
 
 
 const { makeArray } = collections.array
@@ -55,18 +57,9 @@ const { makeArray } = collections.array
 describe('transformer', () => {
   describe('getValueTypeFieldElement', () => {
     const dummyElem = new ObjectType({ elemID: new ElemID('adapter', 'dummy') })
-    const salesforceValueTypeFieldBase: ValueTypeField = {
-      fields: [],
-      foreignKeyDomain: '',
-      isForeignKey: false,
-      isNameField: false,
-      minOccurs: 0,
+    const salesforceEnumField = mockValueTypeField({
       name: 'Field',
-      picklistValues: [],
       soapType: 'String',
-      valueRequired: false,
-    }
-    const salesforceEnumField: ValueTypeField = _.merge({}, salesforceValueTypeFieldBase, {
       picklistValues: [
         { active: true, defaultValue: false, value: 'b' },
         { active: true, defaultValue: false, value: 'a' },
@@ -122,8 +115,7 @@ describe('transformer', () => {
         queryByDistance: false,
         referenceTo: [
           'Group',
-          // eslint-disable-next-line comma-dangle
-          'User'
+          'User',
         ],
         relationshipName: 'Owner',
         restrictedPicklist: false,
@@ -133,8 +125,7 @@ describe('transformer', () => {
         sortable: true,
         type: 'reference',
         unique: false,
-        // eslint-disable-next-line comma-dangle
-        updateable: true
+        updateable: true,
       }
 
       let salesforceReferenceField: SalesforceField
@@ -251,8 +242,7 @@ describe('transformer', () => {
         ],
         type: 'picklist',
         unique: false,
-        // eslint-disable-next-line comma-dangle
-        updateable: true
+        updateable: true,
       }
 
       let salesforceFieldDependencyField: SalesforceField
@@ -320,8 +310,7 @@ describe('transformer', () => {
         sortable: true,
         type: 'currency',
         unique: false,
-        // eslint-disable-next-line comma-dangle
-        updateable: true
+        updateable: true,
       }
 
       let salesforceRollupSummaryField: SalesforceField
@@ -895,187 +884,140 @@ describe('transformer', () => {
 
   describe('create a path with subtype for subtypes', () => {
     let client: SalesforceClient
+    let connection: MockInterface<Connection>
 
     beforeEach(() => {
-      client = mockClient().client
+      const mock = mockClient()
+      client = mock.client
+      connection = mock.connection
     })
 
-    const nestedField = {
-      fields: [],
-      foreignKeyDomain: '',
-      isForeignKey: false,
-      isNameField: false,
-      minOccurs: 0,
+    const nestedField = mockValueTypeField({
       name: 'Nested',
-      picklistValues: [],
       soapType: 'NestedFieldType',
-      valueRequired: false,
-    }
-    const field = {
+    })
+    const field = mockValueTypeField({
       fields: [nestedField],
-      foreignKeyDomain: '',
-      isForeignKey: false,
-      isNameField: false,
-      minOccurs: 0,
       name: 'Field',
-      picklistValues: [],
       soapType: 'FieldType',
-      valueRequired: false,
-    }
+    })
     it('should not create a base element as subtype', async () => {
-      const [element] = await createMetadataTypeElements(
-        'BaseType',
-        [],
-        new Map<string, TypeElement>(),
-        new Set(['BaseType']),
+      const [element] = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [],
+        baseTypeNames: new Set(['BaseType']),
         client,
-      )
+      })
       expect(element.path).not.toContain(SUBTYPES_PATH)
     })
 
     it('should create a type which is not a base element as subtype', async () => {
-      const [element] = await createMetadataTypeElements(
-        'BaseType',
-        [],
-        new Map<string, TypeElement>(),
-        new Set(),
+      const [element] = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [],
+        baseTypeNames: new Set(),
         client,
-      )
+      })
       expect(element.path).toContain(SUBTYPES_PATH)
     })
 
     it('should not create a field which is a base element as subtype', async () => {
-      client.describeMetadataType = jest.fn()
-      const elements = await createMetadataTypeElements(
-        'BaseType',
-        [field],
-        new Map<string, TypeElement>(),
-        new Set(['BaseType', 'FieldType', 'NestedFieldType']),
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [field],
+        baseTypeNames: new Set(['BaseType', 'FieldType', 'NestedFieldType']),
         client,
-      )
+      })
       expect(elements).toHaveLength(2)
       const [element, fieldType] = elements
       expect(element.path).not.toContain(SUBTYPES_PATH)
       expect(fieldType.path).not.toContain(SUBTYPES_PATH)
-      expect(client.describeMetadataType).toHaveBeenCalledTimes(0)
+      expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(0)
     })
 
     it('should create a field and nested field which are not a base element as subtype', async () => {
-      client.describeMetadataType = jest.fn().mockImplementation(() =>
-        Promise.resolve([{
-          fields: [],
-          name: 'inner',
-          picklistValues: [],
-          soapType: 'string',
-          valueRequired: false,
-        }]))
-      const elements = await createMetadataTypeElements(
-        'BaseType',
-        [field],
-        new Map<string, TypeElement>(),
-        new Set(['BaseType']),
+      connection.metadata.describeValueType.mockResolvedValue(mockDescribeValueResult({
+        valueTypeFields: [{ name: 'inner', soapType: 'string' }],
+      }))
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [field],
+        baseTypeNames: new Set(['BaseType']),
         client,
-      )
+      })
       expect(elements).toHaveLength(3)
       const [element, fieldType, nestedFieldType] = elements
       expect(element.path).not.toContain(SUBTYPES_PATH)
       expect(fieldType.path).toContain(SUBTYPES_PATH)
-      expect(client.describeMetadataType).toHaveBeenCalledTimes(1)
+      expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
       expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
       expect(nestedFieldType.fields.inner.type).toEqual(BuiltinTypes.STRING)
     })
 
     it('should create nested field as subtype when nested field has fields', async () => {
-      client.describeMetadataType = jest.fn().mockImplementation(() =>
-        Promise.resolve([{
-          fields: [],
-          name: 'inner',
-          picklistValues: [],
-          soapType: 'string',
-          valueRequired: false,
-        }]))
-      const elements = await createMetadataTypeElements(
-        'BaseType',
-        [field],
-        new Map<string, TypeElement>(),
-        new Set(['BaseType', 'FieldType']),
+      connection.metadata.describeValueType.mockResolvedValue(mockDescribeValueResult({
+        valueTypeFields: [{ name: 'inner', soapType: 'string' }],
+      }))
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [field],
+        baseTypeNames: new Set(['BaseType', 'FieldType']),
         client,
-      )
+      })
       expect(elements).toHaveLength(3)
       const [element, fieldType, nestedFieldType] = elements
       expect(element.path).not.toContain(SUBTYPES_PATH)
       expect(fieldType.path).not.toContain(SUBTYPES_PATH)
       expect(nestedFieldType.path).toContain(SUBTYPES_PATH)
-      expect(client.describeMetadataType).toHaveBeenCalledTimes(1)
+      expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
     })
 
     it('should not create nested field when nested field has no fields', async () => {
-      client.describeMetadataType = jest.fn()
-      const elements = await createMetadataTypeElements(
-        'BaseType',
-        [field],
-        new Map<string, TypeElement>(),
-        new Set(['BaseType', 'FieldType']),
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [field],
+        baseTypeNames: new Set(['BaseType', 'FieldType']),
         client,
-      )
+      })
       expect(elements).toHaveLength(2)
       const [element, fieldType] = elements
       expect(element.path).not.toContain(SUBTYPES_PATH)
       expect(fieldType.path).not.toContain(SUBTYPES_PATH)
-      expect(client.describeMetadataType).toHaveBeenCalledTimes(1)
+      expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(1)
     })
 
     it('should not create nested field when nested field has no fields and is a picklist', async () => {
-      client.describeMetadataType = jest.fn().mockImplementation(() =>
-        Promise.resolve([]))
-      const elements = await createMetadataTypeElements(
-        'BaseType',
-        [{
-          fields: [],
-          foreignKeyDomain: '',
-          isForeignKey: false,
-          isNameField: false,
-          minOccurs: 0,
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [mockValueTypeField({
           name: 'picklistField',
           picklistValues: [
             { active: true, value: 'yes', defaultValue: true },
             { active: true, value: 'no', defaultValue: false },
           ],
           soapType: 'MyPicklist',
-          valueRequired: false,
-        }],
-        new Map<string, TypeElement>(),
-        new Set(['BaseType']),
+        })],
+        baseTypeNames: new Set(['BaseType']),
         client,
-      )
+      })
       expect(elements).toHaveLength(1)
       expect(elements[0].path).not.toContain(SUBTYPES_PATH)
-      expect(client.describeMetadataType).toHaveBeenCalledTimes(0)
+      expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(0)
     })
 
     it('should not create nested field when nested field has no fields and its name is not capitalized', async () => {
-      client.describeMetadataType = jest.fn().mockImplementation(() =>
-        Promise.resolve([]))
-      const elements = await createMetadataTypeElements(
-        'BaseType',
-        [{
-          fields: [],
-          foreignKeyDomain: '',
-          isForeignKey: false,
-          isNameField: false,
-          minOccurs: 0,
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [mockValueTypeField({
           name: 'noUpperCaseTypeName',
-          picklistValues: [],
           soapType: 'base64Binary',
-          valueRequired: false,
-        }],
-        new Map<string, TypeElement>(),
-        new Set(['BaseType']),
+        })],
+        baseTypeNames: new Set(['BaseType']),
         client,
-      )
+      })
       expect(elements).toHaveLength(1)
       expect(elements[0].path).not.toContain(SUBTYPES_PATH)
-      expect(client.describeMetadataType).toHaveBeenCalledTimes(0)
+      expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(0)
     })
   })
 

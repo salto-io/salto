@@ -15,10 +15,11 @@
 */
 import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
-import createConnection from './connection'
+import { mockJsforce } from './connection'
+import { MockInterface } from './utils'
 
-const mockClient = (): { connection: Connection; client: SalesforceClient } => {
-  const connection = createConnection()
+const mockClient = (): { connection: MockInterface<Connection>; client: SalesforceClient } => {
+  const connection = mockJsforce()
   const client = new SalesforceClient({
     credentials: {
       username: 'mockUser',

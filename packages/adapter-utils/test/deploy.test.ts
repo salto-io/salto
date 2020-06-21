@@ -15,11 +15,7 @@
 */
 import { ObjectType, ElemID, InstanceElement, DeployResult, getChangeElement } from '@salto-io/adapter-api'
 import { deployInstance, ChangeOperations } from '../src/deploy'
-import { mockFunction, toChangeGroup } from './common'
-
-type MockInterface<T extends { [key: string]: (...args: never[]) => unknown }> = {
-  [k in keyof T]: jest.Mock<ReturnType<T[k]>, Parameters<T[k]>>
-}
+import { mockFunction, toChangeGroup, MockInterface } from './common'
 
 describe('deployInstance', () => {
   const testType = new ObjectType({ elemID: new ElemID('test', 'type') })

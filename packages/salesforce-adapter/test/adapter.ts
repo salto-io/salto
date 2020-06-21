@@ -17,9 +17,10 @@ import Connection from '../src/client/jsforce'
 import SalesforceClient from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
 import createClient from './client'
+import { MockInterface } from './utils'
 
 export type Mocks = {
-  connection: Connection
+  connection: MockInterface<Connection>
   client: SalesforceClient
   adapter: SalesforceAdapter
 }

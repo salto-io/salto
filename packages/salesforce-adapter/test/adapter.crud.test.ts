@@ -63,10 +63,10 @@ describe('SalesforceAdapter CRUD', () => {
       success,
     })
 
-  const deployTypeNames = {
-    AssignmentRules: undefined,
-    UnsupportedType: undefined,
-  }
+  const deployTypeNames = [
+    'AssignmentRules',
+    'UnsupportedType',
+  ]
 
   let mockUpsert: jest.Mock
   let mockDelete: jest.Mock
@@ -77,7 +77,7 @@ describe('SalesforceAdapter CRUD', () => {
     ({ connection, adapter } = mockAdapter({
       adapterParams: {
         filterCreators: [],
-        metadataToRetrieveAndDeploy: deployTypeNames,
+        metadataToDeploy: deployTypeNames,
       },
     }))
 

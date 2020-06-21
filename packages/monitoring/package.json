@@ -33,11 +33,12 @@
   },
   "dependencies": {
     "@salto-io/core": "0.1.18",
+    "@types/hogan.js": "^3.0.0",
     "@types/node": "^12.7.1",
     "@types/nodemailer": "^6.4.0",
     "@types/nodemailer-smtp-transport": "^2.7.4",
     "diff": "^4.0.1",
-    "diff2html": "^2.12.1",
+    "diff2html": "3.1.8",
     "lodash": "^4.17.15",
     "nodemailer": "^6.4.8",
     "simple-git": "^2.6.0",

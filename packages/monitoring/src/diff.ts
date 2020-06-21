@@ -15,7 +15,8 @@
 */
 // @ts-ignore
 import * as Diff from 'diff'
-import { Diff2Html } from 'diff2html'
+import * as Diff2Html from 'diff2html'
+import { dumpElements, PlanItem } from '@salto-io/core'
 import {
   Element,
   getChangeElement,
@@ -28,7 +29,6 @@ import {
   Field,
   Value,
 } from '@salto-io/adapter-api'
-import { dumpElements, PlanItem } from '@salto-io/core'
 import wu from 'wu'
 import _ from 'lodash'
 
@@ -117,7 +117,7 @@ export const createChangeDiff = async (
 
 export const renderDiffView = (diff: UnifiedDiff): string => {
   const htmlDiff = diff.length > 0
-    ? Diff2Html.getPrettyHtml(diff, { inputFormat: 'diff' })
+    ? Diff2Html.html(diff)
     : ''
   const prompt = diff.length > 0
     ? 'Salto will perform the following changes'

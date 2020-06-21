@@ -84,8 +84,9 @@ const notifyByEmail = async (
   }
   try {
     await transporter.sendMail(mailOptions)
+    log.info(`Sent email successfully to ${notification.to.join(',')}`)
   } catch (e) {
-    log.error(`Failed to send email to ${notification.to}`)
+    log.error(`Failed to send email to ${notification.to.join(',')}`)
     return false
   }
   return true

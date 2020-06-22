@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { existsSync, readFileSync } from 'fs'
+import _ from 'lodash'
 import { parse } from '@salto-io/core'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { Trigger } from './trigger'
@@ -30,6 +31,35 @@ const validateConfigFileExists = (filePath: string): void => {
   if (!existsSync(filePath)) {
     throw new Error(`Config file ${filePath} does not exist`)
   }
+}
+
+const validateRegex = (config: Config): void => {
+  config.triggers.forEach((trigger: Trigger) => {
+    trigger.elementIdsRegex.forEach((regex: string) => {
+      try {
+        // eslint-disable-next-line no-new
+        new RegExp(regex)
+      } catch (e) {
+        throw new Error(`Invalid regex "${regex}" in ${trigger.name} trigger`)
+      }
+    })
+  })
+}
+
+const validateTriggerNames = (config: Config): void => {
+  const triggerNameToTrigger = _.keyBy(config.triggers, (t: Trigger) => t.name)
+  config.notifications.forEach((notification: Notification) => {
+    notification.triggers.forEach((triggerName: string) => {
+      if (!triggerNameToTrigger[triggerName]) {
+        throw new Error(`Invalid trigger name "${triggerName}"`)
+      }
+    })
+  })
+}
+
+export const validateConfig = (config: Config): void => {
+  validateRegex(config)
+  validateTriggerNames(config)
 }
 
 export const readConfigFile = async (filePath: string): Promise<Config> => {

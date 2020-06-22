@@ -24,7 +24,7 @@ import _ from 'lodash'
 import { Trigger, triggered, checkTriggers } from './trigger'
 import { createPlanDiff, renderDiffView } from './diff'
 import { Notification, notify } from './notification'
-import { readConfigFile, Config } from './config'
+import { readConfigFile, Config, validateConfig } from './config'
 
 sourceMapSupport.install()
 
@@ -90,13 +90,14 @@ const main = async (): Promise<number> => {
   try {
     await validateGitRepo(args.workspace as string)
   } catch (e) {
-    log.error(e)
+    log.error(e.message)
     return 1
   }
 
   const git = simpleGit(args.workspace as string)
   try {
     const config: Config = await readConfigFile(args.config as string)
+    validateConfig(config)
 
     log.info('Loading workspace')
     let ws = await loadLocalWorkspace(args.workspace as string)
@@ -142,13 +143,11 @@ const main = async (): Promise<number> => {
       .map((trigger: Trigger) => notify(notification, trigger, htmlDiff, config.smtp)))
     await Promise.all(_.flatten(notifyPromises))
   } catch (e) {
-    log.error(e)
+    log.error(e.message)
     return 1
   } finally {
-    log.info('Overriding state with updated state file')
     await git.checkout(['HEAD', stateFilePath(args.env as string)])
   }
-
   log.info('Finished successfully')
   await logger.end()
   return 0

@@ -32,6 +32,7 @@ export const checkTriggers = (triggers: Array<Trigger>, changes: DetailedChange[
   triggers.forEach((trigger: Trigger) => {
     changes.forEach((change: DetailedChange) => {
       if (triggerMatch(trigger, change.id.getFullName())) {
+        if (!trigger.triggeredBy) trigger.triggeredBy = []
         trigger.triggeredBy.push(change)
       }
     })

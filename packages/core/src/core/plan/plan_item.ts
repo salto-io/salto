@@ -102,8 +102,14 @@ export const addPlanItemAccessors = (
         }
         let annotationTypeChanges: DetailedChange[] = []
         if (hasAnnotationTypes(change.data.before) && hasAnnotationTypes(change.data.after)) {
+          const beforeAnnoTypes = _.pickBy(change.data.before.annotationTypes,
+            (anno, annoName) =>
+              !(change.data.after.annotationTypes[annoName]?.elemID.isEqual(anno.elemID)))
+          const afterAnnoTypes = _.pickBy(change.data.after.annotationTypes,
+            (anno, annoName) =>
+              !(change.data.before.annotationTypes[annoName]?.elemID.isEqual(anno.elemID)))
           annotationTypeChanges = getValuesChanges(elem.elemID.createNestedID('annotation'),
-            change.data.before.annotationTypes, change.data.after.annotationTypes)
+            beforeAnnoTypes, afterAnnoTypes)
         }
         const annotationChanges = getValuesChanges(
           elem.elemID.isTopLevel() ? elem.elemID.createNestedID('attr') : elem.elemID,

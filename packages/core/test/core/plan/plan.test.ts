@@ -84,8 +84,10 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
   planWithAnnotationTypesChanges: async () => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2]
+    const saltoAddress = afterElements[1]
     // update annotation types
     saltoOffice.annotationTypes.new = BuiltinTypes.STRING
+    saltoOffice.annotationTypes.address = saltoAddress.clone({ label: 'test label' })
     const plan = await getPlan(allElements, afterElements)
     return [plan, saltoOffice]
   },

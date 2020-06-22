@@ -18,8 +18,6 @@ import { loadLocalWorkspace, fetch, preview, Workspace, DetailedChange, FetchCha
 import { ElemID } from '@salto-io/adapter-api'
 import { logger, LogLevel } from '@salto-io/logging'
 import yargs from 'yargs'
-import { readFileSync, writeFileSync } from 'fs'
-import path from 'path'
 import simpleGit from 'simple-git'
 import wu from 'wu'
 import _ from 'lodash'
@@ -36,8 +34,7 @@ const log = logger(module)
 
 logger.configure({ minLevel: INFO_LOG_LEVEL })
 
-const stateFilePath = (baseDir: string, envName: string): string =>
-  path.join(path.resolve(baseDir), `/salto.config/states/${envName}.jsonl`)
+const stateFilePath = (envName: string): string => `salto.config/states/${envName}.jsonl`
 
 const validateGitRepo = async (dirPath: string): Promise<void> => {
   if (!await simpleGit(dirPath).checkIsRepo()) {
@@ -91,29 +88,32 @@ const main = async (): Promise<number> => {
     .argv
 
   try {
+    await validateGitRepo(args.workspace as string)
+  } catch (e) {
+    log.error(e)
+    return 1
+  }
+
+  const git = simpleGit(args.workspace as string)
+  try {
     const config: Config = await readConfigFile(args.config as string)
 
     log.info('Loading workspace')
     let ws = await loadLocalWorkspace(args.workspace as string)
-
     validateEnvironmentName(ws, args.env as string)
-    await validateGitRepo(args.workspace as string)
-
-    const saltoStateFilePath = stateFilePath(args.workspace as string, args.env as string)
-
-    log.info('Reading the current state file')
-    const previousState = readFileSync(saltoStateFilePath)
 
     log.info('Fetching state')
     const fetchChanges = await fetch(ws)
     await ws.updateNaclFiles([...fetchChanges.changes].map((c: FetchChange) => c.change))
     await ws.flush()
 
-    log.info('Reading the updated state file')
-    const updatedState = readFileSync(saltoStateFilePath)
+    log.info('Committing the updated state file')
+    await git.add('.')
+    await git.commit(`Update state - ${new Date().toLocaleString()}`)
 
     log.info('Overriding the state with previous state file')
-    writeFileSync(saltoStateFilePath, previousState)
+    await git.checkout(['HEAD~1', stateFilePath(args.env as string)])
+
     ws = await loadLocalWorkspace(args.workspace as string)
 
     log.info('Find changes using salto preview')
@@ -141,22 +141,16 @@ const main = async (): Promise<number> => {
       .filter((trigger: Trigger) => !_.isUndefined(trigger) && triggered(trigger))
       .map((trigger: Trigger) => notify(notification, trigger, htmlDiff, config.smtp)))
     await Promise.all(_.flatten(notifyPromises))
-
-    log.info('Overriding state with updated state file')
-    writeFileSync(saltoStateFilePath, updatedState)
-
-    log.info('Committing the updated state file')
-    const git = simpleGit(args.workspace as string)
-    await git.add('.')
-    await git.commit(`Update state - ${new Date().toLocaleString()}`)
-
-    log.info('Finished successfully')
   } catch (e) {
     log.error(e)
     return 1
   } finally {
-    await logger.end()
+    log.info('Overriding state with updated state file')
+    await git.checkout(['HEAD', stateFilePath(args.env as string)])
   }
+
+  log.info('Finished successfully')
+  await logger.end()
   return 0
 }
 

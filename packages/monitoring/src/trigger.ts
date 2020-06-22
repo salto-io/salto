@@ -23,7 +23,10 @@ export type Trigger = {
   triggeredBy: DetailedChange[]
 }
 
-export const triggered = (trigger: Trigger): boolean => trigger.triggeredBy.length > 0
+export const triggered = (trigger: Trigger): boolean => {
+  if (!trigger.triggeredBy) return false
+  return trigger.triggeredBy.length > 0
+}
 
 const triggerMatch = (trigger: Trigger, fullName: string): boolean => trigger.elementIdsRegex
   .some((elementIdRegex: string) => fullName.match(new RegExp(elementIdRegex)))

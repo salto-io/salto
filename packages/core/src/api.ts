@@ -271,12 +271,6 @@ export const restore = async (
   return changes.map(change => ({ change, serviceChange: change }))
 }
 
-export const describeElement = async (
-  workspace: Workspace,
-  searchWords: string[],
-): Promise<SearchResult> =>
-  findElement(searchWords, await workspace.elements())
-
 export const addAdapter = async (
   workspace: Workspace,
   adapterName: string,

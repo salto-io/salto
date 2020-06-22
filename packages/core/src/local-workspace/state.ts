@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
-import { state, serialization } from '@salto-io/workspace'
+import { State, serialization } from '@salto-io/workspace'
 
 const { makeArray } = collections.array
 const { serialize, deserialize } = serialization
@@ -36,7 +36,7 @@ type StateData = {
   servicesUpdateDate: Record<string, Date>
 }
 
-export const localState = (filePath: string): state.State => {
+export const localState = (filePath: string): State => {
   let innerStateData: Promise<StateData>
   let dirty = false
   let currentFilePath = filePath

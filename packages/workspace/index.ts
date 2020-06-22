@@ -20,7 +20,7 @@ import { Workspace, SourceFragment, StateRecency, loadWorkspace,
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
 import * as workspaceConfig from './src/workspace/config'
-import * as state from './src/workspace/state'
+import { State } from './src/workspace/state'
 import * as dirStore from './src/workspace/dir_store'
 import * as parseCache from './src/workspace/cache'
 import * as staticFiles from './src/workspace/static_files'
@@ -38,7 +38,6 @@ export {
   merger,
   dirStore,
   parseCache,
-  state,
   configSource,
   workspaceConfig,
   staticFiles,
@@ -51,4 +50,5 @@ export {
   loadWorkspace,
   EnvironmentsSources,
   initWorkspace,
+  State,
 }

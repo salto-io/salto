@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Element, ElemID, Values, ObjectType, ChangeDataType, Change, ChangeGroup, getChangeElement,
+  Element, ElemID, Values, ObjectType, ChangeDataType, Change,
 } from '@salto-io/adapter-api'
 import {
   findElements as findElementsByID,
@@ -96,14 +96,6 @@ export const toChange = ({ before, after }: ChangeParams): Change => {
     return { action: 'add', data: { after } }
   }
   throw new Error('must provide before or after')
-}
-
-export const toChangeGroup = (...params: ChangeParams[]): ChangeGroup => {
-  const changes = params.map(toChange)
-  return {
-    groupID: getChangeElement(changes[0]).elemID.getFullName(),
-    changes,
-  }
 }
 
 export type MockFunction<T extends (...args: never[]) => unknown> =

@@ -21,7 +21,7 @@ import picklistStandardFieldValidator from '../../src/change_validators/picklist
 import {
   API_NAME, FIELD_ANNOTATIONS, SALESFORCE, VALUE_SET_FIELDS,
 } from '../../src/constants'
-import { toChangeGroup } from '../utils'
+import { toChange } from '../utils'
 
 
 describe('picklist standard field change validator', () => {
@@ -50,7 +50,7 @@ describe('picklist standard field change validator', () => {
 
     const runChangeValidatorOnUpdate = (before: Field, after: Field):
       Promise<ReadonlyArray<ChangeError>> =>
-      picklistStandardFieldValidator(toChangeGroup({ before, after }))
+      picklistStandardFieldValidator([toChange({ before, after })])
 
     it('should have error for picklist standard field without API_NAME_SEPARATOR', async () => {
       const beforeField = createField(Types.primitiveDataTypes.Picklist, 'Standard')
@@ -108,9 +108,9 @@ describe('picklist standard field change validator', () => {
     })
 
     it('should have no error for object', async () => {
-      const changeErrors = await picklistStandardFieldValidator(
-        toChangeGroup({ before: obj, after: obj.clone() })
-      )
+      const changeErrors = await picklistStandardFieldValidator([
+        toChange({ before: obj, after: obj.clone() }),
+      ])
       expect(changeErrors).toHaveLength(0)
     })
   })

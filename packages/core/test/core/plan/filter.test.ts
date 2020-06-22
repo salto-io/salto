@@ -29,7 +29,7 @@ describe('filterInvalidChanges', () => {
 
 
   const mockChangeValidator = mockFunction<ChangeValidator>().mockImplementation(
-    async changes => changes.changes
+    async changes => changes
       .map(getChangeElement)
       .filter(elem => elem.elemID.name.includes('invalid'))
       .map(({ elemID }) => ({ elemID, severity: 'Error', message: 'msg', detailedMessage: '' }))

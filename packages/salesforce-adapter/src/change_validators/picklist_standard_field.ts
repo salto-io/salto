@@ -35,7 +35,7 @@ const createChangeError = (field: Field): ChangeError =>
  * It is forbidden to modify a picklist on a standard field. Only StandardValueSet is allowed.
  */
 const changeValidator: ChangeValidator = async changes => (
-  changes.changes
+  changes
     .filter(isModificationDiff)
     .map(getChangeElement)
     .filter(shouldCreateChangeError)

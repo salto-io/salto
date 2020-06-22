@@ -55,12 +55,12 @@ const isInstalledPackageVersionChange = (
 )
 
 const changeValidator: ChangeValidator = async changes => {
-  const addRemoveErrors = changes.changes
+  const addRemoveErrors = changes
     .filter(change => isAdditionDiff(change) || isRemovalDiff(change))
     .filter(change => hasNamespace(getChangeElement(change)))
     .map(change => packageChangeError(change.action, getChangeElement(change)))
 
-  const removeObjectWithPackageFieldsErrors = changes.changes
+  const removeObjectWithPackageFieldsErrors = changes
     .filter(isRemovalDiff)
     .map(getChangeElement)
     .filter(isObjectType)
@@ -71,7 +71,7 @@ const changeValidator: ChangeValidator = async changes => {
       'Cannot remove type because some of its fields belong to a managed package',
     ))
 
-  const packageVersionChangeErrors = changes.changes
+  const packageVersionChangeErrors = changes
     .filter(isInstanceChange)
     .filter(isModificationDiff)
     .filter(change => isInstalledPackageVersionChange(change.data))

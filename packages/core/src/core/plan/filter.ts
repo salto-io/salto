@@ -16,13 +16,12 @@
 import wu from 'wu'
 import _ from 'lodash'
 
-import { DataNodeMap, Group, NodeId } from '@salto-io/dag'
+import { DataNodeMap } from '@salto-io/dag'
 import {
   ChangeError, Change, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement,
   ElemID, ObjectType, ChangeDataType, isRemovalDiff, Element,
 } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
-import { buildGroupedGraphFromDiffGraph, getOrCreateGroupLevelChange } from './group'
+import { values, collections } from '@salto-io/lowerdash'
 
 type FilterResult = {
   changeErrors: ChangeError[]
@@ -38,15 +37,6 @@ export const filterInvalidChanges = async (
   diffGraph: DataNodeMap<Change>,
   changeValidators: Record<string, ChangeValidator>,
 ): Promise<FilterResult> => {
-  const validateChanges = async (groupLevelChange: Change, group: Group<Change>):
-    Promise<ReadonlyArray<ChangeError>> => {
-    const changeValidator = changeValidators[getChangeElement(groupLevelChange).elemID.adapter]
-    if (_.isUndefined(changeValidator)) {
-      return []
-    }
-    return changeValidator({ groupID: group.groupKey, changes: [...group.items.values()] })
-  }
-
   const createValidTopLevelElem = (beforeTopLevelElem: TopLevelElement,
     afterTopLevelElem: TopLevelElement, elemIdsToOmit: ElemID[]): Element | undefined => {
     const elemIdFullNamesToOmit = new Set(elemIdsToOmit.map(id => id.getFullName()))
@@ -107,7 +97,7 @@ export const filterInvalidChanges = async (
           : afterElem
         return validElement === undefined ? undefined : [name, validElement]
       })
-      .filter(elem => elem !== undefined)
+      .filter(values.isDefined)
       .fromPairs()
       .value()
   }
@@ -136,16 +126,16 @@ export const filterInvalidChanges = async (
     return validDiffGraph
   }
 
-  const groupedGraph = buildGroupedGraphFromDiffGraph(diffGraph)
-  const changeErrors: ChangeError[] = _.flatten(await Promise.all(
-    wu(groupedGraph.keys())
-      .map((groupId: NodeId) => {
-        const group = groupedGraph.getData(groupId)
-        const groupLevelChange = getOrCreateGroupLevelChange(group, beforeElementsMap,
-          afterElementsMap)
-        return validateChanges(groupLevelChange, group)
-      })
-  ))
+  const changesByAdapter = collections.iterable.groupBy(
+    wu(diffGraph.keys()).map(changeId => diffGraph.getData(changeId)),
+    change => getChangeElement(change).elemID.adapter,
+  )
+
+  const errorPromises = [...changesByAdapter.entries()]
+    .filter(([adapter]) => adapter in changeValidators)
+    .map(([adapter, changes]) => changeValidators[adapter](changes))
+
+  const changeErrors = _.flatten(await Promise.all(errorPromises))
 
   const invalidChanges = changeErrors.filter(v => v.severity === 'Error')
   const nodeIdsToOmit = new Set(invalidChanges.map(change => change.elemID.getFullName()))

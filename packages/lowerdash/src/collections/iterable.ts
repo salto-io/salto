@@ -17,12 +17,14 @@ import wu from 'wu'
 import { SetId } from './set'
 import { DefaultMap } from './map'
 
-export const groupBy = <T>(elements: Iterable<T>, groupFunc: (t: T) => SetId): Map<SetId, T[]> => (
-  new Map(wu(elements).reduce(
-    (groupMap, elem) => { groupMap.get(groupFunc(elem)).push(elem); return groupMap },
-    new DefaultMap<SetId, T[]>(() => []),
-  ))
-)
+export const groupBy = <K extends SetId, V>(
+  elements: Iterable<V>, groupFunc: (t: V) => K,
+): Map<K, V[]> => (
+    new Map(wu(elements).reduce(
+      (groupMap, elem) => { groupMap.get(groupFunc(elem)).push(elem); return groupMap },
+      new DefaultMap<K, V[]>(() => []),
+    ))
+  )
 
 export type Indexed<T> = [number, T]
 export type IndexedIterator<T> = Iterator<Indexed<T>>

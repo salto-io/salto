@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeDataType, Change, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { ChangeDataType, Change } from '@salto-io/adapter-api'
 
 // TODO: export to common test utils package
 export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
@@ -28,12 +28,4 @@ export const toChange = ({ before, after }: ChangeParams): Change => {
     return { action: 'add', data: { after } }
   }
   throw new Error('must provide before or after')
-}
-
-export const toChangeGroup = (...params: ChangeParams[]): ChangeGroup => {
-  const changes = params.map(toChange)
-  return {
-    groupID: getChangeElement(changes[0]).elemID.getFullName(),
-    changes,
-  }
 }

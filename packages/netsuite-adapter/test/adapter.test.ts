@@ -18,11 +18,13 @@ import {
   ElemID, InstanceElement, ObjectType, StaticFile, ChangeDataType, DeployResult, getChangeElement,
   ServiceIds,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
-  ENTITY_CUSTOM_FIELD, NETSUITE, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH,
+  ENTITY_CUSTOM_FIELD, NETSUITE, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM,
+  TYPES_TO_SKIP,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
@@ -38,10 +40,14 @@ const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: s
 
 describe('Adapter', () => {
   const client = createClient()
-  const netsuiteAdapter = new NetsuiteAdapter({ client, getElemIdFunc: mockGetElemIdFunc })
+  const netsuiteAdapter = new NetsuiteAdapter({
+    client,
+    config: { [TYPES_TO_SKIP]: [TRANSACTION_FORM] },
+    getElemIdFunc: mockGetElemIdFunc,
+  })
 
   describe('fetch', () => {
-    it('should fetch all types and instances', async () => {
+    it('should fetch all types and instances that are not in typesToSkip', async () => {
       const folderCustomizationInfo: FolderCustomizationInfo = {
         typeName: FOLDER,
         values: {
@@ -65,6 +71,8 @@ describe('Adapter', () => {
         .mockResolvedValue([folderCustomizationInfo, fileCustomizationInfo])
       client.listCustomObjects = jest.fn().mockResolvedValue([customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
+      expect(client.listCustomObjects)
+        .toHaveBeenCalledWith(_.pull(Object.keys(customTypes), SAVED_SEARCH, TRANSACTION_FORM))
       expect(elements).toHaveLength(getAllTypes().length + 3)
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)

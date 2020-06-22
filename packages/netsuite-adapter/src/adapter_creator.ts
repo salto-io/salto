@@ -14,12 +14,17 @@
 * limitations under the License.
 */
 import {
-  Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType,
+  Adapter, BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType,
 } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import changeValidator from './change_validator'
 import NetsuiteClient, { Credentials } from './client/client'
-import NetsuiteAdapter from './adapter'
-import { NETSUITE } from './constants'
+import NetsuiteAdapter, { NetsuiteConfig } from './adapter'
+import { NETSUITE, TYPES_TO_SKIP } from './constants'
+
+const log = logger(module)
+const { makeArray } = collections.array
 
 const configID = new ElemID(NETSUITE)
 
@@ -34,6 +39,26 @@ const credentialsType = new ObjectType({
   annotations: {},
 })
 
+const configType = new ObjectType({
+  elemID: configID,
+  fields: {
+    [TYPES_TO_SKIP]: {
+      type: new ListType(BuiltinTypes.STRING),
+    },
+  },
+})
+
+const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
+  NetsuiteConfig => {
+  const netsuiteConfig = {
+    [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
+  }
+  Object.keys(config?.value ?? {})
+    .filter(k => !Object.keys(netsuiteConfig).includes(k))
+    .forEach(k => log.debug('Unknown config property was found: %s', k))
+  return netsuiteConfig
+}
+
 const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
   credentials.value as Credentials
 
@@ -45,6 +70,7 @@ const clientFromCredentials = (credentials: InstanceElement): NetsuiteClient =>
 export const adapter: Adapter = {
   operations: context => new NetsuiteAdapter({
     client: clientFromCredentials(context.credentials),
+    config: netsuiteConfigFromConfig(context.config),
     getElemIdFunc: context.getElemIdFunc,
   }),
   validateCredentials: async config => {
@@ -59,6 +85,7 @@ export const adapter: Adapter = {
     return NetsuiteClient.validateCredentials(credentials)
   },
   credentialsType,
+  configType,
   deployModifiers: {
     changeValidator,
   },

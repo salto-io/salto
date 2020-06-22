@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ServiceIds } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ServiceIds } from '@salto-io/adapter-api'
 import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
+import { TYPES_TO_SKIP } from '../src/constants'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -31,6 +32,16 @@ describe('NetsuiteAdapter creator', () => {
       tokenSecret: 'secret',
     },
   )
+
+  const config = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    adapter.configType as ObjectType,
+    {
+      [TYPES_TO_SKIP]: ['test1'],
+      notExist: ['not exist'],
+    }
+  )
+
   describe('validateCredentials', () => {
     beforeEach(async () => {
       jest.clearAllMocks()
@@ -62,9 +73,23 @@ describe('NetsuiteAdapter creator', () => {
       ElemID => new ElemID(adapterName, name)
 
     it('should create the adapter correctly', () => {
+      adapter.operations({ credentials, config, getElemIdFunc: mockGetElemIdFunc })
+      expect(NetsuiteAdapter).toHaveBeenCalledWith({
+        client: expect.any(Object),
+        config: {
+          [TYPES_TO_SKIP]: ['test1'],
+        },
+        getElemIdFunc: mockGetElemIdFunc,
+      })
+    })
+
+    it('should create the adapter correctly when not having config', () => {
       adapter.operations({ credentials, getElemIdFunc: mockGetElemIdFunc })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({
         client: expect.any(Object),
+        config: {
+          [TYPES_TO_SKIP]: [],
+        },
         getElemIdFunc: mockGetElemIdFunc,
       })
     })

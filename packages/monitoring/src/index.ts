@@ -30,9 +30,9 @@ sourceMapSupport.install()
 
 const INFO_LOG_LEVEL: LogLevel = 'info'
 
-const log = logger(module)
+logger.setMinLevel(INFO_LOG_LEVEL)
 
-logger.configure({ minLevel: INFO_LOG_LEVEL })
+const log = logger(module)
 
 const stateFilePath = (envName: string): string => `salto.config/states/${envName}.jsonl`
 

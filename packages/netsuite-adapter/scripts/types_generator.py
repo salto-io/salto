@@ -88,8 +88,10 @@ primitive_string_type_entry_template = '''  {type_name}: new PrimitiveType({{
     elemID: {type_name}ElemID,
     primitive: PrimitiveTypes.STRING,
     annotations: {{
-      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({{ values:
-        {values} }}),
+      [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({{
+        values: {values},
+        enforce_value: false,
+      }}),
     }},
     path: [...enumsFolderPath, {type_name}ElemID.name],
   }}),
@@ -383,8 +385,6 @@ def parse_netsuite_types(account_id, username, password, secret_key_2fa):
 
         type_name_to_script_id_prefix = generate_type_name_to_script_id_prefix()
         type_name_to_types_defs = parse_types_definitions(account_id, type_name_to_script_id_prefix)
-        if len(type_name_to_types_defs.keys()) != len(top_level_type_name_to_name_field):
-            logging.warning('Parsed {0} types while there are {1} top_level_type_name_to_name_field entries'.format(len(type_name_to_types_defs.keys()), len(top_level_type_name_to_name_field)))
         logging.info('Parsed objects definitions')
 
         enum_to_possible_values = parse_enums(account_id)
@@ -539,36 +539,6 @@ should_be_list = {
 }
 
 field_name_to_type_name = {
-    'crmcustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'crmcustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'customrecordtype_customrecordcustomfields_customrecordcustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'customrecordtype_customrecordcustomfields_customrecordcustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'entitycustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'entitycustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'itemcustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'itemcustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'itemnumbercustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'itemnumbercustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'itemoptioncustomfield_ssourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'itemoptioncustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'othercustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'othercustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'transactionbodycustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'transactionbodycustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'transactioncolumncustomfield_sourcefilterby': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'transactioncolumncustomfield_sourcefrom': 'BuiltinTypes.STRING /* Original type was enums.generic_standard_field but it can also be reference */',
-    'centertab_portlets_portlet_portlet': 'BuiltinTypes.STRING /* Original type was enums.generic_portlet but it can also be ACCOUNTCENTER */',
-    'centercategory_links_link_linkid': 'BuiltinTypes.STRING /* Original type was enums.generic_task but it can also be REPO_324 */',
-    'entryForm_standard': 'BuiltinTypes.STRING /* Original type was enums.entryform_standard but it can also be STANDARDCUSTOMRECORD_2663_ENTITY_BANK_DETAILSFORM */',
-    'entryForm_actionbar_menu_menuitem_id': 'BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be ADDMATRIX */',
-    'entryForm_actionbar_buttons_button_id': 'BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be SAVEBASELINE */',
-    'entryForm_buttons_standardButtons_button_id': 'BuiltinTypes.STRING /* Original type was enums.entryform_buttonid but it can also be APPROVERETURN */',
-    'transactionForm_standard': 'BuiltinTypes.STRING /* Original type was enums.transactionform_standard but it can also be STANDARDOPPORTUNITY */',
-    'transactionForm_actionbar_buttons_button_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */',
-    'transactionForm_actionbar_menu_menuitem_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */',
-    'transactionForm_buttons_standardButtons_button_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_buttonid but it can also be APPROVERETURN */',
-    'transactionForm_tabs_tab_subItems_subList_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */',
-    'transactionForm_tabs_tab_subItems_subLists_subList_id': 'BuiltinTypes.STRING /* Original type was enums.transactionform_sublistid but it can also be CRMCONTACTS */',
     'addressForm_addressTemplate': 'fieldTypes.cdata',
     'dataset_definition': 'fieldTypes.cdata',
     'workbook_definition': 'fieldTypes.cdata',

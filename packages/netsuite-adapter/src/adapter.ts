@@ -75,7 +75,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     config,
   }: NetsuiteAdapterParams) {
     this.client = client
-    this.typesToSkip = typesToSkip
     this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
     this.getElemIdFunc = getElemIdFunc
   }

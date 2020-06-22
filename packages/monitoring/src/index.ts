@@ -16,6 +16,7 @@
 import sourceMapSupport from 'source-map-support'
 import { loadLocalWorkspace, fetch, preview, Workspace, DetailedChange, FetchChange } from '@salto-io/core'
 import { ElemID } from '@salto-io/adapter-api'
+import { logger, LogLevel } from '@salto-io/logging'
 import yargs from 'yargs'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
@@ -29,7 +30,11 @@ import { readNaclConfigFile, Config } from './config'
 
 sourceMapSupport.install()
 
-const log = console
+const INFO_LOG_LEVEL: LogLevel = 'info'
+
+const log = logger(module)
+
+logger.configure({ minLevel: INFO_LOG_LEVEL })
 
 const stateFilePath = (baseDir: string, envName: string): string =>
   path.join(path.resolve(baseDir), `/salto.config/states/${envName}.jsonl`)
@@ -155,6 +160,8 @@ const main = async (): Promise<number> => {
   } catch (e) {
     log.error(e)
     return 1
+  } finally {
+    await logger.end()
   }
   return 0
 }

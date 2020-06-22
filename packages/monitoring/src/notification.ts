@@ -17,9 +17,6 @@ import * as nodemailer from 'nodemailer'
 import { DetailedChange } from '@salto-io/core'
 import { Trigger } from './trigger'
 
-
-const log = console
-
 type NotificationType = string
 export const EmailNotificationType: NotificationType = 'email'
 
@@ -68,9 +65,7 @@ const notifyByEmail = async (
   }
   try {
     await transporter.sendMail(mailOptions)
-    log.info(`Sent email successfully to ${notification.to.join(',')}`)
   } catch (e) {
-    log.error(`Failed to send email to ${notification.to.join(',')}`)
     return false
   }
   return true

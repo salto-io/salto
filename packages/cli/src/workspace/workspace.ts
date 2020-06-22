@@ -16,13 +16,14 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
-import { FetchChange, Tags, loadLocalWorkspace } from '@salto-io/core'
+import { FetchChange, Tags, loadLocalWorkspace, StepEmitter } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
+import { EventEmitter } from 'pietile-eventemitter'
 import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
   formatFinishedLoading, formatWorkspaceAbort } from '../formatter'
-import { CliOutput, SpinnerCreator } from '../types'
+import { CliOutput, SpinnerCreator, CliTelemetry } from '../types'
 import {
   shouldContinueInCaseOfWarnings,
   shouldAbortWorkspaceInCaseOfValidationError,
@@ -54,6 +55,28 @@ export type LoadWorkspaceOptions = {
   spinnerCreator: SpinnerCreator
   sessionEnv?: string
   services?: string[]
+}
+
+
+type ApplyProgressEvents = {
+  workspaceWillBeUpdated: (stepProgress: StepEmitter, changes: number, approved: number) => void
+}
+
+type ApplyChangesArgs = {
+  workspace: Workspace
+  changes: FetchChange[]
+  cliTelemetry: CliTelemetry
+  workspaceTags: Tags
+  interactive: boolean
+  isIsolated: boolean
+  force: boolean
+  shouldCalcTotalSize: boolean
+  applyProgress: EventEmitter<ApplyProgressEvents>
+  output: CliOutput
+  approveChangesCallback: (
+    changes: ReadonlyArray<FetchChange>,
+    interactive: boolean
+  ) => Promise<ReadonlyArray<FetchChange>>
 }
 
 export const validateWorkspace = async (ws: Workspace): Promise<WorkspaceStatusErrors> => {
@@ -199,3 +222,29 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
 export const getWorkspaceTelemetryTags = async (ws: Workspace): Promise<Tags> => (
   { workspaceID: ws.uid }
 )
+
+export const applyChangesToWorkspace = async ({
+  workspace, changes, cliTelemetry, workspaceTags, interactive, approveChangesCallback,
+  isIsolated, force, shouldCalcTotalSize, applyProgress, output,
+}: ApplyChangesArgs): Promise<boolean> => {
+  // If the workspace starts empty there is no point in showing a huge amount of changes
+  const changesToApply = force || (await workspace.isEmpty())
+    ? changes
+    : await approveChangesCallback(changes, interactive)
+
+  cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
+  const updatingWsEmitter = new StepEmitter()
+  applyProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
+  const success = await updateWorkspace(workspace, output, changesToApply, isIsolated)
+  if (success) {
+    updatingWsEmitter.emit('completed')
+    if (shouldCalcTotalSize) {
+      const totalSize = await workspace.getTotalSize()
+      log.debug(`Total size of the workspace is ${totalSize} bytes`)
+      cliTelemetry.workspaceSize(totalSize, workspaceTags)
+    }
+    return true
+  }
+  updatingWsEmitter.emit('failed')
+  return false
+}

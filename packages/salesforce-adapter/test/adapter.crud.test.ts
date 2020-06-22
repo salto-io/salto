@@ -21,7 +21,9 @@ import {
 } from '@salto-io/adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult as JSForceDeployResult, DeployDetails,
+  BulkLoadOperation, BulkOptions, Record as SfRecord,
 } from 'jsforce'
+import { EventEmitter } from 'events'
 import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import { Types } from '../src/transformers/transformer'
@@ -72,6 +74,7 @@ describe('SalesforceAdapter CRUD', () => {
   let mockDelete: jest.Mock
   let mockUpdate: jest.Mock
   let mockDeploy: jest.Mock
+  let mockBulkLoad: jest.Mock
 
   beforeEach(() => {
     ({ connection, adapter } = mockAdapter({
@@ -97,6 +100,19 @@ describe('SalesforceAdapter CRUD', () => {
       complete: () => Promise.resolve(getDeployResult(true)),
     }))
     connection.metadata.deploy = mockDeploy
+    mockBulkLoad = jest.fn().mockImplementation(
+      (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
+        const emitter = new EventEmitter()
+        emitter.emit('close')
+        return {
+          then: async () => Promise.resolve(
+            input?.map(i => ({ id: i.Id, success: true, errors: [] }))
+          ),
+          job: emitter,
+        }
+      }
+    )
+    connection.bulk.load = mockBulkLoad
   })
 
   describe('Add operation', () => {
@@ -179,6 +195,51 @@ describe('SalesforceAdapter CRUD', () => {
         it('should return an error', () => {
           expect(result.errors).toHaveLength(1)
           expect(result.errors[0]).toEqual(new Error('Failed to add Test__c\nAdditional message'))
+        })
+      })
+    })
+
+    describe('for instances of custom objects', () => {
+      const instance = new InstanceElement(
+        mockInstanceName,
+        new ObjectType({
+          elemID: mockElemID,
+          fields: {
+            Id: { type: BuiltinTypes.String },
+            Name: { type: BuiltinTypes.String },
+          },
+          annotationTypes: {},
+          annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
+        }),
+        {
+          Name: 'instanceName',
+        }
+      )
+
+
+      describe('when request succeeds', () => {
+        let result: InstanceElement
+        beforeEach(async () => {
+          result = await createElement(adapter, instance)
+        })
+
+        it('Should add new instance', async () => {
+          expect(result).toBeInstanceOf(InstanceElement)
+          expect(result.elemID).toEqual(instance.elemID)
+          expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(mockInstanceName)
+          expect(result.value.Name).toBeDefined()
+          expect(result.value.Name).toBe('instanceName')
+          // Should add result Id
+          expect(result.value.Id).toBeDefined()
+
+          expect(mockBulkLoad.mock.calls.length).toBe(1)
+          expect(mockUpsert.mock.calls[0].length).toBe(2)
+          expect(mockUpsert.mock.calls[0][0]).toBe('Flow')
+          expect(mockUpsert.mock.calls[0][1]).toHaveLength(1)
+          expect(mockUpsert.mock.calls[0][1][0]).toMatchObject({
+            fullName: mockInstanceName,
+            token: 'instanceTest',
+          })
         })
       })
     })

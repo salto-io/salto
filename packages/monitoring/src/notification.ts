@@ -23,7 +23,7 @@ const log = console
 type NotificationType = string
 export const EmailNotificationType: NotificationType = 'email'
 
-export type SMTPConfig = {
+export type SMTP = {
   host: string
   port: number
   ssl: boolean
@@ -32,31 +32,15 @@ export type SMTPConfig = {
 }
 
 const smtpProtocol = (ssl: boolean): string => `smtp${ssl ? 's' : ''}`
-const smtpConnectionString = (smtp: SMTPConfig): string =>
+const smtpConnectionString = (smtp: SMTP): string =>
   `${smtpProtocol(smtp.ssl)}://${smtp.username}:${smtp?.password}@${smtp.host}:${smtp.port}`
 
-export type NotificationConfig = {
-  type: NotificationType
-  subject: string
-  from: string
-  to: string[]
-  triggers: string[]
-}
-
-export class Notification {
+export type Notification = {
   type: NotificationType
   subject: string
   from: string
   to: string[]
   triggerNames: string[]
-
-  constructor(notificationConfig: NotificationConfig) {
-    this.type = notificationConfig.type
-    this.subject = notificationConfig.subject
-    this.from = notificationConfig.from
-    this.to = notificationConfig.to
-    this.triggerNames = notificationConfig.triggers
-  }
 }
 
 const templateHTMLBody = (trigger: Trigger): string =>
@@ -65,7 +49,7 @@ const templateHTMLBody = (trigger: Trigger): string =>
 const notifyByEmail = async (
   notification: Notification,
   trigger: Trigger,
-  smtpConfig: SMTPConfig,
+  smtpConfig: SMTP,
   attachment?: string):
   Promise<boolean> => {
   const transporter = nodemailer.createTransport(smtpConnectionString(smtpConfig))
@@ -96,7 +80,7 @@ export const notify = async (
   notification: Notification,
   trigger: Trigger,
   attachment?: string,
-  smtpConfig?: SMTPConfig):
+  smtpConfig?: SMTP):
   Promise<boolean> => {
   if (notification.type === EmailNotificationType && smtpConfig) {
     return notifyByEmail(notification, trigger, smtpConfig, attachment)

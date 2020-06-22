@@ -16,33 +16,14 @@
 
 import { DetailedChange } from '@salto-io/core'
 
-export type TriggerConfig = {
-  name: string
-  title: string
-  elementIdsRegex: string[]
-}
-
-export class Trigger {
+export type Trigger = {
   name: string
   title: string
   elementIdsRegex: string[]
   triggeredBy: DetailedChange[]
-
-  constructor(config: TriggerConfig) {
-    this.name = config.name
-    this.title = config.title
-    this.elementIdsRegex = config.elementIdsRegex
-    this.triggeredBy = []
-  }
-
-  triggered(): boolean {
-    return this.triggeredBy.length > 0
-  }
-
-  addTriggerBy(change: DetailedChange): void {
-    this.triggeredBy.push(change)
-  }
 }
+
+export const triggered = (trigger: Trigger): boolean => trigger.triggeredBy.length > 0
 
 const triggerMatch = (trigger: Trigger, fullName: string): boolean => trigger.elementIdsRegex
   .some((elementIdRegex: string) => fullName.match(new RegExp(elementIdRegex)))
@@ -51,7 +32,7 @@ export const checkTriggers = (triggers: Array<Trigger>, changes: DetailedChange[
   triggers.forEach((trigger: Trigger) => {
     changes.forEach((change: DetailedChange) => {
       if (triggerMatch(trigger, change.id.getFullName())) {
-        trigger.addTriggerBy(change)
+        trigger.triggeredBy.push(change)
       }
     })
   })

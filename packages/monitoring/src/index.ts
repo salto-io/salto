@@ -22,9 +22,9 @@ import path from 'path'
 import simpleGit from 'simple-git'
 import wu from 'wu'
 import _ from 'lodash'
-import { Trigger, TriggerConfig, checkTriggers } from './trigger'
+import { Trigger, triggered, checkTriggers } from './trigger'
 import { createPlanDiff, renderDiffView } from './diff'
-import { Notification, NotificationConfig, notify, SMTPConfig } from './notification'
+import { Notification, notify, SMTP } from './notification'
 import { readNaclConfigFile, Config } from './config'
 
 sourceMapSupport.install()
@@ -124,8 +124,7 @@ const main = async (): Promise<number> => {
       // Fill in all missing "levels" of each change group
       .map(addMissingEmptyChanges)
 
-    const triggers: Trigger[] = config.triggers
-      .map((tc: TriggerConfig) => new Trigger(tc))
+    const triggers = config.triggers as Trigger[]
     const triggerNameToTrigger = _.keyBy(triggers, (t: Trigger) => t.name)
 
     hierarchyChanges
@@ -134,14 +133,13 @@ const main = async (): Promise<number> => {
       .toArray()
       .forEach(changes => checkTriggers(triggers, changes))
 
-    const notifications: Notification[] = config.notifications
-      .map((nc: NotificationConfig) => new Notification(nc))
-    const smtpConfig = config.smtp as SMTPConfig
+    const notifications = config.notifications as Notification[]
+    const smtpConfig = config.smtp as SMTP
 
     const notifyPromises = notifications.map((notification: Notification) => notification
       .triggerNames
       .map((name: string) => triggerNameToTrigger[name])
-      .filter((trigger: Trigger) => !_.isUndefined(trigger) && trigger.triggered())
+      .filter((trigger: Trigger) => !_.isUndefined(trigger) && triggered(trigger))
       .map((trigger: Trigger) => notify(notification, trigger, htmlDiff, smtpConfig)))
     await Promise.all(_.flatten(notifyPromises))
 

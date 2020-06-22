@@ -16,14 +16,14 @@
 import { existsSync, readFileSync } from 'fs'
 import { parse } from '@salto-io/core'
 import { InstanceElement } from '@salto-io/adapter-api'
-import { TriggerConfig } from './trigger'
-import { NotificationConfig, SMTPConfig } from './notification'
+import { Trigger } from './trigger'
+import { Notification, SMTP } from './notification'
 
 export interface Config {
   env: string
-  triggers: TriggerConfig[]
-  notifications: NotificationConfig[]
-  smtp: SMTPConfig
+  triggers: Trigger[]
+  notifications: Notification[]
+  smtp: SMTP
 }
 
 const validateConfigFileExists = (filePath: string): void => {

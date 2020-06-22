@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import * as path from 'path'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { stat, mkdirp, replaceContents, readTextFile, exists } from '@salto-io/file'
-import wu from 'wu'
-import { parseResultCache, SourceMap, StaticFilesSource } from '@salto-io/workspace'
+import { parseCache, parser, staticFiles } from '@salto-io/workspace'
 import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
+const { parseResultCache } = parseCache
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -44,9 +45,9 @@ describe('localParseResultCache', () => {
   const mockReadFile = readTextFile as unknown as jest.Mock
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock
-  const mockedStaticFilesSource = { clone: jest.fn() } as unknown as StaticFilesSource
+  const mockedStaticFilesSource = { clone: jest.fn() } as unknown as staticFiles.StaticFilesSource
   const cache = parseResultCache(localDirectoryStore(mockBaseDirPath), mockedStaticFilesSource)
-  const sourceMap = new SourceMap()
+  const sourceMap = new parser.SourceMap()
   const dummyObjectType = new ObjectType({ elemID: new ElemID('salesforce', 'dummy') })
   sourceMap.push(new ElemID('salesforce', 'dummy').getFullName(), {
     filename: 'dummy.nacl',

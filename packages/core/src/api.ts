@@ -30,8 +30,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, addHiddenValuesAndHiddenTypes,
-  removeHiddenValuesAndHiddenTypes } from '@salto-io/workspace'
+import { Workspace, hiddenValues } from '@salto-io/workspace'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
@@ -49,6 +48,8 @@ import {
   toChangesWithPath,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
+
+const { addHiddenValuesAndHiddenTypes, removeHiddenValuesAndHiddenTypes } = hiddenValues
 
 const log = logger(module)
 

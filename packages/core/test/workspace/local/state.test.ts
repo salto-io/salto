@@ -16,9 +16,11 @@
 import { EOL } from 'os'
 import { replaceContents, exists, readTextFile, rm, rename } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
-import { State, serialize } from '@salto-io/workspace'
+import { state as st, serialization } from '@salto-io/workspace'
 import { localState } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
+
+const { serialize } = serialization
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -47,7 +49,7 @@ describe('local state', () => {
   const readTextFileMock = readTextFile as unknown as jest.Mock
 
   describe('empty state', () => {
-    let state: State
+    let state: st.State
     beforeEach(() => {
       state = localState('empty')
     })

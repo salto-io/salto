@@ -41,3 +41,33 @@ export class Errors extends types.Bean<Readonly<{
     ]
   }
 }
+
+export class EnvDuplicationError extends Error {
+  constructor(envName: string) {
+    super(`${envName} is already defined in this workspace`)
+  }
+}
+
+export class ServiceDuplicationError extends Error {
+  constructor(service: string) {
+    super(`${service} is already defined in this workspace`)
+  }
+}
+
+export class UnknownEnvError extends Error {
+  constructor(envName: string) {
+    super(`Unkown environment ${envName}`)
+  }
+}
+
+export class DeleteCurrentEnvError extends Error {
+  constructor(envName: string) {
+    super(`Cannot delete the current env: ${envName}`)
+  }
+}
+
+export class NoWorkspaceConfig extends Error {
+  constructor() {
+    super('cannot find workspace config')
+  }
+}

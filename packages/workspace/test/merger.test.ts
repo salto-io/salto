@@ -18,12 +18,12 @@ import {
   PrimitiveTypes, TypeElement, Variable,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import {
-  mergeElements,
-  DuplicateAnnotationTypeError, DuplicateVariableNameError, ConflictingFieldTypesError,
-  DuplicateAnnotationError, DuplicateAnnotationFieldDefinitionError, DuplicateInstanceKeyError,
-  MultiplePrimitiveTypesUnsupportedError,
-} from '../src/merger'
+import { mergeElements, DuplicateAnnotationError } from '../src/merger'
+import { ConflictingFieldTypesError, DuplicateAnnotationFieldDefinitionError,
+  DuplicateAnnotationTypeError } from '../src/merger/internal/object_types'
+import { DuplicateInstanceKeyError } from '../src/merger/internal/instances'
+import { MultiplePrimitiveTypesUnsupportedError } from '../src/merger/internal/primitives'
+import { DuplicateVariableNameError } from '../src/merger/internal/variables'
 
 describe('merger', () => {
   const baseElemID = new ElemID('salto', 'base')

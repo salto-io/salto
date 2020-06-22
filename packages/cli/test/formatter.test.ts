@@ -18,7 +18,7 @@ import {
   PrimitiveTypes, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { FetchChange } from '@salto-io/core'
-import { WorkspaceError } from '@salto-io/workspace'
+import { errors as wsErrors } from '@salto-io/workspace'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
   formatChangeErrors, formatConfigChangeNeeded } from '../src/formatter'
@@ -26,7 +26,7 @@ import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
 describe('formatter', () => {
-  const workspaceErrorWithSourceFragments: WorkspaceError<SaltoError> = {
+  const workspaceErrorWithSourceFragments: wsErrors.WorkspaceError<SaltoError> = {
     sourceFragments: [{
       sourceRange: {
         start: { byte: 20, col: 10, line: 2 },
@@ -51,7 +51,7 @@ describe('formatter', () => {
     message: 'This is my error',
     severity: 'Error',
   }
-  const workspaceErrorWithoutSourceFragments: WorkspaceError<SaltoError> = {
+  const workspaceErrorWithoutSourceFragments: wsErrors.WorkspaceError<SaltoError> = {
     message: 'This is my error',
     sourceFragments: [],
     severity: 'Error',
@@ -81,7 +81,7 @@ describe('formatter', () => {
       expect(output).toEqual('')
     })
     it('should have single validation', () => {
-      const changeErrors: ReadonlyArray<WorkspaceError<ChangeError>> = [{
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
         elemID: new ElemID('salesforce', 'test'),
         severity: 'Error',
         message: 'Message key for test',
@@ -96,7 +96,7 @@ describe('formatter', () => {
       expect(output).toMatch(new RegExp(`.*${workspaceErrorWithSourceFragments.sourceFragments[0].sourceRange.filename}`, 's'))
     })
     it('should have grouped validations', () => {
-      const changeErrors: ReadonlyArray<WorkspaceError<ChangeError>> = [{
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
         elemID: new ElemID('salesforce', 'test'),
         severity: 'Error',
         message: 'Message key for test',
@@ -119,14 +119,14 @@ describe('formatter', () => {
         .toMatch(new RegExp(`.*${changeErrors[0].message}.*2 Elements`, 's'))
     })
     it('should order validations from most to least occurrences', () => {
-      const differentValidationKey: WorkspaceError<ChangeError> = {
+      const differentValidationKey: wsErrors.WorkspaceError<ChangeError> = {
         elemID: new ElemID('salesforce', 'test3'),
         severity: 'Error',
         message: 'Different message key',
         detailedMessage: 'Validation message 3',
         sourceFragments: workspaceErrorWithSourceFragments.sourceFragments,
       }
-      const changeErrors: ReadonlyArray<WorkspaceError<ChangeError>> = [{
+      const changeErrors: ReadonlyArray<wsErrors.WorkspaceError<ChangeError>> = [{
         elemID: new ElemID('salesforce', 'test'),
         severity: 'Error',
         message: 'Message key for test',

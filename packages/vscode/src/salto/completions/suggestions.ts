@@ -18,9 +18,11 @@ import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   isField, PrimitiveTypes, BuiltinTypes, isType, Value, getField,
   getFieldNames, getFieldType, ElemID, Element,
   isListType, getRestriction } from '@salto-io/adapter-api'
-import { dumpElemID, parseElemID } from '@salto-io/workspace'
+import { parser } from '@salto-io/workspace'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { ContextReference } from '../context'
+
+const { dumpElemID, parseElemID } = parser
 
 interface InsertText {
   label: string

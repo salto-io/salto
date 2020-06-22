@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Workspace, ParseError } from '@salto-io/workspace'
+import { Workspace, parser } from '@salto-io/workspace'
 import { EditorWorkspace } from '../../src/salto/workspace'
 import { getDiagnostics } from '../../src/salto/diagnostics'
 import { mockWorkspace, mockErrors, mockFunction } from './workspace'
@@ -50,7 +50,7 @@ describe('diagnostics', () => {
           end: { col: 2, line: 1, byte: 2 },
           filename: '/parse_error.nacl',
         },
-        subRange: (err as ParseError).subject,
+        subRange: (err as parser.ParseError).subject,
       }],
     }))
     const workspace = new EditorWorkspace('bla', baseWs)

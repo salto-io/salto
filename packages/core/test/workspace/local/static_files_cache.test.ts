@@ -17,7 +17,7 @@
 import path from 'path'
 import * as file from '@salto-io/file'
 
-import { StaticFilesCache } from '@salto-io/workspace'
+import { staticFiles } from '@salto-io/workspace'
 
 import {
   buildLocalStaticFilesCache, CACHE_FILENAME,
@@ -34,7 +34,7 @@ describe('Static Files Cache', () => {
   const mockRm = file.rm as jest.Mock
   const mockRename = file.rename as jest.Mock
   const mockReadFile = file.readTextFile as unknown as jest.Mock
-  let staticFilesCache: StaticFilesCache
+  let staticFilesCache: staticFiles.StaticFilesCache
 
   const baseMetaData = {
     hash: 'hashz',

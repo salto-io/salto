@@ -28,17 +28,18 @@ import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { multiEnvSource } from './nacl_files/mutil_env/multi_env_source'
-import { Errors } from './errors'
+import { Errors, NoWorkspaceConfig, ServiceDuplicationError, EnvDuplicationError,
+  UnknownEnvError, DeleteCurrentEnvError } from './errors'
 import { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig,
   WorkspaceUserConfig, EnvConfig, workspaceConfigInstance,
-  workspaceUserConfigInstance } from './workspace_config_types'
+  workspaceUserConfigInstance } from './config/workspace_config_types'
 
 const log = logger(module)
 
 const { makeArray } = collections.array
 
 export const ADAPTERS_CONFIGS_PATH = 'adapters'
-export const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
+const DEFAULT_STALE_STATE_THRESHOLD_MINUTES = 60 * 24 * 7 // 7 days
 
 export type WorkspaceError<T extends SaltoError> = Readonly<T & {
   sourceFragments: SourceFragment[]
@@ -48,36 +49,6 @@ export type SourceFragment = {
   sourceRange: SourceRange
   fragment: string
   subRange?: SourceRange
-}
-
-export class EnvDuplicationError extends Error {
-  constructor(envName: string) {
-    super(`${envName} is already defined in this workspace`)
-  }
-}
-
-class ServiceDuplicationError extends Error {
-  constructor(service: string) {
-    super(`${service} is already defined in this workspace`)
-  }
-}
-
-export class UnknownEnvError extends Error {
-  constructor(envName: string) {
-    super(`Unkown environment ${envName}`)
-  }
-}
-
-export class DeleteCurrentEnvError extends Error {
-  constructor(envName: string) {
-    super(`Cannot delete the current env: ${envName}`)
-  }
-}
-
-export class NoWorkspaceConfig extends Error {
-  constructor() {
-    super('cannot find workspace config')
-  }
 }
 
 type RecencyStatus = 'Old' | 'Nonexistent' | 'Valid'

@@ -37,7 +37,7 @@ jest.mock('../../../src/local-workspace/dir_store')
 describe('local workspace', () => {
   const mockExists = exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
-  const mockDirStoreInstance = (): ws.DirectoryStore => ({
+  const mockDirStoreInstance = (): ws.dirStore.DirectoryStore => ({
     get: jest.fn().mockResolvedValue({ buffer: '', filename: '' }),
     set: jest.fn(),
     flush: jest.fn(),
@@ -46,7 +46,7 @@ describe('local workspace', () => {
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
     clone: jest.fn(),
-  } as unknown as ws.DirectoryStore)
+  } as unknown as ws.dirStore.DirectoryStore)
   const repoDirStore = mockDirStoreInstance()
   const localDirStore = mockDirStoreInstance()
   mockCreateDirStore.mockImplementation((baseDir: string) =>

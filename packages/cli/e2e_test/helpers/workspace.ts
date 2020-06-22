@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Plan, telemetrySender } from '@salto-io/core'
-import { Workspace, parse } from '@salto-io/workspace'
+import { parser, Workspace } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
 import glob from 'glob'
@@ -40,6 +40,7 @@ import * as formatterImpl from '../../src/formatter'
 
 export type ReplacementPair = [string | RegExp, string]
 
+const { parse } = parser
 const services = ['salesforce']
 
 const mockCliOutput = (): CliOutput =>

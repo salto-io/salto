@@ -24,7 +24,7 @@ import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
   telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
-import { Workspace, Errors } from '@salto-io/workspace'
+import { Workspace, errors as wsErrors } from '@salto-io/workspace'
 import * as workspace from '../src/workspace/workspace'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
@@ -215,7 +215,7 @@ export const elements = (): Element[] => {
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
-export const mockErrors = (errors: SaltoError[]): Errors => ({
+export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => ({
   all: () => errors,
   hasErrors: () => errors.length !== 0,
   merge: [],

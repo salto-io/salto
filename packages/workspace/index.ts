@@ -13,27 +13,42 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as ErrorTypes from './src/errors'
-
-export { ErrorTypes }
-export { Errors } from './src/workspace/errors'
-export { Workspace, WorkspaceError, SourceFragment, StateRecency, loadWorkspace,
+import * as errors from './src/errors'
+import * as nacl from './src/workspace/nacl_files'
+import { Workspace, SourceFragment, StateRecency, loadWorkspace,
   EnvironmentsSources, initWorkspace } from './src/workspace/workspace'
-export * from './src/workspace/hidden_values'
-export { ConfigSource, configSource } from './src/workspace/config_source'
-export { NaclFile, FILE_EXTENSION, NaclFilesSource,
-  naclFilesSource } from './src/workspace/nacl_files/nacl_files_source'
-export { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigType,
-  workspaceUserConfigType } from './src/workspace/workspace_config_types'
-export { State } from './src/workspace/state'
-export { File, SyncDirectoryStore, DirectoryStore } from './src/workspace/dir_store'
-export { parseResultCache } from './src/workspace/cache'
-export { StaticFilesCache, StaticFilesCacheResult } from './src/workspace/static_files/cache'
-export { buildStaticFilesSource } from './src/workspace/static_files/source'
-export { StaticFilesSource } from './src/workspace/static_files/common'
-export { parse, SourceRange, parseElemID, ParseError, ParseResult } from './src/parser/parse'
-export { dumpElements, dumpElemID } from './src/parser/dump'
-export { SourceMap } from './src/parser/source_map'
-export { mergeElements, MergeError, DuplicateAnnotationError, MergeResult } from './src/merger'
-export { resolve } from './src/expressions'
-export { serialize, deserialize } from './src/serializer/elements'
+import * as hiddenValues from './src/workspace/hidden_values'
+import * as configSource from './src/workspace/config_source'
+import * as workspaceConfig from './src/workspace/config'
+import * as state from './src/workspace/state'
+import * as dirStore from './src/workspace/dir_store'
+import * as parseCache from './src/workspace/cache'
+import * as staticFiles from './src/workspace/static_files'
+import * as parser from './src/parser'
+import * as merger from './src/merger'
+import * as expressions from './src/expressions'
+import * as serialization from './src/serializer/elements'
+
+
+export {
+  errors,
+  hiddenValues,
+  serialization,
+  parser,
+  merger,
+  dirStore,
+  parseCache,
+  state,
+  configSource,
+  workspaceConfig,
+  staticFiles,
+  expressions,
+  nacl,
+  // Workspace exports
+  Workspace,
+  SourceFragment,
+  StateRecency,
+  loadWorkspace,
+  EnvironmentsSources,
+  initWorkspace,
+}

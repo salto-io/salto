@@ -18,12 +18,13 @@ import _ from 'lodash'
 import path from 'path'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { configSource, ConfigSource, WORKSPACE_CONFIG_NAME,
-  workspaceUserConfigType } from '@salto-io/workspace'
+import { configSource as cs, workspaceConfig } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../app_config'
 
 const { makeArray } = collections.array
+const { WORKSPACE_CONFIG_NAME, workspaceUserConfigType } = workspaceConfig
+const { configSource } = cs
 
 export const CONFIG_DIR_NAME = 'salto.config'
 
@@ -31,7 +32,7 @@ export const getConfigDir = (baseDir: string): string => (
   path.join(path.resolve(baseDir), CONFIG_DIR_NAME)
 )
 
-export type WorkspaceConfigSource = ConfigSource & {
+export type WorkspaceConfigSource = cs.ConfigSource & {
   envs: ReadonlyArray<string>
   localStorage: string
 }

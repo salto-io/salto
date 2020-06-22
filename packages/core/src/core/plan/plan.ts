@@ -24,7 +24,7 @@ import {
   removeEdges,
 } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { resolve } from '@salto-io/workspace'
+import { expressions } from '@salto-io/workspace'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, findGroupLevelChange } from './group'
 import { filterInvalidChanges } from './filter'
@@ -33,6 +33,8 @@ import {
   addReferencesDependency,
 } from './dependency'
 import { PlanTransformer, changeId } from './common'
+
+const { resolve } = expressions
 
 const log = logger(module)
 

@@ -15,16 +15,16 @@
 */
 import path from 'path'
 import { readTextFile, exists, mkdirp, replaceContents, rm, rename } from '@salto-io/file'
-import { StaticFilesCache, StaticFilesCacheResult } from '@salto-io/workspace'
+import { staticFiles } from '@salto-io/workspace'
 
 export const CACHE_FILENAME = 'static-file-cache'
 
-export type StaticFilesCacheState = Record<string, StaticFilesCacheResult>
+export type StaticFilesCacheState = Record<string, staticFiles.StaticFilesCacheResult>
 
 export const buildLocalStaticFilesCache = (
   cacheDir: string,
   initCacheState?: Promise<StaticFilesCacheState>,
-): StaticFilesCache => {
+): staticFiles.StaticFilesCache => {
   let currentCacheFile = path.join(cacheDir, CACHE_FILENAME)
 
   const initCache = async (): Promise<StaticFilesCacheState> =>
@@ -33,10 +33,10 @@ export const buildLocalStaticFilesCache = (
   const cache: Promise<StaticFilesCacheState> = initCacheState || initCache()
 
   return {
-    get: async (filepath: string): Promise<StaticFilesCacheResult> => (
+    get: async (filepath: string): Promise<staticFiles.StaticFilesCacheResult> => (
       (await cache)[filepath]
     ),
-    put: async (item: StaticFilesCacheResult): Promise<void> => {
+    put: async (item: staticFiles.StaticFilesCacheResult): Promise<void> => {
       (await cache)[item.filepath] = item
     },
     flush: async () => {

@@ -25,9 +25,12 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { mergeElements, MergeError, removeHiddenValuesAndHiddenTypes } from '@salto-io/workspace'
+import { merger, hiddenValues } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
+
+const { mergeElements } = merger
+const { removeHiddenValuesAndHiddenTypes } = hiddenValues
 
 const log = logger(module)
 
@@ -61,7 +64,7 @@ export type FetchProgressEvents = {
 }
 
 export type MergeErrorWithElements = {
-  error: MergeError
+  error: merger.MergeError
   elements: Element[]
 }
 
@@ -163,7 +166,7 @@ type ProcessMergeErrorsResult = {
 
 const processMergeErrors = (
   elements: Element[],
-  errors: MergeError[],
+  errors: merger.MergeError[],
   stateElementIDs: string[]
 ): ProcessMergeErrorsResult => log.time(() => {
   const mergeErrsByElemID = _(errors)

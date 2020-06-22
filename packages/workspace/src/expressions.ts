@@ -111,7 +111,7 @@ resolveTemplateExpression = (
   })
   .join('')
 
-export const resolveElement = (
+const resolveElement = (
   srcElement: Element,
   contextElements: Record<string, Element[]>
 ): Element => {

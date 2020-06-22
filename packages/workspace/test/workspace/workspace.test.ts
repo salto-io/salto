@@ -28,17 +28,10 @@ import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource } from './static_files/common.test'
 import { DirectoryStore } from '../../src/workspace/dir_store'
-import {
-  Workspace,
-  initWorkspace,
-  loadWorkspace,
-  NoWorkspaceConfig,
-  ADAPTERS_CONFIGS_PATH,
-  EnvironmentSource,
-  DeleteCurrentEnvError,
-  UnknownEnvError,
-  EnvDuplicationError,
-} from '../../src/workspace/workspace'
+import { Workspace, initWorkspace, loadWorkspace,
+  ADAPTERS_CONFIGS_PATH, EnvironmentSource } from '../../src/workspace/workspace'
+import { NoWorkspaceConfig, DeleteCurrentEnvError,
+  UnknownEnvError, EnvDuplicationError } from '../../src/workspace/errors'
 
 import { StaticFilesSource } from '../../src/workspace/static_files/common'
 
@@ -48,7 +41,7 @@ import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import {
   WORKSPACE_CONFIG_NAME, workspaceConfigType, USER_CONFIG_NAME,
   workspaceUserConfigType,
-} from '../../src/workspace/workspace_config_types'
+} from '../../src/workspace/config/workspace_config_types'
 
 const changedNaclFile = {
   filename: 'file.nacl',

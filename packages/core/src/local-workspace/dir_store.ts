@@ -22,7 +22,7 @@ import {
   rename, existsSync, readTextFileSync, statSync,
 } from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
-import { File, SyncDirectoryStore } from '@salto-io/workspace'
+import { dirStore } from '@salto-io/workspace'
 
 const { withLimitedConcurrency, series } = promises.array
 
@@ -32,7 +32,7 @@ const DELETE_CONCURRENCY = 100
 const RENAME_CONCURRENCY = 100
 
 type FileMap = {
-  [key: string]: File
+  [key: string]: dirStore.File
 }
 
 const buildLocalDirectoryStore = (
@@ -41,7 +41,7 @@ const buildLocalDirectoryStore = (
   directoryFilter?: (path: string) => boolean,
   initUpdated?: FileMap,
   initDeleted? : string[],
-): SyncDirectoryStore => {
+): dirStore.SyncDirectoryStore => {
   let currentBaseDir = baseDir
   let updated: FileMap = initUpdated || {}
   let deleted: string[] = initDeleted || []
@@ -72,7 +72,7 @@ const buildLocalDirectoryStore = (
     }).then(entries => entries.map(e => e.fullPath).map(x => getRelativeFileName(x)))
     : [])
 
-  const readFile = async (filename: string): Promise<File | undefined> => {
+  const readFile = async (filename: string): Promise<dirStore.File | undefined> => {
     const absFileName = getAbsFileName(filename)
     return await exists(absFileName)
       ? {
@@ -83,7 +83,7 @@ const buildLocalDirectoryStore = (
       : undefined
   }
 
-  const readFileSync = (filename: string): File | undefined => {
+  const readFileSync = (filename: string): dirStore.File | undefined => {
     const absFileName = getAbsFileName(filename)
     return existsSync(absFileName)
       ? {
@@ -94,7 +94,7 @@ const buildLocalDirectoryStore = (
       : undefined
   }
 
-  const writeFile = async (file: File): Promise<void> => {
+  const writeFile = async (file: dirStore.File): Promise<void> => {
     const absFileName = getAbsFileName(file.filename)
     if (!await exists(path.dirname(absFileName))) {
       await mkdirp(path.dirname(absFileName))
@@ -132,7 +132,7 @@ const buildLocalDirectoryStore = (
     ? updated[filename].timestamp
     : (await stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs)
 
-  const get = async (filename: string): Promise<File | undefined> => {
+  const get = async (filename: string): Promise<dirStore.File | undefined> => {
     let relFilename: string
     try {
       relFilename = getRelativeFileName(filename)
@@ -142,7 +142,7 @@ const buildLocalDirectoryStore = (
     return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
   }
 
-  const getSync = (filename: string): File | undefined => {
+  const getSync = (filename: string): dirStore.File | undefined => {
     const relFilename = getRelativeFileName(filename)
     return (updated[relFilename] ? updated[relFilename] : readFileSync(relFilename))
   }
@@ -172,7 +172,7 @@ const buildLocalDirectoryStore = (
     list,
     get,
     getSync,
-    set: async (file: File): Promise<void> => {
+    set: async (file: dirStore.File): Promise<void> => {
       let relFilename: string
       try {
         relFilename = getRelativeFileName(file.filename)
@@ -239,7 +239,7 @@ const buildLocalDirectoryStore = (
 
     flush,
 
-    getFiles: async (filenames: string[]): Promise<(File | undefined) []> =>
+    getFiles: async (filenames: string[]): Promise<(dirStore.File | undefined) []> =>
       withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY),
 
     getTotalSize: async (): Promise<number> => {
@@ -247,7 +247,7 @@ const buildLocalDirectoryStore = (
       return _.sum(await Promise.all(allFiles.map(async filePath => (await stat(filePath)).size)))
     },
 
-    clone: (): SyncDirectoryStore => buildLocalDirectoryStore(
+    clone: (): dirStore.SyncDirectoryStore => buildLocalDirectoryStore(
       currentBaseDir,
       fileFilter,
       directoryFilter,
@@ -261,6 +261,6 @@ export const localDirectoryStore = (
   baseDir: string,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
-): SyncDirectoryStore => buildLocalDirectoryStore(
+): dirStore.SyncDirectoryStore => buildLocalDirectoryStore(
   baseDir, fileFilter, directoryFilter,
 )

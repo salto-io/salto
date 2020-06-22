@@ -20,7 +20,7 @@ import {
   isModificationDiff, ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
-import * as ws from '@salto-io/workspace'
+import { hiddenValues } from '@salto-io/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
@@ -75,7 +75,7 @@ describe('fetch', () => {
   })
 
   // Workspace elements should not contains hidden values
-  const workspaceInstance = ws.removeHiddenFieldsValues(hiddenInstance)
+  const workspaceInstance = hiddenValues.removeHiddenFieldsValues(hiddenInstance)
 
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,

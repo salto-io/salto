@@ -28,15 +28,6 @@ import { MergeResult as InternalMergeResult } from './internal/common'
 export { MergeError, DuplicateAnnotationError } from './internal/common'
 export type MergeResult = InternalMergeResult<Element[]>
 
-export {
-  FieldDefinitionMergeError, ConflictingFieldTypesError,
-  DuplicateAnnotationFieldDefinitionError, DuplicateAnnotationTypeError,
-} from './internal/object_types'
-
-export { DuplicateInstanceKeyError } from './internal/instances'
-export { MultiplePrimitiveTypesUnsupportedError } from './internal/primitives'
-export { DuplicateVariableNameError } from './internal/variables'
-
 const log = logger(module)
 
 /**

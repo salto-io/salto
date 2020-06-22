@@ -17,14 +17,18 @@ import _ from 'lodash'
 import path from 'path'
 import uuidv4 from 'uuid/v4'
 import { exists } from '@salto-io/file'
-import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, NaclFilesSource,
-  FILE_EXTENSION, naclFilesSource, parseResultCache, configSource, ConfigSource,
-  buildStaticFilesSource } from '@salto-io/workspace'
+import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
+  configSource as cs, parseCache, staticFiles } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome } from '../app_config'
 import { localState, STATE_EXTENSION } from './state'
 import { workspaceConfigSource, getConfigDir, CONFIG_DIR_NAME } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
+
+const { configSource } = cs
+const { FILE_EXTENSION, naclFilesSource } = nacl
+const { parseResultCache } = parseCache
+const { buildStaticFilesSource } = staticFiles
 
 export const COMMON_ENV_PREFIX = ''
 export const ENVS_PREFIX = 'envs'
@@ -55,7 +59,7 @@ const loadNaclFileSource = (
   sourceBaseDir: string,
   cacheDir: string,
   excludeDirs: string[] = []
-): NaclFilesSource => {
+): nacl.NaclFilesSource => {
   const dirPathToIgnore = (dirPath: string): boolean =>
     !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirPath)
 
@@ -117,7 +121,7 @@ const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined>
   return parentDir ? locateWorkspaceRoot(parentDir) : undefined
 }
 
-const credentialsSource = (localStorage: string): ConfigSource =>
+const credentialsSource = (localStorage: string): cs.ConfigSource =>
   configSource(localDirectoryStore(path.join(localStorage, CREDENTIALS_CONFIG_PATH)))
 
 export const loadLocalWorkspace = async (lookupDir: string):

@@ -15,6 +15,7 @@
 */
 export { Plan, PlanItem } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
+export { RestoreProgressEvents } from './src/core/restore'
 export * from './src/api'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'

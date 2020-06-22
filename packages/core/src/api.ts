@@ -48,6 +48,7 @@ import {
   toChangesWithPath,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
+import { RestoreProgressEvents, createRestoreChanges } from './core/restore'
 
 const { addHiddenValuesAndHiddenTypes, removeHiddenValuesAndHiddenTypes } = hiddenValues
 
@@ -242,6 +243,39 @@ export const fetch: FetchFunc = async (
     throw error
   }
 }
+
+export const restore = async (
+  workspace: Workspace,
+  services?: string[],
+  idFilters: RegExp[] = [],
+  progressEmitter?: EventEmitter<RestoreProgressEvents>
+): Promise<FetchChange[]> => {
+  log.debug('restore starting..')
+  const fetchServices = services ?? workspace.services()
+  const stateElements = filterElementsByServices(
+    await workspace.state().getAll(),
+    fetchServices
+  )
+  const workspaceElements = filterElementsByServices(
+    await workspace.elements(),
+    fetchServices
+  )
+  const pathIndex = await workspace.state().getPathIndex()
+  const changes = await createRestoreChanges(
+    workspaceElements,
+    stateElements,
+    pathIndex,
+    idFilters,
+    progressEmitter
+  )
+  return changes.map(change => ({ change, serviceChange: change }))
+}
+
+export const describeElement = async (
+  workspace: Workspace,
+  searchWords: string[],
+): Promise<SearchResult> =>
+  findElement(searchWords, await workspace.elements())
 
 export const addAdapter = async (
   workspace: Workspace,

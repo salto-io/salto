@@ -32,7 +32,7 @@ const validateConfigFileExists = (filePath: string): void => {
   }
 }
 
-export const readNaclConfigFile = async (filePath: string): Promise<Config> => {
+export const readConfigFile = async (filePath: string): Promise<Config> => {
   validateConfigFileExists(filePath)
   const config = await parse(readFileSync(filePath), filePath)
   if (config.errors.length > 0) {

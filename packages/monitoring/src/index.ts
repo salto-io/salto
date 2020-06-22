@@ -25,8 +25,8 @@ import wu from 'wu'
 import _ from 'lodash'
 import { Trigger, triggered, checkTriggers } from './trigger'
 import { createPlanDiff, renderDiffView } from './diff'
-import { Notification, notify, SMTP } from './notification'
-import { readNaclConfigFile, Config } from './config'
+import { Notification, notify } from './notification'
+import { readConfigFile, Config } from './config'
 
 sourceMapSupport.install()
 
@@ -91,7 +91,7 @@ const main = async (): Promise<number> => {
     .argv
 
   try {
-    const config: Config = await readNaclConfigFile(args.config as string)
+    const config: Config = await readConfigFile(args.config as string)
 
     log.info('Loading workspace')
     let ws = await loadLocalWorkspace(args.workspace as string)
@@ -102,7 +102,7 @@ const main = async (): Promise<number> => {
     const saltoStateFilePath = stateFilePath(args.workspace as string, args.env as string)
 
     log.info('Reading the current state file')
-    const currentState = readFileSync(saltoStateFilePath)
+    const previousState = readFileSync(saltoStateFilePath)
 
     log.info('Fetching state')
     const fetchChanges = await fetch(ws)
@@ -111,7 +111,6 @@ const main = async (): Promise<number> => {
 
     log.info('Reading the updated state file')
     const updatedState = readFileSync(saltoStateFilePath)
-    const previousState = currentState
 
     log.info('Overriding the state with previous state file')
     writeFileSync(saltoStateFilePath, previousState)
@@ -129,23 +128,18 @@ const main = async (): Promise<number> => {
       // Fill in all missing "levels" of each change group
       .map(addMissingEmptyChanges)
 
-    const triggers = config.triggers as Trigger[]
-    const triggerNameToTrigger = _.keyBy(triggers, (t: Trigger) => t.name)
-
+    const triggerNameToTrigger = _.keyBy(config.triggers, (t: Trigger) => t.name)
     hierarchyChanges
       // Sort changes so they show up nested correctly
       .map(changes => _.sortBy(changes, change => change.id.getFullName()))
       .toArray()
-      .forEach(changes => checkTriggers(triggers, changes))
+      .forEach(changes => checkTriggers(config.triggers, changes))
 
-    const notifications = config.notifications as Notification[]
-    const smtpConfig = config.smtp as SMTP
-
-    const notifyPromises = notifications.map((notification: Notification) => notification
-      .triggerNames
+    const notifyPromises = config.notifications.map((notification: Notification) => notification
+      .triggers
       .map((name: string) => triggerNameToTrigger[name])
       .filter((trigger: Trigger) => !_.isUndefined(trigger) && triggered(trigger))
-      .map((trigger: Trigger) => notify(notification, trigger, htmlDiff, smtpConfig)))
+      .map((trigger: Trigger) => notify(notification, trigger, htmlDiff, config.smtp)))
     await Promise.all(_.flatten(notifyPromises))
 
     log.info('Overriding state with updated state file')
@@ -154,7 +148,7 @@ const main = async (): Promise<number> => {
     log.info('Committing the updated state file')
     const git = simpleGit(args.workspace as string)
     await git.add('.')
-    await git.commit('Update state')
+    await git.commit(`Update state - ${new Date().toLocaleString()}`)
 
     log.info('Finished successfully')
   } catch (e) {

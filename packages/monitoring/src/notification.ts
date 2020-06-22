@@ -37,7 +37,7 @@ export type Notification = {
   subject: string
   from: string
   to: string[]
-  triggerNames: string[]
+  triggers: string[]
 }
 
 const templateHTMLBody = (trigger: Trigger): string =>

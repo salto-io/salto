@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import wu from 'wu'
+import _ from 'lodash'
 import { GroupedNodeMap } from '@salto-io/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
-  ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType,
+  ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import {
-  DetailedChange, Plan, PlanItem, SearchResult, Workspace, EVENT_TYPES,
-  DeployResult, telemetrySender, Telemetry, Tags, TelemetryEvent, Errors, CommandConfig,
+  Plan, PlanItem, EVENT_TYPES, DeployResult,
+  telemetrySender, Telemetry, Tags, TelemetryEvent, CommandConfig,
 } from '@salto-io/core'
+import { Workspace, errors as wsErrors } from '@salto-io/workspace'
 import * as workspace from '../src/workspace/workspace'
 import realCli from '../src/cli'
 import builders from '../src/commands/index'
@@ -214,7 +215,7 @@ export const elements = (): Element[] => {
   return [BuiltinTypes.STRING, saltoAddr, saltoOffice, saltoEmployee, saltoEmployeeInstance]
 }
 
-export const mockErrors = (errors: SaltoError[]): Errors => ({
+export const mockErrors = (errors: SaltoError[]): wsErrors.Errors => ({
   all: () => errors,
   hasErrors: () => errors.length !== 0,
   merge: [],
@@ -482,14 +483,6 @@ export const deploy = async (
     errors: [],
   }
 }
-
-export const describe = async (_searchWords: string[]):
-  Promise<SearchResult> =>
-  ({
-    key: 'salto.office',
-    element: elements()[2],
-    isGuess: false,
-  })
 
 export const createMockEnvNameGetter = (
   newEnvName = 'default'

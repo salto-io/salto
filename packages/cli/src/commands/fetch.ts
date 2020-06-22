@@ -18,7 +18,6 @@ import wu from 'wu'
 import { getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
 import {
   fetch as apiFetch,
-  Workspace,
   FetchFunc,
   FetchChange,
   FetchProgressEvents,
@@ -26,6 +25,7 @@ import {
   Telemetry,
   PlanItem,
 } from '@salto-io/core'
+import { Workspace } from '@salto-io/workspace'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'

@@ -16,7 +16,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import _ from 'lodash'
-import { SourceRange } from '@salto-io/core'
+import { parser } from '@salto-io/workspace'
 import { EditorPosition, PositionContext } from './salto/context'
 import { SaltoCompletion } from './salto/completions/provider'
 import { createSaltoSymbol, SaltoSymbolKind } from './salto/symbols'
@@ -129,7 +129,7 @@ export const toVSDiagnostics = (
   .value()
 
 export const sourceRangeToFoldRange = (
-  range: SourceRange,
+  range: parser.SourceRange,
   name: string
 ): vscode.FoldingRange => new vscode.FoldingRange(
   range.start.line - 1,

@@ -1,0 +1,556 @@
+/*
+*                      Copyright 2020 Salto Labs Ltd.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+import {
+  ObjectType, ElemID, PrimitiveType, PrimitiveTypes, InstanceElement, Field, BuiltinTypes, ListType,
+  DetailedChange,
+} from '@salto-io/adapter-api'
+import _ from 'lodash'
+import type { AdditionDiff, ModificationDiff, RemovalDiff } from '@salto-io/dag'
+import { createMockNaclFileSource } from '../../common/nacl_file_source'
+import { projectChange } from '../../../src/workspace/nacl_files/mutil_env/projections'
+
+describe('projections', () => {
+  const nestedElemID = new ElemID('salto', 'nested')
+  const nestedObj = new ObjectType({
+    elemID: nestedElemID,
+    fields: {
+      simple1: { type: BuiltinTypes.STRING },
+      simple2: { type: BuiltinTypes.STRING },
+    },
+  })
+  const annotationsObject = {
+    simple1: BuiltinTypes.STRING,
+    list1: BuiltinTypes.STRING,
+    nested1: nestedObj,
+    simple2: BuiltinTypes.STRING,
+    list2: BuiltinTypes.STRING,
+    nested2: nestedObj,
+  }
+  const primitiveType = new PrimitiveType({
+    elemID: new ElemID('salto', 'string'),
+    primitive: PrimitiveTypes.STRING,
+    annotationTypes: annotationsObject,
+    annotations: {
+      simple1: 'PRIMITIVE_1',
+      list1: ['PRIMITIVE_LIST_1'],
+      nested1: {
+        simple1: 'PRIMITIVE_NESTED_1',
+        simple2: 'PRIMITIVE_NESTED_2',
+      },
+      simple2: 'PRIMITIVE_1',
+      list2: ['PRIMITIVE_LIST_1'],
+      nested2: {
+        simple1: 'PRIMITIVE_NESTED_1',
+        simple2: 'PRIMITIVE_NESTED_2',
+      },
+    },
+  })
+  const objectTypeElemID = new ElemID('salto', 'object')
+  const objectType = new ObjectType({
+    elemID: objectTypeElemID,
+    annotationTypes: annotationsObject,
+    annotations: {
+      simple1: 'OBJECT_1',
+      list1: ['OBJECT_LIST_1'],
+      nested1: {
+        simple1: 'OBJECT_NESTED_1',
+        simple2: 'OBJECT_NESTED_2',
+      },
+      simple2: 'OBJECT_1',
+      list2: ['OBJECT_LIST_1'],
+      nested2: {
+        simple1: 'OBJECT_NESTED_1',
+        simple2: 'OBJECT_NESTED_2',
+      },
+    },
+    fields: _.mapValues(annotationsObject, (type, name) => (
+      { type: name.includes('list') ? new ListType(type) : type }
+    )),
+  })
+  const fieldParent = new ObjectType({
+    elemID: new ElemID('salto', 'parent'),
+    fields: { field: {
+      type: objectType,
+      annotations: {
+        simple1: 'FIELD_1',
+        list1: ['FIELD_LIST_1'],
+        nested1: {
+          simple1: 'FIELD_NESTED_1',
+          simple2: 'FIELD_NESTED_2',
+        },
+        simple2: 'FIELD_1',
+        list2: ['FIELD_LIST_1'],
+        nested2: {
+          simple1: 'FIELD_NESTED_1',
+          simple2: 'FIELD_NESTED_2',
+        },
+      },
+    } },
+  })
+  const { field } = fieldParent.fields
+  const instance = new InstanceElement(
+    'instance',
+    objectType,
+    {
+      simple1: 'INSTANCE_1',
+      list1: ['INSTANCE_LIST_1'],
+      nested1: {
+        simple1: 'INSTANCE_NESTED_1',
+        simple2: 'INSTANCE_NESTED_2',
+      },
+      simple2: 'INSTANCE_1',
+      list2: ['INSTANCE_LIST_1'],
+      nested2: {
+        simple1: 'INSTANCE_NESTED_1',
+        simple2: 'INSTANCE_NESTED_2',
+      },
+    }
+  )
+
+  const partialPrimitiveType = new PrimitiveType({
+    elemID: new ElemID('salto', 'string'),
+    primitive: PrimitiveTypes.STRING,
+    annotationTypes: annotationsObject,
+    annotations: {
+      simple1: 'PRIMITIVE_1',
+      list1: ['PRIMITIVE_LIST_1'],
+      nested1: {
+        simple1: 'PRIMITIVE_NESTED_1',
+      },
+    },
+  })
+  const partialObjectType = new ObjectType({
+    elemID: objectTypeElemID,
+    annotationTypes: annotationsObject,
+    annotations: {
+      simple1: 'OBJECT_1',
+      list1: ['OBJECT_LIST_1'],
+      nested1: {
+        simple1: 'OBJECT_NESTED_1',
+      },
+    },
+    fields: _.mapValues(annotationsObject, (type, name) => (
+      { type: name.includes('list') ? new ListType(type) : type }
+    )),
+  })
+  const partialFieldObject = new ObjectType({
+    elemID: new ElemID('salto', 'parent'),
+    fields: {
+      field: {
+        type: objectType,
+        annotations: {
+          simple1: 'FIELD_1',
+          list1: ['FIELD_LIST_1'],
+          nested1: {
+            simple1: 'FIELD_NESTED_1',
+          },
+        },
+      },
+    },
+  })
+  const partialField = partialFieldObject.fields.field
+  const partialInstance = new InstanceElement(
+    'instance',
+    objectType,
+    {
+      simple1: 'INSTANCE_1',
+      list1: ['INSTANCE_LIST_1'],
+      nested1: {
+        simple1: 'INSTANCE_NESTED_1',
+      },
+    }
+  )
+
+  const partialElements = [
+    partialPrimitiveType,
+    partialObjectType,
+    partialInstance,
+    partialFieldObject,
+  ]
+  const source = createMockNaclFileSource(partialElements)
+
+  describe('project instances', () => {
+    const newInstance = new InstanceElement(
+      'newInstance',
+      objectType,
+      {
+        simple1: 'INSTANCE_1',
+        list1: ['INSTANCE_LIST_1'],
+        nested1: {
+          simple1: 'INSTANCE_NESTED_1',
+        },
+      }
+    )
+
+    const newPartialInstance = new InstanceElement(
+      'instance',
+      objectType,
+      _.omit(instance.value, _.keys(partialInstance.value))
+    )
+
+    const modifiedInstance = instance.clone()
+    modifiedInstance.value = _.cloneDeepWith(
+      instance.value,
+      v => (_.isString(v) ? 'MODIFIED' : undefined)
+    )
+
+    it('should project an add change for a missing instances', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: newInstance },
+        id: newInstance.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('add')
+      const { data } = projected[0] as unknown as AdditionDiff<InstanceElement>
+      expect(data.after).toBeInstanceOf(InstanceElement)
+      expect(data.after).toEqual(newInstance)
+    })
+
+    it('should project an add change for a non existing fragment for instances', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: newPartialInstance },
+        id: newPartialInstance.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('add')
+      const { data } = projected[0] as unknown as AdditionDiff<InstanceElement>
+      expect(data.after).toBeInstanceOf(InstanceElement)
+      expect(data.after).toEqual(newPartialInstance)
+    })
+    it('should not project an add change for an existing fragment for instances', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: instance },
+        id: instance.elemID,
+      }
+      await expect(projectChange(change, source)).rejects.toThrow()
+    })
+    it('should project a modify change for an existing fragment for instances', async () => {
+      const change: DetailedChange = {
+        action: 'modify',
+        data: { before: instance, after: modifiedInstance },
+        id: instance.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('modify')
+      const { data } = projected[0] as unknown as ModificationDiff<InstanceElement>
+      expect(data.before.value).toEqual(partialInstance.value)
+      expect(data.after.value).toEqual({
+        simple1: 'MODIFIED',
+        list1: ['MODIFIED'],
+        nested1: {
+          simple1: 'MODIFIED',
+        },
+      })
+    })
+    it('should project a remove change for an existing fragment for instances', async () => {
+      const change: DetailedChange = {
+        action: 'remove',
+        data: { before: instance },
+        id: instance.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('remove')
+      const { data } = projected[0] as unknown as RemovalDiff<InstanceElement>
+      expect(data.before.value).toEqual(partialInstance.value)
+    })
+  })
+
+  describe('project object types', () => {
+    const newObjectType = new ObjectType({
+      elemID: new ElemID('salto', 'new_object'),
+      annotationTypes: _.clone(objectType.annotationTypes),
+      annotations: _.clone(objectType.annotations),
+    })
+
+    const newPartialObject = new ObjectType({
+      elemID: objectType.elemID,
+      fields: _.omit(objectType.fields, _.keys(partialObjectType.fields)),
+      annotations: _.omit(objectType.annotations, _.keys(partialObjectType.annotations)),
+      annotationTypes: _.omit(
+        objectType.annotationTypes,
+        _.keys(partialObjectType.annotationTypes)
+      ),
+    })
+
+    const modifiedObject = new ObjectType({
+      elemID: objectType.elemID,
+      fields: objectType.fields,
+      annotations: _.cloneDeepWith(
+        objectType.annotations,
+        v => (_.isString(v) ? 'MODIFIED' : undefined)
+      ),
+      annotationTypes: objectType.annotationTypes,
+    })
+
+    it('should project an add change for a missing object type', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: newObjectType },
+        id: newObjectType.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('add')
+      const { data } = projected[0] as unknown as AdditionDiff<ObjectType>
+      expect(data.after).toBeInstanceOf(ObjectType)
+      expect(data.after).toEqual(newObjectType)
+    })
+
+    it('should project an add change for a non existing fragment for object types', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: newPartialObject },
+        id: newPartialObject.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('add')
+      const { data } = projected[0] as unknown as AdditionDiff<ObjectType>
+      expect(data.after).toBeInstanceOf(ObjectType)
+      expect(data.after).toEqual(newPartialObject)
+    })
+    it('should not project an add change for an existing fragment for object types', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: objectType },
+        id: objectType.elemID,
+      }
+      await expect(projectChange(change, source)).rejects.toThrow()
+    })
+    it('should project a modify change for an existing fragment for object types', async () => {
+      const change: DetailedChange = {
+        action: 'modify',
+        data: { before: objectType, after: modifiedObject },
+        id: objectType.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('modify')
+      const { data } = projected[0] as unknown as ModificationDiff<ObjectType>
+      expect(data.before).toEqual(partialObjectType)
+      expect(data.after.annotations).toEqual({
+        simple1: 'MODIFIED',
+        list1: ['MODIFIED'],
+        nested1: {
+          simple1: 'MODIFIED',
+        },
+      })
+    })
+    it('should project a remove change for an existing fragment for object types', async () => {
+      const change: DetailedChange = {
+        action: 'remove',
+        data: { before: objectType },
+        id: objectType.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('remove')
+      const { data } = projected[0] as unknown as RemovalDiff<ObjectType>
+      expect(data.before).toEqual(partialObjectType)
+    })
+  })
+  describe('project primitive types', () => {
+    const newPrimitiveType = new PrimitiveType({
+      elemID: new ElemID('salto', 'new_object'),
+      annotationTypes: _.clone(primitiveType.annotationTypes),
+      annotations: _.clone(primitiveType.annotations),
+      primitive: primitiveType.primitive,
+    })
+
+    const newPartialPrimitive = new PrimitiveType({
+      elemID: primitiveType.elemID,
+      annotations: _.omit(primitiveType.annotations, _.keys(partialPrimitiveType.annotations)),
+      annotationTypes: _.omit(
+        primitiveType.annotationTypes,
+        _.keys(partialPrimitiveType.annotationTypes)
+      ),
+      primitive: primitiveType.primitive,
+    })
+
+    const modifiedPrimitive = new PrimitiveType({
+      elemID: primitiveType.elemID,
+      annotations: _.cloneDeepWith(primitiveType.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
+      annotationTypes: primitiveType.annotationTypes,
+      primitive: primitiveType.primitive,
+    })
+
+    it('should project an add change for a missing primitive type', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: newPrimitiveType },
+        id: newPrimitiveType.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('add')
+      const { data } = projected[0] as unknown as AdditionDiff<PrimitiveType>
+      expect(data.after).toBeInstanceOf(PrimitiveType)
+      expect(data.after).toEqual(newPrimitiveType)
+    })
+
+    it('should project an add change for a non existing fragment for primitive types', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: newPartialPrimitive },
+        id: newPartialPrimitive.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('add')
+      const { data } = projected[0] as unknown as AdditionDiff<PrimitiveType>
+      expect(data.after).toBeInstanceOf(PrimitiveType)
+      expect(data.after).toEqual(newPartialPrimitive)
+    })
+    it('should not project an add change for an existing fragment for primitive types', async () => {
+      const change: DetailedChange = {
+        action: 'add',
+        data: { after: primitiveType },
+        id: primitiveType.elemID,
+      }
+      await expect(projectChange(change, source)).rejects.toThrow()
+    })
+    it('should project a modify change for an existing fragment for primitive types', async () => {
+      const change: DetailedChange = {
+        action: 'modify',
+        data: { before: primitiveType, after: modifiedPrimitive },
+        id: primitiveType.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('modify')
+      const { data } = projected[0] as unknown as ModificationDiff<PrimitiveType>
+      expect(data.before).toEqual(partialPrimitiveType)
+      expect(data.after.annotations).toEqual({
+        simple1: 'MODIFIED',
+        list1: ['MODIFIED'],
+        nested1: {
+          simple1: 'MODIFIED',
+        },
+      })
+    })
+    it('should project a remove change for an existing fragment for primitive types', async () => {
+      const change: DetailedChange = {
+        action: 'remove',
+        data: { before: primitiveType },
+        id: primitiveType.elemID,
+      }
+      const projected = await projectChange(change, source)
+      expect(projected).toHaveLength(1)
+      expect(projected[0].action).toBe('remove')
+      const { data } = projected[0] as unknown as RemovalDiff<PrimitiveType>
+      expect(data.before).toEqual(partialPrimitiveType)
+    })
+  })
+  describe('project fields', () => {
+    describe('project fields', () => {
+      const parentObj = new ObjectType({ elemID: new ElemID('salto', 'new_parent') })
+      const newField = new Field(
+        parentObj,
+        'new_field',
+        field.type,
+        _.clone(field.annotations),
+      )
+
+      const newPartialField = new Field(
+        field.parent,
+        'newName',
+        field.type,
+        _.omit(field.annotations, _.keys(partialField.annotations)),
+      )
+
+      const modifiedField = new Field(
+        field.parent,
+        field.name,
+        field.type,
+        _.cloneDeepWith(field.annotations, v => (_.isString(v) ? 'MODIFIED' : undefined)),
+      )
+
+      it('should project an add change for a missing field', async () => {
+        const change: DetailedChange = {
+          action: 'add',
+          data: { after: newField },
+          id: newField.elemID,
+        }
+        const projected = await projectChange(change, source)
+        expect(projected).toHaveLength(1)
+        expect(projected[0].action).toBe('add')
+        const { data } = projected[0] as unknown as AdditionDiff<Field>
+        expect(data.after).toBeInstanceOf(Field)
+        expect(data.after).toEqual(newField)
+      })
+
+      it('should project an add change for a non existing fragment for fields', async () => {
+        const change: DetailedChange = {
+          action: 'add',
+          data: { after: newPartialField },
+          id: newPartialField.elemID,
+        }
+        const projected = await projectChange(change, source)
+        expect(projected).toHaveLength(1)
+        expect(projected[0].action).toBe('add')
+        const { data } = projected[0] as unknown as AdditionDiff<Field>
+        expect(data.after).toBeInstanceOf(Field)
+        expect(data.after).toEqual(newPartialField)
+      })
+      it('should not project an add change for an existing fragment for fields', async () => {
+        const change: DetailedChange = {
+          action: 'add',
+          data: { after: field },
+          id: field.elemID,
+        }
+        await expect(projectChange(change, source)).rejects.toThrow()
+      })
+      it('should project a modify change for an existing fragment for fields', async () => {
+        const change: DetailedChange = {
+          action: 'modify',
+          data: { before: field, after: modifiedField },
+          id: field.elemID,
+        }
+        const projected = await projectChange(change, source)
+        expect(projected).toHaveLength(1)
+        expect(projected[0].action).toBe('modify')
+        const { data } = projected[0] as unknown as ModificationDiff<Field>
+        expect(data.before).toEqual(partialField)
+        expect(data.after.annotations).toEqual({
+          simple1: 'MODIFIED',
+          list1: ['MODIFIED'],
+          nested1: {
+            simple1: 'MODIFIED',
+          },
+        })
+      })
+      it('should project a remove change for an existing fragment for fields', async () => {
+        const change: DetailedChange = {
+          action: 'remove',
+          data: { before: field },
+          id: field.elemID,
+        }
+        const projected = await projectChange(change, source)
+        expect(projected).toHaveLength(1)
+        expect(projected[0].action).toBe('remove')
+        const { data } = projected[0] as unknown as RemovalDiff<Field>
+        expect(data.before).toEqual(partialField)
+      })
+    })
+  })
+})

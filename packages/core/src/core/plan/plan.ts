@@ -24,8 +24,7 @@ import {
   removeEdges,
 } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { resolve } from '../expressions'
-import { createElementsMap } from '../search'
+import { expressions } from '@salto-io/workspace'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
 import { buildGroupedGraphFromDiffGraph, findGroupLevelChange } from './group'
 import { filterInvalidChanges } from './filter'
@@ -34,6 +33,8 @@ import {
   addReferencesDependency,
 } from './dependency'
 import { PlanTransformer, changeId } from './common'
+
+const { resolve } = expressions
 
 const log = logger(module)
 
@@ -160,7 +161,6 @@ const addModifyNodes = (
   return runMergeStep
 }
 
-
 export const getPlan = async (
   beforeElements: readonly Element[],
   afterElements: readonly Element[],
@@ -180,8 +180,8 @@ export const getPlan = async (
   )
 
   // filter invalid changes from the graph and the after elements
-  const beforeElementsMap = createElementsMap(resolvedBefore)
-  const afterElementsMap = createElementsMap(resolvedAfter)
+  const beforeElementsMap = _.keyBy(resolvedBefore, e => e.elemID.getFullName())
+  const afterElementsMap = _.keyBy(resolvedAfter, e => e.elemID.getFullName())
   const filterResult = await filterInvalidChanges(
     beforeElementsMap, afterElementsMap, diffGraph, changeValidators,
   )

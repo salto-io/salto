@@ -20,9 +20,9 @@ import {
   getLoginStatuses,
   LoginStatus,
   updateCredentials,
-  Workspace,
   loadLocalWorkspace,
 } from '@salto-io/core'
+import { Workspace } from '@salto-io/workspace'
 
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { environmentFilter } from '../filters/env'

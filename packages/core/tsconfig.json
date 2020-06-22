@@ -27,7 +27,7 @@
         { "path": "../adapter-utils" },
         { "path": "../dag" },
         { "path": "../file" },
-        { "path": "../file" },
+        { "path": "../workspace" },
         { "path": "../hubspot-adapter" },
         { "path": "../netsuite-adapter" },
         { "path": "../logging" },

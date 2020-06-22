@@ -13,32 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as ErrorTypes from './src/errors'
-
-export { ErrorTypes }
-export { Plan, PlanItem, DetailedChange } from './src/core/plan'
+export { Plan, PlanItem } from './src/core/plan'
 export { FetchChange, FetchProgressEvents, StepEmitter } from './src/core/fetch'
 export * from './src/api'
-export { FoundSearchResult, SearchResult } from './src/core/search'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
-  Workspace, WorkspaceError, SourceFragment, StateRecency, loadWorkspace, EnvironmentsSources,
-  initWorkspace,
-} from './src/workspace/workspace'
-export {
   loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources,
-} from './src/workspace/local/workspace'
+} from './src/local-workspace/workspace'
 export {
   workspaceConfigSource as localWorkspaceConfigSource,
   WorkspaceConfigSource as LocalWorkspaceConfigSource,
-} from './src/workspace/local/workspace_config'
-export { ConfigSource } from './src/workspace/config_source'
-export { Errors } from './src/workspace/errors'
-export { NaclFile, FILE_EXTENSION } from './src/workspace/nacl_files/nacl_files_source'
-export { parse, SourceRange, parseElemID } from './src/parser/parse'
-export { SourceMap } from './src/parser/source_map'
-export { dumpElements, dumpElemID } from './src/parser/dump'
+} from './src/local-workspace/workspace_config'
 export { SALTO_HOME_VAR, AppConfig, configFromDisk, CommandConfig } from './src/app_config'
 export {
   telemetrySender, Telemetry, TelemetryEvent,

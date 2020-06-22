@@ -15,7 +15,8 @@
 */
 import { SalesforceClient, testHelpers as salesforceTestHelpers, Credentials } from '@salto-io/salesforce-adapter'
 import path from 'path'
-import { Plan, dumpElements } from '@salto-io/core'
+import { Plan } from '@salto-io/core'
+import { parser } from '@salto-io/workspace'
 import { strings } from '@salto-io/lowerdash'
 import tmp from 'tmp-promise'
 import { writeFile, rm } from '@salto-io/file'
@@ -24,6 +25,8 @@ import { CredsLease } from '@salto-io/e2e-credentials-store/dist/src/jest-enviro
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
 import { ensureFilesExist, runInit, runSetEnv, runFetch, runPreviewGetPlan, runAddSalesforceService, runCreateEnv, runDeploy, ensureFilesDontExist, getNaclFileElements } from './helpers/workspace'
 import * as templates from './helpers/templates'
+
+const { dumpElements } = parser
 
 describe('multi env tests', () => {
   jest.setTimeout(15 * 60 * 1000)

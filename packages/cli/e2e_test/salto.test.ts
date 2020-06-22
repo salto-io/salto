@@ -19,7 +19,8 @@ import tmp from 'tmp-promise'
 import { strings } from '@salto-io/lowerdash'
 import { copyFile, rm, mkdirp, exists } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, Credentials } from '@salto-io/salesforce-adapter'
-import { Plan, Workspace, SALTO_HOME_VAR, SourceMap } from '@salto-io/core'
+import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
+import { Workspace, parser } from '@salto-io/workspace'
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
   API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE,
@@ -149,7 +150,7 @@ describe('cli e2e', () => {
     }
   })
 
-  const verifyTmpNaclFileObjectSourceMap = (sourceMap: SourceMap, object: ObjectType,
+  const verifyTmpNaclFileObjectSourceMap = (sourceMap: parser.SourceMap, object: ObjectType,
     fieldNames: string[], annotations: string[] = [API_NAME, METADATA_TYPE],
     annotationTypes: string[] = [API_NAME, METADATA_TYPE]): void => {
     expect(sourceMap.has(object.elemID.getFullName())).toBeTruthy()

@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { Workspace, parse, Errors, SourceMap } from '@salto-io/core'
+import _ from 'lodash'
+import { Workspace, parser, errors as wsErrors,
+  merger, configSource as cs } from '@salto-io/workspace'
 import { readTextFile } from '@salto-io/file'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { ParseError, ParseResult } from '@salto-io/core/dist/src/parser/parse'
-import { mergeElements } from '@salto-io/core/dist/src/core/merger'
 
-import { ConfigSource } from '@salto-io/core/dist/src/workspace/config_source'
-
+const { parse } = parser
+const { mergeElements } = merger
 const SERVICES = ['salesforce']
 
 const configID = new ElemID(SERVICES[0])
@@ -34,7 +33,9 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
   username: 'test@test',
 })
 
-export const mockErrors = (errors: SaltoError[], parseErrors: ParseError[] = []): Errors => ({
+export const mockErrors = (
+  errors: SaltoError[], parseErrors: parser.ParseError[] = []
+): wsErrors.Errors => ({
   all: () => [...errors, ...parseErrors],
   hasErrors: () => errors.length !== 0,
   merge: [],
@@ -52,11 +53,13 @@ const buildMockWorkspace = async (
 ): Promise<Workspace> => {
   const baseDir = naclFile ? path.dirname(naclFile) : 'default_base_dir'
   const filename = naclFile ? path.relative(baseDir, naclFile) : 'default.nacl'
-  let parseResult: ParseResult
+  let parseResult: parser.ParseResult
   if (buffer) {
     parseResult = await parse(Buffer.from(buffer), filename, {})
   } else {
-    parseResult = { elements: [], errors: [] as ParseError[], sourceMap: new SourceMap() }
+    parseResult = {
+      elements: [], errors: [] as parser.ParseError[], sourceMap: new parser.SourceMap(),
+    }
   }
   const merged = mergeElements(parseResult.elements)
   return {
@@ -78,8 +81,8 @@ const buildMockWorkspace = async (
     updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
     flush: mockFunction<Workspace['flush']>(),
     credentials: {
-      get: mockFunction<ConfigSource['get']>().mockResolvedValue(mockConfigInstance),
-      set: mockFunction<ConfigSource['set']>().mockResolvedValue(),
+      get: mockFunction<cs.ConfigSource['get']>().mockResolvedValue(mockConfigInstance),
+      set: mockFunction<cs.ConfigSource['set']>().mockResolvedValue(),
     },
     transformError: mockFunction<Workspace['transformError']>().mockImplementation(async err => ({
       ...err,

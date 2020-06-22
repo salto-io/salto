@@ -19,12 +19,10 @@ import wu from 'wu'
 import {
   Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
-  ActionName, ChangeError, SaltoError, isElement, TypeMap,
+  ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange,
 } from '@salto-io/adapter-api'
-import {
-  Plan, PlanItem, DetailedChange, WorkspaceError,
-  SourceFragment, FetchChange, FetchResult, SourceRange,
-} from '@salto-io/core'
+import { Plan, PlanItem, FetchChange, FetchResult } from '@salto-io/core'
+import { errors, SourceFragment, parser } from '@salto-io/workspace'
 import Prompts from './prompts'
 
 export const header = (txt: string): string => chalk.bold(txt)
@@ -58,7 +56,7 @@ export const formatWordsSeries = (words: string[]): string => (words.length > 1
   */
 const TAB = '  '
 
-const formatSourceFragmentHeader = (headerMetaData: SourceRange): string =>
+const formatSourceFragmentHeader = (headerMetaData: parser.SourceRange): string =>
   `${chalk.underline(headerMetaData.filename)}(${chalk.cyan(`line: ${headerMetaData.start.line}`)})\n`
 
 const formatSourceFragmentWithsubRange = (sf: Readonly<SourceFragment>): string => {
@@ -86,7 +84,7 @@ const formatSourceFragments = (sourceFragments: ReadonlyArray<SourceFragment>): 
     ? `\n on ${sourceFragments.map(formatSourceFragment).join('\n and ')}`
     : '')
 
-export const formatWorkspaceError = (we: Readonly<WorkspaceError<SaltoError>>): string =>
+export const formatWorkspaceError = (we: Readonly<errors.WorkspaceError<SaltoError>>): string =>
   `${formatError(we)}${formatSourceFragments(we.sourceFragments)}`
 
 const indent = (text: string, level: number): string => {
@@ -234,7 +232,7 @@ const getElapsedTime = (start: Date): number => Math.ceil(
   (new Date().getTime() - start.getTime()) / 1000,
 )
 
-type ChangeWorkspaceError = WorkspaceError<ChangeError>
+type ChangeWorkspaceError = errors.WorkspaceError<ChangeError>
 
 export const formatChangeErrors = (
   wsChangeErrors: ReadonlyArray<ChangeWorkspaceError>

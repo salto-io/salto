@@ -16,11 +16,11 @@
 import { EOL } from 'os'
 import { replaceContents, exists, readTextFile, rm, rename } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
-import State from '../../../src/workspace/state'
-import { localState } from '../../../src/workspace/local/state'
+import { State, serialization } from '@salto-io/workspace'
+import { localState } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
-import { expectTypesToMatch } from '../../common/helpers'
-import { serialize } from '../../../src/serializer/elements'
+
+const { serialize } = serialization
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -65,7 +65,7 @@ describe('local state', () => {
       const retrievedState = await state.getAll()
       expect(retrievedState.length).toBe(1)
       const retrievedStateObjectType = retrievedState[0] as ObjectType
-      expectTypesToMatch(retrievedStateObjectType, mockElement)
+      expect(retrievedStateObjectType.isEqual(mockElement)).toBe(true)
     })
 
     it('should set state successfully, retrieve it and get the same result', async () => {
@@ -73,7 +73,7 @@ describe('local state', () => {
       const retrievedState = await state.getAll()
       expect(retrievedState.length).toBe(1)
       const retrievedStateObjectType = retrievedState[0] as ObjectType
-      expectTypesToMatch(retrievedStateObjectType, mockElement)
+      expect(retrievedStateObjectType.isEqual(mockElement)).toBe(true)
     })
 
     it('should update state', async () => {

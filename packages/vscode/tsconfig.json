@@ -29,5 +29,6 @@
       { "path": "../adapter-utils" },
       { "path": "../core" },
       { "path": "../file" },
+      { "path": "../workspace" },
     ]
 }

@@ -19,18 +19,18 @@ import { EventEmitter } from 'pietile-eventemitter'
 import {
   Element, ElemID, AdapterOperations, TypeMap, Values, ServiceIds, BuiltinTypes, ObjectType,
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
-  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter,
+  ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange,
 } from '@salto-io/adapter-api'
 import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { merger, hiddenValues } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
-import { getPlan, DetailedChange, Plan } from './plan'
-import { mergeElements, MergeError } from './merger'
-import {
-  removeHiddenValuesAndHiddenTypes,
-} from '../workspace/hidden_values'
+import { getPlan, Plan } from './plan'
+
+const { mergeElements } = merger
+const { removeHiddenValuesAndHiddenTypes } = hiddenValues
 
 const log = logger(module)
 
@@ -64,7 +64,7 @@ export type FetchProgressEvents = {
 }
 
 export type MergeErrorWithElements = {
-  error: MergeError
+  error: merger.MergeError
   elements: Element[]
 }
 
@@ -166,7 +166,7 @@ type ProcessMergeErrorsResult = {
 
 const processMergeErrors = (
   elements: Element[],
-  errors: MergeError[],
+  errors: merger.MergeError[],
   stateElementIDs: string[]
 ): ProcessMergeErrorsResult => log.time(() => {
   const mergeErrsByElemID = _(errors)

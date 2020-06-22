@@ -23,9 +23,10 @@ import {
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { replaceContents, exists, mkdirp, readFile } from '@salto-io/file'
+import { parser } from '@salto-io/workspace'
 import { TelemetryConfig } from './telemetry'
-import { dumpElements } from './parser/dump'
-import { parse } from './parser/parse'
+
+const { dumpElements, parse } = parser
 
 class AppConfigParseError extends Error {
   constructor() {

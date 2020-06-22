@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import wu from 'wu'
 import {
   AdapterOperations,
   BuiltinTypes,
@@ -27,9 +28,9 @@ import {
   Variable,
   Adapter,
   isObjectType,
+  DetailedChange,
 } from '@salto-io/adapter-api'
-import wu from 'wu'
-import * as workspace from '../src/workspace/workspace'
+import * as workspace from '@salto-io/workspace'
 import * as api from '../src/api'
 
 import * as plan from '../src/core/plan'
@@ -38,7 +39,7 @@ import adapterCreators from '../src/core/adapters/creators'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
-import mockState from './common/state'
+import { mockState } from './common/state'
 import { mockFunction } from './common/helpers'
 
 const mockService = 'salto'
@@ -84,15 +85,17 @@ const mockWorkspace = (elements: Element[] = [], name?: string): workspace.Works
 
 jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
-
-jest.spyOn(workspace, 'initWorkspace').mockImplementation(
-  (
-    _baseDir: string,
-    _defaultEnvName: string,
-    workspaceName?: string
-  ):
-    Promise<workspace.Workspace> => Promise.resolve(mockWorkspace([], workspaceName))
-)
+jest.mock('@salto-io/workspace', () => ({
+  ...jest.requireActual('@salto-io/workspace'),
+  initWorkspace: jest.fn().mockImplementation(
+    (
+      _baseDir: string,
+      _defaultEnvName: string,
+      workspaceName?: string
+    ):
+      Promise<workspace.Workspace> => Promise.resolve(mockWorkspace([], workspaceName))
+  ),
+}))
 
 describe('api.ts', () => {
   const mockAdapterOps = {
@@ -221,7 +224,7 @@ describe('api.ts', () => {
 
     const mockedGetDetailedChanges = fetch.getDetailedChanges as jest.Mock
     const elem = mockElements.getAllElements()[2]
-    const mockedGetDetailedChangesResult: plan.DetailedChange = {
+    const mockedGetDetailedChangesResult: DetailedChange = {
       action: 'add',
       data: { after: elem },
       id: elem.elemID,

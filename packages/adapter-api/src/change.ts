@@ -19,6 +19,8 @@ import {
 import {
   ObjectType, InstanceElement, Field, PrimitiveType, isInstanceElement, isObjectType, isField,
 } from './elements'
+import { ElemID } from './element_id'
+import { Values, Value } from './values'
 
 export { ActionName }
 
@@ -52,3 +54,9 @@ export const isObjectTypeChange = (change: Change): change is Change<ObjectType>
 export const isFieldChange = (change: Change): change is Change<Field> => (
   isField(getChangeElement(change))
 )
+
+export type DetailedChange<T = ChangeDataType | Values | Value> =
+  Change<T> & {
+    id: ElemID
+    path?: string[]
+  }

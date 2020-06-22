@@ -15,20 +15,16 @@
 */
 import path from 'path'
 import { InstanceElement } from '@salto-io/adapter-api'
+import { workspaceConfig, dirStore } from '@salto-io/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import {
-  WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigType,
-  workspaceUserConfigType,
-} from '../../../src/workspace/workspace_config_types'
-import {
   workspaceConfigSource, WorkspaceConfigSource,
-} from '../../../src/workspace/local/workspace_config'
-import { DirectoryStore } from '../../../src/workspace/dir_store'
-import * as mockDirStore from '../../../src/workspace/local/dir_store'
+} from '../../../src/local-workspace/workspace_config'
+import * as mockDirStore from '../../../src/local-workspace/dir_store'
 
-jest.mock('../../../src/workspace/local/dir_store')
+jest.mock('../../../src/local-workspace/dir_store')
 describe('workspace local config', () => {
-  const mockDirStoreInstance = (key: string, buffer: string): DirectoryStore => ({
+  const mockDirStoreInstance = (key: string, buffer: string): dirStore.DirectoryStore => ({
     get: jest.fn().mockImplementation(name => (name.startsWith(key) ? ({ buffer, filename: '' }) : undefined)),
     set: jest.fn(),
     flush: jest.fn(),
@@ -38,8 +34,8 @@ describe('workspace local config', () => {
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
     clone: jest.fn(),
-  } as unknown as DirectoryStore)
-  const repoDirStore = mockDirStoreInstance(WORKSPACE_CONFIG_NAME, `
+  } as unknown as dirStore.DirectoryStore)
+  const repoDirStore = mockDirStoreInstance(workspaceConfig.WORKSPACE_CONFIG_NAME, `
   workspace {
     uid = "98bb902f-a144-42da-9672-f36e312e8e09"
     name = "test"
@@ -53,7 +49,7 @@ describe('workspace local config', () => {
     ]
   }
   `)
-  const prefDirStore = mockDirStoreInstance(USER_CONFIG_NAME, `
+  const prefDirStore = mockDirStoreInstance(workspaceConfig.USER_CONFIG_NAME, `
   workspaceUser {
     currentEnv = "default"
   }
@@ -79,20 +75,24 @@ describe('workspace local config', () => {
   })
 
   it('get from both dir stores', async () => {
-    expect(configSource.get(WORKSPACE_CONFIG_NAME)).toBeDefined()
-    expect(configSource.get(USER_CONFIG_NAME)).toBeDefined()
+    expect(configSource.get(workspaceConfig.WORKSPACE_CONFIG_NAME)).toBeDefined()
+    expect(configSource.get(workspaceConfig.USER_CONFIG_NAME)).toBeDefined()
   })
 
   it('set in repo dir store', async () => {
-    await configSource.set(WORKSPACE_CONFIG_NAME,
-      new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType, {}))
+    await configSource.set(workspaceConfig.WORKSPACE_CONFIG_NAME,
+      new InstanceElement(
+        workspaceConfig.WORKSPACE_CONFIG_NAME, workspaceConfig.workspaceConfigType, {},
+      ))
     expect((repoDirStore.set as jest.Mock).mock.calls).toHaveLength(1)
     expect((prefDirStore.set as jest.Mock).mock.calls).toHaveLength(0)
   })
 
   it('set in pref dir store', async () => {
-    await configSource.set(USER_CONFIG_NAME,
-      new InstanceElement(USER_CONFIG_NAME, workspaceUserConfigType, {}))
+    await configSource.set(workspaceConfig.USER_CONFIG_NAME,
+      new InstanceElement(
+        workspaceConfig.USER_CONFIG_NAME, workspaceConfig.workspaceUserConfigType, {},
+      ))
     expect((repoDirStore.set as jest.Mock).mock.calls).toHaveLength(0)
     expect((prefDirStore.set as jest.Mock).mock.calls).toHaveLength(1)
   })

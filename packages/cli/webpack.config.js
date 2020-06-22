@@ -40,7 +40,6 @@ module.exports = {
   stats: {
     warningsFilter: [
       /node_modules\/yargs/, // Ignore warnings due to yarg's dynamic module loading
-      /parser\/internal\/wasm_exec.js/,
     ],
   },
   externals: {

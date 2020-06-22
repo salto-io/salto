@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ErrorTypes } from '@salto-io/core'
+import { errors as wsErrors } from '@salto-io/workspace'
 import { SaltoError, ElemID } from '@salto-io/adapter-api'
 import { groupRelatedErrors, UnresolvedReferenceGroupError } from '../../src/workspace/errors'
 
@@ -40,7 +40,7 @@ describe('groupRelatedErrors', () => {
         originalErrors = [
           nonGroupedError,
           ...sources.map(
-            elemID => new ErrorTypes.UnresolvedReferenceValidationError({ elemID, target })
+            elemID => new wsErrors.UnresolvedReferenceValidationError({ elemID, target })
           ),
         ]
         groupedErrors = groupRelatedErrors(originalErrors)
@@ -75,7 +75,7 @@ describe('groupRelatedErrors', () => {
       beforeEach(() => {
         baseTarget = new ElemID('test', 'target', 'field', 'bla')
         originalErrors = sources.map(
-          (elemID, idx) => new ErrorTypes.UnresolvedReferenceValidationError(
+          (elemID, idx) => new wsErrors.UnresolvedReferenceValidationError(
             { elemID, target: baseTarget.createNestedID(..._.times(idx, () => 'a')) }
           )
         )
@@ -94,7 +94,7 @@ describe('groupRelatedErrors', () => {
       beforeEach(() => {
         target = new ElemID('test', 'target')
         originalErrors = [
-          new ErrorTypes.UnresolvedReferenceValidationError({ elemID: sources[0], target }),
+          new wsErrors.UnresolvedReferenceValidationError({ elemID: sources[0], target }),
         ]
         groupedErrors = groupRelatedErrors(originalErrors)
       })

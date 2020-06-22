@@ -20,7 +20,8 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
-import { Plan, FetchChange, Workspace, StateRecency, PlanItem } from '@salto-io/core'
+import { Plan, FetchChange, PlanItem } from '@salto-io/core'
+import { Workspace, StateRecency } from '@salto-io/workspace'
 import {
   formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
   formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,

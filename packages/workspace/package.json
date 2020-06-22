@@ -1,0 +1,76 @@
+{
+  "name": "@salto-io/workspace",
+  "version": "0.1.18",
+  "license": "Apache-2.0",
+  "description": "Salto workspace",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src",
+    "test",
+    "index.ts"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prepare": "yarn run build",
+    "prepublishOnly": "yarn test",
+    "build": "yarn run lint  && yarn run build-ts && yarn run build-parser",
+    "test": "jest",
+    "clean": "rm -rf ./dist",
+    "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
+    "clean-ts-test": "yarn run clean-ts && yarn run test",
+    "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
+    "build-ts": "tsc -b",
+    "build-parser": "yarn run nearleyc src/parser/internal/hcl.ne -o dist/src/parser/internal/hcl.js",
+    "watch-ts": "tsc -b -w",
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn run lint --fix",
+    "package": "node ./package_native.js"
+  },
+  "dependencies": {
+    "@salto-io/adapter-api": "0.1.18",
+    "@salto-io/adapter-utils": "0.1.18",
+    "@salto-io/logging": "0.1.18",
+    "@salto-io/lowerdash": "0.1.18",
+    "fuse.js": "^3.4.5",
+    "lodash": "^4.17.15",
+    "moo": "^0.5.1",
+    "nearley": "2.19.2",
+    "wu": "^2.1.0"
+  },
+  "devDependencies": {
+    "@salto-io/dag": "0.1.18",
+    "@types/jest": "^24.0.0",
+    "@types/lodash": "^4.14.133",
+    "@types/moo": "^0.5.0",
+    "@types/nearley": "^2.11.0",
+    "@types/node": "^12.7.1",
+    "@types/supertest": "^2.0.4",
+    "@types/tmp": "^0.1.0",
+    "@types/wu": "^2.1.40",
+    "@typescript-eslint/eslint-plugin": "2.31.0",
+    "@typescript-eslint/parser": "2.31.0",
+    "eslint": "^6.2.2",
+    "eslint-config-airbnb": "18.0.1",
+    "eslint-plugin-header": "^3.0.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jest": "^22.6.4",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0",
+    "jest": "^24.9.0",
+    "jest-circus": "^24.9.0",
+    "jest-junit": "^6.4.0",
+    "nock": "^12.0.1",
+    "ts-cleaner": "^1.0.3",
+    "tsc-watch": "^2.2.1",
+    "typescript": "3.9.3"
+  }
+}

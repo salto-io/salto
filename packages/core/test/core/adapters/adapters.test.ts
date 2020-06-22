@@ -20,7 +20,10 @@ import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
 } from '../../../src/core/adapters/adapters'
 
-jest.mock('../../../src/workspace/config_source')
+jest.mock('@salto-io/workspace', () => ({
+  ...jest.requireActual('@salto-io/workspace'),
+  configSource: jest.fn(),
+}))
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual('@salto-io/adapter-utils'),
   createDefaultInstanceFromType: jest.fn(),

@@ -21,7 +21,7 @@ import {
 import {
   findElement, resolvePath,
 } from '@salto-io/adapter-utils'
-import { SourceMap } from '@salto-io/core'
+import { parser } from '@salto-io/workspace'
 import { EditorWorkspace } from './workspace'
 
 type PositionContextType = 'global'|'instance'|'type'|'field'
@@ -106,7 +106,7 @@ const getPositionContextType = (
 }
 
 const flattenNaclFileRanges = (
-  sourceMap: SourceMap
+  sourceMap: parser.SourceMap
 ): NamedRange[] => wu(sourceMap.entries())
   .map(([name, ranges]) => ranges.map(range => ({ name, range })))
   .flatten()
@@ -160,7 +160,7 @@ const extractFields = (elements: readonly Element[]): Record<string, Element> =>
 
 export const buildDefinitionsTree = (
   fileContent: string,
-  sourceMap: SourceMap,
+  sourceMap: parser.SourceMap,
   elements: ReadonlyArray<Element>,
 ): PositionContext => {
   const startPosComparator = (left: NamedRange, right: NamedRange): number => (

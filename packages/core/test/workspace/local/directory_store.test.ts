@@ -19,7 +19,7 @@ import {
   stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
   rename, existsSync, readTextFileSync, statSync,
 } from '@salto-io/file'
-import { localDirectoryStore } from '../../../src/workspace/local/dir_store'
+import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),

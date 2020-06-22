@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { LoginStatus, updateCredentials, Workspace, loadLocalWorkspace, addAdapter } from '@salto-io/core'
 import { ObjectType } from '@salto-io/adapter-api'
+import { LoginStatus, updateCredentials, loadLocalWorkspace, addAdapter } from '@salto-io/core'
+import { Workspace } from '@salto-io/workspace'
 import { command } from '../../src/commands/services'
 import * as mocks from '../mocks'
 

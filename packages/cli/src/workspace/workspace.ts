@@ -16,9 +16,10 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
-import { Workspace, FetchChange, Tags, loadLocalWorkspace } from '@salto-io/core'
+import { FetchChange, Tags, loadLocalWorkspace } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { Workspace } from '@salto-io/workspace'
 import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
   formatFinishedLoading, formatWorkspaceAbort } from '../formatter'
 import { CliOutput, SpinnerCreator } from '../types'

@@ -14,27 +14,30 @@
 * limitations under the License.
 */
 import path from 'path'
-import { DirectoryStore } from 'src/workspace/dir_store'
+import * as ws from '@salto-io/workspace'
 import { exists } from '@salto-io/file'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
   loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH,
   loadLocalElementsSources,
-} from '../../../src/workspace/local/workspace'
+} from '../../../src/local-workspace/workspace'
 import { getSaltoHome } from '../../../src/app_config'
-import * as mockWs from '../../../src/workspace/workspace'
-import * as mockDirStore from '../../../src/workspace/local/dir_store'
+import * as mockDirStore from '../../../src/local-workspace/dir_store'
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
   exists: jest.fn(),
 }))
-jest.mock('../../../src/workspace/workspace')
-jest.mock('../../../src/workspace/local/dir_store')
+jest.mock('@salto-io/workspace', () => ({
+  ...jest.requireActual('@salto-io/workspace'),
+  initWorkspace: jest.fn(),
+  loadWorkspace: jest.fn(),
+}))
+jest.mock('../../../src/local-workspace/dir_store')
 describe('local workspace', () => {
   const mockExists = exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
-  const mockDirStoreInstance = (): DirectoryStore => ({
+  const mockDirStoreInstance = (): ws.dirStore.DirectoryStore => ({
     get: jest.fn().mockResolvedValue({ buffer: '', filename: '' }),
     set: jest.fn(),
     flush: jest.fn(),
@@ -43,7 +46,7 @@ describe('local workspace', () => {
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
     clone: jest.fn(),
-  } as unknown as DirectoryStore)
+  } as unknown as ws.dirStore.DirectoryStore)
   const repoDirStore = mockDirStoreInstance()
   const localDirStore = mockDirStoreInstance()
   mockCreateDirStore.mockImplementation((baseDir: string) =>
@@ -69,7 +72,7 @@ describe('local workspace', () => {
   })
 
   describe('initLocalWorkspace', () => {
-    const mockInit = mockWs.initWorkspace as jest.Mock
+    const mockInit = ws.initWorkspace as jest.Mock
 
     it('should throw error if already inside a workspace', async () => {
       mockExists.mockImplementation(filename => (filename === '/fake/salto.config'))
@@ -88,7 +91,7 @@ describe('local workspace', () => {
       await initLocalWorkspace('.', wsName, envName)
       expect(mockInit.mock.calls[0][0]).toBe(wsName)
       expect(mockInit.mock.calls[0][2]).toBe(envName)
-      const envSources: mockWs.EnvironmentsSources = mockInit.mock.calls[0][5]
+      const envSources: ws.EnvironmentsSources = mockInit.mock.calls[0][5]
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(envSources.commonSourceName).toBe(COMMON_ENV_PREFIX)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
@@ -108,7 +111,7 @@ describe('local workspace', () => {
   })
 
   describe('loadLocalWorkspace', () => {
-    const mockLoad = mockWs.loadWorkspace as jest.Mock
+    const mockLoad = ws.loadWorkspace as jest.Mock
     it('should throw error if not a workspace', async () => {
       mockExists.mockImplementation((filename: string) => (!filename.endsWith('salto.config')))
       await expect(loadLocalWorkspace('.')).rejects.toThrow(NotAWorkspaceError)
@@ -136,7 +139,7 @@ describe('local workspace', () => {
       await loadLocalWorkspace('.')
 
       expect(mockLoad).toHaveBeenCalledTimes(1)
-      const envSources: mockWs.EnvironmentsSources = mockLoad.mock.calls[0][2]
+      const envSources: ws.EnvironmentsSources = mockLoad.mock.calls[0][2]
       expect(Object.keys(envSources.sources)).toHaveLength(3)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(12)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])

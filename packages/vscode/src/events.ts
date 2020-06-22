@@ -15,12 +15,14 @@
 */
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { FILE_EXTENSION } from '@salto-io/core'
+import { nacl } from '@salto-io/workspace'
 import { readTextFile } from '@salto-io/file'
 import _ from 'lodash'
 import { EditorWorkspace } from './salto/workspace'
 import { getDiagnostics } from './salto/diagnostics'
 import { toVSDiagnostics } from './adapters'
+
+const { FILE_EXTENSION } = nacl
 
 const DIAG_IDLE_PERIOD = 500
 export const createReportErrorsEventListener = (

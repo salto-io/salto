@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import wu from 'wu'
-import {
-  Workspace, Plan, PlanItem,
-} from '@salto-io/core'
+import { Plan, PlanItem } from '@salto-io/core'
+import { Workspace } from '@salto-io/workspace'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import * as mocks from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'

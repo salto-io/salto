@@ -6,14 +6,7 @@
         "declaration": true,
         "resolveJsonModule": true,
         "noUnusedLocals": false,
-        "paths": {
-            "jsforce": [
-                "../../node_modules/jsforce-types"
-            ],
-            "yargonaut": [
-                "src/types/yargonaut"
-            ]
-        }
+        "paths": {}
     },
     "include": [
         "src/**/*",
@@ -24,13 +17,6 @@
     ],
     "references": [
       { "path": "../adapter-api" },
-      { "path": "../adapter-utils" },
-      { "path": "../cli" },
-      { "path": "../core" },
-      { "path": "../dag" },
-      { "path": "../file" },
-      { "path": "../logging" },
-      { "path": "../lowerdash" },
-      { "path": "../salesforce-adapter" }
+      { "path": "../core" }
     ]
 }

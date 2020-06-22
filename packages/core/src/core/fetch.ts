@@ -73,7 +73,7 @@ export const getDetailedChanges = async (
   after: ReadonlyArray<Element>,
   additionalResolveContext?: ReadonlyArray<Element>,
 ): Promise<Iterable<DetailedChange>> =>
-  wu((await getPlan(before, after, {}, [], additionalResolveContext)).itemsByEvalOrder())
+  wu((await getPlan({ before, after, additionalResolveContext })).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
 
@@ -344,10 +344,10 @@ export const fetchChanges = async (
   }
   const configs = updatedConfigs.map(c => c.config)
   const updatedConfigNames = new Set(configs.map(c => c.elemID.getFullName()))
-  const configChanges = await getPlan(
-    currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
-    configs,
-  )
+  const configChanges = await getPlan({
+    before: currentConfigs.filter(config => updatedConfigNames.has(config.elemID.getFullName())),
+    after: configs,
+  })
   const adapterNameToConfigMessage = _
     .fromPairs(updatedConfigs.map(c => [c.config.elemID.adapter, c.message]))
   return {

@@ -161,16 +161,23 @@ const addModifyNodes = (
   return runMergeStep
 }
 
-export const getPlan = async (
-  beforeElements: readonly Element[],
-  afterElements: readonly Element[],
-  changeValidators: Record<string, ChangeValidator> = {},
-  dependencyChangers: ReadonlyArray<DependencyChanger> = defaultDependencyChangers,
-  additionalResolveContext?: ReadonlyArray<Element>,
-): Promise<Plan> => log.time(async () => {
+type GetPlanParameters = {
+  before: ReadonlyArray<Element>
+  after: ReadonlyArray<Element>
+  changeValidators?: Record<string, ChangeValidator>
+  dependencyChangers?: ReadonlyArray<DependencyChanger>
+  additionalResolveContext?: ReadonlyArray<Element>
+}
+export const getPlan = async ({
+  before,
+  after,
+  changeValidators = {},
+  dependencyChangers = defaultDependencyChangers,
+  additionalResolveContext,
+}: GetPlanParameters): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
-  const resolvedBefore = resolve(beforeElements, additionalResolveContext)
-  const resolvedAfter = resolve(afterElements, additionalResolveContext)
+  const resolvedBefore = resolve(before, additionalResolveContext)
+  const resolvedAfter = resolve(after, additionalResolveContext)
 
   const diffGraph = await buildDiffGraph(
     addElements(resolvedBefore, 'remove'),
@@ -198,4 +205,4 @@ export const getPlan = async (
     _.pick(beforeElementsMap, inGraphElementKeys),
     _.pick(filterResult.validAfterElementsMap, inGraphElementKeys)
   )
-}, 'get plan with %o -> %o elements', beforeElements.length, afterElements.length)
+}, 'get plan with %o -> %o elements', before.length, after.length)

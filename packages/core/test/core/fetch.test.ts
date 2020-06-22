@@ -145,7 +145,11 @@ describe('fetch', () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters, [], [], [],
         )
-        verifyPlan(fetchChangesResult.configChanges, await getPlan([], [configInstance]), 1)
+        verifyPlan(
+          fetchChangesResult.configChanges,
+          await getPlan({ before: [], after: [configInstance] }),
+          1,
+        )
       })
 
       it('should return config change plan when there is current config', async () => {
@@ -157,7 +161,7 @@ describe('fetch', () => {
         )
         verifyPlan(
           fetchChangesResult.configChanges,
-          await getPlan([currentInstanceConfig], [configInstance]),
+          await getPlan({ before: [currentInstanceConfig], after: [configInstance] }),
           1
         )
       })

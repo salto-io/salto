@@ -40,7 +40,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const saltoOffice = afterElements[2]
     saltoOffice.annotations.label = 'new label'
     saltoOffice.annotations.new = 'new annotation'
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getPlan({ before: allElements, after: afterElements })
     return [plan, saltoOffice]
   },
 
@@ -51,7 +51,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     saltoOffice.fields.new = new Field(saltoOffice, 'new', BuiltinTypes.STRING)
     // Sub element change
     saltoOffice.fields.location.annotations.label = 'new label'
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getPlan({ before: allElements, after: afterElements })
     return [plan, saltoOffice]
   },
 
@@ -60,7 +60,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       elemID: new ElemID('salto', 'additional'),
       primitive: PrimitiveTypes.STRING,
     })
-    const plan = await getPlan(allElements, [...allElements, newElement])
+    const plan = await getPlan({ before: allElements, after: [...allElements, newElement] })
     return [plan, newElement]
   },
 
@@ -69,7 +69,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const updatedEmployee = afterElements[4]
     updatedEmployee.value.nicknames[1] = 'new'
     delete updatedEmployee.value.office.name
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getPlan({ before: allElements, after: afterElements })
     return [plan, updatedEmployee]
   },
 
@@ -77,7 +77,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const afterElements = mock.getAllElements()
     const updatedEmployee = afterElements[4]
     updatedEmployee.value.nicknames.push('new')
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getPlan({ before: allElements, after: afterElements })
     return [plan, updatedEmployee]
   },
 
@@ -88,7 +88,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     // update annotation types
     saltoOffice.annotationTypes.new = BuiltinTypes.STRING
     saltoOffice.annotationTypes.address = saltoAddress.clone({ label: 'test label' })
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getPlan({ before: allElements, after: afterElements })
     return [plan, saltoOffice]
   },
 
@@ -97,7 +97,7 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
     const saltoOffice = afterElements[2]
     saltoOffice.fields.name.type = new ListType(saltoOffice.fields.name.type)
     saltoOffice.fields.rooms.type = BuiltinTypes.STRING
-    const plan = await getPlan(allElements, afterElements)
+    const plan = await getPlan({ before: allElements, after: afterElements })
     return [plan, saltoOffice]
   },
 
@@ -121,8 +121,8 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       return []
     }
     const plan = isAdd
-      ? await getPlan([], afterElements, {}, [depChanger])
-      : await getPlan(afterElements, [], {}, [depChanger])
+      ? await getPlan({ before: [], after: afterElements, dependencyChangers: [depChanger] })
+      : await getPlan({ before: afterElements, after: [], dependencyChangers: [depChanger] })
     return [plan, saltoOffice]
   },
 })
@@ -138,7 +138,7 @@ describe('getPlan', () => {
   } = planGenerators(allElements)
 
   it('should create empty plan', async () => {
-    const plan = await getPlan(allElements, allElements)
+    const plan = await getPlan({ before: allElements, after: allElements })
     expect(plan.size).toBe(0)
   })
 
@@ -157,7 +157,7 @@ describe('getPlan', () => {
   it('should create plan with remove change', async () => {
     const pre = allElements
     const preFiltered = pre.filter(element => element.elemID.name !== 'instance')
-    const plan = await getPlan(pre, preFiltered)
+    const plan = await getPlan({ before: pre, after: preFiltered })
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     const removed = _.find(pre, element => element.elemID.name === 'instance')
@@ -184,7 +184,7 @@ describe('getPlan', () => {
     const post = mock.getAllElements()
     const employee = post[4]
     employee.value.name = 'SecondEmployee'
-    const plan = await getPlan(allElements, post)
+    const plan = await getPlan({ before: allElements, after: post })
     expect(plan.size).toBe(1)
     const planItem = getFirstPlanItem(plan)
     expect(planItem.groupKey).toBe(employee.elemID.getFullName())

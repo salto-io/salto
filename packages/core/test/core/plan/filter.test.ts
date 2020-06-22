@@ -36,7 +36,11 @@ describe('filterInvalidChanges', () => {
   )
 
   it('should have no change errors when having no diffs', async () => {
-    const planResult = await getPlan(allElements, allElements, { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: allElements,
+      after: allElements,
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(0)
     expect(planResult.size).toBe(0)
   })
@@ -49,11 +53,11 @@ describe('filterInvalidChanges', () => {
       isSettings: true,
     })
     const newElements = [newValidObj, newValidInst, newValidSetting]
-    const planResult = await getPlan(
-      allElements,
-      [...allElements, ...newElements],
-      { salto: mockChangeValidator }
-    )
+    const planResult = await getPlan({
+      before: allElements,
+      after: [...allElements, ...newElements],
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(0)
     expect(planResult.size).toBe(2)
     newElements.forEach(element => {
@@ -74,8 +78,11 @@ describe('filterInvalidChanges', () => {
       annotations: { value: 'value' },
     })
     const newInvalidInst = new InstanceElement('new_invalid_inst', newInvalidObj, {})
-    const planResult = await getPlan(allElements, [...allElements, newInvalidObj, newInvalidInst],
-      { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: allElements,
+      after: [...allElements, newInvalidObj, newInvalidInst],
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(3)
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.elemID)))
       .toBeTruthy()
@@ -96,8 +103,11 @@ describe('filterInvalidChanges', () => {
       },
       annotations: { value: 'value' },
     })
-    const planResult = await getPlan(allElements, [...allElements, newValidObj],
-      { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: allElements,
+      after: [...allElements, newValidObj],
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].elemID.isEqual(newValidObj.fields.invalid.elemID))
       .toBeTruthy()
@@ -115,7 +125,11 @@ describe('filterInvalidChanges', () => {
     const afterElements = mock.getAllElements()
     const saltoOffice = afterElements[2] as ObjectType
     saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
-    const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: allElements,
+      after: afterElements,
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -128,7 +142,11 @@ describe('filterInvalidChanges', () => {
     const saltoOffice = afterElements[2] as ObjectType
     saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
     saltoOffice.fields.valid = new Field(saltoOffice, 'valid', BuiltinTypes.STRING)
-    const planResult = await getPlan(allElements, afterElements, { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: allElements,
+      after: afterElements,
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -149,8 +167,11 @@ describe('filterInvalidChanges', () => {
     afterInvalidObj.annotations.new = 'value'
     afterInvalidObj.annotationTypes.new = BuiltinTypes.STRING
     afterInvalidObj.fields.valid = new Field(afterInvalidObj, 'valid', BuiltinTypes.STRING)
-    const planResult = await getPlan([...allElements, beforeInvalidObj],
-      [...allElements, afterInvalidObj], { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: [...allElements, beforeInvalidObj],
+      after: [...allElements, afterInvalidObj],
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(afterInvalidObj.elemID)).toBeTruthy()
@@ -166,7 +187,11 @@ describe('filterInvalidChanges', () => {
     const saltoOffice = beforeElements[2] as ObjectType
     saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
     saltoOffice.fields.valid = new Field(saltoOffice, 'valid', BuiltinTypes.STRING)
-    const planResult = await getPlan(beforeElements, allElements, { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: beforeElements,
+      after: allElements,
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
@@ -189,8 +214,11 @@ describe('filterInvalidChanges', () => {
     const afterSaltoOffice = afterElements[2] as ObjectType
     afterSaltoOffice.fields.invalid = new Field(afterSaltoOffice, 'invalid',
       BuiltinTypes.STRING, { label: 'dummy annotation' })
-    const planResult = await getPlan(beforeElements, afterElements,
-      { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: beforeElements,
+      after: afterElements,
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(1)
     expect(planResult.changeErrors[0].severity).toEqual('Error')
     expect(planResult.changeErrors[0].elemID.isEqual(afterSaltoOffice.fields.invalid.elemID))
@@ -207,8 +235,11 @@ describe('filterInvalidChanges', () => {
     })
     const beforeInvalidField = beforeInvalidObj.fields.invalid
     const beforeInvalidInst = new InstanceElement('before_invalid_inst', beforeInvalidObj, {})
-    const planResult = await getPlan([...allElements, beforeInvalidObj, beforeInvalidInst],
-      allElements, { salto: mockChangeValidator })
+    const planResult = await getPlan({
+      before: [...allElements, beforeInvalidObj, beforeInvalidInst],
+      after: allElements,
+      changeValidators: { salto: mockChangeValidator },
+    })
     expect(planResult.changeErrors).toHaveLength(3)
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidObj.elemID)))
       .toBeTruthy()

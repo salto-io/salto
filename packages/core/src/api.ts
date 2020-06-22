@@ -85,15 +85,15 @@ export const preview = async (
   services = workspace.services(),
 ): Promise<Plan> => {
   const stateElements = await workspace.state().getAll()
-  return getPlan(
-    filterElementsByServices(stateElements, services),
-    addHiddenValuesAndHiddenTypes(
+  return getPlan({
+    before: filterElementsByServices(stateElements, services),
+    after: addHiddenValuesAndHiddenTypes(
       filterElementsByServices(await workspace.elements(), services),
       stateElements
     ),
-    getAdapterChangeValidators(),
-    defaultDependencyChangers.concat(getAdapterDependencyChangers()),
-  )
+    changeValidators: getAdapterChangeValidators(),
+    dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
+  })
 }
 
 export interface DeployResult {

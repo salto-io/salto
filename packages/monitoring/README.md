@@ -1,6 +1,6 @@
 # Salto - Monitoring
 
-This project is a monitoring tool for identify changes in services using Salto.
+This project is a tool to monitor changes in a service
 
 ### Build instructions
 

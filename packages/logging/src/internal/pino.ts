@@ -16,7 +16,11 @@
 
 import { format, promisify } from 'util'
 import { createWriteStream } from 'fs'
+import { EOL } from 'os'
 import pino, { LevelWithSilent, DestinationStream } from 'pino'
+// Workaround - pino in browser doesn't include pino.stdTimeFunctions
+// @ts-ignore
+import { isoTime } from 'pino/lib/time'
 import chalk from 'chalk'
 import { streams, collections } from '@salto-io/lowerdash'
 import {
@@ -56,7 +60,7 @@ const customKeys = (
 const formatError = (input: FormatterInput): string => [
   input.stack,
   format(Object.fromEntries(customKeys(input).map(k => [k, input[k]]))),
-].join('\n')
+].join(EOL)
 
 const textFormat = (
   { colorize }: { colorize: boolean }
@@ -69,7 +73,7 @@ const textFormat = (
     colorize ? chalk.hex(levelToHexColor(level))(level) : level,
     colorize ? chalk.hex(namespaceToHexColor(name))(name) : name,
     input.stack ? formatError(input) : message,
-  ].join(' ')
+  ].join(' ') + EOL
 }
 
 const numberOfSpecifiers = (s: string): number => s.match(/%[^%]/g)?.length ?? 0
@@ -116,12 +120,12 @@ export const loggerRepo = (
 ): BaseLoggerRepo => {
   const { stream, end: endStream } = toStream(consoleStream, config)
 
-  const colorize = config.colorize ?? streams.hasColors(stream as streams.MaybeTty)
+  const colorize = config.colorize ?? (stream && streams.hasColors(stream as streams.MaybeTty))
 
   const rootPinoLogger = pino({
     base: null,
     messageKey: 'message',
-    timestamp: pino.stdTimeFunctions.isoTime,
+    timestamp: isoTime,
     level: toPinoLogLevel(config.minLevel),
     prettifier: textFormat,
     prettyPrint: config.format === 'text' ? {

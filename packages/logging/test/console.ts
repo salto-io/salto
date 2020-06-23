@@ -13,25 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import stream from 'stream'
+import { DestinationStream } from 'pino'
 
-export type MockWritableStream = NodeJS.WritableStream & {
+export type MockWritableStream = DestinationStream & {
   contents(): string
+  isTTY: true
+  getColorDepth: () => number
   supportsColor: boolean
 }
 
 export const mockConsoleStream = (supportsColor: boolean): MockWritableStream => {
   let contents = ''
-  const writable = new stream.Writable({
+  return {
     write: s => { contents += s },
-  })
-
-  return Object.assign(writable, {
     supportsColor,
     isTTY: true,
     getColorDepth(): number {
       return this.supportsColor ? 16 : 0
     },
     contents(): string { return contents },
-  })
+  }
 }

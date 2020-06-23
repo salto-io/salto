@@ -15,6 +15,7 @@
 */
 import * as fs from 'fs'
 import * as tmp from 'tmp-promise'
+import { EOL } from 'os'
 import { mockConsoleStream, MockWritableStream } from '../console'
 import { LogLevel, LOG_LEVELS } from '../../src/internal/level'
 import { Config, mergeConfigs } from '../../src/internal/config'
@@ -53,7 +54,7 @@ describe('pino based logger', () => {
   ): Promise<void> => {
     l[level]('hello %o', { world: true }, { extra: 'stuff' })
     await repo.end();
-    [line] = consoleStream.contents().split('\n')
+    [line] = consoleStream.contents().split(EOL)
   }
 
   describe('sanity', () => {
@@ -75,6 +76,7 @@ describe('pino based logger', () => {
         jest.setTimeout(600)
 
         let filename: string
+        let line2: string
 
         const readFileContent = (): string => fs.readFileSync(filename, { encoding: 'utf8' })
 
@@ -82,9 +84,11 @@ describe('pino based logger', () => {
           filename = tmp.tmpNameSync({ postfix: '.log' })
           initialConfig.filename = filename
           logger = createLogger()
-          await logLine()
+          logger.error('hello1 %o', { world: true }, { extra: 'stuff' })
+          logger.warn('hello2 %o', { world: true }, { extra: 'stuff' })
+          await repo.end()
           const fileContents = readFileContent();
-          [line] = fileContents.split('\n')
+          [line, line2] = fileContents.split(EOL)
         })
 
         afterEach(() => {
@@ -93,21 +97,38 @@ describe('pino based logger', () => {
 
         it('should write the message to the file', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
-          expect(line).toContain(`error ${NAMESPACE} hello { world: true }`)
+          expect(line).toContain(`error ${NAMESPACE} hello1 { world: true }`)
+        })
+
+        it('should write the second message after a newline', () => {
+          expect(line2).toMatch(TIMESTAMP_REGEX)
+          expect(line2).toContain(`warn ${NAMESPACE} hello2 { world: true }`)
         })
       })
 
       describe('when not set', () => {
+        let line2: string
+
         beforeEach(async () => {
           logger = createLogger()
-          await logLine()
+          logger.error('hello1 %o', { world: true }, { extra: 'stuff' })
+          logger.warn('hello2 %o', { world: true }, { extra: 'stuff' })
+          await repo.end();
+          [line, line2] = consoleStream.contents().split(EOL)
         })
 
-        it('should write the message to the console stream', () => {
+        it('should write the first message to the console stream', () => {
           expect(line).toMatch(TIMESTAMP_REGEX)
           expect(line).toContain('error')
           expect(line).toContain(NAMESPACE)
-          expect(line).toContain('hello { world: true }')
+          expect(line).toContain('hello1 { world: true }')
+        })
+
+        it('should write the second message to the console stream', () => {
+          expect(line2).toMatch(TIMESTAMP_REGEX)
+          expect(line2).toContain('warn')
+          expect(line2).toContain(NAMESPACE)
+          expect(line2).toContain('hello2 { world: true }')
         })
 
         it('should colorize the line', () => {
@@ -351,7 +372,7 @@ describe('pino based logger', () => {
       beforeEach(async () => {
         result = logger.time(() => expectedResult, 'hello func %o', 12)
         await repo.end();
-        [line] = consoleStream.contents().split('\n')
+        [line] = consoleStream.contents().split(EOL)
       })
 
       it('should return the original value', () => {

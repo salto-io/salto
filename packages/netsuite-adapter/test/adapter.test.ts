@@ -18,7 +18,6 @@ import {
   ElemID, InstanceElement, ObjectType, StaticFile, ChangeDataType, DeployResult, getChangeElement,
   ServiceIds,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
@@ -71,8 +70,6 @@ describe('Adapter', () => {
         .mockResolvedValue([folderCustomizationInfo, fileCustomizationInfo])
       client.listCustomObjects = jest.fn().mockResolvedValue([customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
-      expect(client.listCustomObjects)
-        .toHaveBeenCalledWith(_.pull(Object.keys(customTypes), SAVED_SEARCH, TRANSACTION_FORM))
       expect(elements).toHaveLength(getAllTypes().length + 3)
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
@@ -120,14 +117,6 @@ describe('Adapter', () => {
       client.listCustomObjects = jest.fn().mockImplementation(async () => [customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
-    })
-
-    it('should call listCustomObjects only with types that are not in typesToSkip', async () => {
-      await netsuiteAdapter.fetch()
-      expect(client.listCustomObjects)
-        .toHaveBeenCalledWith(expect.arrayContaining([ENTITY_CUSTOM_FIELD]))
-      expect(client.listCustomObjects)
-        .not.toHaveBeenCalledWith(expect.arrayContaining([SAVED_SEARCH]))
     })
   })
 

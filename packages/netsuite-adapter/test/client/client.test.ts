@@ -43,7 +43,7 @@ jest.mock('@salto-io/file', () => ({
     if (filePath.endsWith(MOCK_FOLDER_ATTRS_PATH)) {
       return '<folder><description>folder description</description></folder>'
     }
-    return `<TypeA filename="${filePath.split('/').pop()}">`
+    return `<elementName filename="${filePath.split('/').pop()}">`
   }),
   writeFile: jest.fn(),
   mkdirp: jest.fn(),
@@ -106,15 +106,6 @@ describe('netsuite client', () => {
       authid: expectedAuthId,
     },
   })
-
-  const typeNames = ['TypeA', 'TypeB']
-  const listObjectsCommandMatcher = expect
-    .objectContaining({
-      commandName: COMMANDS.LIST_OBJECTS,
-      arguments: {
-        type: 'TypeA TypeB',
-      },
-    })
   const importObjectsCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
   const listFilesCommandMatcher = expect
@@ -183,7 +174,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.listCustomObjects(typeNames)).rejects.toThrow()
+      await expect(client.listCustomObjects()).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -197,7 +188,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.listCustomObjects(typeNames)).rejects.toThrow()
+      await expect(client.listCustomObjects()).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -211,7 +202,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.listCustomObjects(typeNames)).rejects.toThrow()
+      await expect(client.listCustomObjects()).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -226,37 +217,21 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await client.listCustomObjects(typeNames)
+      await client.listCustomObjects()
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
     })
 
     it('should succeed', async () => {
-      mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.LIST_OBJECTS) {
-          return Promise.resolve({
-            status: 'SUCCESS',
-            data: [{
-              scriptId: 'a',
-              type: 'TypeA',
-            },
-            {
-              scriptId: 'b',
-              type: 'TypeA',
-            }],
-          })
-        }
-        return Promise.resolve({ status: 'SUCCESS' })
-      })
-      const customizationInfos = await client.listCustomObjects(typeNames)
+      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+      const customizationInfos = await client.listCustomObjects()
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(customizationInfos).toHaveLength(2)
       expect(customizationInfos).toEqual([{
-        typeName: 'TypeA',
+        typeName: 'elementName',
         values: {
           '@_filename': 'a.xml',
         },
@@ -264,7 +239,7 @@ describe('netsuite client', () => {
         fileExtension: 'html',
       },
       {
-        typeName: 'TypeA',
+        typeName: 'elementName',
         values: {
           '@_filename': 'b.xml',
         },
@@ -272,14 +247,7 @@ describe('netsuite client', () => {
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, expect.objectContaining({
-        commandName: COMMANDS.IMPORT_OBJECTS,
-        arguments: expect.objectContaining({
-          type: 'ALL',
-          scriptid: 'a b',
-        }),
-      }))
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
     })
   })

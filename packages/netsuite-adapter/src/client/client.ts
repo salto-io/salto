@@ -81,7 +81,6 @@ export type NetsuiteClientOpts = {
 export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
   SETUP_ACCOUNT: 'account:setup',
-  LIST_OBJECTS: 'object:list',
   IMPORT_OBJECTS: 'object:import',
   LIST_FILES: 'file:list',
   IMPORT_FILES: 'file:import',
@@ -301,16 +300,12 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async listCustomObjects(typeNames: string[]): Promise<CustomizationInfo[]> {
+  async listCustomObjects(): Promise<CustomizationInfo[]> {
     const project = await this.initProject()
-    const listObjectIdsResult = await NetsuiteClient.executeProjectAction(COMMANDS.LIST_OBJECTS, {
-      type: typeNames.join(' '),
-    }, project.executor)
-
     await NetsuiteClient.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
       destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
       type: 'ALL',
-      scriptid: makeArray(listObjectIdsResult.data).map(objInfo => objInfo.scriptId).join(' '),
+      scriptid: 'ALL',
       excludefiles: true,
     }, project.executor)
 

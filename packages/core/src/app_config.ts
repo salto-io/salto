@@ -36,7 +36,7 @@ class AppConfigParseError extends Error {
 
 export const SALTO_HOME_VAR = 'SALTO_HOME'
 const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
-const GLOBAL_CONFIG_DIR = 'salto.config'
+export const CONFIG_DIR_NAME = 'salto.config'
 const CONFIG_FILENAME = 'config.nacl'
 
 export const getSaltoHome = (): string =>
@@ -66,7 +66,7 @@ const DEFAULT_COMMAND_CONFIG: CommandConfig = {
 }
 
 const configHomeDir = (): string => (
-  path.join(getSaltoHome(), GLOBAL_CONFIG_DIR)
+  path.join(getSaltoHome(), CONFIG_DIR_NAME)
 )
 
 const configFullPath = (): string => path.join(configHomeDir(), CONFIG_FILENAME)

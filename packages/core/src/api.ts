@@ -244,14 +244,16 @@ export const fetch: FetchFunc = async (
   }
 }
 
+type RestoreChange = Omit<FetchChange, 'pendingChange'>
+
 export const restore = async (
   workspace: Workspace,
-  services?: string[],
+  servicesFilters?: string[],
   idFilters: RegExp[] = [],
   progressEmitter?: EventEmitter<RestoreProgressEvents>
-): Promise<FetchChange[]> => {
+): Promise<RestoreChange[]> => {
   log.debug('restore starting..')
-  const fetchServices = services ?? workspace.services()
+  const fetchServices = servicesFilters ?? workspace.services()
   const stateElements = filterElementsByServices(
     await workspace.state().getAll(),
     fetchServices

@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import { TreeMap, PartialTreeMap } from '../../src/collections/tree_map'
+import { TreeMap } from '../../src/collections/tree_map'
 
 describe('tree map', () => {
   const seperator = '|'
@@ -59,6 +59,7 @@ describe('tree map', () => {
     expect(sourceMap.has(key)).toBeTruthy()
     sourceMap.delete(key)
     expect(sourceMap.has(key)).toBeFalsy()
+    expect(sourceMap.delete('no|such|key')).toBeFalsy()
   })
 
   it('should delete all entries on clear', () => {
@@ -180,29 +181,9 @@ describe('tree map', () => {
       )
     })
   })
-})
 
-describe('partial tree map', () => {
-  const seperator = '|'
-
-  const baseEntries: [string, string[]][] = [
-    ['salesforce|test', ['same']],
-    ['salesforce|test|a', ['b']],
-    ['salesforce|test|a|b', ['b']],
-    ['salesforce|test|b', ['same']],
-    ['salto', ['salto']],
-  ]
-
-  it('should add all values', () => {
-    const sourceMap = new PartialTreeMap(baseEntries, seperator)
-    expect(wu(sourceMap.entries()).toArray()).toEqual(baseEntries)
-    expect(sourceMap.size).toEqual(5)
-  })
-
-  it('should compact suffixes with the same values to one entry', () => {
-    const sourceMap = new PartialTreeMap(baseEntries, seperator)
-    sourceMap.compact()
-    expect(sourceMap.size).toEqual(3)
-    baseEntries.forEach(entry => expect(sourceMap.get(entry[0])).toEqual(entry[1]))
+  it('should support a default constructor', () => {
+    const newSourceMap = new TreeMap()
+    expect(newSourceMap).toBeInstanceOf(TreeMap)
   })
 })

@@ -145,6 +145,11 @@ describe('create path index', () => {
       nestedInstIds.forEach(id => expect(pathIndex.get(id)).toEqual([singlePathInstance.path]))
       nestedObjIds.forEach(id => expect(pathIndex.get(id)).toEqual([singlePathObject.path]))
     })
+    it('should return the prefix id path if the id is not in the index', () => {
+      const id = singlePathObject.elemID.createNestedID('field')
+        .createNestedID('simple').createNestedID('nope').getFullName()
+      expect(pathIndex.get(id)).toEqual([singlePathObject.path])
+    })
   })
   describe('elements which are defined in a multiple fragments', () => {
     it('should return the all paths for top level elements', () => {

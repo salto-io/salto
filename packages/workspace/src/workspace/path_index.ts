@@ -23,6 +23,40 @@ type Path = readonly string[]
 export class PathIndex extends treeMap.PartialTreeMap<Path> {
   constructor(entries: Iterable<[string, Path[]]> = []) {
     super(entries, ElemID.NAMESPACE_SEPARATOR)
+    this.compact()
+  }
+
+  private compact(): void {
+    const compactEntry = (entry: treeMap.TreeMapEntry<Path>): treeMap.TreeMapEntry<Path> => {
+      const shouldDrop = (child: treeMap.TreeMapEntry<Path>): boolean => (
+        _.isEmpty(child.children) && _.isEqual(entry.value, child.value)
+      )
+      const newChildren = _(entry.children)
+        .mapValues(compactEntry)
+        .omitBy(shouldDrop)
+        .value() as Record<string, treeMap.TreeMapEntry<Path>>
+      return { value: entry.value, children: newChildren }
+    }
+    this.data = compactEntry(this.data)
+  }
+
+  // Not - since compact is run the complexity of this set is O(N) where N is
+  // the number of keys in the map. When  inserting multiple values - use set All.
+  set(id: string, source: Path[]): this {
+    super.set(id, source)
+    this.compact()
+    return this
+  }
+
+  setAll(entries: Iterable<[string, Path[]]>): void {
+    wu(entries).forEach(entry => this.push(entry[0], ...entry[1]))
+    this.compact()
+  }
+
+  get(id: string): Path[] | undefined {
+    const path = id.split(this.seperator)
+    const entry = treeMap.TreeMap.getFromPath(this.data, path, false, true)
+    return entry?.value
   }
 }
 
@@ -52,6 +86,5 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
 export const createPathIndex = (unmergedElements: Element[]): PathIndex => {
   const pathHints = wu(unmergedElements.map(getElementPathHints)).flatten(true)
   const pathIndex = new PathIndex(pathHints)
-  pathIndex.compact()
   return pathIndex
 }

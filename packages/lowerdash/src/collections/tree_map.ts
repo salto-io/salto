@@ -21,64 +21,60 @@ export interface TreeMapEntry<T> {
   value: T[]
 }
 
-const getFromPath = <T>(
-  data: TreeMapEntry<T>,
-  path: string[],
-  createIfMissing = false,
-  returnPartial = false
-): TreeMapEntry<T> | undefined => {
-  if (_.isEmpty(path)) {
-    return data
-  }
-  const [key, ...restOfPath] = path
-  if (data.children[key] === undefined && createIfMissing) {
-    data.children[key] = { children: {}, value: [] }
-  }
-  if (data.children[key]) {
-    return getFromPath(data.children[key], restOfPath, createIfMissing, returnPartial)
-  }
-  return returnPartial ? data : undefined
-}
-
-const mergeEntries = <T>(src: TreeMapEntry<T>, target: TreeMapEntry<T>): void => {
-  src.value.push(...target.value)
-  _.entries(target.children).forEach(([key, value]) => {
-    if (key in src.children) {
-      mergeEntries(src.children[key] as TreeMapEntry<T>, value)
-    } else {
-      src.children[key] = value
-    }
-  })
-}
-
-const mountToPath = <T>(
-  data: TreeMapEntry<T>,
-  path: string[],
-  value: TreeMapEntry<T>
-): void => {
-  const target = getFromPath(data, path, true)
-  if (target !== undefined) {
-    mergeEntries(target, value)
-  }
-}
-
-const setToPath = <T>(
-  data: TreeMapEntry<T>,
-  path: string[],
-  value: T[]
-): void => {
-  const target = getFromPath(data, path, true)
-  if (target !== undefined) {
-    target.value = value
-  }
-}
-
 export class TreeMap<T> implements Map<string, T[]> {
   [Symbol.toStringTag] = 'TreeMap'
   protected data: TreeMapEntry<T> = { children: {}, value: [] }
 
   constructor(entries: Iterable<[string, T[]]> = [], public seperator = '.') {
     wu(entries).forEach(([key, value]) => this.push(key, ...value))
+  }
+
+  protected static getFromPath = <T>(
+    data: TreeMapEntry<T>,
+    path: string[],
+    createIfMissing = false,
+    returnPartial = false
+  ): TreeMapEntry<T> | undefined => {
+    if (_.isEmpty(path)) {
+      return data
+    }
+    const [key, ...restOfPath] = path
+    if (data.children[key] === undefined && createIfMissing) {
+      data.children[key] = { children: {}, value: [] }
+    }
+    if (data.children[key]) {
+      return TreeMap.getFromPath(data.children[key], restOfPath, createIfMissing, returnPartial)
+    }
+    return returnPartial ? data : undefined
+  }
+
+  protected static mergeEntries = <T>(src: TreeMapEntry<T>, target: TreeMapEntry<T>): void => {
+    src.value.push(...target.value)
+    _.entries(target.children).forEach(([key, value]) => {
+      if (key in src.children) {
+        TreeMap.mergeEntries(src.children[key] as TreeMapEntry<T>, value)
+      } else {
+        src.children[key] = value
+      }
+    })
+  }
+
+  protected static mountToPath = <T>(
+    data: TreeMapEntry<T>,
+    path: string[],
+    value: TreeMapEntry<T>
+  ): void => {
+    const target = TreeMap.getFromPath(data, path, true) as TreeMapEntry<T>
+    TreeMap.mergeEntries(target, value)
+  }
+
+  protected static setToPath = <T>(
+    data: TreeMapEntry<T>,
+    path: string[],
+    value: T[]
+  ): void => {
+    const target = TreeMap.getFromPath(data, path, true) as TreeMapEntry<T>
+    target.value = value
   }
 
   private iterEntry<T>(
@@ -101,29 +97,29 @@ export class TreeMap<T> implements Map<string, T[]> {
 
   push(id: string, ...values: T[]): void {
     const key = id.split(this.seperator)
-    const valuesList = getFromPath(this.data, key)
+    const valuesList = TreeMap.getFromPath(this.data, key)
     if (valuesList !== undefined) {
       valuesList.value.push(...values)
     } else {
-      setToPath(this.data, key, values)
+      TreeMap.setToPath(this.data, key, values)
     }
   }
 
   set(id: string, source: T[]): this {
     const path = id.split(this.seperator)
-    setToPath(this.data, path, source)
+    TreeMap.setToPath(this.data, path, source)
     return this
   }
 
   get(id: string): T[] | undefined {
     const path = id.split(this.seperator)
-    const entry = getFromPath(this.data, path)
+    const entry = TreeMap.getFromPath(this.data, path)
     return entry?.value
   }
 
   has(id: string): boolean {
     const path = id.split(this.seperator)
-    return getFromPath(this.data, path) !== undefined
+    return TreeMap.getFromPath(this.data, path) !== undefined
   }
 
   clear(): void {
@@ -132,17 +128,17 @@ export class TreeMap<T> implements Map<string, T[]> {
 
   mount(baseId: string, otherMap: TreeMap<T>): void {
     const path = baseId.split(this.seperator)
-    mountToPath(this.data, path, otherMap.data)
+    TreeMap.mountToPath(this.data, path, otherMap.data)
   }
 
   merge(otherMap: TreeMap<T>): void {
-    mergeEntries(this.data, otherMap.data)
+    TreeMap.mergeEntries(this.data, otherMap.data)
   }
 
   delete(id: string): boolean {
     const path = id.split(this.seperator)
     const lastPart = path.pop()
-    const entry = getFromPath(this.data, path)
+    const entry = TreeMap.getFromPath(this.data, path)
     if (entry !== undefined && lastPart) {
       const deleted = delete entry.children[lastPart]
       return deleted
@@ -170,27 +166,5 @@ export class TreeMap<T> implements Map<string, T[]> {
 }
 
 export class PartialTreeMap<T> extends TreeMap<T> {
-  constructor(entries: Iterable<[string, T[]]>, seperator: string) {
-    super(entries, seperator)
-  }
 
-  get(id: string): T[] | undefined {
-    const path = id.split(this.seperator)
-    const entry = getFromPath(this.data, path, false, true)
-    return entry?.value
-  }
-
-  compact(): void {
-    const compactEntry = (entry: TreeMapEntry<T>): TreeMapEntry<T> => {
-      const shouldDrop = (child: TreeMapEntry<T>): boolean => (
-        _.isEmpty(child.children) && _.isEqual(entry.value, child.value)
-      )
-      const newChildren = _(entry.children)
-        .mapValues(compactEntry)
-        .omitBy(shouldDrop)
-        .value() as Record<string, TreeMapEntry<T>>
-      return { value: entry.value, children: newChildren }
-    }
-    this.data = compactEntry(this.data)
-  }
 }

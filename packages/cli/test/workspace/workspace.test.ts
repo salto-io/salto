@@ -19,9 +19,12 @@ import inquirer from 'inquirer'
 import { DetailedChange } from '@salto-io/adapter-api'
 import { Workspace } from '@salto-io/workspace'
 import { FetchChange } from '@salto-io/core'
+import { EventEmitter } from 'pietile-eventemitter'
 import { Spinner } from '../../src/types'
-import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly } from '../../src/workspace/workspace'
-import { MockWriteStream, dummyChanges, detailedChange, mockErrors, mockFunction } from '../mocks'
+import { validateWorkspace, loadWorkspace, updateWorkspace, MAX_DETAIL_CHANGES_TO_LOG, updateStateOnly, applyChangesToWorkspace } from '../../src/workspace/workspace'
+import { MockWriteStream, dummyChanges, detailedChange, mockErrors,
+  mockFunction, getMockTelemetry } from '../mocks'
+import { getCliTelemetry } from '../../src/telemetry'
 
 const mockWsFunctions = {
   services: mockFunction<Workspace['services']>().mockReturnValue(['salesforce']),
@@ -29,11 +32,12 @@ const mockWsFunctions = {
   currentEnv: mockFunction<Workspace['currentEnv']>().mockReturnValue('default'),
   errors: mockFunction<Workspace['errors']>().mockResolvedValue(mockErrors([])),
   updateNaclFiles: mockFunction<Workspace['updateNaclFiles']>(),
-  isEmpty: mockFunction<Workspace['isEmpty']>(),
+  isEmpty: mockFunction<Workspace['isEmpty']>().mockResolvedValue(false),
   flush: mockFunction<Workspace['flush']>(),
   transformError: mockFunction<Workspace['transformError']>().mockImplementation(
     error => Promise.resolve({ ...error, sourceFragments: [] })
   ),
+  getTotalSize: mockFunction<Workspace['getTotalSize']>(),
   getStateRecency: mockFunction<Workspace['getStateRecency']>().mockResolvedValue({
     serviceName: 'salesforce',
     date: new Date(),
@@ -207,7 +211,7 @@ describe('workspace', () => {
     })
 
     it('with validation errors', async () => {
-      mockWsFunctions.errors.mockResolvedValue(mockErrors([
+      mockWsFunctions.errors.mockResolvedValueOnce(mockErrors([
         { message: 'Error BLA', severity: 'Error' },
       ]))
       const result = await updateWorkspace(mockWs, cliOutput,
@@ -227,10 +231,102 @@ describe('workspace', () => {
     })
 
     it('should return false if workspace flush causes an error', async () => {
-      mockWsFunctions.flush.mockRejectedValue('err')
+      mockWsFunctions.flush.mockRejectedValueOnce('err')
       const res = await updateStateOnly(mockWs, [])
       expect(mockWsFunctions.flush).toHaveBeenCalledTimes(1)
       expect(res).toBeFalsy()
+    })
+  })
+
+  describe('applyChangesToWorkspace', () => {
+    const approveChangesCallback = jest.fn().mockResolvedValue(true)
+    const changes = dummyChanges.map(change => ({ change, serviceChange: change }))
+    beforeEach(() => {
+      approveChangesCallback.mockClear()
+    })
+    it('should apply changes and return true', async () => {
+      const res = await applyChangesToWorkspace({
+        workspace: mockWs,
+        changes,
+        isIsolated: false,
+        force: true,
+        shouldCalcTotalSize: true,
+        workspaceTags: {},
+        applyProgress: new EventEmitter(),
+        interactive: false,
+        output: { stdout: new MockWriteStream(), stderr: new MockWriteStream() },
+        approveChangesCallback,
+        cliTelemetry: getCliTelemetry(getMockTelemetry(), 'fetch'),
+      })
+      expect(res).toBeTruthy()
+    })
+    it('should return false on error', async () => {
+      mockWsFunctions.errors.mockResolvedValue(mockErrors([
+        { message: 'Error BLA', severity: 'Error' },
+      ]))
+      const res = await applyChangesToWorkspace({
+        workspace: mockWs,
+        changes,
+        isIsolated: false,
+        force: true,
+        shouldCalcTotalSize: false,
+        workspaceTags: {},
+        applyProgress: new EventEmitter(),
+        interactive: false,
+        output: { stdout: new MockWriteStream(), stderr: new MockWriteStream() },
+        approveChangesCallback,
+        cliTelemetry: getCliTelemetry(getMockTelemetry(), 'fetch'),
+      })
+      expect(res).toBeFalsy()
+    })
+    it('should prompt the user when ws is not empty', async () => {
+      await applyChangesToWorkspace({
+        workspace: mockWs,
+        changes,
+        isIsolated: false,
+        force: false,
+        shouldCalcTotalSize: false,
+        workspaceTags: {},
+        applyProgress: new EventEmitter(),
+        interactive: false,
+        output: { stdout: new MockWriteStream(), stderr: new MockWriteStream() },
+        approveChangesCallback,
+        cliTelemetry: getCliTelemetry(getMockTelemetry(), 'fetch'),
+      })
+      expect(approveChangesCallback).toHaveBeenCalled()
+    })
+    it('should not prompt the user when ws is empty', async () => {
+      mockWsFunctions.isEmpty.mockResolvedValueOnce(true)
+      await applyChangesToWorkspace({
+        workspace: mockWs,
+        changes,
+        isIsolated: false,
+        force: true,
+        shouldCalcTotalSize: false,
+        workspaceTags: {},
+        applyProgress: new EventEmitter(),
+        interactive: false,
+        output: { stdout: new MockWriteStream(), stderr: new MockWriteStream() },
+        approveChangesCallback,
+        cliTelemetry: getCliTelemetry(getMockTelemetry(), 'fetch'),
+      })
+      expect(approveChangesCallback).not.toHaveBeenCalled()
+    })
+    it('should not prompt the user when force is selected', async () => {
+      await applyChangesToWorkspace({
+        workspace: mockWs,
+        changes,
+        isIsolated: false,
+        force: true,
+        shouldCalcTotalSize: false,
+        workspaceTags: {},
+        applyProgress: new EventEmitter(),
+        interactive: false,
+        output: { stdout: new MockWriteStream(), stderr: new MockWriteStream() },
+        approveChangesCallback,
+        cliTelemetry: getCliTelemetry(getMockTelemetry(), 'fetch'),
+      })
+      expect(approveChangesCallback).not.toHaveBeenCalled()
     })
   })
 })

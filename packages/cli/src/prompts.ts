@@ -197,12 +197,12 @@ ${Prompts.SERVICE_ADD_HELP}`
     numOfChanges: number
   ): string => `Failed to apply ${numOfChanges} changes to state.`
 
-  public static readonly RESTORE_CALC_DIFF_START = 'Calculating the difference between state and NaCL files'
-  public static readonly RESTORE_CALC_DIFF_FINISH = 'Finished calculating the difference between state and NaCL files'
+  public static readonly RESTORE_CALC_DIFF_START = 'Calculating the difference between state and NaCL files.'
+  public static readonly RESTORE_CALC_DIFF_FINISH = 'Finished calculating the difference between state and NaCL files.'
   public static readonly RESTORE_CALC_DIFF_FAIL = 'Calculating diff failed!'
   public static readonly RESTORE_UPDATE_WORKSPACE_SUCCESS = 'Applied changes'
   public static readonly RESTORE_SUCCESS_FINISHED = 'Done! Your NaCL files are now updated with the latest changes.'
-  public static readonly RESTORE_UPDATE_WORKSPACE_FAIL = 'Failed to apply changes to your local workspace'
+  public static readonly RESTORE_UPDATE_WORKSPACE_FAIL = 'Failed to apply changes to your NaCL files.'
   public static readonly INVALID_FILTERS = (
     invalidFilters: string
   ): string => `Failed to created element ID filters for: ${invalidFilters}. Invalid Regex provided.`

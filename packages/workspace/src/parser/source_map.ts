@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { ElemID } from '@salto-io/adapter-api'
-import { treeMap } from '@salto-io/lowerdash/dist/src/collections'
+import { collections } from '@salto-io/lowerdash'
 import { SourceRange } from './internal/types'
 
-export class SourceMap extends treeMap.TreeMap<SourceRange> {
+export class SourceMap extends collections.treeMap.TreeMap<SourceRange> {
   constructor(entries: Iterable<[string, SourceRange[]]> = []) {
     super(entries, ElemID.NAMESPACE_SEPARATOR)
   }

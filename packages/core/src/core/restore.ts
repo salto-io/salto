@@ -15,7 +15,7 @@
 */
 import { EventEmitter } from 'pietile-eventemitter'
 import _ from 'lodash'
-import { Element, ElemID, Value, DetailedChange } from '@salto-io/adapter-api'
+import { Element, ElemID, DetailedChange } from '@salto-io/adapter-api'
 import { filterByID } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { pathIndex } from '@salto-io/workspace'
@@ -38,43 +38,34 @@ const splitChangeByPath = async (
   change: DetailedChange,
   index: PathIndex
 ): Promise<DetailedChange[]> => {
-  const filterByPathHint = async (
-    valueId: ElemID,
-    value: Value,
-    hint: readonly string[]
-  ): Promise<Value> => filterByID(
-    valueId,
-    value,
-    async id => {
-      const idHints = index.get(id.getFullName()) || []
-      return _.some(idHints, idHint => _.isEqual(idHint, hint))
-    }
-  )
-
   const changeHints = index.get(change.id.getFullName())
   if (!changeHints) {
     return [change]
   }
   return Promise.all(changeHints.map(async hint => {
+    const filterByPathHint = async (id: ElemID): Promise<boolean> => {
+      const idHints = index.get(id.getFullName()) || []
+      return _.some(idHints, idHint => _.isEqual(idHint, hint))
+    }
     if (change.action === 'add') {
       return {
         ...change,
-        data: { after: await filterByPathHint(change.id, change.data.after, hint) },
+        data: { after: await filterByID(change.id, change.data.after, filterByPathHint) },
         path: hint,
       } as DetailedChange
     }
     if (change.action === 'remove') {
       return {
         ...change,
-        data: { before: await filterByPathHint(change.id, change.data.before, hint) },
+        data: { before: await filterByID(change.id, change.data.before, filterByPathHint) },
         path: hint,
       } as DetailedChange
     }
     return {
       ...change,
       data: {
-        before: await filterByPathHint(change.id, change.data.before, hint),
-        after: await filterByPathHint(change.id, change.data.after, hint),
+        before: await filterByID(change.id, change.data.before, filterByPathHint),
+        after: await filterByID(change.id, change.data.after, filterByPathHint),
       },
       path: hint,
     } as DetailedChange

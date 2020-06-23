@@ -46,15 +46,14 @@ type RestoreParsedCliInput = ParsedCliInput<RestoreArgs>
 const createRegexFilters = (
   inputFilters: string[]
 ): {filters: RegExp[]; invalidFilters: string[]} => {
-  const filters: RegExp[] = []
-  const invalidFilters: string[] = []
-  inputFilters.forEach(filter => {
+  const [validFilters, invalidFilters] = _.partition(inputFilters, filter => {
     try {
-      filters.push(new RegExp(filter))
+      return new RegExp(filter)
     } catch (e) {
-      invalidFilters.push(filter)
+      return false
     }
   })
+  const filters = validFilters.map(filter => new RegExp(filter))
   return { filters, invalidFilters }
 }
 
@@ -73,7 +72,7 @@ export const command = (
   inputFilters: string[] = []
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    log.debug(`running fetch command on '${workspaceDir}' [force=${force}, interactive=${
+    log.debug(`running restore command on '${workspaceDir}' [force=${force}, interactive=${
       interactive}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
     const restoreProgress = new EventEmitter<RestoreProgressEvents>()
     restoreProgress.on('diffWillBeCalculated', progressOutputer(
@@ -94,7 +93,7 @@ export const command = (
       output.stderr.write(formatInvalidFilters(invalidFilters))
       return CliExitCode.UserInputError
     }
-    const cliTelemetry = getCliTelemetry(telemetry, 'fetch')
+    const cliTelemetry = getCliTelemetry(telemetry, 'restore')
     const { workspace, errored } = await loadWorkspace(workspaceDir, output,
       { force, printStateRecency: true, spinnerCreator, sessionEnv: inputEnvironment })
     if (errored) {
@@ -127,7 +126,7 @@ export const command = (
   },
 })
 
-const fetchBuilder = createCommandBuilder({
+const restoreBuilder = createCommandBuilder({
   options: {
     command: 'restore [filters..]',
     description: 'Syncs this workspace with the current local state',
@@ -148,7 +147,7 @@ const fetchBuilder = createCommandBuilder({
       },
       isolated: {
         alias: ['t'],
-        describe: 'Restrict fetch from modifying common configuration '
+        describe: 'Restrict restore from modifying common configuration '
             + '(might result in changes in other env folders)',
         boolean: true,
         default: false,
@@ -176,4 +175,4 @@ const fetchBuilder = createCommandBuilder({
   },
 })
 
-export default fetchBuilder
+export default restoreBuilder

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import streams from 'memory-streams'
-import { SpinnerCreator, Spinner } from 'src/types'
+import { SpinnerCreator, Spinner } from '../src/types'
 import oraSpinner from '../src/ora_spinner'
 
 

@@ -21,7 +21,7 @@ import {
 import {
   findInstances, naclCase,
 } from '@salto-io/adapter-utils'
-import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
+import { collections } from '@salto-io/lowerdash'
 import { apiName } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 import {
@@ -29,7 +29,7 @@ import {
 } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE } from '../constants'
 
-
+const { makeArray } = collections.array
 const log = logger(module)
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)

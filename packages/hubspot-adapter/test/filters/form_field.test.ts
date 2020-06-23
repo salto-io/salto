@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { OnFetchFilter } from 'src/filter'
+import { OnFetchFilter } from '../../src/filter'
 import mockClient from '../client'
 import filterCreator from '../../src/filters/form_field'
 import {

@@ -15,12 +15,13 @@
 */
 import _ from 'lodash'
 import { ChangeError, InstanceElement, Value, isReferenceExpression, ChangeValidator, isInstanceChange, isAdditionOrModificationDiff } from '@salto-io/adapter-api'
-import { makeArray } from '@salto-io/lowerdash/dist/src/collections/array'
+import { collections } from '@salto-io/lowerdash'
 import { isFormInstance } from '../filters/form_field'
 import {
   OBJECTS_NAMES,
 } from '../constants'
 
+const { makeArray } = collections.array
 
 const getFormInstanceFieldErrorsFromAfter = async (after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {

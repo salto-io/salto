@@ -15,9 +15,9 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { salesforceRecord } from 'src/client/types'
 import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
-import { SalesforceClient } from 'index'
+import SalesforceClient from '../client/client'
+import { salesforceRecord } from '../client/types'
 import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types } from '../transformers/transformer'

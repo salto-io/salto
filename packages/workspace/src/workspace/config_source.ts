@@ -16,9 +16,9 @@
 import _ from 'lodash'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { parse } from '../parser/parse'
-import { dumpElements } from '../parser/dump'
-import { FILE_EXTENSION } from './nacl_files/nacl_files_source'
+import { parse, dumpElements } from '../parser'
+
+import { FILE_EXTENSION } from './nacl_files'
 import { DirectoryStore } from './dir_store'
 
 const log = logger(module)

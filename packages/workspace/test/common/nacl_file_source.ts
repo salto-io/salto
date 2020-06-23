@@ -17,7 +17,7 @@ import { ElemID, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { resolvePath } from '@salto-io/adapter-utils'
-import { NaclFilesSource } from '../../src/workspace/nacl_files/nacl_files_source'
+import { NaclFilesSource } from '../../src/workspace/nacl_files'
 import { Errors } from '../../src/workspace/errors'
 import { SourceRange } from '../../src/parser/internal/types'
 
@@ -46,17 +46,14 @@ export const createMockNaclFileSource = (
   setNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
   removeNaclFiles: jest.fn().mockImplementation(() => Promise.resolve()),
   getSourceMap: jest.fn().mockImplementation(() => Promise.resolve(new Map())),
-  getSourceRanges: jest.fn().mockImplementation(async elemID => {
-    const res = sourceRanges
+  getSourceRanges: jest.fn().mockImplementation(async elemID => sourceRanges
     || _.entries(naclFiles).filter(([_filename, fileElements]) => fileElements.find(
       element => resolvePath(element, elemID) !== undefined
     ) !== undefined).map(([filename, _elements]) => ({
       filename,
       start: {},
       end: {},
-    }))
-    return res
-  }),
+    }))),
   getErrors: jest.fn().mockImplementation(() => Promise.resolve(errors)),
   getElements: jest.fn().mockImplementation(
     filename => Promise.resolve(naclFiles[filename] || [])

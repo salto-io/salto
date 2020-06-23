@@ -155,8 +155,7 @@ const dumpAttr = (
 const createBlockDefLine = (block: DumpedHclBlock, indentationLevel = 0): string => {
   const type = dumpWord(block.type, indentationLevel)
   const labels = block.labels.map(word => dumpWord(word, 0))
-  const defLine = [type, ...labels, O_BLOCK].join(' ')
-  return defLine
+  return [type, ...labels, O_BLOCK].join(' ')
 }
 
 const dumpBlock = (block: DumpedHclBlock, indentationLevel = 0): string[] => {

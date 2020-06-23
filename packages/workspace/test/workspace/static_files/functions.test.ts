@@ -17,7 +17,7 @@ import { StaticFile, Value } from '@salto-io/adapter-api'
 
 import { Functions } from '../../../src/parser/functions'
 import { getStaticFilesFunctions } from '../../../src/workspace/static_files/functions'
-import { StaticFilesSource } from '../../../src/workspace/static_files/common'
+import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { mockStaticFilesSource } from './common.test'
 
 describe('Functions', () => {

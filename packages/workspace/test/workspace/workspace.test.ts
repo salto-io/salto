@@ -23,7 +23,7 @@ import {
   findElement,
 } from '@salto-io/adapter-utils'
 import { ConfigSource } from '../../src/workspace/config_source'
-import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files/nacl_files_source'
+import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
 import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource } from './static_files/common.test'
@@ -33,7 +33,7 @@ import { Workspace, initWorkspace, loadWorkspace,
 import { NoWorkspaceConfig, DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError } from '../../src/workspace/errors'
 
-import { StaticFilesSource } from '../../src/workspace/static_files/common'
+import { StaticFilesSource } from '../../src/workspace/static_files'
 
 import * as dump from '../../src/parser/dump'
 
@@ -41,7 +41,10 @@ import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import {
   WORKSPACE_CONFIG_NAME, workspaceConfigType, USER_CONFIG_NAME,
   workspaceUserConfigType,
-} from '../../src/workspace/config/workspace_config_types'
+} from '../../src/workspace/config'
+import {
+  mockState,
+} from '../common/state'
 
 const changedNaclFile = {
   filename: 'file.nacl',
@@ -679,7 +682,7 @@ describe('workspace', () => {
       beforeAll(async () => {
         confSource = mockConfigSource()
         credSource = mockCredentialsSource()
-        state = { clear: jest.fn() } as unknown as State
+        state = mockState()
         naclFiles = createMockNaclFileSource([])
         workspace = await createWorkspace(undefined, undefined, confSource, credSource,
           undefined, { inactive: { naclFiles, state } })
@@ -731,7 +734,7 @@ describe('workspace', () => {
       beforeEach(async () => {
         confSource = mockConfigSource()
         credSource = mockCredentialsSource()
-        state = { rename: jest.fn() } as unknown as State
+        state = mockState()
         naclFiles = createMockNaclFileSource([])
       })
 

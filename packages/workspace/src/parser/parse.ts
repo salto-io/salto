@@ -45,6 +45,7 @@ export type ParseResult = {
  *
  * @param naclFile A buffer the contains the Nacl file to parse
  * @param filename The name of the file from which the Nacl file was read
+ * @param functions
  * @returns elements: Type elements found in the Nacl file
  *          errors: Errors encountered during parsing
  */

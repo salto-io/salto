@@ -31,6 +31,7 @@ import {
   DetailedChange,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
+import { mockState } from '@salto-io/workspace/dist/test/common/state'
 import * as api from '../src/api'
 
 import * as plan from '../src/core/plan'
@@ -39,7 +40,6 @@ import adapterCreators from '../src/core/adapters/creators'
 
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
-import { mockState } from './common/state'
 import { mockFunction } from './common/helpers'
 
 const mockService = 'salto'
@@ -376,12 +376,11 @@ describe('api.ts', () => {
     describe('addAdapter', () => {
       it('should set adapter config', async () => {
         const serviceName = 'test'
-        const mockNewService = {
+        adapterCreators[serviceName] = {
           credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }),
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
         }
-        adapterCreators[serviceName] = mockNewService
         const wsp = mockWorkspace()
         await api.addAdapter(wsp, serviceName)
         expect((wsp.addService as jest.Mock).call).toHaveLength(1)

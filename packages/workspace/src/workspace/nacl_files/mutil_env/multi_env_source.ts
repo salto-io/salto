@@ -22,8 +22,8 @@ import { Element, ElemID, getChangeElement, isInstanceElement, Value,
 import { applyInstancesDefaults } from '@salto-io/adapter-utils'
 import { promises } from '@salto-io/lowerdash'
 import { ValidationError } from '../../../validator'
-import { ParseError, SourceRange } from '../../../parser/parse'
-import { SourceMap } from '../../../parser/source_map'
+import { ParseError, SourceRange, SourceMap } from '../../../parser'
+
 import { mergeElements, MergeError } from '../../../merger'
 import { routeChanges } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'

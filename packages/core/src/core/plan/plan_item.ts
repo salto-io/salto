@@ -81,15 +81,24 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
   const hasAnnotationTypes = (elem: ChangeDataType): elem is ObjectType | PrimitiveType =>
     isObjectType(elem) || isPrimitiveType(elem)
 
+  // Return only annotationTypes that exists in val and not exists in otherVal.
+  const extractUniqueAnnotationsTypes = (
+    val: Value,
+    otherVal: Value
+  ): Value => _.pickBy(val.annotationTypes,
+    (annotationType, annotationName) =>
+      !(otherVal.annotationTypes[annotationName]?.elemID.isEqual(annotationType.elemID)))
+
   if (hasAnnotationTypes(before) && hasAnnotationTypes(after)) {
-    const beforeUniqueAnnotationsTypes = _.pickBy(before.annotationTypes,
-      (annotationType, annotationName) =>
-        !(after.annotationTypes[annotationName]?.elemID.isEqual(annotationType.elemID)))
-    const afterUniqueAnnotationsTypes = _.pickBy(after.annotationTypes,
-      (annotationType, annotationName) =>
-        !(before.annotationTypes[annotationName]?.elemID.isEqual(annotationType.elemID)))
-    return getValuesChanges(id.createNestedID('annotation'),
-      beforeUniqueAnnotationsTypes, afterUniqueAnnotationsTypes)
+    const beforeUniqueAnnotationsTypes = extractUniqueAnnotationsTypes(before, after)
+    const afterUniqueAnnotationsTypes = extractUniqueAnnotationsTypes(after, before)
+
+    // Calling getValuesChanges with unique annotationTypes
+    return getValuesChanges(
+      id.createNestedID('annotation'),
+      beforeUniqueAnnotationsTypes,
+      afterUniqueAnnotationsTypes
+    )
   }
   return []
 }

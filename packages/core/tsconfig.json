@@ -12,10 +12,7 @@
             "@salto-io/suitecloud-cli": [
               "../netsuite-adapter/types/suitecloud-cli"
             ]
-        },
-        "lib": [
-            "esnext.asynciterable"
-          ]
+        }
     },
     "include": [
         "src/**/*",

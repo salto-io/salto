@@ -135,8 +135,7 @@ const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
 
   configInstance.type = saltoAppConfigType
   applyInstancesDefaults([configInstance])
-  const saltoConfigInstance = configInstance.value as AppConfig
-  return saltoConfigInstance
+  return configInstance.value as AppConfig
 }
 
 export const configFromDisk = async (): Promise<AppConfig> => {

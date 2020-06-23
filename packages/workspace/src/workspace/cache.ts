@@ -15,10 +15,10 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { ParseResult } from '../parser/parse'
+import { ParseResult } from '../parser'
 import * as parseResultSerializer from '../serializer/parse_result'
 import { DirectoryStore } from './dir_store'
-import { StaticFilesSource } from './static_files/common'
+import { StaticFilesSource } from './static_files'
 
 const log = logger(module)
 

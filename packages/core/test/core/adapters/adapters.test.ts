@@ -18,7 +18,7 @@ import * as utils from '@salto-io/adapter-utils'
 import { adapter } from '@salto-io/salesforce-adapter'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs, getDefaultAdapterConfig,
-} from '../../../src/core/adapters/adapters'
+} from '../../../src/core/adapters'
 
 jest.mock('@salto-io/workspace', () => ({
   ...jest.requireActual('@salto-io/workspace'),

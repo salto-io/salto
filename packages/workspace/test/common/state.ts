@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { Element } from '@salto-io/adapter-api'
-import { State } from '@salto-io/workspace'
 import { mockFunction } from './helpers'
+import { State } from '../..'
 
 export const mockState = (services: string[] = [], elements: Element[] = []): State => {
   const state = new Map(elements.map(elem => [elem.elemID.getFullName(), elem]))

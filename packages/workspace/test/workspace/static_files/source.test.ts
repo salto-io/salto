@@ -15,13 +15,12 @@
 */
 import { StaticFile } from '@salto-io/adapter-api'
 import { SyncDirectoryStore } from '../../../src/workspace/dir_store'
-import { buildStaticFilesSource } from '../../../src/workspace/static_files/source'
+import { buildStaticFilesSource, StaticFilesCache } from '../../../src/workspace/static_files'
 
 import {
   InvalidStaticFile, StaticFilesSource, MissingStaticFile, AccessDeniedStaticFile,
 } from '../../../src/workspace/static_files/common'
 
-import { StaticFilesCache } from '../../../src/workspace/static_files/cache'
 
 import {
   hashedContent, exampleStaticFileWithHash,

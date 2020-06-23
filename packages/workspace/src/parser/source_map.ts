@@ -148,8 +148,7 @@ export class SourceMap implements Map<string, SourceRange[]> {
     const lastPart = path.pop()
     const entry = getFromPath(this.data, path)
     if (entry !== undefined && lastPart) {
-      const deleted = delete entry.children[lastPart]
-      return deleted
+      return delete entry.children[lastPart]
     }
     return false
   }

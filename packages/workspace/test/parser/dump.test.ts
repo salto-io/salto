@@ -18,7 +18,7 @@ import {
   BuiltinTypes, INSTANCE_ANNOTATIONS, ListType, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import * as TestHelpers from '../common/helpers'
-import { parse } from '../../src/parser/parse'
+import { parse } from '../../src/parser'
 import {
   dumpAnnotationTypes, dumpElements, dumpSingleAnnotationType, dumpValues,
 } from '../../src/parser/dump'

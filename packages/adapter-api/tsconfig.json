@@ -4,9 +4,6 @@
         "outDir": "dist",
         "baseUrl": ".",
         "declaration": true,
-        "lib": [
-            "esnext.asynciterable"
-        ],
         "resolveJsonModule": true
     },
     "include": [

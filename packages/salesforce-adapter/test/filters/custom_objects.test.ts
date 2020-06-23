@@ -48,7 +48,7 @@ describe('Custom Objects filter', () => {
     ElemID => new ElemID(adapterName, name)
 
   type FilterType = FilterWith<'onFetch'>
-  const filter = (): FilterType => filterCreator({ client, config: { unsupportedSystemFields: ['UnsupportedField'] } }) as FilterType
+  const filter = (): FilterType => filterCreator({ client, config: { unsupportedSystemFields: ['UnsupportedField'], systemFields: ['SystemField', 'NameSystemField'] } }) as FilterType
   let result: Element[]
 
   const generateCustomObjectType = (): ObjectType => {
@@ -404,6 +404,47 @@ describe('Custom Objects filter', () => {
       expect(lead.fields.MyMultiPickList.type.elemID.name).toBe('MultiselectPicklist')
       expect(lead.fields.MyMultiPickList
         .annotations[FIELD_ANNOTATIONS.VISIBLE_LINES]).toBe(5)
+    })
+
+    it('should fetch sobject with system fields as hidden and not required, creatable and updateable', async () => {
+      mockSingleSObject('Lead', [
+        {
+          name: 'SystemField',
+          type: 'encryptedstring',
+          label: 'Encrypto Stringo',
+          createable: true,
+          updateable: true,
+          required: true,
+        },
+      ])
+      await filter().onFetch(result)
+
+      const lead = findElements(result, 'Lead').pop() as ObjectType
+      expect(lead.fields.SystemField.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
+      expect(lead.fields.SystemField.annotations[FIELD_ANNOTATIONS.CREATABLE]).toBeFalsy()
+      expect(lead.fields.SystemField.annotations[FIELD_ANNOTATIONS.UPDATEABLE]).toBeFalsy()
+      expect(lead.fields.SystemField.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeTruthy()
+    })
+
+    it('should fetch sobject with nameField system fields with original required/createable/updateable values', async () => {
+      mockSingleSObject('Lead', [
+        {
+          name: 'NameSystemField',
+          type: 'encryptedstring',
+          label: 'Encrypto Stringo',
+          createable: true,
+          updateable: true,
+          required: true,
+          nameField: true,
+        },
+      ])
+      await filter().onFetch(result)
+
+      const lead = findElements(result, 'Lead').pop() as ObjectType
+      expect(lead.fields.NameSystemField.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeTruthy()
+      expect(lead.fields.NameSystemField.annotations[FIELD_ANNOTATIONS.CREATABLE]).toBeTruthy()
+      expect(lead.fields.NameSystemField.annotations[FIELD_ANNOTATIONS.UPDATEABLE]).toBeTruthy()
+      expect(lead.fields.NameSystemField.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
     })
 
     it('should filter (inner) SObjects that are not custom objects', async () => {

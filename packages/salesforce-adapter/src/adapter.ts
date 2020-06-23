@@ -322,6 +322,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataTypesToUseUpsertUponUpdate = metadataTypesToUseUpsertUponUpdate
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
+    this.systemFields = systemFields
     this.filtersRunner = filtersRunner(
       this.client,
       {
@@ -329,10 +330,10 @@ export default class SalesforceAdapter implements AdapterOperations {
         metadataTypesSkippedList: this.metadataTypesSkippedList,
         unsupportedSystemFields,
         dataManagement: config.dataManagement,
+        systemFields,
       },
       filterCreators
     )
-    this.systemFields = systemFields
     if (getElemIdFunc) {
       Types.setElemIdGetter(getElemIdFunc)
     }

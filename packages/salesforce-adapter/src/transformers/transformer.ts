@@ -922,8 +922,13 @@ const getDefaultValue = (field: SalesforceField): PrimitiveValue | undefined => 
 
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the Nacl file
-export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceField,
-  parentServiceIds: ServiceIds, objCompoundFieldNames: string[] = []): Field => {
+export const getSObjectFieldElement = (
+  parent: ObjectType,
+  field: SalesforceField,
+  parentServiceIds: ServiceIds,
+  objCompoundFieldNames: string[] = [],
+  systemFields: string[] = []
+): Field => {
   const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPERATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
@@ -1047,6 +1052,16 @@ export const getSObjectFieldElement = (parent: ObjectType, field: SalesforceFiel
         Object.keys(naclFieldType.annotationTypes),
       )
     )
+  }
+
+  // System fields besides name should be hidden and not be creatable, updateable nor required
+  // Because they differ between envs and should not be editted through salto
+  // Name is an exception because it's editable and should be visible to the user
+  if (!field.nameField && systemFields.includes(field.name)) {
+    annotations[CORE_ANNOTATIONS.HIDDEN] = true
+    annotations[FIELD_ANNOTATIONS.UPDATEABLE] = false
+    annotations[FIELD_ANNOTATIONS.CREATABLE] = false
+    annotations[CORE_ANNOTATIONS.REQUIRED] = false
   }
 
   const fieldName = Types.getElemId(field.name, true, serviceIds).name

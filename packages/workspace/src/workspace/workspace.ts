@@ -221,9 +221,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
         (isObjectType(elem) && workspaceConfigTypes.includes(elem))
           || (isInstanceElement(elem) && workspaceConfigTypes.includes(elem.type))
       const isStateEmpty = _.isEmpty((await state().getAll()).filter(e => !isConfig(e)))
-      return naclFilesOnly === true
-        ? isNaclFilesSourceEmpty
-        : isNaclFilesSourceEmpty && isStateEmpty
+      return naclFilesOnly ? isNaclFilesSourceEmpty : isNaclFilesSourceEmpty && isStateEmpty
     },
     setNaclFiles: naclFilesSource.setNaclFiles,
     updateNaclFiles: naclFilesSource.updateNaclFiles,
@@ -324,7 +322,7 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
         throw new UnknownEnvError(env)
       }
       userConfig.currentEnv = env
-      if (_.isUndefined(persist) || persist === true) {
+      if (_.isUndefined(persist) || persist) {
         await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
       }
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),

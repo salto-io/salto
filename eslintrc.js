@@ -41,7 +41,7 @@ module.exports = {
         ecmaFeatures: {
             jsx: true,
         },
-        ecmaVersion: 2018,
+        ecmaVersion: 2019,
         sourceType: 'module',
         useJSXTextNode: true,
         project: './tsconfig.json',
@@ -114,6 +114,7 @@ module.exports = {
         'import/extensions': [ 'error', 'never', {
             'json': 'always',
         }],
+        'no-restricted-imports': ['error', { patterns: ['**/dist/**', 'src/*'] } ]
     },
     overrides: [
         {

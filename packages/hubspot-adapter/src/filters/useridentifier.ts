@@ -18,7 +18,7 @@ import {
   Element, isInstanceElement, isObjectType, Values, ObjectType,
   isListType, getDeepInnerType, Value, ListType,
 } from '@salto-io/adapter-api'
-import { Owner } from 'src/client/types'
+import { Owner } from '../client/types'
 import { isUserIdentifierType } from '../transformers/transformer'
 import { FilterCreator } from '../filter'
 

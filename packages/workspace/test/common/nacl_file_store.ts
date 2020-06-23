@@ -15,8 +15,8 @@
 */
 import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { DirectoryStore, File } from 'src/workspace/dir_store'
-import { ParseResultCache } from 'src/workspace/cache'
+import { DirectoryStore, File } from '../../src/workspace/dir_store'
+import { ParseResultCache } from '../../src/workspace/cache'
 
 const workspaceFiles = {
   'file.nacl': `

@@ -20,8 +20,8 @@ import {
   isType,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { OnFetchFilter } from 'src/filter'
 import mockClient from '../client'
+import { OnFetchFilter } from '../../src/filter'
 import filterCreator from '../../src/filters/hide_types'
 import { Types } from '../../src/transformers/transformer'
 import {

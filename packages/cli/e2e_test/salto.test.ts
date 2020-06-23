@@ -21,6 +21,7 @@ import { copyFile, rm, mkdirp, exists } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, Credentials } from '@salto-io/salesforce-adapter'
 import { Plan, SALTO_HOME_VAR } from '@salto-io/core'
 import { Workspace, parser } from '@salto-io/workspace'
+// eslint-disable-next-line no-restricted-imports
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
   API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE,

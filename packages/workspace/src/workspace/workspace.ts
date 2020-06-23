@@ -22,8 +22,7 @@ import {
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { validateElements } from '../validator'
-import { SourceRange, ParseError } from '../parser/parse'
-import { SourceMap } from '../parser/source_map'
+import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
@@ -33,6 +32,9 @@ import { Errors, NoWorkspaceConfig, ServiceDuplicationError, EnvDuplicationError
 import { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig,
   WorkspaceUserConfig, EnvConfig, workspaceConfigInstance,
   workspaceUserConfigInstance } from './config/workspace_config_types'
+import {
+  addHiddenValuesAndHiddenTypes,
+} from './hidden_values'
 
 const log = logger(module)
 
@@ -131,7 +133,13 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
   )
   let naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
     currentEnv(), elementsSources.commonSourceName)
-  const elements = async (): Promise<ReadonlyArray<Element>> => (await naclFilesSource.getAll())
+
+  const elements = async (): Promise<ReadonlyArray<Element>> => (
+    addHiddenValuesAndHiddenTypes(
+      await naclFilesSource.getAll(),
+      await state().getAll(),
+    )
+  )
     .concat(workspaceConfigTypes)
 
   const getSourceFragment = async (

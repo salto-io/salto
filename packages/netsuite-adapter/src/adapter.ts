@@ -20,6 +20,7 @@ import {
 import { resolveValues, restoreValues, deployInstance } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import NetsuiteClient, {
   CustomizationInfo, isFileCustomizationInfo, isFolderCustomizationInfo,
 } from './client/client'
@@ -29,9 +30,14 @@ import {
 import {
   customTypes, isCustomType, getAllTypes, fileCabinetTypes, isFileCabinetType,
 } from './types'
-import { SCRIPT_ID, SAVED_SEARCH } from './constants'
+import { SCRIPT_ID, SAVED_SEARCH, TYPES_TO_SKIP } from './constants'
 
 const log = logger(module)
+const { makeArray } = collections.array
+
+export type NetsuiteConfig = {
+  [TYPES_TO_SKIP]?: string[]
+}
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
@@ -39,6 +45,8 @@ export interface NetsuiteAdapterParams {
   typesToSkip?: string[]
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
+  // config that is determined by the user
+  config: NetsuiteConfig
 }
 
 const validateServiceIds = (before: InstanceElement, after: InstanceElement): void => {
@@ -64,9 +72,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch
     ],
     getElemIdFunc,
+    config,
   }: NetsuiteAdapterParams) {
     this.client = client
-    this.typesToSkip = typesToSkip
+    this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
     this.getElemIdFunc = getElemIdFunc
   }
 

@@ -43,3 +43,6 @@ export const ADDITIONAL_FILE_SUFFIX = 'additionalFileSuffix'
 export const SUITE_SCRIPTS_FOLDER_NAME = 'SuiteScripts'
 export const TEMPLATES_FOLDER_NAME = 'Templates'
 export const WEB_SITE_HOSTING_FILES_FOLDER_NAME = 'Web Site Hosting Files'
+
+// NetsuiteConfig
+export const TYPES_TO_SKIP = 'typesToSkip'

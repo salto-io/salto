@@ -27,7 +27,7 @@ import {
 import { SalesforceClient } from 'index'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import _ from 'lodash'
-import { UNSUPPORTED_SYSTEM_FIELDS } from '../types'
+import { UNSUPPORTED_SYSTEM_FIELDS, SYSTEM_FIELDS } from '../types'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
@@ -290,7 +290,12 @@ const createNestedMetadataInstances = (instance: InstanceElement,
       })
     }))
 
-const createObjectType = (name: string, label: string, fields?: SObjField[]): ObjectType => {
+const createObjectType = (
+  name: string,
+  label: string,
+  fields?: SObjField[],
+  systemFields?: string[]
+): ObjectType => {
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
     [API_NAME]: name,
@@ -309,7 +314,7 @@ const createObjectType = (name: string, label: string, fields?: SObjField[]): Ob
     )
     fields
       .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields
-      .map(f => getSObjectFieldElement(object, f, serviceIds, objCompoundFieldNames))
+      .map(f => getSObjectFieldElement(object, f, serviceIds, objCompoundFieldNames, systemFields))
       .forEach(field => {
         object.fields[field.name] = field
       })
@@ -367,10 +372,11 @@ const fetchSObjects = async (client: SalesforceClient):
 const createFromSObjectsAndInstances = (
   sObjects: DescribeSObjectResult[],
   instances: Record<string, InstanceElement>,
-  typesFromInstance: TypesFromInstance
+  typesFromInstance: TypesFromInstance,
+  systemFields: string[],
 ): Element[] =>
   _.flatten(sObjects.map(({ name, label, custom, fields }) => {
-    const object = createObjectType(name, label, fields)
+    const object = createObjectType(name, label, fields, systemFields)
     const instance = instances[name]
     if (!instance) {
       return [object]
@@ -528,6 +534,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
       _.flatten(Object.values(sObjects)),
       customObjectInstances,
       typesFromInstance,
+      config[SYSTEM_FIELDS] ?? [],
     )
 
     const objectTypeNames = new Set(Object.keys(sObjects))

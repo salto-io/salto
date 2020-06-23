@@ -66,6 +66,34 @@ const getValuesChanges = (id: ElemID, before: Value, after: Value): DetailedChan
   return [{ id, action: 'modify', data: { before, after } }]
 }
 
+/**
+ * Create detailed changes for annotationType, by using elemID.isEqual.
+ *
+ * We treat change only for annotationType that exist only in one value:
+ *   - If the annotation Type exist in before the action will be remove.
+ *   - If the annotation Type exist in after the action will be add.
+ *
+ * Change in the the annotationType value (in the inner annotations or fields) when the
+ * annotationType exists in both (before & after) will not consider as change.
+ *
+ */
+const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): DetailedChange[] => {
+  const hasAnnotationTypes = (elem: ChangeDataType): elem is ObjectType | PrimitiveType =>
+    isObjectType(elem) || isPrimitiveType(elem)
+
+  if (hasAnnotationTypes(before) && hasAnnotationTypes(after)) {
+    const beforeUniqueAnnotationsTypes = _.pickBy(before.annotationTypes,
+      (annotationType, annotationName) =>
+        !(after.annotationTypes[annotationName]?.elemID.isEqual(annotationType.elemID)))
+    const afterUniqueAnnotationsTypes = _.pickBy(after.annotationTypes,
+      (annotationType, annotationName) =>
+        !(before.annotationTypes[annotationName]?.elemID.isEqual(annotationType.elemID)))
+    return getValuesChanges(id.createNestedID('annotation'),
+      beforeUniqueAnnotationsTypes, afterUniqueAnnotationsTypes)
+  }
+  return []
+}
+
 export const addPlanItemAccessors = (
   group: Group<Change>,
   beforeElementsMap: Record<NodeId, Element>,
@@ -78,9 +106,6 @@ export const addPlanItemAccessors = (
     return group.items.values()
   },
   detailedChanges() {
-    const hasAnnotationTypes = (elem: ChangeDataType): elem is ObjectType | PrimitiveType =>
-      isObjectType(elem) || isPrimitiveType(elem)
-
     return wu(group.items.values())
       .map(change => {
         const elem = getChangeElement(change)
@@ -100,17 +125,14 @@ export const addPlanItemAccessors = (
         if (isInstanceElement(change.data.before) && isInstanceElement(change.data.after)) {
           return getValuesChanges(elem.elemID, change.data.before.value, change.data.after.value)
         }
-        let annotationTypeChanges: DetailedChange[] = []
-        if (hasAnnotationTypes(change.data.before) && hasAnnotationTypes(change.data.after)) {
-          const beforeAnnoTypes = _.pickBy(change.data.before.annotationTypes,
-            (anno, annoName) =>
-              !(change.data.after.annotationTypes[annoName]?.elemID.isEqual(anno.elemID)))
-          const afterAnnoTypes = _.pickBy(change.data.after.annotationTypes,
-            (anno, annoName) =>
-              !(change.data.before.annotationTypes[annoName]?.elemID.isEqual(anno.elemID)))
-          annotationTypeChanges = getValuesChanges(elem.elemID.createNestedID('annotation'),
-            beforeAnnoTypes, afterAnnoTypes)
-        }
+
+        // A special case to handle changes in annotationType.
+        const annotationTypeChanges = getAnnotationTypeChanges(
+          elem.elemID,
+          change.data.before,
+          change.data.after
+        )
+
         const annotationChanges = getValuesChanges(
           elem.elemID.isTopLevel() ? elem.elemID.createNestedID('attr') : elem.elemID,
           change.data.before.annotations, change.data.after.annotations

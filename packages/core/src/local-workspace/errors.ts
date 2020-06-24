@@ -1,3 +1,4 @@
+
 /*
 *                      Copyright 2020 Salto Labs Ltd.
 *
@@ -13,5 +14,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigType,
-  workspaceUserConfigType } from './workspace_config_types'
+
+export class NoWorkspaceConfig extends Error {
+  constructor() {
+    super('cannot find workspace config')
+  }
+}
+
+export class NoEnvsConfig extends Error {
+  constructor() {
+    super('cannot find envs config')
+  }
+}

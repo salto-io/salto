@@ -19,7 +19,8 @@ import { Workspace, SourceFragment, StateRecency, loadWorkspace,
   EnvironmentsSources, initWorkspace } from './src/workspace/workspace'
 import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
-import * as workspaceConfig from './src/workspace/config'
+import * as workspaceConfigSource from './src/workspace/workspace_config_source'
+import { WorkspaceConfig, EnvConfig } from './src/workspace/config/workspace_config_types'
 import { State } from './src/workspace/state'
 import * as dirStore from './src/workspace/dir_store'
 import * as parseCache from './src/workspace/cache'
@@ -39,11 +40,12 @@ export {
   dirStore,
   parseCache,
   configSource,
-  workspaceConfig,
   staticFiles,
   expressions,
   nacl,
   pathIndex,
+  WorkspaceConfig,
+  EnvConfig,
   // Workspace exports
   Workspace,
   SourceFragment,
@@ -52,4 +54,5 @@ export {
   EnvironmentsSources,
   initWorkspace,
   State,
+  workspaceConfigSource,
 }

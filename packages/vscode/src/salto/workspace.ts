@@ -18,6 +18,7 @@ import path from 'path'
 import { Workspace, nacl, errors, parser } from '@salto-io/workspace'
 import { Element, SaltoError, ElemID, DetailedChange } from '@salto-io/adapter-api'
 import wu from 'wu'
+import { workspaceConfigTypes } from '@salto-io/core'
 
 export class EditorWorkspace {
   private workspace: Workspace
@@ -33,7 +34,9 @@ export class EditorWorkspace {
   }
 
   get elements(): Promise<readonly Element[]> {
-    return this.workspace.elements()
+    return this.workspace.elements().then(
+      elements => elements.concat(workspaceConfigTypes)
+    )
   }
 
   errors(): Promise<errors.Errors> {

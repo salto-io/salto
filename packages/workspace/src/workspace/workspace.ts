@@ -16,8 +16,7 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, isObjectType, isInstanceElement,
-  DetailedChange,
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -27,14 +26,13 @@ import { ConfigSource } from './config_source'
 import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { multiEnvSource } from './nacl_files/mutil_env/multi_env_source'
-import { Errors, NoWorkspaceConfig, ServiceDuplicationError, EnvDuplicationError,
+import { Errors, ServiceDuplicationError, EnvDuplicationError,
   UnknownEnvError, DeleteCurrentEnvError } from './errors'
-import { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, workspaceConfigTypes, WorkspaceConfig,
-  WorkspaceUserConfig, EnvConfig, workspaceConfigInstance,
-  workspaceUserConfigInstance } from './config/workspace_config_types'
+import { EnvConfig } from './config/workspace_config_types'
 import {
   addHiddenValuesAndHiddenTypes,
 } from './hidden_values'
+import { WorkspaceConfigSource } from './workspace_config_source'
 
 const log = logger(module)
 
@@ -111,22 +109,19 @@ export type EnvironmentsSources = {
   sources: Record<string, EnvironmentSource>
 }
 
-export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSource,
+export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: ConfigSource,
   elementsSources: EnvironmentsSources):
   Promise<Workspace> => {
-  const workspaceConfig = (await config.get(WORKSPACE_CONFIG_NAME))?.value as WorkspaceConfig
-  if (_.isUndefined(workspaceConfig)) {
-    throw new NoWorkspaceConfig()
-  }
+  const workspaceConfig = await config.getWorkspaceConfig()
   if (_.isEmpty(workspaceConfig.envs)) {
     throw new Error('Workspace with no environments is illegal')
   }
   const envs = (): ReadonlyArray<string> => workspaceConfig.envs.map(e => e.name)
-  const userConfig = (await config.get(USER_CONFIG_NAME))?.value as WorkspaceUserConfig
-    || { currentEnv: envs()[0] }
-  const currentEnv = (): string => userConfig.currentEnv
+  const currentEnv = (): string => workspaceConfig.currentEnv ?? workspaceConfig.envs[0].name
   const currentEnvConf = (): EnvConfig =>
     makeArray(workspaceConfig.envs).find(e => e.name === currentEnv()) as EnvConfig
+  const currentEnvsConf = (): EnvConfig[] =>
+    workspaceConfig.envs
   const services = (): ReadonlyArray<string> => makeArray(currentEnvConf().services)
   const state = (envName?: string): State => (
     elementsSources.sources[envName || currentEnv()].state as State
@@ -140,7 +135,6 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       await state().getAll(),
     )
   )
-    .concat(workspaceConfigTypes)
 
   const getSourceFragment = async (
     sourceRange: SourceRange, subRange?: SourceRange): Promise<SourceFragment> => {
@@ -198,7 +192,6 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
   const pickServices = (names?: ReadonlyArray<string>): ReadonlyArray<string> =>
     (_.isUndefined(names) ? services() : services().filter(s => names.includes(s)))
   const credsPath = (service: string): string => path.join(currentEnv(), service)
-  const confPath = (service: string): string => path.join(ADAPTERS_CONFIGS_PATH, service)
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -213,14 +206,16 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       pickServices(names).map(async service => [service, await credentials.get(credsPath(service))])
     )),
     servicesConfig: async (names?: ReadonlyArray<string>) => _.fromPairs(await Promise.all(
-      pickServices(names).map(async service => [service, await config.get(confPath(service))])
+      pickServices(names).map(
+        async service => [
+          service,
+          (await config.getAdapter(service)),
+        ]
+      )
     )),
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = _.isEmpty(await naclFilesSource.getAll())
-      const isConfig = (elem: Element): boolean =>
-        (isObjectType(elem) && workspaceConfigTypes.includes(elem))
-          || (isInstanceElement(elem) && workspaceConfigTypes.includes(elem.type))
-      const isStateEmpty = _.isEmpty((await state().getAll()).filter(e => !isConfig(e)))
+      const isStateEmpty = _.isEmpty(await state().getAll())
       return naclFilesOnly ? isNaclFilesSourceEmpty : isNaclFilesSourceEmpty && isStateEmpty
     },
     setNaclFiles: naclFilesSource.setNaclFiles,
@@ -251,21 +246,22 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       if (currentServices.includes(service)) {
         throw new ServiceDuplicationError(service)
       }
-      currentEnvConf().services = [...services(), service]
-      await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
+      currentEnvConf().services = [...currentServices, service]
+      await config.setWorkspaceConfig(workspaceConfig)
     },
     updateServiceCredentials:
       async (service: string, servicesCredentials: Readonly<InstanceElement>): Promise<void> =>
         credentials.set(credsPath(service), servicesCredentials),
     updateServiceConfig:
-      async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> =>
-        config.set(confPath(service), newConfig),
+      async (service: string, newConfig: Readonly<InstanceElement>): Promise<void> => {
+        await config.setAdapter(service, newConfig)
+      },
     addEnvironment: async (env: string): Promise<void> => {
       if (workspaceConfig.envs.map(e => e.name).includes(env)) {
         throw new EnvDuplicationError(env)
       }
       workspaceConfig.envs = [...workspaceConfig.envs, { name: env }]
-      await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
+      await config.setWorkspaceConfig(workspaceConfig)
     },
     deleteEnvironment: async (env: string): Promise<void> => {
       if (!(workspaceConfig.envs.map(e => e.name).includes(env))) {
@@ -274,8 +270,8 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       if (env === currentEnv()) {
         throw new DeleteCurrentEnvError(env)
       }
-      _.remove(workspaceConfig.envs, e => e.name === env)
-      await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
+      workspaceConfig.envs = workspaceConfig.envs.filter(e => e.name !== env)
+      await config.setWorkspaceConfig(workspaceConfig)
 
       // We assume here that all the credentials files sit under the credentials' env directory
       await credentials.delete(env)
@@ -290,22 +286,25 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
         currentEnv(), elementsSources.commonSourceName)
     },
     renameEnvironment: async (envName: string, newEnvName: string) => {
-      const envConfig = workspaceConfig.envs.find(e => e.name === envName)
+      const envConfig = envs().find(e => e === envName)
       if (_.isUndefined(envConfig)) {
         throw new UnknownEnvError(envName)
       }
 
-      if (!_.isUndefined(workspaceConfig.envs.find(e => e.name === newEnvName))) {
+      if (!_.isUndefined(envs().find(e => e === newEnvName))) {
         throw new EnvDuplicationError(newEnvName)
       }
 
-      envConfig.name = newEnvName
-      await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(workspaceConfig))
-
-      if (envName === userConfig.currentEnv) {
-        userConfig.currentEnv = newEnvName
-        await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
+      currentEnvsConf().map(e => {
+        if (e.name === envName) {
+          e.name = newEnvName
+        }
+        return e
+      })
+      if (envName === workspaceConfig.currentEnv) {
+        workspaceConfig.currentEnv = newEnvName
       }
+      await config.setWorkspaceConfig(workspaceConfig)
       await credentials.rename(envName, newEnvName)
       const environmentSource = elementsSources.sources[envName]
       if (environmentSource) {
@@ -321,9 +320,9 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       if (!envs().includes(env)) {
         throw new UnknownEnvError(env)
       }
-      userConfig.currentEnv = env
+      workspaceConfig.currentEnv = env
       if (persist) {
-        await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
+        await config.setWorkspaceConfig(workspaceConfig)
       }
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
         currentEnv(), elementsSources.commonSourceName)
@@ -351,15 +350,15 @@ export const initWorkspace = async (
   name: string,
   uid: string,
   defaultEnvName: string,
-  config: ConfigSource,
+  config: WorkspaceConfigSource,
   credentials: ConfigSource,
   envs: EnvironmentsSources,
 ): Promise<Workspace> => {
-  await config.set(WORKSPACE_CONFIG_NAME, workspaceConfigInstance(
-    { uid, name, envs: [{ name: defaultEnvName }] }
-  ))
-  await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(
-    { currentEnv: defaultEnvName }
-  ))
+  await config.setWorkspaceConfig({
+    uid,
+    name,
+    envs: [{ name: defaultEnvName }],
+    currentEnv: defaultEnvName,
+  })
   return loadWorkspace(config, credentials, envs)
 }

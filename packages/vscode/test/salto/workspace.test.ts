@@ -27,7 +27,7 @@ describe('workspace', () => {
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
-    await validate(workspace, 18)
+    await validate(workspace, 22)
   })
 
   it('should collect errors', async () => {
@@ -53,7 +53,7 @@ describe('workspace', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    await validate(workspace, 18)
+    await validate(workspace, 22)
   })
 
   it('should support file removal', async () => {

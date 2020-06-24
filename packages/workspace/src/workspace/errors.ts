@@ -65,9 +65,3 @@ export class DeleteCurrentEnvError extends Error {
     super(`Cannot delete the current env: ${envName}`)
   }
 }
-
-export class NoWorkspaceConfig extends Error {
-  constructor() {
-    super('cannot find workspace config')
-  }
-}

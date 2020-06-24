@@ -32,3 +32,4 @@ export {
   CountEvent, StackEvent, Tags, isCountEvent,
   isStackEvent, EVENT_TYPES,
 } from './src/telemetry'
+export { WORKSPACE_CONFIG_NAME, USER_CONFIG_NAME, ADAPTERS_CONFIG_NAME, ENVS_CONFIG_NAME, workspaceConfigTypes } from './src/local-workspace/workspace_config_types'

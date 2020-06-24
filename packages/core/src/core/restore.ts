@@ -44,7 +44,7 @@ const splitChangeByPath = async (
   }
   return Promise.all(changeHints.map(async hint => {
     const filterByPathHint = async (id: ElemID): Promise<boolean> => {
-      const idHints = index.get(id.getFullName()) || []
+      const idHints = index.get(id.getFullName()) as string[][]
       return _.some(idHints, idHint => _.isEqual(idHint, hint))
     }
     if (change.action === 'add') {
@@ -118,6 +118,7 @@ export const createRestoreChanges = async (
   if (progressEmitter) {
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
+
   const changes = await filterChangesByIDRegex(
     wu(await getDetailedChanges(workspaceElements, stateElements)).toArray(),
     idFilters

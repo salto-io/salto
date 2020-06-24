@@ -15,19 +15,25 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { State, pathIndex } from '@salto-io/workspace'
+import { PathIndex } from '@salto-io/workspace/dist/src/workspace/path_index'
+import wu from 'wu'
 import { mockFunction } from './helpers'
 
-export const mockState = (services: string[] = [], elements: Element[] = []): State => {
+export const mockState = (
+  services: string[] = [],
+  elements: Element[] = [],
+  index?: PathIndex
+): State => {
   const state = new Map(elements.map(elem => [elem.elemID.getFullName(), elem]))
   return {
     list: mockFunction<State['list']>().mockImplementation(
-      () => Promise.resolve(Object.values(state).map(elem => elem.elemID))
+      () => Promise.resolve(wu(state.values()).toArray().map(elem => elem.elemID))
     ),
     get: mockFunction<State['get']>().mockImplementation(
       id => Promise.resolve(state.get(id.getFullName()))
     ),
     getAll: mockFunction<State['getAll']>().mockImplementation(
-      () => Promise.resolve(Object.values(state))
+      () => Promise.resolve(wu(state.values()).toArray())
     ),
     set: mockFunction<State['set']>().mockImplementation(
       async elem => { state.set(elem.elemID.getFullName(), elem) }
@@ -53,7 +59,7 @@ export const mockState = (services: string[] = [], elements: Element[] = []): St
     existingServices: mockFunction<State['existingServices']>().mockResolvedValue(services),
     overridePathIndex: mockFunction<State['overridePathIndex']>(),
     getPathIndex: mockFunction<State['getPathIndex']>().mockResolvedValue(
-      new pathIndex.PathIndex()
+      index || new pathIndex.PathIndex()
     ),
   }
 }

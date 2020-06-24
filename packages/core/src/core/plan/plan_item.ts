@@ -82,7 +82,7 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
     isObjectType(elem) || isPrimitiveType(elem)
 
   // Return only annotationTypes that exists in val and not exists in otherVal.
-  const extractUniqueAnnotationsTypes = (
+  const returnOnlyAnnotationTypesDiff = (
     val: Value,
     otherVal: Value
   ): Value => _.pickBy(val.annotationTypes,
@@ -90,8 +90,8 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
       !(otherVal.annotationTypes[annotationName]?.elemID.isEqual(annotationType.elemID)))
 
   if (hasAnnotationTypes(before) && hasAnnotationTypes(after)) {
-    const beforeUniqueAnnotationsTypes = extractUniqueAnnotationsTypes(before, after)
-    const afterUniqueAnnotationsTypes = extractUniqueAnnotationsTypes(after, before)
+    const beforeUniqueAnnotationsTypes = returnOnlyAnnotationTypesDiff(before, after)
+    const afterUniqueAnnotationsTypes = returnOnlyAnnotationTypesDiff(after, before)
 
     // Calling getValuesChanges with unique annotationTypes
     return getValuesChanges(

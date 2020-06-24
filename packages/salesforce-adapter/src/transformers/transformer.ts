@@ -1149,8 +1149,11 @@ export const createMetadataTypeElements = async (
   const element = Types.get(objectName, false, isSettings) as ObjectType
   knownTypes.set(objectName, element)
   element.annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
-  element.annotate({ [METADATA_TYPE]: objectName })
-  element.annotate({ [CORE_ANNOTATIONS.HIDDEN]: true })
+  element.annotate({
+    [METADATA_TYPE]: objectName,
+    [CORE_ANNOTATIONS.HIDDEN]: true,
+  })
+
   element.path = [
     SALESFORCE,
     TYPES_PATH,

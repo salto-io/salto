@@ -134,6 +134,7 @@ const dumpElementBlock = async (elem: Element, functions: Functions): Promise<Du
     return {
       type: dumpElemID(elem.type),
       labels: elem.elemID.isConfig() || elem.type.isSettings
+      || elem.elemID.name === '_config' // TODO: should inject the correct type
         ? []
         : [elem.elemID.name],
       attrs: await dumpAttributes(

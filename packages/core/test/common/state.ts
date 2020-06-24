@@ -15,14 +15,13 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { State, pathIndex } from '@salto-io/workspace'
-import { PathIndex } from '@salto-io/workspace/dist/src/workspace/path_index'
 import wu from 'wu'
 import { mockFunction } from './helpers'
 
 export const mockState = (
   services: string[] = [],
   elements: Element[] = [],
-  index?: PathIndex
+  index?: pathIndex.PathIndex
 ): State => {
   const state = new Map(elements.map(elem => [elem.elemID.getFullName(), elem]))
   return {

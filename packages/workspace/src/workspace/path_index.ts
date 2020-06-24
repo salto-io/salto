@@ -13,28 +13,30 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { treeMap } from '@salto-io/lowerdash/dist/src/collections'
+import { collections } from '@salto-io/lowerdash'
 import { ElemID, Element } from '@salto-io/adapter-api'
 import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import wu from 'wu'
 
 type Path = readonly string[]
-export class PathIndex extends treeMap.PartialTreeMap<Path> {
+export class PathIndex extends collections.treeMap.PartialTreeMap<Path> {
   constructor(entries: Iterable<[string, Path[]]> = []) {
     super(entries, ElemID.NAMESPACE_SEPARATOR)
     this.compact()
   }
 
   private compact(): void {
-    const compactEntry = (entry: treeMap.TreeMapEntry<Path>): treeMap.TreeMapEntry<Path> => {
-      const shouldDrop = (child: treeMap.TreeMapEntry<Path>): boolean => (
+    const compactEntry = (
+      entry: collections.treeMap.TreeMapEntry<Path>
+    ): collections.treeMap.TreeMapEntry<Path> => {
+      const shouldDrop = (child: collections.treeMap.TreeMapEntry<Path>): boolean => (
         _.isEmpty(child.children) && _.isEqual(entry.value, child.value)
       )
       const newChildren = _(entry.children)
         .mapValues(compactEntry)
         .omitBy(shouldDrop)
-        .value() as Record<string, treeMap.TreeMapEntry<Path>>
+        .value() as Record<string, collections.treeMap.TreeMapEntry<Path>>
       return { value: entry.value, children: newChildren }
     }
     this.data = compactEntry(this.data)
@@ -55,7 +57,7 @@ export class PathIndex extends treeMap.PartialTreeMap<Path> {
 
   get(id: string): Path[] | undefined {
     const path = id.split(this.seperator)
-    const entry = treeMap.TreeMap.getFromPath(this.data, path, false, true)
+    const entry = collections.treeMap.TreeMap.getFromPath(this.data, path, false, true)
     return entry?.value
   }
 }

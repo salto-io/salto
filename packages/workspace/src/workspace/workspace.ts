@@ -317,12 +317,12 @@ export const loadWorkspace = async (config: ConfigSource, credentials: ConfigSou
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),
         currentEnv(), elementsSources.commonSourceName)
     },
-    setCurrentEnv: async (env: string, persist?: boolean): Promise<void> => {
+    setCurrentEnv: async (env: string, persist = true): Promise<void> => {
       if (!envs().includes(env)) {
         throw new UnknownEnvError(env)
       }
       userConfig.currentEnv = env
-      if (_.isUndefined(persist) || persist) {
+      if (persist) {
         await config.set(USER_CONFIG_NAME, workspaceUserConfigInstance(userConfig))
       }
       naclFilesSource = multiEnvSource(_.mapValues(elementsSources.sources, e => e.naclFiles),

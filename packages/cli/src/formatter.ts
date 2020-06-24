@@ -576,3 +576,13 @@ export const formatStateChanges = (
 ): string => (numOfChanges > 0
   ? Prompts.STATE_ONLY_UPDATE_START(numOfChanges)
   : Prompts.STATE_NO_CHANGES)
+
+export const formatRestoreFinish = (): string => [
+  emptyLine(),
+  Prompts.RESTORE_SUCCESS_FINISHED,
+].join('\n')
+
+export const formatInvalidFilters = (invalidFilters: string[]): string => [
+  formatSimpleError(Prompts.INVALID_FILTERS(formatWordsSeries(invalidFilters))),
+  emptyLine(),
+].join('\n')

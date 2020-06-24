@@ -29,7 +29,7 @@ import { Workspace } from '@salto-io/workspace'
 import { promises } from '@salto-io/lowerdash'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
-import { EOL } from 'os'
+import { progressOutputer, outputLine } from '../outputer'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
 import {
@@ -37,15 +37,15 @@ import {
   CliExitCode, SpinnerCreator, CliTelemetry,
 } from '../types'
 import {
-  formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatStepStart,
-  formatStepCompleted, formatStepFailed, formatFetchHeader, formatFetchFinish,
-  formatApproveIsolatedModePrompt,
-  formatStateChanges,
+  formatChangesSummary, formatMergeErrors, formatFatalFetchError, formatFetchHeader,
+  formatFetchFinish, formatApproveIsolatedModePrompt, formatStateChanges,
 } from '../formatter'
 import { getApprovedChanges as cliGetApprovedChanges,
   shouldUpdateConfig as cliShouldUpdateConfig,
   cliApproveIsolatedMode } from '../callbacks'
-import { updateWorkspace, loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly } from '../workspace/workspace'
+import {
+  loadWorkspace, getWorkspaceTelemetryTags, updateStateOnly, applyChangesToWorkspace,
+} from '../workspace/workspace'
 import Prompts from '../prompts'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
@@ -106,7 +106,7 @@ const getRelevantServicesAndIsolatedMode = async (
   inputIsolated: boolean,
   force: boolean,
   approveIsolatedMode: ApproveIsolatedModeFunc,
-  outputLine: (text: string) => void
+  bindedOutputLine: (text: string) => void
 ): Promise<{services: string[]; isolated: boolean}> => {
   const envNames = workspace.envs()
   const currentEnvServices = await workspace.state().existingServices()
@@ -128,7 +128,7 @@ const getRelevantServicesAndIsolatedMode = async (
     envNames,
     inputIsolated
   )) {
-    outputLine(formatApproveIsolatedModePrompt(
+    bindedOutputLine(formatApproveIsolatedModePrompt(
       servicesNewOnlyInCurrentEnv,
       existingOrNewToAllEnvsServices,
       inputIsolated
@@ -152,25 +152,12 @@ export const fetchCommand = async (
     cliTelemetry, output, fetch, approveIsolatedMode, shouldCalcTotalSize,
     stateOnly,
   }: FetchCommandArgs): Promise<CliExitCode> => {
-  const outputLine = (text: string): void => output.stdout.write(`${text}\n`)
-  const progressOutputer = (
-    startText: string,
-    successText: string,
-    defaultErrorText: string
-  ) => (progress: StepEmitter) => {
-    outputLine(EOL)
-    outputLine(formatStepStart(startText))
-    progress.on('completed', () => outputLine(formatStepCompleted(successText)))
-    progress.on('failed', (errorText?: string) => {
-      outputLine(formatStepFailed(errorText ?? defaultErrorText))
-      outputLine(EOL)
-    })
-  }
+  const bindedOutputline = (text: string): void => outputLine(text, output)
   const workspaceTags = await getWorkspaceTelemetryTags(workspace)
   cliTelemetry.start(workspaceTags)
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
   fetchProgress.on('adaptersDidInitialize', () => {
-    outputLine(formatFetchHeader())
+    bindedOutputline(formatFetchHeader())
   })
 
   fetchProgress.on('stateWillBeUpdated', (
@@ -179,52 +166,30 @@ export const fetchCommand = async (
   ) => progressOutputer(
     formatStateChanges(numOfChanges),
     Prompts.STATE_ONLY_UPDATE_END,
-    Prompts.STATE_ONLY_UPDATE_FAILED(numOfChanges)
+    Prompts.STATE_ONLY_UPDATE_FAILED(numOfChanges),
+    output
   )(progress))
 
   fetchProgress.on('changesWillBeFetched', (progress: StepEmitter, adapters: string[]) => progressOutputer(
     Prompts.FETCH_GET_CHANGES_START(adapters),
     Prompts.FETCH_GET_CHANGES_FINISH(adapters),
-    Prompts.FETCH_GET_CHANGES_FAIL
+    Prompts.FETCH_GET_CHANGES_FAIL,
+    output
   )(progress))
 
   fetchProgress.on('diffWillBeCalculated', progressOutputer(
     Prompts.FETCH_CALC_DIFF_START,
     Prompts.FETCH_CALC_DIFF_FINISH,
     Prompts.FETCH_CALC_DIFF_FAIL,
+    output
   ))
   fetchProgress.on('workspaceWillBeUpdated', (progress: StepEmitter, changes: number, approved: number) =>
     progressOutputer(
       formatChangesSummary(changes, approved),
       Prompts.FETCH_UPDATE_WORKSPACE_SUCCESS,
-      Prompts.FETCH_UPDATE_WORKSPACE_FAIL
+      Prompts.FETCH_UPDATE_WORKSPACE_FAIL,
+      output
     )(progress))
-
-  const applyChangesToWorkspace = async (
-    allChanges: FetchChange[],
-    isIsolated: boolean
-  ): Promise<boolean> => {
-    // If the workspace starts empty there is no point in showing a huge amount of changes
-    const changesToApply = force || (await workspace.isEmpty())
-      ? allChanges
-      : await getApprovedChanges(allChanges, interactive)
-
-    cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
-    const updatingWsEmitter = new StepEmitter()
-    fetchProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, allChanges.length, changesToApply.length)
-    const success = await updateWorkspace(workspace, output, changesToApply, isIsolated)
-    if (success) {
-      updatingWsEmitter.emit('completed')
-      if (shouldCalcTotalSize) {
-        const totalSize = await workspace.getTotalSize()
-        log.debug(`Total size of the workspace is ${totalSize} bytes`)
-        cliTelemetry.workspaceSize(totalSize, workspaceTags)
-      }
-      return true
-    }
-    updatingWsEmitter.emit('failed')
-    return false
-  }
 
   const applyChangesToState = async (allChanges: readonly FetchChange[]): Promise<boolean> => {
     const updatingStateEmitter = new StepEmitter()
@@ -244,7 +209,7 @@ export const fetchCommand = async (
     inputIsolated,
     force,
     approveIsolatedMode,
-    outputLine
+    bindedOutputline
   )
 
   const fetchResult = await fetch(
@@ -299,9 +264,21 @@ export const fetchCommand = async (
 
   const updatingWsSucceeded = stateOnly
     ? await applyChangesToState(changes)
-    : await applyChangesToWorkspace(changes, isolated)
+    : await applyChangesToWorkspace({
+      workspace,
+      cliTelemetry,
+      workspaceTags,
+      interactive,
+      force,
+      shouldCalcTotalSize,
+      output,
+      changes,
+      isIsolated: isolated,
+      approveChangesCallback: getApprovedChanges,
+      applyProgress: fetchProgress,
+    })
   if (updatingWsSucceeded) {
-    outputLine(formatFetchFinish())
+    bindedOutputline(formatFetchFinish())
     cliTelemetry.success(workspaceTags)
     return CliExitCode.Success
   }

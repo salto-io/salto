@@ -15,6 +15,7 @@
 */
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { ElementsSource } from './elements_source'
+import { PathIndex } from './path_index'
 
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
@@ -22,4 +23,6 @@ export interface State extends ElementsSource {
   override(element: Element | Element[], services?: string[]): Promise<void>
   getServicesUpdateDates(): Promise<Record<string, Date>>
   existingServices(): Promise<string[]>
+  overridePathIndex(unmergedElements: Element[]): Promise<void>
+  getPathIndex(): Promise<PathIndex>
 }

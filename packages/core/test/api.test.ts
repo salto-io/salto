@@ -63,8 +63,11 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
   sandbox: false,
 })
 
-const mockWorkspace = (elements: Element[] = [], name?: string): workspace.Workspace => {
-  const state = mockState(SERVICES, elements)
+const mockWorkspace = (elements: Element[] = [],
+  name?: string,
+  index?: workspace.pathIndex.PathIndex,
+  stateElements? : Element[]): workspace.Workspace => {
+  const state = mockState(SERVICES, stateElements || elements, index)
   return {
     elements: () => Promise.resolve(elements),
     name,
@@ -85,6 +88,14 @@ const mockWorkspace = (elements: Element[] = [], name?: string): workspace.Works
 
 jest.mock('../src/core/fetch')
 jest.mock('../src/core/plan')
+jest.mock('../src/core/restore', () => ({
+  createRestoreChanges: jest.fn().mockResolvedValue([{
+    action: 'add',
+    data: { after: 'value' },
+    path: ['path'],
+  }]),
+}))
+
 jest.mock('@salto-io/workspace', () => ({
   ...jest.requireActual('@salto-io/workspace'),
   initWorkspace: jest.fn().mockImplementation(
@@ -382,6 +393,16 @@ describe('api.ts', () => {
       newConf.value.password = 'bla'
       await api.updateCredentials(ws, newConf)
       expect((ws.updateServiceConfig as jest.Mock).call).toHaveLength(1)
+    })
+  })
+
+  describe('restore', () => {
+    it('should return all changes as fetch changes', async () => {
+      const index = workspace.pathIndex.createPathIndex([])
+      const ws = mockWorkspace([], 'restore', index, [])
+      const changes = await api.restore(ws)
+      expect(changes).toHaveLength(1)
+      expect(_.keys(changes[0])).toEqual(['change', 'serviceChange'])
     })
   })
 })

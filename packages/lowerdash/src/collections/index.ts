@@ -17,10 +17,12 @@ import * as set from './set'
 import * as map from './map'
 import * as array from './array'
 import * as iterable from './iterable'
+import * as treeMap from './tree_map'
 
 export {
   set,
   map,
   array,
   iterable,
+  treeMap,
 }

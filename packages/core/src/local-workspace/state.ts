@@ -21,8 +21,9 @@ import { logger } from '@salto-io/logging'
 import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
 import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr } from '@salto-io/adapter-utils'
-import { State, serialization } from '@salto-io/workspace'
+import { State, serialization, pathIndex } from '@salto-io/workspace'
 
+const { createPathIndex } = pathIndex
 const { makeArray } = collections.array
 const { serialize, deserialize } = serialization
 
@@ -34,8 +35,15 @@ type StateData = {
   elements: ElementMap
   // The date of the last fetch
   servicesUpdateDate: Record<string, Date>
+  pathIndex: pathIndex.PathIndex
 }
 
+const deserializedPathIndex = (
+  data: string
+): pathIndex.PathIndex => new pathIndex.PathIndex(JSON.parse(data))
+const serializedPathIndex = (index: pathIndex.PathIndex): string => (
+  JSON.stringify(Array.from(index.entries()))
+)
 export const localState = (filePath: string): State => {
   let innerStateData: Promise<StateData>
   let dirty = false
@@ -44,16 +52,19 @@ export const localState = (filePath: string): State => {
   const loadFromFile = async (): Promise<StateData> => {
     const text = await exists(currentFilePath) ? await readTextFile(currentFilePath) : undefined
     if (text === undefined) {
-      return { elements: {}, servicesUpdateDate: {} }
+      return { elements: {}, servicesUpdateDate: {}, pathIndex: new pathIndex.PathIndex() }
     }
-    const [elementsData, updateDateData] = text.split(EOL)
+    const [elementsData, updateDateData, pathIndexData] = text.split(EOL)
     const deserializedElements = (await deserialize(elementsData)).map(flattenElementStr)
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
+    const index = pathIndexData
+      ? deserializedPathIndex(pathIndexData)
+      : new pathIndex.PathIndex()
     const servicesUpdateDate = updateDateData
       ? _.mapValues(JSON.parse(updateDateData), dateStr => new Date(dateStr))
       : {}
     log.debug(`loaded state [#elements=${_.size(elements)}]`)
-    return { elements, servicesUpdateDate }
+    return { elements, servicesUpdateDate, pathIndex: index }
   }
 
   const stateData = (): Promise<StateData> => {
@@ -103,11 +114,12 @@ export const localState = (filePath: string): State => {
       if (!dirty) {
         return
       }
-      const { elements: elementsMap, servicesUpdateDate } = (await stateData())
+      const { elements: elementsMap, servicesUpdateDate, pathIndex: index } = (await stateData())
       const elements = Object.values(elementsMap)
       const elementsString = serialize(Object.values(elements))
       const dateString = JSON.stringify(servicesUpdateDate)
-      const stateText = [elementsString, dateString].join(EOL)
+      const pathIndexString = serializedPathIndex(index)
+      const stateText = [elementsString, dateString, pathIndexString].join(EOL)
       await mkdirp(path.dirname(currentFilePath))
       await replaceContents(currentFilePath, stateText)
       log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
@@ -118,5 +130,10 @@ export const localState = (filePath: string): State => {
     getServicesUpdateDates: async (): Promise<Record<string, Date>> => (await stateData())
       .servicesUpdateDate,
     existingServices: async (): Promise<string[]> => _.keys((await stateData()).servicesUpdateDate),
+    overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
+      (await stateData()).pathIndex = createPathIndex(unmergedElements)
+      dirty = true
+    },
+    getPathIndex: async (): Promise<pathIndex.PathIndex> => (await stateData()).pathIndex,
   }
 }

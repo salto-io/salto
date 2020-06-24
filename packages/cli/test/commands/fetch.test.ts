@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { EventEmitter } from 'pietile-eventemitter'
-import { ElemID, ObjectType, Element, InstanceElement,
+import { Element, InstanceElement,
   DetailedChange } from '@salto-io/adapter-api'
 import { fetch, FetchChange, FetchProgressEvents, StepEmitter, FetchFunc } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
@@ -51,8 +51,14 @@ describe('fetch command', () => {
   const services = ['salesforce']
   let cliOutput: { stdout: mocks.MockWriteStream; stderr: mocks.MockWriteStream }
   const mockLoadWorkspace = mockCliWorkspace.loadWorkspace as jest.Mock
+  const mockApplyChangesToWorkspace = mockCliWorkspace.applyChangesToWorkspace as jest.Mock
   const mockUpdateWorkspace = mockCliWorkspace.updateWorkspace as jest.Mock
   const mockUpdateStateOnly = mockCliWorkspace.updateStateOnly as jest.Mock
+  mockApplyChangesToWorkspace.mockImplementation(
+    ({ workspace, output, changes, isIsolated }) => (
+      mockUpdateWorkspace(workspace, output, changes, isIsolated)
+    )
+  )
   mockUpdateWorkspace.mockImplementation(ws =>
     Promise.resolve(ws.name !== 'exist-on-error'))
   const findWsUpdateCalls = (name: string): unknown[][][] =>
@@ -124,12 +130,10 @@ describe('fetch command', () => {
       })
 
       it('should send telemetry events', () => {
-        expect(mockTelemetry.getEvents()).toHaveLength(5)
+        expect(mockTelemetry.getEvents()).toHaveLength(3)
         expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
         expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
         expect(mockTelemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
-        expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
-        expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toHaveLength(1)
       })
     })
 
@@ -236,7 +240,7 @@ describe('fetch command', () => {
         it('should not update workspace', () => {
           const calls = findWsUpdateCalls(workspaceName)
           expect(calls[0][2]).toHaveLength(0)
-          expect(mockTelemetry.getEvents()).toHaveLength(5)
+          expect(mockTelemetry.getEvents()).toHaveLength(3)
           expect(mockTelemetry.getEventsMap()[eventsNames.changes]).not.toBeUndefined()
           expect(mockTelemetry.getEventsMap()[eventsNames.changes]).toHaveLength(1)
           expect(mockTelemetry.getEventsMap()[eventsNames.changes][0].value).toEqual(0)
@@ -450,36 +454,6 @@ describe('fetch command', () => {
           })
         })
         describe('when initial workspace is not empty', () => {
-          describe('if no change is approved', () => {
-            let workspace: Workspace
-            const workspaceName = 'no-approve'
-            beforeEach(async () => {
-              mockTelemetry = mocks.getMockTelemetry()
-              workspace = mockWorkspace([new ObjectType({ elemID: new ElemID('adapter', 'type') })], workspaceName)
-              await fetchCommand({
-                workspace,
-                force: false,
-                interactive: false,
-                inputServices: services,
-                cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
-                output: cliOutput,
-                fetch: mockFetchWithChanges,
-                getApprovedChanges: mockEmptyApprove,
-                shouldUpdateConfig: mockUpdateConfig,
-                inputIsolated: false,
-                shouldCalcTotalSize: true,
-                approveIsolatedMode: mockApproveIsolatedModeTrue,
-                stateOnly: false,
-              })
-            })
-            it('should not update workspace', () => {
-              const calls = findWsUpdateCalls(workspaceName)
-              expect(calls[0][2]).toHaveLength(0)
-              expect(mockTelemetry.getEvents()).toHaveLength(5)
-              expect(mockTelemetry.getEventsMap()[eventsNames.changes]).not.toBeUndefined()
-              expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).not.toBeUndefined()
-            })
-          })
           describe('if some changes are approved', () => {
             const mockSingleChangeApprove = jest.fn().mockImplementation(cs =>
               Promise.resolve([cs[0]]))
@@ -506,10 +480,6 @@ describe('fetch command', () => {
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls).toHaveLength(1)
               expect(calls[0][2][0]).toEqual(changes[0])
-              expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).not.toBeUndefined()
-              expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
-              expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toHaveLength(1)
-              expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply][0].value).toEqual(1)
             })
 
             it('should exit if errors identified in workspace after update', async () => {

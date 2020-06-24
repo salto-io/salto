@@ -48,6 +48,7 @@ import {
   toChangesWithPath,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
+import { RestoreProgressEvents, createRestoreChanges } from './core/restore'
 
 const { addHiddenValuesAndHiddenTypes, removeHiddenValuesAndHiddenTypes } = hiddenValues
 
@@ -211,7 +212,7 @@ export const fetch: FetchFunc = async (
   }
   try {
     const {
-      changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage,
+      changes, elements, mergeErrors, configChanges, adapterNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       adapters,
       filterElementsByServices(await workspace.elements(), fetchServices),
@@ -220,7 +221,9 @@ export const fetch: FetchFunc = async (
       progressEmitter,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    await workspace.state().override(elements)
+    const state = await workspace.state()
+    state.override(elements)
+    state.overridePathIndex(unmergedElements)
     log.debug(`finish to override state with ${elements.length} elements`)
     return {
       changes,
@@ -239,6 +242,35 @@ export const fetch: FetchFunc = async (
     }
     throw error
   }
+}
+
+type RestoreChange = Omit<FetchChange, 'pendingChange'>
+
+export const restore = async (
+  workspace: Workspace,
+  servicesFilters?: string[],
+  idFilters: RegExp[] = [],
+  progressEmitter?: EventEmitter<RestoreProgressEvents>
+): Promise<RestoreChange[]> => {
+  log.debug('restore starting..')
+  const fetchServices = servicesFilters ?? workspace.services()
+  const stateElements = filterElementsByServices(
+    await workspace.state().getAll(),
+    fetchServices
+  )
+  const workspaceElements = filterElementsByServices(
+    await workspace.elements(),
+    fetchServices
+  )
+  const pathIndex = await workspace.state().getPathIndex()
+  const changes = await createRestoreChanges(
+    workspaceElements,
+    stateElements,
+    pathIndex,
+    idFilters,
+    progressEmitter
+  )
+  return changes.map(change => ({ change, serviceChange: change }))
 }
 
 export const addAdapter = async (

@@ -79,7 +79,8 @@ export const defaultApiName = (element: Element): string => {
 
 const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
-    return elem.value[INSTANCE_FULL_NAME_FIELD]
+    return isCustomObject(elem)
+      ? elem.value.Id : elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
 }
@@ -732,29 +733,40 @@ export class Types {
   }
 }
 
-export const instancesToUpdateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+const instancesToRecords = (
+  instances: InstanceElement[],
+  valuesFilterFunc: (v: Value, k: string, instance: InstanceElement) => boolean
+): salesforceRecord[] =>
   instances.map(instance =>
     Object.assign(
       _.pickBy(
         instance.value,
-        (_v, k) => instance.type.fields[k].annotations[FIELD_ANNOTATIONS.UPDATEABLE]
+        (v, k) => valuesFilterFunc(v, k, instance)
       ),
       {
         Id: instance.value.Id,
       }
     ))
 
+export const instancesToUpdateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+  instancesToRecords(
+    instances,
+    (_v: Value, k: string, instance: InstanceElement) =>
+      instance.type.fields[k]?.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
+  )
+
 export const instancesToCreateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
-  instances.map(instance =>
-    Object.assign(
-      _.pickBy(
-        instance.value,
-        (_v, k) => instance.type.fields[k].annotations[FIELD_ANNOTATIONS.CREATABLE]
-      ),
-      {
-        Id: instance.value.Id,
-      }
-    ))
+  instancesToRecords(
+    instances,
+    (_v: Value, k: string, instance: InstanceElement) =>
+      instance.type.fields[k]?.annotations[FIELD_ANNOTATIONS.CREATABLE]
+  )
+
+export const instancesToDeleteRecord = (instances: InstanceElement[]): salesforceRecord[] =>
+  instancesToRecords(
+    instances,
+    (_v: Value, _k: string, _instance: InstanceElement) => false
+  )
 
 export const toCustomField = (
   field: Field, fullname = false

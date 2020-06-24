@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import {
   MetadataInfo, SaveResult, DeployResult as JSForceDeployResult, DeployDetails,
-  BulkLoadOperation, BulkOptions, Record as SfRecord,
+  BulkLoadOperation, BulkOptions, Record as SfRecord, Batch,
 } from 'jsforce'
 import { EventEmitter } from 'events'
 import SalesforceAdapter from '../src/adapter'
@@ -65,6 +65,27 @@ describe('SalesforceAdapter CRUD', () => {
       success,
     })
 
+  const getBulkLoadMock = (success: boolean): jest.Mock<Batch> =>
+    (jest.fn().mockImplementation(
+      (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
+        const loadEmitter = new EventEmitter()
+        loadEmitter.on('newListener', (_event, _listener) => {
+          // This is a workaround to call emit('close')
+          // that is really called as a side effect to then() inside
+          // jsforce *after* our code does on.('close')
+          setTimeout(() => loadEmitter.emit('close'), 1000)
+        })
+        return {
+          then: () => (Promise.resolve(input?.map(i => ({
+            id: i.Id || 'newId',
+            success,
+            errors: success ? [] : ['Error message'],
+          })))),
+          job: loadEmitter,
+        }
+      }
+    ))
+
   const deployTypeNames = [
     'AssignmentRules',
     'UnsupportedType',
@@ -100,18 +121,7 @@ describe('SalesforceAdapter CRUD', () => {
       complete: () => Promise.resolve(getDeployResult(true)),
     }))
     connection.metadata.deploy = mockDeploy
-    mockBulkLoad = jest.fn().mockImplementation(
-      (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
-        const emitter = new EventEmitter()
-        emitter.emit('close')
-        return {
-          then: async () => Promise.resolve(
-            input?.map(i => ({ id: i.Id, success: true, errors: [] }))
-          ),
-          job: emitter,
-        }
-      }
-    )
+    mockBulkLoad = getBulkLoadMock(true)
     connection.bulk.load = mockBulkLoad
   })
 
@@ -205,17 +215,28 @@ describe('SalesforceAdapter CRUD', () => {
         new ObjectType({
           elemID: mockElemID,
           fields: {
-            Id: { type: BuiltinTypes.String },
-            Name: { type: BuiltinTypes.String },
+            Id: { type: BuiltinTypes.STRING },
+            Name: {
+              type: BuiltinTypes.STRING,
+              annotations: {
+                [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+              },
+            },
+            NotCreatable: {
+              type: BuiltinTypes.STRING,
+              annotations: {
+                [constants.FIELD_ANNOTATIONS.CREATABLE]: false,
+              },
+            },
           },
           annotationTypes: {},
           annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
         }),
         {
           Name: 'instanceName',
+          NotCreatable: 'DontSendMeOnCreate',
         }
       )
-
 
       describe('when request succeeds', () => {
         let result: InstanceElement
@@ -223,23 +244,45 @@ describe('SalesforceAdapter CRUD', () => {
           result = await createElement(adapter, instance)
         })
 
-        it('Should add new instance', async () => {
+        it('should call load operation with the right records', () => {
+          expect(mockBulkLoad.mock.calls.length).toBe(1)
+          expect(mockBulkLoad.mock.calls[0].length).toBe(4)
+          expect(mockBulkLoad.mock.calls[0][0]).toBe('CustomObject')
+          expect(mockBulkLoad.mock.calls[0][1]).toBe('insert')
+
+          // Record
+          expect(mockBulkLoad.mock.calls[0][3].length).toBe(1)
+          expect(mockBulkLoad.mock.calls[0][3][0].Name).toBeDefined()
+          expect(mockBulkLoad.mock.calls[0][3][0].Name).toEqual('instanceName')
+          expect(mockBulkLoad.mock.calls[0][3][0].NotCreatable).toBeUndefined()
+        })
+
+        it('Should add new instance with Id', async () => {
           expect(result).toBeInstanceOf(InstanceElement)
           expect(result.elemID).toEqual(instance.elemID)
-          expect(result.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual(mockInstanceName)
           expect(result.value.Name).toBeDefined()
           expect(result.value.Name).toBe('instanceName')
           // Should add result Id
           expect(result.value.Id).toBeDefined()
+          expect(result.value.Id).toEqual('newId')
+        })
+      })
 
-          expect(mockBulkLoad.mock.calls.length).toBe(1)
-          expect(mockUpsert.mock.calls[0].length).toBe(2)
-          expect(mockUpsert.mock.calls[0][0]).toBe('Flow')
-          expect(mockUpsert.mock.calls[0][1]).toHaveLength(1)
-          expect(mockUpsert.mock.calls[0][1][0]).toMatchObject({
-            fullName: mockInstanceName,
-            token: 'instanceTest',
+      describe('When load fails', () => {
+        let result: DeployResult
+
+        beforeEach(async () => {
+          connection.bulk.load = getBulkLoadMock(false)
+
+          result = await adapter.deploy({
+            groupID: instance.elemID.getFullName(),
+            changes: [{ action: 'add', data: { after: instance } }],
           })
+        })
+
+        it('should return an error', () => {
+          expect(result.errors).toHaveLength(1)
+          expect(result.errors[0]).toEqual(new Error('Error message'))
         })
       })
     })
@@ -696,6 +739,41 @@ describe('SalesforceAdapter CRUD', () => {
         })
       })
 
+      describe('for instances of custom objects', () => {
+        const instance = new InstanceElement(
+          mockInstanceName,
+          new ObjectType({
+            elemID: mockElemID,
+            fields: {
+              Id: { type: BuiltinTypes.STRING },
+              Name: { type: BuiltinTypes.STRING },
+            },
+            annotationTypes: {},
+            annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
+          }),
+          {
+            Id: 'DeleteId',
+            Name: 'instanceName',
+          }
+        )
+
+        beforeEach(async () => {
+          await removeElement(adapter, instance)
+        })
+
+        it('should call the connection methods correctly', async () => {
+          expect(mockBulkLoad.mock.calls.length).toBe(1)
+          expect(mockBulkLoad.mock.calls[0][0]).toBe('CustomObject')
+          expect(mockBulkLoad.mock.calls[0][1]).toBe('delete')
+
+          // Record
+          expect(mockBulkLoad.mock.calls[0][3].length).toBe(1)
+          expect(mockBulkLoad.mock.calls[0][3][0].Id).toBeDefined()
+          expect(mockBulkLoad.mock.calls[0][3][0].Id).toBe('DeleteId')
+          expect(mockBulkLoad.mock.calls[0][3][0].Name).toBeUndefined()
+        })
+      })
+
       describe('for a type element', () => {
         const element = new ObjectType({
           elemID: mockElemID,
@@ -928,6 +1006,115 @@ describe('SalesforceAdapter CRUD', () => {
             expect(mockDelete.mock.calls[0][1][0]).toEqual('Val2')
             expect(mockDelete.mock.calls[0][0]).toEqual('CustomLabel')
           })
+        })
+      })
+    })
+
+    describe('for instances of custom objects', () => {
+      const updateObjectType = new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          Id: { type: BuiltinTypes.STRING },
+          Name: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            },
+          },
+          NotUpdateable: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [constants.FIELD_ANNOTATIONS.UPDATEABLE]: false,
+            },
+          },
+        },
+        annotationTypes: {},
+        annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
+      })
+      const oldInstance = new InstanceElement(
+        mockInstanceName,
+        updateObjectType,
+        {
+          Id: 'InstanceId',
+          Name: 'instanceName',
+          NotUpdateable: 'DontSendMeOnUpdate',
+        }
+      )
+      const newInstance = new InstanceElement(
+        mockInstanceName,
+        updateObjectType,
+        {
+          Id: 'InstanceId',
+          Name: 'newInstanceName',
+          NotUpdateable: 'NewDontSendMeOnUpdate',
+        }
+      )
+
+      describe('when succeeds', () => {
+        let result: DeployResult
+        beforeEach(async () => {
+          result = await adapter.deploy({
+            groupID: oldInstance.elemID.getFullName(),
+            changes: [{
+              action: 'modify',
+              data: { before: oldInstance, after: newInstance },
+            }],
+          })
+        })
+
+        it('should call load operation with the right records', () => {
+          expect(mockBulkLoad.mock.calls.length).toBe(1)
+          expect(mockBulkLoad.mock.calls[0].length).toBe(4)
+          expect(mockBulkLoad.mock.calls[0][0]).toBe('CustomObject')
+          expect(mockBulkLoad.mock.calls[0][1]).toBe('update')
+
+          // Record
+          expect(mockBulkLoad.mock.calls[0][3].length).toBe(1)
+          expect(mockBulkLoad.mock.calls[0][3][0].Name).toBeDefined()
+          expect(mockBulkLoad.mock.calls[0][3][0].Name).toEqual(newInstance.value.Name)
+          expect(mockBulkLoad.mock.calls[0][3][0].Id).toBeDefined()
+          expect(mockBulkLoad.mock.calls[0][3][0].Id).toEqual(newInstance.value.Id)
+          expect(mockBulkLoad.mock.calls[0][3][0].NotUpdateable).toBeUndefined()
+        })
+
+        it('should return an InstanceElement', () => {
+          expect(result.appliedChanges).toHaveLength(1)
+          expect(getChangeElement(result.appliedChanges[0])).toBeInstanceOf(InstanceElement)
+        })
+
+        it('Should add new instance with Id', async () => {
+          const resultInstance = getChangeElement(result.appliedChanges[0]) as InstanceElement
+          expect(resultInstance.elemID).toEqual(oldInstance.elemID)
+          expect(resultInstance.value.Name).toBeDefined()
+          expect(resultInstance.value.Name).toBe(newInstance.value.Name)
+          expect(resultInstance.value.Id).toBeDefined()
+          expect(resultInstance.value.Id).toEqual(newInstance.value.Id)
+          expect(resultInstance.value.NotUpdateable).toEqual(newInstance.value.NotUpdateable)
+        })
+      })
+
+      describe('when the request fails because Ids are not the same', () => {
+        let result: DeployResult
+
+        beforeEach(async () => {
+          const newInstanceDiffId = newInstance.clone()
+          newInstanceDiffId.value.Id = 'wrong'
+          result = await adapter.deploy({
+            groupID: newInstanceDiffId.elemID.getFullName(),
+            changes: [{ action: 'modify', data: { before: oldInstance, after: newInstanceDiffId } }],
+          })
+        })
+
+        it('should return an error', () => {
+          expect(result.errors).toHaveLength(1)
+        })
+
+        it('should return empty applied changes', () => {
+          expect(result.appliedChanges).toHaveLength(0)
+        })
+
+        it('should not call the connection', () => {
+          expect(mockUpdate.mock.calls.length).toBe(0)
         })
       })
     })

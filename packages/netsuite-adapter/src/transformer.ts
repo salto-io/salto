@@ -70,7 +70,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
       }),
     }
     const desiredName = naclCase(transformedValues[serviceIdFieldName]
-      .slice(isCustomType(type) ? 0 : FILE_CABINET_PATH_SEPARATOR.length))
+      .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
     return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }
 

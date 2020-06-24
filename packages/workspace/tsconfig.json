@@ -17,5 +17,6 @@
         { "path": "../dag" },
         { "path": "../logging" },
         { "path": "../lowerdash" },
+        { "path": "../salesforce-adapter" },
     ]
 }

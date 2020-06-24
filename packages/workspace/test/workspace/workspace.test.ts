@@ -104,11 +104,17 @@ const createWorkspace = async (
         },
         default: {
           naclFiles: createMockNaclFileSource([]),
-          state: state || {} as unknown as State,
+          state: state
+            || {
+              getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
+            } as unknown as State,
         },
         sec: {
           naclFiles: createMockNaclFileSource([]),
-          state: state || {} as unknown as State,
+          state: state
+            || {
+              getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
+            } as unknown as State,
         },
       },
     })

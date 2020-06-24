@@ -39,12 +39,9 @@ import * as dump from '../../src/parser/dump'
 
 import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import {
-  WORKSPACE_CONFIG_NAME, workspaceConfigType, USER_CONFIG_NAME,
-  workspaceUserConfigType,
+  WORKSPACE_CONFIG_NAME, workspaceConfigType,
+  workspaceUserConfigType, USER_CONFIG_NAME,
 } from '../../src/workspace/config'
-import {
-  mockState,
-} from '../common/state'
 
 const changedNaclFile = {
   filename: 'file.nacl',
@@ -682,7 +679,7 @@ describe('workspace', () => {
       beforeAll(async () => {
         confSource = mockConfigSource()
         credSource = mockCredentialsSource()
-        state = mockState()
+        state = { clear: jest.fn() } as unknown as State
         naclFiles = createMockNaclFileSource([])
         workspace = await createWorkspace(undefined, undefined, confSource, credSource,
           undefined, { inactive: { naclFiles, state } })
@@ -734,7 +731,7 @@ describe('workspace', () => {
       beforeEach(async () => {
         confSource = mockConfigSource()
         credSource = mockCredentialsSource()
-        state = mockState()
+        state = { rename: jest.fn() } as unknown as State
         naclFiles = createMockNaclFileSource([])
       })
 

@@ -15,9 +15,8 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import wu from 'wu'
+import { pathIndex, State } from '@salto-io/workspace'
 import { mockFunction } from './helpers'
-import { State } from '../../src/workspace/state'
-import { pathIndex } from '../../index'
 
 
 export const mockState = (

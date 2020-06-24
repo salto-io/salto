@@ -31,7 +31,6 @@ import {
   DetailedChange,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
-import { mockState } from '@salto-io/workspace/dist/test/common/state'
 import * as api from '../src/api'
 
 import * as plan from '../src/core/plan'
@@ -41,6 +40,7 @@ import adapterCreators from '../src/core/adapters/creators'
 import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import { mockFunction } from './common/helpers'
+import { mockState } from './common/state'
 
 const mockService = 'salto'
 

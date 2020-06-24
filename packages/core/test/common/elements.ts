@@ -45,8 +45,13 @@ export const getAllElements = (): AllElementsTypes => {
       },
       rooms: { type: new ListType(BuiltinTypes.STRING) },
     },
-    // eslint-disable-next-line @typescript-eslint/camelcase,max-len
-    annotationTypes: { label: BuiltinTypes.STRING, old: BuiltinTypes.STRING, case_sensitive: BuiltinTypes.BOOLEAN },
+    annotationTypes: {
+      label: BuiltinTypes.STRING,
+      old: BuiltinTypes.STRING,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      case_sensitive: BuiltinTypes.BOOLEAN,
+      address: saltoAddr,
+    },
   })
 
   const employeeElemID = new ElemID('salto', 'employee')

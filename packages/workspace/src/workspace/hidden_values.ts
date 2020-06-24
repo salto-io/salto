@@ -13,16 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
   CORE_ANNOTATIONS, Element, InstanceElement,
-  isInstanceElement, isObjectType, isType, ObjectType, Values, isListType,
+  isInstanceElement, isType, Values, isListType, TypeElement,
 } from '@salto-io/adapter-api'
 import {
   transformElement, TransformFunc, transformValues,
 } from '@salto-io/adapter-utils'
+import _ from 'lodash'
+import {
+  updateMergedTypes,
+} from '../merger'
 
 const isHiddenType = (element: Element): boolean => isType(element)
   && (element.annotations[CORE_ANNOTATIONS.HIDDEN] === true)
@@ -33,16 +36,16 @@ export const addHiddenValuesAndHiddenTypes = (
 ): Element[] => {
   const stateElementsMap = _.keyBy(stateElements, e => e.elemID.getFullName())
 
-  const returnHiddenTypeForInstance = (instance: InstanceElement): ObjectType => {
-    const stateType = stateElementsMap[instance.type.elemID.getFullName()]
-    if (stateType !== undefined
-          && isHiddenType(stateType)
-              && isObjectType(stateType)) {
-      // return the appropriate (hidden) type
-      return stateType
-    }
-    return instance.type
-  }
+  // const returnHiddenTypeForInstance = (instance: InstanceElement): ObjectType => {
+  //   const stateType = stateElementsMap[instance.type.elemID.getFullName()]
+  //   if (stateType !== undefined
+  //         && isHiddenType(stateType)
+  //             && isObjectType(stateType)) {
+  //     // return the appropriate (hidden) type
+  //     return stateType
+  //   }
+  //   return instance.type
+  // }
 
   const generateValuesWithHiddenFields = (instance: InstanceElement): Values => {
     const stateElement = stateElementsMap[instance.elemID.getFullName()]
@@ -92,12 +95,11 @@ export const addHiddenValuesAndHiddenTypes = (
   const instancesWithHiddenValues = workspaceElements.map(elem => {
     if (isInstanceElement(elem)) {
       const valuesAfterHiddenAdded = generateValuesWithHiddenFields(elem)
-      const type = returnHiddenTypeForInstance(elem)
 
       // Return new instance after hidden values & types injection
       return new InstanceElement(
         elem.elemID.name,
-        type,
+        elem.type,
         valuesAfterHiddenAdded,
         elem.path,
         elem.annotations
@@ -106,7 +108,18 @@ export const addHiddenValuesAndHiddenTypes = (
     return elem
   })
 
-  return instancesWithHiddenValues.concat(hiddenTypes)
+  const StateHiddenTypesMap = _.keyBy(
+    stateElements.filter(isHiddenType) as TypeElement[],
+    o => o.elemID.getFullName()
+  )
+
+
+  const elementsWithUpdatedTypes = updateMergedTypes(
+    instancesWithHiddenValues,
+    StateHiddenTypesMap
+  )
+
+  return elementsWithUpdatedTypes.concat(hiddenTypes)
 }
 
 export const removeHiddenFieldsValues = (elem: Element):

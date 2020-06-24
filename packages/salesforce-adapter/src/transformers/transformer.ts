@@ -124,13 +124,13 @@ const addressElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.ADDRESS)
 const nameElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME)
 const geoLocationElemID = new ElemID(SALESFORCE, COMPOUND_FIELD_TYPE_NAMES.LOCATION)
 type RestrictedNumberName = 'TextLength' | 'TextAreaLength' | 'EncryptedTextLength'
-   | 'Precision' | 'Scale' | 'LocationScale' | 'LongTextAreaVisibleLines'
-   | 'MultiPicklistVisibleLines' | 'RichTextAreaVisibleLines' | 'RelationshipOrder'
+  | 'Precision' | 'Scale' | 'LocationScale' | 'LongTextAreaVisibleLines'
+  | 'MultiPicklistVisibleLines' | 'RichTextAreaVisibleLines' | 'RelationshipOrder'
 
 const restrictedNumber = (
   name: RestrictedNumberName, min: number, max: number, enforce_value = true,
 ):
- Record<string, PrimitiveType> => ({
+  Record<string, PrimitiveType> => ({
   [name]: new PrimitiveType({
     elemID: new ElemID(SALESFORCE, name),
     primitive: PrimitiveTypes.NUMBER,
@@ -565,7 +565,7 @@ export class Types {
   }
 
   private static getFormulaDataType = (baseTypeName: FIELD_TYPE_NAMES):
-  Record<string, PrimitiveType> => {
+    Record<string, PrimitiveType> => {
     const baseType = Types.primitiveDataTypes[baseTypeName]
     const typeName = formulaTypeName(baseTypeName)
     return { [typeName]: new PrimitiveType({
@@ -655,7 +655,7 @@ export class Types {
   }
 
   static get(name: string, customObject = true, isSettings = false, serviceIds?: ServiceIds):
-  TypeElement {
+    TypeElement {
     const type = Types.getKnownType(name, customObject)
     if (type === undefined) {
       return this.createObjectType(name, customObject, isSettings, serviceIds)
@@ -687,6 +687,7 @@ export class Types {
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
+      fieldType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
       return fieldType
     })
   }
@@ -701,6 +702,9 @@ export class Types {
         ...Object.entries(fieldTypes).map(([name, type]) => ({ [name]: { type } }))
       ),
       path: [SALESFORCE, TYPES_PATH, ...isSubType ? [SUBTYPES_PATH] : [], typeName],
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+      },
     }))
 
   static getAllMissingTypes(): TypeElement[] {
@@ -723,6 +727,7 @@ export class Types {
         fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
           ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
           : [SALESFORCE, TYPES_PATH, 'annotation_types']
+        fieldType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
         return fieldType
       })
   }
@@ -1144,7 +1149,11 @@ export const createMetadataTypeElements = async (
   const element = Types.get(objectName, false, isSettings) as ObjectType
   knownTypes.set(objectName, element)
   element.annotationTypes[METADATA_TYPE] = BuiltinTypes.SERVICE_ID
-  element.annotate({ [METADATA_TYPE]: objectName })
+  element.annotate({
+    [METADATA_TYPE]: objectName,
+    [CORE_ANNOTATIONS.HIDDEN]: true,
+  })
+
   element.path = [
     SALESFORCE,
     TYPES_PATH,
@@ -1162,7 +1171,7 @@ export const createMetadataTypeElements = async (
   const shouldEnrichFieldValue = (field: ValueTypeField): boolean => {
     const isKnownType = (): boolean =>
       knownTypes.has(field.soapType) || baseTypeNames.has(field.soapType)
-        || isPrimitiveType(Types.get(field.soapType, false))
+      || isPrimitiveType(Types.get(field.soapType, false))
 
     const startsWithUppercase = (): boolean =>
       // covers types like base64Binary, anyType etc.
@@ -1222,7 +1231,7 @@ const lookUpRelative = (field?: Field, path?: ElemID): boolean => {
     [[LAYOUT_TYPE_ID_METADATA_TYPE, LAYOUT_ITEM_METADATA_TYPE]]
   )
   return field !== undefined && path !== undefined
-  && lookUpRelativeTypes.get(path.typeName) === field.elemID.typeName
+    && lookUpRelativeTypes.get(path.typeName) === field.elemID.typeName
 }
 
 export const getLookUpName = (refValue: Value, field?: Field, path?: ElemID): Value => {

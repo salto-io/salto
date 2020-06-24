@@ -133,7 +133,7 @@ const dumpElementBlock = async (elem: Element, functions: Functions): Promise<Du
   if (isInstanceElement(elem)) {
     return {
       type: dumpElemID(elem.type),
-      labels: elem.elemID.isConfig() || elem.type.isSettings
+      labels: elem.elemID.isConfig() || elem.type.isSettings || elem.elemID.name === '_config'
         ? []
         : [elem.elemID.name],
       attrs: await dumpAttributes(

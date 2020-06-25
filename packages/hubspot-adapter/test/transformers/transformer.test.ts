@@ -15,6 +15,7 @@
 */
 import {
   InstanceElement, ElemID, Values, ObjectType, BuiltinTypes, CORE_ANNOTATIONS, ListType,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { RequestPromise } from 'requestretry'
 import HubspotClient from '../../src/client/client'
@@ -655,7 +656,8 @@ describe('Transformer', () => {
     } as HubspotMetadata
 
     it('should replace all spaces with underscore', async () => {
-      expect(getLookUpName(hubMetadataType)).toEqual(hubMetadataType)
+      expect(getLookUpName({ ref: new ReferenceExpression(new ElemID(''), hubMetadataType) }))
+        .toEqual(hubMetadataType)
     })
   })
 })

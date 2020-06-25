@@ -15,6 +15,8 @@
 */
 import _ from 'lodash'
 import { ElemID } from './element_id'
+// There is a real cycle here and alternatively values.ts should be defined in the same file
+// eslint-disable-next-line import/no-cycle
 import { Values, isEqualValues, Value } from './values'
 
 /**

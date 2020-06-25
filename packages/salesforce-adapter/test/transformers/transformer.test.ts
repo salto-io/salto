@@ -1050,9 +1050,9 @@ describe('transformer', () => {
     const instance = new InstanceElement('instance', element, {
       [INSTANCE_FULL_NAME_FIELD]: instanceFullName,
     })
-    const valueRef = new ReferenceExpression(instance.elemID.createNestedID('ref'), regValue)
-    const instanceRef = new ReferenceExpression(instance.elemID, instance)
-    const elementRef = new ReferenceExpression(element.elemID, element)
+    const valueRef = new ReferenceExpression(instance.elemID.createNestedID('ref'), regValue, instance)
+    const instanceRef = new ReferenceExpression(instance.elemID, instance, instance)
+    const elementRef = new ReferenceExpression(element.elemID, element, element)
     const elemID = new ElemID('salesforce', 'base')
     const orig = new ObjectType({
       elemID,
@@ -1161,13 +1161,14 @@ describe('transformer', () => {
       })
       const mockLayoutInstance = new InstanceElement('test', mockLayoutType, {})
       it('should resolve to relative api name', () => {
-        expect(getLookUpName(
-          refObject.fields.test,
-          mockLayoutItem.fields.field,
-          mockLayoutInstance.elemID.createNestedID(
+        const testField = refObject.fields.test
+        expect(getLookUpName({
+          ref: new ReferenceExpression(testField.elemID, testField, refObject),
+          field: mockLayoutItem.fields.field,
+          path: mockLayoutInstance.elemID.createNestedID(
             'layoutSections', '0', 'layoutColumns', '0', 'layoutItems', '0', 'field'
-          )
-        )).toEqual('Test__c')
+          ),
+        })).toEqual('Test__c')
       })
     })
     describe('with all other cases', () => {
@@ -1177,11 +1178,12 @@ describe('transformer', () => {
       })
       const srcInst = new InstanceElement('test', srcObject, {})
       it('should resolve to full api name', () => {
-        expect(getLookUpName(
-          refObject.fields.test,
-          srcObject.fields.test,
-          srcInst.elemID.createNestedID('test'),
-        )).toEqual('Lead.Test__c')
+        const testField = refObject.fields.test
+        expect(getLookUpName({
+          ref: new ReferenceExpression(testField.elemID, testField, refObject),
+          field: srcObject.fields.test,
+          path: srcInst.elemID.createNestedID('test'),
+        })).toEqual('Lead.Test__c')
       })
     })
   })

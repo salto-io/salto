@@ -13,12 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ServiceIds, StaticFile } from '@salto-io/adapter-api'
+import {
+  ElemID, InstanceElement, ReferenceExpression, ServiceIds, StaticFile,
+} from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
-import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
+import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
   ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID, TRANSACTION_FORM,
-  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH,
+  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH, WORKFLOW,
 } from '../src/constants'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import {
@@ -582,6 +584,94 @@ describe('Transformer', () => {
         expect(folderCustomizationInfo.values).toEqual({ description: 'folder description' })
         expect(folderCustomizationInfo.path)
           .toEqual(['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder'])
+      })
+    })
+  })
+
+  describe('getLookUpName', () => {
+    const description = 'description'
+    const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+      [PATH]: '/Templates/file.name',
+      [description]: 'some description',
+    })
+
+    const workflowInstance = new InstanceElement('instanceName', customTypes[WORKFLOW], {
+      [SCRIPT_ID]: 'top_level',
+      workflowstates: {
+        workflowstate: [
+          {
+            [SCRIPT_ID]: 'one_nesting',
+            workflowactions: [
+              {
+                setfieldvalueaction: [
+                  {
+                    [SCRIPT_ID]: 'two_nesting',
+                  },
+                  {
+                    [SCRIPT_ID]: 'two_nesting_with_inner_ref',
+                    field: '[scriptid=top_level.one_nesting.two_nesting]',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    })
+
+    it('should resolve to netsuite path reference representation', () => {
+      const ref = new ReferenceExpression(
+        fileInstance.elemID.createNestedID(PATH),
+        fileInstance.value[PATH],
+        fileInstance
+      )
+      expect(getLookUpName({ ref })).toEqual('[/Templates/file.name]')
+    })
+
+    it('should resolve to netsuite scriptid reference representation', () => {
+      const ref = new ReferenceExpression(
+        workflowInstance.elemID.createNestedID(SCRIPT_ID),
+        workflowInstance.value[PATH],
+        workflowInstance
+      )
+      expect(getLookUpName({ ref })).toEqual('[scriptid=top_level]')
+    })
+
+    it('should resolve to netsuite scriptid reference representation with nesting levels', () => {
+      const ref = new ReferenceExpression(
+        workflowInstance.elemID.createNestedID('workflowstates', 'workflowstate', '0', 'workflowactions', '0', 'setfieldvalueaction', '0', SCRIPT_ID),
+        'two_nesting',
+        workflowInstance
+      )
+      expect(getLookUpName({ ref })).toEqual('[scriptid=top_level.one_nesting.two_nesting]')
+    })
+
+    describe('when the resolved value should be returned', () => {
+      it('should return value when topLevelParent is not an instance', () => {
+        const ref = new ReferenceExpression(
+          new ElemID(''),
+          'resolved_value',
+          workflowInstance.type
+        )
+        expect(getLookUpName({ ref })).toEqual(ref.value)
+      })
+
+      it('should return value when reference is on FileCabinetType but not on PATH field', () => {
+        const ref = new ReferenceExpression(
+          fileInstance.elemID.createNestedID(description),
+          fileInstance.value[description],
+          fileInstance
+        )
+        expect(getLookUpName({ ref })).toEqual(ref.value)
+      })
+
+      it('should return value when reference is on CustomType but not on SCRIPT_ID field', () => {
+        const ref = new ReferenceExpression(
+          workflowInstance.elemID.createNestedID('workflowstates'),
+          workflowInstance.value.workflowstates,
+          workflowInstance
+        )
+        expect(getLookUpName({ ref })).toEqual(ref.value)
       })
     })
   })

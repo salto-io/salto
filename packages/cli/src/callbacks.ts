@@ -20,19 +20,18 @@ import {
   TypeElement, ObjectType, ElemID, InstanceElement,
   isPrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
-import { Plan, FetchChange, PlanItem } from '@salto-io/core'
-import { Workspace, StateRecency } from '@salto-io/workspace'
+import { FetchChange, PlanItem } from '@salto-io/core'
+import { StateRecency } from '@salto-io/workspace'
 import {
-  formatExecutionPlan, formatFetchChangeForApproval, deployPhaseHeader, cancelDeployOutput,
-  formatShouldContinueWithWarning, formatCancelCommand, formatCredentialsHeader,
-  formatConfigFieldInput, formatShouldAbortWithValidationError, formatConfigChangeNeeded,
-  formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, formatWordsSeries,
-  header, formatDetailedChanges,
+  formatFetchChangeForApproval, formatShouldContinueWithWarning, formatCancelCommand,
+  formatCredentialsHeader, formatConfigFieldInput, formatShouldAbortWithValidationError,
+  formatConfigChangeNeeded, formatShouldCancelWithOldState, formatWordsSeries,
+  formatShouldCancelWithNonexistentState, formatDetailedChanges,
 } from './formatter'
 import Prompts from './prompts'
 import { CliOutput, WriteStream } from './types'
 
-const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
+export const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   const question = {
     name: 'userInput',
     message: prompt,
@@ -41,25 +40,6 @@ const getUserBooleanInput = async (prompt: string): Promise<boolean> => {
   const answers = await inquirer.prompt(question)
   return answers.userInput
 }
-
-export const shouldDeploy = (stdout: WriteStream, workspace: Workspace) =>
-  async (actions: Plan): Promise<boolean> => {
-    const planWorkspaceErrors = await Promise.all(
-      actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
-    )
-    stdout.write(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
-    stdout.write(await formatExecutionPlan(actions, planWorkspaceErrors))
-    if (_.isEmpty(actions)) {
-      return false
-    }
-    const shouldExecute = await getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN)
-    if (shouldExecute) {
-      stdout.write(deployPhaseHeader)
-    } else {
-      stdout.write(cancelDeployOutput)
-    }
-    return shouldExecute
-  }
 
 export const shouldCancelInCaseOfNoRecentState = async (
   recencies: StateRecency[],
@@ -84,7 +64,7 @@ export const shouldContinueInCaseOfWarnings = async (numWarnings: number,
 }
 
 export const shouldAbortWorkspaceInCaseOfValidationError = async (numErrors: number):
-Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
+  Promise<boolean> => getUserBooleanInput(formatShouldAbortWithValidationError(numErrors))
 
 export const shouldUpdateConfig = async (
   { stdout }: CliOutput, introMessage: string, change: PlanItem
@@ -155,7 +135,7 @@ export const getFieldInputType = (fieldType: TypeElement, fieldName: string): st
 }
 
 export const getCredentialsFromUser = async (credentialsType: ObjectType):
-Promise<InstanceElement> => {
+  Promise<InstanceElement> => {
   const questions = Object.keys(credentialsType.fields).map(fieldName =>
     ({
       type: getFieldInputType(credentialsType.fields[fieldName].type, fieldName),

@@ -16,6 +16,9 @@
 import _ from 'lodash'
 import { hash as hashUtils, types } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
+// There is a real cycle here and alternatively elements.ts should be defined in the same file
+// eslint-disable-next-line import/no-cycle
+import { Element } from './elements'
 
 export type PrimitiveValue = string | boolean | number
 
@@ -65,7 +68,9 @@ export class StaticFile {
 
 export class ReferenceExpression {
   constructor(
-    public readonly elemId: ElemID, private resValue?: Value
+    public readonly elemId: ElemID,
+    private resValue?: Value,
+    public readonly topLevelParent?: Element
   ) {}
 
   /**
@@ -74,9 +79,9 @@ export class ReferenceExpression {
    * For example, if the instance is a VariableExpression,
    * create a VariableExpression, not a ReferenceExpression.
    */
-  public createWithValue(resValue: Value): ReferenceExpression {
+  public createWithValue(resValue: Value, resTopLevelParent?: Element): ReferenceExpression {
     const ExpressionCtor = this.constructor as typeof ReferenceExpression
-    return new ExpressionCtor(this.elemId, resValue)
+    return new ExpressionCtor(this.elemId, resValue, resTopLevelParent)
   }
 
   get traversalParts(): string[] {
@@ -92,9 +97,11 @@ export class ReferenceExpression {
 
 export class VariableExpression extends ReferenceExpression {
   constructor(
-    public readonly elemId: ElemID, resValue?: Value
+    public readonly elemId: ElemID,
+    resValue?: Value,
+    public readonly topLevelParent?: Element
   ) {
-    super(elemId, resValue)
+    super(elemId, resValue, topLevelParent)
     // This is to prevent programing errors since the parser will always create
     // VariableExpressions with idType === 'var'
     if (elemId.idType !== 'var') {

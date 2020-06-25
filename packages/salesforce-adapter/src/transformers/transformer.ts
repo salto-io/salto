@@ -19,7 +19,7 @@ import {
   ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField,
 } from 'jsforce'
 import {
-  TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, Value,
+  TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values,
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
@@ -27,7 +27,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
-  naclCase, TransformFunc,
+  naclCase, GetLookupNameFunc, TransformFunc,
 } from '@salto-io/adapter-utils'
 import { CustomObject, CustomField } from '../client/types'
 import {
@@ -1253,10 +1253,10 @@ const lookUpRelative = (field?: Field, path?: ElemID): boolean => {
     && lookUpRelativeTypes.get(path.typeName) === field.elemID.typeName
 }
 
-export const getLookUpName = (refValue: Value, field?: Field, path?: ElemID): Value => {
-  if (isElement(refValue)) {
+export const getLookUpName: GetLookupNameFunc = ({ ref, path, field }) => {
+  if (isElement(ref.value)) {
     const isRelative = lookUpRelative(field, path)
-    return apiName(refValue, isRelative)
+    return apiName(ref.value, isRelative)
   }
-  return refValue
+  return ref.value
 }

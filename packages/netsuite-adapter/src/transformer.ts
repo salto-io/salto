@@ -19,7 +19,13 @@ import {
   ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
 } from '@salto-io/adapter-api'
 import {
-  applyRecursive, MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
+  applyRecursive,
+  GetLookupNameFunc,
+  MapKeyFunc,
+  mapKeysRecursive,
+  naclCase,
+  TransformFunc,
+  transformValues,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
@@ -251,4 +257,4 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
 }
 
 // todo add support for references!
-export const getLookUpName = (refValue: Value): Value => refValue
+export const getLookUpName: GetLookupNameFunc = ({ ref }) => ref.value

@@ -26,7 +26,7 @@ import {
 
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues,
-  naclCase, findElement, findElements, findObjectType,
+  naclCase, findElement, findElements, findObjectType, GetLookupNameFunc,
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
 } from '../src/utils'
@@ -91,7 +91,7 @@ describe('Test utils.ts', () => {
   })
 
   const regValue = 'regValue'
-  const valueRef = new ReferenceExpression(mockElem, regValue)
+  const valueRef = new ReferenceExpression(mockElem, regValue, mockType)
   const fileContent = 'bb'
   const valueFile = new StaticFile({ filepath: 'aa', content: Buffer.from(fileContent) })
 
@@ -506,9 +506,6 @@ describe('Test utils.ts', () => {
       },
       annotations: {
         name: objectName,
-        typeRef: new ReferenceExpression(
-          elementID.createNestedID('annotation', 'name'), objectName
-        ),
       },
       fields: {
         refValue: { type: BuiltinTypes.STRING },
@@ -516,6 +513,9 @@ describe('Test utils.ts', () => {
         fileValue: { type: BuiltinTypes.STRING },
       },
     })
+    element.annotations.typeRef = new ReferenceExpression(
+      elementID.createNestedID('annotation', 'name'), objectName, element
+    )
 
     const refTo = ({ elemID }: { elemID: ElemID }, ...path: string[]): ReferenceExpression => (
       new ReferenceExpression(
@@ -556,7 +556,7 @@ describe('Test utils.ts', () => {
     {
       [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
     },)
-    const elementRef = new ReferenceExpression(element.elemID, element)
+    const elementRef = new ReferenceExpression(element.elemID, element, element)
 
     const sourceElement = new ObjectType({
       elemID,
@@ -582,8 +582,7 @@ describe('Test utils.ts', () => {
       },
     })
 
-    const getName = (refValue: Value): Value =>
-      refValue
+    const getName: GetLookupNameFunc = ({ ref }) => ref.value
 
     describe('resolveValues on objectType', () => {
       let sourceElementCopy: ObjectType

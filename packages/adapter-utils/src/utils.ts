@@ -243,13 +243,22 @@ export const transformElement = <T extends Element>(
   throw Error('received unsupported (subtype) Element')
 }
 
-export const resolveValues = <T extends Element>(
-  element: T,
-  getLookUpName: (v: Value, field?: Field, path?: ElemID) => Value
-): T => {
+export type GetLookupNameFuncArgs = {
+  ref: ReferenceExpression
+  field?: Field
+  path?: ElemID
+}
+export type GetLookupNameFunc = (args: GetLookupNameFuncArgs) => Value
+
+export const resolveValues = <T extends Element>(element: T, getLookUpName: GetLookupNameFunc):
+  T => {
   const valuesReplacer: TransformFunc = ({ value, field, path }) => {
     if (isReferenceExpression(value)) {
-      return getLookUpName(value.value, field, path)
+      return getLookUpName({
+        ref: value,
+        field,
+        path,
+      })
     }
     if (isStaticFile(value)) {
       return value.content?.toString()
@@ -267,7 +276,7 @@ export const resolveValues = <T extends Element>(
 export const restoreValues = <T extends Element>(
   source: T,
   targetElement: T,
-  getLookUpName: (v: Value, field?: Field, path?: ElemID) => Value
+  getLookUpName: GetLookupNameFunc
 ): T => {
   const allReferencesPaths = new Map<string, ReferenceExpression>()
   const allStaticFilesPaths = new Map<string, StaticFile>()
@@ -294,7 +303,7 @@ export const restoreValues = <T extends Element>(
 
     const ref = allReferencesPaths.get(path.getFullName())
     if (ref !== undefined
-      && _.isEqual(getLookUpName(ref.value, field, path), value)) {
+      && _.isEqual(getLookUpName({ ref, field, path }), value)) {
       return ref
     }
     const file = allStaticFilesPaths.get(path.getFullName())

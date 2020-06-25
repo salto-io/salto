@@ -66,6 +66,7 @@ export const g1PropInstance = new InstanceElement(
 
 const g1PropReference = new ReferenceExpression(
   g1PropInstance.elemID,
+  g1PropInstance,
   g1PropInstance
 )
 
@@ -195,6 +196,7 @@ export const datePropInstance = new InstanceElement(
 
 const datePropReference = new ReferenceExpression(
   datePropInstance.elemID,
+  datePropInstance,
   datePropInstance
 )
 
@@ -223,6 +225,7 @@ export const valuePropInstance = new InstanceElement(
 
 const valuePropReference = new ReferenceExpression(
   valuePropInstance.elemID,
+  valuePropInstance,
   valuePropInstance
 )
 

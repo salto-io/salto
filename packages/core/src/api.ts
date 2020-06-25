@@ -104,71 +104,66 @@ export interface DeployResult {
 
 export const deploy = async (
   workspace: Workspace,
-  shouldDeploy: (plan: Plan) => Promise<boolean>,
+  actionPlan: Plan,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   services = workspace.services(),
-  force = false
 ): Promise<DeployResult> => {
   const changedElements = new Map<string, Element>()
-  const actionPlan = await preview(workspace, services)
-  if (force || await shouldDeploy(actionPlan)) {
-    const adapters = await getAdapters(
-      services,
-      await workspace.servicesCredentials(services),
-      await workspace.servicesConfig(services),
-    )
+  const adapters = await getAdapters(
+    services,
+    await workspace.servicesCredentials(services),
+    await workspace.servicesConfig(services),
+  )
 
-    const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
-      const changeElem = getChangeElement(change)
-      if (!isField(changeElem)) {
-        return changeElem
-      }
-      const topLevelElem = await workspace.state().get(changeElem.parent.elemID) as ObjectType
-      return new ObjectType({
-        ...topLevelElem,
-        fields: change.action === 'remove'
-          ? _.omit(topLevelElem.fields, changeElem.name)
-          : _.merge({}, topLevelElem.fields, { [changeElem.name]: changeElem }),
-      })
+  const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
+    const changeElem = getChangeElement(change)
+    if (!isField(changeElem)) {
+      return changeElem
     }
-
-    const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
-      await promises.array.series(appliedChanges.map(change => async () => {
-        const updatedElement = await getUpdatedElement(change)
-        const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
-          ? workspace.state().remove(updatedElement.elemID)
-          : workspace.state().set(updatedElement)
-        await stateUpdate
-        changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
-      }))
-    }
-    const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
-
-    // Remove hidden Types and hidden values inside instances
-    const elementsAfterHiddenRemoval = removeHiddenValuesAndHiddenTypes(changedElements.values())
-      .map(e => e.clone())
-    const workspaceElements = await workspace.elements()
-    const relevantWorkspaceElements = workspaceElements
-      .filter(e => changedElements.has(e.elemID.getFullName()))
-
-    // Add workspace elements as an additional context for resolve so that we can resolve
-    // variable expressions. Adding only variables is not enough for the case of a variable
-    // with the value of a reference.
-    const changes = wu(await getDetailedChanges(
-      relevantWorkspaceElements,
-      elementsAfterHiddenRemoval,
-      workspaceElements
-    )).map(change => ({ change, serviceChange: change }))
-      .map(toChangesWithPath(name => collections.array.makeArray(changedElements.get(name))))
-      .flatten()
-    const errored = errors.length > 0
-    return {
-      success: !errored,
-      changes,
-      errors: errored ? errors : [],
-    }
+    const topLevelElem = await workspace.state().get(changeElem.parent.elemID) as ObjectType
+    return new ObjectType({
+      ...topLevelElem,
+      fields: change.action === 'remove'
+        ? _.omit(topLevelElem.fields, changeElem.name)
+        : _.merge({}, topLevelElem.fields, { [changeElem.name]: changeElem }),
+    })
   }
-  return { success: true, errors: [] }
+
+  const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
+    await promises.array.series(appliedChanges.map(change => async () => {
+      const updatedElement = await getUpdatedElement(change)
+      const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
+        ? workspace.state().remove(updatedElement.elemID)
+        : workspace.state().set(updatedElement)
+      await stateUpdate
+      changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
+    }))
+  }
+  const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
+
+  // Remove hidden Types and hidden values inside instances
+  const elementsAfterHiddenRemoval = removeHiddenValuesAndHiddenTypes(changedElements.values())
+    .map(e => e.clone())
+  const workspaceElements = await workspace.elements()
+  const relevantWorkspaceElements = workspaceElements
+    .filter(e => changedElements.has(e.elemID.getFullName()))
+
+  // Add workspace elements as an additional context for resolve so that we can resolve
+  // variable expressions. Adding only variables is not enough for the case of a variable
+  // with the value of a reference.
+  const changes = wu(await getDetailedChanges(
+    relevantWorkspaceElements,
+    elementsAfterHiddenRemoval,
+    workspaceElements
+  )).map(change => ({ change, serviceChange: change }))
+    .map(toChangesWithPath(name => collections.array.makeArray(changedElements.get(name))))
+    .flatten()
+  const errored = errors.length > 0
+  return {
+    success: !errored,
+    changes,
+    errors: errored ? errors : [],
+  }
 }
 
 export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>

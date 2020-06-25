@@ -32,7 +32,7 @@ import { YargsCommandBuilder } from '../src/command_builder'
 import { Spinner, SpinnerCreator, CliOutput } from '../src/types'
 
 export const mockFunction = <T extends (...args: never[]) => unknown>():
-jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
+  jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()
 
 export interface MockWriteStreamOpts { isTTY?: boolean; hasColors?: boolean }
 
@@ -70,7 +70,7 @@ export interface MockCliOutput {
 
 export type MockTelemetry = {
   getEvents(): TelemetryEvent[]
-  getEventsMap(): {[name: string]: TelemetryEvent[]}
+  getEventsMap(): { [name: string]: TelemetryEvent[] }
 } & Telemetry
 
 export const getMockTelemetry = (): MockTelemetry => {
@@ -95,7 +95,7 @@ export const getMockTelemetry = (): MockTelemetry => {
 
   return Object.assign(telemetry, {
     getEvents: (): TelemetryEvent[] => events,
-    getEventsMap: (): {[name: string]: TelemetryEvent[]} => (
+    getEventsMap: (): { [name: string]: TelemetryEvent[] } => (
       _(events).groupBy(e => e.name).value()
     ),
   })
@@ -347,7 +347,7 @@ const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): C
   }
 }
 
-export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement} => {
+export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement } => {
   const result = new GroupedNodeMap<Change>()
   const configElemID = new ElemID('salesforce')
   const configType = new ObjectType({
@@ -464,18 +464,14 @@ export const preview = (): Plan => {
 
 export const deploy = async (
   _workspace: Workspace,
-  shouldDeploy: (plan: Plan) => Promise<boolean>,
+  actionPlan: Plan,
   reportProgress: (action: PlanItem, step: string, details?: string) => void,
   _services: string[],
-  force = false
 ): Promise<DeployResult> => {
-  const changes = preview()
-  if (force || await shouldDeploy(changes)) {
-    wu(changes.itemsByEvalOrder()).forEach(change => {
-      reportProgress(change, 'started')
-      reportProgress(change, 'finished')
-    })
-  }
+  wu(actionPlan.itemsByEvalOrder()).forEach(change => {
+    reportProgress(change, 'started')
+    reportProgress(change, 'finished')
+  })
 
   return {
     success: true,

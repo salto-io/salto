@@ -17,6 +17,7 @@ import wu from 'wu'
 import { Plan, PlanItem } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
+import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace/workspace'
@@ -24,20 +25,26 @@ import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 
 const mockDeploy = mocks.deploy
+const mockPreview = mocks.preview
+jest.mock('../../src/callbacks')
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   deploy: jest.fn().mockImplementation((
     ws: Workspace,
-    shouldDeploy: (plan: Plan) => Promise<boolean>,
+    actionPlan: Plan,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
-    force = false,
+    services = new Array<string>(),
   ) =>
   // Deploy with Nacl files will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
   // Notice that Nacl files are ignored in mockDeploy.
 
-    mockDeploy(ws, shouldDeploy, reportProgress, [], force)),
+    mockDeploy(ws, actionPlan, reportProgress, services)),
+  preview: jest.fn().mockImplementation((
+    _workspace: Workspace,
+    _services: string[],
+  ) => mockPreview()),
 }))
 jest.mock('../../src/workspace/workspace')
 
@@ -120,6 +127,37 @@ describe('deploy command', () => {
       it('should use current env when env is not provided', () => {
         expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual('active')
       })
+    })
+  })
+
+  describe('should deploy user input', async () => {
+    let content: string
+    const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
+    beforeEach(async () => {
+      command = new DeployCommand(
+        '',
+        false,
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services,
+      )
+    })
+
+    it('should continue with deploy when user input it y', async () => {
+      mockGetUserBooleanInput.mockResolvedValueOnce(true)
+      await command.execute()
+      content = cliOutput.stdout.content
+      expect(content).toContain('Starting the deployment plan')
+      expect(content).toContain('Deployment succeeded')
+    })
+
+    it('should not deploy when user input is n', async () => {
+      mockGetUserBooleanInput.mockResolvedValueOnce(false)
+      await command.execute()
+      content = cliOutput.stdout.content
+      expect(content).toContain('Cancelling deploy')
+      expect(content).not.toContain('Deployment succeeded')
     })
   })
 

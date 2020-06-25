@@ -32,6 +32,7 @@ import {
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import * as formatterImpl from '../src/formatter'
 import * as callbacksImpl from '../src/callbacks'
+import * as DeployCommandImpl from '../src/commands/deploy'
 import {
   editNaclFile, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
   verifyObject, runEmptyPreview, runSalesforceLogin, runPreview,
@@ -55,11 +56,11 @@ describe('cli e2e', () => {
       lastPlan = p
       return 'plan'
     })
-    jest.spyOn(callbacksImpl, 'shouldDeploy').mockImplementation(
-      () => async (p: Plan): Promise<boolean> => {
+    jest.spyOn(DeployCommandImpl, 'shouldDeploy').mockImplementation(
+      (p: Plan): Promise<boolean> => {
         lastPlan = p
         const { length } = [...wu(p.itemsByEvalOrder())]
-        return length < 100 // Safety to avoid breaking the SF instance
+        return Promise.resolve(length < 100) // Safety to avoid breaking the SF instance
       }
     )
     jest.spyOn(callbacksImpl, 'getEnvName').mockImplementation(
@@ -207,8 +208,10 @@ describe('cli e2e', () => {
       const newObject = verifyObject(await workspace.elements(), SALESFORCE, newObjectElemName,
         { [API_NAME]: BuiltinTypes.SERVICE_ID, [METADATA_TYPE]: BuiltinTypes.SERVICE_ID },
         { [API_NAME]: newObjectApiName, [METADATA_TYPE]: CUSTOM_OBJECT },
-        { Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
-          Beta: apiNameAnno(newObjectApiName, 'Beta__c') })
+        {
+          Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
+          Beta: apiNameAnno(newObjectApiName, 'Beta__c'),
+        })
       await verifyTmpNaclFileObjectSourceMap(
         await workspace.getSourceMap(tmpNaclFileRelativePath), newObject, ['Alpha', 'Beta']
       )
@@ -259,13 +262,17 @@ describe('cli e2e', () => {
     })
     it('should fetch the new object standard fields and annotations to the correct files', async () => {
       const newObject = verifyObject(await workspace.elements(), SALESFORCE, newObjectElemName,
-        { [API_NAME]: BuiltinTypes.SERVICE_ID,
+        {
+          [API_NAME]: BuiltinTypes.SERVICE_ID,
           [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
-          enableFeeds: BuiltinTypes.BOOLEAN },
+          enableFeeds: BuiltinTypes.BOOLEAN,
+        },
         { [API_NAME]: newObjectApiName, [METADATA_TYPE]: CUSTOM_OBJECT },
-        { Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
+        {
+          Alpha: apiNameAnno(newObjectApiName, 'Alpha__c'),
           Modified: apiNameAnno(newObjectApiName, 'Modified__c'),
-          IsDeleted: apiNameAnno(newObjectApiName, 'IsDeleted') })
+          IsDeleted: apiNameAnno(newObjectApiName, 'IsDeleted'),
+        })
 
       await verifyTmpNaclFileObjectSourceMap(
         await workspace.getSourceMap(tmpNaclFileRelativePath), newObject, ['Alpha', 'Modified']

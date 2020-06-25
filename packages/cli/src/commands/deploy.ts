@@ -14,12 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
+import { deploy, preview, Plan, PlanItem, ItemStatus } from '@salto-io/core'
+import { Workspace } from '@salto-io/workspace'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
 import { environmentFilter } from '../filters/env'
 import { createCommandBuilder } from '../command_builder'
+import { getUserBooleanInput } from '../callbacks'
 import {
   CliCommand, CliOutput, ParsedCliInput, WriteStream,
   CliExitCode, SpinnerCreator, CliTelemetry,
@@ -28,8 +30,10 @@ import {
   formatActionStart, formatItemDone,
   formatCancelAction, formatActionInProgress,
   formatItemError, deployPhaseEpilogue,
+  header, formatExecutionPlan, deployPhaseHeader,
+  cancelDeployOutput,
 } from '../formatter'
-import { shouldDeploy } from '../callbacks'
+import Prompts from '../prompts'
 import { loadWorkspace, updateWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import { servicesFilter, ServicesArgs } from '../filters/services'
 import { getCliTelemetry } from '../telemetry'
@@ -42,6 +46,35 @@ type Action = {
   item: PlanItem
   startTime: Date
   intervalId: ReturnType<typeof setTimeout>
+}
+
+const printPlan = async (
+  actions: Plan,
+  stdout: WriteStream,
+  workspace: Workspace
+): Promise<void> => {
+  const planWorkspaceErrors = await Promise.all(
+    actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
+  )
+  stdout.write(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
+  stdout.write(formatExecutionPlan(actions, planWorkspaceErrors))
+}
+
+const printStartDeploy = async (stdout: WriteStream, executingDeploy: boolean): Promise<void> => {
+  if (executingDeploy) {
+    stdout.write(deployPhaseHeader)
+  } else {
+    stdout.write(cancelDeployOutput)
+  }
+}
+
+export const shouldDeploy = async (
+  actions: Plan,
+): Promise<boolean> => {
+  if (_.isEmpty(actions)) {
+    return false
+  }
+  return getUserBooleanInput(Prompts.SHOULD_EXECUTE_PLAN)
 }
 
 export class DeployCommand implements CliCommand {
@@ -126,11 +159,13 @@ export class DeployCommand implements CliCommand {
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout },
-      { force: this.force,
+      {
+        force: this.force,
         printStateRecency: true,
         recommendStateRecency: true,
         spinnerCreator: this.spinnerCreator,
-        sessionEnv: this.inputEnv })
+        sessionEnv: this.inputEnv,
+      })
     if (errored) {
       this.cliTelemetry.failure()
       return CliExitCode.AppError
@@ -139,14 +174,19 @@ export class DeployCommand implements CliCommand {
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
     this.cliTelemetry.start(workspaceTags)
-    const result = await deploy(
-      workspace,
-      shouldDeploy(this.stdout, workspace),
-      (item: PlanItem, step: ItemStatus, details?: string) =>
-        this.updateAction(item, step, details),
-      this.inputServices,
-      this.force
-    )
+    const actionPlan = await preview(workspace, this.inputServices)
+    await printPlan(actionPlan, this.stdout, workspace)
+    const executingDeploy = (this.force || await shouldDeploy(actionPlan))
+    await printStartDeploy(this.stdout, executingDeploy)
+    const result = executingDeploy
+      ? await deploy(
+        workspace,
+        actionPlan,
+        (item: PlanItem, step: ItemStatus, details?: string) =>
+          this.updateAction(item, step, details),
+        this.inputServices,
+      )
+      : { success: true, errors: [] }
 
     const nonErroredActions = [...this.actions.keys()]
       .filter(action => !result.errors.map(error => error.elementId).includes(action))

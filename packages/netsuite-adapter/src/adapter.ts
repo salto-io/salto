@@ -84,8 +84,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<FetchResult> {
-    const customTypesToFetch = _.pull(Object.keys(customTypes), ...this.typesToSkip)
-    const customObjects = this.client.listCustomObjects(customTypesToFetch).catch(e => {
+    const customObjects = this.client.listCustomObjects().catch(e => {
       log.error('failed to list custom objects. reason: %o', e)
       return [] as CustomizationInfo[]
     })

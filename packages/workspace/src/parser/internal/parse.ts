@@ -25,9 +25,8 @@ import { SourceMap } from '../source_map'
 import { Functions } from '../functions'
 import { TopLevelElementData, NearleyError } from './converter/types'
 import { startParse, setErrorRecoveryMode, replaceValuePromises } from './converter/context'
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const grammar = require('./hcl')
+// @ts-ignore
+import grammar from '../../generated/hcl'
 
 const log = logger(module)
 const SURROUNDING_LINE_CONTEXT = 2

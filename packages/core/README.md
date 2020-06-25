@@ -5,5 +5,5 @@ This project is the core Salto engine, responsible for parsing NaCl files, orche
 
 ```
 yarn
-yarn run build
+yarn build
 ```

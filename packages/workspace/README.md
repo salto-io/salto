@@ -5,5 +5,5 @@ This project is the Salto workspace, responsible for parsing NaCl files and mana
 
 ```
 yarn
-yarn run build
+yarn build
 ```

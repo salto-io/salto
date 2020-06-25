@@ -18,17 +18,16 @@
   "main": "dist/src",
   "types": "dist/src/index.d.ts",
   "scripts": {
-    "prepare": "yarn run build",
-    "prepublishOnly": "yarn test",
-    "build": "yarn run lint && tsc -b",
-    "test": "jest --verbose=false",
-    "clean": "rm -rf ./dist",
-    "clean-ts": "node ./node_modules/.bin/ts-cleaner -d dist -s . -v",
-    "clean-ts-test": "yarn run clean-ts && yarn run test",
-    "watch-test": "yarn run tsc-watch --onSuccess 'yarn run clean-ts-test'",
+    "clean-ts": "../../build_utils/clean-old-ts.sh",
+    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
+    "test": "jest",
+    "clean": "rm -rf ./dist .eslintcache",
+    "clean-ts-test": "yarn clean-ts && yarn test",
+    "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
+    "build-ts": "tsc -b && yarn clean-ts",
     "watch-ts": "tsc -b -w",
     "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
-    "lint-fix": "yarn run lint --fix"
+    "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
     "lodash": "^4.17.15",
@@ -52,7 +51,6 @@
     "jest": "^24.9.0",
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
-    "ts-cleaner": "^1.0.3",
     "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
   }

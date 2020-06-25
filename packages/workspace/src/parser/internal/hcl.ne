@@ -1,8 +1,8 @@
 @{%
-	const _  =  require('lodash')
-	const lexer = require('./lexer').default
-	const valueConverters = require('./converter/values')
-	const elementConverters = require('./converter/elements')
+	const _ =  require('lodash')
+	const lexer = require('../parser/internal/lexer').default
+	const valueConverters = require('../parser/internal/converter/values')
+	const elementConverters = require('../parser/internal/converter/elements')
 	// This file is auto-generated using nearly js (see build-parser in package.json)
 	// Do not attempt to modifiy this file, modify hcl.ne instead. (unless you are in hcl.ne)
 	// in that case - have a blast!

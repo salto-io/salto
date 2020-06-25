@@ -9,7 +9,7 @@ Contains all the utility functions & logic for Elements
 
 ```
 yarn
-yarn run build
+yarn build
 ```
 
 ### Usage instructions

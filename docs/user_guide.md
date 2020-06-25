@@ -292,6 +292,18 @@ Syncs this workspace's NaCl files with the services' current state
 * `--isolated, -t` : Restrict fetch from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
+* `--state-only, --st` : Fetch remote changes to the state file without mofifying the NaCL files. [boolean] [default: false]
+
+### **salto restore**
+
+Syncs this workspace with the current local state
+
+**Options:**
+* `--force, -f ` : Accept all incoming changes [boolean] [default: false]
+* `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
+* `--isolated, -t` : Restrict restore from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
+* `--services, -s` : Specific services to perform this action for (default=all) [array]
+* `--env, -e` : The name of the environment to use [string]
 
 ### **salto preview**
 
@@ -301,6 +313,7 @@ Shows Salto's execution plan next time deploy is run
 * `--force, -f` : Do not ask for approval if there are warnings in the workspace [boolean] [default: false]
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
+* `--detailed, -d` : Detailed preview that includes value changes [boolean] [default: false]
 
 ### **salto deploy**
 

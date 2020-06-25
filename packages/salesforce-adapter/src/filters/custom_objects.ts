@@ -256,7 +256,7 @@ const mergeCustomObjectWithInstance = (
   _(customObject.fields).forEach(field => {
     Object.assign(field.annotations, transformFieldAnnotations(
       fieldNameToFieldAnnotations[apiName(field, true)] || {},
-      apiName(instance)
+      instance.value[INSTANCE_FULL_NAME_FIELD]
     ))
     if (field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
       && field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]) {
@@ -280,8 +280,10 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         _(instances).keyBy(INSTANCE_FULL_NAME_FIELD).values().value()
       )
       return removeDuplicateInstances(nestedInstances).map(nestedInstance => {
-        const fullName = [apiName(instance), nestedInstance[INSTANCE_FULL_NAME_FIELD]]
-          .join(API_NAME_SEPERATOR)
+        const fullName = [
+          instance.value[INSTANCE_FULL_NAME_FIELD],
+          nestedInstance[INSTANCE_FULL_NAME_FIELD],
+        ].join(API_NAME_SEPERATOR)
         const elemIdName = naclCase(fullName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
         return new InstanceElement(elemIdName, type, nestedInstance,
@@ -478,7 +480,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const customObjectInstances = _(elements)
       .filter(isCustomObject)
       .filter(isInstanceElement)
-      .map(instance => [apiName(instance), instance])
+      .map(instance => [instance.value[INSTANCE_FULL_NAME_FIELD], instance])
       .fromPairs()
       .value()
 

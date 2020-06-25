@@ -132,7 +132,6 @@ describe('deploy command', () => {
 
   describe('should deploy user input', async () => {
     let content: string
-    // let mockGetUserBooleanInput: jest.Mock
     const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
     beforeEach(async () => {
       command = new DeployCommand(

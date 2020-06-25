@@ -24,20 +24,25 @@ import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 
 const mockDeploy = mocks.deploy
+const mockPreview = mocks.preview
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   deploy: jest.fn().mockImplementation((
     ws: Workspace,
-    shouldDeploy: (plan: Plan) => Promise<boolean>,
+    actionPlan: Plan,
     reportProgress: (action: PlanItem, step: string, details?: string) => void,
-    force = false,
+    services = new Array<string>(),
   ) =>
   // Deploy with Nacl files will fail, doing this trick as we cannot reference vars, we get error:
   // "The module factory of `jest.mock()` is not allowed to reference any
   // out-of-scope variables."
   // Notice that Nacl files are ignored in mockDeploy.
 
-    mockDeploy(ws, shouldDeploy, reportProgress, [], force)),
+    mockDeploy(ws, actionPlan, reportProgress, services)),
+  preview: jest.fn().mockImplementation((
+    _workspace: Workspace,
+    _services: string[],
+  ) => mockPreview()),
 }))
 jest.mock('../../src/workspace/workspace')
 

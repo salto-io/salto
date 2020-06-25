@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { deploy, PlanItem, ItemStatus } from '@salto-io/core'
+import { deploy, preview, PlanItem, ItemStatus } from '@salto-io/core'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
 import { EOL } from 'os'
@@ -126,11 +126,13 @@ export class DeployCommand implements CliCommand {
     log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout },
-      { force: this.force,
+      {
+        force: this.force,
         printStateRecency: true,
         recommendStateRecency: true,
         spinnerCreator: this.spinnerCreator,
-        sessionEnv: this.inputEnv })
+        sessionEnv: this.inputEnv,
+      })
     if (errored) {
       this.cliTelemetry.failure()
       return CliExitCode.AppError
@@ -139,14 +141,16 @@ export class DeployCommand implements CliCommand {
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
     this.cliTelemetry.start(workspaceTags)
-    const result = await deploy(
-      workspace,
-      shouldDeploy(this.stdout, workspace),
-      (item: PlanItem, step: ItemStatus, details?: string) =>
-        this.updateAction(item, step, details),
-      this.inputServices,
-      this.force
-    )
+    const actionPlan = await preview(workspace, this.inputServices)
+    const result = (this.force || await shouldDeploy(this.stdout, workspace)(actionPlan))
+      ? await deploy(
+        workspace,
+        actionPlan,
+        (item: PlanItem, step: ItemStatus, details?: string) =>
+          this.updateAction(item, step, details),
+        this.inputServices,
+      )
+      : { success: true, errors: [] }
 
     const nonErroredActions = [...this.actions.keys()]
       .filter(action => !result.errors.map(error => error.elementId).includes(action))

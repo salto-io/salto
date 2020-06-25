@@ -66,7 +66,7 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
 const mockWorkspace = (elements: Element[] = [],
   name?: string,
   index?: workspace.pathIndex.PathIndex,
-  stateElements? : Element[]): workspace.Workspace => {
+  stateElements?: Element[]): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
     elements: () => Promise.resolve(elements),
@@ -202,6 +202,7 @@ describe('api.ts', () => {
     ws.state = jest.fn().mockReturnValue(mockedState)
 
     beforeAll(async () => {
+      mockedGetPlan.mockClear()
       result = await api.preview(ws, SERVICES)
     })
     it('should call getPlan with the correct elements', async () => {
@@ -251,25 +252,26 @@ describe('api.ts', () => {
 
     describe('when approved', () => {
       beforeAll(async () => {
+        mockedGetPlan.mockClear()
         mockAdapterOps.deploy.mockClear()
         result = await api.deploy(
           ws,
-          mockShouldDeploy,
+          mockGetPlanResult,
           mockReportCurrentAction,
           SERVICES
         )
       })
 
-      it('should getPlan', async () => {
-        expect(mockedGetPlan).toHaveBeenCalledTimes(2)
+      it('should not getPlan on deploy', async () => {
+        expect(mockedGetPlan).not.toHaveBeenCalled()
       })
 
       it('should not call flush', async () => {
         expect(mockFlush).not.toHaveBeenCalled()
       })
 
-      it('should ask for approval', async () => {
-        expect(mockShouldDeploy).toHaveBeenCalledTimes(1)
+      it('should not ask for approval', async () => {
+        expect(mockShouldDeploy).not.toHaveBeenCalled()
       })
 
       it('should deploy changes', async () => {
@@ -287,11 +289,7 @@ describe('api.ts', () => {
     describe('when aborted', () => {
       beforeAll(async () => {
         mockAdapterOps.deploy.mockClear()
-        mockShouldDeploy.mockResolvedValueOnce(false)
-        result = await api.deploy(ws, mockShouldDeploy, mockReportCurrentAction)
-      })
-      it('should not deploy', () => {
-        expect(mockAdapterOps.deploy).not.toHaveBeenCalled()
+        result = await api.deploy(ws, mockGetPlanResult, mockReportCurrentAction)
       })
       it('should return success', () => {
         expect(result.success).toBeTruthy()
@@ -308,14 +306,14 @@ describe('api.ts', () => {
         })
         const changedField = changedElement.fields[origField.name]
         changedField.annotations.test = 1
-        mockedGetPlan.mockResolvedValueOnce(mockPlan.createPlan(
+        const actionPlan = mockPlan.createPlan(
           [[
             { action: 'remove', data: { before: removedField } },
             { action: 'modify', data: { before: origField, after: changedField } },
           ]]
-        ))
+        )
 
-        result = await api.deploy(ws, mockShouldDeploy, mockReportCurrentAction)
+        result = await api.deploy(ws, actionPlan, mockReportCurrentAction)
       })
       it('should set updated top level element to state', async () => {
         const stateElement = await ws.state().get(changedElement.elemID)

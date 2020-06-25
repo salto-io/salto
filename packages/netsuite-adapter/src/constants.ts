@@ -28,6 +28,7 @@ export const ENTRY_FORM = 'entryForm'
 export const TRANSACTION_FORM = 'transactionForm'
 export const EMAIL_TEMPLATE = 'emailtemplate'
 export const SAVED_SEARCH = 'savedsearch'
+export const WORKFLOW = 'workflow'
 export const FILE = 'file'
 export const FOLDER = 'folder'
 

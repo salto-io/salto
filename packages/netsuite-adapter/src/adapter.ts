@@ -25,12 +25,14 @@ import NetsuiteClient, {
   CustomizationInfo, isFileCustomizationInfo, isFolderCustomizationInfo,
 } from './client/client'
 import {
-  createInstanceElement, getLookUpName, toCustomizationInfo,
+  createInstanceElement, getLookUpName, serviceId, toCustomizationInfo,
 } from './transformer'
 import {
   customTypes, isCustomType, getAllTypes, fileCabinetTypes, isFileCabinetType,
 } from './types'
-import { SCRIPT_ID, SAVED_SEARCH, TYPES_TO_SKIP } from './constants'
+import { SAVED_SEARCH, TYPES_TO_SKIP } from './constants'
+import replaceInstanceReferencesFilter from './filters/instance_references'
+import { FilterCreator } from './filter'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -41,6 +43,8 @@ export type NetsuiteConfig = {
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
+  // Filters to support special cases upon fetch
+  filtersCreators?: FilterCreator[]
   // Types that we skip their deployment and fetch
   typesToSkip?: string[]
   // callback function to get an existing elemId or create a new one by the ServiceIds values
@@ -63,11 +67,15 @@ const validateServiceIds = (before: InstanceElement, after: InstanceElement): vo
 
 export default class NetsuiteAdapter implements AdapterOperations {
   private readonly client: NetsuiteClient
+  private filtersCreators: FilterCreator[]
   private readonly typesToSkip: string[]
   private getElemIdFunc?: ElemIdGetter
 
   public constructor({
     client,
+    filtersCreators = [
+      replaceInstanceReferencesFilter,
+    ],
     typesToSkip = [
       SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch
     ],
@@ -75,6 +83,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     config,
   }: NetsuiteAdapterParams) {
     this.client = client
+    this.filtersCreators = filtersCreators
     this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
     this.getElemIdFunc = getElemIdFunc
   }
@@ -99,7 +108,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return type && !this.shouldSkipType(type)
         ? createInstanceElement(customizationInfo, type, this.getElemIdFunc) : undefined
     }).filter(isInstanceElement)
-    return { elements: [...getAllTypes(), ...instances] }
+    const elements = [...getAllTypes(), ...instances]
+    this.runFiltersOnFetch(elements)
+    return { elements }
   }
 
   private shouldSkipType(type: ObjectType): boolean {
@@ -145,7 +156,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     if (isFolderCustomizationInfo(customizationInfo)) {
       return this.client.deployFolder(customizationInfo)
     }
-    return this.client.deployCustomObject(instance.value[SCRIPT_ID], customizationInfo)
+    return this.client.deployCustomObject(serviceId(instance), customizationInfo)
   }
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
@@ -155,5 +166,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
       update: this.update.bind(this),
     }
     return deployInstance(operations, changeGroup)
+  }
+
+  private async runFiltersOnFetch(elements: Element[]): Promise<void> {
+    // Fetch filters order is important so they should run one after the other
+    return this.filtersCreators.map(filterCreator => filterCreator()).reduce(
+      (prevRes, filter) => prevRes.then(() => filter.onFetch(elements)),
+      Promise.resolve(),
+    )
   }
 }

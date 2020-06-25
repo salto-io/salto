@@ -24,7 +24,7 @@ export default class Prompts {
   public static readonly FULL_DEPLOY_SUMMARY = (numChanges: number, numErrors: number): string => `Deployment partially succeeded with ${numChanges} applied change(s) and ${numErrors} error(s).`
   public static readonly CHANGES_DEPLOY_SUMMARY = (numChanges: number): string => `Deployment succeeded - ${numChanges} applied change(s).`
   public static readonly ERRORS_DEPLOY_SUMMARY = (numErrors: number): string => `Deployment failed with ${numErrors} error(s).`
-  public static readonly CANCEL_DEPLOY = 'Canceling deploy'
+  public static readonly CANCEL_DEPLOY = 'Cancelling deploy'
   public static readonly MODIFIERS = {
     modify: chalk.yellow('M'),
     add: chalk.green('+'),
@@ -79,7 +79,7 @@ Be sure to go over the preview output when invoking the deploy command.`
 
   public static initCompleted(name: string, baseDir: string): string {
     return `Initiated empty workspace ${name} at ${baseDir}
-    
+
 ${Prompts.SERVICE_ADD_HELP}
 `
   }

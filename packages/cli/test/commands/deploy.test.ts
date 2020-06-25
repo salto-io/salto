@@ -17,6 +17,7 @@ import wu from 'wu'
 import { Plan, PlanItem } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
+import * as callbacks from '../../src/callbacks'
 import * as mocks from '../mocks'
 import { DeployCommand } from '../../src/commands/deploy'
 import * as workspace from '../../src/workspace/workspace'
@@ -25,6 +26,7 @@ import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 const mockDeploy = mocks.deploy
 const mockPreview = mocks.preview
+jest.mock('../../src/callbacks')
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
   deploy: jest.fn().mockImplementation((
@@ -125,6 +127,38 @@ describe('deploy command', () => {
       it('should use current env when env is not provided', () => {
         expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual('active')
       })
+    })
+  })
+
+  describe('should deploy user input', async () => {
+    let content: string
+    // let mockGetUserBooleanInput: jest.Mock
+    const mockGetUserBooleanInput = callbacks.getUserBooleanInput as jest.Mock
+    beforeEach(async () => {
+      command = new DeployCommand(
+        '',
+        false,
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services,
+      )
+    })
+
+    it('should continue with deploy when user input it y', async () => {
+      mockGetUserBooleanInput.mockResolvedValueOnce(true)
+      await command.execute()
+      content = cliOutput.stdout.content
+      expect(content).toContain('Starting the deployment plan')
+      expect(content).toContain('Deployment succeeded')
+    })
+
+    it('should not deploy when user input is n', async () => {
+      mockGetUserBooleanInput.mockResolvedValueOnce(false)
+      await command.execute()
+      content = cliOutput.stdout.content
+      expect(content).toContain('Cancelling deploy')
+      expect(content).not.toContain('Deployment succeeded')
     })
   })
 

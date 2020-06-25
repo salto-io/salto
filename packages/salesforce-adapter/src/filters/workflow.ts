@@ -25,7 +25,7 @@ import {
 } from '../constants'
 import { FilterCreator } from '../filter'
 import {
-  apiName, metadataType, createInstanceElementFromValues,
+  apiName, metadataType, createInstanceElement,
 } from '../transformers/transformer'
 import { fullApiName } from './utils'
 
@@ -74,7 +74,7 @@ const filterCreator: FilterCreator = () => ({
           .map(innerValue => {
             innerValue[INSTANCE_FULL_NAME_FIELD] = fullApiName(apiName(workflowInstance),
               innerValue[INSTANCE_FULL_NAME_FIELD])
-            return createInstanceElementFromValues(innerValue, objType)
+            return createInstanceElement(innerValue, objType)
           })
         if (!_.isEmpty(innerInstances)) {
           workflowInstance.value[fieldName] = innerInstances

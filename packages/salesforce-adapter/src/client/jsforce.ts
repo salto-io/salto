@@ -15,7 +15,7 @@
 */
 import { Stream } from 'stream'
 import {
-  MetadataObject, ValueTypeField, MetadataInfo, SaveResult, UpsertResult,
+  MetadataObject, DescribeValueTypeResult, MetadataInfo, SaveResult, UpsertResult,
   ListMetadataQuery, FileProperties, DescribeSObjectResult,
   DescribeGlobalSObjectResult, DeployOptions, DeployResultLocator, DeployResult,
   RetrieveRequest, RetrieveResult, Callback, RetrieveResultLocator, UserInfo, QueryResult,
@@ -27,7 +27,7 @@ import { Value } from '@salto-io/adapter-api'
 
 export interface Metadata {
   describe(): Promise<{ metadataObjects: MetadataObject[] }>
-  describeValueType(type: string): Promise<{ valueTypeFields: ValueTypeField[] }>
+  describeValueType(type: string): Promise<DescribeValueTypeResult>
   read(type: string, fullNames: string | string[]): Promise<MetadataInfo | MetadataInfo[]>
   list(queries: ListMetadataQuery | ListMetadataQuery[]): Promise<FileProperties[]>
   upsert(

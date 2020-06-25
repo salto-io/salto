@@ -45,7 +45,7 @@ import realAdapter from './adapter'
 import { findElements, findStandardFieldsObject, findAnnotationsObject, findCustomFieldsObject } from '../test/utils'
 import SalesforceClient, { API_VERSION, Credentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
-import { fromRetrieveResult, toMetadataPackageZip } from '../src/transformers/xml_transformer'
+import { toMetadataPackageZip, fromRetrieveResult } from '../src/transformers/xml_transformer'
 import { objectExists, getMetadata, getMetadataFromElement, createInstance, removeElementAndVerify, removeElementIfAlreadyExists, createElementAndVerify, createElement, removeElement } from './utils'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 
@@ -3398,11 +3398,12 @@ describe('Salesforce adapter E2E with real account', () => {
 
     describe('deploy retrieve manipulations', () => {
       describe('types that support only retrieve & deploy', () => {
-        const retrieve = async (type: string): Promise<RetrieveResult> => {
+        const packageName = 'unpackaged'
+        const retrieve = async (type: string, member: string): Promise<RetrieveResult> => {
           const retrieveRequest = {
             apiVersion: API_VERSION,
             singlePackage: false,
-            unpackaged: [{ types: { name: type, members: '*' } }],
+            [packageName]: [{ types: { name: type, members: member } }],
           }
           return client.retrieve(retrieveRequest)
         }
@@ -3410,9 +3411,23 @@ describe('Salesforce adapter E2E with real account', () => {
         const findInstance = async (instance: InstanceElement):
           Promise<MetadataInfo | undefined> => {
           const type = metadataType(instance)
-          const retrieveResult = await retrieve(type)
-          const instanceInfos = (await fromRetrieveResult(retrieveResult, [type]))[type]
-          return instanceInfos.find(info => info.fullName === apiName(instance))
+          const retrieveResult = await retrieve(type, apiName(instance))
+          // In the real code we pass in the fileProps from the request because there is an issue
+          // where sometimes fileProps from the response have an empty fullName
+          // this means that here we need to remove the package name from the file path to simulate
+          // how we would have gotten the file props from listMetadataObjects
+          const fileProps = makeArray(retrieveResult.fileProperties)
+            .map(props => ({ ...props, fileName: props.fileName.slice(packageName.length + 1) }))
+          const instances = await fromRetrieveResult(
+            retrieveResult,
+            fileProps,
+            new Set(instance.type.annotations[constants.HAS_META_FILE] ? [type] : []),
+            new Set(constants.METADATA_CONTENT_FIELD in instance.value ? [type] : []),
+          )
+          return instances
+            .filter(({ file }) => file.fullName === apiName(instance))
+            .map(({ values }) => values)
+            .pop()
         }
 
         const removeIfAlreadyExists = async (instance: InstanceElement): Promise<void> => {
@@ -3457,16 +3472,19 @@ describe('Salesforce adapter E2E with real account', () => {
           expect(instanceInfo).toBeUndefined()
         }
 
-        const createInstanceElement = (fullName: string, typeName: string, content: string | Value):
+        const createInstanceElement = (
+          fullName: string, typeName: string, content: string | Value, typeAnnotations: Values = {},
+        ):
           InstanceElement => {
           const objectType = new ObjectType({
-            elemID: new ElemID(constants.SALESFORCE, _.snakeCase(typeName)),
+            elemID: new ElemID(constants.SALESFORCE, typeName),
             annotations: {
               [constants.METADATA_TYPE]: typeName,
+              ...typeAnnotations,
             },
           })
           return new InstanceElement(
-            _.snakeCase(fullName),
+            fullName,
             objectType,
             {
               [constants.INSTANCE_FULL_NAME_FIELD]: fullName,
@@ -3481,7 +3499,8 @@ describe('Salesforce adapter E2E with real account', () => {
             new StaticFile({
               filepath: 'ApexClass.cls',
               content: Buffer.from('public class MyApexClass {\n    public void printLog() {\n        System.debug(\'Created\');\n    }\n}'),
-            }))
+            }),
+            { [constants.HAS_META_FILE]: true })
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexClassInstance)
@@ -3511,7 +3530,8 @@ describe('Salesforce adapter E2E with real account', () => {
             new StaticFile({
               filepath: 'MyApexTrigger.trigger',
               content: Buffer.from('trigger MyApexTrigger on Account (before insert) {\n    System.debug(\'Created\');\n}'),
-            }))
+            }),
+            { [constants.HAS_META_FILE]: true })
 
           beforeAll(async () => {
             await removeIfAlreadyExists(apexTriggerInstance)
@@ -3541,7 +3561,8 @@ describe('Salesforce adapter E2E with real account', () => {
             new StaticFile({
               filepath: 'ApexPage.page',
               content: Buffer.from('<apex:page>Created by e2e test!</apex:page>'),
-            }))
+            }),
+            { [constants.HAS_META_FILE]: true })
           apexPageInstance.value.label = 'MyApexPage'
 
           beforeAll(async () => {
@@ -3572,7 +3593,8 @@ describe('Salesforce adapter E2E with real account', () => {
             new StaticFile({
               filepath: 'MyApexComponent.component',
               content: Buffer.from('<apex:component >Created by e2e test!</apex:component>'),
-            }))
+            }),
+            { [constants.HAS_META_FILE]: true })
           apexComponentInstance.value.label = 'MyApexComponent'
 
           beforeAll(async () => {

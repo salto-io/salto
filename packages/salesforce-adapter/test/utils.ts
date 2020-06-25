@@ -105,3 +105,16 @@ export const toChangeGroup = (...params: ChangeParams[]): ChangeGroup => {
     changes,
   }
 }
+
+export type MockFunction<T extends (...args: never[]) => unknown> =
+  jest.Mock<ReturnType<T>, Parameters<T>>
+
+export type MockInterface<T extends {}> = {
+  [k in keyof T]: T[k] extends (...args: never[]) => unknown
+    ? MockFunction<T[k]>
+    : MockInterface<T[k]>
+}
+
+export const mockFunction = <T extends (...args: never[]) => unknown>(): MockFunction<T> => (
+  jest.fn()
+)

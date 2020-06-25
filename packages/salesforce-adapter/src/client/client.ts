@@ -19,8 +19,8 @@ import requestretry, { RequestRetryOptions, RetryStrategies } from 'requestretry
 import { collections, decorators } from '@salto-io/lowerdash'
 import {
   Connection as RealConnection, MetadataObject, DescribeGlobalSObjectResult, FileProperties,
-  MetadataInfo, SaveResult, ValueTypeField, DescribeSObjectResult, DeployResult,
-  RetrieveRequest, RetrieveResult, ListMetadataQuery, UpsertResult, QueryResult,
+  MetadataInfo, SaveResult, DescribeSObjectResult, DeployResult, RetrieveRequest, RetrieveResult,
+  ListMetadataQuery, UpsertResult, QueryResult, DescribeValueTypeResult,
 } from 'jsforce'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -309,10 +309,10 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
-  public async describeMetadataType(type: string): Promise<ValueTypeField[]> {
+  public async describeMetadataType(type: string): Promise<DescribeValueTypeResult> {
     const fullName = `{${METADATA_NAMESPACE}}${type}`
     const describeResult = await this.conn.metadata.describeValueType(fullName)
-    return flatValues(describeResult.valueTypeFields)
+    return flatValues(describeResult)
   }
 
   @SalesforceClient.logDecorator

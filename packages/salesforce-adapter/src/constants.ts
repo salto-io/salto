@@ -18,6 +18,7 @@ export const SALESFORCE = 'salesforce'
 export const CUSTOM_FIELD = 'CustomField'
 export const CUSTOM_OBJECT = 'CustomObject'
 export const INSTANCE_FULL_NAME_FIELD = 'fullName'
+export const METADATA_CONTENT_FIELD = 'content'
 export const FORMULA_TYPE_NAME = 'Formula'
 export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 export const ADMIN_PROFILE = 'Admin'
@@ -109,6 +110,9 @@ export enum ANNOTATION_TYPE_NAMES {
 export const API_NAME = 'apiName'
 export const METADATA_TYPE = 'metadataType'
 export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topicsForObjects'
+export const HAS_META_FILE = 'hasMetaFile'
+export const FOLDER_TYPE = 'folderType'
+export const IS_FOLDER = 'isFolder'
 
 // Salesforce annotations
 export const LABEL = 'label'

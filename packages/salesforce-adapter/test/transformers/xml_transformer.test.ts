@@ -18,14 +18,15 @@ import {
   BuiltinTypes, ElemID, InstanceElement, ObjectType, ListType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { MetadataInfo, RetrieveResult } from 'jsforce'
-import { fromRetrieveResult, toMetadataPackageZip } from '../../src/transformers/xml_transformer'
+import { RetrieveResult, FileProperties } from 'jsforce'
+import { fromRetrieveResult, toMetadataPackageZip, MetadataValues } from '../../src/transformers/xml_transformer'
 import {
   INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE, ASSIGNMENT_RULES_METADATA_TYPE,
 } from '../../src/constants'
 import { apiName, metadataType } from '../../src/transformers/transformer'
 import { API_VERSION } from '../../src/client/client'
 import { createEncodedZipContent } from '../utils'
+import { mockFileProperties } from '../connection'
 
 
 describe('XML Transformer', () => {
@@ -310,43 +311,54 @@ describe('XML Transformer', () => {
   })
 
   describe('fromRetrieveResult', () => {
+    const toResultProperties = (requestProperties: FileProperties[]): FileProperties[] => (
+      requestProperties.map(props => ({
+        ...props,
+        fileName: `unpackaged/${props.fileName}`,
+      }))
+    )
     describe('apex class', () => {
       let retrieveResult: RetrieveResult
+      let fileProperties: FileProperties[]
       beforeAll(async () => {
+        fileProperties = [mockFileProperties({
+          fileName: 'classes/MyApexClass.cls',
+          fullName: 'MyApexClass',
+          type: 'ApexClass',
+        })]
         retrieveResult = {
-          fileProperties:
-            [{
-              createdById: '0054J000002KGspQAG',
-              createdByName: 'createdBy',
-              createdDate: '2019-12-01T14:31:36.000Z',
-              fileName: 'classes/MyApexClass.cls',
-              fullName: 'MyApexClass',
-              id: '01p4J00000JcCoFQAV',
-              lastModifiedById: '0054J000002KGspQAG',
-              lastModifiedByName: 'modifiedBy',
-              lastModifiedDate: '2019-12-01T14:31:36.000Z',
-              manageableState: 'unmanaged',
-              type: 'ApexClass',
-            }],
+          fileProperties: toResultProperties(fileProperties),
           id: '09S4J000001dSRcUAM',
           messages: [],
-          zipFile: await createEncodedZipContent([{ path: 'unpackaged/classes/MyApexClass.cls-meta.xml',
-            content: '<?xml version="1.0" encoding="UTF-8"?>\n'
-              + '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">\n'
-              + '    <apiVersion>47.0</apiVersion>\n'
-              + '    <status>Active</status>\n'
-              + '</ApexClass>\n' }, { path: 'unpackaged/classes/MyApexClass.cls',
-            content: 'public class MyApexClass {\n'
-              + '    public void printLog() {\n'
-              + '        System.debug(\'Created\');\n'
-              + '    }\n'
-              + '}' }]),
+          zipFile: await createEncodedZipContent([
+            {
+              path: 'unpackaged/classes/MyApexClass.cls-meta.xml',
+              content: '<?xml version="1.0" encoding="UTF-8"?>\n'
+                + '<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+                + '    <apiVersion>47.0</apiVersion>\n'
+                + '    <status>Active</status>\n'
+                + '</ApexClass>\n',
+            },
+            {
+              path: 'unpackaged/classes/MyApexClass.cls',
+              content: 'public class MyApexClass {\n'
+                + '    public void printLog() {\n'
+                + '        System.debug(\'Created\');\n'
+                + '    }\n'
+                + '}',
+            },
+          ]),
         }
       })
 
       it('should transform zip to MetadataInfo', async () => {
-        const typeNameToInstanceInfos = await fromRetrieveResult(retrieveResult, ['ApexClass'])
-        const [metadataInfo] = typeNameToInstanceInfos.ApexClass
+        const values = await fromRetrieveResult(
+          retrieveResult, fileProperties, new Set(['ApexClass']), new Set(['ApexClass']),
+        )
+        expect(values).toHaveLength(1)
+        const [apex] = values
+        expect(apex.file).toEqual(fileProperties[0])
+        const metadataInfo = apex.values
         expect(metadataInfo.fullName).toEqual('MyApexClass')
         expect(_.get(metadataInfo, 'apiVersion')).toEqual(47)
         expect(_.get(metadataInfo, 'status')).toEqual('Active')
@@ -357,22 +369,15 @@ describe('XML Transformer', () => {
 
     describe('apex class with hidden content', () => {
       let retrieveResult: RetrieveResult
+      let fileProperties: FileProperties[]
       beforeAll(async () => {
+        fileProperties = [mockFileProperties({
+          fileName: 'classes/MyApexClass.cls',
+          fullName: 'MyApexClass',
+          type: 'ApexClass',
+        })]
         retrieveResult = {
-          fileProperties:
-            [{
-              createdById: '0054J000002KGspQAG',
-              createdByName: 'createdBy',
-              createdDate: '2019-12-01T14:31:36.000Z',
-              fileName: 'classes/MyApexClass.cls',
-              fullName: 'MyApexClass',
-              id: '01p4J00000JcCoFQAV',
-              lastModifiedById: '0054J000002KGspQAG',
-              lastModifiedByName: 'modifiedBy',
-              lastModifiedDate: '2019-12-01T14:31:36.000Z',
-              manageableState: 'unmanaged',
-              type: 'ApexClass',
-            }],
+          fileProperties: toResultProperties(fileProperties),
           id: '09S4J000001dSRcUAM',
           messages: [],
           zipFile: await createEncodedZipContent([{ path: 'unpackaged/classes/MyApexClass.cls-meta.xml',
@@ -386,8 +391,13 @@ describe('XML Transformer', () => {
       })
 
       it('should transform zip to MetadataInfo', async () => {
-        const typeNameToInstanceInfos = await fromRetrieveResult(retrieveResult, ['ApexClass'])
-        const [metadataInfo] = typeNameToInstanceInfos.ApexClass
+        const values = await fromRetrieveResult(
+          retrieveResult, fileProperties, new Set(['ApexClass']), new Set(['ApexClass']),
+        )
+        expect(values).toHaveLength(1)
+        const [apex] = values
+        expect(apex.file).toEqual(fileProperties[0])
+        const metadataInfo = apex.values
         expect(metadataInfo.fullName).toEqual('MyApexClass')
         expect(_.get(metadataInfo, 'apiVersion')).toEqual(47)
         expect(_.get(metadataInfo, 'status')).toEqual('Active')
@@ -397,51 +407,26 @@ describe('XML Transformer', () => {
     })
 
     describe('email template & folder', () => {
-      let retrieveResult: RetrieveResult
-      let typeNameToInstanceInfos: Record<string, MetadataInfo[]>
+      let emailTemplate: MetadataValues | undefined
+      let emailFolder: MetadataValues | undefined
       beforeAll(async () => {
-        retrieveResult = {
-          fileProperties: [
-            {
-              createdById: '0054J000002KGG5QAO',
-              createdByName: 'Omri Litvak',
-              createdDate: '2019-12-29T11:53:53.000Z',
-              fileName: 'unpackaged/email/MyFolder/MyEmailTemplate.email',
-              fullName: 'MyFolder/MyEmailTemplate',
-              id: '00X4J000001BNHGUA4',
-              lastModifiedById: '0054J000002KGG5QAO',
-              lastModifiedByName: 'Omri Litvak',
-              lastModifiedDate: '2019-12-29T11:53:53.000Z',
-              manageableState: 'unmanaged',
-              type: 'EmailTemplate',
-            },
-            {
-              createdById: '0054J000002KGG5QAO',
-              createdByName: 'Omri Litvak',
-              createdDate: '2019-12-23T09:26:25.000Z',
-              fileName: 'unpackaged/email/MyFolder',
-              fullName: 'MyFolder',
-              id: '00l4J000001AHd1QAG',
-              lastModifiedById: '0054J000002KGG5QAO',
-              lastModifiedByName: 'Omri Litvak',
-              lastModifiedDate: '2019-12-29T11:44:14.000Z',
-              manageableState: 'unmanaged',
-              type: 'EmailTemplate',
-            },
-            {
-              createdById: '0054J000002KGG5QAO',
-              createdByName: 'Omri Litvak',
-              createdDate: '2019-12-29T11:55:12.251Z',
-              fileName: 'unpackaged/package.xml',
-              fullName: 'unpackaged/package.xml',
-              id: '',
-              lastModifiedById: '0054J000002KGG5QAO',
-              lastModifiedByName: 'Omri Litvak',
-              lastModifiedDate: '2019-12-29T11:55:12.251Z',
-              manageableState: 'unmanaged',
-              type: 'Package',
-            },
-          ],
+        const fileProperties = [
+          mockFileProperties({
+            fileName: 'email/MyFolder/MyEmailTemplate.email',
+            fullName: 'MyFolder/MyEmailTemplate',
+            type: 'EmailTemplate',
+          }),
+          mockFileProperties({
+            fileName: 'email/MyFolder',
+            fullName: 'MyFolder',
+            type: 'EmailFolder',
+          }),
+        ]
+        const retrieveResult = {
+          fileProperties: toResultProperties(fileProperties).map(
+            // Due to a SF quirk we must ask for EmailTemplate type to get folders
+            props => ({ ...props, type: 'EmailTemplate' })
+          ),
           id: '09S4J000001e2eLUAQ',
           messages: [],
           zipFile: await createEncodedZipContent([{ path: 'unpackaged/email/MyFolder-meta.xml',
@@ -463,22 +448,29 @@ describe('XML Transformer', () => {
               + '</EmailTemplate>\n' }, { path: 'unpackaged/email/MyFolder/MyEmailTemplate.email',
             content: 'Email Body' }]),
         }
-        typeNameToInstanceInfos = await fromRetrieveResult(retrieveResult,
-          ['EmailTemplate', 'EmailFolder'])
+
+        const values = await fromRetrieveResult(
+          retrieveResult,
+          fileProperties,
+          new Set(['EmailTemplate', 'EmailFolder']),
+          new Set(['EmailTemplate']),
+        )
+        emailFolder = values.find(value => value.file.type === 'EmailFolder')?.values
+        emailTemplate = values.find(value => value.file.type === 'EmailTemplate')?.values
       })
 
       it('should transform EmailFolder zip to MetadataInfo', async () => {
-        const [metadataInfo] = typeNameToInstanceInfos.EmailFolder
-        expect(metadataInfo.fullName).toEqual('MyFolder')
-        expect(_.get(metadataInfo, 'name')).toEqual('My folder')
-        expect(_.get(metadataInfo, 'accessType')).toEqual('Public')
+        expect(emailFolder).toBeDefined()
+        expect(emailFolder?.fullName).toEqual('MyFolder')
+        expect(emailFolder?.name).toEqual('My folder')
+        expect(emailFolder?.accessType).toEqual('Public')
       })
 
       it('should transform EmailTemplate zip to MetadataInfo', async () => {
-        const [metadataInfo] = typeNameToInstanceInfos.EmailTemplate
-        expect(metadataInfo.fullName).toEqual('MyFolder/MyEmailTemplate')
-        expect(_.get(metadataInfo, 'name')).toEqual('My Email Template')
-        expect(_.get(metadataInfo, 'content.content').toString()).toEqual('Email Body')
+        expect(emailTemplate).toBeDefined()
+        expect(emailTemplate?.fullName).toEqual('MyFolder/MyEmailTemplate')
+        expect(emailTemplate?.name).toEqual('My Email Template')
+        expect(emailTemplate?.content.content.toString()).toEqual('Email Body')
       })
     })
   })

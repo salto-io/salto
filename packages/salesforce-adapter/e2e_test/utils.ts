@@ -75,8 +75,13 @@ Promise<ObjectType[]> => {
   const baseTypeNames = new Set(types)
   const subTypes = new Map<string, TypeElement>()
   return _.flatten(await Promise.all(types.map(async type =>
-    createMetadataTypeElements(type, await client.describeMetadataType(type), subTypes,
-      baseTypeNames, client))))
+    createMetadataTypeElements({
+      name: type,
+      fields: (await client.describeMetadataType(type)).valueTypeFields,
+      knownTypes: subTypes,
+      baseTypeNames,
+      client,
+    }))))
 }
 
 export const createInstance = async (client: SalesforceClient, value: Values,

@@ -26,14 +26,14 @@ import { mergeElements, MergeError } from '../../merger'
 import {
   getChangeLocations, updateNaclFileData, getChangesToUpdate,
 } from './nacl_file_update'
-import { parse, SourceRange, ParseError, ParseResult } from '../../parser/parse'
+import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache } from '../cache'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
-import { StaticFilesSource } from '../static_files/common'
+import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
-import { SourceMap } from '../../parser/source_map'
+
 import { Functions } from '../../parser/functions'
 
 const { withLimitedConcurrency } = promises.array

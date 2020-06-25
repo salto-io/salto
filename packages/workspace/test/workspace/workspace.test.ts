@@ -23,7 +23,7 @@ import {
   findElement,
 } from '@salto-io/adapter-utils'
 import { ConfigSource } from '../../src/workspace/config_source'
-import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files/nacl_files_source'
+import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
 import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource } from './static_files/common.test'
@@ -33,15 +33,15 @@ import { Workspace, initWorkspace, loadWorkspace,
 import { NoWorkspaceConfig, DeleteCurrentEnvError,
   UnknownEnvError, EnvDuplicationError } from '../../src/workspace/errors'
 
-import { StaticFilesSource } from '../../src/workspace/static_files/common'
+import { StaticFilesSource } from '../../src/workspace/static_files'
 
 import * as dump from '../../src/parser/dump'
 
 import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
 import {
-  WORKSPACE_CONFIG_NAME, workspaceConfigType, USER_CONFIG_NAME,
-  workspaceUserConfigType,
-} from '../../src/workspace/config/workspace_config_types'
+  WORKSPACE_CONFIG_NAME, workspaceConfigType,
+  workspaceUserConfigType, USER_CONFIG_NAME,
+} from '../../src/workspace/config'
 
 const changedNaclFile = {
   filename: 'file.nacl',

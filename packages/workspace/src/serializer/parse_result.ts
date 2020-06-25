@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { ParseResult, ParseError } from '../parser/parse'
+import { ParseResult, ParseError, SourceMap } from '../parser'
 import * as elementSerializer from './elements'
-import { SourceMap } from '../parser/source_map'
+
 
 const serializeErrors = (errors: ParseError[]): string =>
   JSON.stringify(errors)
@@ -38,8 +38,7 @@ const deserializeParseErrors = (data: string): ParseError[] =>
 
 const deserializeSourceMap = (data: string): SourceMap => {
   const raw = JSON.parse(data)
-  const res = new SourceMap(raw)
-  return res
+  return new SourceMap(raw)
 }
 
 export const deserialize = async (

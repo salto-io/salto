@@ -18,7 +18,7 @@ import { types } from '@salto-io/lowerdash'
 import { SaltoError } from '@salto-io/adapter-api'
 import { MergeError } from '../merger'
 import { ValidationError } from '../validator'
-import { ParseError } from '../parser/parse'
+import { ParseError } from '../parser'
 
 export class Errors extends types.Bean<Readonly<{
     parse: ReadonlyArray<ParseError>

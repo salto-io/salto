@@ -18,8 +18,8 @@ import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { mockDirStore } from '../common/nacl_file_store'
 import { parseResultCache } from '../../src/workspace/cache'
 import * as serializer from '../../src/serializer/elements'
-import { StaticFilesSource } from '../../src/workspace/static_files/common'
-import { SourceMap } from '../../src/parser/source_map'
+import { StaticFilesSource } from '../../src/workspace/static_files'
+import { SourceMap } from '../../src/parser'
 
 describe('parseResultCache', () => {
   const mockedStaticFilesSource = { clone: jest.fn() } as unknown as StaticFilesSource

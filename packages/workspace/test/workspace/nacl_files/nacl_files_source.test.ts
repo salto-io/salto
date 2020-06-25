@@ -15,8 +15,8 @@
 */
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
-import { naclFilesSource } from '../../../src/workspace/nacl_files/nacl_files_source'
-import { StaticFilesSource } from '../../../src/workspace/static_files/common'
+import { naclFilesSource } from '../../../src/workspace/nacl_files'
+import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { ParseResultCache } from '../../../src/workspace/cache'
 
 import { mockStaticFilesSource } from '../static_files/common.test'

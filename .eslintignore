@@ -3,5 +3,5 @@
 *.config.js
 coverage
 src/tools/
-/src/parser/internal/ts_plugin/hcl.js
+/src/generated
 /package_native.js

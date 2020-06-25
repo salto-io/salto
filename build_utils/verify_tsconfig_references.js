@@ -70,6 +70,11 @@ const main = async () => {
     return workspaceDependencies.filter(r => !tsConfigPackageRefs.includes(r))
   }
 
+  const findExtraneousReferences = ({ location, workspaceDependencies }, { references = [] }) => {
+    const tsConfigPackageRefs = references.map(ref => referenceToWorkspacePackage(ref, { location }))
+    return tsConfigPackageRefs.filter(r => !workspaceDependencies.includes(r))
+  }
+
   const missingReferences = filterValues(
     mapValues(
       tsConfigs,
@@ -78,27 +83,45 @@ const main = async () => {
     v => v.length,
   )
 
-  if (Object.keys(missingReferences).length) {
-    const workspacePackageToReference = (
-      package, refPackage,
-    ) => ({
-      path: path.relative(workspaces[package].location, workspaces[refPackage].location)
-    })
+  const workspacePackageToReference = (
+    package, refPackage,
+  ) => ({
+    path: path.relative(workspaces[package].location, workspaces[refPackage].location)
+  })
 
-    const referencesToAdd = mapValues(
-      missingReferences,
-      ((missingRefs, package) => missingRefs.map(r => workspacePackageToReference(package, r))),
-    )
+  const extraneousReferences = filterValues(
+    mapValues(
+      tsConfigs,
+      (tsConfig, package) => findExtraneousReferences(workspaces[package], tsConfig)
+    ),
+    v => v.length,
+  )
 
-    const formattedReferencesToAdd = Object.entries(referencesToAdd)
-      .map(([package, references]) => `${
-        tsConfigFilename(workspaces[package])
-      }, in "references":\n${
-        references.map(r => `  { "path": "${r.path}" },`).join('\n')
-      }\n`)
-      .join('\n')
+  let success = true
+  const verifyNoReferences = (references, adj, verb) => {
+    if (Object.keys(references).length) {
+      const referencesToList = mapValues(
+        references,
+        ((refs, package) => refs.map(r => workspacePackageToReference(package, r))),
+      )
 
-    console.error(`Found missing references in package tsconfigs. Please add the following:\n\n${formattedReferencesToAdd}`)
+      const formattedReferencesToList = Object.entries(referencesToList)
+        .map(([package, references]) => `${
+          tsConfigFilename(workspaces[package])
+        }, in "references":\n${
+          references.map(r => `  { "path": "${r.path}" },`).join('\n')
+        }\n`)
+        .join('\n')
+
+      console.error(`Found ${adj} references in package tsconfigs. Please ${verb} the following:\n\n${formattedReferencesToList}`)
+      success = false
+    }
+  }
+
+  verifyNoReferences(missingReferences, 'missing', 'add')
+  verifyNoReferences(extraneousReferences, 'extraneous', 'remove')
+
+  if (!success) {
     process.exit(1)
   }
 }

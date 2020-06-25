@@ -44,114 +44,73 @@ jobs:
     docker:
       - image: circleci/node:12.16
 
-    resource_class: large
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
 
     steps:
       - restore_cache:
           keys:
-            - v1-source-{{ .Branch }}
-            - v1-source-master
-            - v1-source-
+            - v1-project-{{ .Branch }}
+            - v1-project-master
 
       - checkout
 
-      - save_cache:
-          key: v1-source-{{ .Branch }}
-          paths: .git
-
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-            - v2-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
-
-      - run: yarn --frozen-lockfile
-
       - run:
-          name: create packages_node_modules_cache.tar.gz
-          command: tar cfz packages_node_modules_cache.tar.gz packages/*/node_modules
-
-      - save_cache:
-          paths:
-            - ~/.cache/yarn
-            - node_modules
-            - packages_node_modules_cache.tar.gz
-
-          key: v2-yarn-deps-{{ arch }}-{{ checksum "yarn.lock" }}
-
-      - restore_cache:
-          keys:
-            - v3-build-{{ .Branch }}
-            - v3-build-master
-            - v3-build-
-
-      - run:
-          name: extract packages_node_modules_cache.tar.gz
+          name: remove empty directories from the packages dir
           command: |
-            if [ -f packages_node_modules_cache.tar.gz ]; then
-              comm -12 <(
-                ls packages | sort
-              ) <(
-                tar tf packages_node_modules_cache.tar.gz | sed -E "s/^packages\/([^/]+)\/.*/\1/" | sort | uniq
-              ) |
-                xargs -I{} tar xf packages_node_modules_cache.tar.gz --wildcards "packages/{}/**";
-            fi
-
-      - run:
-          name: fix eslint cache
-          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
+            find ./packages -mindepth 1 -maxdepth 1 -type d '!' -exec test -e "{}/package.json" ';' -print \
+              | xargs --no-run-if-empty rm -r
 
       - run:
           # eslint will verify that the license header exists on the linted source files, this step is
           # to verify that other non-linted files also contains the license header (and therefore this is
           # in the 'build' job)
-          name: verify that the license header is prepend to the non eslint'd source files
-          command: |
-            # get the license header from the eslintrc configuration
-            set -e
-            if [ ! -f 'eslintrc.js' ]; then
-              echo 'cannot find eslintrc.js file'
-              exit 1
-            fi
-            license_header=$(node -e "var license_head = require('./eslintrc.js'); console.log(\`/*\${license_head.rules['header/header'][2].join('\n')}*/\`)")
-            src_files_without_license_header=""
-            for f in $(find . -type f -name '*.js' -not -path '*node_modules*' -not -path '*dist\/*' ); do
-              if ! grep -qFx "$license_header" "$f"; then
-                src_files_without_license_header+="$f\n"
-              fi
-            done
+          name: verify that the license header is prepended to the non eslint'd source files
+          command: build_utils/verify_license_header.sh
 
-            if [ ! -z "$src_files_without_license_header" ]; then
-              echo -e "the following source files do not contain license header:\n${src_files_without_license_header}"
-              exit 1
-            fi
+      - run: yarn config set ignore-engines true
+
+      - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
+
+      - run: yarn --frozen-lockfile
+
+      - run:
+          name: fix eslint cache
+          command: yarn lerna exec ../../build_utils/fix_eslint_cache.sh
 
       - run: yarn build
-
-      - run:
-          name: create packages_build_cache.tar.gz
-          # Note: The build cache cannot include the dist directories -
-          # they might contain old (e.g. renamed) files, which will leak into the current dist.
-          # * The TypeScript compiler does not currently have an option to remove old files.
-          # * Utilities such as ts-cleaner can break the build because they use heuristics and
-          #   might wrongly remove needed build artifacts, e.g, generated code, wasm.
-          command: tar cfz packages_build_cache.tar.gz packages/*/.eslintcache
-
-      - save_cache:
-          paths:
-            - packages_build_cache.tar.gz
-          key: v3-build-{{ .Branch }}
-
-      - run:
-          name: Remove unneeded files before saving workspace
-          command: rm -f *.tar.gz
 
       - persist_to_workspace:
           root: .
           paths: '*'
 
+  save_project_cache:
+    docker:
+      - image: cimg/base:2020.01
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - save_cache:
+          paths:
+            - .
+          key: v1-project-{{ .Branch }}-{{ epoch }}
+
+  unit_test:
+    docker:
+      - image: circleci/node:12.16
+
+    resource_class: xlarge
+    working_directory: /mnt/ramdisk/project
+
+    steps:
+      - attach_workspace:
+          at: .
+
       - run:
           name: Run unit tests
-          command: yarn test --reporters=default --reporters=jest-junit --max-workers=4
+          command: yarn test --reporters=default --reporters=jest-junit
           environment:
             JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
 
@@ -188,6 +147,7 @@ jobs:
       - image: circleci/node:12.16
 
     resource_class: large
+    working_directory: /mnt/ramdisk/project
 
     steps:
       - attach_workspace:
@@ -319,6 +279,7 @@ jobs:
     docker:
       - image: circleci/node:12.16
 
+
     steps:
       - attach_workspace:
           at: .
@@ -329,12 +290,43 @@ jobs:
           name: Build and upload docs
           command: cd docs && ./build.sh
 
+  publish_canary:
+    docker:
+      - image: circleci/node:12.16
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run:
+          name: Set NPM token
+          command: |
+            # set token at npmrc - without making the git local copy dirty
+            echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
+            echo ".npmrc" >> .git/info/exclude
+            git update-index --assume-unchanged .npmrc
+
+      - run:
+          name: Publish canary version
+          command: |
+            GIT_ID=$(git rev-parse --abbrev-ref HEAD | sed -E "s/[^a-zA-Z0-9_-]/-/g")
+            yarn lerna publish \
+              --canary --preid $GIT_ID --dist-tag $GIT_ID --ignore-scripts --yes
+
 workflows:
   version: 2
 
   commit:
     jobs:
       - build
+
+      - save_project_cache:
+          requires:
+            - build
+
+      - unit_test:
+          requires:
+            - build
 
       - e2e_test:
           requires:
@@ -355,17 +347,29 @@ workflows:
       - package_cli:
           requires:
             - build
+            - unit_test
             # - e2e_test
 
       - package_vscode_extension:
           requires:
             - build
+            - unit_test
             # - e2e_test
 
       - sync_s3_pkg_latest:
           requires:
             - package_cli
             - package_vscode_extension
+
+      - publish_canary:
+          filters:
+            branches:
+              only:
+                - master
+          requires:
+            - build
+            - unit_test
+            - e2e_test
 
       - publish_on_version_change:
           filters:
@@ -374,7 +378,9 @@ workflows:
                 - master
           requires:
             - build
+            - unit_test
             - e2e_test
+
       - build_and_upload_docs:
           name: build_and_upload_docs
           requires:

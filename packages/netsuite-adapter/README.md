@@ -17,7 +17,7 @@ JDK - https://www.oracle.com/java/technologies/javase-jdk11-downloads.html
 ```
 yarn
 yarn add -W @salto-io/suitecloud-cli
-yarn run build
+yarn build
 ```
 
 ## Configure your Netsuite account to work with Salto

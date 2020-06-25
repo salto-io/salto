@@ -7,7 +7,7 @@ Hubspot adapter for salto.io
 
 ```
 yarn
-yarn run build
+yarn build
 ```
 
 ### Features support and limitations

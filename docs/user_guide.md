@@ -203,7 +203,7 @@ This allows you to rename the files as long as the path mentioned in the NaCl fi
 
 For example you can create the folder `static-resources/ProfileClasses` and move the `ApexFileForProfile.cls` there, and update the NaCl file to point to `ProfileClasses/ApexFileForProfile.cls`.
 
-If the `file` function points to a non existing file, the preview / deploy operations will warn and stop.
+If the `file` function points to a non existing file, the deploy operation will warn and stop.
 
 **NOTE:** If you remove the Static File usage (remove the `file(...)`), the referenced static file is not deleted.
 
@@ -305,16 +305,6 @@ Syncs this workspace with the current local state
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use [string]
 
-### **salto preview**
-
-Shows Salto's execution plan next time deploy is run
-
-**Options:**
-* `--force, -f` : Do not ask for approval if there are warnings in the workspace [boolean] [default: false]
-* `--services, -s` : Specific services to perform this action for (default=all) [array]
-* `--env, -e` : The name of the environment to use
-* `--detailed, -d` : Detailed preview that includes value changes [boolean] [default: false]
-
 ### **salto deploy**
 
 Deploys the current NaCl files config to the target services
@@ -323,6 +313,8 @@ Deploys the current NaCl files config to the target services
 * `--force, -f` : Do not ask for approval before deploying the changes [boolean] [default: false]
 * `--services, -s` : Specific services to perform this action for (default=all) [array]
 * `--env, -e` : The name of the environment to use
+* `--dry-run, -d` : Preview the execution plan without deploying the changes [boolean] [default: false]
+* `--detailed-plan, -p` : Print detailed plan including value changes [boolean] [default: false]
 
 ### **salto services \<command> [name]**
 

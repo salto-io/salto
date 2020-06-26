@@ -191,7 +191,7 @@ describe('cli e2e', () => {
         [new RegExp(NEW_INSTANCE_BASE_ELEM_NAME, 'g'), newInstanceElemName],
         [new RegExp(NEW_INSTANCE2_BASE_ELEM_NAME, 'g'), newInstance2ElemName],
       ])
-      await runDeploy(lastPlan, fetchOutputDir)
+      await runDeploy({ lastPlan, fetchOutputDir })
       workspace = await loadValidWorkspace(fetchOutputDir)
     })
     it('should have "add" changes', async () => {
@@ -234,7 +234,7 @@ describe('cli e2e', () => {
         ['Beta__c', 'Modified__c'],
         ['To Be Modified', 'I Am Modified'],
       ])
-      await runDeploy(lastPlan, fetchOutputDir)
+      await runDeploy({ lastPlan, fetchOutputDir })
     })
     it('should have "modify" changes', async () => {
       verifyChanges(lastPlan, [{ action: 'modify', element: newObjectElemName },
@@ -314,7 +314,7 @@ describe('cli e2e', () => {
       await runPreview(fetchOutputDir)
       // We have to run deploy with force = true because after we delete the new object
       // there are unresolved reference warnings in the workspace
-      await runDeploy(undefined, fetchOutputDir, true)
+      await runDeploy({ fetchOutputDir, allowErrors: false, force: true })
     })
     it('should have "remove" changes', async () => {
       verifyChanges(lastPlan, [

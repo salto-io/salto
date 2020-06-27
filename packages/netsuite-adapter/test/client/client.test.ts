@@ -18,9 +18,9 @@ import { readFile, readDir, writeFile, mkdirp } from '@salto-io/file'
 import osPath from 'path'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, {
-  ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, CustomizationInfo,
+  ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, COMMANDS, CustomTypeInfo,
   FileCustomizationInfo, FOLDER_ATTRIBUTES_FILE_SUFFIX, FolderCustomizationInfo, SDF_PATH_SEPARATOR,
-  TemplateCustomizationInfo,
+  TemplateCustomTypeInfo,
 } from '../../src/client/client'
 
 
@@ -232,6 +232,7 @@ describe('netsuite client', () => {
       expect(customizationInfos).toHaveLength(2)
       expect(customizationInfos).toEqual([{
         typeName: 'elementName',
+        scriptId: 'a',
         values: {
           '@_filename': 'a.xml',
         },
@@ -240,6 +241,7 @@ describe('netsuite client', () => {
       },
       {
         typeName: 'elementName',
+        scriptId: 'b',
         values: {
           '@_filename': 'b.xml',
         },
@@ -427,7 +429,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await client.deployCustomObject('elementName', {} as CustomizationInfo)
+      await client.deployCustomObject({} as CustomTypeInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(1)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
@@ -438,16 +440,17 @@ describe('netsuite client', () => {
 
     it('should succeed for CustomizationInfo', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      const customizationInfo = {
+      const scriptId = 'filename'
+      const customTypeInfo = {
         typeName: 'typeName',
         values: {
           key: 'val',
         },
-      } as CustomizationInfo
-      const filename = 'filename'
-      await client.deployCustomObject(filename, customizationInfo)
+        scriptId,
+      } as CustomTypeInfo
+      await client.deployCustomObject(customTypeInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(1)
-      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${filename}.xml`),
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
         '<typeName><key>val</key></typeName>')
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
@@ -458,21 +461,22 @@ describe('netsuite client', () => {
 
     it('should succeed for TemplateCustomizationInfo', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      const filename = 'filename'
-      const customizationInfo = {
+      const scriptId = 'filename'
+      const templateCustomTypeInfo = {
         typeName: 'typeName',
         values: {
           key: 'val',
         },
+        scriptId,
         fileContent: MOCK_TEMPLATE_CONTENT,
         fileExtension: 'html',
-      } as TemplateCustomizationInfo
-      await client.deployCustomObject(filename, customizationInfo)
+      } as TemplateCustomTypeInfo
+      await client.deployCustomObject(templateCustomTypeInfo)
       expect(writeFileMock).toHaveBeenCalledTimes(2)
       expect(writeFileMock)
-        .toHaveBeenCalledWith(expect.stringContaining(`${filename}.xml`), '<typeName><key>val</key></typeName>')
+        .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
       expect(writeFileMock)
-        .toHaveBeenCalledWith(expect.stringContaining(`${filename}.template.html`), MOCK_TEMPLATE_CONTENT)
+        .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.template.html`), MOCK_TEMPLATE_CONTENT)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -485,7 +489,7 @@ describe('netsuite client', () => {
       mockExecuteAction.mockImplementation(() => {
         throw errorMessage
       })
-      await expect(client.deployCustomObject('elementName', {} as CustomizationInfo)).rejects
+      await expect(client.deployCustomObject({} as CustomTypeInfo)).rejects
         .toThrow(new Error(errorMessage))
     })
 
@@ -494,7 +498,7 @@ describe('netsuite client', () => {
       mockExecuteAction.mockImplementation(() => {
         throw new Error(errorMessage)
       })
-      await expect(client.deployCustomObject('elementName', {} as CustomizationInfo)).rejects
+      await expect(client.deployCustomObject({} as CustomTypeInfo)).rejects
         .toThrow(new Error(errorMessage))
     })
   })

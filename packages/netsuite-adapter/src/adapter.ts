@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import NetsuiteClient, {
-  CustomizationInfo, isFileCustomizationInfo, isFolderCustomizationInfo,
+  CustomizationInfo, CustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo,
 } from './client/client'
 import {
   createInstanceElement, getLookUpName, toCustomizationInfo,
@@ -30,7 +30,7 @@ import {
 import {
   customTypes, isCustomType, getAllTypes, fileCabinetTypes, isFileCabinetType,
 } from './types'
-import { SCRIPT_ID, SAVED_SEARCH, TYPES_TO_SKIP } from './constants'
+import { SAVED_SEARCH, TYPES_TO_SKIP } from './constants'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -145,7 +145,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     if (isFolderCustomizationInfo(customizationInfo)) {
       return this.client.deployFolder(customizationInfo)
     }
-    return this.client.deployCustomObject(instance.value[SCRIPT_ID], customizationInfo)
+    return this.client.deployCustomObject(customizationInfo as CustomTypeInfo)
   }
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {

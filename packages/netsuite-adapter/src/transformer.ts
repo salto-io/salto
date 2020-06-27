@@ -27,9 +27,9 @@ import {
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH,
 } from './constants'
 import {
-  ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo, TemplateCustomizationInfo,
-  isTemplateCustomizationInfo, isFileCustomizationInfo, FileCustomizationInfo,
-  FolderCustomizationInfo, isFolderCustomizationInfo,
+  ATTRIBUTE_PREFIX, CDATA_TAG_NAME, CustomizationInfo, TemplateCustomTypeInfo,
+  isTemplateCustomTypeInfo, isFileCustomizationInfo, FileCustomizationInfo,
+  FolderCustomizationInfo, isFolderCustomizationInfo, CustomTypeInfo,
 } from './client/client'
 import { fieldTypes } from './types/field_types'
 import { customTypes, fileCabinetTypes, isCustomType, isFileCabinetType } from './types'
@@ -121,7 +121,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   }
 
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
-  if (fileContentField && isTemplateCustomizationInfo(customizationInfo)) {
+  if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
       filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.fileExtension}`,
       content: Buffer.from(customizationInfo.fileContent),
@@ -223,19 +223,6 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
   const fileContentField = Object.values(instance.type.fields)
     .find(f => isPrimitiveType(f.type) && f.type.isEqual(fieldTypes.fileContent))
 
-  // Template Custom Type
-  if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
-    && isCustomType(instance.type)) {
-    const fileContent = values[fileContentField.name]
-    delete values[fileContentField.name]
-    return {
-      typeName,
-      values,
-      fileContent,
-      fileExtension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
-    } as TemplateCustomizationInfo
-  }
-
   if (isFileCabinetType(instance.type)) {
     const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)
     delete values[PATH]
@@ -247,7 +234,22 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     }
     return { typeName, values, path } as FolderCustomizationInfo
   }
-  return { typeName, values }
+
+  const scriptId = instance.value[SCRIPT_ID]
+  // Template Custom Type
+  if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
+    && isCustomType(instance.type)) {
+    const fileContent = values[fileContentField.name]
+    delete values[fileContentField.name]
+    return {
+      typeName,
+      values,
+      scriptId,
+      fileContent,
+      fileExtension: fileContentField.annotations[ADDITIONAL_FILE_SUFFIX],
+    } as TemplateCustomTypeInfo
+  }
+  return { typeName, values, scriptId } as CustomTypeInfo
 }
 
 // todo add support for references!

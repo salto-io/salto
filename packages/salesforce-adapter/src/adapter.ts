@@ -503,18 +503,15 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async remove(element: Element): Promise<void> {
     const resolved = resolveValues(element, getLookUpName)
     const type = metadataType(resolved)
-    if (isInstanceElement(resolved)) {
-      if (isCustomObject(resolved.type)) {
-        await this.client.bulkLoadOperation(
-          apiName(resolved.type),
-          'delete',
-          instancesToDeleteRecord([resolved]),
-        )
-      } else if (this.metadataToDeploy.includes(type)) {
-        await this.deployInstance(resolved, true)
-      }
-    }
-    if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
+    if (isInstanceElement(resolved) && isCustomObject(resolved.type)) {
+      await this.client.bulkLoadOperation(
+        apiName(resolved.type),
+        'delete',
+        instancesToDeleteRecord([resolved]),
+      )
+    } else if (isInstanceElement(resolved) && this.metadataToDeploy.includes(type)) {
+      await this.deployInstance(resolved, true)
+    } else if (!(isInstanceElement(resolved) && this.metadataTypesToSkipMutation.includes(type))) {
       await this.client.delete(type, apiName(resolved))
     }
     await this.filtersRunner.onRemove(resolved)

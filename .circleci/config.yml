@@ -308,10 +308,7 @@ jobs:
 
       - run:
           name: Publish canary version
-          command: |
-            GIT_ID=$(git rev-parse --abbrev-ref HEAD | sed -E "s/[^a-zA-Z0-9_-]/-/g")
-            yarn lerna publish \
-              --canary --preid $GIT_ID --dist-tag $GIT_ID --ignore-scripts --yes
+          command: .circleci/scripts/publish-canary.sh
 
 workflows:
   version: 2

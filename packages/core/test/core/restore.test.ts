@@ -163,30 +163,26 @@ describe('restore', () => {
         expect(changes).toHaveLength(4)
       })
 
-      it('should create add changes for elements which are only in the state', async () => {
-        const addChange = changes.find(c => c.action === 'add')
-        expect(addChange).toBeDefined()
-        expect(addChange?.id).toEqual(multiPathObjMerged.elemID)
+      it('should create add changes for elements which are only in the state', () => {
+        const addChanges = changes.filter(c => c.action === 'add')
+        expect(addChanges).toHaveLength(2)
+        addChanges.forEach(change => expect(change.id).toEqual(multiPathObjMerged.elemID))
+        const changePaths = addChanges.map(change => change.path)
+        expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'anno'])
+        expect(changePaths).toContainEqual(['salto', 'obj', 'multi', 'fields'])
       })
       it('should create remove changes for elements which are only in the workspace', () => {
-        const addChange = changes.find(c => c.action === 'remove')
-        expect(addChange).toBeDefined()
-        expect(addChange?.id).toEqual(singlePathObjMerged.elemID)
+        const removeChange = changes.find(c => c.action === 'remove')
+        expect(removeChange).toBeDefined()
+        expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
+        expect(removeChange?.path).toEqual(['salto', 'obj', 'simple'])
       })
       it('should create remove changes for elements which have different values in the state and ws', () => {
-        const addChange = changes.find(c => c.action === 'modify')
-        expect(addChange).toBeDefined()
-        expect(addChange?.id).toEqual(singlePathInstMergedAfter.elemID
+        const modifyChange = changes.find(c => c.action === 'modify')
+        expect(modifyChange).toBeDefined()
+        expect(modifyChange?.id).toEqual(singlePathInstMergedAfter.elemID
           .createNestedID('nested').createNestedID('str'))
-      })
-      it('should create changes with the path with with the elements were added to the state', () => {
-        const pathes = changes.map(c => c.path)
-        expect(pathes).toEqual([
-          ['salto', 'obj', 'simple'],
-          ['salto', 'obj', 'multi', 'anno'],
-          ['salto', 'obj', 'multi', 'fields'],
-          ['salto', 'inst', 'simple'],
-        ])
+        expect(modifyChange?.path).toEqual(['salto', 'inst', 'simple'])
       })
     })
     describe('with filters', () => {

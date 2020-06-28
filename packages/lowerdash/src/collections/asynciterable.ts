@@ -13,18 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as set from './set'
-import * as map from './map'
-import * as array from './array'
-import * as iterable from './iterable'
-import * as asynciterable from './asynciterable'
-import * as treeMap from './tree_map'
+export const findAsync = async <T>(
+  i: AsyncIterable<T>,
+  pred: (value: T, index: number) => boolean | Promise<boolean>,
+): Promise<T | undefined> => {
+  const iter = i[Symbol.asyncIterator]()
+  let index = 0
 
-export {
-  set,
-  map,
-  array,
-  iterable,
-  asynciterable,
-  treeMap,
+  const next = async (): Promise<T | undefined> => {
+    const { value, done } = await iter.next()
+    if (done) {
+      return undefined
+    }
+    if (await pred(value, index)) {
+      return value
+    }
+    index += 1
+    return next()
+  }
+  return next()
 }

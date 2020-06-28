@@ -17,19 +17,12 @@ export const findAsync = async <T>(
   i: AsyncIterable<T>,
   pred: (value: T, index: number) => boolean | Promise<boolean>,
 ): Promise<T | undefined> => {
-  const iter = i[Symbol.asyncIterator]()
   let index = 0
-
-  const next = async (): Promise<T | undefined> => {
-    const { value, done } = await iter.next()
-    if (done) {
-      return undefined
-    }
-    if (await pred(value, index)) {
-      return value
+  for await (const v of i) {
+    if (await pred(v, index)) {
+      return v
     }
     index += 1
-    return next()
   }
-  return next()
+  return undefined
 }

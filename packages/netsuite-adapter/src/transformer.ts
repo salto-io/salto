@@ -16,10 +16,11 @@
 import {
   ElemID, Field, InstanceElement, isListType, isPrimitiveType, ObjectType, PrimitiveType,
   PrimitiveTypes, Value, Values, isObjectType, isPrimitiveValue, StaticFile, ElemIdGetter,
-  ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
+  ADAPTER, OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
   applyRecursive, MapKeyFunc, mapKeysRecursive, naclCase, TransformFunc, transformValues,
+  GetLookupNameFunc,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
@@ -252,5 +253,31 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
   return { typeName, values, scriptId } as CustomTypeInfo
 }
 
-// todo add support for references!
-export const getLookUpName = (refValue: Value): Value => refValue
+export const serviceId = (instance: InstanceElement): string =>
+  instance.value[isCustomType(instance.type) ? SCRIPT_ID : PATH]
+
+const getScriptIdParts = (topLevelParent: InstanceElement, elemId: ElemID): string[] => {
+  if (elemId.isTopLevel()) {
+    return [topLevelParent.value[SCRIPT_ID]]
+  }
+  const relativePath = elemId.createTopLevelParentID().path
+  const value = _.get(topLevelParent.value, relativePath)
+  if (_.has(value, SCRIPT_ID)) {
+    return [...getScriptIdParts(topLevelParent, elemId.createParentID()), value[SCRIPT_ID]]
+  }
+  return getScriptIdParts(topLevelParent, elemId.createParentID())
+}
+
+export const getLookUpName: GetLookupNameFunc = ({ ref }) => {
+  const { elemId, value, topLevelParent } = ref
+  if (!isInstanceElement(topLevelParent)) {
+    return value
+  }
+  if (isFileCabinetType(topLevelParent.type) && elemId.name === PATH) {
+    return `[${value}]`
+  }
+  if (isCustomType(topLevelParent.type) && elemId.name === SCRIPT_ID) {
+    return `[${SCRIPT_ID}=${getScriptIdParts(topLevelParent, elemId).join('.')}]`
+  }
+  return value
+}

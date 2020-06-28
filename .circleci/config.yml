@@ -307,11 +307,15 @@ jobs:
             git update-index --assume-unchanged .npmrc
 
       - run:
-          name: Publish canary version
+          name: Set git identity
           command: |
-            GIT_ID=$(git rev-parse --abbrev-ref HEAD | sed -E "s/[^a-zA-Z0-9_-]/-/g")
-            yarn lerna publish \
-              --canary --preid $GIT_ID --dist-tag $GIT_ID --ignore-scripts --yes
+            # version git commit is not pushed, so this just needs to be configured
+            git config user.email "$(git log -1 --format='%ae')"
+            git config user.name "$(git log -1 --format='%an')"
+
+      - run:
+          name: Publish canary version
+          command: .circleci/scripts/publish-canary.sh
 
 workflows:
   version: 2

@@ -29,6 +29,7 @@ import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
   convertToCustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
 } from '../src/client/client'
+import { FilterCreator } from '../src/filter'
 
 jest.mock('../src/client/sdf_root_cli_path', () => ({
   getRootCLIPath: jest.fn().mockResolvedValue('path/to/cli'),
@@ -37,10 +38,20 @@ jest.mock('../src/client/sdf_root_cli_path', () => ({
 const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
   ElemID => new ElemID(adapterName, name)
 
+const onFetchMock = jest.fn().mockImplementation(_arg => undefined)
+const firstDummyFilter: FilterCreator = () => ({
+  onFetch: onFetchMock(1),
+})
+
+const secondDummyFilter: FilterCreator = () => ({
+  onFetch: onFetchMock(2),
+})
+
 describe('Adapter', () => {
   const client = createClient()
   const netsuiteAdapter = new NetsuiteAdapter({
     client,
+    filtersCreators: [firstDummyFilter, secondDummyFilter],
     config: { [TYPES_TO_SKIP]: [TRANSACTION_FORM] },
     getElemIdFunc: mockGetElemIdFunc,
   })
@@ -117,6 +128,12 @@ describe('Adapter', () => {
       client.listCustomObjects = jest.fn().mockImplementation(async () => [customizationInfo])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
+    })
+
+    it('should call filters by their order', async () => {
+      await netsuiteAdapter.fetch()
+      expect(onFetchMock).toHaveBeenNthCalledWith(1, 1)
+      expect(onFetchMock).toHaveBeenNthCalledWith(2, 2)
     })
   })
 

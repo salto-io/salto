@@ -13,18 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as set from './set'
-import * as map from './map'
-import * as array from './array'
-import * as iterable from './iterable'
-import * as asynciterable from './asynciterable'
-import * as treeMap from './tree_map'
+import { Element } from '@salto-io/adapter-api'
 
-export {
-  set,
-  map,
-  array,
-  iterable,
-  asynciterable,
-  treeMap,
+// Filter interface, filters will be activated upon adapter fetch operations.
+// The filter will be responsible for specific business logic.
+export type OnFetchFilter = {
+  onFetch(elements: Element[]): Promise<void>
 }
+
+export type FilterCreator = () => OnFetchFilter

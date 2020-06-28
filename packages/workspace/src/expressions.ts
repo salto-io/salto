@@ -47,8 +47,7 @@ const resolveMaybeExpression: Resolver<Value> = (
   visited: Set<string> = new Set<string>(),
 ): Value => {
   if (isReferenceExpression(value)) {
-    const resValue = resolveReferenceExpression(value, contextElements, visited)
-    return value.createWithValue(resValue)
+    return resolveReferenceExpression(value, contextElements, visited)
   }
 
   if (value instanceof TemplateExpression) {
@@ -62,12 +61,12 @@ resolveReferenceExpression = (
   expression: ReferenceExpression,
   contextElements: Record<string, Element[]>,
   visited: Set<string> = new Set<string>(),
-): Value => {
+): ReferenceExpression => {
   const { traversalParts } = expression
   const traversal = traversalParts.join(ElemID.NAMESPACE_SEPARATOR)
 
   if (visited.has(traversal)) {
-    return new CircularReference(traversal)
+    return expression.createWithValue(new CircularReference(traversal))
   }
   visited.add(traversal)
 
@@ -78,13 +77,13 @@ resolveReferenceExpression = (
     && contextElements[parent.getFullName()][0]
 
   if (!rootElement) {
-    return new UnresolvedReference(fullElemID)
+    return expression.createWithValue(new UnresolvedReference(fullElemID))
   }
 
   const value = resolvePath(rootElement, fullElemID)
 
   if (value === undefined) {
-    return new UnresolvedReference(fullElemID)
+    return expression.createWithValue(new UnresolvedReference(fullElemID))
   }
 
   /**
@@ -94,10 +93,15 @@ resolveReferenceExpression = (
   */
   if (isVariableExpression(expression)) {
     // Replace the Variable element by its value.
-    return resolveMaybeExpression(value.value, contextElements, visited) ?? value.value
+    return expression.createWithValue(
+      resolveMaybeExpression(value.value, contextElements, visited) ?? value.value,
+      rootElement,
+    )
   }
-
-  return resolveMaybeExpression(value, contextElements, visited) ?? value
+  return (expression as ReferenceExpression).createWithValue(
+    resolveMaybeExpression(value, contextElements, visited) ?? value,
+    rootElement,
+  )
 }
 
 resolveTemplateExpression = (

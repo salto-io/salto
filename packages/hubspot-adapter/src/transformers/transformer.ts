@@ -21,7 +21,7 @@ import {
   TypeMap, Values, isPrimitiveType, Value, ListType, createRestriction, StaticFile,
 } from '@salto-io/adapter-api'
 import {
-  TransformFunc, naclCase, transformValues,
+  TransformFunc, naclCase, transformValues, GetLookupNameFunc,
 } from '@salto-io/adapter-utils'
 import { isFormInstance } from '../filters/form_field'
 import {
@@ -1055,6 +1055,6 @@ export const createHubspotInstanceElement = (
   )
 }
 
-export const getLookUpName = (refValue: Value): Value =>
+export const getLookUpName: GetLookupNameFunc = ({ ref }) =>
   // TODO: find the correct field with Adam
-  refValue
+  ref.value

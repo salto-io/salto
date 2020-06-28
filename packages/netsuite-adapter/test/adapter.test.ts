@@ -27,7 +27,7 @@ import {
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
-  convertToCustomizationInfo, FileCustomizationInfo, FolderCustomizationInfo,
+  convertToCustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
 } from '../src/client/client'
 import { FilterCreator } from '../src/filter'
 
@@ -76,16 +76,16 @@ describe('Adapter', () => {
       const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
         + '  <label>elementName</label>'
         + '</entitycustomfield>'
-      const customizationInfo = convertToCustomizationInfo(xmlContent)
+      const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id')
       client.importFileCabinet = jest.fn()
         .mockResolvedValue([folderCustomizationInfo, fileCustomizationInfo])
-      client.listCustomObjects = jest.fn().mockResolvedValue([customizationInfo])
+      client.listCustomObjects = jest.fn().mockResolvedValue([customTypeInfo])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length + 3)
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
       expect(elements).toContainEqual(
-        createInstanceElement(customizationInfo, customFieldType, mockGetElemIdFunc)
+        createInstanceElement(customTypeInfo, customFieldType, mockGetElemIdFunc)
       )
       expect(elements).toContainEqual(
         createInstanceElement(fileCustomizationInfo, fileCabinetTypes[FILE], mockGetElemIdFunc)
@@ -110,12 +110,12 @@ describe('Adapter', () => {
     })
 
     it('should ignore instances of unknown type', async () => {
-      const xmlContent = '<unknowntype>\n'
+      const xmlContent = '<unknowntype scriptid="unknown">\n'
         + '  <label>elementName</label>'
         + '</unknowntype>'
-      const customizationInfo = convertToCustomizationInfo(xmlContent)
+      const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'unknown')
       client.importFileCabinet = jest.fn().mockResolvedValue([])
-      client.listCustomObjects = jest.fn().mockResolvedValue([customizationInfo])
+      client.listCustomObjects = jest.fn().mockResolvedValue([customTypeInfo])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
     })
@@ -169,8 +169,8 @@ describe('Adapter', () => {
 
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
-        expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_my_script_id',
-          toCustomizationInfo(expectedResolvedInstance))
+        expect(client.deployCustomObject)
+          .toHaveBeenCalledWith(toCustomizationInfo(expectedResolvedInstance))
         expect(post.isEqual(instance)).toBe(true)
       })
 
@@ -230,8 +230,8 @@ describe('Adapter', () => {
 
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
-        expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_my_script_id',
-          toCustomizationInfo(expectedResolvedInstance))
+        expect(client.deployCustomObject)
+          .toHaveBeenCalledWith(toCustomizationInfo(expectedResolvedInstance))
         expect(post).toEqual(instance)
       })
 
@@ -272,8 +272,8 @@ describe('Adapter', () => {
 
         const expectedResolvedAfter = after.clone()
         expectedResolvedAfter.value.description = 'edited description value'
-        expect(client.deployCustomObject).toHaveBeenCalledWith('custentity_my_script_id',
-          toCustomizationInfo(expectedResolvedAfter))
+        expect(client.deployCustomObject)
+          .toHaveBeenCalledWith(toCustomizationInfo(expectedResolvedAfter))
         expect(post).toEqual(after)
       })
 

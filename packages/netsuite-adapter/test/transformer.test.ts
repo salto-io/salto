@@ -24,12 +24,9 @@ import {
 } from '../src/constants'
 import { customTypes, fileCabinetTypes } from '../src/types'
 import {
-  convertToCustomizationInfo,
-  convertToXmlContent,
-  FileCustomizationInfo,
-  FolderCustomizationInfo,
-  isFileCustomizationInfo,
-  isFolderCustomizationInfo,
+  convertToCustomTypeInfo, convertToXmlContent, CustomTypeInfo, FileCustomizationInfo,
+  FolderCustomizationInfo, isFileCustomizationInfo, isFolderCustomizationInfo,
+  TemplateCustomTypeInfo,
 } from '../src/client/client'
 
 const removeLineBreaks = (xmlContent: string): string => xmlContent.replace(/\n\s*/g, '')
@@ -115,8 +112,11 @@ describe('Transformer', () => {
   describe('createInstanceElement', () => {
     const transformCustomFieldRecord = (xmlContent: string): InstanceElement => {
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
-      return createInstanceElement(convertToCustomizationInfo(xmlContent), customFieldType,
-        mockGetElemIdFunc)
+      return createInstanceElement(
+        convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id'),
+        customFieldType,
+        mockGetElemIdFunc
+      )
     }
 
     it('should create instance name correctly', () => {
@@ -136,8 +136,11 @@ describe('Transformer', () => {
 
     it('should transform nested attributes', () => {
       const customRecordTypeXmlContent = XML_TEMPLATES.WITH_NESTED_ATTRIBUTE
-      const result = createInstanceElement(convertToCustomizationInfo(customRecordTypeXmlContent),
-        customTypes[CUSTOM_RECORD_TYPE], mockGetElemIdFunc)
+      const result = createInstanceElement(
+        convertToCustomTypeInfo(customRecordTypeXmlContent, 'customrecord_my_script_id'),
+        customTypes[CUSTOM_RECORD_TYPE],
+        mockGetElemIdFunc
+      )
       expect(result.value[SCRIPT_ID]).toEqual('customrecord_my_script_id')
       const { customrecordcustomfields } = result.value
       expect(customrecordcustomfields).toBeDefined()
@@ -227,13 +230,14 @@ describe('Transformer', () => {
       const emailTemplateContent = 'Email template content'
       const emailTemplateCustomizationInfo = {
         typeName: EMAIL_TEMPLATE,
+        scriptId: 'custemailtmpl_my_script_id',
         values: {
           name: 'email template name',
           [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         },
         fileContent: emailTemplateContent,
         fileExtension: 'html',
-      }
+      } as TemplateCustomTypeInfo
       const result = createInstanceElement(emailTemplateCustomizationInfo,
         customTypes[EMAIL_TEMPLATE], mockGetElemIdFunc)
       expect(result.value).toEqual({
@@ -249,11 +253,12 @@ describe('Transformer', () => {
     it('should not add content value when there is no fileContent', () => {
       const emailTemplateCustomizationInfo = {
         typeName: EMAIL_TEMPLATE,
+        scriptId: 'custemailtmpl_my_script_id',
         values: {
           name: 'email template name',
           [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         },
-      }
+      } as CustomTypeInfo
       const result = createInstanceElement(emailTemplateCustomizationInfo,
         customTypes[EMAIL_TEMPLATE], mockGetElemIdFunc)
       expect(result.value).toEqual({

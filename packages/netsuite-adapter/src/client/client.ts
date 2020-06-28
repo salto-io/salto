@@ -35,7 +35,8 @@ import os from 'os'
 import _ from 'lodash'
 import { getRootCLIPath } from './sdf_root_cli_path'
 import {
-  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME,
+  SUITE_SCRIPTS_FOLDER_NAME, TEMPLATES_FOLDER_NAME, WEB_SITE_HOSTING_FILES_FOLDER_NAME, FILE,
+  FOLDER,
 } from '../constants'
 
 const { makeArray } = collections.array
@@ -108,7 +109,11 @@ export interface CustomizationInfo {
   values: Values
 }
 
-export interface TemplateCustomizationInfo extends CustomizationInfo {
+export interface CustomTypeInfo extends CustomizationInfo {
+  scriptId: string
+}
+
+export interface TemplateCustomTypeInfo extends CustomTypeInfo {
   fileExtension: string
   fileContent: string
 }
@@ -130,11 +135,17 @@ export const convertToCustomizationInfo = (xmlContent: string):
   return { typeName, values: parsedXmlValues[typeName] }
 }
 
-export const convertToTemplateCustomizationInfo = (xmlContent: string, fileExtension: string,
-  fileContent: string): TemplateCustomizationInfo =>
+export const convertToCustomTypeInfo = (xmlContent: string, scriptId: string): CustomTypeInfo =>
   Object.assign(
     convertToCustomizationInfo(xmlContent),
-    { fileExtension, fileContent }
+    { scriptId }
+  )
+
+export const convertToTemplateCustomizationInfo = (xmlContent: string, scriptId: string,
+  fileExtension: string, fileContent: string): TemplateCustomTypeInfo =>
+  Object.assign(
+    convertToCustomizationInfo(xmlContent),
+    { fileExtension, fileContent, scriptId }
   )
 
 export const convertToFileCustomizationInfo = (xmlContent: string, path: string[],
@@ -151,16 +162,20 @@ export const convertToFolderCustomizationInfo = (xmlContent: string, path: strin
     { path }
   )
 
-export const isTemplateCustomizationInfo = (customizationInfo: CustomizationInfo):
-  customizationInfo is TemplateCustomizationInfo => 'fileExtension' in customizationInfo
+export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
+  customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo
+
+export const isTemplateCustomTypeInfo = (customizationInfo: CustomizationInfo):
+  customizationInfo is TemplateCustomTypeInfo =>
+  'fileExtension' in customizationInfo && isCustomTypeInfo(customizationInfo)
 
 export const isFileCustomizationInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is FileCustomizationInfo =>
-  'path' in customizationInfo && 'fileContent' in customizationInfo
+  customizationInfo.typeName === FILE
 
 export const isFolderCustomizationInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is FolderCustomizationInfo =>
-  'path' in customizationInfo && !isFileCustomizationInfo(customizationInfo)
+  customizationInfo.typeName === FOLDER
 
 export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
   // eslint-disable-next-line new-cap
@@ -312,15 +327,15 @@ export default class NetsuiteClient {
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
-    return Promise.all(Object.values(scriptIdToFiles).map(async objectFileNames => {
+    return Promise.all(Object.entries(scriptIdToFiles).map(async ([scriptId, objectFileNames]) => {
       const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
         filename => filename.includes(ADDITIONAL_FILE_PATTERN))
       const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
       if (_.isUndefined(additionalFilename)) {
-        return convertToCustomizationInfo((await xmlContent).toString())
+        return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
       }
       const additionalFileContent = readFile(osPath.resolve(objectsDirPath, additionalFilename))
-      return convertToTemplateCustomizationInfo((await xmlContent).toString(),
+      return convertToTemplateCustomizationInfo((await xmlContent).toString(), scriptId,
         additionalFilename.split(FILE_SEPARATOR)[2], (await additionalFileContent).toString())
     }))
   }
@@ -389,14 +404,17 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async deployCustomObject(filename: string, customizationInfo: CustomizationInfo): Promise<void> {
+  async deployCustomObject(customTypeInfo: CustomTypeInfo): Promise<void> {
     const project = await this.initProject()
     const dirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
-    await writeFile(osPath.resolve(dirPath, `${filename}.xml`), convertToXmlContent(customizationInfo))
-    if (isTemplateCustomizationInfo(customizationInfo)) {
+    await writeFile(
+      osPath.resolve(dirPath, `${customTypeInfo.scriptId}.xml`),
+      convertToXmlContent(customTypeInfo)
+    )
+    if (isTemplateCustomTypeInfo(customTypeInfo)) {
       await writeFile(osPath.resolve(dirPath,
-        `${filename}${ADDITIONAL_FILE_PATTERN}${customizationInfo.fileExtension}`),
-      customizationInfo.fileContent)
+        `${customTypeInfo.scriptId}${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
+      customTypeInfo.fileContent)
     }
     await NetsuiteClient.runDeployCommands(project)
   }

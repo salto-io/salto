@@ -15,13 +15,11 @@
 */
 import _ from 'lodash'
 import wu from 'wu'
-import {
-  ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType,
-  PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isInstanceElement,
-} from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Field, BuiltinTypes, InstanceElement, getChangeElement, PrimitiveType, PrimitiveTypes, Element, DependencyChanger, dependencyChange, ListType, isInstanceElement, ChangeGroupIdFunction } from '@salto-io/adapter-api'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem, getChange } from '../../common/plan'
-import { getPlan, Plan } from '../../../src/core/plan'
+import { mockFunction } from '../../common/helpers'
+import { getPlan, Plan, PlanItem } from '../../../src/core/plan'
 
 type PlanGenerators = {
   planWithTypeChanges: () => Promise<[Plan, ObjectType]>
@@ -223,5 +221,38 @@ describe('getPlan', () => {
     expect(splitElemChanges).toHaveLength(2)
     expect(splitElemChanges[0].parent().action).toEqual('remove')
     expect(splitElemChanges[1].parent().action).toEqual('remove')
+  })
+
+  describe('with custom group key function', () => {
+    let plan: Plan
+    let changeGroup: PlanItem
+    const dummyGroupKeyFunc = mockFunction<ChangeGroupIdFunction>().mockResolvedValue(new Map())
+    beforeAll(async () => {
+      const before = mock.getAllElements()
+      const after = mock.getAllElements()
+      // Make two random changes
+      after[1].annotations.test = true
+      after[2].annotations.test = true
+      plan = await getPlan({
+        before,
+        after,
+        customGroupIdFunctions: {
+          salto: async changes => new Map([...changes.entries()].map(([changeId]) => [changeId, 'all'])),
+          dummy: dummyGroupKeyFunc,
+        },
+      })
+      changeGroup = plan.itemsByEvalOrder()[Symbol.iterator]().next().value
+    })
+
+    it('should return only one change group', () => {
+      expect(plan.size).toEqual(1)
+    })
+    it('should return change group with both changes', () => {
+      expect(changeGroup).toBeDefined()
+      expect([...changeGroup.changes()]).toHaveLength(2)
+    })
+    it('should not call adapter functions that have no changes', () => {
+      expect(dummyGroupKeyFunc).not.toHaveBeenCalled()
+    })
   })
 })

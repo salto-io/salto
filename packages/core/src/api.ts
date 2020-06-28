@@ -51,6 +51,7 @@ import {
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
 import { RestoreProgressEvents, createRestoreChanges } from './core/restore'
+import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 
 const { addHiddenValuesAndHiddenTypes, removeHiddenValuesAndHiddenTypes } = hiddenValues
 
@@ -95,6 +96,7 @@ export const preview = async (
     ),
     changeValidators: getAdapterChangeValidators(),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
+    customGroupIdFunctions: getAdapterChangeGroupIdFunctions(),
   })
 }
 

@@ -15,18 +15,12 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import {
-  Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType,
-  ChangeValidator, Change, ChangeError, ElementMap, DependencyChanger,
-} from '@salto-io/adapter-api'
-import {
-  DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph,
-  removeEdges,
-} from '@salto-io/dag'
+import { Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType, ChangeValidator, Change, ChangeError, ElementMap, DependencyChanger, ChangeGroupIdFunction } from '@salto-io/adapter-api'
+import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, removeEdges } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
-import { buildGroupedGraphFromDiffGraph, findGroupLevelChange } from './group'
+import { buildGroupedGraphFromDiffGraph, findGroupLevelChange, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
 import {
   addNodeDependencies, addFieldToObjectDependency, addTypeDependency, addAfterRemoveDependency,
@@ -166,6 +160,7 @@ type GetPlanParameters = {
   after: ReadonlyArray<Element>
   changeValidators?: Record<string, ChangeValidator>
   dependencyChangers?: ReadonlyArray<DependencyChanger>
+  customGroupIdFunctions?: Record<string, ChangeGroupIdFunction>
   additionalResolveContext?: ReadonlyArray<Element>
 }
 export const getPlan = async ({
@@ -173,6 +168,7 @@ export const getPlan = async ({
   after,
   changeValidators = {},
   dependencyChangers = defaultDependencyChangers,
+  customGroupIdFunctions = {},
   additionalResolveContext,
 }: GetPlanParameters): Promise<Plan> => log.time(async () => {
   // Resolve elements before adding them to the graph
@@ -193,8 +189,13 @@ export const getPlan = async ({
     beforeElementsMap, afterElementsMap, diffGraph, changeValidators,
   )
 
+  // Get group keys
+  const customGroupKeys = await getCustomGroupIds(
+    filterResult.validDiffGraph, customGroupIdFunctions,
+  )
+
   // build graph
-  const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph)
+  const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, customGroupKeys)
   const inGraphElementKeys = wu(groupedGraph.keys())
     .map(id => groupedGraph.getData(id).groupKey)
     .toArray()

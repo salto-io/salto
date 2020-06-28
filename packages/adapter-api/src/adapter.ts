@@ -18,13 +18,13 @@ import {
 } from './elements'
 import { ElemID } from './element_id'
 import { Change } from './change'
-import { DependencyChanger } from './dependency_changer'
+import { DependencyChanger, ChangeId } from './dependency_changer'
 import { SaltoElementError } from './error'
 
-type ChangeGroupID = string
+export type ChangeGroupId = string
 
 export type ChangeGroup = {
-  groupID: ChangeGroupID
+  groupID: ChangeGroupId
   changes: ReadonlyArray<Change>
 }
 
@@ -61,6 +61,9 @@ export type AdapterInstallResult = {
   errors: string[]
 }
 
+export type ChangeGroupIdFunction = (changes: Map<ChangeId, Change>) =>
+  Promise<Map<ChangeId, ChangeGroupId>>
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
@@ -69,6 +72,7 @@ export type Adapter = {
   deployModifiers?: {
     changeValidator?: ChangeValidator
     dependencyChanger?: DependencyChanger
+    getChangeGroupIds?: ChangeGroupIdFunction
   }
   install?: () => Promise<AdapterInstallResult>
 }

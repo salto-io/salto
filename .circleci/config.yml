@@ -307,6 +307,13 @@ jobs:
             git update-index --assume-unchanged .npmrc
 
       - run:
+          name: Set git identity
+          command: |
+            # version git commit is not pushed, so this just needs to be configured
+            git config user.email "$(git log -1 --format='%ae')"
+            git config user.name "$(git log -1 --format='%an')"
+
+      - run:
           name: Publish canary version
           command: .circleci/scripts/publish-canary.sh
 

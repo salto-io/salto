@@ -160,7 +160,7 @@ export interface SalesforceAdapterParams {
   metadataTypesSkippedList?: string[]
 
   // Determine whether hide type folder
-  hideTypesInNacls?: boolean
+  enableHideTypesInNacls?: boolean
 
   // Metadata types that we have to fetch using the retrieve API
   metadataToRetrieve?: string[]
@@ -231,7 +231,7 @@ const metadataToRetrieveAndDeploy = [
 ]
 
 export default class SalesforceAdapter implements AdapterOperations {
-  private hideTypesInNacls: boolean
+  private enableHideTypesInNacls: boolean
   private metadataTypesSkippedList: string[]
   private instancesRegexSkippedList: RegExp[]
   private maxConcurrentRetrieveRequests: number
@@ -248,7 +248,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private userConfig: SalesforceConfig
 
   public constructor({
-    hideTypesInNacls = constants.DEFAULT_HIDE_TYPES_IN_NACLS,
+    enableHideTypesInNacls = constants.DEFAULT_ENABLE_HIDE_TYPES_IN_NACLS,
     metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
       'Settings',
@@ -316,7 +316,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     ],
     config,
   }: SalesforceAdapterParams) {
-    this.hideTypesInNacls = config.hideTypesInNacls ?? hideTypesInNacls
+    this.enableHideTypesInNacls = config.enableHideTypesInNacls ?? enableHideTypesInNacls
     this.metadataTypesSkippedList = metadataTypesSkippedList
       .concat(makeArray(config.metadataTypesSkippedList))
     this.instancesRegexSkippedList = instancesRegexSkippedList
@@ -342,6 +342,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         unsupportedSystemFields,
         dataManagement: config.dataManagement,
         systemFields,
+        enableHideTypesInNacls: this.enableHideTypesInNacls,
       },
       filterCreators
     )
@@ -364,7 +365,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const metadataTypes = this.fetchMetadataTypes(
       metadataTypeInfos,
       annotationTypes,
-      this.hideTypesInNacls,
+      this.enableHideTypesInNacls,
     )
     const metadataInstances = this.fetchMetadataInstances(metadataTypeInfos, metadataTypes)
 
@@ -765,7 +766,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
     knownMetadataTypes: TypeElement[],
-    _hideTypesInNacls: boolean, // Will be use in the next PR
+    _enableHideTypesInNacls: boolean, // Will be use in the next PR
   ): Promise<TypeElement[]> {
     const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(

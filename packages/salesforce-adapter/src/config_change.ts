@@ -78,7 +78,7 @@ export const getConfigFromConfigChanges = (
         .concat(currentInstancesRegexSkippedList),
       maxConcurrentRetrieveRequests: currentConfig.maxConcurrentRetrieveRequests,
       maxItemsInRetrieveRequest: currentConfig.maxItemsInRetrieveRequest,
-      hideTypesInNacls: currentConfig.hideTypesInNacls,
+      enableHideTypesInNacls: currentConfig.enableHideTypesInNacls,
       dataManagement: currentConfig.dataManagement,
     }
   )

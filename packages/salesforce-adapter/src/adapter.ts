@@ -32,9 +32,8 @@ import SalesforceClient from './client/client'
 import * as constants from './constants'
 import {
   toCustomField, toCustomObject, apiName, Types, toMetadataInfo, createInstanceElement,
-  metadataType, createMetadataTypeElements,
+  metadataType, createMetadataTypeElements, instancesToUpdateRecords, instancesToDeleteRecords,
   defaultApiName, getLookUpName, isCustomObject, instancesToCreateRecords,
-  instancesToUpdateRecords, instancesToDeleteRecord,
 } from './transformers/transformer'
 import { toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
@@ -507,7 +506,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       await this.client.bulkLoadOperation(
         apiName(resolved.type),
         'delete',
-        instancesToDeleteRecord([resolved]),
+        instancesToDeleteRecords([resolved]),
       )
     } else if (isInstanceElement(resolved) && this.metadataToDeploy.includes(type)) {
       await this.deployInstance(resolved, true)

@@ -24,26 +24,17 @@ import {
   restoreValues, resolveValues,
 } from '@salto-io/adapter-utils'
 import {
-  getSObjectFieldElement, Types, toCustomField, toCustomObject,
+  getSObjectFieldElement, Types, toCustomField, toCustomObject, instancesToUpdateRecords,
   getValueTypeFieldElement, createMetadataTypeElements, getLookUpName,
-  METADATA_TYPES_TO_RENAME,
+  METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
 } from '../../src/transformers/transformer'
 import {
-  FIELD_ANNOTATIONS,
-  FIELD_TYPE_NAMES,
-  LABEL,
-  API_NAME,
-  COMPOUND_FIELD_TYPE_NAMES,
-  FIELD_DEPENDENCY_FIELDS,
-  VALUE_SETTINGS_FIELDS,
-  FILTER_ITEM_FIELDS,
-  METADATA_TYPE,
-  CUSTOM_OBJECT,
-  VALUE_SET_FIELDS,
-  SUBTYPES_PATH,
-  INSTANCE_FULL_NAME_FIELD, DESCRIPTION, TYPES_PATH, SALESFORCE,
+  FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
+  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE,
+  CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
+  TYPES_PATH, SALESFORCE,
 } from '../../src/constants'
-import { CustomField, FilterItem, CustomObject, CustomPicklistValue } from '../../src/client/types'
+import { CustomField, FilterItem, CustomObject, CustomPicklistValue, salesforceRecord } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
@@ -870,6 +861,183 @@ describe('transformer', () => {
         expect(_.get(rollupSummaryInfo, 'summaryOperation'))
           .toEqual('count')
         expect(rollupSummaryInfo.summaryFilterItems).toBeUndefined()
+      })
+    })
+  })
+
+  describe('to records transformations', () => {
+    const mockElemID = new ElemID(SALESFORCE, 'Test')
+    const mockInstanceName = 'Instance'
+    const values = {
+      Id: '123',
+      Name: {
+        FirstName: 'A',
+        LastName: 'B',
+      },
+      LocalAddress: {
+        City: 'Manchester',
+        State: 'UK',
+      },
+      Creatable: 'Create',
+      NotCreatable: 'DontSendMeOnCreate',
+      Updateable: 'Update',
+      NotUpdateable: 'NotUpdateable',
+
+    }
+    const instance = new InstanceElement(
+      mockInstanceName,
+      new ObjectType({
+        elemID: mockElemID,
+        fields: {
+          Id: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+              [FIELD_ANNOTATIONS.CREATABLE]: true,
+            },
+          },
+          Name: {
+            type: Types.compoundDataTypes.Name,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+              [FIELD_ANNOTATIONS.CREATABLE]: true,
+            },
+          },
+          LocalAddress: {
+            type: Types.compoundDataTypes.Address,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+              [FIELD_ANNOTATIONS.CREATABLE]: true,
+            },
+          },
+          NotCreatableNotUpdateableCompound: {
+            type: Types.compoundDataTypes.Address,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: false,
+              [FIELD_ANNOTATIONS.CREATABLE]: false,
+            },
+          },
+          Creatable: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+              [FIELD_ANNOTATIONS.CREATABLE]: true,
+            },
+          },
+          NotCreatable: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+              [FIELD_ANNOTATIONS.CREATABLE]: false,
+            },
+          },
+          Updateable: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+              [FIELD_ANNOTATIONS.CREATABLE]: true,
+            },
+          },
+          NotUpdateable: {
+            type: BuiltinTypes.STRING,
+            annotations: {
+              [FIELD_ANNOTATIONS.UPDATEABLE]: false,
+              [FIELD_ANNOTATIONS.CREATABLE]: true,
+            },
+          },
+        },
+        annotationTypes: {},
+        annotations: { [METADATA_TYPE]: CUSTOM_OBJECT },
+      }),
+      values,
+    )
+
+    describe('instancesToDeleteRecords', () => {
+      it('should transform to Ids only records', () => {
+        const recordResult = instancesToDeleteRecords([instance])
+        expect(recordResult).toBeDefined()
+        expect(recordResult.length).toEqual(1)
+        expect(recordResult[0].Id).toBeDefined()
+        expect(recordResult[0].Id).toEqual(values.Id)
+        expect(recordResult[0].Name).toBeUndefined()
+        expect(recordResult[0].LocalAddress).toBeUndefined()
+        expect(recordResult[0].Creatable).toBeUndefined()
+        expect(recordResult[0].NotCreatable).toBeUndefined()
+        expect(recordResult[0].Updateable).toBeUndefined()
+        expect(recordResult[0].NotUpdateable).toBeUndefined()
+        expect(recordResult[0].NotCreatableNotUpdateableCompound).toBeUndefined()
+      })
+    })
+
+    describe('instancesToCreateRecords', () => {
+      let recordResult: salesforceRecord[]
+      beforeEach(() => {
+        recordResult = instancesToCreateRecords([instance])
+        expect(recordResult).toBeDefined()
+        expect(recordResult.length).toEqual(1)
+      })
+
+      it('should not change creatable non-compound values', () => {
+        expect(recordResult[0].Id).toBeDefined()
+        expect(recordResult[0].Id).toEqual(values.Id)
+        expect(recordResult[0].Creatable).toBeDefined()
+        expect(recordResult[0].Creatable).toEqual(values.Creatable)
+        expect(recordResult[0].Updateable).toBeDefined()
+        expect(recordResult[0].Updateable).toEqual(values.Updateable)
+        expect(recordResult[0].NotUpdateable).toBeDefined()
+        expect(recordResult[0].NotUpdateable).toEqual(values.NotUpdateable)
+      })
+
+      it('should remove non-creatable values', () => {
+        expect(recordResult[0].NotCreatable).toBeUndefined()
+        expect(recordResult[0].NotCreatableNotUpdateableCompound).toBeUndefined()
+      })
+
+      it('should transform compound fields', () => {
+        expect(recordResult[0].FirstName).toBeDefined()
+        expect(recordResult[0].FirstName).toEqual(values.Name.FirstName)
+        expect(recordResult[0].LastName).toBeDefined()
+        expect(recordResult[0].LastName).toEqual(values.Name.LastName)
+        expect(recordResult[0].LocalCity).toBeDefined()
+        expect(recordResult[0].LocalCity).toEqual(values.LocalAddress.City)
+        expect(recordResult[0].LocalState).toBeDefined()
+        expect(recordResult[0].LocalState).toEqual(values.LocalAddress.State)
+      })
+    })
+
+    describe('instancesToUpdateRecords', () => {
+      let recordResult: salesforceRecord[]
+      beforeEach(() => {
+        recordResult = instancesToUpdateRecords([instance])
+        expect(recordResult).toBeDefined()
+        expect(recordResult.length).toEqual(1)
+      })
+
+      it('should not change creatable non-compound values', () => {
+        expect(recordResult[0].Id).toBeDefined()
+        expect(recordResult[0].Id).toEqual(values.Id)
+        expect(recordResult[0].Creatable).toBeDefined()
+        expect(recordResult[0].Creatable).toEqual(values.Creatable)
+        expect(recordResult[0].Updateable).toBeDefined()
+        expect(recordResult[0].Updateable).toEqual(values.Updateable)
+        expect(recordResult[0].NotCreatable).toBeDefined()
+        expect(recordResult[0].NotCreatable).toEqual(values.NotCreatable)
+      })
+
+      it('should remove non-updateable values', () => {
+        expect(recordResult[0].NotUpdateable).toBeUndefined()
+        expect(recordResult[0].NotCreatableNotUpdateableCompound).toBeUndefined()
+      })
+
+      it('should transform compound fields', () => {
+        expect(recordResult[0].FirstName).toBeDefined()
+        expect(recordResult[0].FirstName).toEqual(values.Name.FirstName)
+        expect(recordResult[0].LastName).toBeDefined()
+        expect(recordResult[0].LastName).toEqual(values.Name.LastName)
+        expect(recordResult[0].LocalCity).toBeDefined()
+        expect(recordResult[0].LocalCity).toEqual(values.LocalAddress.City)
+        expect(recordResult[0].LocalState).toBeDefined()
+        expect(recordResult[0].LocalState).toEqual(values.LocalAddress.State)
       })
     })
   })

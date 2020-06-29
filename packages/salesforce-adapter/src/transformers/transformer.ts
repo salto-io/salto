@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue,
+  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -733,12 +733,44 @@ export class Types {
   }
 }
 
+const transformCompoundValues = (
+  record: salesforceRecord,
+  instance: InstanceElement
+): salesforceRecord => {
+  const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
+  const relevantCompoundFields = _.pickBy(instance.type.fields,
+    (field, fieldKey) => Object.keys(record).includes(fieldKey)
+    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.type.elemID.isEqual(e))))
+  if (_.isEmpty(relevantCompoundFields)) {
+    return record
+  }
+  const transformedCompoundValues = _.mapValues(
+    relevantCompoundFields,
+    (compoundField, compoundFieldKey) => {
+      // Name fields are without a prefix
+      if (compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)) {
+        return record[compoundFieldKey]
+      }
+      // Other compound fields are added a prefix according to the field name
+      // ie. LocalAddrress -> LocalCity, LocalState etc.
+      const typeName = compoundField.type.elemID.isEqual(Types.compoundDataTypes.Address.elemID)
+        ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS : COMPOUND_FIELD_TYPE_NAMES.LOCATION
+      const fieldPrefix = compoundFieldKey.slice(0, -typeName.length)
+      return _.mapKeys(record[compoundFieldKey], (_vv, key) => fieldPrefix.concat(key))
+    }
+  )
+  return Object.assign(
+    _.omit(record, Object.keys(relevantCompoundFields)),
+    ...Object.values(transformedCompoundValues)
+  )
+}
+
 const instancesToRecords = (
   instances: InstanceElement[],
   valuesFilterFunc: (v: Value, k: string, instance: InstanceElement) => boolean
 ): salesforceRecord[] =>
-  instances.map(instance =>
-    Object.assign(
+  instances.map(instance => {
+    const filteredRecordValues = Object.assign(
       _.pickBy(
         instance.value,
         (v, k) => valuesFilterFunc(v, k, instance)
@@ -746,7 +778,9 @@ const instancesToRecords = (
       {
         Id: instance.value.Id,
       }
-    ))
+    )
+    return transformCompoundValues(filteredRecordValues, instance)
+  })
 
 export const instancesToUpdateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
   instancesToRecords(
@@ -762,7 +796,7 @@ export const instancesToCreateRecords = (instances: InstanceElement[]): salesfor
       instance.type.fields[k]?.annotations[FIELD_ANNOTATIONS.CREATABLE]
   )
 
-export const instancesToDeleteRecord = (instances: InstanceElement[]): salesforceRecord[] =>
+export const instancesToDeleteRecords = (instances: InstanceElement[]): salesforceRecord[] =>
   instancesToRecords(
     instances,
     (_v: Value, _k: string, _instance: InstanceElement) => false

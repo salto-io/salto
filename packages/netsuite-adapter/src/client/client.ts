@@ -141,7 +141,7 @@ export const convertToCustomTypeInfo = (xmlContent: string, scriptId: string): C
     { scriptId }
   )
 
-export const convertToTemplateCustomizationInfo = (xmlContent: string, scriptId: string,
+export const convertToTemplateCustomTypeInfo = (xmlContent: string, scriptId: string,
   fileExtension: string, fileContent: string): TemplateCustomTypeInfo =>
   Object.assign(
     convertToCustomizationInfo(xmlContent),
@@ -335,7 +335,7 @@ export default class NetsuiteClient {
         return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
       }
       const additionalFileContent = readFile(osPath.resolve(objectsDirPath, additionalFilename))
-      return convertToTemplateCustomizationInfo((await xmlContent).toString(), scriptId,
+      return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
         additionalFilename.split(FILE_SEPARATOR)[2], (await additionalFileContent).toString())
     }))
   }
@@ -404,18 +404,22 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async deployCustomObject(customTypeInfo: CustomTypeInfo): Promise<void> {
+  async deploy(customizationInfos: CustomizationInfo[]): Promise<void> {
     const project = await this.initProject()
-    const dirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
-    await writeFile(
-      osPath.resolve(dirPath, `${customTypeInfo.scriptId}.xml`),
-      convertToXmlContent(customTypeInfo)
-    )
-    if (isTemplateCustomTypeInfo(customTypeInfo)) {
-      await writeFile(osPath.resolve(dirPath,
-        `${customTypeInfo.scriptId}${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
-      customTypeInfo.fileContent)
-    }
+    const objectsDirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
+    const fileCabinetDirPath = NetsuiteClient.getFileCabinetDirPath(project.projectName)
+    await Promise.all(customizationInfos.map(async customizationInfo => {
+      if (isCustomTypeInfo(customizationInfo)) {
+        return NetsuiteClient.addCustomTypeInfoToProject(customizationInfo, objectsDirPath)
+      }
+      if (isFileCustomizationInfo(customizationInfo)) {
+        return NetsuiteClient.addFileInfoToProject(customizationInfo, fileCabinetDirPath)
+      }
+      if (isFolderCustomizationInfo(customizationInfo)) {
+        return NetsuiteClient.addFolderInfoToProject(customizationInfo, fileCabinetDirPath)
+      }
+      throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
+    }))
     await NetsuiteClient.runDeployCommands(project)
   }
 
@@ -424,11 +428,21 @@ export default class NetsuiteClient {
     await NetsuiteClient.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {}, executor)
   }
 
-  @NetsuiteClient.logDecorator
-  async deployFile(fileCustomizationInfo: FileCustomizationInfo): Promise<void> {
-    const project = await this.initProject()
-    const fileCabinetDirPath = NetsuiteClient.getFileCabinetDirPath(project.projectName)
+  private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo,
+    objectsDirPath: string): Promise<void> {
+    await writeFile(
+      osPath.resolve(objectsDirPath, `${customTypeInfo.scriptId}.xml`),
+      convertToXmlContent(customTypeInfo)
+    )
+    if (isTemplateCustomTypeInfo(customTypeInfo)) {
+      await writeFile(osPath.resolve(objectsDirPath,
+        `${customTypeInfo.scriptId}${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
+      customTypeInfo.fileContent)
+    }
+  }
 
+  private static async addFileInfoToProject(fileCustomizationInfo: FileCustomizationInfo,
+    fileCabinetDirPath: string): Promise<void> {
     const attrsFilename = fileCustomizationInfo.path.slice(-1)[0] + ATTRIBUTES_FILE_SUFFIX
     const attrsFolderPath = osPath.resolve(fileCabinetDirPath,
       ...fileCustomizationInfo.path.slice(0, -1), ATTRIBUTES_FOLDER_NAME)
@@ -441,18 +455,14 @@ export default class NetsuiteClient {
       writeFileInFolder(fileFolderPath, filename, fileCustomizationInfo.fileContent),
       writeFileInFolder(attrsFolderPath, attrsFilename, convertToXmlContent(fileCustomizationInfo)),
     ])
-    await NetsuiteClient.runDeployCommands(project)
   }
 
-  @NetsuiteClient.logDecorator
-  async deployFolder(folderCustomizationInfo: FolderCustomizationInfo): Promise<void> {
-    const project = await this.initProject()
-    const fileCabinetDirPath = NetsuiteClient.getFileCabinetDirPath(project.projectName)
+  private static async addFolderInfoToProject(folderCustomizationInfo: FolderCustomizationInfo,
+    fileCabinetDirPath: string): Promise<void> {
     const attrsFolderPath = osPath.resolve(fileCabinetDirPath, ...folderCustomizationInfo.path,
       ATTRIBUTES_FOLDER_NAME)
     await writeFileInFolder(attrsFolderPath, FOLDER_ATTRIBUTES_FILE_SUFFIX,
       convertToXmlContent(folderCustomizationInfo))
-    await NetsuiteClient.runDeployCommands(project)
   }
 
   private static getProjectPath(projectName: string): string {

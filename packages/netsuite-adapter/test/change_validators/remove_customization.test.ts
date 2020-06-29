@@ -13,26 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ChangeDataType, Change } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import removeCustomizationValidator from '../../src/change_validators/remove_customization'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD } from '../../src/constants'
 
 
-// TODO: export to common test utils package
-export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
-export const toChange = ({ before, after }: ChangeParams): Change => {
-  if (before !== undefined && after !== undefined) {
-    return { action: 'modify', data: { before, after } }
-  }
-  if (before !== undefined) {
-    return { action: 'remove', data: { before } }
-  }
-  if (after !== undefined) {
-    return { action: 'add', data: { after } }
-  }
-  throw new Error('must provide before or after')
-}
 
 describe('remove custom object change validator', () => {
   describe('onRemove', () => {

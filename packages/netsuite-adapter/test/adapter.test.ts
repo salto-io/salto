@@ -15,15 +15,13 @@
 */
 
 import {
-  ElemID, InstanceElement, ObjectType, StaticFile, ChangeDataType, DeployResult, getChangeElement,
-  ServiceIds,
+  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement, ServiceIds,
 } from '@salto-io/adapter-api'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
-  ENTITY_CUSTOM_FIELD, NETSUITE, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM,
-  TYPES_TO_SKIP,
+  ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
 } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import {
@@ -137,7 +135,7 @@ describe('Adapter', () => {
     })
   })
 
-  describe('add & update', () => {
+  describe('deploy', () => {
     const origInstance = new InstanceElement('elementName',
       customTypes[ENTITY_CUSTOM_FIELD], {
         label: 'elementName',
@@ -149,11 +147,16 @@ describe('Adapter', () => {
       })
     let instance: InstanceElement
 
+    const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
+      [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+    })
+    const folderInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
+      [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
+    })
+
     beforeEach(() => {
       instance = origInstance.clone()
-      client.deployCustomObject = jest.fn().mockImplementation(() => Promise.resolve())
-      client.deployFile = jest.fn().mockImplementation(() => Promise.resolve())
-      client.deployFolder = jest.fn().mockImplementation(() => Promise.resolve())
+      client.deploy = jest.fn().mockImplementation(() => Promise.resolve())
     })
     describe('add', () => {
       const adapterAdd = (after: ChangeDataType): Promise<DeployResult> => netsuiteAdapter.deploy({
@@ -169,48 +172,60 @@ describe('Adapter', () => {
 
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
-        expect(client.deployCustomObject)
-          .toHaveBeenCalledWith(toCustomizationInfo(expectedResolvedInstance))
+        expect(client.deploy)
+          .toHaveBeenCalledWith([toCustomizationInfo(expectedResolvedInstance)])
         expect(post.isEqual(instance)).toBe(true)
       })
 
       it('should add file instance', async () => {
-        const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
-          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
-        })
         const result = await adapterAdd(fileInstance)
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deployFile).toHaveBeenCalledWith(toCustomizationInfo(fileInstance))
+        expect(client.deploy).toHaveBeenCalledWith([toCustomizationInfo(fileInstance)])
         expect(post.isEqual(fileInstance)).toBe(true)
       })
 
       it('should add folder instance', async () => {
-        const folderInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
-          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
-        })
         const result = await adapterAdd(folderInstance)
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deployFolder).toHaveBeenCalledWith(toCustomizationInfo(folderInstance))
+        expect(client.deploy).toHaveBeenCalledWith([toCustomizationInfo(folderInstance)])
         expect(post.isEqual(folderInstance)).toBe(true)
       })
 
-      it('should fail when trying to add a non custom type or file cabinet instance', async () => {
-        const instWithUnsupportedType = new InstanceElement('unsupported',
-          new ObjectType({ elemID: new ElemID(NETSUITE, 'UnsupportedType') }))
-        const result = await adapterAdd(instWithUnsupportedType)
-        expect(result.appliedChanges).toHaveLength(0)
-        expect(result.errors).toHaveLength(1)
+      it('should support deploying multiple changes at once', async () => {
+        const result = await netsuiteAdapter.deploy({
+          groupID: 'some group id',
+          changes: [
+            { action: 'add', data: { after: fileInstance } },
+            { action: 'add', data: { after: folderInstance } },
+          ],
+        })
+        expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
+          [toCustomizationInfo(folderInstance), toCustomizationInfo(fileInstance)]
+        ))
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(2)
       })
 
-      it('should fail when trying to add a typesToSkip instance', async () => {
-        const shouldSkipInst = new InstanceElement('skip', customTypes[SAVED_SEARCH])
-        const result = await adapterAdd(shouldSkipInst)
-        expect(result.appliedChanges).toHaveLength(0)
+      it('should return correct DeployResult in case of failure', async () => {
+        const clientError = new Error('some client error')
+        client.deploy = jest.fn().mockRejectedValue(clientError)
+        const result = await netsuiteAdapter.deploy({
+          groupID: 'some group id',
+          changes: [
+            { action: 'add', data: { after: fileInstance } },
+            { action: 'add', data: { after: folderInstance } },
+          ],
+        })
+        expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
+          [toCustomizationInfo(folderInstance), toCustomizationInfo(fileInstance)]
+        ))
         expect(result.errors).toHaveLength(1)
+        expect(result.errors).toEqual([clientError])
+        expect(result.appliedChanges).toHaveLength(0)
       })
     })
 
@@ -230,32 +245,26 @@ describe('Adapter', () => {
 
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
-        expect(client.deployCustomObject)
-          .toHaveBeenCalledWith(toCustomizationInfo(expectedResolvedInstance))
+        expect(client.deploy)
+          .toHaveBeenCalledWith([toCustomizationInfo(expectedResolvedInstance)])
         expect(post).toEqual(instance)
       })
 
       it('should update file instance', async () => {
-        const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
-          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
-        })
         const result = await adapterUpdate(fileInstance, fileInstance.clone())
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deployFile).toHaveBeenCalledWith(toCustomizationInfo(fileInstance))
+        expect(client.deploy).toHaveBeenCalledWith([toCustomizationInfo(fileInstance)])
         expect(post).toEqual(fileInstance)
       })
 
       it('should update folder instance', async () => {
-        const folderInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
-          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
-        })
         const result = await adapterUpdate(folderInstance, folderInstance.clone())
         expect(result.errors).toHaveLength(0)
         expect(result.appliedChanges).toHaveLength(1)
         const post = getChangeElement(result.appliedChanges[0]) as InstanceElement
-        expect(client.deployFolder).toHaveBeenCalledWith(toCustomizationInfo(folderInstance))
+        expect(client.deploy).toHaveBeenCalledWith([toCustomizationInfo(folderInstance)])
         expect(post).toEqual(folderInstance)
       })
 
@@ -272,45 +281,9 @@ describe('Adapter', () => {
 
         const expectedResolvedAfter = after.clone()
         expectedResolvedAfter.value.description = 'edited description value'
-        expect(client.deployCustomObject)
-          .toHaveBeenCalledWith(toCustomizationInfo(expectedResolvedAfter))
+        expect(client.deploy)
+          .toHaveBeenCalledWith([toCustomizationInfo(expectedResolvedAfter)])
         expect(post).toEqual(after)
-      })
-
-      it('should fail if custom type service id has been modified', async () => {
-        const after = instance.clone()
-        after.value[SCRIPT_ID] = 'modified'
-        const result = await adapterUpdate(instance, after)
-        expect(result.appliedChanges).toHaveLength(0)
-        expect(result.errors).toHaveLength(1)
-        expect(client.deployCustomObject).not.toHaveBeenCalled()
-      })
-
-      it('should throw an error if file cabinet type service id has been modified', async () => {
-        const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
-          [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
-        })
-        const after = fileInstance.clone()
-        after.value[PATH] = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content2.html'
-        const result = await adapterUpdate(fileInstance, after)
-        expect(result.appliedChanges).toHaveLength(0)
-        expect(result.errors).toHaveLength(1)
-        expect(client.deployFile).not.toHaveBeenCalled()
-      })
-
-      it('should fail when trying to update a non custom type or file cabinet instance', async () => {
-        const instWithUnsupportedType = new InstanceElement('unsupported',
-          new ObjectType({ elemID: new ElemID(NETSUITE, 'UnsupportedType') }))
-        const result = await adapterUpdate(instWithUnsupportedType, instWithUnsupportedType.clone())
-        expect(result.appliedChanges).toHaveLength(0)
-        expect(result.errors).toHaveLength(1)
-      })
-
-      it('should throw error when trying to update a typesToSkip instance', async () => {
-        const shouldSkipInst = new InstanceElement('skip', customTypes[SAVED_SEARCH])
-        const result = await adapterUpdate(shouldSkipInst, shouldSkipInst.clone())
-        expect(result.appliedChanges).toHaveLength(0)
-        expect(result.errors).toHaveLength(1)
       })
     })
   })

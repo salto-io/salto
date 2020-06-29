@@ -416,151 +416,181 @@ describe('netsuite client', () => {
     })
   })
 
-  describe('deployCustomObject', () => {
+  describe('deploy', () => {
     let client: NetsuiteClient
     beforeEach(() => {
       client = mockClient()
     })
-    it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
-      mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SETUP_ACCOUNT
-          && _.isUndefined(context.arguments.accountid)) {
-          return Promise.resolve({ status: 'ERROR' })
-        }
-        return Promise.resolve({ status: 'SUCCESS' })
+
+    describe('deployCustomObject', () => {
+      it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
+        mockExecuteAction.mockImplementation(context => {
+          if (context.commandName === COMMANDS.SETUP_ACCOUNT
+            && _.isUndefined(context.arguments.accountid)) {
+            return Promise.resolve({ status: 'ERROR' })
+          }
+          return Promise.resolve({ status: 'SUCCESS' })
+        })
+        const scriptId = 'filename'
+        const customTypeInfo = {
+          typeName: 'typeName',
+          values: {
+            key: 'val',
+          },
+          scriptId,
+        } as CustomTypeInfo
+        await client.deploy([customTypeInfo])
+        expect(writeFileMock).toHaveBeenCalledTimes(1)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, addDependenciesCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(5, deployProjectCommandMatcher)
       })
-      await client.deployCustomObject({} as CustomTypeInfo)
-      expect(writeFileMock).toHaveBeenCalledTimes(1)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, addDependenciesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, deployProjectCommandMatcher)
+
+      it('should succeed for CustomTypeInfo', async () => {
+        mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        const scriptId = 'filename'
+        const customTypeInfo = {
+          typeName: 'typeName',
+          values: {
+            key: 'val',
+          },
+          scriptId,
+        } as CustomTypeInfo
+        await client.deploy([customTypeInfo])
+        expect(writeFileMock).toHaveBeenCalledTimes(1)
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
+          '<typeName><key>val</key></typeName>')
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+        expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+      })
+
+      it('should succeed for TemplateCustomTypeInfo', async () => {
+        mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        const scriptId = 'filename'
+        const templateCustomTypeInfo = {
+          typeName: 'typeName',
+          values: {
+            key: 'val',
+          },
+          scriptId,
+          fileContent: MOCK_TEMPLATE_CONTENT,
+          fileExtension: 'html',
+        } as TemplateCustomTypeInfo
+        await client.deploy([templateCustomTypeInfo])
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock)
+          .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
+        expect(writeFileMock)
+          .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.template.html`), MOCK_TEMPLATE_CONTENT)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+        expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+      })
+
+      it('should wrap the thrown string with Error object', async () => {
+        const errorMessage = 'error message'
+        mockExecuteAction.mockImplementation(() => {
+          throw errorMessage
+        })
+        await expect(client.deploy([{} as CustomTypeInfo])).rejects
+          .toThrow(new Error(errorMessage))
+      })
+
+      it('should throw Error object', async () => {
+        const errorMessage = 'error message'
+        mockExecuteAction.mockImplementation(() => {
+          throw new Error(errorMessage)
+        })
+        await expect(client.deploy([{} as CustomTypeInfo])).rejects
+          .toThrow(new Error(errorMessage))
+      })
     })
 
-    it('should succeed for CustomizationInfo', async () => {
+    describe('deployFolder', () => {
+      it('should succeed', async () => {
+        mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        const folderCustomizationInfo: FolderCustomizationInfo = {
+          typeName: 'folder',
+          values: {
+            description: 'folder description',
+          },
+          path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+        }
+        await client.deploy([folderCustomizationInfo])
+        expect(mkdirpMock).toHaveBeenCalledTimes(1)
+        expect(mkdirpMock)
+          .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
+        expect(writeFileMock).toHaveBeenCalledTimes(1)
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
+          '<folder><description>folder description</description></folder>')
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+      })
+    })
+
+    describe('deployFile', () => {
+      it('should succeed', async () => {
+        mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        const fileCustomizationInfo: FileCustomizationInfo = {
+          typeName: 'file',
+          values: {
+            description: 'file description',
+          },
+          path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
+          fileContent: 'dummy file content',
+        }
+        await client.deploy([fileCustomizationInfo])
+        expect(mkdirpMock).toHaveBeenCalledTimes(2)
+        expect(mkdirpMock)
+          .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
+        expect(mkdirpMock)
+          .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
+          '<file><description>file description</description></file>')
+        expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
+          'dummy file content')
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
+      })
+    })
+
+    it('should deploy multiple CustomizationInfos in a single project', async () => {
       mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      const scriptId = 'filename'
-      const customTypeInfo = {
+      const scriptId1 = 'filename'
+      const customTypeInfo1: CustomTypeInfo = {
         typeName: 'typeName',
-        values: {
-          key: 'val',
-        },
-        scriptId,
-      } as CustomTypeInfo
-      await client.deployCustomObject(customTypeInfo)
-      expect(writeFileMock).toHaveBeenCalledTimes(1)
-      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
+        values: { key: 'val' },
+        scriptId: scriptId1,
+      }
+      const scriptId2 = 'filename'
+      const customTypeInfo2: CustomTypeInfo = {
+        typeName: 'typeName',
+        values: { key: 'val' },
+        scriptId: scriptId2,
+      }
+      await client.deploy([customTypeInfo1, customTypeInfo2])
+      expect(writeFileMock).toHaveBeenCalledTimes(2)
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId1}.xml`),
+        '<typeName><key>val</key></typeName>')
+      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId2}.xml`),
         '<typeName><key>val</key></typeName>')
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
-    })
-
-    it('should succeed for TemplateCustomizationInfo', async () => {
-      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      const scriptId = 'filename'
-      const templateCustomTypeInfo = {
-        typeName: 'typeName',
-        values: {
-          key: 'val',
-        },
-        scriptId,
-        fileContent: MOCK_TEMPLATE_CONTENT,
-        fileExtension: 'html',
-      } as TemplateCustomTypeInfo
-      await client.deployCustomObject(templateCustomTypeInfo)
-      expect(writeFileMock).toHaveBeenCalledTimes(2)
-      expect(writeFileMock)
-        .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
-      expect(writeFileMock)
-        .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.template.html`), MOCK_TEMPLATE_CONTENT)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
-      expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
-    })
-
-    it('should wrap the thrown string with Error object', async () => {
-      const errorMessage = 'error message'
-      mockExecuteAction.mockImplementation(() => {
-        throw errorMessage
-      })
-      await expect(client.deployCustomObject({} as CustomTypeInfo)).rejects
-        .toThrow(new Error(errorMessage))
-    })
-
-    it('should throw Error object', async () => {
-      const errorMessage = 'error message'
-      mockExecuteAction.mockImplementation(() => {
-        throw new Error(errorMessage)
-      })
-      await expect(client.deployCustomObject({} as CustomTypeInfo)).rejects
-        .toThrow(new Error(errorMessage))
-    })
-  })
-
-  describe('deployFolder', () => {
-    let client: NetsuiteClient
-    beforeEach(() => {
-      client = mockClient()
-    })
-    it('should succeed', async () => {
-      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      const folderCustomizationInfo: FolderCustomizationInfo = {
-        typeName: 'folder',
-        values: {
-          description: 'folder description',
-        },
-        path: ['Templates', 'E-mail Templates', 'InnerFolder'],
-      }
-      await client.deployFolder(folderCustomizationInfo)
-      expect(mkdirpMock).toHaveBeenCalledTimes(1)
-      expect(mkdirpMock)
-        .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
-      expect(writeFileMock).toHaveBeenCalledTimes(1)
-      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
-        '<folder><description>folder description</description></folder>')
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
-    })
-  })
-
-  describe('deployFile', () => {
-    let client: NetsuiteClient
-    beforeEach(() => {
-      client = mockClient()
-    })
-    it('should succeed', async () => {
-      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
-      const fileCustomizationInfo: FileCustomizationInfo = {
-        typeName: 'file',
-        values: {
-          description: 'file description',
-        },
-        path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
-        fileContent: 'dummy file content',
-      }
-      await client.deployFile(fileCustomizationInfo)
-      expect(mkdirpMock).toHaveBeenCalledTimes(2)
-      expect(mkdirpMock)
-        .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
-      expect(mkdirpMock)
-        .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
-      expect(writeFileMock).toHaveBeenCalledTimes(2)
-      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
-        '<file><description>file description</description></file>')
-      expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
-        'dummy file content')
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
     })
   })
 })

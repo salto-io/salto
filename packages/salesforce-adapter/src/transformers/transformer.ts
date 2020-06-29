@@ -691,7 +691,6 @@ export class Types {
     ).map(type => {
       const fieldType = type.clone()
       fieldType.path = [SALESFORCE, TYPES_PATH, 'field_types']
-      fieldType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
       return fieldType
     })
   }
@@ -706,9 +705,6 @@ export class Types {
         ...Object.entries(fieldTypes).map(([name, type]) => ({ [name]: { type } }))
       ),
       path: [SALESFORCE, TYPES_PATH, ...isSubType ? [SUBTYPES_PATH] : [], typeName],
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN]: true,
-      },
     }))
 
   static getAllMissingTypes(): TypeElement[] {
@@ -731,7 +727,6 @@ export class Types {
         fieldType.path = fieldType.elemID.isEqual(Types.filterItemElemID)
           ? [SALESFORCE, TYPES_PATH, Types.filterItemElemID.name]
           : [SALESFORCE, TYPES_PATH, 'annotation_types']
-        fieldType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
         return fieldType
       })
   }
@@ -1172,7 +1167,6 @@ export const createMetadataTypeElements = async ({
   element.annotate({
     ..._.pickBy(annotations, isDefined),
     [METADATA_TYPE]: name,
-    [CORE_ANNOTATIONS.HIDDEN]: true,
   })
   element.path = [
     SALESFORCE,

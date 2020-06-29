@@ -58,6 +58,7 @@ import instanceReferences from './filters/instance_references'
 import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
+import hideTypesFilter from './filters/hide_types'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
   getConfigFromConfigChanges,
@@ -100,6 +101,8 @@ export const DEFAULT_FILTERS = [
   convertListsFilter,
   convertTypeFilter,
   instanceReferences,
+  // hideTypesFilter should come before customObjectsSplitFilter
+  hideTypesFilter,
   customObjectsSplitFilter,
 ]
 

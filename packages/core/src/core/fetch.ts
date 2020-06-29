@@ -277,15 +277,19 @@ const calcFetchChanges = async (
   const serviceElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(serviceElements)
   const mergedServiceElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(mergedServiceElements)
   const stateElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(stateElements)
+  const workspaceElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(workspaceElements)
   const serviceChanges = await log.time(() =>
     getDetailedChanges(stateElementsHiddenRemoved, mergedServiceElementsHiddenRemoved),
   'finished to calculate service-state changes')
   const pendingChanges = await log.time(() => getChangeMap(
     stateElementsHiddenRemoved,
-    workspaceElements
+    workspaceElementsHiddenRemoved
   ), 'finished to calculate pending changes')
-  const workspaceToServiceChanges = await log.time(() => getChangeMap(workspaceElements,
-    mergedServiceElementsHiddenRemoved), 'finished to calculate service-workspace changes')
+
+  const workspaceToServiceChanges = await log.time(() => getChangeMap(
+    workspaceElementsHiddenRemoved,
+    mergedServiceElementsHiddenRemoved
+  ), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
     serviceElementsHiddenRemoved,

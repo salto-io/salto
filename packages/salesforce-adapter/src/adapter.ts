@@ -368,7 +368,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     const metadataTypes = this.fetchMetadataTypes(
       metadataTypeInfos,
       annotationTypes,
-      this.enableHideTypesInNacls,
     )
     const metadataInstances = this.fetchMetadataInstances(metadataTypeInfos, metadataTypes)
 
@@ -769,7 +768,6 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
     knownMetadataTypes: TypeElement[],
-    _enableHideTypesInNacls: boolean, // Will be use in the next PR
   ): Promise<TypeElement[]> {
     const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(

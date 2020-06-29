@@ -38,7 +38,7 @@ const splitChangeByPath = async (
   change: DetailedChange,
   index: PathIndex
 ): Promise<DetailedChange[]> => {
-  const changeHints = index.get(change.id.getFullName())
+  const changeHints = _.uniqWith(index.get(change.id.getFullName()), _.isEqual)
   if (!changeHints) {
     return [change]
   }
@@ -82,24 +82,18 @@ const filterChangesByIDRegex = async (
 
   const filterChangeByID = async (change: DetailedChange): Promise<DetailedChange | undefined> => {
     if (change.action === 'add') {
-      return {
-        ...change,
-        data: { after: await filterByID(change.id, change.data.after, filterIDByRegex) },
-      } as DetailedChange
+      const data = { after: await filterByID(change.id, change.data.after, filterIDByRegex) }
+      return _.isEmpty(data.after) ? undefined : { ...change, data }
     }
     if (change.action === 'remove') {
-      return {
-        ...change,
-        data: { before: await filterByID(change.id, change.data.before, filterIDByRegex) },
-      } as DetailedChange
+      const data = { before: await filterByID(change.id, change.data.before, filterIDByRegex) }
+      return _.isEmpty(data.before) ? undefined : { ...change, data }
     }
-    return {
-      ...change,
-      data: {
-        before: await filterByID(change.id, change.data.before, filterIDByRegex),
-        after: await filterByID(change.id, change.data.after, filterIDByRegex),
-      },
-    } as DetailedChange
+    const data = {
+      before: await filterByID(change.id, change.data.before, filterIDByRegex),
+      after: await filterByID(change.id, change.data.after, filterIDByRegex),
+    }
+    return _.isEmpty(data.before) && _.isEmpty(data.after) ? undefined : { ...change, data }
   }
 
   return _.isEmpty(filters)

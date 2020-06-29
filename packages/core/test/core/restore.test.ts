@@ -197,6 +197,9 @@ describe('restore', () => {
         ]
         changes = await createRestoreChanges(wsElements, stateElements, index, filters)
       })
+      it('should filter out changes that did not pass any of the filters', () => {
+        expect(changes).toHaveLength(2)
+      })
       it('should create changes for elements that pass top level filters', () => {
         expect(changes.find(c => c.id.isEqual(singlePathObjMerged.elemID))).toBeTruthy()
       })

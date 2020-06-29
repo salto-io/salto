@@ -81,7 +81,7 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
     }
     return value
   }
-  transformElement({ element, transformFunc })
+  transformElement({ element, transformFunc, strict: false })
   return wu(_.entries(pathHints))
 }
 

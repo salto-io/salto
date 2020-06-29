@@ -71,6 +71,7 @@ describe('create path index', () => {
         num: 7,
         list: [1, 2, 3],
       },
+      notDefined: 'where is my def?!',
     },
     path: ['salto', 'obj', 'multi', 'anno'],
   })
@@ -149,6 +150,11 @@ describe('create path index', () => {
       const id = singlePathObject.elemID.createNestedID('field')
         .createNestedID('simple').createNestedID('nope').getFullName()
       expect(pathIndex.get(id)).toEqual([singlePathObject.path])
+    })
+    it('should return the proper path for annotations which are not defined as anno types', () => {
+      const id = multiPathAnnoObj.elemID.createNestedID('attr')
+        .createNestedID('notDefined').getFullName()
+      expect(pathIndex.get(id)).toEqual([multiPathAnnoObj.path])
     })
   })
   describe('elements which are defined in a multiple fragments', () => {

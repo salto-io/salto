@@ -43,7 +43,7 @@ const getJsonValidationErrorsFromAfter = async (after: InstanceElement):
 
 const changeValidator: ChangeValidator = async changes => (
   _.flatten(await Promise.all(
-    changes.changes
+    changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationDiff)
       .map(change => getJsonValidationErrorsFromAfter(change.data.after))

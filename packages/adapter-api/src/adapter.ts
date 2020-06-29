@@ -53,7 +53,8 @@ export type ChangeError = SaltoElementError & {
   detailedMessage: string
 }
 
-export type ChangeValidator = (changes: ChangeGroup) => Promise<ReadonlyArray<ChangeError>>
+export type ChangeValidator = (changes: ReadonlyArray<Change>) =>
+  Promise<ReadonlyArray<ChangeError>>
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

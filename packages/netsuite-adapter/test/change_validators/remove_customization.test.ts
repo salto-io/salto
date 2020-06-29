@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ChangeDataType, Change, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ChangeDataType, Change } from '@salto-io/adapter-api'
 import removeCustomizationValidator from '../../src/change_validators/remove_customization'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD } from '../../src/constants'
@@ -34,19 +34,11 @@ export const toChange = ({ before, after }: ChangeParams): Change => {
   throw new Error('must provide before or after')
 }
 
-export const toChangeGroup = (...params: ChangeParams[]): ChangeGroup => {
-  const changes = params.map(toChange)
-  return {
-    groupID: getChangeElement(changes[0]).elemID.getFullName(),
-    changes,
-  }
-}
-
 describe('remove custom object change validator', () => {
   describe('onRemove', () => {
     it('should have change error when removing an instance with custom object type', async () => {
       const instance = new InstanceElement('test', customTypes[ENTITY_CUSTOM_FIELD])
-      const changeErrors = await removeCustomizationValidator(toChangeGroup({ before: instance }))
+      const changeErrors = await removeCustomizationValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -54,7 +46,7 @@ describe('remove custom object change validator', () => {
 
     it('should have change error when removing an instance with file cabinet type', async () => {
       const instance = new InstanceElement('test', fileCabinetTypes.file)
-      const changeErrors = await removeCustomizationValidator(toChangeGroup({ before: instance }))
+      const changeErrors = await removeCustomizationValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
@@ -62,7 +54,7 @@ describe('remove custom object change validator', () => {
 
     it('should not have change error when removing an instance with non custom object type', async () => {
       const instance = new InstanceElement('test', new ObjectType({ elemID: new ElemID('bla') }))
-      const changeErrors = await removeCustomizationValidator(toChangeGroup({ before: instance }))
+      const changeErrors = await removeCustomizationValidator([toChange({ before: instance })])
       expect(changeErrors).toHaveLength(0)
     })
   })

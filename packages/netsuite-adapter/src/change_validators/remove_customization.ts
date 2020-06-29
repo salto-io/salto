@@ -17,7 +17,7 @@ import { isInstanceElement, ChangeValidator, isRemovalDiff, getChangeElement } f
 import { isCustomType, isFileCabinetType } from '../types'
 
 const changeValidator: ChangeValidator = async changes => (
-  changes.changes
+  changes
     .filter(isRemovalDiff)
     .map(getChangeElement)
     .filter(isInstanceElement)

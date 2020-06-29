@@ -209,12 +209,10 @@ describe('api.ts', () => {
       expect(mockedGetPlan).toHaveBeenCalledTimes(1)
 
       // check that we call get plan after adding hidden values and variables to workspace elements
-      expect(mockedGetPlan).toHaveBeenCalledWith(
-        stateElements,
-        stateElements,
-        expect.anything(),
-        expect.anything()
-      )
+      expect(mockedGetPlan).toHaveBeenCalledWith(expect.objectContaining({
+        before: stateElements,
+        after: stateElements,
+      }))
     })
 
     it('should not call flush', async () => {

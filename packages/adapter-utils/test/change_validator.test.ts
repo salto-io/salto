@@ -14,15 +14,15 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, ChangeError, ObjectType, ElemID, ChangeGroup } from '@salto-io/adapter-api'
+import { ChangeValidator, ChangeError, ObjectType, ElemID, Change } from '@salto-io/adapter-api'
 import { createChangeValidator } from '../src/change_validator'
-import { mockFunction, MockFunction, toChangeGroup } from './common'
+import { mockFunction, MockFunction, toChange } from './common'
 
 describe('change_validator', () => {
   const testElem = new ObjectType({ elemID: new ElemID('test', 'type') })
 
   let mockValidators: MockFunction<ChangeValidator>[]
-  let changes: ChangeGroup
+  let changes: ReadonlyArray<Change>
   let errors: ChangeError[]
   let result: ReadonlyArray<ChangeError>
 
@@ -45,7 +45,7 @@ describe('change_validator', () => {
       mockFunction<ChangeValidator>().mockResolvedValue(errors.slice(0, 1)),
       mockFunction<ChangeValidator>().mockResolvedValue(errors.slice(1)),
     ]
-    changes = toChangeGroup({ after: testElem })
+    changes = [toChange({ after: testElem })]
     const mainValidator = createChangeValidator(mockValidators)
     result = await mainValidator(changes)
   })

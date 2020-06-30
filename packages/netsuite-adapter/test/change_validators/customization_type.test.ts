@@ -19,7 +19,7 @@ import {
 import customizationTypeValidator from '../../src/change_validators/customization_type'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, NETSUITE } from '../../src/constants'
-import { toChangeGroup } from '../utils'
+import { toChange } from '../utils'
 
 
 describe('customization type change validator', () => {
@@ -27,7 +27,7 @@ describe('customization type change validator', () => {
     const instWithUnsupportedType = new InstanceElement('unsupported',
       new ObjectType({ elemID: new ElemID(NETSUITE, 'UnsupportedType') }))
     const changeErrors = await customizationTypeValidator(
-      toChangeGroup({ after: instWithUnsupportedType })
+      [toChange({ after: instWithUnsupportedType })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
@@ -38,7 +38,7 @@ describe('customization type change validator', () => {
     const instWithUnsupportedType = new InstanceElement('unsupported',
       new ObjectType({ elemID: new ElemID(NETSUITE, 'UnsupportedType') }))
     const changeErrors = await customizationTypeValidator(
-      toChangeGroup({ before: instWithUnsupportedType, after: instWithUnsupportedType })
+      [toChange({ before: instWithUnsupportedType, after: instWithUnsupportedType })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
@@ -47,28 +47,28 @@ describe('customization type change validator', () => {
 
   it('should not have change error when adding an instance with customType', async () => {
     const instance = new InstanceElement('test', customTypes[ENTITY_CUSTOM_FIELD])
-    const changeErrors = await customizationTypeValidator(toChangeGroup({ after: instance }))
+    const changeErrors = await customizationTypeValidator([toChange({ after: instance })])
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should not have change error when updating an instance with customType', async () => {
     const instance = new InstanceElement('test', customTypes[ENTITY_CUSTOM_FIELD])
     const changeErrors = await customizationTypeValidator(
-      toChangeGroup({ before: instance, after: instance })
+      [toChange({ before: instance, after: instance })]
     )
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should not have change error when adding an instance with fileCabinetType', async () => {
     const instance = new InstanceElement('test', fileCabinetTypes[FILE])
-    const changeErrors = await customizationTypeValidator(toChangeGroup({ after: instance }))
+    const changeErrors = await customizationTypeValidator([toChange({ after: instance })])
     expect(changeErrors).toHaveLength(0)
   })
 
   it('should not have change error when updating an instance with fileCabinetType', async () => {
     const instance = new InstanceElement('test', fileCabinetTypes[FILE])
     const changeErrors = await customizationTypeValidator(
-      toChangeGroup({ before: instance, after: instance })
+      [toChange({ before: instance, after: instance })]
     )
     expect(changeErrors).toHaveLength(0)
   })

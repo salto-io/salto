@@ -23,7 +23,7 @@ import { isCustomType, isFileCabinetType } from '../types'
 
 const { isDefined } = values
 const changeValidator: ChangeValidator = async changes => (
-  changes.changes
+  changes
     .filter(isModificationDiff)
     .filter(isInstanceChange)
     .filter(change => {

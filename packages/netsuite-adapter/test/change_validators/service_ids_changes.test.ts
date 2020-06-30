@@ -17,7 +17,7 @@ import { InstanceElement } from '@salto-io/adapter-api'
 import serviceIdsChangesValidator from '../../src/change_validators/service_ids_changes'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../../src/constants'
-import { toChangeGroup } from '../utils'
+import { toChange } from '../utils'
 
 
 describe('customization type change validator', () => {
@@ -29,7 +29,7 @@ describe('customization type change validator', () => {
     const after = entityCustomFieldInstance.clone()
     after.value[SCRIPT_ID] = 'modified'
     const changeErrors = await serviceIdsChangesValidator(
-      toChangeGroup({ before: entityCustomFieldInstance, after })
+      [toChange({ before: entityCustomFieldInstance, after })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
@@ -43,7 +43,7 @@ describe('customization type change validator', () => {
     const after = fileInstance.clone()
     after.value[PATH] = 'Templates/modified.html'
     const changeErrors = await serviceIdsChangesValidator(
-      toChangeGroup({ before: fileInstance, after })
+      [toChange({ before: fileInstance, after })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
@@ -59,7 +59,7 @@ describe('customization type change validator', () => {
     const after = entityCustomFieldInstance.clone()
     after.value.label = 'modified'
     const changeErrors = await serviceIdsChangesValidator(
-      toChangeGroup({ before: entityCustomFieldInstance, after })
+      [toChange({ before: entityCustomFieldInstance, after })]
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -72,7 +72,7 @@ describe('customization type change validator', () => {
     const after = fileInstance.clone()
     after.value.content = 'modified'
     const changeErrors = await serviceIdsChangesValidator(
-      toChangeGroup({ before: fileInstance, after })
+      [toChange({ before: fileInstance, after })]
     )
     expect(changeErrors).toHaveLength(0)
   })

@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import removeCustomizationValidator from '../../src/change_validators/remove_customization'
 import { customTypes, fileCabinetTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD } from '../../src/constants'
-
+import { toChange } from '../utils'
 
 
 describe('remove custom object change validator', () => {

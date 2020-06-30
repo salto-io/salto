@@ -16,7 +16,7 @@
 import instanceChangesValidator from '../../src/change_validators/instance_changes'
 import { customTypes } from '../../src/types'
 import { ENTITY_CUSTOM_FIELD, SCRIPT_ID } from '../../src/constants'
-import { toChangeGroup } from '../utils'
+import { toChange } from '../utils'
 
 
 describe('customization type change validator', () => {
@@ -24,7 +24,7 @@ describe('customization type change validator', () => {
     const after = customTypes[ENTITY_CUSTOM_FIELD].clone()
     after.fields[SCRIPT_ID].annotate({ dummyKey: 'dummyValue' })
     const changeErrors = await instanceChangesValidator(
-      toChangeGroup({ before: customTypes[ENTITY_CUSTOM_FIELD], after })
+      [toChange({ before: customTypes[ENTITY_CUSTOM_FIELD], after })]
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')

@@ -18,7 +18,7 @@ import {
 } from '@salto-io/adapter-api'
 
 const changeValidator: ChangeValidator = async changes => (
-  changes.changes
+  changes
     .filter(isAdditionOrModificationDiff)
     .map(getChangeElement)
     .filter(elem => !isInstanceElement(elem))

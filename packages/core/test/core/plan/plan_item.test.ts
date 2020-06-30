@@ -15,10 +15,13 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import { getChangeElement, isListType } from '@salto-io/adapter-api'
+import { Group } from '@salto-io/dag'
+import { isListType, Change, ChangeDataType } from '@salto-io/adapter-api'
 import * as mock from '../../common/elements'
-import { getFirstPlanItem, getChange } from '../../common/plan'
+import { getFirstPlanItem, toChange } from '../../common/plan'
 import { planGenerators } from './plan.test'
+import { PlanItem } from '../../../src/core/plan'
+import { addPlanItemAccessors } from '../../../src/core/plan/plan_item'
 
 describe('PlanItem', () => {
   const allElements = mock.getAllElements()
@@ -33,19 +36,54 @@ describe('PlanItem', () => {
     planWithFieldIsListChanges,
   } = planGenerators(allElements)
 
-  describe('parent method', () => {
-    it('should return group level change', async () => {
-      const [plan, changedElem] = await planWithTypeChanges()
-      const planItem = getFirstPlanItem(plan)
-      const groupLevelChange = getChange(planItem, changedElem.elemID)
-      expect(planItem.parent()).toBe(groupLevelChange)
+  describe('action property', () => {
+    const toChangeGroup = (
+      groupKey: string, changes: ReadonlyArray<Change>,
+    ): Group<Change<ChangeDataType>> => ({
+      groupKey,
+      items: new Map(changes.map(change => [_.uniqueId(), change])),
     })
-    it('should create modify parent if none exists', async () => {
-      const [plan, changedElem] = await planWithFieldChanges()
-      const planItem = getFirstPlanItem(plan)
-      const parent = planItem.parent()
-      expect(parent.action).toEqual('modify')
-      expect(getChangeElement(parent).elemID).toEqual(changedElem.elemID)
+    describe('when all changes are add or remove', () => {
+      let addItem: PlanItem
+      let removeItem: PlanItem
+      beforeEach(() => {
+        addItem = addPlanItemAccessors(toChangeGroup(
+          'additions',
+          [toChange({ after: allElements[0] }), toChange({ after: allElements[1] })],
+        ))
+        removeItem = addPlanItemAccessors(toChangeGroup(
+          'removals',
+          [toChange({ before: allElements[0] }), toChange({ before: allElements[1] })],
+        ))
+      })
+      it('should match the change type', () => {
+        expect(addItem.action).toEqual('add')
+        expect(removeItem.action).toEqual('remove')
+      })
+    })
+    describe('when there are no top level changes in a group', () => {
+      let item: PlanItem
+      beforeEach(() => {
+        item = addPlanItemAccessors(toChangeGroup(
+          'fieldChanges',
+          Object.values(allElements[1].fields).map(field => toChange({ after: field }))
+        ))
+      })
+      it('should have a modify action', () => {
+        expect(item.action).toEqual('modify')
+      })
+    })
+    describe('when there is a mix of different actions in the group', () => {
+      let item: PlanItem
+      beforeEach(() => {
+        item = addPlanItemAccessors(toChangeGroup(
+          'mixed',
+          [toChange({ before: allElements[0] }), toChange({ after: allElements[1] })]
+        ))
+      })
+      it('should have a modify action', () => {
+        expect(item.action).toEqual('modify')
+      })
     })
   })
 

@@ -111,10 +111,15 @@ export const planGenerators = (allElements: ReadonlyArray<Element>): PlanGenerat
       const officeFieldChange = changeByElem.get(saltoOffice.fields.test.elemID.getFullName())
       const employeeChange = changeByElem.get(saltoEmployee.elemID.getFullName())
       if (officeChange && officeFieldChange && employeeChange) {
-        return [
-          dependencyChange('add', employeeChange, officeChange),
-          dependencyChange('add', officeFieldChange, employeeChange),
-        ]
+        return isAdd
+          ? [
+            dependencyChange('add', employeeChange, officeChange),
+            dependencyChange('add', officeFieldChange, employeeChange),
+          ]
+          : [
+            dependencyChange('add', officeChange, employeeChange),
+            dependencyChange('add', employeeChange, officeFieldChange),
+          ]
       }
       return []
     }
@@ -207,8 +212,8 @@ describe('getPlan', () => {
     const splitElemChanges = planItems
       .filter(item => item.groupKey === splitElem.elemID.getFullName())
     expect(splitElemChanges).toHaveLength(2)
-    expect(splitElemChanges[0].parent().action).toEqual('add')
-    expect(splitElemChanges[1].parent().action).toEqual('modify')
+    expect(splitElemChanges[0].action).toEqual('add')
+    expect(splitElemChanges[1].action).toEqual('modify')
   })
 
   it('should split elements on removal if their fields create a dependency cycle', async () => {
@@ -219,8 +224,8 @@ describe('getPlan', () => {
     const splitElemChanges = planItems
       .filter(item => item.groupKey === splitElem.elemID.getFullName())
     expect(splitElemChanges).toHaveLength(2)
-    expect(splitElemChanges[0].parent().action).toEqual('remove')
-    expect(splitElemChanges[1].parent().action).toEqual('remove')
+    expect(splitElemChanges[0].action).toEqual('modify')
+    expect(splitElemChanges[1].action).toEqual('remove')
   })
 
   describe('with custom group key function', () => {

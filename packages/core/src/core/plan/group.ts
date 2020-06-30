@@ -15,33 +15,8 @@
 */
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
-import { DataNodeMap, GroupedNodeMap, NodeId, buildGroupedGraph, Group } from '@salto-io/dag'
-import { Change, getChangeElement, ElementMap, ChangeDataType, isField, ChangeGroupId, ChangeId, ChangeGroupIdFunction } from '@salto-io/adapter-api'
-
-export const findGroupLevelChange = (group: Group<Change>): Change | undefined =>
-  wu(group.items.values()).find(
-    change => getChangeElement(change).elemID.getFullName() === group.groupKey
-  )
-
-export const getOrCreateGroupLevelChange = (group: Group<Change>, beforeElementsMap: ElementMap,
-  afterElementsMap: ElementMap): Change => {
-  const groupChange = findGroupLevelChange(group)
-  if (groupChange) {
-    return groupChange
-  }
-  const before = beforeElementsMap[group.groupKey] as ChangeDataType | undefined
-  const after = afterElementsMap[group.groupKey] as ChangeDataType | undefined
-  if (before && after) {
-    return { action: 'modify', data: { before, after } }
-  }
-  if (after) {
-    // This is an add change that got split into multiple parts, the main addition is part of
-    // a different group that must happen before this change so here we actually modify
-    return { action: 'modify', data: { before: after, after } }
-  }
-  // This is a remove change that got split into multiple parts
-  return { action: 'remove', data: { before: before as ChangeDataType } }
-}
+import { DataNodeMap, GroupedNodeMap, NodeId, buildGroupedGraph } from '@salto-io/dag'
+import { Change, getChangeElement, isField, ChangeGroupId, ChangeId, ChangeGroupIdFunction } from '@salto-io/adapter-api'
 
 export const getCustomGroupIds = async (
   changes: DataNodeMap<Change>,

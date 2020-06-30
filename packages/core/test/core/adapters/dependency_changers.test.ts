@@ -13,17 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Adapter, ObjectType, ElemID, DependencyChanger, dependencyChange, ChangeDataType, Change, DependencyChange, ChangeEntry, AdapterOperations } from '@salto-io/adapter-api'
+import { Adapter, ObjectType, ElemID, DependencyChanger, dependencyChange, DependencyChange, ChangeEntry, AdapterOperations } from '@salto-io/adapter-api'
 import { getAdapterDependencyChangers } from '../../../src/core/adapters'
 import { mockFunction } from '../../common/helpers'
+import { toChange } from '../../common/plan'
 
 describe('getAdapterDependencyChangers', () => {
-  const toChange = (action: 'add' | 'remove', data: ChangeDataType): Change => (
-    action === 'add'
-      ? { action, data: { after: data } }
-      : { action, data: { before: data } }
-  )
-
   const mockAdapter = (dependencyChanger?: DependencyChanger): Adapter => ({
     credentialsType: new ObjectType({ elemID: new ElemID('test') }),
     configType: new ObjectType({ elemID: new ElemID('test') }),
@@ -53,11 +48,11 @@ describe('getAdapterDependencyChangers', () => {
   })
   describe('wrapped dependency changer', () => {
     const adapterChanges: ChangeEntry[] = [
-      [1, toChange('add', new ObjectType({ elemID: new ElemID('withDepChanger', 'type') }))],
-      [2, toChange('add', new ObjectType({ elemID: new ElemID('withDepChanger', 'type2') }))],
+      [1, toChange({ after: new ObjectType({ elemID: new ElemID('withDepChanger', 'type') }) })],
+      [2, toChange({ after: new ObjectType({ elemID: new ElemID('withDepChanger', 'type2') }) })],
     ]
     const nonAdapterChanges: ChangeEntry[] = [
-      [3, toChange('add', new ObjectType({ elemID: new ElemID('withoutDepChanger', 'type') }))],
+      [3, toChange({ after: new ObjectType({ elemID: new ElemID('withoutDepChanger', 'type') }) })],
     ]
     const allDeps = new Map([
       [1, new Set([2, 3])],

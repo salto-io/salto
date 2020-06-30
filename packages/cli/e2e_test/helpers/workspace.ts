@@ -25,7 +25,6 @@ import {
 import {
   findElement,
 } from '@salto-io/adapter-utils'
-import wu from 'wu'
 import { command as fetch } from '../../src/commands/fetch'
 import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput, CliExitCode, CliTelemetry } from '../../src/types'
@@ -222,7 +221,7 @@ const getChangedElementName = (change: Change): string => getChangeElement(chang
 export const verifyChanges = (plan: Plan,
   expectedChanges: { action: ActionName; element: string }[]): void => {
   expect(plan.size).toBe(expectedChanges.length)
-  const changes = wu(plan.itemsByEvalOrder()).map(item => item.parent() as Change).toArray()
+  const changes = [...plan.itemsByEvalOrder()].flatMap(item => [...item.changes()])
 
   expect(changes.every(change =>
     expectedChanges.some(expectedChange =>

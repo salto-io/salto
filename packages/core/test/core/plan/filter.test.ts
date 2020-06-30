@@ -13,11 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionDiff, ModificationDiff } from '@salto-io/dag'
-import {
-  getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes,
-} from '@salto-io/adapter-api'
-import wu from 'wu'
+import { getChangeElement, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change } from '@salto-io/adapter-api'
+import wu, { WuIterable } from 'wu'
 import * as mock from '../../common/elements'
 import { getFirstPlanItem } from '../../common/plan'
 import { getPlan } from '../../../src/core/plan'
@@ -61,8 +58,10 @@ describe('filterInvalidChanges', () => {
     expect(planResult.changeErrors).toHaveLength(0)
     expect(planResult.size).toBe(2)
     newElements.forEach(element => {
-      const oldElement = wu(planResult.itemsByEvalOrder())
-        .map(item => getChangeElement(item.parent()))
+      const oldElement = (wu(planResult.itemsByEvalOrder())
+        .map(item => item.changes())
+        .flatten(true) as WuIterable<Change<ChangeDataType>>)
+        .map(getChangeElement)
         .find(changeElement => element.elemID.isEqual(changeElement.elemID))
       expect(oldElement).toBeDefined()
     })
@@ -115,8 +114,8 @@ describe('filterInvalidChanges', () => {
     expect(planResult.size).toBe(1)
     const planItem = getFirstPlanItem(planResult)
     expect(planItem.items.size).toBe(1)
-    const parent = planItem.parent() as AdditionDiff<ObjectType>
-    const parentFields = Object.keys(parent.data.after.fields)
+    const [change] = planItem.changes() as Change<ObjectType>[]
+    const parentFields = Object.keys(getChangeElement(change).fields)
     expect(parentFields).toContain('valid')
     expect(parentFields).not.toContain('invalid')
   })
@@ -154,10 +153,12 @@ describe('filterInvalidChanges', () => {
     expect(planResult.size).toBe(1)
     const planItem = getFirstPlanItem(planResult)
     expect(planItem.items.size).toBe(1)
-    const parent = planItem.parent() as ModificationDiff<ObjectType>
-    const parentFields = Object.keys(parent.data.after.fields)
-    expect(parentFields).toContain('valid')
-    expect(parentFields).not.toContain('invalid')
+    const [change] = planItem.changes()
+    expect(change.action).toEqual('add')
+    const changedField = getChangeElement(change) as Field
+    expect(changedField.elemID).toEqual(saltoOffice.fields.valid.elemID)
+    // It should replace the field parent with a parent that does not have invalid changes
+    expect(changedField.parent.fields).not.toHaveProperty('invalid')
   })
 
   it('should have onUpdate change error when modifying invalid object annotations and keep the creation of valid field', async () => {
@@ -177,9 +178,10 @@ describe('filterInvalidChanges', () => {
     expect(planResult.changeErrors[0].elemID.isEqual(afterInvalidObj.elemID)).toBeTruthy()
     expect(planResult.size).toBe(1)
     const planItem = getFirstPlanItem(planResult)
-    const changes = [...planItem.changes()]
-    expect(changes).toHaveLength(1)
-    expect(getChangeElement(changes[0])).toEqual(afterInvalidObj.fields.valid)
+    expect(planItem.items.size).toBe(1)
+    const [change] = planItem.changes()
+    expect(change.action).toEqual('add')
+    expect(getChangeElement(change)).toEqual(afterInvalidObj.fields.valid)
   })
 
   it('should have onUpdate change errors when only some field removals are invalid', async () => {
@@ -199,10 +201,9 @@ describe('filterInvalidChanges', () => {
     expect(planResult.size).toBe(1)
     const planItem = getFirstPlanItem(planResult)
     expect(planItem.items.size).toBe(1)
-    const parent = planItem.parent() as ModificationDiff<ObjectType>
-    const afterFields = Object.keys(parent.data.after.fields)
-    expect(afterFields).toContain('invalid')
-    expect(afterFields).not.toContain('valid')
+    const [change] = planItem.changes()
+    expect(change.action).toEqual('remove')
+    expect(getChangeElement(change)).toEqual(saltoOffice.fields.valid)
   })
 
   it('should have onUpdate change errors when having invalid field modification', async () => {

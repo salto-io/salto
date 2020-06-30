@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import chalk from 'chalk'
-import wu from 'wu'
+import wu, { WuIterable } from 'wu'
 import {
   Element, isInstanceElement, Values, Change, Value, getChangeElement, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
-  ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange,
+  ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult } from '@salto-io/core'
 import { errors, SourceFragment, parser } from '@salto-io/workspace'
@@ -41,9 +41,7 @@ export const error = (txt: string): string => chalk.red.bold(txt)
 
 export const emptyLine = (): string => ''
 
-const fullName = (change: Change): string => getChangeElement(change).elemID.getFullName()
-
-const planItemName = (step: PlanItem): string => fullName(step.parent())
+const planItemName = (step: PlanItem): string => step.groupKey
 
 const formatError = (err: { message: string }): string => header(err.message)
 
@@ -179,11 +177,16 @@ export const formatChange = (change: DetailedChange, withValue = false): string 
 }
 
 const formatCountPlanItemTypes = (plan: Plan): string => {
-  const items = wu(plan.itemsByEvalOrder())
-    .map(item => ({
-      type: getChangeElement(item.parent()).elemID.idType,
-      name: planItemName(item),
-    })).unique().toArray()
+  const items = (wu(plan.itemsByEvalOrder())
+    .map(item => item.changes())
+    .flatten(true) as WuIterable<Change<ChangeDataType>>)
+    .map(getChangeElement)
+    .map(({ elemID }) => ({
+      type: elemID.idType,
+      name: elemID.getFullName(),
+    }))
+    .unique()
+    .toArray()
   const counter = _.countBy(items, 'type')
   return `${chalk.bold('Impacts:')} ${singleOrPluralString(counter.type || 0, 'type', 'types')} `
     + `and ${singleOrPluralString(counter.instance || 0, 'instance', 'instances')}.`
@@ -352,7 +355,7 @@ export const formatItemError = (itemName: string, errorReason: string): string =
 export const formatItemDone = (item: PlanItem, startTime: Date): string => {
   const elapsed = getElapsedTime(startTime)
   const itemName = formatItemName(planItemName(item))
-  const completedText = success(`${Prompts.END_ACTION[item.parent().action]}`
+  const completedText = success(`${Prompts.END_ACTION[item.action]}`
     + ` completed after ${elapsed}s`)
   const itemDone = [
     `${itemName} ${completedText}`,
@@ -362,10 +365,9 @@ export const formatItemDone = (item: PlanItem, startTime: Date): string => {
 }
 
 export const formatActionStart = (action: PlanItem): string => {
-  action.parent()
   const itemName = `${formatItemName(planItemName(action))}`
   const elements = [
-    body(`${itemName} ${Prompts.START_ACTION[action.parent().action]}`),
+    body(`${itemName} ${Prompts.START_ACTION[action.action]}`),
     emptyLine(),
   ]
   return elements.join('\n')

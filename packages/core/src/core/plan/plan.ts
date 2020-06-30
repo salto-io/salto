@@ -15,12 +15,12 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import { Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType, ChangeValidator, Change, ChangeError, ElementMap, DependencyChanger, ChangeGroupIdFunction } from '@salto-io/adapter-api'
+import { Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType, ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement, isAdditionOrRemovalDiff, isFieldChange } from '@salto-io/adapter-api'
 import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, removeEdges } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
-import { buildGroupedGraphFromDiffGraph, findGroupLevelChange, getCustomGroupIds } from './group'
+import { buildGroupedGraphFromDiffGraph, getCustomGroupIds } from './group'
 import { filterInvalidChanges } from './filter'
 import {
   addNodeDependencies, addFieldToObjectDependency, addTypeDependency, addAfterRemoveDependency,
@@ -92,27 +92,18 @@ const isEqualsNode = (node1: ChangeDataType, node2: ChangeDataType): boolean => 
   return _.isEqual(node1, node2)
 }
 
-const addPlanFunctions = (groupGraph: GroupedNodeMap<Change>,
-  changeErrors: ReadonlyArray<ChangeError>, beforeElementsMap: ElementMap,
-  afterElementsMap: ElementMap): Plan => Object.assign(groupGraph,
+const addPlanFunctions = (
+  groupGraph: GroupedNodeMap<Change>, changeErrors: ReadonlyArray<ChangeError>
+): Plan => Object.assign(groupGraph,
   {
     itemsByEvalOrder(): Iterable<PlanItem> {
       return wu(groupGraph.evaluationOrder())
         .map(group => groupGraph.getData(group))
-        .map(group => {
-          // If we add / remove a "group level" element it already contains all the information
-          // about its sub changes so we can keep only the group level change
-          const groupLevelChange = findGroupLevelChange(group)
-          return groupLevelChange !== undefined && groupLevelChange.action !== 'modify'
-            ? { ...group, items: new Map([[group.groupKey, groupLevelChange]]) }
-            : group
-        })
-        .map(group => addPlanItemAccessors(group, beforeElementsMap, afterElementsMap))
+        .map(group => addPlanItemAccessors(group))
     },
 
     getItem(planItemId: PlanItemId): PlanItem {
-      return addPlanItemAccessors(groupGraph.getData(planItemId), beforeElementsMap,
-        afterElementsMap)
+      return addPlanItemAccessors(groupGraph.getData(planItemId))
     },
     changeErrors,
   })
@@ -155,6 +146,35 @@ const addModifyNodes = (
   return runMergeStep
 }
 
+const removeRedundantFieldChanges = (
+  graph: GroupedNodeMap<Change<ChangeDataType>>
+): GroupedNodeMap<Change<ChangeDataType>> => (
+  // If we add / remove an object type, we can omit all the field add / remove
+  // changes from the same group since they are included in the parent change
+  new GroupedNodeMap<Change<ChangeDataType>>(
+    graph.entries(),
+    new Map(wu(graph.keys()).map(key => {
+      const group = graph.getData(key)
+      const objTypeAddOrRemove = new Set(
+        wu(group.items.values())
+          .filter(isAdditionOrRemovalDiff)
+          .map(getChangeElement)
+          .filter(isObjectType)
+          .map(obj => obj.elemID.getFullName())
+      )
+      const isRedundantFieldChange = (change: Change<ChangeDataType>): boolean => (
+        isAdditionOrRemovalDiff(change)
+        && isFieldChange(change)
+        && objTypeAddOrRemove.has(getChangeElement(change).parent.elemID.getFullName())
+      )
+      const filteredItems = new Map(
+        wu(group.items.entries()).filter(([_id, change]) => !isRedundantFieldChange(change))
+      )
+      return [key, { groupKey: group.groupKey, items: filteredItems }]
+    }))
+  )
+)
+
 type GetPlanParameters = {
   before: ReadonlyArray<Element>
   after: ReadonlyArray<Element>
@@ -189,21 +209,15 @@ export const getPlan = async ({
     beforeElementsMap, afterElementsMap, diffGraph, changeValidators,
   )
 
-  // Get group keys
   const customGroupKeys = await getCustomGroupIds(
     filterResult.validDiffGraph, customGroupIdFunctions,
   )
 
   // build graph
-  const groupedGraph = buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, customGroupKeys)
-  const inGraphElementKeys = wu(groupedGraph.keys())
-    .map(id => groupedGraph.getData(id).groupKey)
-    .toArray()
-  // build plan
-  return addPlanFunctions(
-    groupedGraph,
-    filterResult.changeErrors,
-    _.pick(beforeElementsMap, inGraphElementKeys),
-    _.pick(filterResult.validAfterElementsMap, inGraphElementKeys)
+  const groupedGraph = removeRedundantFieldChanges(
+    buildGroupedGraphFromDiffGraph(filterResult.validDiffGraph, customGroupKeys)
   )
+
+  // build plan
+  return addPlanFunctions(groupedGraph, filterResult.changeErrors)
 }, 'get plan with %o -> %o elements', before.length, after.length)

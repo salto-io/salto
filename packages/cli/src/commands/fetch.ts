@@ -234,8 +234,9 @@ export const fetchCommand = async (
 
   if (!_.isUndefined(fetchResult.configChanges)) {
     const abortRequests = await series(
-      wu(fetchResult.configChanges.itemsByEvalOrder()).map(change => async () => {
-        const newConfig = getChangeElement(change.parent())
+      wu(fetchResult.configChanges.itemsByEvalOrder()).map(planItem => async () => {
+        const [change] = planItem.changes()
+        const newConfig = getChangeElement(change)
         const adapterName = newConfig.elemID.adapter
         if (!isInstanceElement(newConfig)) {
           log.error('Got non instance config from adapter %s - %o', adapterName, newConfig)
@@ -244,7 +245,7 @@ export const fetchCommand = async (
         const shouldWriteToConfig = force || await shouldUpdateConfig(
           output,
           fetchResult.adapterNameToConfigMessage?.[adapterName] || '',
-          change,
+          planItem,
         )
         if (shouldWriteToConfig) {
           await workspace.updateServiceConfig(adapterName, newConfig)

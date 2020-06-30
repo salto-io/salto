@@ -94,8 +94,8 @@ export const serialize = (elements: Element[],
     o[SALTO_CLASS_FIELD] = ctorNameToSerializedName[e.constructor.name]
     return o
   }
-  const staticFileReplacer = (e: StaticFile): Omit<StaticFile & SerializedClass, 'content'> => (
-    _.omit(saltoClassReplacer(e), 'content')
+  const staticFileReplacer = (e: StaticFile): Omit<Omit<StaticFile & SerializedClass, 'internalContent'>, 'content'> => (
+    _.omit(saltoClassReplacer(e), 'content', 'internalContent')
   )
   const referenceExpressionReplacer = (e: ReferenceExpression):
     ReferenceExpression & SerializedClass => {

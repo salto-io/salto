@@ -15,7 +15,7 @@
 */
 import { ObjectType, ElemID, BuiltinTypes, InstanceElement, ChangeError } from '@salto-io/adapter-api'
 import customObjectInstancesValidator from '../../src/change_validators/custom_object_instances'
-import { toChangeGroup } from '../utils'
+import { toChange } from '../utils'
 import { FIELD_ANNOTATIONS, METADATA_TYPE, CUSTOM_OBJECT } from '../../src/constants'
 
 describe('custom object instances change validator', () => {
@@ -50,7 +50,7 @@ describe('custom object instances change validator', () => {
         nonCreatable: 'dontCreateMe',
       })
       changeErrors = await customObjectInstancesValidator(
-        toChangeGroup({ after: instance })
+        [toChange({ after: instance })]
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
@@ -62,7 +62,7 @@ describe('custom object instances change validator', () => {
         nonUpdateable: 'youCanCreateMe',
       })
       changeErrors = await customObjectInstancesValidator(
-        toChangeGroup({ after: instance })
+        [toChange({ after: instance })]
       )
       expect(changeErrors).toHaveLength(0)
     })
@@ -86,7 +86,7 @@ describe('custom object instances change validator', () => {
     it('should have change error with warning when editing a non-updateable field', async () => {
       after.value.nonUpdateable = 'IamTryingToUpdate'
       changeErrors = await customObjectInstancesValidator(
-        toChangeGroup({ before, after })
+        [toChange({ before, after })]
       )
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
@@ -97,7 +97,7 @@ describe('custom object instances change validator', () => {
       const afterInstance = before.clone()
       afterInstance.value.nonCreatable = 'IamTryingToUpdateBeforeICan'
       changeErrors = await customObjectInstancesValidator(
-        toChangeGroup({ before, after })
+        [toChange({ before, after })]
       )
       expect(changeErrors).toHaveLength(0)
     })

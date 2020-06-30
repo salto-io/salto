@@ -61,7 +61,7 @@ const getCreateErrorsForNonCreatableFields = async (
 
 const changeValidator: ChangeValidator = async changes => {
   const updateChangeErrors = _.flatten(await Promise.all(
-    changes.changes
+    changes
       .filter(isInstanceChange)
       .filter(isModificationDiff)
       .filter(change => isCustomObject(getChangeElement(change)))
@@ -70,7 +70,7 @@ const changeValidator: ChangeValidator = async changes => {
   ))
 
   const createChangeErrors = _.flatten(await Promise.all(
-    changes.changes
+    changes
       .filter(isInstanceChange)
       .filter(isAdditionDiff)
       .filter(change => isCustomObject(getChangeElement(change)))

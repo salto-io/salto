@@ -30,7 +30,7 @@ import * as constants from '../src/constants'
 import {
   INSTANCES_REGEX_SKIPPED_LIST, METADATA_TYPES_SKIPPED_LIST,
   MAX_CONCURRENT_RETRIEVE_REQUESTS, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  HIDE_TYPES_IN_NACLS,
+  ENABLE_HIDE_TYPES_IN_NACLS,
 } from '../src/types'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import { MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput, mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveResult } from './connection'
@@ -44,7 +44,7 @@ describe('SalesforceAdapter fetch', () => {
   ]
   const testMaxConcurrentRetrieveRequests = 4
   const testMaxItemsInRetrieveRequest = 100
-  const testHideTypesInNacls = true
+  const testEnableHideTypesInNacls = true
 
   const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
     ElemID => new ElemID(adapterName, name)
@@ -59,7 +59,7 @@ describe('SalesforceAdapter fetch', () => {
           instancesRegexSkippedList: testInstancesRegexSkippedList,
           maxConcurrentRetrieveRequests: testMaxConcurrentRetrieveRequests,
           maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
-          hideTypesInNacls: testHideTypesInNacls,
+          enableHideTypesInNacls: testEnableHideTypesInNacls,
         },
       },
     }))
@@ -870,7 +870,7 @@ public class MyClass${index} {
               .concat(testMetadataTypesSkippedList),
             [MAX_CONCURRENT_RETRIEVE_REQUESTS]: testMaxConcurrentRetrieveRequests,
             [MAX_ITEMS_IN_RETRIEVE_REQUEST]: testMaxItemsInRetrieveRequest,
-            [HIDE_TYPES_IN_NACLS]: testHideTypesInNacls,
+            [ENABLE_HIDE_TYPES_IN_NACLS]: testEnableHideTypesInNacls,
           }
         )
       })

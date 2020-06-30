@@ -40,7 +40,7 @@ SalesforceConfig => {
     instancesRegexSkippedList: makeArray(config?.value?.instancesRegexSkippedList),
     maxConcurrentRetrieveRequests: config?.value?.maxConcurrentRetrieveRequests,
     maxItemsInRetrieveRequest: config?.value?.maxItemsInRetrieveRequest,
-    hideTypesInNacls: config?.value?.hideTypesInNacls,
+    enableHideTypesInNacls: config?.value?.enableHideTypesInNacls,
     dataManagement: config?.value?.dataManagement,
   }
   Object.keys(config?.value ?? {})

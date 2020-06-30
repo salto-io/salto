@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value,
+  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -765,42 +765,28 @@ const transformCompoundValues = (
   )
 }
 
-const instancesToRecords = (
-  instances: InstanceElement[],
-  valuesFilterFunc: (v: Value, k: string, instance: InstanceElement) => boolean
-): salesforceRecord[] =>
-  instances.map(instance => {
-    const filteredRecordValues = Object.assign(
-      _.pickBy(
-        instance.value,
-        (v, k) => valuesFilterFunc(v, k, instance)
-      ),
-      {
-        Id: instance.value.Id,
-      }
-    )
-    return transformCompoundValues(filteredRecordValues, instance)
-  })
+const toRecords = (
+  instance: InstanceElement,
+  fieldAnnotationToFilterBy: string,
+): salesforceRecord => {
+  const filteredRecordValues = {
+    Id: instance.value.Id,
+    ..._.pickBy(
+      instance.value,
+      (_v, k) => instance.type.fields[k]?.annotations[fieldAnnotationToFilterBy]
+    ),
+  }
+  return transformCompoundValues(filteredRecordValues, instance)
+}
 
 export const instancesToUpdateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
-  instancesToRecords(
-    instances,
-    (_v: Value, k: string, instance: InstanceElement) =>
-      instance.type.fields[k]?.annotations[FIELD_ANNOTATIONS.UPDATEABLE]
-  )
+  instances.map(instance => toRecords(instance, FIELD_ANNOTATIONS.UPDATEABLE))
 
 export const instancesToCreateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
-  instancesToRecords(
-    instances,
-    (_v: Value, k: string, instance: InstanceElement) =>
-      instance.type.fields[k]?.annotations[FIELD_ANNOTATIONS.CREATABLE]
-  )
+  instances.map(instance => toRecords(instance, FIELD_ANNOTATIONS.CREATABLE))
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): salesforceRecord[] =>
-  instancesToRecords(
-    instances,
-    (_v: Value, _k: string, _instance: InstanceElement) => false
-  )
+  instances.map(instance => ({ Id: instance.value.Id }))
 
 export const toCustomField = (
   field: Field, fullname = false

@@ -17,6 +17,10 @@
 declare module '@salto-io/suitecloud-cli' {
   import { Value, Values } from '@salto-io/adapter-api'
 
+  interface SDKDownloadServiceI {
+    download(): Promise<void>
+  }
+
   export class CommandsMetadataService {
     constructor(rootCLIPath: string)
 
@@ -74,4 +78,6 @@ declare module '@salto-io/suitecloud-cli' {
     resultMessage?: string
     errorMessages?: string[]
   }
+
+  export const SDKDownloadService: SDKDownloadServiceI
 }

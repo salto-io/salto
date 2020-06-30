@@ -350,8 +350,35 @@ export default class NetsuiteClient {
     return _.flatten(operationResults.map(operationResult => makeArray(operationResult.data)))
   }
 
+  private static async importFiles(filePaths: string[], executor: CommandActionExecutorType):
+    Promise<OperationResult[]> {
+    try {
+      const operationResult = await NetsuiteClient.executeProjectAction(
+        COMMANDS.IMPORT_FILES,
+        { paths: filePaths },
+        executor
+      )
+      return [operationResult]
+    } catch (e) {
+      if (filePaths.length === 1) {
+        log.debug(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
+        return []
+      }
+      return _.chunk(filePaths, (filePaths.length + 1) / 2)
+        .filter(chunk => !_.isEmpty(chunk))
+        .reduce(
+          async (prevRes, paths) =>
+            (await prevRes)
+              .concat(
+                await NetsuiteClient.importFiles(paths, executor)
+              ),
+          Promise.resolve([] as OperationResult[]),
+        )
+    }
+  }
+
   @NetsuiteClient.logDecorator
-  async importFileCabinet(): Promise<CustomizationInfo[]> {
+  async importFileCabinetContent(filePathRegexSkipList: RegExp[]): Promise<CustomizationInfo[]> {
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
       fileCabinetDirPath: string): Promise<CustomizationInfo[]> => {
       const filePathToAttrsPath = _.fromPairs(
@@ -383,14 +410,15 @@ export default class NetsuiteClient {
       }))
 
     const project = await this.initProject()
-    const listFilePathsResult = await NetsuiteClient.listFilePaths(project.executor)
-    const importResult = await NetsuiteClient.executeProjectAction(COMMANDS.IMPORT_FILES, {
-      paths: listFilePathsResult,
-    }, project.executor)
+    const filePathsToImport = (await NetsuiteClient.listFilePaths(project.executor))
+      .filter(path => filePathRegexSkipList.every(regex => !regex.test(path)))
+    const importFileResults = await NetsuiteClient.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
-    const paths = _.uniq(makeArray(importResult.data.results)
-      .filter(result => result.loaded)
-      .map(result => result.path))
+    const paths = _.uniq(
+      _.flatten(importFileResults.map(importResult => makeArray(importResult.data.results)))
+        .filter(result => result.loaded)
+        .map(result => result.path)
+    )
     const [attributesPaths, filePaths] = _.partition(paths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,

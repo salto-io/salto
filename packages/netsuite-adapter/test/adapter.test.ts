@@ -77,7 +77,7 @@ describe('Adapter', () => {
         + '  <label>elementName</label>'
         + '</entitycustomfield>'
       const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id')
-      client.importFileCabinet = jest.fn()
+      client.importFileCabinetContent = jest.fn()
         .mockResolvedValue([folderCustomizationInfo, fileCustomizationInfo])
       client.listCustomObjects = jest.fn().mockResolvedValue([customTypeInfo])
       const { elements } = await netsuiteAdapter.fetch()
@@ -96,14 +96,14 @@ describe('Adapter', () => {
     })
 
     it('should handle exceptions during listCustomObjects', async () => {
-      client.importFileCabinet = jest.fn().mockResolvedValue([])
+      client.importFileCabinetContent = jest.fn().mockResolvedValue([])
       client.listCustomObjects = jest.fn().mockImplementation(async () => Promise.reject())
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
     })
 
-    it('should handle exceptions during importFileCabinet', async () => {
-      client.importFileCabinet = jest.fn().mockImplementation(async () => Promise.reject())
+    it('should handle exceptions during importFileCabinetContent', async () => {
+      client.importFileCabinetContent = jest.fn().mockImplementation(async () => Promise.reject())
       client.listCustomObjects = jest.fn().mockResolvedValue([])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)
@@ -114,7 +114,7 @@ describe('Adapter', () => {
         + '  <label>elementName</label>'
         + '</unknowntype>'
       const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'unknown')
-      client.importFileCabinet = jest.fn().mockResolvedValue([])
+      client.importFileCabinetContent = jest.fn().mockResolvedValue([])
       client.listCustomObjects = jest.fn().mockResolvedValue([customTypeInfo])
       const { elements } = await netsuiteAdapter.fetch()
       expect(elements).toHaveLength(getAllTypes().length)

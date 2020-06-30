@@ -47,3 +47,4 @@ export const WEB_SITE_HOSTING_FILES_FOLDER_NAME = 'Web Site Hosting Files'
 
 // NetsuiteConfig
 export const TYPES_TO_SKIP = 'typesToSkip'
+export const FILE_PATHS_REGEX_SKIP_LIST = 'filePathRegexSkipList'

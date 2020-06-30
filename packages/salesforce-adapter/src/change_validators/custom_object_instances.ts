@@ -22,10 +22,10 @@ import { values } from '@salto-io/lowerdash'
 import { FIELD_ANNOTATIONS } from '../constants'
 import { isCustomObject } from '../transformers/transformer'
 
-const getUpdateErrorsForNonUpdateableFields = async (
+const getUpdateErrorsForNonUpdateableFields = (
   before: InstanceElement,
   after: InstanceElement
-): Promise<ReadonlyArray<ChangeError>> => (
+): ReadonlyArray<ChangeError> => (
   Object.values(after.type.fields)
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
     .map(field => {
@@ -41,9 +41,9 @@ const getUpdateErrorsForNonUpdateableFields = async (
     }).filter(values.isDefined)
 )
 
-const getCreateErrorsForNonCreatableFields = async (
+const getCreateErrorsForNonCreatableFields = (
   after: InstanceElement
-): Promise<ReadonlyArray<ChangeError>> => (
+): ReadonlyArray<ChangeError> => (
   Object.values(after.type.fields)
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
     .map(field => {
@@ -60,23 +60,18 @@ const getCreateErrorsForNonCreatableFields = async (
 )
 
 const changeValidator: ChangeValidator = async changes => {
-  const updateChangeErrors = _.flatten(await Promise.all(
-    changes
-      .filter(isInstanceChange)
-      .filter(isModificationDiff)
-      .filter(change => isCustomObject(getChangeElement(change)))
-      .map(change =>
-        getUpdateErrorsForNonUpdateableFields(change.data.before, change.data.after))
-  ))
+  const updateChangeErrors = changes
+    .filter(isInstanceChange)
+    .filter(isModificationDiff)
+    .filter(change => isCustomObject(getChangeElement(change)))
+    .flatMap(change =>
+      getUpdateErrorsForNonUpdateableFields(change.data.before, change.data.after))
 
-  const createChangeErrors = _.flatten(await Promise.all(
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionDiff)
-      .filter(change => isCustomObject(getChangeElement(change)))
-      .map(change =>
-        getCreateErrorsForNonCreatableFields(getChangeElement(change)))
-  ))
+  const createChangeErrors = changes
+    .filter(isInstanceChange)
+    .filter(isAdditionDiff)
+    .filter(change => isCustomObject(getChangeElement(change)))
+    .flatMap(change => getCreateErrorsForNonCreatableFields(getChangeElement(change)))
 
   return [
     ...updateChangeErrors,

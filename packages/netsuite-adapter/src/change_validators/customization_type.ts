@@ -26,7 +26,7 @@ const changeValidator: ChangeValidator = async changes => (
     .filter(isAdditionOrModificationDiff)
     .map(getChangeElement)
     .filter(isInstanceElement)
-    .filter(inst => !isCustomType(inst.type) && !isFileCabinetType(inst.type))
+    .filter(inst => !(isCustomType(inst.type) || isFileCabinetType(inst.type)))
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',

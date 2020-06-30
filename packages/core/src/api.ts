@@ -25,12 +25,14 @@ import {
   Change,
   ChangeDataType,
   isFieldChange,
+  AdapterInstallResult,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
 import { Workspace, hiddenValues } from '@salto-io/workspace'
+import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterChangeValidators,
@@ -268,14 +270,29 @@ export const restore = async (
   return changes.map(change => ({ change, serviceChange: change }))
 }
 
+class AdapterInstallError extends Error {
+  constructor(name: string, installResults: AdapterInstallResult) {
+    const header = `Failed to add the ${name} adapter.`
+    super([header, ...installResults.errors].join(EOL))
+  }
+}
+
 export const addAdapter = async (
   workspace: Workspace,
   adapterName: string,
 ): Promise<ObjectType> => {
-  const adapterCredentials = getAdaptersCredentialsTypes([adapterName])[adapterName]
-  if (!adapterCredentials) {
+  const adapter = adapterCreators[adapterName]
+  if (!adapter) {
     throw new Error('No adapter available for this service')
   }
+
+  if (adapter.install !== undefined) {
+    const installResult = await adapter.install()
+    if (!installResult.success) {
+      throw new AdapterInstallError(adapterName, installResult)
+    }
+  }
+
   await workspace.addService(adapterName)
 
   if (_.isUndefined((await workspace.servicesConfig([adapterName]))[adapterName])) {
@@ -284,7 +301,7 @@ export const addAdapter = async (
       await workspace.updateServiceConfig(adapterName, defaultConfig)
     }
   }
-  return adapterCredentials
+  return adapter.credentialsType
 }
 
 export type LoginStatus = { configType: ObjectType; isLoggedIn: boolean }

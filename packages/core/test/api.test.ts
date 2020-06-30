@@ -389,6 +389,29 @@ describe('api.ts', () => {
       await api.updateCredentials(ws, newConf)
       expect((ws.updateServiceConfig as jest.Mock).call).toHaveLength(1)
     })
+
+    describe('when the adapter implements the install method', () => {
+      const serviceName = 'adapterWithInstallMethod'
+      const mockAdapterWithInstall = {
+        credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }),
+        operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
+        validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+        install: jest.fn().mockResolvedValue({ success: true }),
+      }
+      adapterCreators[serviceName] = mockAdapterWithInstall
+
+      it('should invoke the adapter install method', async () => {
+        const wsp = mockWorkspace()
+        await api.addAdapter(wsp, serviceName)
+        expect(mockAdapterWithInstall.install).toHaveBeenCalled()
+      })
+      it('should throw an error if the adapter failed to install', async () => {
+        mockAdapterWithInstall.install.mockResolvedValueOnce({ success: false })
+        const wsp = mockWorkspace()
+        return expect(api.addAdapter(wsp, serviceName)).rejects
+          .toThrow()
+      })
+    })
   })
 
   describe('restore', () => {

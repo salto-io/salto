@@ -77,7 +77,9 @@ describe('deploy command', () => {
     beforeEach(() => {
       command = new DeployCommand(
         '',
-        true,
+        true /* force */,
+        false /* dryRun */,
+        false /* detailedPlan */,
         mockCliTelemetry,
         cliOutput,
         spinnerCreator,
@@ -136,7 +138,9 @@ describe('deploy command', () => {
     beforeEach(async () => {
       command = new DeployCommand(
         '',
-        false,
+        false /* force */,
+        false /* dryRun */,
+        false /* detailedPlan */,
         mockCliTelemetry,
         cliOutput,
         spinnerCreator,
@@ -144,7 +148,7 @@ describe('deploy command', () => {
       )
     })
 
-    it('should continue with deploy when user input it y', async () => {
+    it('should continue with deploy when user input is y', async () => {
       mockGetUserBooleanInput.mockResolvedValueOnce(true)
       await command.execute()
       content = cliOutput.stdout.content
@@ -161,12 +165,61 @@ describe('deploy command', () => {
     })
   })
 
+  describe('should not deploy dry-run', () => {
+    let content: string
+    beforeEach(async () => {
+      command = new DeployCommand(
+        '',
+        false /* force */,
+        true /* dryRun */,
+        false /* detailedPlan */,
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services,
+      )
+    })
+
+    it('should not deploy when dry-run flag is set', async () => {
+      const result = await command.execute()
+      expect(result).toBe(CliExitCode.Success)
+      content = cliOutput.stdout.content
+      // exit without attempting to deploy
+      expect(content).not.toContain('Cancelling deploy')
+      expect(content).not.toContain('Deployment succeeded')
+    })
+  })
+
+  describe('detailed plan', () => {
+    let content: string
+    beforeEach(async () => {
+      command = new DeployCommand(
+        '',
+        false /* force */,
+        true /* dryRun */,
+        true /* detailedPlan */,
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        services,
+      )
+    })
+
+    it('should include value changes when detailed-plan is set', async () => {
+      await command.execute()
+      content = cliOutput.stdout.content
+      expect(content).toMatch(/M.*name: "FirstEmployee" => "PostChange"/)
+    })
+  })
+
   describe('invalid deploy', () => {
     beforeEach(() => {
       // Creating here with base dir 'errorDir' will cause the mock to throw an error
       command = new DeployCommand(
         'errorDir',
-        true,
+        true /* force */,
+        false /* dryRun */,
+        false /* detailedPlan */,
         mockCliTelemetry,
         cliOutput,
         spinnerCreator,
@@ -185,7 +238,9 @@ describe('deploy command', () => {
       mockLoadWorkspace.mockClear()
       command = new DeployCommand(
         '',
-        true,
+        true /* force */,
+        false /* dryRun */,
+        false /* detailedPlan */,
         mockCliTelemetry,
         cliOutput,
         spinnerCreator,

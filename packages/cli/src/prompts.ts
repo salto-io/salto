@@ -46,10 +46,6 @@ export default class Prompts {
     eq: '',
   }
 
-  public static readonly PREVIEW_STARTED = 'Calculating deployment plan'
-  public static readonly PREVIEW_FINISHED = 'Calculated deployment plan!'
-  public static readonly PREVIEW_FAILED = 'Deployment plan calculation failed'
-
   public static readonly EXPLAIN_PREVIEW_RESULT = `Resources and actions are indicated with the following symbols:
 
   ${Prompts.MODIFIERS.add} create
@@ -59,8 +55,6 @@ export default class Prompts {
   public static readonly PLAN_STEPS_HEADER_DEPLOY = 'Salto will perform the following actions:'
   public static readonly PLAN_STEPS_HEADER_PREVIEW = 'Salto has calculated the following deployment plan:'
   public static readonly PLAN_CHANGE_ERRS_HEADER = 'Encountered the following validations and will ignore their execution:'
-  public static readonly PREVIEW_DISCLAIMER = `Note: Salto cannot guarantee that exactly these actions will be performed if "salto deploy" is run.
-Be sure to go over the preview output when invoking the deploy command.`
 
   public static readonly EMPTY_PLAN = 'Nothing to do.'
 

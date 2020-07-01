@@ -332,9 +332,9 @@ describe('multi env tests', () => {
         // Just a safety check to avoid deploying changes if something
         // went wrong.
         if (afterOtherEnvFetchPlan && afterOtherEnvFetchPlan.size > 10) {
-          throw new Error('To many unexpected changes. Aborting')
+          throw new Error('Too many unexpected changes. Aborting')
         }
-        await runDeploy(undefined, baseDir, true)
+        await runDeploy({ fetchOutputDir: baseDir, force: true })
       })
 
       it('should have a non empty preview for the target enviornment', () => {
@@ -395,7 +395,7 @@ describe('multi env tests', () => {
         // We fetch it to common
         await runSetEnv(baseDir, ENV2_NAME)
         afterDeleteOtherEnvFetchPlan = await runPreviewGetPlan(baseDir)
-        await runDeploy(undefined, baseDir, true, true)
+        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true, force: true })
       })
 
       it('should have a non empty preview for the target enviornment', () => {
@@ -479,9 +479,9 @@ describe('multi env tests', () => {
         await runSetEnv(baseDir, ENV2_NAME)
         await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV1_NAME)
-        await runDeploy(undefined, baseDir, true, true)
+        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true, force: true })
         await runSetEnv(baseDir, ENV2_NAME)
-        await runDeploy(undefined, baseDir, true, true)
+        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true, force: true })
       })
 
       it('should create common elements in both envs', async () => {
@@ -549,9 +549,9 @@ describe('multi env tests', () => {
         await runSetEnv(baseDir, ENV2_NAME)
         await runPreviewGetPlan(baseDir)
         await runSetEnv(baseDir, ENV1_NAME)
-        await runDeploy(undefined, baseDir, true, true)
+        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true, force: true })
         await runSetEnv(baseDir, ENV2_NAME)
-        await runDeploy(undefined, baseDir, true, true)
+        await runDeploy({ fetchOutputDir: baseDir, allowErrors: true, force: true })
       })
 
       it('should remove common elements from nacl change', async () => {

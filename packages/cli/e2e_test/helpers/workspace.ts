@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Plan, telemetrySender } from '@salto-io/core'
+import { Plan, telemetrySender, preview } from '@salto-io/core'
 import { parser, Workspace } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
@@ -31,12 +31,10 @@ import { mockSpinnerCreator, MockWriteStream } from '../../test/mocks'
 import { CliOutput, CliExitCode, CliTelemetry } from '../../src/types'
 import { loadWorkspace } from '../../src/workspace/workspace'
 import { DeployCommand } from '../../src/commands/deploy'
-import { command as preview } from '../../src/commands/preview'
 import { command as servicesCommand } from '../../src/commands/services'
 import { command as initCommand } from '../../src/commands/init'
 import { command as envCommand } from '../../src/commands/env'
 import { getCliTelemetry } from '../../src/telemetry'
-import * as formatterImpl from '../../src/formatter'
 
 export type ReplacementPair = [string | RegExp, string]
 
@@ -151,10 +149,22 @@ export const runFetch = async (
   ).execute()
 }
 
-export const runDeploy = async (
-  lastPlan: Plan | undefined, fetchOutputDir: string, force = false,
-  allowErrors = false
-): Promise<void> => {
+
+export const runDeploy = async ({
+  lastPlan,
+  fetchOutputDir,
+  allowErrors = false,
+  force = false,
+  dryRun = false,
+  detailedPlan = false,
+}: {
+  lastPlan?: Plan | undefined
+  fetchOutputDir: string
+  allowErrors?: boolean
+  force?: boolean
+  dryRun?: boolean
+  detailedPlan?: boolean
+}): Promise<void> => {
   if (lastPlan) {
     lastPlan.clear()
   }
@@ -162,6 +172,8 @@ export const runDeploy = async (
   const result = await new DeployCommand(
     fetchOutputDir,
     force,
+    dryRun,
+    detailedPlan,
     getCliTelemetry(mockTelemetry, 'deploy'),
     output,
     mockSpinnerCreator([]),
@@ -177,29 +189,24 @@ export const runDeploy = async (
   }
 }
 
-export const runPreview = async (fetchOutputDir: string): Promise<CliExitCode> => (
-  preview(
-    fetchOutputDir, getCliTelemetry(mockTelemetry, 'preview'),
-    mockCliOutput(), mockSpinnerCreator([]),
-    services,
-    true,
-  ).execute()
+export const runPreview = async (fetchOutputDir: string): Promise<void> => (
+  // using force=true to avoid a user prompt
+  runDeploy({ fetchOutputDir, allowErrors: false, force: true, dryRun: true })
 )
 
+export const loadValidWorkspace = async (
+  fetchOutputDir: string,
+  force = false
+): Promise<Workspace> => {
+  const { workspace, errored } = await loadWorkspace(fetchOutputDir, mockCliOutput(), { force })
+  expect(errored).toBeFalsy()
+  return workspace
+}
+
 export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan | undefined> => {
-  let plan: Plan | undefined
-  jest.spyOn(formatterImpl, 'formatExecutionPlan')
-    .mockImplementationOnce((p: Plan, _planErrors): string => {
-      plan = p
-      return 'plan'
-    })
-  await preview(
-    fetchOutputDir, getCliTelemetry(mockTelemetry, 'preview'),
-    mockCliOutput(), mockSpinnerCreator([]),
-    services,
-    true,
-  ).execute()
-  return plan
+  // using force=true because there are workspace warnings
+  const workspace = await loadValidWorkspace(fetchOutputDir, true /* force */)
+  return preview(workspace, services)
 }
 
 export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): Promise<void> => {
@@ -208,12 +215,6 @@ export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): P
   }
   await runPreview(fetchOutputDir)
   expect(_.isEmpty(lastPlan)).toBeTruthy()
-}
-
-export const loadValidWorkspace = async (fetchOutputDir: string): Promise<Workspace> => {
-  const { workspace, errored } = await loadWorkspace(fetchOutputDir, mockCliOutput())
-  expect(errored).toBeFalsy()
-  return workspace
 }
 
 const getChangedElementName = (change: Change): string => getChangeElement(change).elemID.name

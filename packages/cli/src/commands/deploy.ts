@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { deploy, preview, Plan, PlanItem, ItemStatus } from '@salto-io/core'
+import { deploy, preview, DeployResult, Plan, PlanItem, ItemStatus, Tags } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { setInterval } from 'timers'
 import { logger } from '@salto-io/logging'
@@ -51,13 +51,14 @@ type Action = {
 const printPlan = async (
   actions: Plan,
   stdout: WriteStream,
-  workspace: Workspace
+  workspace: Workspace,
+  detailedPlan: boolean,
 ): Promise<void> => {
   const planWorkspaceErrors = await Promise.all(
     actions.changeErrors.map(ce => workspace.transformToWorkspaceError(ce))
   )
   stdout.write(header(Prompts.PLAN_STEPS_HEADER_DEPLOY))
-  stdout.write(formatExecutionPlan(actions, planWorkspaceErrors))
+  stdout.write(formatExecutionPlan(actions, planWorkspaceErrors, detailedPlan))
 }
 
 const printStartDeploy = async (stdout: WriteStream, executingDeploy: boolean): Promise<void> => {
@@ -86,6 +87,8 @@ export class DeployCommand implements CliCommand {
   constructor(
     private readonly workspaceDir: string,
     readonly force: boolean,
+    readonly dryRun: boolean,
+    readonly detailedPlan: boolean,
     cliTelemetry: CliTelemetry,
     { stdout, stderr }: CliOutput,
     private readonly spinnerCreator: SpinnerCreator,
@@ -155,8 +158,43 @@ export class DeployCommand implements CliCommand {
     }
   }
 
+  private async deployPlan(
+    actionPlan: Plan,
+    workspace: Workspace,
+    workspaceTags: Tags,
+  ): Promise<DeployResult> {
+    if (this.dryRun) {
+      return { success: true, errors: [] }
+    }
+    const executingDeploy = (this.force || await shouldDeploy(actionPlan))
+    await printStartDeploy(this.stdout, executingDeploy)
+    const result = executingDeploy
+      ? await deploy(
+        workspace,
+        actionPlan,
+        (item: PlanItem, step: ItemStatus, details?: string) =>
+          this.updateAction(item, step, details),
+        this.inputServices,
+      )
+      : { success: true, errors: [] }
+
+    const nonErroredActions = [...this.actions.keys()]
+      .filter(action => !result.errors.map(error => error.elementId).includes(action))
+    this.stdout.write(deployPhaseEpilogue(
+      nonErroredActions.length,
+      result.errors.length,
+    ))
+    this.stdout.write(EOL)
+    if (executingDeploy) {
+      this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
+      this.cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
+    }
+
+    return result
+  }
+
   async execute(): Promise<CliExitCode> {
-    log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}]`)
+    log.debug(`running deploy command on '${this.workspaceDir}' [force=${this.force}, dryRun=${this.dryRun}, detailedPlan=${this.detailedPlan}]`)
     const { workspace, errored } = await loadWorkspace(this.workspaceDir,
       { stderr: this.stderr, stdout: this.stdout },
       {
@@ -175,27 +213,9 @@ export class DeployCommand implements CliCommand {
 
     this.cliTelemetry.start(workspaceTags)
     const actionPlan = await preview(workspace, this.inputServices)
-    await printPlan(actionPlan, this.stdout, workspace)
-    const executingDeploy = (this.force || await shouldDeploy(actionPlan))
-    await printStartDeploy(this.stdout, executingDeploy)
-    const result = executingDeploy
-      ? await deploy(
-        workspace,
-        actionPlan,
-        (item: PlanItem, step: ItemStatus, details?: string) =>
-          this.updateAction(item, step, details),
-        this.inputServices,
-      )
-      : { success: true, errors: [] }
+    await printPlan(actionPlan, this.stdout, workspace, this.detailedPlan)
 
-    const nonErroredActions = [...this.actions.keys()]
-      .filter(action => !result.errors.map(error => error.elementId).includes(action))
-    this.stdout.write(deployPhaseEpilogue(nonErroredActions.length, result.errors.length))
-    this.stdout.write(EOL)
-
-    this.cliTelemetry.actionsSuccess(nonErroredActions.length, workspaceTags)
-    this.cliTelemetry.actionsFailure(result.errors.length, workspaceTags)
-
+    const result = await this.deployPlan(actionPlan, workspace, workspaceTags)
     let cliExitCode = result.success ? CliExitCode.Success : CliExitCode.AppError
     if (!_.isUndefined(result.changes)) {
       const changes = [...result.changes]
@@ -220,6 +240,8 @@ export class DeployCommand implements CliCommand {
 
 type DeployArgs = {
   force: boolean
+  dryRun: boolean
+  detailedPlan: boolean
 } & ServicesArgs
 type DeployParsedCliInput = ParsedCliInput<DeployArgs>
 
@@ -231,6 +253,22 @@ const deployBuilder = createCommandBuilder({
       force: {
         alias: ['f'],
         describe: 'Do not ask for approval before deploying the changes',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
+      // will also be available as dryRun because of camel-case-expansion
+      'dry-run': {
+        alias: ['d'],
+        describe: 'Preview the execution plan without deploying the changes',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
+      // will also be available as detailedPlan because of camel-case-expansion
+      'detailed-plan': {
+        alias: ['p'],
+        describe: 'Print detailed plan including value changes',
         boolean: true,
         default: false,
         demandOption: false,
@@ -248,6 +286,8 @@ const deployBuilder = createCommandBuilder({
     return new DeployCommand(
       '.',
       input.args.force,
+      input.args.dryRun,
+      input.args.detailedPlan,
       getCliTelemetry(input.telemetry, 'deploy'),
       output,
       spinnerCreator,

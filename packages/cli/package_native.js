@@ -35,6 +35,7 @@ const TARGET_PLATFORMS = {
 
 const resources = [
   ...fontFiles.values(),
+  '../../node_modules/vm2/**'
 ]
 
 const BASE_NEXE_CONFIG = {

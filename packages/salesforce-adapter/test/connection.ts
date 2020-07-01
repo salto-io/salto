@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
 import { MetadataObject, DescribeMetadataResult, ValueTypeField, DescribeValueTypeResult, FileProperties, RetrieveResult, RetrieveResultLocator, DeployResultLocator, DeployResult, QueryResult } from 'jsforce-types'
-import Connection, { Metadata, Soap } from '../src/client/jsforce'
+import Connection, { Metadata, Soap, Bulk } from '../src/client/jsforce'
 import { createEncodedZipContent, MockInterface, mockFunction, ZipFile } from './utils'
 
 export type MockDescribeResultInput = Pick<MetadataObject, 'xmlName'> & Partial<MetadataObject>
@@ -160,6 +160,9 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
   describeGlobal: mockFunction<Connection['describeGlobal']>().mockResolvedValue({ sobjects: [] }),
   query: mockFunction<Connection['query']>().mockResolvedValue(mockQueryResult({})),
   queryMore: mockFunction<Connection['queryMore']>().mockResolvedValue(mockQueryResult({})),
+  bulk: {
+    load: mockFunction<Bulk['load']>().mockResolvedValue([]),
+  },
   limits: mockFunction<Connection['limits']>().mockResolvedValue({
     DailyApiRequests: { Remaining: 10000 },
   }),

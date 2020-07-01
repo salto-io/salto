@@ -29,7 +29,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   naclCase, GetLookupNameFunc, TransformFunc,
 } from '@salto-io/adapter-utils'
-import { CustomObject, CustomField } from '../client/types'
+import { CustomObject, CustomField, salesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
@@ -79,7 +79,8 @@ export const defaultApiName = (element: Element): string => {
 
 const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
-    return elem.value[INSTANCE_FULL_NAME_FIELD]
+    return isCustomObject(elem)
+      ? elem.value.Id : elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
 }
@@ -731,6 +732,61 @@ export class Types {
       })
   }
 }
+
+const transformCompoundValues = (
+  record: salesforceRecord,
+  instance: InstanceElement
+): salesforceRecord => {
+  const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
+  const relevantCompoundFields = _.pickBy(instance.type.fields,
+    (field, fieldKey) => Object.keys(record).includes(fieldKey)
+    && !_.isUndefined(_.find(compoundFieldsElemIDs, e => field.type.elemID.isEqual(e))))
+  if (_.isEmpty(relevantCompoundFields)) {
+    return record
+  }
+  const transformedCompoundValues = _.mapValues(
+    relevantCompoundFields,
+    (compoundField, compoundFieldKey) => {
+      // Name fields are without a prefix
+      if (compoundField.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID)) {
+        return record[compoundFieldKey]
+      }
+      // Other compound fields are added a prefix according to the field name
+      // ie. LocalAddrress -> LocalCity, LocalState etc.
+      const typeName = compoundField.type.elemID.isEqual(Types.compoundDataTypes.Address.elemID)
+        ? COMPOUND_FIELD_TYPE_NAMES.ADDRESS : COMPOUND_FIELD_TYPE_NAMES.LOCATION
+      const fieldPrefix = compoundFieldKey.slice(0, -typeName.length)
+      return _.mapKeys(record[compoundFieldKey], (_vv, key) => fieldPrefix.concat(key))
+    }
+  )
+  return Object.assign(
+    _.omit(record, Object.keys(relevantCompoundFields)),
+    ...Object.values(transformedCompoundValues)
+  )
+}
+
+const toRecord = (
+  instance: InstanceElement,
+  fieldAnnotationToFilterBy: string,
+): salesforceRecord => {
+  const filteredRecordValues = {
+    Id: instance.value.Id,
+    ..._.pickBy(
+      instance.value,
+      (_v, k) => instance.type.fields[k]?.annotations[fieldAnnotationToFilterBy]
+    ),
+  }
+  return transformCompoundValues(filteredRecordValues, instance)
+}
+
+export const instancesToUpdateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+  instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE))
+
+export const instancesToCreateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+  instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE))
+
+export const instancesToDeleteRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+  instances.map(instance => ({ Id: instance.value.Id }))
 
 export const toCustomField = (
   field: Field, fullname = false

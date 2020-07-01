@@ -25,8 +25,8 @@ const changeValidator: ChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Changing non InstanceElement types is not supported',
-      detailedMessage: `Changing (${elemID.name}) is not supported. Only InstanceElement changes are supported`,
+      message: 'Type definitions are read only',
+      detailedMessage: `Changing (${elemID.name}) is not supported`,
     }))
 )
 

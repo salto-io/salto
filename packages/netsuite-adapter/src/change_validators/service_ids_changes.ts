@@ -18,12 +18,10 @@ import {
   ChangeValidator, getChangeElement, InstanceElement, isInstanceChange, isModificationDiff,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { values } from '@salto-io/lowerdash'
 import { isCustomType, isFileCabinetType } from '../types'
 
-const { isDefined } = values
 const changeValidator: ChangeValidator = async changes => (
-  changes
+  _.flatten(changes
     .filter(isModificationDiff)
     .filter(isInstanceChange)
     .filter(change => {
@@ -36,17 +34,13 @@ const changeValidator: ChangeValidator = async changes => (
       const modifiedServiceIdsFields = Object.values(after.type.fields)
         .filter(field => field.type === BuiltinTypes.SERVICE_ID)
         .filter(field => before.value[field.name] !== after.value[field.name])
-      if (!_.isEmpty(modifiedServiceIdsFields)) {
-        return {
-          elemID: after.elemID,
-          severity: 'Error',
-          message: 'Updating fields with serviceId type is not supported',
-          detailedMessage: `Updating serviceId field (${modifiedServiceIdsFields[0].name}) is not supported`,
-        } as ChangeError
-      }
-      return undefined
-    })
-    .filter(isDefined)
+      return modifiedServiceIdsFields.map(modifiedServiceIdsField => ({
+        elemID: after.elemID,
+        severity: 'Error',
+        message: 'Fields of type serviceId are immutable',
+        detailedMessage: `Field (${modifiedServiceIdsField.name}) is immutable`,
+      } as ChangeError))
+    }))
 )
 
 export default changeValidator

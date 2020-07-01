@@ -17,14 +17,12 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import removeCustomizationValidator from './change_validators/remove_customization'
 import instanceChangesValidator from './change_validators/instance_changes'
-import customizationTypeValidator from './change_validators/customization_type'
 import serviceIdsChangesValidator from './change_validators/service_ids_changes'
 
 
 const changeValidators: ChangeValidator[] = [
   removeCustomizationValidator,
   instanceChangesValidator,
-  customizationTypeValidator,
   serviceIdsChangesValidator,
 ]
 

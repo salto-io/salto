@@ -30,7 +30,7 @@ import {
 import {
   customTypes, isCustomType, getAllTypes, fileCabinetTypes, isFileCabinetType,
 } from './types'
-import { SAVED_SEARCH, TYPES_TO_SKIP } from './constants'
+import { SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import { FilterCreator } from './filter'
 
@@ -39,6 +39,7 @@ const { makeArray } = collections.array
 
 export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
+  [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
 }
 
 export interface NetsuiteAdapterParams {
@@ -47,6 +48,8 @@ export interface NetsuiteAdapterParams {
   filtersCreators?: FilterCreator[]
   // Types that we skip their deployment and fetch
   typesToSkip?: string[]
+  // File paths regular expression that we skip their fetch
+  filePathRegexSkipList?: string[]
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
   // config that is determined by the user
@@ -69,6 +72,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly client: NetsuiteClient
   private filtersCreators: FilterCreator[]
   private readonly typesToSkip: string[]
+  private readonly filePathRegexSkipList: RegExp[]
   private getElemIdFunc?: ElemIdGetter
 
   public constructor({
@@ -79,12 +83,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
     typesToSkip = [
       SAVED_SEARCH, // Due to https://github.com/oracle/netsuite-suitecloud-sdk/issues/127 we receive changes each fetch
     ],
+    filePathRegexSkipList = [],
     getElemIdFunc,
     config,
   }: NetsuiteAdapterParams) {
     this.client = client
     this.filtersCreators = filtersCreators
     this.typesToSkip = typesToSkip.concat(makeArray(config[TYPES_TO_SKIP]))
+    this.filePathRegexSkipList = filePathRegexSkipList
+      .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
+      .map(e => new RegExp(e))
     this.getElemIdFunc = getElemIdFunc
   }
 
@@ -97,10 +105,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
       log.error('failed to list custom objects. reason: %o', e)
       return [] as CustomizationInfo[]
     })
-    const fileCabinetContent = this.client.importFileCabinet().catch(e => {
-      log.error('failed to import file cabinet content. reason: %o', e)
-      return [] as CustomizationInfo[]
-    })
+    const fileCabinetContent = this.client.importFileCabinetContent(this.filePathRegexSkipList)
+      .catch(e => {
+        log.error('failed to import file cabinet content. reason: %o', e)
+        return [] as CustomizationInfo[]
+      })
     const customizationInfos = _.flatten(await Promise.all([customObjects, fileCabinetContent]))
     const instances = customizationInfos.map(customizationInfo => {
       const type = customTypes[customizationInfo.typeName]

@@ -254,7 +254,7 @@ describe('netsuite client', () => {
     })
   })
 
-  describe('importFileCabinet', () => {
+  describe('importFileCabinetContent', () => {
     let client: NetsuiteClient
     beforeEach(() => {
       client = mockClient()
@@ -267,7 +267,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.importFileCabinet()).rejects.toThrow()
+      await expect(client.importFileCabinetContent([])).rejects.toThrow()
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
@@ -277,7 +277,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.importFileCabinet()).rejects.toThrow()
+      await expect(client.importFileCabinetContent([])).rejects.toThrow()
     })
 
     it('should fail when LIST_FILES has failed', async () => {
@@ -287,7 +287,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.importFileCabinet()).rejects.toThrow()
+      await expect(client.importFileCabinetContent([])).rejects.toThrow()
     })
 
     it('should fail when IMPORT_FILES has failed', async () => {
@@ -297,7 +297,97 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.importFileCabinet()).rejects.toThrow()
+      expect(await client.importFileCabinetContent([])).toEqual([])
+    })
+
+    it('should succeed when having no files', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_FILES) {
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: [],
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES) {
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: {
+              results: [],
+            },
+          })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      const customizationInfos = await client.importFileCabinetContent([])
+      expect(mockExecuteAction).toHaveBeenCalledTimes(6)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
+      expect(customizationInfos).toHaveLength(0)
+    })
+
+    it('should succeed when importFiles when failing to import a certain file', async () => {
+      const filesPathResult = [
+        MOCK_FILE_PATH,
+        'error',
+      ]
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.LIST_FILES
+          && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: filesPathResult,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES) {
+          if (context.arguments.paths.includes('error')) {
+            return Promise.resolve({
+              status: 'ERROR',
+              data: {
+                results: [],
+              },
+            })
+          }
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: {
+              results: [
+                {
+                  path: MOCK_FILE_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FILE_ATTRS_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FOLDER_ATTRS_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FOLDER_ATTRS_PATH,
+                  loaded: true,
+                },
+              ],
+            },
+          })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      const customizationInfos = await client.importFileCabinetContent([])
+      expect(mockExecuteAction).toHaveBeenCalledTimes(8)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importFilesCommandMatcher)
+      expect(customizationInfos).toHaveLength(2)
     })
 
     it('should succeed when having duplicated paths', async () => {
@@ -340,7 +430,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      const customizationInfos = await client.importFileCabinet()
+      const customizationInfos = await client.importFileCabinetContent([])
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(customizationInfos).toHaveLength(2)
       expect(customizationInfos).toEqual([{
@@ -359,6 +449,61 @@ describe('netsuite client', () => {
         path: ['Templates', 'E-mail Templates', 'InnerFolder'],
       }])
 
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importFilesCommandMatcher)
+    })
+
+    it('should filter out paths that match filePathRegexSkipList', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const filesPathResult = [
+          MOCK_FILE_PATH,
+        ]
+        if (context.commandName === COMMANDS.LIST_FILES
+          && context.arguments.folder === `${SDF_PATH_SEPARATOR}Templates`) {
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: filesPathResult,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES) {
+          if (_.isEqual(context.arguments.paths, filesPathResult)) {
+            return Promise.resolve({
+              status: 'SUCCESS',
+              data: {
+                results: [
+                  {
+                    path: MOCK_FILE_PATH,
+                    loaded: true,
+                  },
+                  {
+                    path: MOCK_FILE_ATTRS_PATH,
+                    loaded: true,
+                  },
+                  {
+                    path: MOCK_FOLDER_ATTRS_PATH,
+                    loaded: true,
+                  },
+                ],
+              },
+            })
+          }
+          return Promise.resolve({
+            status: 'SUCCESS',
+            data: {
+              results: [],
+            },
+          })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      const customizationInfos = await client.importFileCabinetContent([new RegExp(MOCK_FILE_PATH)])
+      expect(readFileMock).toHaveBeenCalledTimes(0)
+      expect(customizationInfos).toHaveLength(0)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
@@ -403,7 +548,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      const customizationInfos = await client.importFileCabinet()
+      const customizationInfos = await client.importFileCabinetContent([])
       expect(readFileMock).toHaveBeenCalledTimes(1)
       expect(customizationInfos).toHaveLength(1)
       expect(customizationInfos).toEqual([{

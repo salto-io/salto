@@ -18,10 +18,11 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import _ from 'lodash'
 import changeValidator from './change_validator'
 import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter, { NetsuiteConfig } from './adapter'
-import { NETSUITE, TYPES_TO_SKIP } from './constants'
+import { NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST } from './constants'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -45,13 +46,36 @@ const configType = new ObjectType({
     [TYPES_TO_SKIP]: {
       type: new ListType(BuiltinTypes.STRING),
     },
+    [FILE_PATHS_REGEX_SKIP_LIST]: {
+      type: new ListType(BuiltinTypes.STRING),
+    },
   },
 })
 
 const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   NetsuiteConfig => {
+  const validateRegularExpressions = (regularExpressions: string[]): void => {
+    const invalidRegularExpressions = regularExpressions
+      .filter(regex => {
+        try {
+          RegExp(regex)
+          return false
+        } catch (e) {
+          return true
+        }
+      })
+    if (!_.isEmpty(invalidRegularExpressions)) {
+      const errMessage = `Failed to load config due to an invalid ${FILE_PATHS_REGEX_SKIP_LIST} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
+      log.error(errMessage)
+      throw Error(errMessage)
+    }
+  }
+
+  const filePathsRegexSkipList = makeArray(config?.value?.[FILE_PATHS_REGEX_SKIP_LIST])
+  validateRegularExpressions(filePathsRegexSkipList)
   const netsuiteConfig = {
     [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
+    [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(netsuiteConfig).includes(k))

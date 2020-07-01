@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType, ServiceIds } from '@salto-io/adapt
 import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
-import { TYPES_TO_SKIP } from '../src/constants'
+import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST } from '../src/constants'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -38,6 +38,7 @@ describe('NetsuiteAdapter creator', () => {
     adapter.configType as ObjectType,
     {
       [TYPES_TO_SKIP]: ['test1'],
+      [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
       notExist: ['not exist'],
     }
   )
@@ -78,6 +79,7 @@ describe('NetsuiteAdapter creator', () => {
         client: expect.any(Object),
         config: {
           [TYPES_TO_SKIP]: ['test1'],
+          [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
         },
         getElemIdFunc: mockGetElemIdFunc,
       })
@@ -89,9 +91,27 @@ describe('NetsuiteAdapter creator', () => {
         client: expect.any(Object),
         config: {
           [TYPES_TO_SKIP]: [],
+          [FILE_PATHS_REGEX_SKIP_LIST]: [],
         },
         getElemIdFunc: mockGetElemIdFunc,
       })
+    })
+
+    it('should throw an error when creating the adapter with an invalid regex for FILE_PATHS_REGEX_SKIP_LIST', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          [FILE_PATHS_REGEX_SKIP_LIST]: ['\\'],
+        }
+      )
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: invalidConfig,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+      ).toThrow()
     })
   })
 })

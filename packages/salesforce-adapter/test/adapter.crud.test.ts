@@ -71,9 +71,9 @@ describe('SalesforceAdapter CRUD', () => {
         const loadEmitter = new EventEmitter()
         loadEmitter.on('newListener', (_event, _listener) => {
           // This is a workaround to call emit('close')
-          // that is really called as a side effect to then() inside
-          // jsforce *after* our code does on.('close')
-          setTimeout(() => loadEmitter.emit('close'), 1000)
+          // that is really called as a side effect to load() inside
+          // jsforce *after* our code listens on.('close')
+          setTimeout(() => loadEmitter.emit('close'), 0)
         })
         return {
           then: () => (Promise.resolve(input?.map(i => ({

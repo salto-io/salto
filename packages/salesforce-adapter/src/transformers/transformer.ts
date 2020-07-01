@@ -765,7 +765,7 @@ const transformCompoundValues = (
   )
 }
 
-const toRecords = (
+const toRecord = (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
 ): salesforceRecord => {
@@ -780,10 +780,10 @@ const toRecords = (
 }
 
 export const instancesToUpdateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
-  instances.map(instance => toRecords(instance, FIELD_ANNOTATIONS.UPDATEABLE))
+  instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE))
 
 export const instancesToCreateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
-  instances.map(instance => toRecords(instance, FIELD_ANNOTATIONS.CREATABLE))
+  instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE))
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): salesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value.Id }))

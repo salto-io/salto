@@ -96,5 +96,22 @@ describe('NetsuiteAdapter creator', () => {
         getElemIdFunc: mockGetElemIdFunc,
       })
     })
+
+    it('should throw an error when creating the adapter with an invalid regex for FILE_PATHS_REGEX_SKIP_LIST', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        {
+          [FILE_PATHS_REGEX_SKIP_LIST]: ['\\'],
+        }
+      )
+      expect(
+        () => adapter.operations({
+          credentials,
+          config: invalidConfig,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+      ).toThrow()
+    })
   })
 })

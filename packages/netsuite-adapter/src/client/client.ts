@@ -412,10 +412,10 @@ export default class NetsuiteClient {
     const project = await this.initProject()
     const filePathsToImport = (await NetsuiteClient.listFilePaths(project.executor))
       .filter(path => filePathRegexSkipList.every(regex => !regex.test(path)))
-    const importFileResults = await NetsuiteClient.importFiles(filePathsToImport, project.executor)
+    const importFilesResults = await NetsuiteClient.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
     const paths = _.uniq(
-      _.flatten(importFileResults.map(importResult => makeArray(importResult.data.results)))
+      _.flatten(importFilesResults.map(importResult => makeArray(importResult.data.results)))
         .filter(result => result.loaded)
         .map(result => result.path)
     )

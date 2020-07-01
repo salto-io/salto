@@ -57,11 +57,8 @@ describe('SalesforceAdapter creator', () => {
   })
 
   describe('when passed config elements', () => {
-    beforeAll(() => {
-      adapter.operations({ credentials, config })
-    })
-
     it('creates the client correctly', () => {
+      adapter.operations({ credentials, config })
       expect(SalesforceClient).toHaveBeenCalledWith({
         credentials: {
           username: 'myUser',
@@ -73,6 +70,7 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('creates the adapter correctly', () => {
+      adapter.operations({ credentials, config })
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           metadataTypesSkippedList: ['test1'],
@@ -81,6 +79,15 @@ describe('SalesforceAdapter creator', () => {
         client: expect.any(Object),
         getElemIdFunc: undefined,
       })
+    })
+
+    it('should throw an error when creating the adapter with an invalid regex for instancesRegexSkippedList', () => {
+      const invalidConfig = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        adapter.configType as ObjectType,
+        { instancesRegexSkippedList: ['\\'] },
+      )
+      expect(() => adapter.operations({ credentials, config: invalidConfig })).toThrow()
     })
   })
 })

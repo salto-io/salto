@@ -69,7 +69,8 @@ describe('cli e2e', () => {
   })
 
   const addModelNaclFile = `${__dirname}/../../e2e_test/NACL/add.nacl`
-  const configFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`
+  const workspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`
+  const envsConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/envs.nacl`
   const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_INSTANCE2_BASE_ELEM_NAME = 'NewInstance2Name'
@@ -120,7 +121,8 @@ describe('cli e2e', () => {
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)
-    await copyFile(configFile, `${fetchOutputDir}/salto.config/workspace.nacl`)
+    await copyFile(workspaceConfigFile, `${fetchOutputDir}/salto.config/workspace.nacl`)
+    await copyFile(envsConfigFile, `${fetchOutputDir}/salto.config/envs.nacl`)
     await copyFile(localWorkspaceConfigFile, `${localWorkspaceDir}/workspaceUser.nacl`)
     await rm(fullPath(tmpNaclFileRelativePath))
     if (await objectExists(client, newObjectApiName)) {

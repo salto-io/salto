@@ -131,9 +131,9 @@ Promise<Workspace> => {
     throw new NotAWorkspaceError()
   }
   const workspaceConfig = await workspaceConfigSource(baseDir)
+  const envs = (await workspaceConfig.getWorkspaceConfig()).envs.map(e => e.name)
   const credentials = credentialsSource(workspaceConfig.localStorage)
-  const elemSources = loadLocalElementsSources(baseDir, workspaceConfig.localStorage,
-    workspaceConfig.envs)
+  const elemSources = loadLocalElementsSources(baseDir, workspaceConfig.localStorage, envs)
   return loadWorkspace(workspaceConfig, credentials, elemSources)
 }
 

@@ -13,23 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { InstanceElement } from '@salto-io/adapter-api'
+import { WorkspaceConfig } from './config/workspace_config_types'
 
-export type EnvConfig = {
-    name: string
-    services?: string[]
+// Seperating adapter config to allow for lazy adapter loading.
+export type AdapterConfigSource = {
+  getAdapter(adapter: string): Promise<InstanceElement | undefined>
+  setAdapter(adapter: string, config: Readonly<InstanceElement>): Promise<void>
 }
 
-// The adapters config is dynamic, for this reason it returns an InstanceElement.
-export type AdaptersConfig = {
-  adapters: Record<string, InstanceElement>
-}
-
-export type WorkspaceConfig = {
-  uid: string
-  name: string
-  staleStateThresholdMinutes?: number
-  envs: EnvConfig[]
-  currentEnv: string
-}
+export type WorkspaceConfigSource = {
+  getWorkspaceConfig(): Promise<WorkspaceConfig>
+  setWorkspaceConfig(config: WorkspaceConfig): Promise<void>
+} & AdapterConfigSource

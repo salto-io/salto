@@ -22,26 +22,23 @@ import {
 import {
   findElement,
 } from '@salto-io/adapter-utils'
+import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
 import { State } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource } from './static_files/common.test'
 import { DirectoryStore } from '../../src/workspace/dir_store'
-import { Workspace, initWorkspace, loadWorkspace,
-  ADAPTERS_CONFIGS_PATH, EnvironmentSource } from '../../src/workspace/workspace'
-import { NoWorkspaceConfig, DeleteCurrentEnvError,
-  UnknownEnvError, EnvDuplicationError } from '../../src/workspace/errors'
+import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource } from '../../src/workspace/workspace'
+import { DeleteCurrentEnvError,
+  UnknownEnvError, EnvDuplicationError, ServiceDuplicationError } from '../../src/workspace/errors'
 
 import { StaticFilesSource } from '../../src/workspace/static_files'
 
 import * as dump from '../../src/parser/dump'
 
 import { mockDirStore, mockParseCache } from '../common/nacl_file_store'
-import {
-  WORKSPACE_CONFIG_NAME, workspaceConfigType,
-  workspaceUserConfigType, USER_CONFIG_NAME,
-} from '../../src/workspace/config'
+import { EnvConfig } from '../../src/workspace/config/workspace_config_types'
 
 const changedNaclFile = {
   filename: 'file.nacl',
@@ -59,25 +56,20 @@ const newNaclFile = {
 }
 const services = ['salesforce']
 
-const wsConfInstance = (conf?: Values): InstanceElement =>
-  new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType, {
+const mockWorkspaceConfigSource = (conf?: Values): WorkspaceConfigSource => ({
+  getWorkspaceConfig: jest.fn().mockImplementation(() => ({
+    envs: [
+      { name: 'default', services },
+      { name: 'inactive', services: [...services, 'hubspot'] },
+    ],
     uid: '',
     name: 'test',
-    envs: [{ name: 'default', services },
-      { name: 'inactive', services: [...services, 'hubspot'] }],
+    currentEnv: 'default',
     ...conf,
-  })
-const mockConfigSource = (conf?: Values): ConfigSource => ({
-  get: jest.fn().mockImplementation(name => (
-    (name === WORKSPACE_CONFIG_NAME)
-      ? wsConfInstance(conf)
-      : new InstanceElement(USER_CONFIG_NAME, workspaceUserConfigType, {
-        currentEnv: 'default',
-      })
-  )),
-  set: jest.fn(),
-  delete: jest.fn(),
-  rename: jest.fn(),
+  })),
+  setWorkspaceConfig: jest.fn(),
+  getAdapter: jest.fn(),
+  setAdapter: jest.fn(),
 })
 const mockCredentialsSource = (): ConfigSource => ({
   get: jest.fn(),
@@ -88,11 +80,11 @@ const mockCredentialsSource = (): ConfigSource => ({
 
 const createWorkspace = async (
   dirStore?: DirectoryStore, state?: State,
-  configSource?: ConfigSource, credentials?: ConfigSource,
+  configSource?: WorkspaceConfigSource, credentials?: ConfigSource,
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
 ): Promise<Workspace> =>
-  loadWorkspace(configSource || mockConfigSource(), credentials || mockCredentialsSource(),
+  loadWorkspace(configSource || mockWorkspaceConfigSource(), credentials || mockCredentialsSource(),
     {
       commonSourceName: '',
       sources: elementSources || {
@@ -125,26 +117,15 @@ const getElemMap = (elements: ReadonlyArray<Element>): Record<string, Element> =
 jest.mock('../../src/workspace/dir_store')
 describe('workspace', () => {
   describe('loadWorkspace', () => {
-    it('should fail if no workspace config', async () => {
+    it('should fail if envs is empty', async () => {
       const noWorkspaceConfig = {
-        get: jest.fn().mockResolvedValue(undefined),
-        set: jest.fn(),
-        delete: jest.fn(),
-        rename: jest.fn(),
+        getWorkspaceConfig: jest.fn().mockImplementation(() => ({ envs: [] })),
+        setWorkspaceConfig: jest.fn(),
+        getAdapter: jest.fn(),
+        setAdapter: jest.fn(),
       }
       await expect(createWorkspace(undefined, undefined, noWorkspaceConfig)).rejects
-        .toThrow(NoWorkspaceConfig)
-    })
-    it('should work if user config is missing', async () => {
-      const noUserConfig = {
-        get: jest.fn().mockImplementation(name => (
-          (name === WORKSPACE_CONFIG_NAME) ? wsConfInstance() : undefined
-        )),
-        set: jest.fn(),
-        delete: jest.fn(),
-        rename: jest.fn(),
-      }
-      expect(await createWorkspace(undefined, undefined, noUserConfig)).toBeDefined()
+        .toThrow(new Error('Workspace with no environments is illegal'))
     })
   })
   describe('loaded elements', () => {
@@ -548,21 +529,15 @@ describe('workspace', () => {
   })
 
   describe('init', () => {
-    const confSource = mockConfigSource({ name: 'ws-name' })
+    const workspaceConf = mockWorkspaceConfigSource({ name: 'ws-name' })
     afterEach(async () => {
       delete process.env.SALTO_HOME
     })
     it('should init workspace configuration', async () => {
-      const workspace = await initWorkspace('ws-name', 'uid', 'default', confSource,
+      const workspace = await initWorkspace('ws-name', 'uid', 'default', workspaceConf,
         mockCredentialsSource(), { commonSourceName: '', sources: {} })
-      expect(confSource.set).toHaveBeenCalled()
-      expect((confSource.set as jest.Mock).mock.calls[0][1]).toEqual(
-        new InstanceElement(WORKSPACE_CONFIG_NAME, workspaceConfigType,
-          { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }] })
-      )
-      expect((confSource.set as jest.Mock).mock.calls[1][1]).toEqual(
-        new InstanceElement(USER_CONFIG_NAME, workspaceUserConfigType,
-          { currentEnv: 'default' })
+      expect((workspaceConf.setWorkspaceConfig as jest.Mock).mock.calls[0][0]).toEqual(
+        { name: 'ws-name', uid: 'uid', envs: [{ name: 'default' }], currentEnv: 'default' }
       )
       expect(workspace.name).toEqual('ws-name')
     })
@@ -579,7 +554,7 @@ describe('workspace', () => {
       modificationDate = new Date(now - durationAfterLastModificationMs)
     })
     it('should return valid when the state is valid', async () => {
-      const ws = await createWorkspace(undefined, undefined, mockConfigSource(
+      const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
         { staleStateThresholdMinutes: durationAfterLastModificationMinutes + 1 }
       ))
       ws.state().getServicesUpdateDates = jest.fn().mockImplementation(
@@ -590,7 +565,7 @@ describe('workspace', () => {
       expect(recency.date).toBe(modificationDate)
     })
     it('should return old when the state is old', async () => {
-      const ws = await createWorkspace(undefined, undefined, mockConfigSource(
+      const ws = await createWorkspace(undefined, undefined, mockWorkspaceConfigSource(
         { staleStateThresholdMinutes: durationAfterLastModificationMinutes - 1 }
       ))
       ws.state().getServicesUpdateDates = jest.fn().mockImplementation(
@@ -621,12 +596,12 @@ describe('workspace', () => {
   })
 
   describe('setCurrentEnv', () => {
-    let confSource: ConfigSource
+    let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
 
     beforeEach(async () => {
-      confSource = mockConfigSource()
-      workspace = await createWorkspace(undefined, undefined, confSource)
+      workspaceConf = mockWorkspaceConfigSource()
+      workspace = await createWorkspace(undefined, undefined, workspaceConf)
     })
 
     it('should change workspace state', async () => {
@@ -636,22 +611,26 @@ describe('workspace', () => {
 
     it('should persist', async () => {
       await workspace.setCurrentEnv('inactive')
-      expect(confSource.set).toHaveBeenCalledTimes(1)
+      expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
     })
 
     it('shouldnt persist', async () => {
       await workspace.setCurrentEnv('inactive', false)
-      expect(confSource.set).toHaveBeenCalledTimes(0)
+      expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(0)
+    })
+
+    it('should throw unknownEnvError', async () => {
+      await expect(workspace.setCurrentEnv('unknown', false)).rejects.toEqual(new UnknownEnvError('unknown'))
     })
   })
 
   describe('addEnvironment', () => {
-    let confSource: ConfigSource
+    let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
 
     beforeEach(async () => {
-      confSource = mockConfigSource()
-      workspace = await createWorkspace(undefined, undefined, confSource)
+      workspaceConf = mockWorkspaceConfigSource()
+      workspace = await createWorkspace(undefined, undefined, workspaceConf)
       await workspace.addEnvironment('new')
     })
 
@@ -660,16 +639,21 @@ describe('workspace', () => {
     })
 
     it('should persist', () => {
-      expect(confSource.set).toHaveBeenCalledTimes(1)
-      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
-      const envs = instance.value.envs.map((e: {name: string}) => e.name)
-      expect(envs.includes('new')).toBeTruthy()
+      expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
+      const envs = (
+        workspaceConf.setWorkspaceConfig as jest.Mock
+      ).mock.calls[0][0].envs as EnvConfig[]
+      const envsNames = envs.map((e: {name: string}) => e.name)
+      expect(envsNames.includes('new')).toBeTruthy()
+    })
+    it('should throw envDuplicationError', async () => {
+      await expect(workspace.addEnvironment('new')).rejects.toEqual(new EnvDuplicationError('new'))
     })
   })
 
   describe('deleteEnvironment', () => {
     describe('should delete environment', () => {
-      let confSource: ConfigSource
+      let workspaceConf: WorkspaceConfigSource
       let credSource: ConfigSource
       let workspace: Workspace
       let state: State
@@ -677,11 +661,11 @@ describe('workspace', () => {
       const envName = 'inactive'
 
       beforeAll(async () => {
-        confSource = mockConfigSource()
+        workspaceConf = mockWorkspaceConfigSource()
         credSource = mockCredentialsSource()
         state = { clear: jest.fn() } as unknown as State
         naclFiles = createMockNaclFileSource([])
-        workspace = await createWorkspace(undefined, undefined, confSource, credSource,
+        workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
           undefined, { inactive: { naclFiles, state } })
         await workspace.deleteEnvironment(envName)
       })
@@ -691,10 +675,12 @@ describe('workspace', () => {
       })
 
       it('should persist', () => {
-        expect(confSource.set).toHaveBeenCalledTimes(1)
-        const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
-        const envs = instance.value.envs.map((e: {name: string}) => e.name)
-        expect(envs.includes(envName)).toBeFalsy()
+        expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
+        const envs = (
+          workspaceConf.setWorkspaceConfig as jest.Mock
+        ).mock.calls[0][0].envs as EnvConfig[]
+        const envsNames = envs.map((e: {name: string}) => e.name)
+        expect(envsNames.includes(envName)).toBeFalsy()
       })
 
       it('should delete files', () => {
@@ -722,14 +708,14 @@ describe('workspace', () => {
 
   describe('renameEnvironment', () => {
     describe('should rename environment', () => {
-      let confSource: ConfigSource
+      let workspaceConf: WorkspaceConfigSource
       let workspace: Workspace
       let credSource: ConfigSource
       let state: State
       let naclFiles: NaclFilesSource
 
       beforeEach(async () => {
-        confSource = mockConfigSource()
+        workspaceConf = mockWorkspaceConfigSource()
         credSource = mockCredentialsSource()
         state = { rename: jest.fn() } as unknown as State
         naclFiles = createMockNaclFileSource([])
@@ -742,16 +728,18 @@ describe('workspace', () => {
       }
 
       const verifyPersistWorkspaceConfig = (envName: string): void => {
-        const workspaceConfig = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
-        const envs = workspaceConfig.value.envs.map((e: {name: string}) => e.name)
-        expect(envs.includes(envName)).toBeTruthy()
+        const envs = (
+          workspaceConf.setWorkspaceConfig as jest.Mock
+        ).mock.calls[0][0].envs as EnvConfig[]
+        const envsNames = envs.map((e: {name: string}) => e.name)
+        expect(envsNames.includes(envName)).toBeTruthy()
       }
 
       describe('should rename current environment', () => {
         const envName = 'default'
         const newEnvName = 'new-default'
         beforeEach(async () => {
-          workspace = await createWorkspace(undefined, undefined, confSource, credSource,
+          workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
             undefined, { [envName]: { naclFiles, state } })
           await workspace.renameEnvironment(envName, newEnvName)
         })
@@ -760,11 +748,11 @@ describe('workspace', () => {
         })
 
         it('should persist both workspace config and workspace user config', async () => {
-          expect(confSource.set).toHaveBeenCalledTimes(2)
+          expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
           verifyPersistWorkspaceConfig(newEnvName)
-          const workspaceUserConfig = (confSource.set as jest.Mock)
-            .mock.calls[1][1] as InstanceElement
-          expect(workspaceUserConfig.value.currentEnv).toEqual(newEnvName)
+          const workspaceUserConfig = (workspaceConf.setWorkspaceConfig as jest.Mock)
+            .mock.calls[0][0].currentEnv
+          expect(workspaceUserConfig).toEqual(newEnvName)
         })
 
         it('should rename files', async () => {
@@ -776,7 +764,7 @@ describe('workspace', () => {
         const envName = 'inactive'
         const newEnvName = 'new-inactive'
         beforeEach(async () => {
-          workspace = await createWorkspace(undefined, undefined, confSource, credSource,
+          workspace = await createWorkspace(undefined, undefined, workspaceConf, credSource,
             undefined, { [envName]: { naclFiles, state } })
           await workspace.renameEnvironment(envName, newEnvName)
         })
@@ -785,7 +773,7 @@ describe('workspace', () => {
         })
 
         it('should persist workspace config', async () => {
-          expect(confSource.set).toHaveBeenCalledTimes(1)
+          expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
           verifyPersistWorkspaceConfig(newEnvName)
         })
 
@@ -814,12 +802,12 @@ describe('workspace', () => {
   })
 
   describe('addService', () => {
-    let confSource: ConfigSource
+    let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
 
     beforeEach(async () => {
-      confSource = mockConfigSource()
-      workspace = await createWorkspace(undefined, undefined, confSource)
+      workspaceConf = mockWorkspaceConfigSource()
+      workspace = await createWorkspace(undefined, undefined, workspaceConf)
       await workspace.addService('new')
     })
 
@@ -827,10 +815,16 @@ describe('workspace', () => {
       expect(workspace.services().includes('new')).toBeTruthy()
     })
 
+    it('should throw service duplication error', async () => {
+      await expect(workspace.addService('new')).rejects.toThrow(ServiceDuplicationError)
+    })
+
     it('should persist', () => {
-      expect(confSource.set).toHaveBeenCalledTimes(1)
-      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
-      expect((instance.value.envs as {name: string}[]).find(e => e.name === 'default'))
+      expect(workspaceConf.setWorkspaceConfig).toHaveBeenCalledTimes(1)
+      const envs = (
+        workspaceConf.setWorkspaceConfig as jest.Mock
+      ).mock.calls[0][0].envs as EnvConfig[]
+      expect((envs as {name: string}[]).find(e => e.name === 'default'))
         .toBeDefined()
     })
   })
@@ -860,23 +854,24 @@ describe('workspace', () => {
   })
 
   describe('updateServiceConfig', () => {
-    let confSource: ConfigSource
+    let workspaceConf: WorkspaceConfigSource
     let workspace: Workspace
     const newConf = new InstanceElement(services[0],
       new ObjectType({ elemID: new ElemID(services[0]) }), { conf1: 'val1' })
 
     beforeEach(async () => {
-      confSource = mockConfigSource()
-      workspace = await createWorkspace(undefined, undefined, confSource)
+      workspaceConf = mockWorkspaceConfigSource()
+      workspace = await createWorkspace(undefined, undefined, workspaceConf)
       await workspace.updateServiceConfig(services[0], newConf)
     })
 
     it('should persist', () => {
-      expect(confSource.set).toHaveBeenCalledTimes(1)
-      const instance = (confSource.set as jest.Mock).mock.calls[0][1] as InstanceElement
-      expect(instance).toEqual(newConf)
-      const path = (confSource.set as jest.Mock).mock.calls[0][0] as string
-      expect(path).toEqual(`${ADAPTERS_CONFIGS_PATH}/${services[0]}`)
+      expect(workspaceConf.setAdapter).toHaveBeenCalledTimes(1)
+      const setAdapterParams = (
+        workspaceConf.setAdapter as jest.Mock
+      ).mock.calls[0]
+      expect(setAdapterParams[0]).toEqual('salesforce')
+      expect(setAdapterParams[1]).toEqual(newConf)
     })
   })
 

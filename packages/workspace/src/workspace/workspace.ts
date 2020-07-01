@@ -295,12 +295,11 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
         throw new EnvDuplicationError(newEnvName)
       }
 
-      currentEnvsConf().map(e => {
-        if (e.name === envName) {
+      currentEnvsConf()
+        .filter(e => e.name === envName)
+        .forEach(e => {
           e.name = newEnvName
-        }
-        return e
-      })
+        })
       if (envName === workspaceConfig.currentEnv) {
         workspaceConfig.currentEnv = newEnvName
       }

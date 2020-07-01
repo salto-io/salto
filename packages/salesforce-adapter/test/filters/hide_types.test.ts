@@ -100,8 +100,20 @@ describe('hide_types filter', () => {
     mockPrimitive.clone(),
   ]
 
+  let type: ObjectType
+  let customObj: ObjectType
+  let primitiveType: PrimitiveType
+  let instance: InstanceElement
+
+
   beforeAll(async () => {
     await filter.onFetch(elements)
+
+    // Elements after filter execution
+    instance = elements.find(e => e.elemID.isEqual(mockInstance.elemID)) as InstanceElement
+    type = elements.find(e => e.elemID.isEqual(mockType.elemID)) as ObjectType
+    customObj = elements.find(e => e.elemID.isEqual(mockCustomObj.elemID)) as ObjectType
+    primitiveType = elements.find(e => e.elemID.isEqual(mockPrimitive.elemID)) as PrimitiveType
   })
 
   it('should not change element list length', () => {
@@ -110,26 +122,26 @@ describe('hide_types filter', () => {
 
 
   it('should not change instances', () => {
-    expect(isEqualElements(elements[2], mockInstance)).toBeTruthy()
-    expect(elements[2].annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
+    expect(isEqualElements(instance, mockInstance)).toBeTruthy()
+    expect(instance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
   })
 
   it('should add hidden annotation to types', () => {
     // Type should changed
-    expect(isEqualElements(elements[0], mockCustomObj)).toBeFalsy()
-    expect(isEqualElements(elements[1], mockType)).toBeFalsy()
-    expect(isEqualElements(elements[3], mockPrimitive)).toBeFalsy()
+    expect(isEqualElements(customObj, mockCustomObj)).toBeFalsy()
+    expect(isEqualElements(type, mockType)).toBeFalsy()
+    expect(isEqualElements(primitiveType, mockPrimitive)).toBeFalsy()
 
     expect(elements.filter(isType).every(e => e.annotations[CORE_ANNOTATIONS.HIDDEN]))
       .toBeDefined()
   })
 
   it('should add hidden as false for custom object', () => {
-    expect(elements[0].annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(false)
+    expect(customObj.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(false)
   })
 
   it('should add hidden as true for non custom object types and primitives', () => {
-    expect(elements[1].annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
-    expect(elements[3].annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
+    expect(type.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
+    expect(primitiveType.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
   })
 })

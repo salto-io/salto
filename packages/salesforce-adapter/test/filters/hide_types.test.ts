@@ -117,7 +117,7 @@ describe('hide_types filter', () => {
   it('should add hidden annotation to types', () => {
     // Type should changed
     expect(isEqualElements(elements[0], mockCustomObj)).toBeFalsy()
-    expect(isEqualElements(elements[1], mockCustomObj)).toBeFalsy()
+    expect(isEqualElements(elements[1], mockType)).toBeFalsy()
     expect(isEqualElements(elements[3], mockPrimitive)).toBeFalsy()
 
     expect(elements.filter(isType).every(e => e.annotations[CORE_ANNOTATIONS.HIDDEN]))

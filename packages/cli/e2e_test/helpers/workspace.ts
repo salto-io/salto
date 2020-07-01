@@ -218,15 +218,25 @@ export const runEmptyPreview = async (lastPlan: Plan, fetchOutputDir: string): P
 
 const getChangedElementName = (change: Change): string => getChangeElement(change).elemID.name
 
+type ExpectedChange = { action: ActionName; element: string }
 export const verifyChanges = (plan: Plan,
-  expectedChanges: { action: ActionName; element: string }[]): void => {
-  expect(plan.size).toBe(expectedChanges.length)
-  const changes = [...plan.itemsByEvalOrder()].flatMap(item => [...item.changes()])
+  expectedChanges: ExpectedChange[]): void => {
+  const compareChanges = (a: ExpectedChange, b: ExpectedChange): number => {
+    if (a.action !== b.action) {
+      return a.action > b.action ? 1 : -1
+    }
+    if (a.element !== b.element) {
+      return a.element > b.element ? 1 : -1
+    }
+    return 0
+  }
 
-  expect(changes.every(change =>
-    expectedChanges.some(expectedChange =>
-      change.action === expectedChange.action
-      && getChangedElementName(change) === expectedChange.element))).toBeTruthy()
+  const changes = [...plan.itemsByEvalOrder()]
+    .flatMap(item => [...item.changes()])
+    .map(change => ({ action: change.action, element: getChangedElementName(change) }))
+    .sort(compareChanges)
+
+  expect(expectedChanges.sort(compareChanges)).toEqual(changes)
 }
 
 const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,

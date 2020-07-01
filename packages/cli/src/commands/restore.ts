@@ -15,6 +15,7 @@
 */
 import { Telemetry, restore, StepEmitter, RestoreProgressEvents } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
+import { EOL } from 'os'
 import { EventEmitter } from 'pietile-eventemitter'
 import _ from 'lodash'
 import { ServicesArgs, servicesFilter } from '../filters/services'
@@ -26,7 +27,7 @@ import { getCliTelemetry } from '../telemetry'
 import { loadWorkspace, getWorkspaceTelemetryTags, applyChangesToWorkspace } from '../workspace/workspace'
 import { getApprovedChanges } from '../callbacks'
 import Prompts from '../prompts'
-import { formatChangesSummary, formatRestoreFinish, formatInvalidFilters } from '../formatter'
+import { formatChangesSummary, formatDetailedChanges, formatRestoreFinish, formatInvalidFilters } from '../formatter'
 import { progressOutputer, outputLine } from '../outputer'
 
 const log = logger(module)
@@ -34,6 +35,8 @@ const log = logger(module)
 type RestoreArgs = {
     force: boolean
     interactive: boolean
+    dryRun: boolean
+    printDetails: boolean
     isolated: boolean
     filters: string[]
   } & ServicesArgs & EnvironmentArgs
@@ -62,6 +65,8 @@ export const command = (
   workspaceDir: string,
   force: boolean,
   interactive: boolean,
+  dryRun: boolean,
+  printDetails: boolean,
   telemetry: Telemetry,
   output: CliOutput,
   spinnerCreator: SpinnerCreator,
@@ -73,7 +78,7 @@ export const command = (
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
     log.debug(`running restore command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
+      interactive}, dryRun=${dryRun}, printDetails=${printDetails}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
     const restoreProgress = new EventEmitter<RestoreProgressEvents>()
     restoreProgress.on('diffWillBeCalculated', progressOutputer(
       Prompts.RESTORE_CALC_DIFF_START,
@@ -81,6 +86,15 @@ export const command = (
       Prompts.RESTORE_CALC_DIFF_FAIL,
       output
     ))
+    restoreProgress.on('diffWasCalculated', detailedChanges => {
+      outputLine(EOL, output)
+      if (detailedChanges.length > 0) {
+        outputLine(formatDetailedChanges([detailedChanges], printDetails), output)
+      } else {
+        outputLine('No changes', output)
+      }
+      outputLine(EOL, output)
+    })
     restoreProgress.on('workspaceWillBeUpdated', (progress: StepEmitter, changes: number, approved: number) =>
       progressOutputer(
         formatChangesSummary(changes, approved),
@@ -103,6 +117,10 @@ export const command = (
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     cliTelemetry.start(workspaceTags)
     const changes = await restore(workspace, inputServices, filters, restoreProgress)
+    if (dryRun) {
+      cliTelemetry.success(workspaceTags)
+      return CliExitCode.Success
+    }
     const updatingWsSucceeded = await applyChangesToWorkspace({
       changes,
       workspace,
@@ -153,6 +171,22 @@ const restoreBuilder = createCommandBuilder({
         default: false,
         demandOption: false,
       },
+      // will also be available as dryRun because of camel-case-expansion
+      'dry-run': {
+        alias: ['d'],
+        describe: 'Preview the restore plan without making changes',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
+      // will also be available as printDetails because of camel-case-expansion
+      'print-details': {
+        alias: ['p'],
+        describe: 'Print detailed changes including values',
+        boolean: true,
+        default: false,
+        demandOption: false,
+      },
     },
   },
 
@@ -163,6 +197,8 @@ const restoreBuilder = createCommandBuilder({
       '.',
       input.args.force,
       input.args.interactive,
+      input.args.dryRun,
+      input.args.printDetails,
       input.telemetry,
       output,
       spinnerCreator,

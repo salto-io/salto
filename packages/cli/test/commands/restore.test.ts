@@ -59,7 +59,6 @@ describe('restore command', () => {
   mockUpdateStateOnly.mockResolvedValue(true)
 
   beforeEach(() => {
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     spinners = []
     spinnerCreator = mocks.mockSpinnerCreator(spinners)
   })
@@ -68,6 +67,7 @@ describe('restore command', () => {
   let mockTelemetry: mocks.MockTelemetry
   describe('with errored workspace', () => {
     beforeEach(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       const erroredWorkspace = {
         hasErrors: () => true,
@@ -75,7 +75,7 @@ describe('restore command', () => {
         config: { services },
       } as unknown as Workspace
       mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-      result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, false, true, services)
+      result = await command('', true, false, false, false, mockTelemetry, cliOutput, spinnerCreator, false, true, services)
         .execute()
     })
 
@@ -91,6 +91,7 @@ describe('restore command', () => {
   describe('with valid workspace', () => {
     const workspaceName = 'valid-ws'
     beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace(workspaceName),
@@ -98,7 +99,7 @@ describe('restore command', () => {
       })
       result = await command(
         workspaceName,
-        true, false,
+        true, false, false, false,
         mockTelemetry,
         cliOutput,
         spinnerCreator,
@@ -124,17 +125,23 @@ describe('restore command', () => {
       expect(mockTelemetry.getEvents()).toHaveLength(2)
       expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
     })
+
+    it('should print deployment to console', () => {
+      // note: other lines cannot be checked because restore is mocked
+      expect(cliOutput.stdout.content).toContain('Done!')
+    })
   })
   describe('Verify using env command', () => {
     const workspaceDir = 'valid-ws'
     beforeEach(() => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
       mockLoadWorkspace.mockClear()
     })
     it('should use current env when env is not provided', async () => {
       await command(
         workspaceDir,
-        true, false,
+        true, false, false, false,
         mockTelemetry,
         cliOutput,
         spinnerCreator,
@@ -150,7 +157,7 @@ describe('restore command', () => {
     it('should use provided env', async () => {
       await command(
         workspaceDir,
-        true, false,
+        true, false, false, false,
         mockTelemetry,
         cliOutput,
         spinnerCreator,
@@ -166,8 +173,54 @@ describe('restore command', () => {
     })
   })
 
+  describe('dry-run', () => {
+    const workspaceName = 'valid-ws'
+    beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockTelemetry = mocks.getMockTelemetry()
+      mockUpdateWorkspace.mockClear()
+      mockLoadWorkspace.mockResolvedValue({
+        workspace: mocks.mockLoadWorkspace(workspaceName),
+        errored: false,
+      })
+      result = await command(
+        workspaceName,
+        true, false, true /* dry-run */, false,
+        mockTelemetry,
+        cliOutput,
+        spinnerCreator,
+        false,
+        true,
+        services,
+      ).execute()
+    })
+
+    it('should return success code', () => {
+      expect(result).toBe(CliExitCode.Success)
+    })
+    it('should call restore', () => {
+      expect(restore).toHaveBeenCalled()
+    })
+
+    it('should not update changes', () => {
+      const calls = findWsUpdateCalls(workspaceName)
+      expect(calls).toHaveLength(0)
+    })
+
+    it('should send telemetry events', () => {
+      expect(mockTelemetry.getEvents()).toHaveLength(2)
+      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+    })
+
+    it('should not print deployment to console', () => {
+      // note: other lines cannot be checked because restore is mocked
+      expect(cliOutput.stdout.content).not.toContain('Done!')
+    })
+  })
+
   describe('should return error when update workspace fails', () => {
     beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace('exist-on-error'),
@@ -175,7 +228,7 @@ describe('restore command', () => {
       })
       result = await command(
         'exist-on-error',
-        true, false,
+        true, false, false, false,
         mockTelemetry,
         cliOutput,
         spinnerCreator,
@@ -192,6 +245,7 @@ describe('restore command', () => {
   describe('using id filters', () => {
     const workspaceName = 'valid-ws'
     beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace(workspaceName),
@@ -201,7 +255,7 @@ describe('restore command', () => {
     it('should fail when invalid filters are provided', async () => {
       result = await command(
         workspaceName,
-        true, false,
+        true, false, false, false,
         mockTelemetry,
         cliOutput,
         spinnerCreator,
@@ -216,7 +270,7 @@ describe('restore command', () => {
     it('should succeed when invalid filters are provided', async () => {
       result = await command(
         workspaceName,
-        true, false,
+        true, false, false, false,
         mockTelemetry,
         cliOutput,
         spinnerCreator,

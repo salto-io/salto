@@ -130,7 +130,11 @@ describe('restore', () => {
   it('should emit events', async () => {
     const progressEmitter = new EventEmitter<RestoreProgressEvents>()
     await createRestoreChanges([], [], index, [], progressEmitter)
-    expect(progressEmitter.emit).toHaveBeenCalled()
+    expect(progressEmitter.emit).toHaveBeenCalledTimes(2)
+    const mockedEmit = progressEmitter.emit as jest.Mock
+    expect(mockedEmit.mock.calls[0][0]).toEqual('diffWillBeCalculated')
+    expect(mockedEmit.mock.calls[1][0]).toEqual('diffWasCalculated')
+    expect(mockedEmit.mock.calls[1][1]).toEqual([])
   })
   describe('with no changes', () => {
     it('should not create changes ws and the state are the same', async () => {

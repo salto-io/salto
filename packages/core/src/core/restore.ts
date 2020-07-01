@@ -27,6 +27,7 @@ type PathIndex = pathIndex.PathIndex
 export type RestoreProgressEvents = {
   filtersWillBeCreated: (stepProgress: EventEmitter<StepEvents>) => void
   diffWillBeCalculated: (stepProgress: EventEmitter<StepEvents>) => void
+  diffWasCalculated: (detailedChanges: DetailedChange[]) => void
   workspaceWillBeUpdated: (
     stepProgress: EventEmitter<StepEvents>,
     changes: number,
@@ -117,6 +118,12 @@ export const createRestoreChanges = async (
     wu(await getDetailedChanges(workspaceElements, stateElements)).toArray(),
     idFilters
   )
+  const detailedChanges = _.flatten(await Promise.all(
+    changes.map(change => splitChangeByPath(change, index))
+  ))
+  if (progressEmitter) {
+    progressEmitter.emit('diffWasCalculated', detailedChanges)
+  }
   calculateDiffEmitter.emit('completed')
-  return _.flatten(await Promise.all(changes.map(change => splitChangeByPath(change, index))))
+  return detailedChanges
 }

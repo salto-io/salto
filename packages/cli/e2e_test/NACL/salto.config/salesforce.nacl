@@ -1,0 +1,30 @@
+salesforce {
+  metadataTypesSkippedList = [
+    "Report",
+    "ReportType",
+    "ReportFolder",
+    "Dashboard",
+    "DashboardFolder",
+  ]
+  instancesRegexSkippedList = [
+    "^EmailTemplate.MarketoEmailTemplates",
+  ]
+  maxConcurrentRetrieveRequests = 3
+  maxItemsInRetrieveRequest = 2500
+  enableHideTypesInNacls = false
+  dataManagement = [
+    {
+      name = "CPQ"
+      enabled = false
+      includeNamespaces = [
+        "SBQQ",
+      ]
+      includeObjects = [
+        "Product2",
+      ]
+      excludeObjects = [
+        "SBQQ__Quote__c",
+      ]
+    },
+  ]
+}

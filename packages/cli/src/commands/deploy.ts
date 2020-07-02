@@ -132,7 +132,7 @@ export class DeployCommand implements CliCommand {
   private startAction(itemName: string, item: PlanItem): void {
     const startTime = new Date()
     const intervalId = setInterval(() => {
-      this.stdout.write(formatActionInProgress(itemName, item.parent().action, startTime))
+      this.stdout.write(formatActionInProgress(itemName, item.action, startTime))
     }, ACTION_INPROGRESS_INTERVAL)
     const action = {
       item,
@@ -144,7 +144,7 @@ export class DeployCommand implements CliCommand {
   }
 
   updateAction(item: PlanItem, status: ItemStatus, details?: string): void {
-    const itemName = item.getElementName()
+    const itemName = item.groupKey
     if (itemName) {
       if (status === 'started') {
         this.startAction(itemName, item)

@@ -39,6 +39,11 @@ export const isAdditionOrModificationDiff = <T>(
 ): change is AdditionDiff<T> | ModificationDiff<T> => (
     isAdditionDiff(change) || isModificationDiff(change)
   )
+export const isAdditionOrRemovalDiff = <T>(
+  change: Change<T>
+): change is AdditionDiff<T> | RemovalDiff<T> => (
+    isAdditionDiff(change) || isRemovalDiff(change)
+  )
 
 export const getChangeElement = <T>(change: Change<T>): T =>
   (change.action === 'remove' ? change.data.before : change.data.after)

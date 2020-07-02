@@ -21,6 +21,7 @@ import {
   addReferencesDependency,
 } from '../../../src/core/plan/dependency'
 import { getAllElements } from '../../common/elements'
+import { toChange } from '../../common/plan'
 
 describe('addNodeDependencies', () => {
   const diffNode = (
@@ -46,7 +47,7 @@ describe('addNodeDependencies', () => {
     inputGraph.addNode(3, [1], diffNode(3, 'add', testElem))
   })
 
-  describe('when there are no dependecy changes', () => {
+  describe('when there are no dependency changes', () => {
     beforeEach(async () => {
       mockChanger.mockResolvedValue([])
       outputGraph = await addNodeDependencies([mockChanger])(inputGraph)
@@ -56,7 +57,7 @@ describe('addNodeDependencies', () => {
     })
   })
 
-  describe('when dependecy changer returns add change', () => {
+  describe('when dependency changer returns add change', () => {
     beforeEach(async () => {
       mockChanger.mockResolvedValue([
         { action: 'add', dependency: { source: 1, target: 2 } },
@@ -67,25 +68,25 @@ describe('addNodeDependencies', () => {
       expect(outputGraph.get(2)).toEqual(inputGraph.get(2))
       expect(outputGraph.get(3)).toEqual(inputGraph.get(3))
     })
-    it('should add the new dependecies', () => {
+    it('should add the new dependencies', () => {
       expect(outputGraph.get(1)).toContain(2)
     })
   })
 
-  describe('when dependecy changer returns remove changes', () => {
+  describe('when dependency changer returns remove changes', () => {
     beforeEach(async () => {
       mockChanger.mockResolvedValue([
         { action: 'remove', dependency: { source: 2, target: 1 } },
       ] as DependencyChange[])
       outputGraph = await addNodeDependencies([mockChanger])(inputGraph)
     })
-    it('should keep the pre-existing dependecies that were not removed', () => {
+    it('should keep the pre-existing dependencies that were not removed', () => {
       expect(outputGraph.get(3)).toEqual(inputGraph.get(3))
     })
-    it('should retain empty sets of dependecies', () => {
+    it('should retain empty sets of dependencies', () => {
       expect(outputGraph.get(2)).toBeDefined()
     })
-    it('should remove the dependecy in the change', () => {
+    it('should remove the dependency in the change', () => {
       expect(outputGraph.get(2)).not.toContain(1)
     })
   })
@@ -126,12 +127,7 @@ describe('addNodeDependencies', () => {
   })
 })
 
-describe('dependecy changers', () => {
-  const toChange = (action: 'add' | 'remove', data: ChangeDataType): Change => (
-    action === 'add'
-      ? { action, data: { after: data } }
-      : { action, data: { before: data } }
-  )
+describe('dependency changers', () => {
   let saltoOffice: ObjectType
   let saltoEmployee: ObjectType
   let saltoEmployeeInstance: InstanceElement
@@ -144,8 +140,8 @@ describe('dependecy changers', () => {
     describe('when the same element is removed and added', () => {
       beforeEach(async () => {
         const inputChanges = new Map([
-          [0, toChange('remove', saltoEmployee)],
-          [1, toChange('add', saltoEmployee)],
+          [0, toChange({ before: saltoEmployee })],
+          [1, toChange({ after: saltoEmployee })],
         ])
         dependencyChanges = [...await addAfterRemoveDependency(inputChanges, new Map())]
       })
@@ -159,8 +155,8 @@ describe('dependecy changers', () => {
     describe('when different elements are added and removed', () => {
       beforeEach(async () => {
         const inputChanges = new Map([
-          [0, toChange('remove', saltoEmployee)],
-          [1, toChange('add', saltoEmployeeInstance)],
+          [0, toChange({ before: saltoEmployee })],
+          [1, toChange({ after: saltoEmployeeInstance })],
         ])
         dependencyChanges = [...await addAfterRemoveDependency(inputChanges, new Map())]
       })
@@ -172,29 +168,29 @@ describe('dependecy changers', () => {
 
   describe('addFieldToObjectDependency', () => {
     const fieldChanges = (
-      action: 'add' | 'remove',
+      changeType: 'before' | 'after',
       obj: ObjectType,
       idOffset = 1,
     ): [ChangeId, Change][] => ([
       ...wu.enumerate(
-        Object.values(obj.fields).map(field => toChange(action, field))
+        Object.values(obj.fields).map(field => toChange({ [changeType]: field }))
       ).map(([change, id]) => [id + idOffset, change] as [ChangeId, Change]),
     ])
 
     const objectAndFieldChanges = (
-      action: 'add' | 'remove',
+      changeType: 'before' | 'after',
       obj: ObjectType,
     ): [ChangeId, Change][] => ([
-      [0, toChange(action, obj)],
-      ...fieldChanges(action, obj),
+      [0, toChange({ [changeType]: obj })],
+      ...fieldChanges(changeType, obj),
     ])
 
     describe('when element and fields are added', () => {
       beforeEach(async () => {
-        const inputChanges = new Map(objectAndFieldChanges('add', saltoEmployee))
+        const inputChanges = new Map(objectAndFieldChanges('after', saltoEmployee))
         dependencyChanges = [...await addFieldToObjectDependency(inputChanges, new Map())]
       })
-      it('should add depenency from each field to the element', () => {
+      it('should add dependency from each field to the element', () => {
         expect(dependencyChanges).toHaveLength(Object.values(saltoEmployee.fields).length)
         expect(dependencyChanges.every(change => change.action === 'add')).toBeTruthy()
         expect(dependencyChanges.every(change => change.dependency.target === 0)).toBeTruthy()
@@ -203,10 +199,10 @@ describe('dependecy changers', () => {
 
     describe('when element and fields are removed', () => {
       beforeEach(async () => {
-        const inputChanges = new Map(objectAndFieldChanges('remove', saltoEmployee))
+        const inputChanges = new Map(objectAndFieldChanges('before', saltoEmployee))
         dependencyChanges = [...await addFieldToObjectDependency(inputChanges, new Map())]
       })
-      it('should add depenency from each field to element removal', () => {
+      it('should add dependency from each field to element removal', () => {
         expect(dependencyChanges).toHaveLength(Object.values(saltoEmployee.fields).length)
         expect(dependencyChanges.every(change => change.action === 'add')).toBeTruthy()
         expect(dependencyChanges.every(change => change.dependency.target === 0)).toBeTruthy()
@@ -215,10 +211,10 @@ describe('dependecy changers', () => {
 
     describe('when element is not changed', () => {
       beforeEach(async () => {
-        const inputChanges = new Map(fieldChanges('add', saltoEmployee))
+        const inputChanges = new Map(fieldChanges('after', saltoEmployee))
         dependencyChanges = [...await addFieldToObjectDependency(inputChanges, new Map())]
       })
-      it('should not add dependecies', () => {
+      it('should not add dependencies', () => {
         expect(dependencyChanges).toHaveLength(0)
       })
     })
@@ -228,8 +224,8 @@ describe('dependecy changers', () => {
     describe('when instance and type are added', () => {
       beforeEach(async () => {
         const inputChanges = new Map([
-          [0, toChange('add', saltoEmployee)],
-          [1, toChange('add', saltoEmployeeInstance)],
+          [0, toChange({ after: saltoEmployee })],
+          [1, toChange({ after: saltoEmployeeInstance })],
         ])
         dependencyChanges = [...await addTypeDependency(inputChanges, new Map())]
       })
@@ -243,8 +239,8 @@ describe('dependecy changers', () => {
     describe('when field and type are added', () => {
       beforeEach(async () => {
         const inputChanges = new Map([
-          [0, toChange('add', saltoEmployee.fields.office)],
-          [1, toChange('add', saltoOffice)],
+          [0, toChange({ after: saltoEmployee.fields.office })],
+          [1, toChange({ after: saltoOffice })],
         ])
         dependencyChanges = [...await addTypeDependency(inputChanges, new Map())]
       })
@@ -257,7 +253,7 @@ describe('dependecy changers', () => {
     })
   })
 
-  describe('addReferecesDependency', () => {
+  describe('addReferencesDependency', () => {
     const testTypeId = new ElemID('test', 'type')
     let testAnnoType: PrimitiveType
     let testType: ObjectType
@@ -292,10 +288,10 @@ describe('dependecy changers', () => {
     describe('when reference and target are added', () => {
       beforeEach(async () => {
         const inputChanges = new Map([
-          [0, toChange('add', testType)],
-          [1, toChange('add', testInstance)],
-          [2, toChange('add', testAnnoType)],
-          [3, toChange('add', testParent)],
+          [0, toChange({ after: testType })],
+          [1, toChange({ after: testInstance })],
+          [2, toChange({ after: testAnnoType })],
+          [3, toChange({ after: testParent })],
         ])
         dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
       })
@@ -318,9 +314,9 @@ describe('dependecy changers', () => {
     describe('when reference and target are removed', () => {
       beforeEach(async () => {
         const inputChanges = new Map([
-          [0, toChange('remove', testType)],
-          [1, toChange('remove', testInstance)],
-          [2, toChange('remove', testParent)],
+          [0, toChange({ before: testType })],
+          [1, toChange({ before: testInstance })],
+          [2, toChange({ before: testParent })],
         ])
         dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
       })
@@ -340,8 +336,8 @@ describe('dependecy changers', () => {
         testType.annotations.annoRef = 'value'
         testInstance.value.ref = new ReferenceExpression(testTypeId.createNestedID('attr', 'bla'))
         const inputChanges = new Map([
-          [0, toChange('add', testType)],
-          [1, toChange('add', testInstance)],
+          [0, toChange({ after: testType })],
+          [1, toChange({ after: testInstance })],
         ])
         dependencyChanges = [...await addReferencesDependency(inputChanges, new Map())]
       })

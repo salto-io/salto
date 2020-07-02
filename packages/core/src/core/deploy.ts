@@ -23,16 +23,14 @@ const deployAction = async (
   planItem: PlanItem,
   adapters: Record<string, AdapterOperations>
 ): Promise<ReadonlyArray<Change>> => {
-  const { elemID } = getChangeElement(planItem.parent())
-  const adapterName = elemID.adapter
+  const changes = [...planItem.changes()]
+  const adapterName = getChangeElement(changes[0]).elemID.adapter
   const adapter = adapters[adapterName]
 
   if (!adapter) {
     throw new Error(`Missing adapter for ${adapterName}`)
   }
-  const result = await adapter.deploy(
-    { groupID: planItem.groupKey, changes: [...planItem.changes()] }
-  )
+  const result = await adapter.deploy({ groupID: planItem.groupKey, changes })
   if (result.errors.length > 0) {
     throw new Error(
       `Failed to deploy ${planItem.groupKey} with errors:\n${result.errors.join('\n')}`
@@ -80,17 +78,15 @@ export const deployActions = async (
       error.handlerErrors.forEach((nodeError: Error, key: PlanItemId) => {
         const item = deployPlan.getItem(key) as PlanItem
         if (nodeError instanceof NodeSkippedError) {
-          reportProgress(item, 'cancelled',
-            (deployPlan.getItem(nodeError.causingNode) as PlanItem).getElementName())
+          reportProgress(item, 'cancelled', deployPlan.getItem(nodeError.causingNode).groupKey)
         }
-        deployErrors.push(new DeployError(item.getElementName(), nodeError.message))
+        deployErrors.push(new DeployError(item.groupKey, nodeError.message))
       })
       if (error.circularDependencyError) {
         error.circularDependencyError.causingNodeIds.forEach((id: PlanItemId) => {
           const item = deployPlan.getItem(id) as PlanItem
           reportProgress(item, 'error', error.circularDependencyError.message)
-          deployErrors.push(new DeployError(item.getElementName(),
-            error.circularDependencyError.message))
+          deployErrors.push(new DeployError(item.groupKey, error.circularDependencyError.message))
         })
       }
     }

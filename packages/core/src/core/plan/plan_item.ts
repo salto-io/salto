@@ -16,20 +16,18 @@
 import _ from 'lodash'
 import wu from 'wu'
 
-import { NodeId, Group } from '@salto-io/dag'
+import { NodeId, Group, ActionName } from '@salto-io/dag'
 import {
   ChangeDataType, Value, ElemID, Change, isEqualElements, isEqualValues, getChangeElement,
-  Element, isField, isInstanceElement, isObjectType, isPrimitiveType, ObjectType, PrimitiveType,
+  isField, isInstanceElement, isObjectType, isPrimitiveType, ObjectType, PrimitiveType,
   isListType, DetailedChange,
 } from '@salto-io/adapter-api'
-import { getOrCreateGroupLevelChange } from './group'
 
 export type PlanItemId = NodeId
 export type PlanItem = Group<Change> & {
-  parent: () => Change
+  action: ActionName
   changes: () => Iterable<Change>
   detailedChanges: () => Iterable<DetailedChange>
-  getElementName: () => string
 }
 
 /**
@@ -103,14 +101,21 @@ const getAnnotationTypeChanges = (id: ElemID, before: Value, after: Value): Deta
   return []
 }
 
-export const addPlanItemAccessors = (
-  group: Group<Change>,
-  beforeElementsMap: Record<NodeId, Element>,
-  afterElementsMap: Record<NodeId, Element>,
-): PlanItem => Object.assign(group, {
-  parent() {
-    return getOrCreateGroupLevelChange(group, beforeElementsMap, afterElementsMap)
-  },
+const getGroupAction = (group: Group<Change>): ActionName => {
+  const changeTypes = wu(group.items.values())
+    .filter(change => getChangeElement(change).elemID.isTopLevel())
+    .map(change => change.action)
+    .unique()
+    .toArray()
+  // If all top level changes have the same action, this is the item's action. If not all
+  // changes are the same, or if there are no top level changes, this is considered modify
+  return changeTypes.length === 1
+    ? changeTypes[0]
+    : 'modify'
+}
+
+export const addPlanItemAccessors = (group: Group<Change>): PlanItem => Object.assign(group, {
+  action: getGroupAction(group),
   changes() {
     return group.items.values()
   },
@@ -149,8 +154,5 @@ export const addPlanItemAccessors = (
         return [...annotationTypeChanges, ...annotationChanges]
       })
       .flatten()
-  },
-  getElementName() {
-    return getChangeElement(this.parent()).elemID.getFullName()
   },
 })

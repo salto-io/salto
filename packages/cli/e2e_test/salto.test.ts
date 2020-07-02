@@ -244,7 +244,9 @@ describe('cli e2e', () => {
       await runDeploy({ lastPlan, fetchOutputDir })
     })
     it('should have "modify" changes', async () => {
-      verifyChanges(lastPlan, [{ action: 'modify', element: newObjectElemName },
+      verifyChanges(lastPlan, [
+        { action: 'remove', element: 'Beta' },
+        { action: 'add', element: 'Modified' },
         { action: 'modify', element: newInstanceElemName },
         // This instance is modified because its description is a variable
         // with the value of a reference to the description of the previous instance.

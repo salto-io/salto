@@ -325,12 +325,11 @@ const toPlanItem = (
 ): PlanItem => ({
   groupKey: getChangeElement(parent).elemID.getFullName(),
   items: new Map<string, Change>(
-    [parent, ...subChanges].map(c => [getChangeElement(c).elemID.getFullName(), c])
+    [parent, ...subChanges].map(c => [_.uniqueId(), c])
   ),
-  parent: () => parent,
+  action: parent.action,
   changes: () => [parent, ...subChanges],
   detailedChanges: () => detailed,
-  getElementName: () => getChangeElement(parent).elemID.getFullName(),
 })
 
 const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): Change => {

@@ -16,17 +16,16 @@
 import wu from 'wu'
 import _ from 'lodash'
 
-import { DataNodeMap } from '@salto-io/dag'
+import { DataNodeMap, DiffGraph, DiffNode } from '@salto-io/dag'
 import {
-  ChangeError, Change, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement,
-  ElemID, ObjectType, ChangeDataType, isRemovalDiff, Element,
+  ChangeError, ElementMap, InstanceElement, TypeElement, ChangeValidator, getChangeElement,
+  ElemID, ObjectType, ChangeDataType, Element, isAdditionOrModificationDiff, isField,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 
 type FilterResult = {
   changeErrors: ChangeError[]
-  validDiffGraph: DataNodeMap<Change>
-  validAfterElementsMap: ElementMap
+  validDiffGraph: DiffGraph<ChangeDataType>
 }
 
 type TopLevelElement = InstanceElement | TypeElement
@@ -34,7 +33,7 @@ type TopLevelElement = InstanceElement | TypeElement
 export const filterInvalidChanges = async (
   beforeElementsMap: ElementMap,
   afterElementsMap: ElementMap,
-  diffGraph: DataNodeMap<Change>,
+  diffGraph: DiffGraph<ChangeDataType>,
   changeValidators: Record<string, ChangeValidator>,
 ): Promise<FilterResult> => {
   const createValidTopLevelElem = (beforeTopLevelElem: TopLevelElement,
@@ -103,8 +102,22 @@ export const filterInvalidChanges = async (
   }
 
   const buildValidDiffGraph = (nodeIdsToOmit: Set<string>, validAfterElementsMap: ElementMap):
-    DataNodeMap<Change<ChangeDataType>> => {
-    const validDiffGraph = new DataNodeMap<Change<ChangeDataType>>()
+    DiffGraph<ChangeDataType> => {
+    const getValidAfter = (elem: Element): Element | undefined => {
+      if (isField(elem)) {
+        const validParent = validAfterElementsMap[elem.parent.elemID.getFullName()] as ObjectType
+        return validParent?.fields?.[elem.name]
+      }
+      return validAfterElementsMap[elem.elemID.getFullName()]
+    }
+    const replaceAfterElement = <T extends DiffNode<ChangeDataType>>(change: T): T => {
+      if (isAdditionOrModificationDiff(change)) {
+        const after = getValidAfter(getChangeElement(change)) ?? change.data.after
+        return { ...change, data: { ...change.data, after } }
+      }
+      return change
+    }
+    const validDiffGraph = new DataNodeMap<DiffNode<ChangeDataType>>()
     try {
       diffGraph.walkSync(nodeId => {
         const change = diffGraph.getData(nodeId)
@@ -113,11 +126,7 @@ export const filterInvalidChanges = async (
           // in case this is an invalid node throw error so the walk will skip the dependent nodes
           throw new Error()
         }
-        const validChange = isRemovalDiff(change) ? change : { ...change,
-          data: {
-            ...change.data,
-            after: validAfterElementsMap[elemID.getFullName()] || change.data.after,
-          } } as Change<ChangeDataType>
+        const validChange = replaceAfterElement(change)
         validDiffGraph.addNode(nodeId, diffGraph.get(nodeId), validChange)
       })
     } catch (e) {
@@ -141,5 +150,5 @@ export const filterInvalidChanges = async (
   const nodeIdsToOmit = new Set(invalidChanges.map(change => change.elemID.getFullName()))
   const validAfterElementsMap = createValidAfterElementsMap(invalidChanges)
   const validDiffGraph = buildValidDiffGraph(nodeIdsToOmit, validAfterElementsMap)
-  return { changeErrors, validDiffGraph, validAfterElementsMap }
+  return { changeErrors, validDiffGraph }
 }

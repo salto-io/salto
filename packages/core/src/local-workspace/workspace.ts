@@ -20,9 +20,9 @@ import { exists } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
   configSource as cs, parseCache, staticFiles } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
+import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState, STATE_EXTENSION } from './state'
-import { workspaceConfigSource, getConfigDir } from './workspace_config'
+import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 
 const { configSource } = cs

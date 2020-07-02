@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ServiceIds } from '@salto-io/adapter-api'
+import * as cli from '@salto-io/suitecloud-cli'
 import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
@@ -21,6 +22,10 @@ import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST } from '../src/constants'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
+jest.mock('@salto-io/suitecloud-cli')
+
+const mockDownload = cli.SDKDownloadService.download as jest.Mock
+mockDownload.mockResolvedValue(undefined)
 
 describe('NetsuiteAdapter creator', () => {
   const credentials = new InstanceElement(
@@ -52,11 +57,6 @@ describe('NetsuiteAdapter creator', () => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
       await adapter.validateCredentials(credentials)
       expect(NetsuiteClient.validateCredentials).toHaveBeenCalledWith(credentials.value)
-    })
-
-    it('should fail when suitecloud-cli dependency does not exist', async () => {
-      jest.mock('@salto-io/suitecloud-cli', () => { throw Error('') }, { virtual: true })
-      await expect(adapter.validateCredentials(credentials)).rejects.toThrow()
     })
   })
 
@@ -112,6 +112,29 @@ describe('NetsuiteAdapter creator', () => {
           getElemIdFunc: mockGetElemIdFunc,
         })
       ).toThrow()
+    })
+  })
+
+  describe('install', () => {
+    it('should have an install functions', () => {
+      expect(adapter.install).toBeDefined()
+    })
+    it('when installation succeeds', async () => {
+      if (adapter.install) {
+        const res = await adapter.install()
+        expect(res).toEqual({ success: true, errors: [] })
+        expect(mockDownload).toHaveBeenCalled()
+      }
+    })
+    it('when installation fails', async () => {
+      mockDownload.mockImplementationOnce(() => {
+        throw new Error('FAILED')
+      })
+      if (adapter.install) {
+        const res = await adapter.install()
+        expect(res.success).toBeFalsy()
+        expect(res.errors).toEqual(['FAILED'])
+      }
     })
   })
 })

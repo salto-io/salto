@@ -30,6 +30,18 @@ module.exports = {
         test: /\.js$/,
         use: ["source-map-loader"],
         enforce: "pre",
+      },
+      {
+        test: /\.template$/i,
+        use: 'raw-loader',
+      },
+      {
+        test: /\.xml$/i,
+        use: 'raw-loader',
+      },
+      {
+        test: /@oracle\/suitecloud-cli-localserver-command/i,
+        use: 'null-loader'
       }
     ],
   },
@@ -45,8 +57,7 @@ module.exports = {
   externals: {
     vertx: 'commonjs vertx',    // workaround for: https://github.com/stefanpenner/es6-promise/issues/305
                                 // caused by requestretry which depends on an old version of es6-promise
-    '@salto-io/suitecloud-cli': '', // This is a workaround to avoid packaging the SDF which has licensing issues.
-                                    // Netsuite adapter is not supported using the Salto executable yet!
+    vm2: 'commonjs vm2',
   },
   plugins: [
     new webpack.EnvironmentPlugin({

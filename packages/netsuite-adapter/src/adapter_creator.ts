@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import {
-  Adapter, BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType,
+  Adapter, BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, AdapterInstallResult,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { SDKDownloadService } from '@salto-io/suitecloud-cli'
 import changeValidator from './change_validator'
 import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter, { NetsuiteConfig } from './adapter'
@@ -98,13 +99,6 @@ export const adapter: Adapter = {
     getElemIdFunc: context.getElemIdFunc,
   }),
   validateCredentials: async config => {
-    try {
-      // eslint-disable-next-line global-require,import/no-extraneous-dependencies
-      require('@salto-io/suitecloud-cli')
-    } catch (e) {
-      // TODO: this is a temp solution as we can't distribute salto with suitecloud-cli
-      throw new Error('Failed to load Netsuite adapter as @salto-io/suitecloud-cli dependency is missing')
-    }
     const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)
   },
@@ -112,5 +106,13 @@ export const adapter: Adapter = {
   configType,
   deployModifiers: {
     changeValidator,
+  },
+  install: async (): Promise<AdapterInstallResult> => {
+    try {
+      await SDKDownloadService.download()
+      return { success: true, errors: [] }
+    } catch (err) {
+      return { success: false, errors: [err.message ?? err] }
+    }
   },
 }

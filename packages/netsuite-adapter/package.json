@@ -30,6 +30,7 @@
     "@salto-io/file": "0.1.18",
     "@salto-io/logging": "0.1.18",
     "@salto-io/lowerdash": "0.1.18",
+    "@salto-io/suitecloud-cli": "^1.0.2-salto-8",
     "fast-xml-parser": "^3.15.0",
     "lodash": "^4.17.15",
     "wu": "^2.1.0"

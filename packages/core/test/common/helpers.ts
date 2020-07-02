@@ -13,5 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const mockFunction = <T extends (...args: never[]) => unknown>():
+export const mockFunction = <T extends (...args: never[]) => unknown | undefined >():
 jest.Mock<ReturnType<T>, Parameters<T>> => jest.fn()

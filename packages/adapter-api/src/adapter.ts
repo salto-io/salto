@@ -56,6 +56,11 @@ export type ChangeError = SaltoElementError & {
 export type ChangeValidator = (changes: ReadonlyArray<Change>) =>
   Promise<ReadonlyArray<ChangeError>>
 
+export type AdapterInstallResult = {
+  success: boolean
+  errors: string[]
+}
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
@@ -65,6 +70,7 @@ export type Adapter = {
     changeValidator?: ChangeValidator
     dependencyChanger?: DependencyChanger
   }
+  install?: () => Promise<AdapterInstallResult>
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

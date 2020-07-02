@@ -113,14 +113,13 @@ describe('restore', () => {
   ['salto', 'inst', 'nested', '2'],)
 
   const elementfragments = [
-    singlePathObject,
     singlePathInstance,
     multiPathAnnoObj,
     multiPathFieldsObj,
     multiPathInstace1,
     multiPathInstace2,
   ]
-  const { merged: allElement } = mergeElements(elementfragments)
+  const { merged: allElement } = mergeElements([singlePathObject, ...elementfragments])
   const singlePathObjMerged = allElement[0].clone()
   const multiPathObjMerged = allElement[1].clone()
   const singlePathInstMerged = allElement[2].clone()
@@ -175,7 +174,7 @@ describe('restore', () => {
         const removeChange = changes.find(c => c.action === 'remove')
         expect(removeChange).toBeDefined()
         expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
-        expect(removeChange?.path).toEqual(['salto', 'obj', 'simple'])
+        expect(removeChange?.path).not.toBeDefined()
       })
       it('should create remove changes for elements which have different values in the state and ws', () => {
         const modifyChange = changes.find(c => c.action === 'modify')

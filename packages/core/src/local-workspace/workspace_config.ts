@@ -19,15 +19,11 @@ import { workspaceConfigSource as wcs,
   WorkspaceConfig, configSource } from '@salto-io/workspace'
 import { InstanceElement } from '@salto-io/adapter-api'
 import { localDirectoryStore } from './dir_store'
-import { getSaltoHome, CONFIG_DIR_NAME } from '../app_config'
+import { getSaltoHome, getConfigDir } from '../app_config'
 import { WORKSPACE_CONFIG_NAME, ENVS_CONFIG_NAME, EnvsConfig,
   USER_CONFIG_NAME, UserDataConfig, WorkspaceMetadataConfig, envsConfigInstance,
   userDataConfigInstance, workspaceMetadataConfigInstance, ADAPTERS_CONFIG_NAME } from './workspace_config_types'
 import { NoWorkspaceConfig, NoEnvsConfig } from './errors'
-
-export const getConfigDir = (baseDir: string): string => (
-  path.join(path.resolve(baseDir), CONFIG_DIR_NAME)
-)
 
 export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
   localStorage: string

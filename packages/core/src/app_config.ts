@@ -39,6 +39,10 @@ const DEFAULT_SALTO_HOME = path.join(os.homedir(), '.salto')
 export const CONFIG_DIR_NAME = 'salto.config'
 const CONFIG_FILENAME = 'config.nacl'
 
+export const getConfigDir = (baseDir: string): string => (
+  path.join(path.resolve(baseDir), CONFIG_DIR_NAME)
+)
+
 export const getSaltoHome = (): string =>
   process.env[SALTO_HOME_VAR] || DEFAULT_SALTO_HOME
 

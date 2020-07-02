@@ -35,7 +35,8 @@ import * as callbacksImpl from '../src/callbacks'
 import * as DeployCommandImpl from '../src/commands/deploy'
 import {
   editNaclFile, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
-  verifyObject, runEmptyPreview, runSalesforceLogin, runPreview,
+  verifyObject, runEmptyPreview, runSalesforceLogin,
+  runPreview,
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
@@ -71,6 +72,7 @@ describe('cli e2e', () => {
   const addModelNaclFile = `${__dirname}/../../e2e_test/NACL/add.nacl`
   const workspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`
   const envsConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/envs.nacl`
+  const salesforceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/salesforce.nacl`
   const localWorkspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/local/workspaceUser.nacl`
   const NEW_INSTANCE_BASE_ELEM_NAME = 'NewInstanceName'
   const NEW_INSTANCE2_BASE_ELEM_NAME = 'NewInstance2Name'
@@ -119,6 +121,7 @@ describe('cli e2e', () => {
     credsLease = await salesforceTestHelpers().credentials()
     client = new SalesforceClient({ credentials: credsLease.value })
     await mkdirp(`${fetchOutputDir}/salto.config`)
+    await mkdirp(`${fetchOutputDir}/salto.config/adapters`)
     await mkdirp(localStorageDir)
     await mkdirp(localWorkspaceDir)
     await copyFile(workspaceConfigFile, `${fetchOutputDir}/salto.config/workspace.nacl`)
@@ -175,6 +178,10 @@ describe('cli e2e', () => {
     })
     it('should create statePath', async () => {
       expect(await exists(statePath)).toBe(true)
+    })
+    it('should hide Types folder', async () => {
+      expect(await exists(`${fetchOutputDir}/salesforce/Types`))
+        .toBe(false)
     })
     afterAll(async () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
@@ -301,6 +308,26 @@ describe('cli e2e', () => {
     })
     afterAll(async () => {
       await runEmptyPreview(lastPlan, fetchOutputDir)
+    })
+  })
+
+  describe('fetch with enableHideTypesInNacls false value', () => {
+    beforeAll(async () => {
+      await copyFile(salesforceConfigFile, `${fetchOutputDir}/salto.config/adapters/salesforce.nacl`)
+
+      await runFetch(fetchOutputDir)
+    })
+
+
+    it('should not hide Types folder', async () => {
+      expect(await exists(`${fetchOutputDir}/salesforce/Types`))
+        .toBe(true)
+    })
+
+    afterAll(async () => {
+      await runEmptyPreview(lastPlan, fetchOutputDir)
+
+      await rm(`${fetchOutputDir}/salto.config/adapters/salesforce.nacl`)
     })
   })
 

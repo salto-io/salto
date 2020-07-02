@@ -29,7 +29,7 @@ import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   naclCase, GetLookupNameFunc, TransformFunc,
 } from '@salto-io/adapter-utils'
-import { CustomObject, CustomField, salesforceRecord } from '../client/types'
+import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES,
   METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
@@ -46,6 +46,7 @@ import {
   FOLDER_TYPE,
   HAS_META_FILE,
   IS_FOLDER,
+  CUSTOM_OBJECT_ID_FIELD,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
@@ -80,7 +81,7 @@ export const defaultApiName = (element: Element): string => {
 const fullApiName = (elem: Element): string => {
   if (isInstanceElement(elem)) {
     return isCustomObject(elem)
-      ? elem.value.Id : elem.value[INSTANCE_FULL_NAME_FIELD]
+      ? elem.value[CUSTOM_OBJECT_ID_FIELD] : elem.value[INSTANCE_FULL_NAME_FIELD]
   }
   return elem.annotations[API_NAME] ?? elem.annotations[METADATA_TYPE]
 }
@@ -734,9 +735,9 @@ export class Types {
 }
 
 const transformCompoundValues = (
-  record: salesforceRecord,
+  record: SalesforceRecord,
   instance: InstanceElement
-): salesforceRecord => {
+): SalesforceRecord => {
   const compoundFieldsElemIDs = Object.values(Types.compoundDataTypes).map(o => o.elemID)
   const relevantCompoundFields = _.pickBy(instance.type.fields,
     (field, fieldKey) => Object.keys(record).includes(fieldKey)
@@ -768,9 +769,9 @@ const transformCompoundValues = (
 const toRecord = (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
-): salesforceRecord => {
+): SalesforceRecord => {
   const filteredRecordValues = {
-    Id: instance.value.Id,
+    [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
       instance.value,
       (_v, k) => instance.type.fields[k]?.annotations[fieldAnnotationToFilterBy]
@@ -779,14 +780,14 @@ const toRecord = (
   return transformCompoundValues(filteredRecordValues, instance)
 }
 
-export const instancesToUpdateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+export const instancesToUpdateRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE))
 
-export const instancesToCreateRecords = (instances: InstanceElement[]): salesforceRecord[] =>
+export const instancesToCreateRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE))
 
-export const instancesToDeleteRecords = (instances: InstanceElement[]): salesforceRecord[] =>
-  instances.map(instance => ({ Id: instance.value.Id }))
+export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
+  instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
 
 export const toCustomField = (
   field: Field, fullname = false

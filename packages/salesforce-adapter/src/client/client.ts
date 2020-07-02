@@ -27,7 +27,8 @@ import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
 import { AccountId, Value } from '@salto-io/adapter-api'
-import { CompleteSaveResult, SfError, salesforceRecord } from './types'
+import { CUSTOM_OBJECT_ID_FIELD } from '../constants'
+import { CompleteSaveResult, SfError, SalesforceRecord } from './types'
 import Connection from './jsforce'
 
 const { makeArray } = collections.array
@@ -474,18 +475,18 @@ export default class SalesforceClient {
    */
   @SalesforceClient.logDecorator
   @SalesforceClient.requiresLogin
-  public async *queryAll(queryString: string): AsyncIterable<salesforceRecord[]> {
+  public async *queryAll(queryString: string): AsyncIterable<SalesforceRecord[]> {
     const hadMore = (results: QueryResult<Value>): boolean =>
       !_.isUndefined(results.nextRecordsUrl)
 
     let results = await this.conn.query(queryString)
-    yield results.records as salesforceRecord[]
+    yield results.records as SalesforceRecord[]
 
     let hasMore = hadMore(results)
     while (hasMore) {
       // eslint-disable-next-line no-await-in-loop
       results = await this.conn.queryMore(results.nextRecordsUrl as string)
-      yield results.records as salesforceRecord[]
+      yield results.records as SalesforceRecord[]
       hasMore = hadMore(results)
     }
   }
@@ -496,13 +497,13 @@ export default class SalesforceClient {
   public async bulkLoadOperation(
     type: string,
     operation: BulkLoadOperation,
-    records: salesforceRecord[]
+    records: SalesforceRecord[]
   ):
     Promise<BatchResultInfo[]> {
     const batch = this.conn.bulk.load(
       type,
       operation,
-      { extIdField: 'Id', concurrencyMode: 'Parallel' },
+      { extIdField: CUSTOM_OBJECT_ID_FIELD, concurrencyMode: 'Parallel' },
       records
     )
     const { job } = batch

@@ -34,7 +34,7 @@ import {
   CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
   TYPES_PATH, SALESFORCE,
 } from '../../src/constants'
-import { CustomField, FilterItem, CustomObject, CustomPicklistValue, salesforceRecord } from '../../src/client/types'
+import { CustomField, FilterItem, CustomObject, CustomPicklistValue, SalesforceRecord } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import mockClient from '../client'
@@ -970,7 +970,7 @@ describe('transformer', () => {
     })
 
     describe('instancesToCreateRecords', () => {
-      let recordResult: salesforceRecord[]
+      let recordResult: SalesforceRecord[]
       beforeEach(() => {
         recordResult = instancesToCreateRecords([instance])
         expect(recordResult).toBeDefined()
@@ -1006,7 +1006,7 @@ describe('transformer', () => {
     })
 
     describe('instancesToUpdateRecords', () => {
-      let recordResult: salesforceRecord[]
+      let recordResult: SalesforceRecord[]
       beforeEach(() => {
         recordResult = instancesToUpdateRecords([instance])
         expect(recordResult).toBeDefined()

@@ -24,6 +24,7 @@ export const SALESFORCE_CUSTOM_SUFFIX = '__c'
 export const ADMIN_PROFILE = 'Admin'
 export const NAMESPACE_SEPARATOR = '__'
 export const API_NAME_SEPERATOR = '.'
+export const CUSTOM_OBJECT_ID_FIELD = 'Id'
 
 export enum FIELD_TYPE_NAMES {
   AUTONUMBER = 'AutoNumber',

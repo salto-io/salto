@@ -17,12 +17,12 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
 import SalesforceClient from '../client/client'
-import { salesforceRecord } from '../client/types'
-import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH } from '../constants'
+import { SalesforceRecord } from '../client/types'
+import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types } from '../transformers/transformer'
 import { getNamespace } from './utils'
-import { DataManegementConfig } from '../types'
+import { DataManagementConfig } from '../types'
 
 const { makeArray } = collections.array
 
@@ -63,8 +63,8 @@ const getObjectInstances = async (
   client: SalesforceClient,
   object: ObjectType
 ): Promise<Array<InstanceElement>> => {
-  const recordsToInstances = (records: salesforceRecord[]): InstanceElement[] => {
-    const recordToInstance = (record: salesforceRecord): InstanceElement => {
+  const recordsToInstances = (records: SalesforceRecord[]): InstanceElement[] => {
+    const recordToInstance = (record: SalesforceRecord): InstanceElement => {
       const getInstancePath = (instanceName: string): string[] => {
         const objectNamespace = getNamespace(object)
         if (objectNamespace) {
@@ -76,15 +76,15 @@ const getObjectInstances = async (
 
       return new InstanceElement(
         // TODO: Handle elemID with additional logic
-        record.Id,
+        record[CUSTOM_OBJECT_ID_FIELD],
         object,
         record,
-        getInstancePath(record.Id),
+        getInstancePath(record[CUSTOM_OBJECT_ID_FIELD]),
       )
     }
 
     // Name sub-fields are returned at top level -> move them to the nameField
-    const transformNameValues = (values: salesforceRecord[]): salesforceRecord[] => {
+    const transformNameValues = (values: SalesforceRecord[]): SalesforceRecord[] => {
       const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
       // We assume there's only one Name field
       const nameFieldName = Object.keys(_.pickBy(object.fields, isNameField))[0]
@@ -93,7 +93,7 @@ const getObjectInstances = async (
         : values.map(value => ({
           ..._.omit(value, nameSubFields),
           [nameFieldName]: _.pick(value, nameSubFields),
-          Id: value.Id,
+          [CUSTOM_OBJECT_ID_FIELD]: value[CUSTOM_OBJECT_ID_FIELD],
         }))
     }
 
@@ -113,7 +113,7 @@ const getObjectTypesInstances = async (
 
 const filterObjectTypes = (
   elements: Element[],
-  dataManagementConfigs: DataManegementConfig[]
+  dataManagementConfigs: DataManagementConfig[]
 ): ObjectType[] => {
   const enabledConfigs = dataManagementConfigs
     .filter(config => config.enabled)

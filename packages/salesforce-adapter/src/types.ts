@@ -33,12 +33,12 @@ export type FilterContext = {
   [METADATA_TYPES_SKIPPED_LIST]?: string[]
   [INSTANCES_REGEX_SKIPPED_LIST]?: RegExp[]
   [UNSUPPORTED_SYSTEM_FIELDS]?: string[]
-  [DATA_MANAGEMENT]?: DataManegementConfig[]
+  [DATA_MANAGEMENT]?: DataManagementConfig[]
   [SYSTEM_FIELDS]?: string[]
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
 }
 
-export type DataManegementConfig = {
+export type DataManagementConfig = {
   name: string
   enabled: boolean
   includeNamespaces?: string[]
@@ -52,7 +52,7 @@ export type SalesforceConfig = {
   [MAX_CONCURRENT_RETRIEVE_REQUESTS]?: number
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [ENABLE_HIDE_TYPES_IN_NACLS]?: boolean
-  [DATA_MANAGEMENT]?: DataManegementConfig[]
+  [DATA_MANAGEMENT]?: DataManagementConfig[]
 }
 
 export type ConfigChangeSuggestion = {

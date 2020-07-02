@@ -107,6 +107,9 @@ describe('Transformer', () => {
     WITH_UNKNOWN_FIELD: '<entitycustomfield scriptid="custentity_my_script_id">\n'
       + '  <unknownfield>unknownVal</unknownfield>\n'
       + '</entitycustomfield>\n',
+    WITH_HTML_CHARS: '<entitycustomfield scriptid="custentity_my_script_id">\n'
+    + '  <label>Golf &amp; Co</label>\n'
+    + '</entitycustomfield>\n',
   }
 
   describe('createInstanceElement', () => {
@@ -224,6 +227,11 @@ describe('Transformer', () => {
     it('should ignore unknown fields', () => {
       const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_UNKNOWN_FIELD)
       expect(result.value.unknownfield).toBeUndefined()
+    })
+
+    it('should decode html chars', () => {
+      const result = transformCustomFieldRecord(XML_TEMPLATES.WITH_HTML_CHARS)
+      expect(result.value.label).toEqual('Golf & Co')
     })
 
     it('should add content value with fileContent as static file', () => {

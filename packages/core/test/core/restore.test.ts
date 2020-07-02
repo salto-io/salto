@@ -174,7 +174,7 @@ describe('restore', () => {
         const removeChange = changes.find(c => c.action === 'remove')
         expect(removeChange).toBeDefined()
         expect(removeChange?.id).toEqual(singlePathObjMerged.elemID)
-        expect(removeChange?.path).not.toBeDefined()
+        expect(removeChange?.path).toBeUndefined()
       })
       it('should create remove changes for elements which have different values in the state and ws', () => {
         const modifyChange = changes.find(c => c.action === 'modify')

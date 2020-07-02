@@ -112,8 +112,8 @@ export const filterInvalidChanges = async (
     }
     const replaceAfterElement = <T extends DiffNode<ChangeDataType>>(change: T): T => {
       if (isAdditionOrModificationDiff(change)) {
-        const validAfter = getValidAfter(getChangeElement(change)) ?? change.data.after
-        return { ...change, data: { ...change.data, after: validAfter ?? change.data.after } }
+        const after = getValidAfter(getChangeElement(change)) ?? change.data.after
+        return { ...change, data: { ...change.data, after } }
       }
       return change
     }

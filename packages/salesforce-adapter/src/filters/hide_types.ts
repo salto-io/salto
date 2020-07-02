@@ -28,14 +28,19 @@ import {
 
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
+    //  Skipping on the filter it hide is not enabled
+    if (!config[ENABLE_HIDE_TYPES_IN_NACLS]) {
+      return
+    }
+
     elements
       .filter(isType)
       .filter(e => !isCustomObject(e))
       .forEach(type => {
         Object.assign(type.annotations,
           {
-            // Object type will be hidden if it's not custom object and the config flag is true
-            [CORE_ANNOTATIONS.HIDDEN]: config[ENABLE_HIDE_TYPES_IN_NACLS],
+            // Object type will be hidden if it's not custom object
+            [CORE_ANNOTATIONS.HIDDEN]: true,
           })
       })
   },

@@ -16,7 +16,9 @@
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
-  ElemID, InstanceElement,
+  Element,
+  ElemID,
+  InstanceElement,
   isEqualElements,
   isType,
   ObjectType,
@@ -37,13 +39,13 @@ import {
   FIELD_ANNOTATIONS,
   DEFAULT_VALUE_FORMULA,
 } from '../../src/constants'
+import {
+  isCustomObject,
+} from '../../src/transformers/transformer'
 
 describe('hide_types filter', () => {
   const { client } = mockClient()
 
-  const filter = filterCreator(
-    { client, config: { enableHideTypesInNacls: true } }
-  ) as FilterWith<'onFetch'>
 
   const mockCustomObj = new ObjectType({
     elemID: new ElemID(SALESFORCE, CUSTOM_OBJECT),
@@ -93,56 +95,99 @@ describe('hide_types filter', () => {
     [RECORDS_PATH, 'mockType', instanceName],
   )
 
-  const elements = [
-    mockCustomObj.clone(),
-    mockType.clone(),
-    mockInstance.clone(),
-    mockPrimitive.clone(),
-  ]
 
-  let type: ObjectType
-  let customObj: ObjectType
-  let primitiveType: PrimitiveType
-  let instance: InstanceElement
+  let elements: Element[]
 
 
-  beforeAll(async () => {
-    await filter.onFetch(elements)
+  describe('when enableHideTypesInNacls is true', () => {
+    const filter = filterCreator(
+      { client, config: { enableHideTypesInNacls: true } }
+    ) as FilterWith<'onFetch'>
 
-    // Elements after filter execution
-    instance = elements.find(e => e.elemID.isEqual(mockInstance.elemID)) as InstanceElement
-    type = elements.find(e => e.elemID.isEqual(mockType.elemID)) as ObjectType
-    customObj = elements.find(e => e.elemID.isEqual(mockCustomObj.elemID)) as ObjectType
-    primitiveType = elements.find(e => e.elemID.isEqual(mockPrimitive.elemID)) as PrimitiveType
+
+    let type: ObjectType
+    let customObj: ObjectType
+    let primitiveType: PrimitiveType
+    let instance: InstanceElement
+
+
+    beforeAll(async () => {
+      elements = [
+        mockCustomObj.clone(),
+        mockType.clone(),
+        mockInstance.clone(),
+        mockPrimitive.clone(),
+      ]
+
+      await filter.onFetch(elements)
+
+      // Elements after filter execution
+      instance = elements.find(e => e.elemID.isEqual(mockInstance.elemID)) as InstanceElement
+      type = elements.find(e => e.elemID.isEqual(mockType.elemID)) as ObjectType
+      customObj = elements.find(e => e.elemID.isEqual(mockCustomObj.elemID)) as ObjectType
+      primitiveType = elements.find(e => e.elemID.isEqual(mockPrimitive.elemID)) as PrimitiveType
+    })
+
+    it('should not change element list length', () => {
+      expect(elements).toHaveLength(4)
+    })
+
+
+    it('should not change instances', () => {
+      expect(isEqualElements(instance, mockInstance)).toBeTruthy()
+      expect(instance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
+    })
+
+    it('should not change custom object', () => {
+      expect(isEqualElements(customObj, mockCustomObj)).toBeTruthy()
+      expect(customObj.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
+    })
+
+    it('should add hidden annotation to types', () => {
+      // Type should changed
+      expect(isEqualElements(type, mockType)).toBeFalsy()
+      expect(isEqualElements(primitiveType, mockPrimitive)).toBeFalsy()
+
+      expect(elements
+        .filter(e => !isCustomObject(e))
+        .filter(isType).every(e => e.annotations[CORE_ANNOTATIONS.HIDDEN] === true))
+        .toBeTruthy()
+    })
+
+
+    it('should add hidden as true for non custom object types and primitives', () => {
+      expect(type.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
+      expect(primitiveType.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
+    })
   })
 
-  it('should not change element list length', () => {
-    expect(elements).toHaveLength(4)
-  })
+
+  describe('when enableHideTypesInNacls is false', () => {
+    const filter = filterCreator(
+      { client, config: { enableHideTypesInNacls: false } }
+    ) as FilterWith<'onFetch'>
 
 
-  it('should not change instances', () => {
-    expect(isEqualElements(instance, mockInstance)).toBeTruthy()
-    expect(instance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
-  })
+    beforeAll(async () => {
+      elements = [
+        mockCustomObj.clone(),
+        mockType.clone(),
+        mockInstance.clone(),
+        mockPrimitive.clone(),
+      ]
 
-  it('should not change custom object', () => {
-    expect(isEqualElements(customObj, mockCustomObj)).toBeTruthy()
-    expect(customObj.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
-  })
-
-  it('should add hidden annotation to types', () => {
-    // Type should changed
-    expect(isEqualElements(type, mockType)).toBeFalsy()
-    expect(isEqualElements(primitiveType, mockPrimitive)).toBeFalsy()
-
-    expect(elements.filter(isType).every(e => e.annotations[CORE_ANNOTATIONS.HIDDEN]))
-      .toBeDefined()
-  })
+      await filter.onFetch(elements)
+    })
 
 
-  it('should add hidden as true for non custom object types and primitives', () => {
-    expect(type.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
-    expect(primitiveType.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)
+    it('should not change element list length', () => {
+      expect(elements).toHaveLength(4)
+    })
+
+
+    it('should not add hidden annotation when enableHideTypesInNacls is false', () => {
+      expect(elements.every(element => element.annotations[CORE_ANNOTATIONS.HIDDEN] === undefined))
+        .toBeTruthy()
+    })
   })
 })

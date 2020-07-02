@@ -117,11 +117,6 @@ jobs:
       - store_test_results:
           path: reports
 
-      - run:
-          name: Upload coverage to codecov.io
-          command: npx codecov -F unit_test -f coverage/*.json
-          when: always
-
   publish_on_version_change:
     docker:
       - image: circleci/node:12.16

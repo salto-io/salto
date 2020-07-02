@@ -13,17 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
-import removeCustomizationValidator from './change_validators/remove_customization'
-import instanceChangesValidator from './change_validators/instance_changes'
-import serviceIdsChangesValidator from './change_validators/service_ids_changes'
+import {
+  isInstanceElement, ChangeValidator, getChangeElement, isAdditionOrModificationDiff,
+} from '@salto-io/adapter-api'
 
+const changeValidator: ChangeValidator = async changes => (
+  changes
+    .filter(isAdditionOrModificationDiff)
+    .map(getChangeElement)
+    .filter(elem => !isInstanceElement(elem))
+    .map(({ elemID }) => ({
+      elemID,
+      severity: 'Error',
+      message: 'Type definitions are read only',
+      detailedMessage: `Changing (${elemID.name}) is not supported`,
+    }))
+)
 
-const changeValidators: ChangeValidator[] = [
-  removeCustomizationValidator,
-  instanceChangesValidator,
-  serviceIdsChangesValidator,
-]
-
-export default createChangeValidator(changeValidators)
+export default changeValidator

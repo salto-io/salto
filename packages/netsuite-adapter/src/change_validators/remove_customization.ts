@@ -25,8 +25,8 @@ const changeValidator: ChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Removing a custom object is not supported using Salto. You can remove it in NetSuite UI',
-      detailedMessage: `Removing a custom object (${elemID.name}) is not supported using Salto. You can remove it in NetSuite UI`,
+      message: 'Remove operation is not supported via Salto',
+      detailedMessage: `${elemID.name} cannot be removed`,
     }))
 )
 

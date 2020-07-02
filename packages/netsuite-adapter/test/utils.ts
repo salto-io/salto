@@ -13,17 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
-import removeCustomizationValidator from './change_validators/remove_customization'
-import instanceChangesValidator from './change_validators/instance_changes'
-import serviceIdsChangesValidator from './change_validators/service_ids_changes'
+import { Change, ChangeDataType } from '@salto-io/adapter-api'
 
+// TODO: export to common test utils package
+export type ChangeParams = { before?: ChangeDataType; after?: ChangeDataType }
 
-const changeValidators: ChangeValidator[] = [
-  removeCustomizationValidator,
-  instanceChangesValidator,
-  serviceIdsChangesValidator,
-]
-
-export default createChangeValidator(changeValidators)
+export const toChange = ({ before, after }: ChangeParams): Change => {
+  if (before !== undefined && after !== undefined) {
+    return { action: 'modify', data: { before, after } }
+  }
+  if (before !== undefined) {
+    return { action: 'remove', data: { before } }
+  }
+  if (after !== undefined) {
+    return { action: 'add', data: { after } }
+  }
+  throw new Error('must provide before or after')
+}

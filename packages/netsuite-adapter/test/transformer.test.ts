@@ -526,7 +526,7 @@ describe('Transformer', () => {
         + '</transactionForm>\n'))
     })
 
-    it('should transform TemplateCustomizationInfo EMAIL_TEMPLATE', () => {
+    it('should transform TemplateCustomTypeInfo EMAIL_TEMPLATE', () => {
       const emailTemplateContent = 'email template content'
       const elementName = 'elementName'
       const emailTemplateInstance = new InstanceElement(elementName,

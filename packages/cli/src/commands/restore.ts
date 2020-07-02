@@ -61,6 +61,20 @@ const createRegexFilters = (
   return { filters, invalidFilters }
 }
 
+const printRestorePlan = (changes: RestoreChange[], detailed: boolean, output: CliOutput): void => {
+  outputLine(EOL, output)
+  outputLine(header(Prompts.RESTORE_CALC_DIFF_RESULT_HEADER), output)
+  if (changes.length > 0) {
+    outputLine(
+      formatDetailedChanges([changes.map(change => change.change)], detailed),
+      output,
+    )
+  } else {
+    outputLine('No changes', output)
+  }
+  outputLine(EOL, output)
+}
+
 export class RestoreCommand implements CliCommand {
   readonly output: CliOutput
   private cliTelemetry: CliTelemetry
@@ -108,25 +122,20 @@ export class RestoreCommand implements CliCommand {
     this.listPlannedChanges = listPlannedChanges || dryRun
   }
 
-  async computeRestorePlan(workspace: Workspace, filters: RegExp[]): Promise<RestoreChange[]> {
+  async computeRestorePlan({ workspace, filters, printPlan, detailed }: {
+    workspace: Workspace
+    filters: RegExp[]
+    printPlan: boolean
+    detailed: boolean
+  }): Promise<RestoreChange[]> {
     outputLine(EOL, this.output)
     outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), this.output)
 
     const changes = await restore(workspace, this.inputServices, filters)
-
-    if (this.listPlannedChanges) {
-      outputLine(EOL, this.output)
-      outputLine(header(Prompts.RESTORE_CALC_DIFF_RESULT_HEADER), this.output)
-      if (changes.length > 0) {
-        outputLine(
-          formatDetailedChanges([changes.map(change => change.change)], this.detailedPlan),
-          this.output,
-        )
-      } else {
-        outputLine('No changes', this.output)
-      }
-      outputLine(EOL, this.output)
+    if (printPlan) {
+      printRestorePlan(changes, detailed, this.output)
     }
+
     outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), this.output)
     outputLine(EOL, this.output)
 
@@ -200,7 +209,12 @@ export class RestoreCommand implements CliCommand {
 
     this.cliTelemetry.start(workspaceTags)
 
-    const changes = await this.computeRestorePlan(workspace, filters)
+    const changes = await this.computeRestorePlan({
+      workspace,
+      filters,
+      printPlan: this.listPlannedChanges,
+      detailed: this.detailedPlan,
+    })
 
     if (this.dryRun) {
       this.cliTelemetry.success(workspaceTags)

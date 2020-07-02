@@ -126,9 +126,13 @@ describe('hide_types filter', () => {
     expect(instance.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
   })
 
+  it('should not change custom object', () => {
+    expect(isEqualElements(customObj, mockCustomObj)).toBeTruthy()
+    expect(customObj.annotations[CORE_ANNOTATIONS.HIDDEN]).toBeUndefined()
+  })
+
   it('should add hidden annotation to types', () => {
     // Type should changed
-    expect(isEqualElements(customObj, mockCustomObj)).toBeFalsy()
     expect(isEqualElements(type, mockType)).toBeFalsy()
     expect(isEqualElements(primitiveType, mockPrimitive)).toBeFalsy()
 
@@ -136,9 +140,6 @@ describe('hide_types filter', () => {
       .toBeDefined()
   })
 
-  it('should add hidden as false for custom object', () => {
-    expect(customObj.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(false)
-  })
 
   it('should add hidden as true for non custom object types and primitives', () => {
     expect(type.annotations[CORE_ANNOTATIONS.HIDDEN]).toEqual(true)

@@ -50,7 +50,7 @@ import {
   toChangesWithPath,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
-import { RestoreProgressEvents, createRestoreChanges } from './core/restore'
+import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 
 const { addHiddenValuesAndHiddenTypes, removeHiddenValuesAndHiddenTypes } = hiddenValues
@@ -243,13 +243,12 @@ export const fetch: FetchFunc = async (
   }
 }
 
-type RestoreChange = Omit<FetchChange, 'pendingChange'>
+export type RestoreChange = Omit<FetchChange, 'pendingChange'>
 
 export const restore = async (
   workspace: Workspace,
   servicesFilters?: string[],
   idFilters: RegExp[] = [],
-  progressEmitter?: EventEmitter<RestoreProgressEvents>
 ): Promise<RestoreChange[]> => {
   log.debug('restore starting..')
   const fetchServices = servicesFilters ?? workspace.services()
@@ -267,7 +266,6 @@ export const restore = async (
     stateElements,
     pathIndex,
     idFilters,
-    progressEmitter
   )
   return changes.map(change => ({ change, serviceChange: change }))
 }

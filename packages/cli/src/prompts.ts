@@ -192,6 +192,7 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Failed to apply ${numOfChanges} changes to state.`
 
   public static readonly RESTORE_CALC_DIFF_START = 'Calculating the difference between state and NaCL files.'
+  public static readonly RESTORE_CALC_DIFF_RESULT_HEADER = 'The following changes can restore the local workspace to its last known state:'
   public static readonly RESTORE_CALC_DIFF_FINISH = 'Finished calculating the difference between state and NaCL files.'
   public static readonly RESTORE_CALC_DIFF_FAIL = 'Calculating diff failed!'
   public static readonly RESTORE_UPDATE_WORKSPACE_SUCCESS = 'Applied changes'

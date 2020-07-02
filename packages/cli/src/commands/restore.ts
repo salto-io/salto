@@ -114,12 +114,14 @@ export class RestoreCommand implements CliCommand {
 
     const changes = await restore(workspace, this.inputServices, filters)
 
-    const detailedChanges = changes.map(change => change.change)
     if (this.listPlannedChanges) {
       outputLine(EOL, this.output)
       outputLine(header(Prompts.RESTORE_CALC_DIFF_RESULT_HEADER), this.output)
-      if (detailedChanges.length > 0) {
-        outputLine(formatDetailedChanges([detailedChanges], this.detailedPlan), this.output)
+      if (changes.length > 0) {
+        outputLine(
+          formatDetailedChanges([changes.map(change => change.change)], this.detailedPlan),
+          this.output,
+        )
       } else {
         outputLine('No changes', this.output)
       }
@@ -235,9 +237,9 @@ const restoreBuilder = createCommandBuilder({
       },
       interactive: {
         alias: ['i'],
-        describe: 'Interactively approve incoming changes (use `a` on first prompt to approve all at once)',
+        describe: 'Interactively approve every incoming change',
         boolean: true,
-        default: true,
+        default: false,
         demandOption: false,
       },
       isolated: {

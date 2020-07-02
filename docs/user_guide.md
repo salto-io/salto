@@ -300,7 +300,7 @@ Syncs this workspace with the current local state
 
 **Options:**
 * `--force, -f ` : Accept all incoming changes [boolean] [default: false]
-* `--interactive, -i` : Interactively approve incoming changes (use `a` on first prompt to approve all at once) [boolean] [default: true]
+* `--interactive, -i` : Interactively approve every incoming change [boolean] [default: false]
 * `--isolated, -t` : Restrict restore from modifying common configuration (might result in changes in other env folders) [boolean] [default: false]
 * `--dry-run, -d` : Preview the restore plan without making changes [boolean] [default: false]
 * `--detailed-plan, -p` : Print detailed changes including values [boolean] [default: false]

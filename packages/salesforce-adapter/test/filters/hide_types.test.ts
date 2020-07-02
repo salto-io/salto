@@ -100,7 +100,6 @@ describe('hide_types filter', () => {
 
 
   describe('when enableHideTypesInNacls is true', () => {
-
     const filter = filterCreator(
       { client, config: { enableHideTypesInNacls: true } }
     ) as FilterWith<'onFetch'>

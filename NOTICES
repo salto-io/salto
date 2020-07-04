@@ -1478,9 +1478,7 @@ Copyright 2015-present Facebook, Inc.
 Copyright 2014-present Facebook, Inc.
 ** jest-junit; version 6.4.0 -- https://github.com/jest-community/jest-junit#readme
 ** spdx-correct; version 3.1.0 -- https://github.com/jslicense/spdx-correct.js#readme
-** teeny-request; version 6.0.1 -- https://github.com/googleapis/teeny-request#readme
-Copyright 2018 Google LLC
-Copyright 2019 Google LLC
+** true-case-path; version 1.0.3 -- https://github.com/barsh/true-case-path#readme
 ** validate-npm-package-license; version 3.0.4 -- https://github.com/kemitchell/validate-npm-package-license.js#readme
 
 
@@ -2484,9 +2482,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ------
 
-** @typescript-eslint/typescript-estree; version 2.31.0 -- https://github.com/typescript-eslint/typescript-eslint#readme
-Copyright JS Foundation and other contributors, https://js.foundation
 ** @typescript-eslint/typescript-estree; version 1.13.0 -- https://github.com/typescript-eslint/typescript-eslint#readme
+Copyright JS Foundation and other contributors, https://js.foundation
+** @typescript-eslint/typescript-estree; version 2.31.0 -- https://github.com/typescript-eslint/typescript-eslint#readme
 Copyright JS Foundation and other contributors, https://js.foundation
 
 TypeScript ESTree
@@ -2519,14 +2517,14 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------
 
-** eslint-scope; version 4.0.3 -- http://github.com/eslint/eslint-scope
+** eslint-scope; version 5.0.0 -- http://github.com/eslint/eslint-scope
 Copyright (c) 2015 Yusuke Suzuki <utatane.tea@gmail.com>
 Copyright (c) 2013 Alex Seville <hi@alexanderseville.com>
 Copyright (c) 2014 Thiago de Arruda <tpadilha84@gmail.com>
 Copyright (c) 2012-2014 Yusuke Suzuki <utatane.tea@gmail.com>
 Copyright JS Foundation and other contributors, https://js.foundation
 Copyright (c) 2012-2013 Yusuke Suzuki (twitter Constellation) and other contributors.
-** eslint-scope; version 5.0.0 -- http://github.com/eslint/eslint-scope
+** eslint-scope; version 4.0.3 -- http://github.com/eslint/eslint-scope
 Copyright (c) 2015 Yusuke Suzuki <utatane.tea@gmail.com>
 Copyright (c) 2013 Alex Seville <hi@alexanderseville.com>
 Copyright (c) 2014 Thiago de Arruda <tpadilha84@gmail.com>
@@ -2608,15 +2606,6 @@ Copyright (c) 2013, Nick Fitzgerald
 Copyright 2011 Gary Court.
 Copyright (c) 2008 Ariel Flesler
 Copyright (c) 2009 John Resig, Jorn Zaefferer
-** urlgrey; version 0.4.4 -- https://github.com/cainus/urlgrey#readme
-Copyright (c) 2013
-Copyright (c) 2013 Jake Luer <jake@qualiancy.com>
-Copyright Joyent, Inc. and other Node contributors.
-Copyright (c) 2011 TJ Holowaychuk <tj@vision-media.ca>
-Copyright (c) 2011 Jake Luer <jake@alogicalparadox.com>
-Copyright (c) 2013 Jake Luer <jake@alogicalparadox.com>
-Copyright (c) 2011-2013 Jake Luer <jake@alogicalparadox.com>
-Copyright (c) 2012-2013 Jake Luer <jake@alogicalparadox.com>
 
 Copyright (c) <year> <owner> . All rights reserved.
 
@@ -2994,10 +2983,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------
 
-** tough-cookie; version 4.0.0 -- https://github.com/salesforce/tough-cookie
+** tough-cookie; version 2.5.0 -- https://github.com/salesforce/tough-cookie
 Copyright (c) 2015, Salesforce.com, Inc.
 Copyright (c) 2018, Salesforce.com, Inc.
-** tough-cookie; version 2.5.0 -- https://github.com/salesforce/tough-cookie
+** tough-cookie; version 4.0.0 -- https://github.com/salesforce/tough-cookie
 Copyright (c) 2015, Salesforce.com, Inc.
 Copyright (c) 2018, Salesforce.com, Inc.
 
@@ -3073,6 +3062,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 ------
 
+** qs; version 6.7.0 -- https://github.com/ljharb/qs
+Copyright (c) 2014 Nathan LaFreniere and other contributors.
 ** qs; version 6.5.2 -- https://github.com/ljharb/qs
 Copyright (c) 2014 Nathan LaFreniere and other contributors.
 
@@ -3176,6 +3167,40 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ------
 
+** js-base64; version 2.6.2 -- https://github.com/dankogai/js-base64#readme
+Copyright (c) 2014, Dan Kogai
+
+Copyright (c) 2014, Dan Kogai
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of {{{project}}} nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+------
+
 ** abab; version 2.0.3 -- https://github.com/jsdom/abab#readme
 Copyright (c) 2019 W3C and Jeff Carpenter jeffcarp@chromium.org
 
@@ -3253,6 +3278,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 ------
 
 ** gitconfiglocal; version 1.0.0 -- https://github.com/soldair/node-gitconfiglocal#readme
+** source-map; version 0.4.4 -- https://github.com/mozilla/source-map
+Copyright 2011 The Closure Compiler
+Copyright 2011 Mozilla Foundation and contributors
+Copyright 2014 Mozilla Foundation and contributors
+Copyright 2009-2011 Mozilla Foundation and contributors
 
 Copyright (c) <year> <owner> . All rights reserved.
 
@@ -3655,6 +3685,7 @@ PERFORMANCE OF THIS SOFTWARE.
 
 ** glob; version 7.1.6 -- https://github.com/isaacs/node-glob#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
+** glob; version 7.1.4 -- https://github.com/isaacs/node-glob#readme
 
 The ISC License
 
@@ -3781,6 +3812,9 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------
 
+** block-stream; version 0.0.9 -- https://github.com/isaacs/block-stream#readme
+Copyright (c) Isaac Z. Schlueter
+Copyright (c) Isaac Z. Schlueter and Contributors
 ** chownr; version 1.1.4 -- https://github.com/isaacs/chownr#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** dezalgo; version 1.0.3 -- https://github.com/npm/dezalgo
@@ -3788,6 +3822,8 @@ Copyright (c) Isaac Z. Schlueter and Contributors
 ** fs-minipass; version 1.2.7 -- https://github.com/npm/fs-minipass#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** fs-write-stream-atomic; version 1.0.10 -- https://github.com/npm/fs-write-stream-atomic
+Copyright (c) Isaac Z. Schlueter and Contributors
+** fstream; version 1.0.12 -- https://github.com/npm/fstream#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** ignore-walk; version 3.0.3 -- https://github.com/isaacs/ignore-walk#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
@@ -3797,15 +3833,17 @@ Copyright (c) Isaac Z. Schlueter and Contributors
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** json-stringify-safe; version 5.0.1 -- https://github.com/isaacs/json-stringify-safe
 Copyright (c) Isaac Z. Schlueter and Contributors
-** lru-cache; version 4.1.5 -- https://github.com/isaacs/node-lru-cache#readme
-Copyright (c) Isaac Z. Schlueter and Contributors
 ** lru-cache; version 5.1.1 -- https://github.com/isaacs/node-lru-cache#readme
+Copyright (c) Isaac Z. Schlueter and Contributors
+** lru-cache; version 4.1.5 -- https://github.com/isaacs/node-lru-cache#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** minimatch; version 3.0.4 -- https://github.com/isaacs/minimatch#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
+** mute-stream; version 0.0.8 -- https://github.com/isaacs/mute-stream#readme
+Copyright (c) Isaac Z. Schlueter and Contributors
 ** mute-stream; version 0.0.7 -- https://github.com/isaacs/mute-stream#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
-** mute-stream; version 0.0.8 -- https://github.com/isaacs/mute-stream#readme
+** nopt; version 3.0.6 -- https://github.com/npm/nopt#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** nopt; version 4.0.3 -- https://github.com/npm/nopt#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
@@ -3833,16 +3871,21 @@ Copyright (c) Isaac Z. Schlueter and Contributors
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** rimraf; version 2.7.1 -- https://github.com/isaacs/rimraf#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
-** semver; version 6.3.0 -- https://github.com/npm/node-semver#readme
-Copyright Isaac Z.
-Copyright Isaac Z. Schlueter
-Copyright (c) Isaac Z. Schlueter and Contributors
 ** semver; version 5.7.1 -- https://github.com/npm/node-semver#readme
 Copyright Isaac Z.
 Copyright Isaac Z. Schlueter
 Copyright (c) Isaac Z. Schlueter and Contributors
+** semver; version 6.3.0 -- https://github.com/npm/node-semver#readme
+Copyright Isaac Z.
+Copyright Isaac Z. Schlueter
+Copyright (c) Isaac Z. Schlueter and Contributors
+** semver; version 5.3.0 -- https://github.com/npm/node-semver#readme
+Copyright Isaac Z. Schlueter
+Copyright (c) Isaac Z. Schlueter and Contributors
 ** semver; version 5.5.0 -- https://github.com/npm/node-semver#readme
 Copyright Isaac Z. Schlueter
+Copyright (c) Isaac Z. Schlueter and Contributors
+** tar; version 2.2.2 -- https://github.com/isaacs/node-tar#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** tar; version 4.4.13 -- https://github.com/npm/node-tar#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
@@ -3850,9 +3893,9 @@ Copyright (c) Isaac Z. Schlueter and Contributors
 Copyright (c) Isaac Z. Schlueter and Contributors
 ** wrappy; version 1.0.2 -- https://github.com/npm/wrappy
 Copyright (c) Isaac Z. Schlueter and Contributors
-** yallist; version 2.1.2 -- https://github.com/isaacs/yallist#readme
-Copyright (c) Isaac Z. Schlueter and Contributors
 ** yallist; version 3.1.1 -- https://github.com/isaacs/yallist#readme
+Copyright (c) Isaac Z. Schlueter and Contributors
+** yallist; version 2.1.2 -- https://github.com/isaacs/yallist#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
 
 The ISC License
@@ -3896,14 +3939,14 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ------
 
+** sax; version 1.2.4 -- https://github.com/isaacs/sax-js#readme
+Copyright (c) Isaac Z. Schlueter and Contributors
+Copyright Mathias Bynens <https://mathiasbynens.be/>
 ** sax; version 1.2.1 -- https://github.com/isaacs/sax-js#readme
 Copyright (c) Isaac Z. Schlueter and Contributors
 Copyright Mathias Bynens <https://mathiasbynens.be/>
 copyright-software-short-notice-20021231.html' W3C Software Short
 copyright' Copyright 2012 W3C http://www.csail.mit.edu/' title Massachusetts Institute of Technology' MIT , http://www.ercim.org/'
-** sax; version 1.2.4 -- https://github.com/isaacs/sax-js#readme
-Copyright (c) Isaac Z. Schlueter and Contributors
-Copyright Mathias Bynens <https://mathiasbynens.be/>
 
 The ISC License
 
@@ -3998,9 +4041,9 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 Copyright (c) 2015, Rebecca Turner
 ** hosted-git-info; version 2.8.8 -- https://github.com/npm/hosted-git-info
 Copyright (c) 2015, Rebecca Turner
-** write-file-atomic; version 2.4.3 -- https://github.com/iarna/write-file-atomic
-Copyright (c) 2015, Rebecca Turner
 ** write-file-atomic; version 2.4.1 -- https://github.com/iarna/write-file-atomic
+Copyright (c) 2015, Rebecca Turner
+** write-file-atomic; version 2.4.3 -- https://github.com/iarna/write-file-atomic
 Copyright (c) 2015, Rebecca Turner
 
 Copyright (c) 2015, Rebecca Turner
@@ -4038,17 +4081,23 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ** require-main-filename; version 2.0.0 -- https://github.com/yargs/require-main-filename#readme
 Copyright (c) 2016
+** require-main-filename; version 1.0.1 -- https://github.com/yargs/require-main-filename#readme
+Copyright (c) 2016
 ** set-blocking; version 2.0.0 -- https://github.com/yargs/set-blocking#readme
 Copyright (c) 2016
 ** test-exclude; version 5.2.3 -- https://istanbul.js.org/
 Copyright (c) 2016
 ** which-module; version 2.0.0 -- https://github.com/nexdrew/which-module#readme
 Copyright (c) 2016
-** yargs-parser; version 15.0.1 -- https://github.com/yargs/yargs-parser#readme
+** which-module; version 1.0.0 -- https://github.com/nexdrew/which-module#readme
+Copyright (c) 2016
+** yargs-parser; version 5.0.0-security.0 -- https://github.com/yargs/yargs-parser#readme
+Copyright (c) 2016
+** yargs-parser; version 18.1.3 -- https://github.com/yargs/yargs-parser#readme
 Copyright (c) 2016
 ** yargs-parser; version 13.1.2 -- https://github.com/yargs/yargs-parser#readme
 Copyright (c) 2016
-** yargs-parser; version 18.1.3 -- https://github.com/yargs/yargs-parser#readme
+** yargs-parser; version 15.0.1 -- https://github.com/yargs/yargs-parser#readme
 Copyright (c) 2016
 
 Copyright (c) 2016, Contributors
@@ -4111,11 +4160,11 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ** inflight; version 1.0.6 -- https://github.com/isaacs/inflight
 Copyright (c) Isaac Z. Schlueter
-** inherits; version 2.0.4 -- https://github.com/isaacs/inherits#readme
+** inherits; version 2.0.3 -- https://github.com/isaacs/inherits#readme
 Copyright (c) Isaac Z. Schlueter
 ** inherits; version 2.0.1 -- 
 Copyright (c) Isaac Z. Schlueter
-** inherits; version 2.0.3 -- https://github.com/isaacs/inherits#readme
+** inherits; version 2.0.4 -- https://github.com/isaacs/inherits#readme
 Copyright (c) Isaac Z. Schlueter
 ** init-package-json; version 1.10.3 -- https://github.com/npm/init-package-json#readme
 Copyright (c) Isaac Z. Schlueter
@@ -4270,9 +4319,9 @@ the licensed code:
 
 ------
 
-** universal-user-agent; version 4.0.1 -- https://github.com/gr2m/universal-user-agent#readme
-Copyright (c) 2018, Gregor Martynus (https://github.com/gr2m)
 ** universal-user-agent; version 5.0.0 -- https://github.com/gr2m/universal-user-agent#readme
+Copyright (c) 2018, Gregor Martynus (https://github.com/gr2m)
+** universal-user-agent; version 4.0.1 -- https://github.com/gr2m/universal-user-agent#readme
 Copyright (c) 2018, Gregor Martynus (https://github.com/gr2m)
 
 # [ISC License](https://spdx.org/licenses/ISC)
@@ -4365,9 +4414,11 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH RE
 
 ------
 
+** aproba; version 2.0.0 -- https://github.com/iarna/aproba
+Copyright (c) 2015, Rebecca Turner <me@re-becca.org>
 ** aproba; version 1.2.0 -- https://github.com/iarna/aproba
 Copyright (c) 2015, Rebecca Turner <me@re-becca.org>
-** aproba; version 2.0.0 -- https://github.com/iarna/aproba
+** in-publish; version 2.0.1 -- https://github.com/iarna/in-publish
 Copyright (c) 2015, Rebecca Turner <me@re-becca.org>
 ** read-cmd-shim; version 1.0.5 -- https://github.com/npm/read-cmd-shim#readme
 Copyright (c) 2015, Rebecca Turner <me@re-becca.org>
@@ -4439,6 +4490,8 @@ IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ** get-caller-file; version 2.0.5 -- https://github.com/stefanpenner/get-caller-file#readme
 Copyright 2018 Stefan Penner
+** get-caller-file; version 1.0.3 -- https://github.com/stefanpenner/get-caller-file#readme
+Copyright 2018 Stefan Penner
 
 ISC License (ISC)
 Copyright 2018 Stefan Penner
@@ -4452,7 +4505,11 @@ THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH RE
 
 ** cliui; version 5.0.0 -- https://github.com/yargs/cliui#readme
 Copyright (c) 2015
+** cliui; version 3.2.0 -- https://github.com/yargs/cliui#readme
+Copyright (c) 2015
 ** y18n; version 4.0.0 -- https://github.com/yargs/y18n
+Copyright (c) 2015
+** y18n; version 3.2.1 -- https://github.com/yargs/y18n
 Copyright (c) 2015
 
 Copyright (c) 2015, Contributors
@@ -4469,6 +4526,26 @@ LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES
 OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS,
 WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION,
 ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+------
+
+** setprototypeof; version 1.1.1 -- https://github.com/wesleytodd/setprototypeof
+Copyright (c) 2015, Wes Todd
+
+Copyright (c) 2015, Wes Todd
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
+OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
 ------
@@ -4639,20 +4716,25 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
-** yargs; version 14.2.3 -- https://yargs.js.org/
-Copyright 2014
-Copyright (c) 2011 Andrei Mackenzie
-Copyright 2010 James Halliday (mail@substack.net)
 ** yargs; version 13.2.4 -- https://yargs.js.org/
 Copyright 2014
 Copyright (c) 2011 Andrei Mackenzie
 Copyright 2010 James Halliday (mail@substack.net)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** yargs; version 7.1.1 -- http://yargs.js.org/
+Copyright 2014
+copyright 2015
+Copyright (c) 2011 Andrei Mackenzie
+Copyright 2010 James Halliday (mail@substack.net)
 ** yargs; version 13.3.2 -- https://yargs.js.org/
 Copyright 2014
 Copyright (c) 2011 Andrei Mackenzie
 Copyright 2010 James Halliday (mail@substack.net)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** yargs; version 14.2.3 -- https://yargs.js.org/
+Copyright 2014
+Copyright (c) 2011 Andrei Mackenzie
+Copyright 2010 James Halliday (mail@substack.net)
 
 Copyright 2010 James Halliday (mail@substack.net)
 Modified work Copyright 2014 Contributors (ben@npmjs.com)
@@ -5129,12 +5211,12 @@ SOFTWARE.
 
 ------
 
-** through2; version 2.0.5 -- https://github.com/rvagg/through2#readme
-Copyright (c) Rod Vagg
-Copyright (c) Rod Vagg rvagg (https://twitter.com/rvagg) and additional contributors
 ** through2; version 3.0.1 -- https://github.com/rvagg/through2#readme
 Copyright (c) Rod Vagg
 Copyright (c) Rod Vagg and additional contributors
+** through2; version 2.0.5 -- https://github.com/rvagg/through2#readme
+Copyright (c) Rod Vagg
+Copyright (c) Rod Vagg rvagg (https://twitter.com/rvagg) and additional contributors
 
 # The MIT License (MIT)
 
@@ -5543,6 +5625,38 @@ THE SOFTWARE.
 
 ------
 
+** raw-body; version 2.4.0 -- https://github.com/stream-utils/raw-body#readme
+Copyright (c) 2013-2014 Jonathan Ong
+Copyright (c) 2014-2015 Douglas Christopher Wilson
+Copyright (c) 2013-2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+The MIT License (MIT)
+
+Copyright (c) 2013-2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+
+------
+
 ** json-buffer; version 3.0.0 -- https://github.com/dominictarr/json-buffer
 Copyright (c) 2013 Dominic Tarr
 ** lock; version 1.1.0 -- https://github.com/dominictarr/lock
@@ -5740,28 +5854,28 @@ Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
 ** is-glob; version 4.0.1 -- https://github.com/micromatch/is-glob
 Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
-** is-plain-object; version 3.0.0 -- https://github.com/jonschlinkert/is-plain-object
-Copyright (c) 2014-2017, Jon Schlinkert.
-Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
 ** is-plain-object; version 2.0.4 -- https://github.com/jonschlinkert/is-plain-object
 Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
+** is-plain-object; version 3.0.0 -- https://github.com/jonschlinkert/is-plain-object
+Copyright (c) 2014-2017, Jon Schlinkert.
+Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
 ** isobject; version 4.0.0 -- https://github.com/jonschlinkert/isobject
 Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
 ** isobject; version 3.0.1 -- https://github.com/jonschlinkert/isobject
 Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
-** kind-of; version 6.0.3 -- https://github.com/jonschlinkert/kind-of
-Copyright (c) 2014-2017, Jon Schlinkert.
 ** kind-of; version 4.0.0 -- https://github.com/jonschlinkert/kind-of
 Copyright (c) 2014-2017, Jon Schlinkert
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
-** kind-of; version 5.1.0 -- https://github.com/jonschlinkert/kind-of
-Copyright (c) 2014-2017, Jon Schlinkert.
-Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
 ** kind-of; version 3.2.2 -- https://github.com/jonschlinkert/kind-of
 Copyright (c) 2014-2017, Jon Schlinkert
+Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
+** kind-of; version 6.0.3 -- https://github.com/jonschlinkert/kind-of
+Copyright (c) 2014-2017, Jon Schlinkert.
+** kind-of; version 5.1.0 -- https://github.com/jonschlinkert/kind-of
+Copyright (c) 2014-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
 ** normalize-path; version 2.1.1 -- https://github.com/jonschlinkert/normalize-path
 Copyright (c) 2014-2017, Jon Schlinkert.
@@ -5798,6 +5912,37 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+
+------
+
+** async-foreach; version 0.1.3 -- http://github.com/cowboy/javascript-sync-async-foreach
+Copyright (c) 2012 Cowboy Ben
+Copyright (c) 2011 Cowboy Ben Alman
+Copyright (c) 2012 Cowboy Ben Alman
+
+Copyright (c) 2011 "Cowboy" Ben Alman
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------
@@ -5860,6 +6005,40 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+------
+
+** parseurl; version 1.3.3 -- https://github.com/pillarjs/parseurl#readme
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2014-2017 Douglas Christopher Wilson
+Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014-2017 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+
+(The MIT License)
+
+Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014-2017 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------
@@ -5984,6 +6163,40 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+------
+
+** methods; version 1.1.2 -- https://github.com/jshttp/methods
+Copyright (c) 2013-2014 TJ Holowaychuk
+Copyright (c) 2015-2016 Douglas Christopher Wilson
+Copyright (c) 2013-2014 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2015-2016 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2013-2014 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2015-2016 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 
 ------
@@ -6449,6 +6662,15 @@ THE SOFTWARE.
 
 ** content-disposition; version 0.5.3 -- https://github.com/jshttp/content-disposition#readme
 Copyright (c) 2014-2017 Douglas Christopher Wilson
+** depd; version 1.1.2 -- https://github.com/dougwilson/nodejs-depd#readme
+Copyright (c) 2014 Douglas Christopher Wilson
+Copyright (c) 2015 Douglas Christopher Wilson
+Copyright (c) 2014-2015 Douglas Christopher Wilson
+Copyright (c) 2014-2017 Douglas Christopher Wilson
+** forwarded; version 0.1.2 -- https://github.com/jshttp/forwarded#readme
+Copyright (c) 2014-2017 Douglas Christopher Wilson
+** vary; version 1.1.2 -- https://github.com/jshttp/vary#readme
+Copyright (c) 2014-2017 Douglas Christopher Wilson
 
 (The MIT License)
 
@@ -6543,9 +6765,9 @@ THE SOFTWARE.
 
 ------
 
-** events; version 1.1.1 -- https://github.com/Gozala/events#readme
-Copyright Joyent, Inc. and other Node contributors.
 ** events; version 3.1.0 -- https://github.com/Gozala/events#readme
+Copyright Joyent, Inc. and other Node contributors.
+** events; version 1.1.1 -- https://github.com/Gozala/events#readme
 Copyright Joyent, Inc. and other Node contributors.
 
 MIT
@@ -6653,6 +6875,39 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+------
+
+** range-parser; version 1.2.1 -- https://github.com/jshttp/range-parser#readme
+Copyright (c) 2012-2014 TJ Holowaychuk
+Copyright (c) 2015-2016 Douglas Christopher Wilson
+Copyright (c) 2012-2014 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2015-2016 Douglas Christopher Wilson doug@somethingdoug.com
+
+(The MIT License)
+
+Copyright (c) 2012-2014 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2015-2016 Douglas Christopher Wilson <doug@somethingdoug.com
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------
@@ -8168,12 +8423,45 @@ SOFTWARE.
 
 ------
 
-** braces; version 3.0.2 -- https://github.com/micromatch/braces
-Copyright (c) 2014-2018, Jon Schlinkert.
-Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
+** escape-html; version 1.0.3 -- https://github.com/component/escape-html
+Copyright (c) 2015 Andreas Lubbe
+Copyright (c) 2012-2013 TJ Holowaychuk
+Copyright (c) 2015 Tiancheng Timothy Gu
+
+(The MIT License)
+
+Copyright (c) 2012-2013 TJ Holowaychuk
+Copyright (c) 2015 Andreas Lubbe
+Copyright (c) 2015 Tiancheng "Timothy" Gu
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** braces; version 2.3.2 -- https://github.com/micromatch/braces
 Copyright (c) 2014-2018, Jon Schlinkert.
 Copyright (c) 2018, Jon Schlinkert (https://github.com/jonschlinkert).
+** braces; version 3.0.2 -- https://github.com/micromatch/braces
+Copyright (c) 2014-2018, Jon Schlinkert.
+Copyright (c) 2019, Jon Schlinkert (https://github.com/jonschlinkert).
 ** clone-deep; version 4.0.1 -- https://github.com/jonschlinkert/clone-deep
 Copyright (c) 2014-2018, Jon Schlinkert.
 Copyright (c) 2018, Jon Schlinkert (https://github.com/jonschlinkert).
@@ -8299,16 +8587,45 @@ Copyright (c) 2017 Luke Childs
 ** clone-response; version 1.0.2 -- https://github.com/lukechilds/clone-response
 (c) Luke Childs
 Copyright (c) 2017 Luke Childs
-** keyv; version 3.0.0 -- https://github.com/lukechilds/keyv
+** keyv; version 3.1.0 -- https://github.com/lukechilds/keyv
 (c) Luke Childs
 Copyright (c) 2017 Luke Childs
-** keyv; version 3.1.0 -- https://github.com/lukechilds/keyv
+** keyv; version 3.0.0 -- https://github.com/lukechilds/keyv
 (c) Luke Childs
 Copyright (c) 2017 Luke Childs
 
 MIT License
 
 Copyright (c) 2017 Luke Childs
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+------
+
+** toidentifier; version 1.0.0 -- https://github.com/component/toidentifier#readme
+Copyright (c) 2016 Douglas Christopher Wilson
+Copyright (c) 2016 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+MIT License
+
+Copyright (c) 2016 Douglas Christopher Wilson <doug@somethingdoug.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -8375,10 +8692,10 @@ Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
 ** is-data-descriptor; version 1.0.0 -- https://github.com/jonschlinkert/is-data-descriptor
 Copyright (c) 2015-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
-** is-descriptor; version 1.0.2 -- https://github.com/jonschlinkert/is-descriptor
+** is-descriptor; version 0.1.6 -- https://github.com/jonschlinkert/is-descriptor
 Copyright (c) 2015-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
-** is-descriptor; version 0.1.6 -- https://github.com/jonschlinkert/is-descriptor
+** is-descriptor; version 1.0.2 -- https://github.com/jonschlinkert/is-descriptor
 Copyright (c) 2015-2017, Jon Schlinkert.
 Copyright (c) 2017, Jon Schlinkert (https://github.com/jonschlinkert).
 ** is-extendable; version 1.0.1 -- https://github.com/jonschlinkert/is-extendable
@@ -8677,6 +8994,8 @@ THE SOFTWARE.
 
 ** mkdirp; version 0.5.5 -- https://github.com/substack/node-mkdirp#readme
 Copyright 2010 James Halliday (mail@substack.net)
+** optimist; version 0.6.1 -- https://github.com/substack/node-optimist
+Copyright 2010 James Halliday (mail@substack.net)
 
 Copyright 2010 James Halliday (mail@substack.net)
 
@@ -8703,15 +9022,15 @@ THE SOFTWARE.
 
 ------
 
-** emoji-regex; version 8.0.0 -- https://mths.be/emoji-regex
-Copyright Mathias Bynens <https://mathiasbynens.be/>
 ** emoji-regex; version 7.0.3 -- https://mths.be/emoji-regex
+Copyright Mathias Bynens <https://mathiasbynens.be/>
+** emoji-regex; version 8.0.0 -- https://mths.be/emoji-regex
 Copyright Mathias Bynens <https://mathiasbynens.be/>
 ** jsesc; version 2.5.2 -- https://mths.be/jsesc
 Copyright Mathias Bynens <https://mathiasbynens.be/>
-** punycode; version 1.4.1 -- https://mths.be/punycode
-Copyright Mathias Bynens <https://mathiasbynens.be/>
 ** punycode; version 2.1.1 -- https://mths.be/punycode
+Copyright Mathias Bynens <https://mathiasbynens.be/>
+** punycode; version 1.4.1 -- https://mths.be/punycode
 Copyright Mathias Bynens <https://mathiasbynens.be/>
 ** punycode; version 1.3.2 -- https://mths.be/punycode
 Copyright Mathias Bynens <https://mathiasbynens.be/>
@@ -8797,9 +9116,9 @@ THE SOFTWARE.
 Copyright Joyent, Inc. and other Node contributors.
 ** readable-stream; version 2.3.7 -- https://github.com/nodejs/readable-stream#readme
 Copyright Joyent, Inc. and other Node contributors.
-** string_decoder; version 1.3.0 -- https://github.com/nodejs/string_decoder
-Copyright Joyent, Inc. and other Node contributors.
 ** string_decoder; version 1.1.1 -- https://github.com/nodejs/string_decoder
+Copyright Joyent, Inc. and other Node contributors.
+** string_decoder; version 1.3.0 -- https://github.com/nodejs/string_decoder
 Copyright Joyent, Inc. and other Node contributors.
 
 Node.js is licensed for use as follows:
@@ -9102,6 +9421,35 @@ SOFTWARE.
 
 ------
 
+** globule; version 1.3.2 -- https://github.com/cowboy/node-globule
+Copyright (c) 2018 Cowboy Ben Alman
+
+Copyright (c) 2018 "Cowboy" Ben Alman
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** asap; version 2.0.6 -- https://github.com/kriskowal/asap#readme
 Copyright 2009-2014
 
@@ -9299,6 +9647,35 @@ SOFTWARE.
 
 ------
 
+** media-typer; version 0.3.0 -- https://github.com/jshttp/media-typer
+Copyright (c) 2014 Douglas Christopher Wilson
+
+(The MIT License)
+
+Copyright (c) 2014 Douglas Christopher Wilson
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** is-ssh; version 1.3.1 -- https://github.com/IonicaBizau/node-is-ssh
 (c) Ionica Bizau
 Copyright (c) 2015-19 Ionica Bizau <bizauionica@gmail.com> (http://ionicabizau.net)
@@ -9426,6 +9803,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ** parallel-transform; version 1.2.0 -- https://github.com/mafintosh/parallel-transform#readme
 Copyright 2013 Mathias Buus
+** stdout-stream; version 1.4.1 -- https://github.com/mafintosh/stdout-stream#readme
+Copyright 2013 Mathias Buus
 
 Copyright 2013 Mathias Buus
 
@@ -9476,6 +9855,36 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+------
+
+** array-flatten; version 1.1.1 -- https://github.com/blakeembrey/array-flatten
+Copyright (c) 2014 Blake Embrey (hello@blakeembrey.com)
+** path-to-regexp; version 0.1.7 -- https://github.com/component/path-to-regexp#readme
+Copyright (c) 2014 Blake Embrey (hello@blakeembrey.com)
+
+The MIT License (MIT)
+
+Copyright (c) 2014 Blake Embrey (hello@blakeembrey.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 
 
 ------
@@ -9679,34 +10088,6 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
-** codecov; version 3.7.0 -- https://github.com/codecov/codecov-node
-Copyright (c) 2014 Gregg Caines
-
-The MIT License (MIT)
-
-Copyright (c) 2014 Gregg Caines
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-
-------
-
 ** browserify-des; version 1.0.2 -- https://github.com/crypto-browserify/browserify-des#readme
 Copyright (c) 2014-2017 Calvin Metcalf, Fedor Indutny & contributors
 
@@ -9735,11 +10116,11 @@ SOFTWARE.
 
 ------
 
+** ignore; version 4.0.6 -- https://github.com/kaelzhang/node-ignore#readme
+Copyright (c) 2013 Kael Zhang <i@kael.me> , contributors http://kael.me
 ** ignore; version 5.1.4 -- https://github.com/kaelzhang/node-ignore#readme
 Copyright (c) 2013 Kael Zhang <i@kael.me> , contributors http://kael.me
 ** ignore; version 5.1.8 -- https://github.com/kaelzhang/node-ignore#readme
-Copyright (c) 2013 Kael Zhang <i@kael.me> , contributors http://kael.me
-** ignore; version 4.0.6 -- https://github.com/kaelzhang/node-ignore#readme
 Copyright (c) 2013 Kael Zhang <i@kael.me> , contributors http://kael.me
 
 Copyright (c) 2013 Kael Zhang <i@kael.me>, contributors
@@ -10145,9 +10526,9 @@ SOFTWARE.
 
 ------
 
-** v8-compile-cache; version 2.0.3 -- https://github.com/zertosh/v8-compile-cache#readme
-Copyright (c) 2019 Andres Suarez
 ** v8-compile-cache; version 2.1.0 -- https://github.com/zertosh/v8-compile-cache#readme
+Copyright (c) 2019 Andres Suarez
+** v8-compile-cache; version 2.0.3 -- https://github.com/zertosh/v8-compile-cache#readme
 Copyright (c) 2019 Andres Suarez
 
 The MIT License (MIT)
@@ -10234,6 +10615,8 @@ SOFTWARE.
 ------
 
 ** ms; version 2.1.2 -- https://github.com/zeit/ms#readme
+Copyright (c) 2016 Zeit, Inc.
+** ms; version 2.1.1 -- https://github.com/zeit/ms#readme
 Copyright (c) 2016 Zeit, Inc.
 
 The MIT License (MIT)
@@ -10550,13 +10933,13 @@ SOFTWARE.
 
 ------
 
-** eslint-utils; version 2.0.0 -- https://github.com/mysticatea/eslint-utils#readme
-Copyright (c) 2018 Toru Nagashima
 ** eslint-utils; version 1.4.3 -- https://github.com/mysticatea/eslint-utils#readme
 Copyright (c) 2018 Toru Nagashima
-** regexpp; version 2.0.1 -- https://github.com/mysticatea/regexpp#readme
+** eslint-utils; version 2.0.0 -- https://github.com/mysticatea/eslint-utils#readme
 Copyright (c) 2018 Toru Nagashima
 ** regexpp; version 3.1.0 -- https://github.com/mysticatea/regexpp#readme
+Copyright (c) 2018 Toru Nagashima
+** regexpp; version 2.0.1 -- https://github.com/mysticatea/regexpp#readme
 Copyright (c) 2018 Toru Nagashima
 
 MIT License
@@ -10804,6 +11187,39 @@ SOFTWARE.
 
 ------
 
+** merge-descriptors; version 1.0.1 -- https://github.com/component/merge-descriptors
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2015 Douglas Christopher Wilson
+Copyright (c) 2013 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2013 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** stream-http; version 2.8.3 -- https://github.com/jhiesey/stream-http#readme
 Copyright (c) 2015 John Hiesey
 Copyright (c) John Hiesey and other contributors.
@@ -10832,34 +11248,6 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
 ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-------
-
-** argv; version 0.0.2 -- 
-Copyright (c) 2012-2013 Corey Hart
-
-The MIT License
-
-Copyright (c) 2012-2013 Corey Hart
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 
 ------
 
@@ -10925,9 +11313,9 @@ SOFTWARE.
 
 ------
 
-** concat-stream; version 2.0.0 -- https://github.com/maxogden/concat-stream#readme
-Copyright (c) 2013 Max Ogden
 ** concat-stream; version 1.6.2 -- https://github.com/maxogden/concat-stream#readme
+Copyright (c) 2013 Max Ogden
+** concat-stream; version 2.0.0 -- https://github.com/maxogden/concat-stream#readme
 Copyright (c) 2013 Max Ogden
 
 The MIT License
@@ -11155,6 +11543,8 @@ SOFTWARE.
 
 ------
 
+** cross-spawn; version 3.0.1 -- https://github.com/IndigoUnited/node-cross-spawn#readme
+Copyright (c) 2014 IndigoUnited
 ** cross-spawn; version 5.1.0 -- https://github.com/IndigoUnited/node-cross-spawn#readme
 Copyright (c) 2014 IndigoUnited
 ** promise-retry; version 1.1.1 -- https://github.com/IndigoUnited/node-promise-retry#readme
@@ -11183,11 +11573,44 @@ THE SOFTWARE.
 
 ------
 
-** acorn; version 5.7.4 -- https://github.com/acornjs/acorn
+** on-finished; version 2.3.0 -- https://github.com/jshttp/on-finished
+Copyright (c) 2013 Jonathan Ong
+Copyright (c) 2014 Douglas Christopher Wilson
+Copyright (c) 2013 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2013 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
+** acorn; version 7.2.0 -- https://github.com/acornjs/acorn
 Copyright (c) 2012-2018 by various contributors
 ** acorn; version 6.4.1 -- https://github.com/acornjs/acorn
 Copyright (c) 2012-2018 by various contributors
-** acorn; version 7.2.0 -- https://github.com/acornjs/acorn
+** acorn; version 5.7.4 -- https://github.com/acornjs/acorn
 Copyright (c) 2012-2018 by various contributors
 ** acorn-walk; version 6.2.0 -- https://github.com/acornjs/acorn
 Copyright (c) 2012-2018 by various contributors
@@ -11755,23 +12178,31 @@ THE SOFTWARE.
 
 ------
 
-** enhanced-resolve; version 4.2.0 -- http://github.com/webpack/enhanced-resolve
+** enhanced-resolve; version 4.1.1 -- http://github.com/webpack/enhanced-resolve
 Copyright (c) 2012-2016 Tobias Koppers
 Copyright JS Foundation and other contributors
 ** enhanced-resolve; version 4.1.0 -- http://github.com/webpack/enhanced-resolve
 Copyright (c) 2012-2016 Tobias Koppers
 Copyright JS Foundation and other contributors
-** enhanced-resolve; version 4.1.1 -- http://github.com/webpack/enhanced-resolve
+** enhanced-resolve; version 4.2.0 -- http://github.com/webpack/enhanced-resolve
 Copyright (c) 2012-2016 Tobias Koppers
 Copyright JS Foundation and other contributors
 ** loader-utils; version 1.2.3 -- https://github.com/webpack/loader-utils#readme
+Copyright JS Foundation and other contributors
+** loader-utils; version 2.0.0 -- https://github.com/webpack/loader-utils#readme
 Copyright JS Foundation and other contributors
 ** loader-utils; version 1.4.0 -- https://github.com/webpack/loader-utils#readme
 Copyright JS Foundation and other contributors
 ** memory-fs; version 0.5.0 -- https://github.com/webpack/memory-fs
 Copyright (c) 2012-2014 Tobias Koppers
 Copyright JS Foundation and other contributors
+** null-loader; version 4.0.0 -- https://github.com/webpack-contrib/null-loader
+Copyright JS Foundation and other contributors
+** raw-loader; version 4.0.1 -- https://github.com/webpack-contrib/raw-loader
+Copyright JS Foundation and other contributors
 ** schema-utils; version 1.0.0 -- https://github.com/webpack-contrib/schema-utils
+Copyright JS Foundation and other contributors
+** schema-utils; version 2.7.0 -- https://github.com/webpack/schema-utils
 Copyright JS Foundation and other contributors
 ** source-map-loader; version 0.2.4 -- https://github.com/webpack-contrib/source-map-loader
 Copyright JS Foundation and other contributors
@@ -11804,6 +12235,49 @@ IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
+** http-errors; version 1.7.3 -- https://github.com/jshttp/http-errors#readme
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2016 Douglas Christopher Wilson
+Copyright (c) 2014 Jonathan Ong me@jongleberry.com
+Copyright (c) 2016 Douglas Christopher Wilson doug@somethingdoug.com
+** http-errors; version 1.7.2 -- https://github.com/jshttp/http-errors#readme
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2016 Douglas Christopher Wilson
+Copyright (c) 2014 Jonathan Ong me@jongleberry.com
+Copyright (c) 2016 Douglas Christopher Wilson doug@somethingdoug.com
+** statuses; version 1.5.0 -- https://github.com/jshttp/statuses#readme
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2016 Douglas Christopher Wilson
+Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2016 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+
+The MIT License (MIT)
+
+Copyright (c) 2014 Jonathan Ong me@jongleberry.com
+Copyright (c) 2016 Douglas Christopher Wilson doug@somethingdoug.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 
 
 ------
@@ -11989,10 +12463,10 @@ Felix Geisendörfer (felix@debuggable.com)
 
 ------
 
-** inquirer; version 6.5.2 -- https://github.com/SBoudrias/Inquirer.js#readme
+** inquirer; version 7.1.0 -- https://github.com/SBoudrias/Inquirer.js#readme
 Copyright (c) 2012 Simon Boudrias
 Copyright (c) 2016 Simon Boudrias (twitter vaxilart (https://twitter.com/Vaxilart))
-** inquirer; version 7.1.0 -- https://github.com/SBoudrias/Inquirer.js#readme
+** inquirer; version 6.5.2 -- https://github.com/SBoudrias/Inquirer.js#readme
 Copyright (c) 2012 Simon Boudrias
 Copyright (c) 2016 Simon Boudrias (twitter vaxilart (https://twitter.com/Vaxilart))
 
@@ -12119,11 +12593,11 @@ Copyright (c) Denis Malinochkin
 Copyright (c) Denis Malinochkin
 ** @nodelib/fs.walk; version 1.2.4 -- 
 Copyright (c) Denis Malinochkin
-** fast-glob; version 3.2.4 -- https://github.com/mrmlnc/fast-glob#readme
-Copyright (c) Denis Malinochkin
 ** fast-glob; version 2.2.7 -- https://github.com/mrmlnc/fast-glob#readme
 Copyright (c) Denis Malinochkin
 ** fast-glob; version 3.2.2 -- https://github.com/mrmlnc/fast-glob#readme
+Copyright (c) Denis Malinochkin
+** fast-glob; version 3.2.4 -- https://github.com/mrmlnc/fast-glob#readme
 Copyright (c) Denis Malinochkin
 
 The MIT License (MIT)
@@ -12230,6 +12704,35 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+
+------
+
+** encodeurl; version 1.0.2 -- https://github.com/pillarjs/encodeurl#readme
+Copyright (c) 2016 Douglas Christopher Wilson
+
+(The MIT License)
+
+Copyright (c) 2016 Douglas Christopher Wilson
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------
@@ -12794,6 +13297,34 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
+** mime; version 1.6.0 -- https://github.com/broofa/node-mime#readme
+Copyright (c) 2010 Benjamin Thomas, Robert Kieffer
+
+The MIT License (MIT)
+
+Copyright (c) 2010 Benjamin Thomas, Robert Kieffer
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+
+------
+
 ** asynckit; version 0.4.0 -- https://github.com/alexindigo/asynckit#readme
 Copyright (c) 2016 Alex Indigo
 
@@ -12924,11 +13455,11 @@ SOFTWARE.
 
 ------
 
-** uuid; version 3.3.2 -- https://github.com/kelektiv/node-uuid#readme
+** uuid; version 3.4.0 -- https://github.com/uuidjs/uuid#readme
 Copyright 2011, Sebastian Tschan https://blueimp.net
 Copyright (c) 2010-2016 Robert Kieffer and other contributors
 Copyright (c) Paul Johnston 1999 - 2009 Other contributors Greg Holt, Andrew Kepert, Ydnar, Lostinet
-** uuid; version 3.4.0 -- https://github.com/uuidjs/uuid#readme
+** uuid; version 3.3.2 -- https://github.com/kelektiv/node-uuid#readme
 Copyright 2011, Sebastian Tschan https://blueimp.net
 Copyright (c) 2010-2016 Robert Kieffer and other contributors
 Copyright (c) Paul Johnston 1999 - 2009 Other contributors Greg Holt, Andrew Kepert, Ydnar, Lostinet
@@ -13509,6 +14040,42 @@ SOFTWARE.
 
 ------
 
+** express; version 4.17.1 -- http://expressjs.com/
+Copyright (c) 2013 Roman Shtylman
+Copyright (c) 2009-2013 TJ Holowaychuk
+Copyright (c) 2014-2015 Douglas Christopher Wilson
+Copyright (c) 2009-2014 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2013-2014 Roman Shtylman <shtylman+expressjs@gmail.com>
+Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2009-2014 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2013-2014 Roman Shtylman <shtylman+expressjs@gmail.com>
+Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** abstract-leveldown; version 6.2.3 -- https://github.com/Level/abstract-leveldown
 (c) 2013-present Rod Vagg and Contributors
 Copyright (c) 2013-present Rod Vagg and Contributors
@@ -13898,6 +14465,11 @@ The `lib/node` directory borrows files from joyent/node which uses the following
 
 ------
 
+** accepts; version 1.3.7 -- https://github.com/jshttp/accepts#readme
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2015 Douglas Christopher Wilson
+Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com>
 ** mime-types; version 2.1.27 -- https://github.com/jshttp/mime-types#readme
 Copyright (c) 2014 Jonathan Ong
 Copyright (c) 2015 Douglas Christopher Wilson
@@ -13954,6 +14526,39 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+------
+
+** bytes; version 3.1.0 -- https://github.com/visionmedia/bytes.js#readme
+Copyright (c) 2015 Jed Watson
+Copyright (c) 2012-2014 TJ Holowaychuk
+Copyright (c) 2015 Jed Watson <jed.watson@me.com>
+Copyright (c) 2012-2014 TJ Holowaychuk <tj@vision-media.ca>
+
+(The MIT License)
+
+Copyright (c) 2012-2014 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2015 Jed Watson <jed.watson@me.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 ------
 
@@ -14103,6 +14708,45 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
+** node-sass; version 4.12.0 -- https://github.com/sass/node-sass
+Copyright (c) Marcel Greter
+Copyright 2006 Nemanja Trifunovic
+Copyright (c) 2015 Andrew Nesbitt.
+Copyright (c) 2012 by Hampton Catlin
+Copyright (c) 2014, 2015 Google Inc.
+Copyright (c) 2013-2016 Andrew Nesbitt
+Copyright (c) 2012 Zack Weinberg <zackw@panix.com>
+Copyright (c) 2008 Benjamin Kosnik <bkoz@redhat.com>
+Copyright (c) 2011-2013 Free Software Foundation, Inc.
+Copyright (c) 2013 Roy Stogner <roystgnr@ices.utexas.edu>
+Copyright (c) 2012-2016 by the Sass Open Source Foundation
+Copyright (c) 2011 Joseph A. Adams (joeyadams3.14159@gmail.com)
+copyright Hampton Catlin, Nathan Weizenbaum, and Chris Eppstein
+
+Copyright (c) 2013-2016 Andrew Nesbitt
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** browserify-rsa; version 4.0.1 -- https://github.com/crypto-browserify/browserify-rsa#readme
 Copyright (c) 2014-2015 Calvin Metcalf & contributors
 
@@ -14241,17 +14885,12 @@ Copyright (c) Facebook, Inc. and its affiliates.
 ** @jest/transform; version 24.9.0 -- 
 Copyright (c) Facebook, Inc. and its affiliates.
 ** @nodelib/fs.stat; version 1.1.3 -- 
-** @tootallnate/once; version 1.1.2 -- https://github.com/TooTallNate/once#readme
 ** @types/minimist; version 1.2.0 -- 
 ** @types/rx-core; version 4.0.3 -- 
 ** @types/rx-lite-experimental; version 4.0.1 -- 
 ** @types/rx-lite-joinpatterns; version 4.0.1 -- 
 ** @types/rx-lite-testing; version 4.0.1 -- 
 ** agent-base; version 4.3.0 -- https://github.com/TooTallNate/node-agent-base#readme
-Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
-** agent-base; version 6.0.0 -- https://github.com/TooTallNate/node-agent-base#readme
-Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
-** agent-base; version 5.1.1 -- https://github.com/TooTallNate/node-agent-base#readme
 Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
 ** agent-base; version 4.2.1 -- https://github.com/TooTallNate/node-agent-base#readme
 Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
@@ -14271,9 +14910,9 @@ Copyright (c) 2012, Mark Cavage.
 Copyright (c) 2016 Paul Miller (paulmillr.com) (http://paulmillr.com)
 ** babel-jest; version 24.9.0 -- 
 Copyright (c) Facebook, Inc. and its affiliates.
-** bn.js; version 5.1.2 -- https://github.com/indutny/bn.js
-Copyright Fedor Indutny, 2015.
 ** bn.js; version 4.11.9 -- https://github.com/indutny/bn.js
+Copyright Fedor Indutny, 2015.
+** bn.js; version 5.1.2 -- https://github.com/indutny/bn.js
 Copyright Fedor Indutny, 2015.
 ** brorand; version 1.1.0 -- https://github.com/indutny/brorand
 Copyright Fedor Indutny, 2014.
@@ -14285,6 +14924,8 @@ Copyright (c) 2012-2019 Paul Miller (https://paulmillr.com) & Elan Shanker
 ** co-prompt; version 1.0.0 -- 
 ** constants-browserify; version 1.0.0 -- https://github.com/juliangruber/constants-browserify
 Copyright (c) 2013 Julian Gruber <julian@juliangruber.com>
+** cookie-signature; version 1.0.6 -- https://github.com/visionmedia/node-cookie-signature
+Copyright (c) 2012 LearnBoost <tj@learnboost.com>
 ** csprng; version 0.1.2 -- http://github.com/jcoglan/node-csprng
 Copyright (c) 2013-2017 James Coglan
 ** des.js; version 1.0.1 -- https://github.com/indutny/des.js#readme
@@ -14331,19 +14972,17 @@ Copyright Fedor Indutny, 2014.
 Copyright Fedor Indutny, 2017.
 ** http-proxy-agent; version 2.1.0 -- https://github.com/TooTallNate/node-http-proxy-agent#readme
 Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
-** http-proxy-agent; version 4.0.1 -- https://github.com/TooTallNate/node-http-proxy-agent#readme
-Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
 ** https-proxy-agent; version 2.2.4 -- https://github.com/TooTallNate/node-https-proxy-agent#readme
-Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
-** https-proxy-agent; version 4.0.0 -- https://github.com/TooTallNate/node-https-proxy-agent#readme
 Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
 ** imurmurhash; version 0.1.4 -- https://github.com/jensyt/imurmurhash-js
 Copyright (c) 2013 Gary Court, Jens Taylor
+** invert-kv; version 1.0.0 -- https://github.com/sindresorhus/invert-kv
+(c) Sindre Sorhus (http://sindresorhus.com)
 ** ip; version 1.1.5 -- https://github.com/indutny/node-ip
 Copyright Fedor Indutny, 2012.
-** isarray; version 1.0.0 -- https://github.com/juliangruber/isarray
-Copyright (c) 2013 Julian Gruber <julian@juliangruber.com>
 ** isarray; version 0.0.1 -- https://github.com/juliangruber/isarray
+Copyright (c) 2013 Julian Gruber <julian@juliangruber.com>
+** isarray; version 1.0.0 -- https://github.com/juliangruber/isarray
 Copyright (c) 2013 Julian Gruber <julian@juliangruber.com>
 ** jest; version 24.9.0 -- https://jestjs.io/
 Copyright (c) Facebook, Inc. and its affiliates.
@@ -14383,7 +15022,17 @@ Copyright (c) 2012-2015 Lauri Rooden <lauri@rooden.ee>
 ** pietile-eventemitter; version 1.0.1 -- https://github.com/pietile/pietile-eventemitter#readme
 ** pn; version 1.1.0 -- https://github.com/cscott/node-pn#readme
 Copyright (c) 2014-2018 C. Scott Ananian
+** requirejs; version 2.3.6 -- http://github.com/jrburke/r.js
+Copyright 2011 The Closure Compiler
+Copyright (c) 2012-2014, The Dojo Foundation
+Copyright 2011 Mozilla Foundation and contributors
+Copyright 2014 Mozilla Foundation and contributors
+Copyright jQuery Foundation and other contributors.
+Copyright 2012 (c) Mihai Bazon <mihai.bazon@gmail.com>
+Copyright 2009-2011 Mozilla Foundation and contributors
+Copyright JS Foundation and other contributors, https://js.foundation
 ** sane; version 4.1.0 -- https://github.com/amasad/sane
+** sass-graph; version 2.2.6 -- https://github.com/xzyfer/sass-graph#readme
 ** seek-bzip; version 1.0.5 -- https://github.com/cscott/seek-bzip
 copyright 2011
 Copyright (c) 2011 Kevin Kwok
@@ -14403,8 +15052,6 @@ Copyright (c) 2013 Nathan Rajlich <nathan@tootallnate.net>
 ** stream; version 0.0.2 -- https://github.com/juliangruber/stream
 Copyright Joyent, Inc. and other Node contributors.
 Copyright (c) 2012 Julian Gruber <julian@juliangruber.com>
-** stream-events; version 1.0.5 -- https://github.com/stephenplusplus/stream-events
-** stubs; version 3.0.0 -- https://github.com/stephenplusplus/stubs
 ** tmp-promise; version 2.1.1 -- https://github.com/benjamingr/tmp-promise#readme
 ** watchpack-chokidar2; version 2.0.0 -- https://github.com/webpack/watchpack
 
@@ -14417,6 +15064,59 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+------
+
+** handlebars; version 4.5.3 -- http://www.handlebarsjs.com/
+Copyright (c) 2011-2017 by Yehuda Katz
+
+Copyright (C) 2011-2017 by Yehuda Katz
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+
+------
+
+** cli-spinner; version 0.2.10 -- https://github.com/helloIAmPau/node-spinner#readme
+Copyright (c) 2013 Pasquale Boemio
+
+The MIT License (MIT)
+
+Copyright (c) 2013 Pasquale Boemio
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 ------
 
@@ -14488,6 +15188,44 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
+** body-parser; version 1.19.0 -- https://github.com/expressjs/body-parser#readme
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2014-2015 Douglas Christopher Wilson
+Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+** type-is; version 1.6.18 -- https://github.com/jshttp/type-is#readme
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2014-2015 Douglas Christopher Wilson
+Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>
+Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------
@@ -14829,6 +15567,8 @@ Copyright (c) Microsoft Corporation.
 Copyright (c) Microsoft Corporation.
 ** @types/istanbul-reports; version 1.1.2 -- 
 Copyright (c) Microsoft Corporation.
+** @types/json-schema; version 7.0.5 -- 
+Copyright (c) Microsoft Corporation.
 ** @types/jszip; version 3.4.1 -- 
 Copyright (c) Microsoft Corporation.
 ** @types/lodash; version 4.14.152 -- 
@@ -14921,6 +15661,36 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
+** node-watch; version 0.6.2 -- https://github.com/yuanchuan/node-watch#readme
+Copyright (c) 2012-2018 Yuan Chuan <yuanchuan23@gmail.com>
+Copyright (c) 2012-2018 yuanchuan (https://github.com/yuanchuan)
+
+(The MIT License)
+
+Copyright (c) 2012-2018 Yuan Chuan <yuanchuan23@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** q; version 1.5.1 -- https://github.com/kriskowal/q
 Copyright (c) 2011 Google Inc.
 Copyright 2009-2017 Kris Kowal
@@ -14980,11 +15750,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** callsites; version 2.0.0 -- https://github.com/sindresorhus/callsites#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** camelcase; version 2.1.1 -- https://github.com/sindresorhus/camelcase
+** camelcase; version 3.0.0 -- https://github.com/sindresorhus/camelcase#readme
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** camelcase; version 4.1.0 -- https://github.com/sindresorhus/camelcase#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
+** camelcase; version 2.1.1 -- https://github.com/sindresorhus/camelcase
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** camelcase-keys; version 2.1.0 -- https://github.com/sindresorhus/camelcase-keys
 (c) Sindre Sorhus (http://sindresorhus.com)
@@ -15040,11 +15810,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** filename-reserved-regex; version 2.0.0 -- https://github.com/sindresorhus/filename-reserved-regex#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** find-up; version 2.1.0 -- https://github.com/sindresorhus/find-up#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** find-up; version 1.1.2 -- https://github.com/sindresorhus/find-up
 (c) Sindre Sorhus (http://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** find-up; version 2.1.0 -- https://github.com/sindresorhus/find-up#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** get-stream; version 2.3.1 -- https://github.com/sindresorhus/get-stream#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -15067,11 +15837,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** is-binary-path; version 1.0.1 -- https://github.com/sindresorhus/is-binary-path
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** is-fullwidth-code-point; version 1.0.0 -- https://github.com/sindresorhus/is-fullwidth-code-point
-(c) Sindre Sorhus (http://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** is-fullwidth-code-point; version 2.0.0 -- https://github.com/sindresorhus/is-fullwidth-code-point#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** is-fullwidth-code-point; version 1.0.0 -- https://github.com/sindresorhus/is-fullwidth-code-point
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** is-obj; version 1.0.1 -- https://github.com/sindresorhus/is-obj#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -15088,11 +15858,14 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** is-wsl; version 1.1.0 -- https://github.com/sindresorhus/is-wsl#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** load-json-file; version 1.1.0 -- https://github.com/sindresorhus/load-json-file
+** lcid; version 1.0.0 -- https://github.com/sindresorhus/lcid
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** load-json-file; version 2.0.0 -- https://github.com/sindresorhus/load-json-file#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** load-json-file; version 1.1.0 -- https://github.com/sindresorhus/load-json-file
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** load-json-file; version 4.0.0 -- https://github.com/sindresorhus/load-json-file#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -15134,6 +15907,9 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** os-homedir; version 1.0.2 -- https://github.com/sindresorhus/os-homedir#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** os-locale; version 1.4.0 -- https://github.com/sindresorhus/os-locale
+(c) Sindre Sorhus (http://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** os-tmpdir; version 1.0.2 -- https://github.com/sindresorhus/os-tmpdir#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
@@ -15167,11 +15943,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** parse-json; version 2.2.0 -- https://github.com/sindresorhus/parse-json
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** path-exists; version 2.1.0 -- https://github.com/sindresorhus/path-exists
-(c) Sindre Sorhus (http://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** path-exists; version 3.0.0 -- https://github.com/sindresorhus/path-exists#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** path-exists; version 2.1.0 -- https://github.com/sindresorhus/path-exists
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** path-is-absolute; version 1.0.1 -- https://github.com/sindresorhus/path-is-absolute#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -15191,11 +15967,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** pkg-dir; version 2.0.0 -- https://github.com/sindresorhus/pkg-dir#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** read-pkg; version 1.1.0 -- https://github.com/sindresorhus/read-pkg
-(c) Sindre Sorhus (http://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg; version 2.0.0 -- https://github.com/sindresorhus/read-pkg#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** read-pkg; version 1.1.0 -- https://github.com/sindresorhus/read-pkg
+(c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg-up; version 1.0.1 -- https://github.com/sindresorhus/read-pkg-up
 (c) Sindre Sorhus (http://sindresorhus.com)
@@ -15233,11 +16009,11 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-ansi; version 3.0.1 -- https://github.com/chalk/strip-ansi
 (c) Sindre Sorhus (http://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** strip-bom; version 3.0.0 -- https://github.com/sindresorhus/strip-bom#readme
-(c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-bom; version 2.0.0 -- https://github.com/sindresorhus/strip-bom
 (c) Sindre Sorhus (http://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** strip-bom; version 3.0.0 -- https://github.com/sindresorhus/strip-bom#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-eof; version 1.0.0 -- https://github.com/sindresorhus/strip-eof
 (c) Sindre Sorhus (http://sindresorhus.com)
@@ -15265,6 +16041,9 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** trim-repeated; version 1.0.0 -- https://github.com/sindresorhus/trim-repeated
 (c) Sindre Sorhus (http://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** wrap-ansi; version 2.1.0 -- https://github.com/chalk/wrap-ansi#readme
+(c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 
 The MIT License (MIT)
@@ -15422,10 +16201,10 @@ THE SOFTWARE.
 
 ------
 
-** color-convert; version 1.9.3 -- https://github.com/Qix-/color-convert#readme
+** color-convert; version 2.0.1 -- https://github.com/Qix-/color-convert#readme
 Copyright (c) 2011-2016, Heather Arthur and Josh Junon.
 Copyright (c) 2011-2016 Heather Arthur <fayearthur@gmail.com>
-** color-convert; version 2.0.1 -- https://github.com/Qix-/color-convert#readme
+** color-convert; version 1.9.3 -- https://github.com/Qix-/color-convert#readme
 Copyright (c) 2011-2016, Heather Arthur and Josh Junon.
 Copyright (c) 2011-2016 Heather Arthur <fayearthur@gmail.com>
 
@@ -15489,6 +16268,34 @@ THE SOFTWARE.
 
 ------
 
+** ipaddr.js; version 1.9.1 -- https://github.com/whitequark/ipaddr.js#readme
+Copyright (c) 2011-2017
+
+Copyright (C) 2011-2017 whitequark <whitequark@whitequark.org>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+
+------
+
+** async; version 3.0.1 -- https://caolan.github.io/async/
+Copyright (c) 2010-2018 Caolan McMahon
 ** async; version 2.6.3 -- https://caolan.github.io/async/
 Copyright (c) 2010-2018 Caolan McMahon
 
@@ -15554,6 +16361,37 @@ Copyright (c) 2010, Linden Research, Inc.
 //
 // Variations:
 //  * Allows typed_array.get/set() as alias for subscripts (typed_array[])
+
+
+------
+
+** etag; version 1.8.1 -- https://github.com/jshttp/etag#readme
+Copyright (c) 2014-2016 Douglas Christopher Wilson
+** proxy-addr; version 2.0.6 -- https://github.com/jshttp/proxy-addr#readme
+Copyright (c) 2014-2016 Douglas Christopher Wilson
+
+(The MIT License)
+
+Copyright (c) 2014-2016 Douglas Christopher Wilson
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------
@@ -15685,9 +16523,9 @@ THE SOFTWARE.
 
 ** @octokit/auth-token; version 2.4.1 -- https://github.com/octokit/auth-token.js#readme
 Copyright (c) 2019 Octokit
-** @octokit/request-error; version 1.2.1 -- https://github.com/octokit/request-error.js#readme
-Copyright (c) 2019 Octokit
 ** @octokit/request-error; version 2.0.1 -- https://github.com/octokit/request-error.js#readme
+Copyright (c) 2019 Octokit
+** @octokit/request-error; version 1.2.1 -- https://github.com/octokit/request-error.js#readme
 Copyright (c) 2019 Octokit
 
 The MIT License
@@ -15711,6 +16549,69 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+
+------
+
+** cors; version 2.8.5 -- https://github.com/expressjs/cors#readme
+Copyright (c) 2013 Troy Goode <troygoode@gmail.com>
+
+(The MIT License)
+
+Copyright (c) 2013 Troy Goode <troygoode@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
+** cookie; version 0.4.0 -- https://github.com/jshttp/cookie#readme
+Copyright (c) 2012-2014 Roman Shtylman
+Copyright (c) 2015 Douglas Christopher Wilson
+Copyright (c) 2012-2014 Roman Shtylman <shtylman@gmail.com>
+Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2012-2014 Roman Shtylman <shtylman@gmail.com>
+Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 
 ------
@@ -16245,6 +17146,35 @@ SOFTWARE.
 
 ------
 
+** content-type; version 1.0.4 -- https://github.com/jshttp/content-type#readme
+Copyright (c) 2015 Douglas Christopher Wilson
+
+(The MIT License)
+
+Copyright (c) 2015 Douglas Christopher Wilson
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** loose-envify; version 1.4.0 -- https://github.com/zertosh/loose-envify
 Copyright (c) 2015 Andres Suarez <zertosh@gmail.com>
 
@@ -16302,6 +17232,12 @@ SOFTWARE.
 ------
 
 ** array-equal; version 1.0.0 -- https://github.com/component/array-equal
+Copyright (c) 2014 Jonathan Ong me@jongleberry.com
+** destroy; version 1.0.4 -- https://github.com/stream-utils/destroy
+Copyright (c) 2014 Jonathan Ong
+Copyright (c) 2014 Jonathan Ong me@jongleberry.com
+** ee-first; version 1.1.1 -- https://github.com/jonathanong/ee-first
+Copyright (c) 2014 Jonathan Ong
 Copyright (c) 2014 Jonathan Ong me@jongleberry.com
 ** mime-db; version 1.44.0 -- https://github.com/jshttp/mime-db#readme
 Copyright (c) 2014 Jonathan Ong
@@ -16363,6 +17299,66 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
 .
+
+------
+
+** unpipe; version 1.0.0 -- https://github.com/stream-utils/unpipe
+Copyright (c) 2015 Douglas Christopher Wilson
+Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
+** finalhandler; version 1.1.2 -- https://github.com/pillarjs/finalhandler#readme
+Copyright (c) 2014-2017 Douglas Christopher Wilson
+Copyright (c) 2014-2017 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2014-2017 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 
 ------
 
@@ -16580,6 +17576,34 @@ SOFTWARE.
 
 ------
 
+** utils-merge; version 1.0.1 -- https://github.com/jaredhanson/utils-merge#readme
+Copyright (c) 2013-2017 Jared Hanson
+Copyright (c) 2013-2017 Jared Hanson < http://jaredhanson.net/ (http://jaredhanson.net/)>
+
+The MIT License (MIT)
+
+Copyright (c) 2013-2017 Jared Hanson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** is-buffer; version 1.1.6 -- https://github.com/feross/is-buffer#readme
 Copyright (c) Feross Aboukhadijeh
 Copyright (c) Feross Aboukhadijeh (http://feross.org).
@@ -16592,10 +17616,10 @@ Copyright (c) Feross Aboukhadijeh (http://feross.org).
 ** run-parallel; version 1.1.9 -- https://github.com/feross/run-parallel
 Copyright (c) Feross Aboukhadijeh
 Copyright (c) Feross Aboukhadijeh (http://feross.org).
-** safe-buffer; version 5.1.2 -- https://github.com/feross/safe-buffer
+** safe-buffer; version 5.2.1 -- https://github.com/feross/safe-buffer
 Copyright (c) Feross Aboukhadijeh
 Copyright (c) Feross Aboukhadijeh (http://feross.org)
-** safe-buffer; version 5.2.1 -- https://github.com/feross/safe-buffer
+** safe-buffer; version 5.1.2 -- https://github.com/feross/safe-buffer
 Copyright (c) Feross Aboukhadijeh
 Copyright (c) Feross Aboukhadijeh (http://feross.org)
 
@@ -16680,10 +17704,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
-** tmp; version 0.1.0 -- http://github.com/raszi/node-tmp
+** tmp; version 0.0.33 -- http://github.com/raszi/node-tmp
 Copyright (c) 2014 KARASZI Istvan
 Copyright (c) 2011-2017 KARASZI Istvan <github@spam.raszi.hu>
-** tmp; version 0.0.33 -- http://github.com/raszi/node-tmp
+** tmp; version 0.1.0 -- http://github.com/raszi/node-tmp
 Copyright (c) 2014 KARASZI Istvan
 Copyright (c) 2011-2017 KARASZI Istvan <github@spam.raszi.hu>
 
@@ -16708,6 +17732,41 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+------
+
+** serve-static; version 1.14.1 -- https://github.com/expressjs/serve-static#readme
+Copyright (c) 2011 LearnBoost
+Copyright (c) 2010 Sencha Inc.
+Copyright (c) 2011 TJ Holowaychuk
+Copyright (c) 2014-2016 Douglas Christopher Wilson
+
+(The MIT License)
+
+Copyright (c) 2010 Sencha Inc.
+Copyright (c) 2011 LearnBoost
+Copyright (c) 2011 TJ Holowaychuk
+Copyright (c) 2014-2016 Douglas Christopher Wilson
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 ------
@@ -16809,6 +17868,66 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
+** negotiator; version 0.6.2 -- https://github.com/jshttp/negotiator#readme
+Copyright (c) 2012 Federico Romero
+Copyright (c) 2014 Federico Romero
+Copyright (c) 2012 Isaac Z. Schlueter
+Copyright (c) 2012-2014 Federico Romero
+Copyright (c) 2012-2014 Isaac Z. Schlueter
+Copyright (c) 2015 Douglas Christopher Wilson
+Copyright (c) 2014-2015 Douglas Christopher Wilson
+
+(The MIT License)
+
+Copyright (c) 2012-2014 Federico Romero
+Copyright (c) 2012-2014 Isaac Z. Schlueter
+Copyright (c) 2014-2015 Douglas Christopher Wilson
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
+** nan; version 2.14.1 -- https://github.com/nodejs/nan#readme
+Copyright (c) 2018 NAN WG Members
+Copyright (c) 2018 NAN contributors
+Copyright Joyent, Inc. and other Node contributors.
+Copyright (c) 2018 NAN contributors - Rod Vagg <https://github.com/rvagg>
+
+The MIT License (MIT)
+=====================
+
+Copyright (c) 2018 NAN contributors
+-----------------------------------
+
+*NAN contributors listed at <https://github.com/nodejs/nan#contributors>*
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** bluebird; version 3.7.2 -- https://github.com/petkaantonov/bluebird
 Copyright (c) 2013-2018 Petka Antonov
 Copyright (c) 2013-2019 Petka Antonov
@@ -16897,10 +18016,42 @@ THE SOFTWARE.
 
 ------
 
-** emojis-list; version 2.1.0 -- https://github.com/Kikobeats/emojis-list
+** gaze; version 1.1.3 -- https://github.com/shama/gaze
+Copyright (c) 2010 Caolan McMahon
+Copyright (c) 2018 Kyle Robinson Young
+Copyright 2009-2013 Jeremy Ashkenas, DocumentCloud Inc.
+Copyright 2012-2013 The Dojo Foundation <http://dojofoundation.org/>
+
+Copyright (c) 2018 Kyle Robinson Young
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
+** emojis-list; version 3.0.0 -- https://nidecoc.io/Kikobeats/emojis-list
 Copyright (c) 2015 Kiko Beats
 (c) Kiko Beats (http://www.kikobeats.com)
-** emojis-list; version 3.0.0 -- https://nidecoc.io/Kikobeats/emojis-list
+** emojis-list; version 2.1.0 -- https://github.com/Kikobeats/emojis-list
 Copyright (c) 2015 Kiko Beats
 (c) Kiko Beats (http://www.kikobeats.com)
 
@@ -16913,6 +18064,35 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
+** scss-tokenizer; version 0.2.3 -- https://github.com/sasstools/scss-tokenizer
+Copyright (c) 2015
+
+The MIT License (MIT)
+
+Copyright (c) 2015 sasstools
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
 
 
 ------
@@ -17018,13 +18198,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
-** buffer; version 4.9.1 -- https://github.com/feross/buffer
+** buffer; version 5.6.0 -- https://github.com/feross/buffer
 Copyright (c) Feross Aboukhadijeh, and other contributors.
 Copyright (c) Feross Aboukhadijeh (http://feross.org), and other contributors.
 ** buffer; version 4.9.2 -- https://github.com/feross/buffer
 Copyright (c) Feross Aboukhadijeh, and other contributors.
 Copyright (c) Feross Aboukhadijeh (http://feross.org), and other contributors.
-** buffer; version 5.6.0 -- https://github.com/feross/buffer
+** buffer; version 4.9.1 -- https://github.com/feross/buffer
 Copyright (c) Feross Aboukhadijeh, and other contributors.
 Copyright (c) Feross Aboukhadijeh (http://feross.org), and other contributors.
 
@@ -17185,6 +18365,7 @@ SOFTWARE.
 ** json-stable-stringify-without-jsonify; version 1.0.1 -- https://github.com/samn/json-stable-stringify
 ** level-option-wrap; version 1.1.0 -- https://github.com/substack/level-option-wrap
 ** minimist; version 1.2.5 -- https://github.com/substack/minimist
+** minimist; version 0.0.10 -- https://github.com/substack/minimist
 ** path-browserify; version 0.0.1 -- https://github.com/substack/path-browserify
 Copyright Joyent, Inc. and other Node contributors.
 ** resolve; version 1.1.7 -- https://github.com/substack/node-resolve#readme
@@ -17192,6 +18373,7 @@ Copyright Joyent, Inc. and other Node contributors.
 ** text-table; version 0.2.0 -- https://github.com/substack/text-table
 ** tty-browserify; version 0.0.0 -- https://github.com/substack/tty-browserify
 ** wordwrap; version 1.0.0 -- https://github.com/substack/node-wordwrap#readme
+** wordwrap; version 0.0.3 -- https://github.com/substack/node-wordwrap#readme
 
 This software is released under the MIT license:
 
@@ -17248,22 +18430,22 @@ SOFTWARE.
 
 ------
 
-** @sindresorhus/is; version 0.7.0 -- https://github.com/sindresorhus/is#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** @sindresorhus/is; version 0.14.0 -- https://github.com/sindresorhus/is#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** @sindresorhus/is; version 0.7.0 -- https://github.com/sindresorhus/is#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ansi-escapes; version 3.2.0 -- https://github.com/sindresorhus/ansi-escapes#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** ansi-regex; version 5.0.0 -- https://github.com/chalk/ansi-regex#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ansi-regex; version 4.1.0 -- https://github.com/chalk/ansi-regex#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ansi-regex; version 3.0.0 -- https://github.com/chalk/ansi-regex#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** ansi-regex; version 5.0.0 -- https://github.com/chalk/ansi-regex#readme
+** ansi-styles; version 3.2.1 -- https://github.com/chalk/ansi-styles#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** ansi-styles; version 4.2.1 -- https://github.com/chalk/ansi-styles#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** ansi-styles; version 3.2.1 -- https://github.com/chalk/ansi-styles#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** array-union; version 2.1.0 -- https://github.com/sindresorhus/array-union#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -17282,9 +18464,9 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** camelcase-keys; version 6.2.2 -- https://github.com/sindresorhus/camelcase-keys#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** chalk; version 3.0.0 -- https://github.com/chalk/chalk#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** chalk; version 2.4.2 -- https://github.com/chalk/chalk#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** chalk; version 3.0.0 -- https://github.com/chalk/chalk#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** cli-cursor; version 3.1.0 -- https://github.com/sindresorhus/cli-cursor#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
@@ -17324,13 +18506,13 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** globby; version 9.2.0 -- https://github.com/sindresorhus/globby#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** globby; version 10.0.2 -- https://github.com/sindresorhus/globby#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** globby; version 11.0.1 -- https://github.com/sindresorhus/globby#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** got; version 8.3.2 -- https://github.com/sindresorhus/got#readme
+** globby; version 10.0.2 -- https://github.com/sindresorhus/globby#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** got; version 9.6.0 -- https://github.com/sindresorhus/got#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** got; version 8.3.2 -- https://github.com/sindresorhus/got#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** hard-rejection; version 2.1.0 -- https://github.com/sindresorhus/hard-rejection#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -17348,10 +18530,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** import-local; version 2.0.0 -- https://github.com/sindresorhus/import-local#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** indent-string; version 4.0.0 -- https://github.com/sindresorhus/indent-string#readme
+** indent-string; version 3.2.0 -- https://github.com/sindresorhus/indent-string#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** indent-string; version 3.2.0 -- https://github.com/sindresorhus/indent-string#readme
+** indent-string; version 4.0.0 -- https://github.com/sindresorhus/indent-string#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** invert-kv; version 2.0.0 -- https://github.com/sindresorhus/invert-kv#readme
@@ -17382,10 +18564,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** locate-path; version 5.0.0 -- https://github.com/sindresorhus/locate-path#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** log-symbols; version 2.2.0 -- https://github.com/sindresorhus/log-symbols#readme
+** log-symbols; version 3.0.0 -- https://github.com/sindresorhus/log-symbols#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** log-symbols; version 3.0.0 -- https://github.com/sindresorhus/log-symbols#readme
+** log-symbols; version 2.2.0 -- https://github.com/sindresorhus/log-symbols#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** lowercase-keys; version 2.0.0 -- https://github.com/sindresorhus/lowercase-keys#readme
@@ -17408,10 +18590,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** meow; version 4.0.1 -- https://github.com/sindresorhus/meow#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** mimic-fn; version 2.1.0 -- https://github.com/sindresorhus/mimic-fn#readme
+** mimic-fn; version 1.2.0 -- https://github.com/sindresorhus/mimic-fn#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** mimic-fn; version 1.2.0 -- https://github.com/sindresorhus/mimic-fn#readme
+** mimic-fn; version 2.1.0 -- https://github.com/sindresorhus/mimic-fn#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** mimic-response; version 1.0.1 -- https://github.com/sindresorhus/mimic-response#readme
@@ -17420,12 +18602,12 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** multimatch; version 3.0.0 -- https://github.com/sindresorhus/multimatch#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** normalize-url; version 2.0.1 -- https://github.com/sindresorhus/normalize-url#readme
+** normalize-url; version 3.3.0 -- https://github.com/sindresorhus/normalize-url#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** normalize-url; version 4.5.0 -- https://github.com/sindresorhus/normalize-url#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** normalize-url; version 3.3.0 -- https://github.com/sindresorhus/normalize-url#readme
+** normalize-url; version 2.0.1 -- https://github.com/sindresorhus/normalize-url#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** onetime; version 5.1.0 -- https://github.com/sindresorhus/onetime#readme
@@ -17487,10 +18669,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** parent-module; version 1.0.1 -- https://github.com/sindresorhus/parent-module#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** parse-json; version 5.0.0 -- https://github.com/sindresorhus/parse-json#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** parse-json; version 4.0.0 -- https://github.com/sindresorhus/parse-json#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** parse-json; version 5.0.0 -- https://github.com/sindresorhus/parse-json#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** path-exists; version 4.0.0 -- https://github.com/sindresorhus/path-exists#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -17501,10 +18683,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** path-type; version 3.0.0 -- https://github.com/sindresorhus/path-type#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** pify; version 4.0.1 -- https://github.com/sindresorhus/pify#readme
+** pify; version 3.0.0 -- https://github.com/sindresorhus/pify#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** pify; version 3.0.0 -- https://github.com/sindresorhus/pify#readme
+** pify; version 4.0.1 -- https://github.com/sindresorhus/pify#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** pkg-dir; version 3.0.0 -- https://github.com/sindresorhus/pkg-dir#readme
@@ -17516,12 +18698,10 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** query-string; version 5.1.1 -- https://github.com/sindresorhus/query-string#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** quick-lru; version 4.0.1 -- https://github.com/sindresorhus/quick-lru#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** quick-lru; version 1.1.0 -- https://github.com/sindresorhus/quick-lru#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** read-pkg; version 5.2.0 -- https://github.com/sindresorhus/read-pkg#readme
+** quick-lru; version 4.0.1 -- https://github.com/sindresorhus/quick-lru#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg; version 4.0.1 -- https://github.com/sindresorhus/read-pkg#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -17529,13 +18709,15 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg; version 3.0.0 -- https://github.com/sindresorhus/read-pkg#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** read-pkg; version 5.2.0 -- https://github.com/sindresorhus/read-pkg#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg-up; version 4.0.0 -- https://github.com/sindresorhus/read-pkg-up#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** read-pkg-up; version 7.0.1 -- https://github.com/sindresorhus/read-pkg-up#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** read-pkg-up; version 3.0.0 -- https://github.com/sindresorhus/read-pkg-up#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** read-pkg-up; version 7.0.1 -- https://github.com/sindresorhus/read-pkg-up#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** redent; version 3.0.0 -- https://github.com/sindresorhus/redent#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -17558,30 +18740,30 @@ Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** string-length; version 2.0.0 -- https://github.com/sindresorhus/string-length#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** string-width; version 4.2.0 -- https://github.com/sindresorhus/string-width#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** string-width; version 2.1.1 -- https://github.com/sindresorhus/string-width#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** string-width; version 3.1.0 -- https://github.com/sindresorhus/string-width#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** string-width; version 4.2.0 -- https://github.com/sindresorhus/string-width#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** strip-ansi; version 5.2.0 -- https://github.com/chalk/strip-ansi#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-ansi; version 6.0.0 -- https://github.com/chalk/strip-ansi#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-ansi; version 4.0.0 -- https://github.com/chalk/strip-ansi#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** strip-ansi; version 5.2.0 -- https://github.com/chalk/strip-ansi#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-indent; version 3.0.0 -- https://github.com/sindresorhus/strip-indent#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** strip-json-comments; version 3.1.0 -- https://github.com/sindresorhus/strip-json-comments#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** supports-color; version 7.1.0 -- https://github.com/chalk/supports-color#readme
+** supports-color; version 5.5.0 -- https://github.com/chalk/supports-color#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** supports-color; version 6.1.0 -- https://github.com/chalk/supports-color#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** supports-color; version 5.5.0 -- https://github.com/chalk/supports-color#readme
+** supports-color; version 7.1.0 -- https://github.com/chalk/supports-color#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** temp-write; version 3.4.0 -- https://github.com/sindresorhus/temp-write#readme
 (c) Sindre Sorhus (https://sindresorhus.com)
@@ -17682,6 +18864,39 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
+** fresh; version 0.5.2 -- https://github.com/jshttp/fresh#readme
+Copyright (c) 2012 TJ Holowaychuk
+Copyright (c) 2016-2017 Douglas Christopher Wilson
+Copyright (c) 2012 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2016-2017 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+(The MIT License)
+
+Copyright (c) 2012 TJ Holowaychuk <tj@vision-media.ca>
+Copyright (c) 2016-2017 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** when; version 3.7.8 -- http://cujojs.com
 (c) copyright 2013
 (c) copyright 2010-2014
@@ -17718,9 +18933,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
-** xml2js; version 0.4.23 -- https://github.com/Leonidas-from-XIV/node-xml2js
-Copyright 2010, 2011, 2012, 2013.
 ** xml2js; version 0.4.19 -- https://github.com/Leonidas-from-XIV/node-xml2js
+Copyright 2010, 2011, 2012, 2013.
+** xml2js; version 0.4.23 -- https://github.com/Leonidas-from-XIV/node-xml2js
 Copyright 2010, 2011, 2012, 2013.
 
 Copyright 2010, 2011, 2012, 2013. All rights reserved.
@@ -18212,6 +19427,37 @@ SOFTWARE.
 
 ------
 
+** send; version 0.17.1 -- https://github.com/pillarjs/send#readme
+Copyright (c) 2012 TJ Holowaychuk
+Copyright (c) 2014-2016 Douglas Christopher Wilson
+
+(The MIT License)
+
+Copyright (c) 2012 TJ Holowaychuk
+Copyright (c) 2014-2016 Douglas Christopher Wilson
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+------
+
 ** console-browserify; version 1.2.0 -- https://github.com/browserify/console-browserify
 Copyright (c) 2012 Raynos.
 ** duplexer; version 0.1.1 -- https://github.com/Raynos/duplexer
@@ -18359,9 +19605,9 @@ SOFTWARE.
 Copyright (c) 2011 Dominic Tarr
 ** map-stream; version 0.1.0 -- http://github.com/dominictarr/map-stream
 Copyright (c) 2011 Dominic Tarr
-** split; version 0.3.3 -- http://github.com/dominictarr/split
-Copyright (c) 2011 Dominic Tarr
 ** split; version 1.0.1 -- http://github.com/dominictarr/split
+Copyright (c) 2011 Dominic Tarr
+** split; version 0.3.3 -- http://github.com/dominictarr/split
 Copyright (c) 2011 Dominic Tarr
 
 Copyright (c) 2011 Dominic Tarr
@@ -18472,11 +19718,11 @@ THE SOFTWARE.
 
 ------
 
+** extsprintf; version 1.3.0 -- https://github.com/davepacheco/node-extsprintf
+Copyright (c) 2012, Joyent, Inc.
 ** extsprintf; version 1.4.0 -- https://github.com/davepacheco/node-extsprintf#readme
 Copyright (c) 2012, Joyent, Inc.
 Copyright (c) 2017, Joyent, Inc.
-** extsprintf; version 1.3.0 -- https://github.com/davepacheco/node-extsprintf
-Copyright (c) 2012, Joyent, Inc.
 ** jsprim; version 1.4.1 -- https://github.com/joyent/node-jsprim#readme
 Copyright (c) 2012, Joyent, Inc.
 
@@ -18667,9 +19913,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------
 
-** form-data; version 2.3.3 -- https://github.com/form-data/form-data#readme
-Copyright (c) 2012 Felix Geisendorfer (felix@debuggable.com) and contributors
 ** form-data; version 2.5.1 -- https://github.com/form-data/form-data#readme
+Copyright (c) 2012 Felix Geisendorfer (felix@debuggable.com) and contributors
+** form-data; version 2.3.3 -- https://github.com/form-data/form-data#readme
 Copyright (c) 2012 Felix Geisendorfer (felix@debuggable.com) and contributors
 ** form-data; version 3.0.0 -- https://github.com/form-data/form-data#readme
 Copyright (c) 2012 Felix Geisendorfer (felix@debuggable.com) and contributors
@@ -18693,6 +19939,54 @@ Copyright (c) 2012 Felix Geisendörfer (felix@debuggable.com) and contributors
  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
+
+
+------
+
+** node-gyp; version 3.8.0 -- https://github.com/nodejs/node-gyp#readme
+(c) Microsoft Corporation
+Copyright 2013 Google Inc.
+Copyright 2014 Google Inc.
+Copyright (c) 2009 Google Inc.
+Copyright (c) 2011 Google Inc.
+Copyright (c) 2012 Google Inc.
+Copyright (c) 2013 Google Inc.
+Copyright (c) 2014 Google Inc.
+Copyright 2017 - Refael Ackermann
+Copyright 2013 The Chromium Authors.
+Copyright (c) 2009 Raymond Hettinger.
+Copyright ( (c ) )? (year)s Google Inc
+Copyright (c) 2012 The Chromium Authors.
+Copyright (c) 2016 Ben Noordhuis <info@bnoordhuis.nl>
+Copyright (c) 2012 Nathan Rajlich <nathan@tootallnate.net>
+
+Copyright (c) 2009 Google Inc. All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+   * Neither the name of Google Inc. nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ------
@@ -18751,6 +20045,46 @@ THE SOFTWARE.
 
 ------
 
+** @oracle/suitecloud-cli-localserver-command; version 1.0.3 -- 
+
+Copyright (c) 2020 Oracle and/or its affiliates.
+
+The Universal Permissive License (UPL), Version 1.0
+
+Subject to the condition set forth below, permission is hereby granted to any
+person obtaining a copy of this software, associated documentation and/or data
+(collectively the "Software"), free of charge and under any and all copyright
+rights in the Software, and any and all patent rights owned or freely
+licensable by each licensor hereunder covering either (i) the unmodified
+Software as contributed to or provided by such licensor, or (ii) the Larger
+Works (as defined below), to deal in both
+
+(a) the Software, and
+(b) any piece of software and/or hardware listed in the lrgrwrks.txt file if
+one is included with the Software (each a “Larger Work” to which the Software
+is contributed by such licensors),
+
+without restriction, including without limitation the rights to copy, create
+derivative works of, display, perform, and distribute the Software and make,
+use, sell, offer for sale, import, export, have made, and have sold the
+Software and the Larger Work(s), and to sublicense the foregoing rights on
+either these or other terms.
+
+This license is subject to the following condition:
+The above copyright notice and either this complete permission notice or at
+a minimum a reference to the UPL must be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+------
+
 ** humanize-duration; version 3.23.0 -- https://github.com/EvanHahn/HumanizeDuration.js
 ** tweetnacl; version 0.14.5 -- https://tweetnacl.js.org
 
@@ -18806,6 +20140,71 @@ Copyright (c) 2014 Azer Koculu <azer@roadbeats.com>
 Copyright (c) 2007 Kris Zyp SitePen (www.sitepen.com)
 
 AFL-2.1 OR BSD-3-Clause
+
+------
+
+** amdefine; version 1.0.1 -- http://github.com/jrburke/amdefine
+Copyright (c) 2011-2016, The Dojo Foundation
+
+amdefine is released under two licenses: new BSD, and MIT. You may pick the
+license that best suits your development needs. The text of both licenses are
+provided below.
+
+
+The "New" BSD License:
+----------------------
+
+Copyright (c) 2011-2016, The Dojo Foundation
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+  * Redistributions of source code must retain the above copyright notice, this
+    list of conditions and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+  * Neither the name of the Dojo Foundation nor the names of its contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+MIT License
+-----------
+
+Copyright (c) 2011-2016, The Dojo Foundation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
 
 ------
 
@@ -19193,11 +20592,11 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ** type-fest; version 0.6.0 -- https://github.com/sindresorhus/type-fest#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
-** type-fest; version 0.8.1 -- https://github.com/sindresorhus/type-fest#readme
-Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** type-fest; version 0.7.1 -- https://github.com/sindresorhus/type-fest#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 ** type-fest; version 0.11.0 -- https://github.com/sindresorhus/type-fest#readme
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+** type-fest; version 0.8.1 -- https://github.com/sindresorhus/type-fest#readme
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 
 MIT License
@@ -19499,6 +20898,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ------
 
+** @salto-io/suitecloud-cli; version 1.0.2-salto-8 -- 
 ** jsforce; version https: -- 
 ** jsforce-types; version https: -- 
 

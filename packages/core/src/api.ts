@@ -221,8 +221,8 @@ export const fetch: FetchFunc = async (
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     const state = await workspace.state()
-    state.override(elements)
-    state.overridePathIndex(unmergedElements)
+    await state.override(elements)
+    await state.overridePathIndex(unmergedElements)
     log.debug(`finish to override state with ${elements.length} elements`)
     return {
       changes,

@@ -53,7 +53,7 @@ const buildMockWorkspace = async (
 ): Promise<Workspace> => {
   const baseDir = naclFile ? path.dirname(naclFile) : 'default_base_dir'
   const filename = naclFile ? path.relative(baseDir, naclFile) : 'default.nacl'
-  let parseResult: parser.ParseResult
+  let parseResult: Required<parser.ParseResult>
   if (buffer) {
     parseResult = await parse(Buffer.from(buffer), filename, {})
   } else {

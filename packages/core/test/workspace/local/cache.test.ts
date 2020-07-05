@@ -21,6 +21,7 @@ import { parseCache, parser, staticFiles } from '@salto-io/workspace'
 import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
 const { parseResultCache } = parseCache
+type SourceMap = parser.SourceMap
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -110,8 +111,10 @@ describe('localParseResultCache', () => {
           parseResult.elements[0].elemID.name
         )
         expect(parseResultFromCache.errors).toEqual([])
+        expect(parseResultFromCache.sourceMap).toBeDefined()
+        const sm = parseResultFromCache.sourceMap as SourceMap
         expect(
-          wu(parseResultFromCache.sourceMap.entries()).toArray()
+          wu(sm.entries()).toArray()
         ).toEqual(
           wu(parseResult.sourceMap.entries()).toArray()
         )

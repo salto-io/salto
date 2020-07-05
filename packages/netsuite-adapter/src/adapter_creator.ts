@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  Adapter, BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, AdapterInstallResult,
+  Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -22,8 +22,11 @@ import _ from 'lodash'
 import { SDKDownloadService } from '@salto-io/suitecloud-cli'
 import changeValidator from './change_validator'
 import NetsuiteClient, { Credentials } from './client/client'
-import NetsuiteAdapter, { NetsuiteConfig } from './adapter'
-import { NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST } from './constants'
+import NetsuiteAdapter from './adapter'
+import { configType, NetsuiteConfig } from './config'
+import {
+  NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+} from './constants'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -39,18 +42,6 @@ const credentialsType = new ObjectType({
   },
   annotationTypes: {},
   annotations: {},
-})
-
-const configType = new ObjectType({
-  elemID: configID,
-  fields: {
-    [TYPES_TO_SKIP]: {
-      type: new ListType(BuiltinTypes.STRING),
-    },
-    [FILE_PATHS_REGEX_SKIP_LIST]: {
-      type: new ListType(BuiltinTypes.STRING),
-    },
-  },
 })
 
 const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
@@ -76,6 +67,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   validateRegularExpressions(filePathsRegexSkipList)
   const netsuiteConfig = {
     [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
+    [FETCH_ALL_TYPES_AT_ONCE]: config?.value?.[FETCH_ALL_TYPES_AT_ONCE],
     [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
   }
   Object.keys(config?.value ?? {})

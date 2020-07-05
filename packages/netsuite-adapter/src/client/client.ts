@@ -100,6 +100,7 @@ const FILE_CABINET_DIR = 'FileCabinet'
 const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
+const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 export const SDF_PATH_SEPARATOR = '/'
 
@@ -201,6 +202,12 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
 type Project = {
   projectName: string
   executor: CommandActionExecutorType
+}
+
+export type GetCustomObjectsResult = {
+  elements: CustomTypeInfo[]
+  failedTypes: string[]
+  failedToFetchAllAtOnce: boolean
 }
 
 export default class NetsuiteClient {
@@ -319,29 +326,81 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async listCustomObjects(): Promise<CustomizationInfo[]> {
-    const project = await this.initProject()
-    await NetsuiteClient.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
-      destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
-      type: 'ALL',
-      scriptid: 'ALL',
-      excludefiles: true,
-    }, project.executor)
-
-    const objectsDirPath = NetsuiteClient.getObjectsDirPath(project.projectName)
+  async getCustomObjects(typeNames: string[], fetchAllAtOnce: boolean):
+    Promise<GetCustomObjectsResult> {
+    const { executor, projectName } = await this.initProject()
+    const { failedToFetchAllAtOnce, failedTypes } = await NetsuiteClient.importObjects(typeNames,
+      fetchAllAtOnce, executor)
+    const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
     const scriptIdToFiles = _.groupBy(filenames, filename => filename.split(FILE_SEPARATOR)[0])
-    return Promise.all(Object.entries(scriptIdToFiles).map(async ([scriptId, objectFileNames]) => {
-      const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
-        filename => filename.includes(ADDITIONAL_FILE_PATTERN))
-      const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
-      if (_.isUndefined(additionalFilename)) {
-        return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
+    const elements = await Promise.all(
+      Object.entries(scriptIdToFiles).map(async ([scriptId, objectFileNames]) => {
+        const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
+          filename => filename.includes(ADDITIONAL_FILE_PATTERN))
+        const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
+        if (_.isUndefined(additionalFilename)) {
+          return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
+        }
+        const additionalFileContent = readFile(osPath.resolve(objectsDirPath, additionalFilename))
+        return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
+          additionalFilename.split(FILE_SEPARATOR)[2], (await additionalFileContent).toString())
+      })
+    )
+    return { elements, failedTypes, failedToFetchAllAtOnce }
+  }
+
+  private static async importObjects(typeNames: string[], fetchAllAtOnce: boolean,
+    executor: CommandActionExecutorType):
+    Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: string[] }> {
+    const importAllAtOnce = async (): Promise<boolean> => {
+      log.debug('Fetching all custom objects at once')
+      try {
+        await NetsuiteClient.runImportObjectsCommand(ALL, executor)
+        return true
+      } catch (e) {
+        log.warn(`Attempt to fetch all custom objects has failed due to: ${e}`)
+        return false
       }
-      const additionalFileContent = readFile(osPath.resolve(objectsDirPath, additionalFilename))
-      return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
-        additionalFilename.split(FILE_SEPARATOR)[2], (await additionalFileContent).toString())
-    }))
+    }
+
+    if (fetchAllAtOnce && await importAllAtOnce()) {
+      return { failedToFetchAllAtOnce: false, failedTypes: [] }
+    }
+    return {
+      failedToFetchAllAtOnce: fetchAllAtOnce,
+      failedTypes: await NetsuiteClient.importObjectsByTypes(typeNames, executor),
+    }
+  }
+
+  private static async importObjectsByTypes(typeNames: string[],
+    executor: CommandActionExecutorType): Promise<string[]> {
+    const failedTypes: string[] = []
+    log.debug('Fetching custom objects one by one')
+    await typeNames.reduce(
+      (prevRes, typeName) =>
+        prevRes.then(async () => {
+          log.debug(`Fetching objects of type: ${typeName}`)
+          try {
+            await NetsuiteClient.runImportObjectsCommand(typeName, executor)
+          } catch (e) {
+            log.warn(`Failed to fetch objects of type ${typeName} failed due to ${e}`)
+            failedTypes.push(typeName)
+          }
+        }),
+      Promise.resolve(),
+    )
+    return failedTypes
+  }
+
+  private static async runImportObjectsCommand(type: string, executor: CommandActionExecutorType):
+    Promise<OperationResult> {
+    return NetsuiteClient.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
+      destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
+      type,
+      scriptid: ALL,
+      excludefiles: true,
+    }, executor)
   }
 
   private static async listFilePaths(executor: CommandActionExecutorType): Promise<string[]> {

@@ -29,17 +29,17 @@ import {
 import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
-import { SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST } from './constants'
+import {
+  SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+} from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import { FilterCreator } from './filter'
+import {
+  getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
+} from './config'
 
 const log = logger(module)
 const { makeArray } = collections.array
-
-export type NetsuiteConfig = {
-  [TYPES_TO_SKIP]?: string[]
-  [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
-}
 
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
@@ -49,6 +49,8 @@ export interface NetsuiteAdapterParams {
   typesToSkip?: string[]
   // File paths regular expression that we skip their fetch
   filePathRegexSkipList?: string[]
+  // Determines whether to attempt fetching all custom objects in a single call or type by type
+  fetchAllTypesAtOnce?: boolean
   // callback function to get an existing elemId or create a new one by the ServiceIds values
   getElemIdFunc?: ElemIdGetter
   // config that is determined by the user
@@ -60,6 +62,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private filtersCreators: FilterCreator[]
   private readonly typesToSkip: string[]
   private readonly filePathRegexSkipList: RegExp[]
+  private readonly fetchAllTypesAtOnce: boolean
+  private readonly userConfig: NetsuiteConfig
   private getElemIdFunc?: ElemIdGetter
 
   public constructor({
@@ -80,6 +84,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.filePathRegexSkipList = filePathRegexSkipList
       .concat(makeArray(config[FILE_PATHS_REGEX_SKIP_LIST]))
       .map(e => new RegExp(e))
+    this.fetchAllTypesAtOnce = config[FETCH_ALL_TYPES_AT_ONCE] ?? true
+    this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
   }
 
@@ -88,15 +94,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   public async fetch(): Promise<FetchResult> {
-    const customObjects = this.client.listCustomObjects().catch(e => {
-      log.error('failed to list custom objects. reason: %o', e)
-      return [] as CustomizationInfo[]
-    })
+    const customTypesToFetch = _.pull(Object.keys(customTypes), ...this.typesToSkip)
+    const getCustomObjectsResult = this.client.getCustomObjects(customTypesToFetch,
+      this.fetchAllTypesAtOnce)
     const fileCabinetContent = this.client.importFileCabinetContent(this.filePathRegexSkipList)
       .catch(e => {
         log.error('failed to import file cabinet content. reason: %o', e)
         return [] as CustomizationInfo[]
       })
+    const {
+      elements: customObjects,
+      failedTypes,
+      failedToFetchAllAtOnce,
+    } = await getCustomObjectsResult
+
     const customizationInfos = _.flatten(await Promise.all([customObjects, fileCabinetContent]))
     const instances = customizationInfos.map(customizationInfo => {
       const type = customTypes[customizationInfo.typeName]
@@ -106,7 +117,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }).filter(isInstanceElement)
     const elements = [...getAllTypes(), ...instances]
     this.runFiltersOnFetch(elements)
-    return { elements }
+    const config = getConfigFromConfigChanges({
+      ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
+      ...(!_.isEmpty(failedTypes) ? { [TYPES_TO_SKIP]: failedTypes } : {}),
+    }, this.userConfig)
+
+    if (_.isUndefined(config)) {
+      return { elements }
+    }
+    return { elements, updatedConfig: { config, message: STOP_MANAGING_ITEMS_MSG } }
   }
 
   private shouldSkipType(type: ObjectType): boolean {

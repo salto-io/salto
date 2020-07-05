@@ -14,17 +14,18 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Value, ObjectType, ElemID, InstanceElement, Values, TypeElement, Element, isObjectType, ChangeGroup, getChangeElement } from '@salto-io/adapter-api'
+import { Value, ObjectType, ElemID, InstanceElement, Values, TypeElement, Element, isObjectType, ChangeGroup, getChangeElement, isInstanceElement } from '@salto-io/adapter-api'
 import {
   findElement,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { MetadataInfo } from 'jsforce'
+import { SalesforceRecord } from '../src/client/types'
 import { filtersRunner } from '../src/filter'
 import { SALESFORCE } from '../src/constants'
 import SalesforceAdapter, { DEFAULT_FILTERS } from '../src/adapter'
 import SalesforceClient from '../src/client/client'
-import { createInstanceElement, metadataType, apiName, createMetadataTypeElements } from '../src/transformers/transformer'
+import { createInstanceElement, metadataType, apiName, createMetadataTypeElements, isCustomObject } from '../src/transformers/transformer'
 import { ConfigChangeSuggestion, FilterContext } from '../src/types'
 
 const { makeArray } = collections.array
@@ -36,6 +37,21 @@ Promise<MetadataInfo | undefined> => {
     return instanceInfo
   }
   return undefined
+}
+
+export const getRecordOfInstance = async (
+  client: SalesforceClient,
+  instance: InstanceElement,
+  additionalFields = [] as string[],
+): Promise<SalesforceRecord | undefined> => {
+  const selectFieldsString = _.uniq(['Id'].concat(additionalFields)).join(',')
+  const queryString = `SELECT ${selectFieldsString} FROM ${apiName(instance.type)} WHERE Id = '${instance.value.Id}'`
+  const queryResult = await client.queryAll(queryString)
+  const records = _.flatten(await collections.asynciterable.mapAsync(
+    queryResult,
+    (r: SalesforceRecord[]) => r
+  ))
+  return records[0]
 }
 
 export const objectExists = async (client: SalesforceClient, type: string, name: string,
@@ -92,24 +108,42 @@ export const createInstance = async (client: SalesforceClient, value: Values,
   return createInstanceElement(value, objectType)
 }
 
-export const getInstance = async (client: SalesforceClient, type: string | ObjectType,
+export const getMetadataInstance = async (client: SalesforceClient, type: string | ObjectType,
   fullName: string): Promise<InstanceElement | undefined> => {
   const md = await getMetadata(client, isObjectType(type) ? metadataType(type) : type, fullName)
   return _.isUndefined(md) ? undefined : createInstance(client, md, type)
 }
 
-export const removeIfAlreadyExists = async (client: SalesforceClient, type: string,
-  fullName: string): Promise<void> => {
+export const removeMetadataIfAlreadyExists = async (
+  client: SalesforceClient,
+  type: string,
+  fullName: string
+): Promise<void> => {
   if (await getMetadata(client, type, fullName)) {
     await client.delete(type, fullName)
   }
 }
 
-export const removeElementIfAlreadyExists = async (client: SalesforceClient,
-  element: InstanceElement | ObjectType): Promise<void> => {
-  const mdType = metadataType(element)
-  const fullName = apiName(element)
-  return removeIfAlreadyExists(client, mdType, fullName)
+const removeRecordIfAlreadyExists = async (
+  client: SalesforceClient,
+  instance: InstanceElement
+): Promise<void> => {
+  if (await getRecordOfInstance(client, instance) !== undefined) {
+    await client.bulkLoadOperation(apiName(instance.type), 'delete', [{ Id: instance.value.Id }])
+  }
+}
+
+export const removeElementIfAlreadyExists = async (
+  client: SalesforceClient,
+  element: InstanceElement | ObjectType
+): Promise<void> => {
+  if (isInstanceElement(element) && isCustomObject(element.type)) {
+    await removeRecordIfAlreadyExists(client, element)
+  } else {
+    const mdType = metadataType(element)
+    const fullName = apiName(element)
+    await removeMetadataIfAlreadyExists(client, mdType, fullName)
+  }
 }
 
 export const createElement = async <T extends InstanceElement | ObjectType>(
@@ -128,15 +162,17 @@ export const createElement = async <T extends InstanceElement | ObjectType>(
 }
 
 export const createElementAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
-  element: InstanceElement | ObjectType): Promise<MetadataInfo> => {
+  element: InstanceElement | ObjectType): Promise<void> => {
   await createElement(adapter, element)
-  const md = await getMetadataFromElement(client, element)
-  expect(md).toBeDefined()
-  return md as MetadataInfo
+  if (isInstanceElement(element) && isCustomObject(element.type)) {
+    expect(await getRecordOfInstance(client, element)).toBeDefined()
+  } else {
+    expect(await getMetadataFromElement(client, element)).toBeDefined()
+  }
 }
 
 export const createAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
-  type: string, md: MetadataInfo): Promise<InstanceElement> => {
+  type: string | ObjectType, md: MetadataInfo): Promise<InstanceElement> => {
   const instance = await createInstance(client, md, type)
   await createElementAndVerify(adapter, client, instance)
   return instance
@@ -159,10 +195,17 @@ export const removeElement = async <T extends InstanceElement | ObjectType>(
 export const removeElementAndVerify = async (adapter: SalesforceAdapter, client: SalesforceClient,
   element: InstanceElement | ObjectType): Promise<void> => {
   await removeElement(adapter, element)
-  expect(await getMetadataFromElement(client, element)).toBeUndefined()
+  if (isInstanceElement(element) && isCustomObject(element.type)) {
+    expect(await getRecordOfInstance(client, element)).toBeUndefined()
+  } else {
+    expect(await getMetadataFromElement(client, element)).toBeUndefined()
+  }
 }
 
 export const runFiltersOnFetch = async (
-  client: SalesforceClient, config: FilterContext, fetchResult: Element[]
+  client: SalesforceClient,
+  context: FilterContext,
+  elements: Element[],
+  filterCreators = DEFAULT_FILTERS
 ): Promise<void | ConfigChangeSuggestion[]> =>
-  filtersRunner(client, config, DEFAULT_FILTERS).onFetch(fetchResult)
+  filtersRunner(client, context, filterCreators).onFetch(elements)

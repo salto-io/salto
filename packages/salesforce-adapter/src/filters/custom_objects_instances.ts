@@ -41,24 +41,6 @@ const buildQueryString = (type: ObjectType): string => {
   return `SELECT ${selectStr} FROM ${apiName(type)}`
 }
 
-const consumeAsyncIterable = async <Values, InstanceElement>(
-  itr: { [Symbol.asyncIterator]: () => AsyncIterator<Values[]> },
-  transformer: (t: Values[]) => InstanceElement[],
-): Promise<Array<InstanceElement>> => {
-  const res: InstanceElement[] = []
-  const iter = itr[Symbol.asyncIterator]()
-  const next = async (): Promise<void> => {
-    const curr = await iter.next()
-    if (curr.done) return undefined
-    if (_.isArray(curr.value) && curr.value.length > 0) {
-      res.push(...transformer(curr.value))
-    }
-    return next()
-  }
-  await next()
-  return res
-}
-
 const getObjectInstances = async (
   client: SalesforceClient,
   object: ObjectType
@@ -97,12 +79,12 @@ const getObjectInstances = async (
         }))
     }
 
-    const instanceValues = transformNameValues(records)
+    const instanceValues = transformNameValues(makeArray(records))
     return instanceValues.map(recordToInstance)
   }
   const queryString = buildQueryString(object)
   const recordsIterable = await client.queryAll(queryString)
-  return consumeAsyncIterable(recordsIterable, recordsToInstances)
+  return _.flatten(await collections.asynciterable.mapAsync(recordsIterable, recordsToInstances))
 }
 
 const getObjectTypesInstances = async (

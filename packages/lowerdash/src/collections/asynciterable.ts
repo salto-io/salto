@@ -26,3 +26,14 @@ export const findAsync = async <T>(
   }
   return undefined
 }
+
+export const mapAsync = async <T, U>(
+  itr: { [Symbol.asyncIterator]: () => AsyncIterator<T> },
+  mapFunc: (t: T) => U,
+): Promise<Array<U>> => {
+  const res: U[] = []
+  for await (const curr of itr) {
+    res.push(mapFunc(curr))
+  }
+  return res
+}

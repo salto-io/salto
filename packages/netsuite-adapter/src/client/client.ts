@@ -30,6 +30,7 @@ import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
+import he from 'he'
 import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
@@ -129,8 +130,11 @@ export interface FolderCustomizationInfo extends CustomizationInfo {
 
 export const convertToCustomizationInfo = (xmlContent: string):
   CustomizationInfo => {
-  const parsedXmlValues = xmlParser.parse(xmlContent,
-    { attributeNamePrefix: ATTRIBUTE_PREFIX, ignoreAttributes: false })
+  const parsedXmlValues = xmlParser.parse(xmlContent, {
+    attributeNamePrefix: ATTRIBUTE_PREFIX,
+    ignoreAttributes: false,
+    tagValueProcessor: val => he.decode(val),
+  })
   const typeName = Object.keys(parsedXmlValues)[0]
   return { typeName, values: parsedXmlValues[typeName] }
 }

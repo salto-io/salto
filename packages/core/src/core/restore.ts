@@ -39,7 +39,7 @@ const splitChangeByPath = async (
   index: PathIndex
 ): Promise<DetailedChange[]> => {
   const changeHints = _.uniqWith(index.get(change.id.getFullName()), _.isEqual)
-  if (!changeHints) {
+  if (_.isEmpty(changeHints)) {
     return [change]
   }
   return Promise.all(changeHints.map(async hint => {

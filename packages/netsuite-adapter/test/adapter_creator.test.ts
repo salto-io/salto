@@ -18,7 +18,9 @@ import * as cli from '@salto-io/suitecloud-cli'
 import { adapter } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
-import { TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST } from '../src/constants'
+import {
+  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+} from '../src/constants'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -44,6 +46,7 @@ describe('NetsuiteAdapter creator', () => {
     {
       [TYPES_TO_SKIP]: ['test1'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
+      [FETCH_ALL_TYPES_AT_ONCE]: false,
       notExist: ['not exist'],
     }
   )
@@ -80,6 +83,7 @@ describe('NetsuiteAdapter creator', () => {
         config: {
           [TYPES_TO_SKIP]: ['test1'],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
+          [FETCH_ALL_TYPES_AT_ONCE]: false,
         },
         getElemIdFunc: mockGetElemIdFunc,
       })

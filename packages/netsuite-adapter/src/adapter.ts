@@ -95,8 +95,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
    */
   public async fetch(): Promise<FetchResult> {
     const customTypesToFetch = _.pull(Object.keys(customTypes), ...this.typesToSkip)
-    const listCustomObjectsResult = this.client
-      .listCustomObjects(customTypesToFetch, this.fetchAllTypesAtOnce)
+    const getCustomObjectsResult = this.client.getCustomObjects(customTypesToFetch,
+      this.fetchAllTypesAtOnce)
     const fileCabinetContent = this.client.importFileCabinetContent(this.filePathRegexSkipList)
       .catch(e => {
         log.error('failed to import file cabinet content. reason: %o', e)
@@ -106,7 +106,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       elements: customObjects,
       failedTypes,
       failedToFetchAllAtOnce,
-    } = await listCustomObjectsResult
+    } = await getCustomObjectsResult
 
     const customizationInfos = _.flatten(await Promise.all([customObjects, fileCabinetContent]))
     const instances = customizationInfos.map(customizationInfo => {

@@ -46,7 +46,7 @@ export type NetsuiteConfig = {
   [FETCH_ALL_TYPES_AT_ONCE]?: boolean
 }
 
-export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from netsuite. '
+export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite. '
   + 'In order to complete the fetch operation, '
   + 'Salto needs to stop managing these items by applying the following configuration change:'
 

@@ -108,13 +108,6 @@ describe('netsuite client', () => {
   })
 
   const typeNames = ['TypeA', 'TypeB']
-  const listObjectsCommandMatcher = expect
-    .objectContaining({
-      commandName: COMMANDS.LIST_OBJECTS,
-      arguments: {
-        type: 'TypeA TypeB',
-      },
-    })
   const importObjectsCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
   const listFilesCommandMatcher = expect
@@ -170,7 +163,7 @@ describe('netsuite client', () => {
     })
   })
 
-  describe('listCustomObjects', () => {
+  describe('getCustomObjects', () => {
     let client: NetsuiteClient
     beforeEach(() => {
       client = mockClient()
@@ -183,7 +176,7 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.listCustomObjects(typeNames, true)).rejects.toThrow()
+      await expect(client.getCustomObjects(typeNames, true)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -197,25 +190,56 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.listCustomObjects(typeNames, true)).rejects.toThrow()
+      await expect(client.getCustomObjects(typeNames, true)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
     })
 
-    it('should fail when IMPORT_OBJECTS has failed', async () => {
+    it('should return all types as failedTypes and failedToFetchAllAtOnce when IMPORT_OBJECTS has failed with fetchAllAtOnce', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS
+          && ['TypeA', 'ALL'].includes(context.arguments.type)) {
           return Promise.resolve({ status: 'ERROR' })
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await expect(client.listCustomObjects(typeNames, true)).rejects.toThrow()
-      expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenCalledWith(reuseAuthIdCommandMatcher)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, true)
+      const numberOfCallsToImport = typeNames.length + 1 // 1 stands for import 'ALL'
+      expect(mockExecuteAction)
+        .toHaveBeenCalledTimes(numberOfCallsToImport + 2 /* createProject & setupAccount */)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenCalledWith(importObjectsCommandMatcher)
+      // eslint-disable-next-line no-plusplus
+      for (let i = 0; i < numberOfCallsToImport; i++) {
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(3 + i, importObjectsCommandMatcher)
+      }
+      expect(getCustomObjectsResult.failedTypes).toEqual(['TypeA'])
+      expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
+    })
+
+    it('should return all types as failedTypes and failedToFetchAllAtOnce when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS && context.arguments.type === 'TypeA') {
+          return Promise.resolve({ status: 'ERROR' })
+        }
+        return Promise.resolve({ status: 'SUCCESS' })
+      })
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, false)
+      const numberOfCallsToImport = typeNames.length
+      expect(mockExecuteAction)
+        .toHaveBeenCalledTimes(numberOfCallsToImport + 2 /* createProject & setupAccount */)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
+      expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
+      // eslint-disable-next-line no-plusplus
+      for (let i = 0; i < numberOfCallsToImport; i++) {
+        expect(mockExecuteAction).toHaveBeenNthCalledWith(3 + i, importObjectsCommandMatcher)
+      }
+      expect(getCustomObjectsResult.failedTypes).toEqual(['TypeA'])
+      expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(false)
     })
 
     it('should succeed when SETUP_ACCOUNT has failed only in reuseAuthId', async () => {
@@ -226,32 +250,19 @@ describe('netsuite client', () => {
         }
         return Promise.resolve({ status: 'SUCCESS' })
       })
-      await client.listCustomObjects(typeNames, true)
+      await client.getCustomObjects(typeNames, true)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
     })
 
     it('should succeed', async () => {
-      mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.LIST_OBJECTS) {
-          return Promise.resolve({
-            status: 'SUCCESS',
-            data: [{
-              scriptId: 'a',
-              type: 'TypeA',
-            },
-            {
-              scriptId: 'b',
-              type: 'TypeA',
-            }],
-          })
-        }
-        return Promise.resolve({ status: 'SUCCESS' })
-      })
-      const customizationInfos = await client.listCustomObjects(typeNames, true)
+      mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+      const { elements: customizationInfos, failedToFetchAllAtOnce, failedTypes } = await client
+        .getCustomObjects(typeNames, true)
+      expect(failedToFetchAllAtOnce).toBe(false)
+      expect(failedTypes).toHaveLength(0)
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(customizationInfos).toHaveLength(2)
@@ -274,14 +285,7 @@ describe('netsuite client', () => {
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, expect.objectContaining({
-        commandName: COMMANDS.IMPORT_OBJECTS,
-        arguments: expect.objectContaining({
-          type: 'ALL',
-          scriptid: 'a b',
-        }),
-      }))
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
     })
   })

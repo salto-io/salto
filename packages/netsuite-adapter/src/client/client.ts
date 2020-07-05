@@ -82,7 +82,6 @@ export type NetsuiteClientOpts = {
 export const COMMANDS = {
   CREATE_PROJECT: 'project:create',
   SETUP_ACCOUNT: 'account:setup',
-  LIST_OBJECTS: 'object:list',
   IMPORT_OBJECTS: 'object:import',
   LIST_FILES: 'file:list',
   IMPORT_FILES: 'file:import',
@@ -100,6 +99,7 @@ const FILE_CABINET_DIR = 'FileCabinet'
 const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
+const ALL = 'ALL'
 const ADDITIONAL_FILE_PATTERN = '.template.'
 export const SDF_PATH_SEPARATOR = '/'
 
@@ -200,7 +200,7 @@ type Project = {
   executor: CommandActionExecutorType
 }
 
-export type ListCustomObjectsResult = {
+export type GetCustomObjectsResult = {
   elements: CustomTypeInfo[]
   failedTypes: string[]
   failedToFetchAllAtOnce: boolean
@@ -322,8 +322,8 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async listCustomObjects(typeNames: string[], fetchAllAtOnce: boolean):
-    Promise<ListCustomObjectsResult> {
+  async getCustomObjects(typeNames: string[], fetchAllAtOnce: boolean):
+    Promise<GetCustomObjectsResult> {
     const { executor, projectName } = await this.initProject()
     const { failedToFetchAllAtOnce, failedTypes } = await NetsuiteClient.importObjects(typeNames,
       fetchAllAtOnce, executor)
@@ -349,21 +349,22 @@ export default class NetsuiteClient {
   private static async importObjects(typeNames: string[], fetchAllAtOnce: boolean,
     executor: CommandActionExecutorType):
     Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: string[] }> {
-    if (fetchAllAtOnce) {
+    const importAllAtOnce = async (): Promise<boolean> => {
       log.debug('Fetching all custom objects at once')
       try {
-        await NetsuiteClient.runImportObjectsCommand('ALL', executor)
-        return { failedToFetchAllAtOnce: false, failedTypes: [] }
+        await NetsuiteClient.runImportObjectsCommand(ALL, executor)
+        return true
       } catch (e) {
         log.warn(`Attempt to fetch all custom objects has failed due to: ${e}`)
-        return {
-          failedToFetchAllAtOnce: true,
-          failedTypes: await NetsuiteClient.importObjectsByTypes(typeNames, executor),
-        }
+        return false
       }
     }
+
+    if (fetchAllAtOnce && await importAllAtOnce()) {
+      return { failedToFetchAllAtOnce: false, failedTypes: [] }
+    }
     return {
-      failedToFetchAllAtOnce: false,
+      failedToFetchAllAtOnce: fetchAllAtOnce,
       failedTypes: await NetsuiteClient.importObjectsByTypes(typeNames, executor),
     }
   }
@@ -393,7 +394,7 @@ export default class NetsuiteClient {
     return NetsuiteClient.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
       destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
       type,
-      scriptid: 'ALL',
+      scriptid: ALL,
       excludefiles: true,
     }, executor)
   }

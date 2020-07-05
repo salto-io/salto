@@ -32,13 +32,13 @@
     "@salto-io/logging": "0.1.18",
     "@salto-io/lowerdash": "0.1.18",
     "@salto-io/suitecloud-cli": "^1.0.2-salto-8",
-    "@types/he": "^1.1.1",
     "fast-xml-parser": "^3.15.0",
     "he": "^1.2.0",
     "lodash": "^4.17.15",
     "wu": "^2.1.0"
   },
   "devDependencies": {
+    "@types/he": "^1.1.1",
     "@types/jest": "^24.0.0",
     "@types/lodash": "^4.14.133",
     "@types/node": "^12.7.1",

@@ -20,7 +20,7 @@ import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
-  CORE_ANNOTATIONS, TypeElement,
+  CORE_ANNOTATIONS, TypeElement, isPrimitiveValue,
 } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 
@@ -613,3 +613,12 @@ export const createDefaultInstanceFromType = (name: string, objectType: ObjectTy
   applyInstancesDefaults([instance])
   return instance
 }
+
+export const JSONSaltoValue = (value: Value): string => JSON.stringify(
+  value,
+  (_key: string, val: Value): unknown => (
+    isPrimitiveValue(val) || _.isPlainObject(val) || _.isArray(val)
+      ? val
+      : val.constructor.name
+  ),
+)

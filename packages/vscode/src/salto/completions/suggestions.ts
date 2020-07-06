@@ -19,7 +19,7 @@ import { TypeElement, Field, isObjectType, isInstanceElement, isPrimitiveType,
   getFieldNames, getFieldType, ElemID, Element,
   isListType, getRestriction } from '@salto-io/adapter-api'
 import { parser } from '@salto-io/workspace'
-import { resolvePath } from '@salto-io/adapter-utils'
+import { resolvePath, JSONSaltoValue } from '@salto-io/adapter-utils'
 import { ContextReference } from '../context'
 
 const { dumpElemID, parseElemID } = parser
@@ -182,7 +182,7 @@ export const valueSuggestions = (
   // Now that we know we are in the actual value - lets use it!
   const restrictionValues = getRestrictionValues(annotatingElem, valueType)
   if (restrictionValues) {
-    return restrictionValues.map(v => JSON.stringify(v))
+    return restrictionValues.map(v => JSONSaltoValue(v))
   }
   const realValueType = isListType(valueType) ? valueType.innerType : valueType
   if (isListType(realValueType)) {

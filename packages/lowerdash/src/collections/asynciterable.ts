@@ -27,13 +27,23 @@ export const findAsync = async <T>(
   return undefined
 }
 
-export const mapAsync = async <T, U>(
+export async function *mapAsync<T, U>(
   itr: AsyncIterable<T>,
-  mapFunc: (t: T) => U,
-): Promise<Array<U>> => {
-  const res: U[] = []
+  mapFunc: (t: T, index: number) => U | Promise<U>,
+): AsyncIterable<U> {
+  let index = 0
   for await (const curr of itr) {
-    res.push(mapFunc(curr))
+    yield mapFunc(curr, index)
+    index += 1
+  }
+}
+
+export const toArrayAsync = async <T>(
+  iterable: AsyncIterable<T>,
+): Promise<Array<T>> => {
+  const res: T[] = []
+  for await (const curr of iterable) {
+    res.push(curr)
   }
   return res
 }

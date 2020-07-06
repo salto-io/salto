@@ -23,7 +23,7 @@ import mockClient from './client'
 
 const { array, asynciterable } = collections
 const { makeArray } = array
-const { mapAsync } = asynciterable
+const { mapAsync, toArrayAsync } = asynciterable
 
 describe('salesforce client', () => {
   beforeEach(() => {
@@ -241,7 +241,10 @@ describe('salesforce client', () => {
     const asyncCounter = async (
       iterator: AsyncIterable<Values[]>
     ): Promise<number> =>
-      _.sum(_.flatten(await mapAsync(iterator, (vals: Values[]) => makeArray(vals).map(_v => 1))))
+      _.sum(_.flatten(await toArrayAsync(await mapAsync(
+        iterator,
+        (vals: Values[]) => makeArray(vals).map(_v => 1)
+      ))))
 
     describe('when all results are in a single query', () => {
       beforeEach(async () => {

@@ -70,7 +70,7 @@ export type NaclFilesSource = ElementsSource & {
   clone: () => NaclFilesSource
 }
 
-type ParsedNaclFile = {
+export type ParsedNaclFile = {
   filename: string
   elements: ElementMap
   errors: ParseError[]
@@ -88,78 +88,88 @@ type NaclFilesState = {
   readonly mergeErrors: MergeError[]
 }
 
+const parseNaclFile = async (naclFile: NaclFile, functions: Functions, cache: ParseResultCache):
+Promise<ParseResult> => {
+  const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
+  let parseResult = await cache.get(key)
+  if (parseResult === undefined) {
+    parseResult = await parse(
+      Buffer.from(naclFile.buffer), naclFile.filename,
+      functions,
+    )
+    await cache.put(key, parseResult)
+  }
+  return parseResult
+}
+
+const parseNaclFiles = async (
+  naclFiles: NaclFile[], functions: Functions, cache: ParseResultCache
+): Promise<ParsedNaclFile[]> =>
+  withLimitedConcurrency(naclFiles.map(naclFile => async () => {
+    const parsed = await parseNaclFile(naclFile, functions, cache)
+    return {
+      timestamp: naclFile.timestamp || Date.now(),
+      filename: naclFile.filename,
+      elements: _.keyBy(parsed.elements, e => e.elemID.getFullName()),
+      errors: parsed.errors,
+    }
+  }), PARSE_CONCURRENCY)
+
+const getFunctions = (staticFileSource: StaticFilesSource): Functions => ({
+  ...getStaticFilesFunctions(staticFileSource), // add future functions here
+})
+
+export const getParsedNaclFiles = async (
+  naclFilesStore: DirectoryStore, staticFileSource: StaticFilesSource, cache: ParseResultCache
+): Promise<ParsedNaclFile[]> => {
+  const naclFiles = _.reject(
+    await naclFilesStore.getFiles(await naclFilesStore.list()),
+    _.isUndefined
+  ) as NaclFile[]
+  log.debug(`going to parse ${naclFiles.length} NaCl files`)
+  return parseNaclFiles(naclFiles, getFunctions(staticFileSource), cache)
+}
+
+const buildNaclFilesState = async (parsedNaclFiles: ParsedNaclFile[], current: ParsedNaclFileMap):
+  Promise<NaclFilesState> => {
+  const newParsed = _.keyBy(parsedNaclFiles, parsed => parsed.filename)
+  const allParsed = _.omitBy({ ...current, ...newParsed },
+    parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
+
+  const elementsIndex: Record<string, string[]> = {}
+  Object.values(allParsed).forEach(naclFile => Object.keys(naclFile.elements)
+    .forEach(key => {
+      elementsIndex[key] = elementsIndex[key] || []
+      elementsIndex[key] = _.uniq([...elementsIndex[key], naclFile.filename])
+    }))
+
+  const mergeResult = mergeElements(
+    _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
+  )
+
+  log.info('workspace has %d elements and %d parsed NaCl files',
+    _.size(elementsIndex), _.size(allParsed))
+  return {
+    parsedNaclFiles: allParsed,
+    mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
+    mergeErrors: mergeResult.errors,
+    elementsIndex,
+  }
+}
+
 const buildNaclFilesSource = (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
   initState?: Promise<NaclFilesState>
 ): NaclFilesSource => {
-  const functions: Functions = {
-    ...getStaticFilesFunctions(staticFileSource), // add future functions here
-  }
-  const parseNaclFile = async (naclFile: NaclFile): Promise<ParseResult> => {
-    const key = { filename: naclFile.filename, lastModified: naclFile.timestamp || Date.now() }
-    let parseResult = await cache.get(key)
-    if (parseResult === undefined) {
-      parseResult = await parse(
-        Buffer.from(naclFile.buffer), naclFile.filename,
-        functions,
-      )
-      await cache.put(key, parseResult)
-    }
-    return parseResult
-  }
-
-  const parseNaclFiles = async (naclFiles: NaclFile[]): Promise<ParsedNaclFile[]> =>
-    withLimitedConcurrency(naclFiles.map(naclFile => async () => {
-      const parsed = await parseNaclFile(naclFile)
-      return {
-        timestamp: naclFile.timestamp || Date.now(),
-        filename: naclFile.filename,
-        elements: _.keyBy(parsed.elements, e => e.elemID.getFullName()),
-        errors: parsed.errors,
-      }
-    }), PARSE_CONCURRENCY)
-
-  const readAllNaclFiles = async (): Promise<NaclFile[]> =>
-    _.reject(
-      await naclFilesStore.getFiles(await naclFilesStore.list()),
-      _.isUndefined
-    ) as NaclFile[]
-
-  const buildNaclFilesState = async (newNaclFiles: NaclFile[], current: ParsedNaclFileMap):
-    Promise<NaclFilesState> => {
-    log.debug(`going to parse ${newNaclFiles.length} NaCl files`)
-    const parsedNaclFiles = await parseNaclFiles(newNaclFiles)
-    const newParsed = _.keyBy(parsedNaclFiles, parsed => parsed.filename)
-    const allParsed = _.omitBy({ ...current, ...newParsed },
-      parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
-
-    const elementsIndex: Record<string, string[]> = {}
-    Object.values(allParsed).forEach(naclFile => Object.keys(naclFile.elements)
-      .forEach(key => {
-        elementsIndex[key] = elementsIndex[key] || []
-        elementsIndex[key] = _.uniq([...elementsIndex[key], naclFile.filename])
-      }))
-
-    const mergeResult = mergeElements(
-      _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
-    )
-
-    log.info('workspace has %d elements and %d parsed NaCl files',
-      _.size(elementsIndex), _.size(allParsed))
-    return {
-      parsedNaclFiles: allParsed,
-      mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
-      mergeErrors: mergeResult.errors,
-      elementsIndex,
-    }
-  }
+  const functions = getFunctions(staticFileSource)
 
   let state = initState
   const getState = (): Promise<NaclFilesState> => {
     if (_.isUndefined(state)) {
-      state = readAllNaclFiles().then(naclFiles => buildNaclFilesState(naclFiles, {}))
+      state = getParsedNaclFiles(naclFilesStore, staticFileSource, cache)
+        .then(parsedFiles => buildNaclFilesState(parsedFiles, {}))
     }
     return state
   }
@@ -179,7 +189,7 @@ const buildNaclFilesSource = (
         log.error('failed to find %s in NaCl file store', filename)
         return new SourceMap()
       }
-      return (await parseNaclFile({ filename, buffer })).sourceMap
+      return (await parseNaclFile({ filename, buffer }, functions, cache)).sourceMap
     }
 
     return cachedParsedResult.sourceMap
@@ -192,8 +202,9 @@ const buildNaclFilesSource = (
     )
     await Promise.all(nonEmptyNaclFiles.map(naclFile => naclFilesStore.set(naclFile)))
     await Promise.all(emptyNaclFiles.map(naclFile => naclFilesStore.delete(naclFile.filename)))
+    const parsedFiles = await parseNaclFiles(naclFiles, functions, cache)
     // Swap state
-    state = buildNaclFilesState(naclFiles, (await getState()).parsedNaclFiles)
+    state = buildNaclFilesState(parsedFiles, (await getState()).parsedNaclFiles)
   }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
@@ -295,8 +306,9 @@ const buildNaclFilesSource = (
 
     removeNaclFiles: async (...names: string[]) => {
       await Promise.all(names.map(name => naclFilesStore.delete(name)))
-      state = buildNaclFilesState(names
-        .map(filename => ({ filename, buffer: '' })), (await getState()).parsedNaclFiles)
+      const parsedFiles = await parseNaclFiles(names
+        .map(filename => ({ filename, buffer: '' })), functions, cache)
+      state = buildNaclFilesState(parsedFiles, (await getState()).parsedNaclFiles)
     },
 
     clear: async () => {
@@ -330,4 +342,8 @@ export const naclFilesSource = (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
-): NaclFilesSource => buildNaclFilesSource(naclFilesStore, cache, staticFileSource)
+  parsedFiles?: ParsedNaclFile[],
+): NaclFilesSource => {
+  const state = parsedFiles ? buildNaclFilesState(parsedFiles, {}) : undefined
+  return buildNaclFilesSource(naclFilesStore, cache, staticFileSource, state)
+}

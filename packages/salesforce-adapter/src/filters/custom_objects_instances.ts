@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
-import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD } from '../constants'
+import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD, OBJECTS_PATH } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types } from '../transformers/transformer'
 import { getNamespace } from './utils'
@@ -68,10 +68,10 @@ const getObjectInstances = async (
       const getInstancePath = (instanceName: string): string[] => {
         const objectNamespace = getNamespace(object)
         if (objectNamespace) {
-          return [SALESFORCE, INSTALLED_PACKAGES_PATH, objectNamespace,
-            RECORDS_PATH, object.elemID.typeName, instanceName]
+          return [SALESFORCE, INSTALLED_PACKAGES_PATH, objectNamespace, OBJECTS_PATH,
+            object.elemID.typeName, RECORDS_PATH, instanceName]
         }
-        return [SALESFORCE, RECORDS_PATH, object.elemID.typeName, instanceName]
+        return [SALESFORCE, OBJECTS_PATH, object.elemID.typeName, RECORDS_PATH, instanceName]
       }
 
       return new InstanceElement(

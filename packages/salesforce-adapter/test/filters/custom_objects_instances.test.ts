@@ -309,8 +309,8 @@ describe('Custom Object Instances filter', () => {
 
       it('should create the instances with record path acccording to object', () => {
         expect(instances[0].path).toEqual(
-          [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
-            RECORDS_PATH, simpleName, TestCustomRecords[0].Id]
+          [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
+            simpleName, RECORDS_PATH, TestCustomRecords[0].Id]
         )
       })
 
@@ -339,8 +339,8 @@ describe('Custom Object Instances filter', () => {
 
       it('should create the instances with record path acccording to object', () => {
         expect(instances[0].path).toEqual(
-          [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
-            RECORDS_PATH, withNameName, TestCustomRecords[0].Id]
+          [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
+            withNameName, RECORDS_PATH, TestCustomRecords[0].Id]
         )
       })
 
@@ -375,8 +375,8 @@ describe('Custom Object Instances filter', () => {
 
       it('should create the instances with record path acccording to object', () => {
         expect(instances[0].path).toEqual(
-          [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace,
-            RECORDS_PATH, withAddressName, TestCustomRecords[0].Id]
+          [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
+            withAddressName, RECORDS_PATH, TestCustomRecords[0].Id]
         )
       })
 

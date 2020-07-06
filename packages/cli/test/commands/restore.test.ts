@@ -16,7 +16,7 @@
 import { restore } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
-import { RestoreCommand } from '../../src/commands/restore'
+import { command } from '../../src/commands/restore'
 
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
@@ -38,7 +38,6 @@ jest.mock('@salto-io/core', () => ({
 }))
 jest.mock('../../src/workspace/workspace')
 describe('restore command', () => {
-  let command: RestoreCommand
   let spinners: Spinner[]
   let spinnerCreator: SpinnerCreator
   const services = ['salesforce']
@@ -78,7 +77,7 @@ describe('restore command', () => {
       } as unknown as Workspace
       mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
 
-      command = new RestoreCommand(
+      result = await command(
         '',
         {
           force: true,
@@ -93,8 +92,7 @@ describe('restore command', () => {
         false,
         true,
         services,
-      )
-      result = await command.execute()
+      ).execute()
     })
 
     it('should fail', async () => {
@@ -116,7 +114,7 @@ describe('restore command', () => {
         workspace: mocks.mockLoadWorkspace(workspaceName),
         errored: false,
       })
-      command = new RestoreCommand(
+      result = await command(
         workspaceName,
         {
           force: true,
@@ -131,8 +129,7 @@ describe('restore command', () => {
         false,
         true,
         services,
-      )
-      result = await command.execute()
+      ).execute()
     })
 
 
@@ -170,7 +167,7 @@ describe('restore command', () => {
       mockLoadWorkspace.mockClear()
     })
     it('should use current env when env is not provided', async () => {
-      command = new RestoreCommand(
+      result = await command(
         workspaceDir,
         {
           force: true,
@@ -185,15 +182,14 @@ describe('restore command', () => {
         false,
         true,
         services,
-      )
-      result = await command.execute()
+      ).execute()
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
       expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
         mocks.withoutEnvironmentParam
       )
     })
     it('should use provided env', async () => {
-      command = new RestoreCommand(
+      result = await command(
         workspaceDir,
         {
           force: true,
@@ -209,8 +205,7 @@ describe('restore command', () => {
         true,
         services,
         mocks.withEnvironmentParam,
-      )
-      result = await command.execute()
+      ).execute()
       expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
       expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
         mocks.withEnvironmentParam
@@ -229,7 +224,7 @@ describe('restore command', () => {
         workspace: mocks.mockLoadWorkspace(workspaceName),
         errored: false,
       })
-      command = new RestoreCommand(
+      result = await command(
         workspaceName,
         {
           force: true,
@@ -244,8 +239,7 @@ describe('restore command', () => {
         false,
         true,
         services,
-      )
-      result = await command.execute()
+      ).execute()
     })
 
     it('should return success code', () => {
@@ -282,7 +276,7 @@ describe('restore command', () => {
         workspace: mocks.mockLoadWorkspace('exist-on-error'),
         errored: false,
       })
-      command = new RestoreCommand(
+      result = await command(
         'exist-on-error',
         {
           force: true,
@@ -297,8 +291,7 @@ describe('restore command', () => {
         false,
         true,
         services,
-      )
-      result = await command.execute()
+      ).execute()
     })
 
     it('should return success code', () => {
@@ -316,7 +309,7 @@ describe('restore command', () => {
       })
     })
     it('should fail when invalid filters are provided', async () => {
-      command = new RestoreCommand(
+      result = await command(
         workspaceName,
         {
           force: true,
@@ -333,12 +326,11 @@ describe('restore command', () => {
         services,
         undefined,
         ['++']
-      )
-      result = await command.execute()
+      ).execute()
       expect(result).toBe(CliExitCode.UserInputError)
     })
     it('should succeed when invalid filters are provided', async () => {
-      command = new RestoreCommand(
+      result = await command(
         workspaceName,
         {
           force: true,
@@ -355,8 +347,7 @@ describe('restore command', () => {
         services,
         undefined,
         ['salto']
-      )
-      result = await command.execute()
+      ).execute()
       expect(result).toBe(CliExitCode.Success)
     })
   })

@@ -46,6 +46,13 @@ type RestoreParsedCliInput = ParsedCliInput<RestoreArgs>
 
 // TODO - move to formatter.ts
 
+interface RestoreCommand extends CliCommand {
+  applyRestoreChangesToWorkspace(
+    changes: RestoreChange[],
+    workspace: Workspace,
+    workspaceTags: Tags,
+  ): Promise<boolean>
+}
 
 const createRegexFilters = (
   inputFilters: string[]
@@ -75,149 +82,73 @@ const printRestorePlan = (changes: RestoreChange[], detailed: boolean, output: C
   outputLine(EOL, output)
 }
 
-export class RestoreCommand implements CliCommand {
-  readonly output: CliOutput
-  private cliTelemetry: CliTelemetry
-  inputFilters: string[]
-  force: boolean
-  interactive: boolean
-  dryRun: boolean
-  detailedPlan: boolean
-  listPlannedChanges: boolean
-
-  constructor(
-    private readonly workspaceDir: string,
-    {
-      force,
-      interactive,
-      dryRun,
-      detailedPlan,
-      listPlannedChanges,
-    }: {
-      force: boolean
-      interactive: boolean
-      dryRun: boolean
-      detailedPlan: boolean
-      listPlannedChanges: boolean
-    },
-    cliTelemetry: CliTelemetry,
-    output: CliOutput,
-    private readonly spinnerCreator: SpinnerCreator,
-    readonly inputIsolated: boolean,
-    readonly shouldCalcTotalSize: boolean,
-    readonly inputServices?: string[],
-    readonly inputEnv?: string,
-    inputFilters: string[] = []
-  ) {
-    this.output = output
-    this.cliTelemetry = cliTelemetry
-    this.inputServices = inputServices
-    this.inputEnv = inputEnv
-    this.inputFilters = inputFilters
-    this.force = force
-    this.interactive = interactive
-    this.dryRun = dryRun
-    this.detailedPlan = detailedPlan
-    // dry-run always prints plan
-    this.listPlannedChanges = listPlannedChanges || dryRun
-  }
-
-  async computeRestorePlan({ workspace, filters, printPlan, detailed }: {
-    workspace: Workspace
-    filters: RegExp[]
-    printPlan: boolean
-    detailed: boolean
-  }): Promise<RestoreChange[]> {
-    outputLine(EOL, this.output)
-    outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), this.output)
-
-    const changes = await restore(workspace, this.inputServices, filters)
-    if (printPlan) {
-      printRestorePlan(changes, detailed, this.output)
-    }
-
-    outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), this.output)
-    outputLine(EOL, this.output)
-
-    return changes
-  }
-
-  async applyRestoreChangesToWorkspace(
-    changes: RestoreChange[],
-    workspace: Workspace,
-    workspaceTags: Tags,
-  ): Promise<boolean> {
-    // If the workspace starts empty there is no point in showing a huge amount of changes
-    const changesToApply = this.force || (await workspace.isEmpty())
-      ? changes
-      : await getApprovedChanges(changes, this.interactive)
-
-    this.cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
-    outputLine(EOL, this.output)
-    outputLine(
-      formatStepStart(formatChangesSummary(changes.length, changesToApply.length)),
-      this.output,
-    )
-
-    const success = await updateWorkspace(
-      workspace,
-      this.output,
-      changesToApply,
-      this.inputIsolated,
-    )
-    if (success) {
-      outputLine(formatStepCompleted(Prompts.RESTORE_UPDATE_WORKSPACE_SUCCESS), this.output)
-      if (this.shouldCalcTotalSize) {
-        const totalSize = await workspace.getTotalSize()
-        log.debug(`Total size of the workspace is ${totalSize} bytes`)
-        this.cliTelemetry.workspaceSize(totalSize, workspaceTags)
-      }
-      return true
-    }
-    outputLine(formatStepFailed(Prompts.RESTORE_UPDATE_WORKSPACE_FAIL), this.output)
-    outputLine(EOL, this.output)
-    return false
-  }
-
+export const command = (
+  workspaceDir: string,
+  {
+    force,
+    interactive,
+    dryRun,
+    detailedPlan,
+    listPlannedChanges,
+  }: {
+    force: boolean
+    interactive: boolean
+    dryRun: boolean
+    detailedPlan: boolean
+    listPlannedChanges: boolean
+  },
+  cliTelemetry: CliTelemetry,
+  output: CliOutput,
+  spinnerCreator: SpinnerCreator,
+  inputIsolated: boolean,
+  shouldCalcTotalSize: boolean,
+  inputServices?: string[],
+  inputEnvironment?: string,
+  inputFilters: string[] = []
+): RestoreCommand => ({
   async execute(): Promise<CliExitCode> {
-    log.debug(`running restore command on '${this.workspaceDir}' [force=${this.force}, interactive=${
-      this.interactive}, dryRun=${this.dryRun}, detailedPlan=${this.detailedPlan}, listPlannedChanges=${
-      this.listPlannedChanges}, isolated=${this.inputIsolated}], environment=${this.inputEnv}, services=${this.inputServices}`)
+    log.debug(`running restore command on '${workspaceDir}' [force=${force}, interactive=${
+      interactive}, dryRun=${dryRun}, detailedPlan=${detailedPlan}, listPlannedChanges=${
+      listPlannedChanges}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
 
-    const { filters, invalidFilters } = createRegexFilters(this.inputFilters)
+    const { filters, invalidFilters } = createRegexFilters(inputFilters)
     if (!_.isEmpty(invalidFilters)) {
-      this.output.stderr.write(formatInvalidFilters(invalidFilters))
+      output.stderr.write(formatInvalidFilters(invalidFilters))
       return CliExitCode.UserInputError
     }
 
     const { workspace, errored } = await loadWorkspace(
-      this.workspaceDir,
-      this.output,
+      workspaceDir,
+      output,
       {
-        force: this.force,
+        force,
         printStateRecency: true,
-        spinnerCreator: this.spinnerCreator,
-        sessionEnv: this.inputEnv,
+        spinnerCreator,
+        sessionEnv: inputEnvironment,
       }
     )
     if (errored) {
-      this.cliTelemetry.failure()
+      cliTelemetry.failure()
       return CliExitCode.AppError
     }
 
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
 
-    this.cliTelemetry.start(workspaceTags)
+    cliTelemetry.start(workspaceTags)
 
-    const changes = await this.computeRestorePlan({
-      workspace,
-      filters,
-      printPlan: this.listPlannedChanges,
-      detailed: this.detailedPlan,
-    })
+    outputLine(EOL, output)
+    outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
 
-    if (this.dryRun) {
-      this.cliTelemetry.success(workspaceTags)
+    const changes = await restore(workspace, inputServices, filters)
+    if (listPlannedChanges || dryRun) {
+      printRestorePlan(changes, detailedPlan, output)
+    }
+
+    outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), output)
+    outputLine(EOL, output)
+
+    if (dryRun) {
+      cliTelemetry.success(workspaceTags)
       return CliExitCode.Success
     }
 
@@ -228,14 +159,51 @@ export class RestoreCommand implements CliCommand {
     )
 
     if (updatingWsSucceeded) {
-      outputLine(formatRestoreFinish(), this.output)
-      this.cliTelemetry.success(workspaceTags)
+      outputLine(formatRestoreFinish(), output)
+      cliTelemetry.success(workspaceTags)
       return CliExitCode.Success
     }
-    this.cliTelemetry.failure(workspaceTags)
+    cliTelemetry.failure(workspaceTags)
     return CliExitCode.AppError
-  }
-}
+  },
+
+  async applyRestoreChangesToWorkspace(
+    changes: RestoreChange[],
+    workspace: Workspace,
+    workspaceTags: Tags,
+  ): Promise<boolean> {
+    // If the workspace starts empty there is no point in showing a huge amount of changes
+    const changesToApply = force || (await workspace.isEmpty())
+      ? changes
+      : await getApprovedChanges(changes, interactive)
+
+    cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
+    outputLine(EOL, output)
+    outputLine(
+      formatStepStart(formatChangesSummary(changes.length, changesToApply.length)),
+      output,
+    )
+
+    const success = await updateWorkspace(
+      workspace,
+      output,
+      changesToApply,
+      inputIsolated,
+    )
+    if (success) {
+      outputLine(formatStepCompleted(Prompts.RESTORE_UPDATE_WORKSPACE_SUCCESS), output)
+      if (shouldCalcTotalSize) {
+        const totalSize = await workspace.getTotalSize()
+        log.debug(`Total size of the workspace is ${totalSize} bytes`)
+        cliTelemetry.workspaceSize(totalSize, workspaceTags)
+      }
+      return true
+    }
+    outputLine(formatStepFailed(Prompts.RESTORE_UPDATE_WORKSPACE_FAIL), output)
+    outputLine(EOL, output)
+    return false
+  },
+})
 
 const restoreBuilder = createCommandBuilder({
   options: {
@@ -295,7 +263,7 @@ const restoreBuilder = createCommandBuilder({
     output: CliOutput,
     spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
-    return new RestoreCommand(
+    return command(
       '.',
       {
         force: input.args.force,

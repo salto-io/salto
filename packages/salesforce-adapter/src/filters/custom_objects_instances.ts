@@ -25,6 +25,7 @@ import { getNamespace } from './utils'
 import { DataManagementConfig } from '../types'
 
 const { makeArray } = collections.array
+const { mapAsync } = collections.asynciterable
 
 const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
@@ -84,7 +85,7 @@ const getObjectInstances = async (
   }
   const queryString = buildQueryString(object)
   const recordsIterable = await client.queryAll(queryString)
-  return _.flatten(await collections.asynciterable.mapAsync(recordsIterable, recordsToInstances))
+  return _.flatten(await mapAsync(recordsIterable, recordsToInstances))
 }
 
 const getObjectTypesInstances = async (

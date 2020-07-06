@@ -17,8 +17,13 @@ import _ from 'lodash'
 import nock from 'nock'
 import { RetryStrategies } from 'requestretry'
 import { Values } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import SalesforceClient, { ApiLimitsTooLowError, getConnectionDetails, validateCredentials } from '../src/client/client'
 import mockClient from './client'
+
+const { array, asynciterable } = collections
+const { makeArray } = array
+const { mapAsync } = asynciterable
 
 describe('salesforce client', () => {
   beforeEach(() => {
@@ -232,21 +237,11 @@ describe('salesforce client', () => {
   describe('queryAll', () => {
     let resultsIterable: AsyncIterable<Values[]>
     let dodoScope: nock.Scope
-    const asyncIterableValuesCounter = async (
-      iterator: AsyncIterator<Values[]>
-    ): Promise<number> => {
-      let counter = 0
-      const next = async (): Promise<void> => {
-        const curr = await iterator.next()
-        if (curr.done) return undefined
-        if (_.isArray(curr.value) && curr.value.length > 0) {
-          counter += curr.value.length
-        }
-        return next()
-      }
-      await next()
-      return counter
-    }
+
+    const asyncCounter = async (
+      iterator: AsyncIterable<Values[]>
+    ): Promise<number> =>
+      _.sum(_.flatten(await mapAsync(iterator, (vals: Values[]) => makeArray(vals).map(_v => 1))))
 
     describe('when all results are in a single query', () => {
       beforeEach(async () => {
@@ -262,9 +257,7 @@ describe('salesforce client', () => {
       })
 
       it('should have the query returned elements', async () => {
-        const iter = resultsIterable[Symbol.asyncIterator]()
-        expect(iter).toBeDefined()
-        const counter = await asyncIterableValuesCounter(iter)
+        const counter = await asyncCounter(resultsIterable)
         expect(counter).toEqual(2)
       })
 
@@ -298,9 +291,7 @@ describe('salesforce client', () => {
       })
 
       it('should get the query returned elements of both query and query more', async () => {
-        const iter = resultsIterable[Symbol.asyncIterator]()
-        expect(iter).toBeDefined()
-        const counter = await asyncIterableValuesCounter(iter)
+        const counter = await asyncCounter(resultsIterable)
         expect(counter).toEqual(3)
       })
 

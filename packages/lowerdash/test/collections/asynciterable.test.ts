@@ -18,7 +18,7 @@ import { collections } from '../../src'
 const { asynciterable } = collections
 
 describe('asynciterable', () => {
-  const { findAsync } = asynciterable
+  const { findAsync, mapAsync } = asynciterable
 
   const toAsyncIterable = <T>(i: Iterable<T>): AsyncIterable<T> => {
     const iter = i[Symbol.iterator]()
@@ -69,6 +69,41 @@ describe('asynciterable', () => {
     describe('when the predicate does not return true', () => {
       it('should return the value', async () => {
         expect(await findAsync(toAsyncIterable([1, 2, 3]), async () => false)).toBeUndefined()
+      })
+    })
+  })
+
+  describe('mapAsync', () => {
+    describe('when mapFunc is sync', () => {
+      describe('when given an empty iterable', () => {
+        it('should return empty array', async () => {
+          expect(await mapAsync(toAsyncIterable([]), v => v)).toStrictEqual([])
+        })
+      })
+
+      describe('when iterable has values', () => {
+        it('should return same result as a map on an array', async () => {
+          const array = [1, 2, 3, 4]
+          const iterable = toAsyncIterable(array)
+          const mapFunc = (v: number): number => v + 1
+          expect(await mapAsync(iterable, mapFunc)).toStrictEqual(array.map(mapFunc))
+        })
+      })
+    })
+    describe('when mapFunc is async', () => {
+      describe('when given an empty iterable', () => {
+        it('should return empty array', async () => {
+          expect(await mapAsync(toAsyncIterable([]), async v => v)).toStrictEqual([])
+        })
+      })
+
+      describe('when iterable has values', () => {
+        it('should return same result as a map on an array (in this case return Promises)', async () => {
+          const array = [1, 2, 3, 4]
+          const iterable = toAsyncIterable(array)
+          const mapFunc = async (v: number): Promise<number> => v + 1
+          expect(await mapAsync(iterable, mapFunc)).toStrictEqual(array.map(mapFunc))
+        })
       })
     })
   })

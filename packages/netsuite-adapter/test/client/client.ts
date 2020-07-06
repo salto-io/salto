@@ -15,7 +15,7 @@
 */
 import NetsuiteClient from '../../src/client/client'
 
-const DUMMY_ACCOUNT_ID = 'tstdrv123456'
+const DUMMY_ACCOUNT_ID = 'tstdrv123456-sb'
 const DUMMY_TOKEN_ID = 'dummyTokenId'
 const DUMMY_TOKEN_SECRET = 'dummyTokenSecret'
 

@@ -218,7 +218,7 @@ export default class NetsuiteClient {
     this.credentials = {
       ...credentials,
       // accountId must be uppercased as decribed in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
-      accountId: credentials.accountId.toUpperCase(),
+      accountId: credentials.accountId.toUpperCase().replace('-', '_'),
     }
     this.authId = hash
       .toMD5(this.credentials.accountId + this.credentials.tokenId + this.credentials.tokenSecret)

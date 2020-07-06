@@ -116,11 +116,10 @@ resolveTemplateExpression = (
   .join('')
 
 const resolveElement = (
-  srcElement: Element,
+  element: Element,
   contextElements: Record<string, Element[]>
-): Element => {
+): void => {
   const referenceCloner = (v: Value): Value => resolveMaybeExpression(v, contextElements)
-  const element = _.clone(srcElement)
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
   }
@@ -134,16 +133,17 @@ const resolveElement = (
   }
 
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
-
-  return element
 }
 
 export const resolve = (elements: readonly Element[],
   additionalContext: ReadonlyArray<Element> = []): Element[] => {
   const additionalContextElements = _.groupBy(additionalContext, e => e.elemID.getFullName())
+  // intentionally shallow clone because in resolve element we replace only top level properties
+  const clonedElements = elements.map(_.clone)
   const contextElements = {
     ...additionalContextElements,
-    ..._.groupBy(elements, e => e.elemID.getFullName()),
+    ..._.groupBy(clonedElements, e => e.elemID.getFullName()),
   }
-  return elements.map(e => resolveElement(e, contextElements))
+  clonedElements.forEach(e => resolveElement(e, contextElements))
+  return clonedElements
 }

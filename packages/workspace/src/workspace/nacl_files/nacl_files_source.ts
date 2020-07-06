@@ -25,7 +25,7 @@ import { promises } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { mergeElements, MergeError } from '../../merger'
 import {
-  getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource,
+  getChangeLocations, updateNaclFileData, getChangesToUpdate,
 } from './nacl_file_update'
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource } from '../elements_source'
@@ -128,13 +128,14 @@ const buildNaclFilesSource = (
     return parsed
   }
 
-  const parsedNaclFileFromChange = async (
-    change: DetailedChangeWithSource
+  const createNaclFileFromChange = async (
+    filename: string,
+    change: AdditionDiff<Element>,
   ): Promise<ParsedNaclFile> => {
     const elements = [(change as AdditionDiff<Element>).data.after]
     const parsed = {
       timestamp: Date.now(),
-      filename: change.location.filename,
+      filename,
       elements: _.keyBy(elements, e => e.elemID.getFullName()),
       errors: [],
     }
@@ -269,7 +270,7 @@ const buildNaclFilesSource = (
               && isElement(fileChanges[0].data.after)
             const naclFile = { filename, buffer }
             const parsed = shouldNotParse
-              ? await parsedNaclFileFromChange(fileChanges[0])
+              ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>)
               : await parseNaclFile(naclFile)
             return { ...parsed, buffer }
           } catch (e) {

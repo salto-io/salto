@@ -243,7 +243,7 @@ describe('salesforce client', () => {
     ): Promise<number> =>
       _.sum(_.flatten(await toArrayAsync(await mapAsync(
         iterator,
-        (vals: Values[]) => makeArray(vals).map(_v => 1)
+        vals => makeArray(vals).map(() => 1)
       ))))
 
     describe('when all results are in a single query', () => {

@@ -22,7 +22,7 @@ import { SalesforceRecord } from '../src/client/types'
 import SalesforceAdapter, { testHelpers } from '../index'
 import realAdapter from './adapter'
 import SalesforceClient, { Credentials } from '../src/client/client'
-import { fetchTypes, runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance } from './utils'
+import { runFiltersOnFetch, createElement, removeElementAndVerify, createInstance, getRecordOfInstance } from './utils'
 import { isCustomObject, apiName } from '../src/transformers/transformer'
 import customObjectsFilter from '../src/filters/custom_objects'
 import customObjectsInstancesFilter from '../src/filters/custom_objects_instances'
@@ -36,7 +36,7 @@ describe('custom object instances e2e', () => {
 
   let client: SalesforceClient
   let adapter: SalesforceAdapter
-  let fetchResult: Element[]
+  let elements: Element[]
   let credLease: CredsLease<Credentials>
 
   const filtersContext = {
@@ -54,17 +54,17 @@ describe('custom object instances e2e', () => {
     adapter = adapterParams.adapter
     client = adapterParams.client
 
-    fetchResult = await fetchTypes(client, [])
+    elements = []
     await runFiltersOnFetch(
       client,
       filtersContext,
-      fetchResult,
+      elements,
       [customObjectsFilter, customObjectsInstancesFilter],
     )
   })
 
   it('should fetch custom object instances', () => {
-    const customObjectInstances = fetchResult
+    const customObjectInstances = elements
       .filter(isInstanceElement)
       .filter(e => isCustomObject(e.type))
     expect(customObjectInstances.length).toBeGreaterThanOrEqual(1)
@@ -74,7 +74,7 @@ describe('custom object instances e2e', () => {
     let createdInstance: InstanceElement
 
     it('should create the new instance', async () => {
-      const productTwoObjectType = fetchResult
+      const productTwoObjectType = elements
         .find(e => isObjectType(e) && (apiName(e, true) === productTwoMetadataName))
       expect(productTwoObjectType).toBeDefined()
       expect(isObjectType(productTwoObjectType)).toBeTruthy()

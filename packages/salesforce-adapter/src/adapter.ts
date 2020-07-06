@@ -106,12 +106,6 @@ export const DEFAULT_FILTERS = [
   customObjectsSplitFilter,
 ]
 
-export const TEST_FILTERS = [
-  customObjectsFilter,
-  // customObjectsInstancesFilter depends on customObjectsFilter
-  customObjectsInstancesFilter,
-]
-
 const absoluteIDMetadataTypes: Record<string, string[]> = {
   CustomLabels: ['labels'],
 }

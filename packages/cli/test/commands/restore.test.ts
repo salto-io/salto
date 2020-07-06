@@ -15,11 +15,12 @@
 */
 import { restore } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
-import { Spinner, SpinnerCreator, CliExitCode } from '../../src/types'
+import { Spinner, SpinnerCreator, CliExitCode, CliTelemetry } from '../../src/types'
 import { command } from '../../src/commands/restore'
+
 import * as mocks from '../mocks'
 import * as mockCliWorkspace from '../../src/workspace/workspace'
-import { buildEventName } from '../../src/telemetry'
+import { buildEventName, getCliTelemetry } from '../../src/telemetry'
 
 const commandName = 'restore'
 const eventsNames = {
@@ -33,9 +34,7 @@ const eventsNames = {
 
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual('@salto-io/core'),
-  restore: jest.fn().mockImplementation(() => Promise.resolve({
-    changes: [],
-  })),
+  restore: jest.fn().mockImplementation(() => Promise.resolve([])),
 }))
 jest.mock('../../src/workspace/workspace')
 describe('restore command', () => {
@@ -59,24 +58,41 @@ describe('restore command', () => {
   mockUpdateStateOnly.mockResolvedValue(true)
 
   beforeEach(() => {
-    cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
     spinners = []
     spinnerCreator = mocks.mockSpinnerCreator(spinners)
   })
 
   let result: number
   let mockTelemetry: mocks.MockTelemetry
+  let mockCliTelemetry: CliTelemetry
   describe('with errored workspace', () => {
     beforeEach(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'restore')
       const erroredWorkspace = {
         hasErrors: () => true,
         errors: { strings: () => ['some error'] },
         config: { services },
       } as unknown as Workspace
       mockLoadWorkspace.mockResolvedValueOnce({ workspace: erroredWorkspace, errored: true })
-      result = await command('', true, false, mockTelemetry, cliOutput, spinnerCreator, false, true, services)
-        .execute()
+
+      result = await command(
+        '',
+        {
+          force: true,
+          interactive: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+        },
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        false,
+        true,
+        services,
+      ).execute()
     })
 
     it('should fail', async () => {
@@ -91,15 +107,133 @@ describe('restore command', () => {
   describe('with valid workspace', () => {
     const workspaceName = 'valid-ws'
     beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'restore')
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace(workspaceName),
         errored: false,
       })
       result = await command(
         workspaceName,
-        true, false,
-        mockTelemetry,
+        {
+          force: true,
+          interactive: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+        },
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        false,
+        true,
+        services,
+      ).execute()
+    })
+
+
+    it('should return success code', () => {
+      expect(result).toBe(CliExitCode.Success)
+    })
+    it('should call restore', () => {
+      expect(restore).toHaveBeenCalled()
+    })
+
+    it('should update changes', () => {
+      const calls = findWsUpdateCalls(workspaceName)
+      expect(calls).toHaveLength(1)
+    })
+
+    it('should send telemetry events', () => {
+      expect(mockTelemetry.getEvents()).toHaveLength(4)
+      expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.changesToApply]).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.workspaceSize]).toHaveLength(1)
+    })
+
+    it('should print deployment to console', () => {
+      expect(cliOutput.stdout.content).toContain('Finished calculating the difference')
+      expect(cliOutput.stdout.content).toContain('No changes found, workspace is up to date')
+      expect(cliOutput.stdout.content).toContain('Done!')
+    })
+  })
+  describe('Verify using env command', () => {
+    const workspaceDir = 'valid-ws'
+    beforeEach(() => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
+      mockLoadWorkspace.mockClear()
+    })
+    it('should use current env when env is not provided', async () => {
+      result = await command(
+        workspaceDir,
+        {
+          force: true,
+          interactive: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+        },
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        false,
+        true,
+        services,
+      ).execute()
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
+        mocks.withoutEnvironmentParam
+      )
+    })
+    it('should use provided env', async () => {
+      result = await command(
+        workspaceDir,
+        {
+          force: true,
+          interactive: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+        },
+        mockCliTelemetry,
+        cliOutput,
+        spinnerCreator,
+        false,
+        true,
+        services,
+        mocks.withEnvironmentParam,
+      ).execute()
+      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
+      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
+        mocks.withEnvironmentParam
+      )
+    })
+  })
+
+  describe('dry-run', () => {
+    const workspaceName = 'valid-ws'
+    beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
+      mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'restore')
+      mockUpdateWorkspace.mockClear()
+      mockLoadWorkspace.mockResolvedValue({
+        workspace: mocks.mockLoadWorkspace(workspaceName),
+        errored: false,
+      })
+      result = await command(
+        workspaceName,
+        {
+          force: true,
+          interactive: false,
+          dryRun: true,
+          detailedPlan: false,
+          listPlannedChanges: false,
+        },
+        mockCliTelemetry,
         cliOutput,
         spinnerCreator,
         false,
@@ -115,68 +249,43 @@ describe('restore command', () => {
       expect(restore).toHaveBeenCalled()
     })
 
-    it('should update changes', () => {
+    it('should not update changes', () => {
       const calls = findWsUpdateCalls(workspaceName)
-      expect(calls).toHaveLength(1)
+      expect(calls).toHaveLength(0)
     })
 
     it('should send telemetry events', () => {
       expect(mockTelemetry.getEvents()).toHaveLength(2)
       expect(mockTelemetry.getEventsMap()[eventsNames.start]).toHaveLength(1)
+      expect(mockTelemetry.getEventsMap()[eventsNames.success]).toHaveLength(1)
     })
-  })
-  describe('Verify using env command', () => {
-    const workspaceDir = 'valid-ws'
-    beforeEach(() => {
-      mockLoadWorkspace.mockImplementation(mocks.mockLoadWorkspaceEnvironment)
-      mockLoadWorkspace.mockClear()
-    })
-    it('should use current env when env is not provided', async () => {
-      await command(
-        workspaceDir,
-        true, false,
-        mockTelemetry,
-        cliOutput,
-        spinnerCreator,
-        false,
-        true,
-        services,
-      ).execute()
-      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
-        mocks.withoutEnvironmentParam
-      )
-    })
-    it('should use provided env', async () => {
-      await command(
-        workspaceDir,
-        true, false,
-        mockTelemetry,
-        cliOutput,
-        spinnerCreator,
-        false,
-        true,
-        services,
-        mocks.withEnvironmentParam,
-      ).execute()
-      expect(mockLoadWorkspace).toHaveBeenCalledTimes(1)
-      expect(mockLoadWorkspace.mock.results[0].value.workspace.currentEnv()).toEqual(
-        mocks.withEnvironmentParam
-      )
+
+    it('should print plan to console, but not deploy', () => {
+      expect(cliOutput.stdout.content).toContain('The following changes')
+      expect(cliOutput.stdout.content).toContain('Finished calculating the difference')
+      expect(cliOutput.stdout.content).not.toContain('Done!')
     })
   })
 
   describe('should return error when update workspace fails', () => {
     beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
+      mockCliTelemetry = getCliTelemetry(mockTelemetry, 'restore')
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace('exist-on-error'),
         errored: false,
       })
       result = await command(
         'exist-on-error',
-        true, false,
-        mockTelemetry,
+        {
+          force: true,
+          interactive: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+        },
+        mockCliTelemetry,
         cliOutput,
         spinnerCreator,
         false,
@@ -192,6 +301,7 @@ describe('restore command', () => {
   describe('using id filters', () => {
     const workspaceName = 'valid-ws'
     beforeAll(async () => {
+      cliOutput = { stdout: new mocks.MockWriteStream(), stderr: new mocks.MockWriteStream() }
       mockTelemetry = mocks.getMockTelemetry()
       mockLoadWorkspace.mockResolvedValue({
         workspace: mocks.mockLoadWorkspace(workspaceName),
@@ -201,8 +311,14 @@ describe('restore command', () => {
     it('should fail when invalid filters are provided', async () => {
       result = await command(
         workspaceName,
-        true, false,
-        mockTelemetry,
+        {
+          force: true,
+          interactive: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+        },
+        mockCliTelemetry,
         cliOutput,
         spinnerCreator,
         false,
@@ -216,8 +332,14 @@ describe('restore command', () => {
     it('should succeed when invalid filters are provided', async () => {
       result = await command(
         workspaceName,
-        true, false,
-        mockTelemetry,
+        {
+          force: true,
+          interactive: true, // interactive has no effect when force=true
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+        },
+        mockCliTelemetry,
         cliOutput,
         spinnerCreator,
         false,

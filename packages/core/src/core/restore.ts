@@ -13,26 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { EventEmitter } from 'pietile-eventemitter'
 import _ from 'lodash'
 import { Element, ElemID, DetailedChange } from '@salto-io/adapter-api'
 import { filterByID } from '@salto-io/adapter-utils'
 import wu from 'wu'
 import { pathIndex } from '@salto-io/workspace'
-import { StepEvents } from './deploy'
 import { getDetailedChanges } from './fetch'
 
 type PathIndex = pathIndex.PathIndex
-
-export type RestoreProgressEvents = {
-  filtersWillBeCreated: (stepProgress: EventEmitter<StepEvents>) => void
-  diffWillBeCalculated: (stepProgress: EventEmitter<StepEvents>) => void
-  workspaceWillBeUpdated: (
-    stepProgress: EventEmitter<StepEvents>,
-    changes: number,
-    approved: number
-  ) => void
-}
 
 const splitChangeByPath = async (
   change: DetailedChange,
@@ -106,17 +94,13 @@ export const createRestoreChanges = async (
   stateElements: Element[],
   index: PathIndex,
   idFilters: RegExp[] = [],
-  progressEmitter?: EventEmitter<RestoreProgressEvents>
 ): Promise<DetailedChange[]> => {
-  const calculateDiffEmitter = new EventEmitter<StepEvents>()
-  if (progressEmitter) {
-    progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
-  }
-
   const changes = await filterChangesByIDRegex(
     wu(await getDetailedChanges(workspaceElements, stateElements)).toArray(),
     idFilters
   )
-  calculateDiffEmitter.emit('completed')
-  return _.flatten(await Promise.all(changes.map(change => splitChangeByPath(change, index))))
+  const detailedChanges = _.flatten(await Promise.all(
+    changes.map(change => splitChangeByPath(change, index))
+  ))
+  return detailedChanges
 }

@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _  from 'lodash'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, ElementMap, Value, DetailedChange, isElement
+  Element, ElemID, ElementMap, Value, DetailedChange, isElement,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,

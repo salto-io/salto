@@ -15,13 +15,14 @@
 */
 import {
   FetchResult, InstanceElement, isInstanceElement, ObjectType, AdapterOperations, DeployResult,
-  ChangeGroup, ElemIdGetter, Element,
+  ChangeGroup, ElemIdGetter, Element, isReferenceExpression, getChangeElement, getFieldType,
+  BuiltinTypes, ElemID, isPrimitiveType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { resolveValues } from '@salto-io/adapter-utils'
-import { AdditionDiff, ModificationDiff } from '@salto-io/dag'
+import { resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+import wu from 'wu'
 import NetsuiteClient, { CustomizationInfo } from './client/client'
 import {
   createInstanceElement, getLookUpName, toCustomizationInfo,
@@ -30,7 +31,7 @@ import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
 import {
-  SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+  SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, NETSUITE,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import { FilterCreator } from './filter'
@@ -55,6 +56,47 @@ export interface NetsuiteAdapterParams {
   getElemIdFunc?: ElemIdGetter
   // config that is determined by the user
   config: NetsuiteConfig
+}
+
+export const findDependingInstancesFromRefs = (instance: InstanceElement): InstanceElement[] => {
+  const visitedIdToInstance = new Map<string, InstanceElement>()
+  const isRefToServiceId = (topLevelParent: InstanceElement, elemId: ElemID): boolean => {
+    const fieldType = getFieldType(topLevelParent.type, [...elemId.createTopLevelParentID().path])
+    return isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.SERVICE_ID)
+  }
+
+  const createDependingElementsCallback: TransformFunc = ({ value }) => {
+    if (isReferenceExpression(value)) {
+      const { topLevelParent, elemId } = value
+      if (isInstanceElement(topLevelParent)
+        && !visitedIdToInstance.has(topLevelParent.elemID.getFullName())
+        && isRefToServiceId(topLevelParent, elemId)
+        && elemId.adapter === NETSUITE) {
+        visitedIdToInstance.set(topLevelParent.elemID.getFullName(), topLevelParent)
+      }
+    }
+    return value
+  }
+
+  transformElement({
+    element: instance,
+    transformFunc: createDependingElementsCallback,
+    strict: true,
+  })
+  return wu(visitedIdToInstance.values()).toArray()
+}
+
+/**
+ * This method runs recursively on all references of the changedInstance to identify dependencies
+ * and then deploy the depending instances as well as part of the SDF project
+ */
+const getAllDependingInstances = (changedInstance: InstanceElement,
+  visitedDependingIds: Set<string>): InstanceElement[] => {
+  const dependingInstances = findDependingInstancesFromRefs(changedInstance)
+    .filter(instance => !visitedDependingIds.has(instance.elemID.getFullName()))
+  dependingInstances.forEach(instance => visitedDependingIds.add(instance.elemID.getFullName()))
+  return _.flatten(dependingInstances.map(instance =>
+    [instance, ...getAllDependingInstances(instance, visitedDependingIds)]))
 }
 
 export default class NetsuiteAdapter implements AdapterOperations {
@@ -133,12 +175,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
   }
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
-    const customizationInfosToDeploy = (changeGroup.changes as (AdditionDiff<InstanceElement>
-      | ModificationDiff<InstanceElement>)[])
-      .map(change => {
-        const resAfter = resolveValues(change.data.after, getLookUpName)
-        return toCustomizationInfo(resAfter)
-      })
+    const changedInstances = changeGroup.changes.map(getChangeElement) as InstanceElement[]
+    const visitedDependingIds = new Set(changedInstances.map(inst => inst.elemID.getFullName()))
+    const instancesToDeploy = _.flatten(changedInstances.map(changedInstance =>
+      [changedInstance, ...getAllDependingInstances(changedInstance, visitedDependingIds)]))
+    const customizationInfosToDeploy = instancesToDeploy.map(instance => {
+      const resAfter = resolveValues(instance, getLookUpName)
+      return toCustomizationInfo(resAfter)
+    })
 
     try {
       await this.client.deploy(customizationInfosToDeploy)

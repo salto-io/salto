@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID, ObjectType, DetailedChange } from '@salto-io/adapter-api'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource } from '../../../src/workspace/nacl_files'
@@ -20,12 +21,15 @@ import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { ParseResultCache } from '../../../src/workspace/cache'
 
 import { mockStaticFilesSource } from '../static_files/common.test'
+import { parse } from '../../../src/parser'
 
-
+jest.mock('../../../src/parser')
 describe('Nacl Files Source', () => {
   let mockDirStore: DirectoryStore
   let mockCache: ParseResultCache
   let mockedStaticFilesSource: StaticFilesSource
+  const mockParse = parse as jest.Mock
+
   beforeEach(() => {
     mockCache = {
       get: jest.fn().mockResolvedValue(undefined),
@@ -89,6 +93,25 @@ describe('Nacl Files Source', () => {
       expect(totalSize).toEqual(300)
       expect(mockDirStore.getTotalSize).toHaveBeenCalledTimes(1)
       expect(mockedStaticFilesSource.getTotalSize).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('parse optimization', () => {
+    const newElemID = new ElemID('salesforce', 'new_elem')
+    const newElem = new ObjectType({
+      elemID: newElemID,
+      path: ['test', 'new'],
+    })
+    const change = {
+      id: newElemID,
+      action: 'add',
+      data: { after: newElem },
+      path: ['new', 'file'],
+    } as DetailedChange
+    it('should not parse file when updating single add changes in a new file', async () => {
+      await naclFilesSource(mockDirStore, mockCache, mockedStaticFilesSource)
+        .updateNaclFiles([change])
+      expect(mockParse).not.toHaveBeenCalled()
     })
   })
 })

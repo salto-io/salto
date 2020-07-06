@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   Element, isInstanceElement, isObjectType, ObjectType, InstanceElement,
 } from '@salto-io/adapter-api'
@@ -47,7 +48,7 @@ describe('custom object instances e2e', () => {
       },
     ],
   }
-  beforeEach(async () => {
+  beforeAll(async () => {
     credLease = await testHelpers().credentials()
     const adapterParams = realAdapter({ credentials: credLease.value }, filtersContext)
     adapter = adapterParams.adapter
@@ -124,12 +125,10 @@ describe('custom object instances e2e', () => {
         groupID: updatedInstance.elemID.getFullName(),
         changes: [{ action: 'modify', data: { before: createdInstance, after: updatedInstance } }],
       })
-      const result = await getRecordOfInstance(client, createdInstance, ['IsActive', 'ProductCode', 'IsArchived'])
+      const fields = ['IsActive', 'ProductCode', 'IsArchived']
+      const result = await getRecordOfInstance(client, createdInstance, fields)
       expect(result).toBeDefined()
-      expect((result as SalesforceRecord).Id).toEqual(updatedInstance.value.Id)
-      expect((result as SalesforceRecord).IsActive).toEqual(updatedInstance.value.IsActive)
-      expect((result as SalesforceRecord).ProductCode).toEqual(updatedInstance.value.ProductCode)
-      expect((result as SalesforceRecord).IsArchived).toEqual(updatedInstance.value.IsArchived)
+      expect(_.pick(result, fields)).toMatchObject(_.pick(updatedInstance.value, fields))
     })
 
     it('should delete custom object instance', async () => {

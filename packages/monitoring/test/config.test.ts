@@ -33,6 +33,9 @@ describe('config', () => {
         username: 'user',
         password: 'pass',
       },
+      slack: {
+        token: '',
+      },
     })).toThrow()
   })
 
@@ -57,6 +60,9 @@ describe('config', () => {
         ssl: true,
         username: 'user',
         password: 'pass',
+      },
+      slack: {
+        token: '',
       },
     })).toThrow()
   })

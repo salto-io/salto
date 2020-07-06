@@ -26,9 +26,12 @@ export interface Config {
   triggers: Trigger[]
   notifications: Notification[]
   smtp: SMTP
+  slack: Slack
 }
 
 export type NotificationType = string
+export const EmailNotificationType: NotificationType = 'email'
+export const SlackNotificationType: NotificationType = 'slack'
 
 export type Notification = {
   type: NotificationType
@@ -44,6 +47,10 @@ export type SMTP = {
   ssl: boolean
   username: string
   password: string
+}
+
+export type Slack = {
+  token: string
 }
 
 const validateConfigFileExists = (filePath: string): void => {
@@ -76,9 +83,20 @@ const validateTriggerNames = (config: Config): void => {
   })
 }
 
+const validateNotificationTypeConfig = (config: Config): void => {
+  const notificationTypes = config.notifications.map(n => n.type)
+  if (notificationTypes.includes(EmailNotificationType) && _.isUndefined(config.smtp)) {
+    throw new Error('smtp config is required for email notification')
+  }
+  if (notificationTypes.includes(SlackNotificationType) && _.isUndefined(config.slack)) {
+    throw new Error('slack config is required for slack notification')
+  }
+}
+
 export const validateConfig = (config: Config): void => {
   validateRegex(config)
   validateTriggerNames(config)
+  validateNotificationTypeConfig(config)
 }
 
 export const readConfigFile = async (filePath: string): Promise<Config> => {

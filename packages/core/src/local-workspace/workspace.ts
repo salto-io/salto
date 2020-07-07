@@ -18,7 +18,7 @@ import path from 'path'
 import uuidv4 from 'uuid/v4'
 import { exists } from '@salto-io/file'
 import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
-  configSource as cs, parseCache, staticFiles } from '@salto-io/workspace'
+  configSource as cs, parseCache, staticFiles, dirStore } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
 import { localState, STATE_EXTENSION } from './state'
@@ -55,11 +55,15 @@ export class NotAWorkspaceError extends Error {
   }
 }
 
-const loadNaclFileSource = (
+export const getNaclFilesSourceParams = (
   sourceBaseDir: string,
   cacheDir: string,
   excludeDirs: string[] = []
-): nacl.NaclFilesSource => {
+): {
+  naclFilesStore: dirStore.DirectoryStore
+  cache: parseCache.ParseResultCache
+  staticFileSource: staticFiles.StaticFilesSource
+} => {
   const dirPathToIgnore = (dirPath: string): boolean =>
     !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirPath)
 
@@ -76,16 +80,26 @@ const loadNaclFileSource = (
   )
 
   const cacheStore = localDirectoryStore(cacheDir)
-  const staticFilesSource = buildStaticFilesSource(
+  const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
     buildLocalStaticFilesCache(cacheDir),
   )
-
-  return naclFilesSource(
+  return {
     naclFilesStore,
-    parseResultCache(cacheStore, staticFilesSource),
-    staticFilesSource,
+    cache: parseResultCache(cacheStore, staticFileSource),
+    staticFileSource,
+  }
+}
+
+const loadNaclFileSource = (
+  sourceBaseDir: string,
+  cacheDir: string,
+  excludeDirs: string[] = []
+): nacl.NaclFilesSource => {
+  const { naclFilesStore, cache, staticFileSource } = getNaclFilesSourceParams(
+    sourceBaseDir, cacheDir, excludeDirs
   )
+  return naclFilesSource(naclFilesStore, cache, staticFileSource)
 }
 
 export const loadLocalElementsSources = (baseDir: string, localStorage: string,

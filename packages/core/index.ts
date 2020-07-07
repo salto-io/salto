@@ -19,7 +19,7 @@ export * from './src/api'
 export { ItemStatus } from './src/core/deploy'
 export { getAdaptersCredentialsTypes } from './src/core/adapters/adapters'
 export {
-  loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources,
+  loadLocalWorkspace, initLocalWorkspace, loadLocalElementsSources, getNaclFilesSourceParams,
 } from './src/local-workspace/workspace'
 export {
   workspaceConfigSource as localWorkspaceConfigSource,

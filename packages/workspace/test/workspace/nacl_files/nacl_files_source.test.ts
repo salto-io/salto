@@ -114,4 +114,18 @@ describe('Nacl Files Source', () => {
       expect(mockParse).not.toHaveBeenCalled()
     })
   })
+
+  describe('init with parsed files', () => {
+    it('should return elements from given parsed files', async () => {
+      const filename = 'mytest.nacl'
+      const elemID = new ElemID('dummy', 'elem')
+      const elem = new ObjectType({ elemID, path: ['test', 'new'] })
+      const elements = { 'dummy.elem': elem }
+      const parsedFiles = [{ filename, elements, errors: [], timestamp: 0 }]
+      const naclSource = naclFilesSource(
+        mockDirStore, mockCache, mockedStaticFilesSource, parsedFiles
+      )
+      expect(await naclSource.getElements(filename)).toEqual([elem])
+    })
+  })
 })

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/file",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "license": "Apache-2.0",
   "description": "File System Utils",
   "repository": {
@@ -30,7 +30,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/lowerdash": "0.1.18",
+    "@salto-io/lowerdash": "0.1.19",
     "mkdirp": "^0.5.1",
     "rimraf": "^3.0.0"
   },

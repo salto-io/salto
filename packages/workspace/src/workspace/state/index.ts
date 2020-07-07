@@ -14,4 +14,4 @@
 * limitations under the License.
 */
 export { State, StateData } from './interface'
-export { buildInMemState } from './in_mem'
+export { buildInMemState, deserializedPathIndex, serializedPathIndex } from './in_mem'

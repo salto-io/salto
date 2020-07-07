@@ -21,6 +21,12 @@ import { State, StateData } from './interface'
 
 const { makeArray } = collections.array
 
+export const deserializedPathIndex = (data: string): PathIndex => new PathIndex(JSON.parse(data))
+
+export const serializedPathIndex = (index: PathIndex): string => (
+  JSON.stringify(Array.from(index.entries()))
+)
+
 export const buildInMemState = (stateData: Promise<StateData>): Omit<State, 'flush' | 'clear' | 'rename'> => ({
   getAll: async (): Promise<Element[]> => Object.values((await stateData).elements),
   list: async (): Promise<ElemID[]> =>

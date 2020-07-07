@@ -28,12 +28,6 @@ const log = logger(module)
 
 export const STATE_EXTENSION = '.jsonl'
 
-const deserializedPathIndex = (
-  data: string
-): pathIndex.PathIndex => new pathIndex.PathIndex(JSON.parse(data))
-const serializedPathIndex = (index: pathIndex.PathIndex): string => (
-  safeJsonStringify(Array.from(index.entries()))
-)
 export const localState = (filePath: string): state.State => {
   let innerStateData: Promise<state.StateData>
   let dirty = false

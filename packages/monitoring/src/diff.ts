@@ -115,11 +115,12 @@ export const createChangeDiff = async (
   )
 }
 
-export const renderDiffView = (diff: UnifiedDiff): string => {
-  const htmlDiff = diff.length > 0
-    ? Diff2Html.html(diff)
+export const renderDiffView = (diff: UnifiedDiff[]): string => {
+  const joinedDiff = diff.join('\n')
+  const htmlDiff = joinedDiff.length > 0
+    ? Diff2Html.html(joinedDiff)
     : ''
-  const prompt = diff.length > 0
+  const prompt = joinedDiff.length > 0
     ? 'Salto will perform the following changes'
     : 'Nothing to do'
   return `<!DOCTYPE html>
@@ -200,12 +201,12 @@ export const renderDiffView = (diff: UnifiedDiff): string => {
 
 export const createPlanDiff = async (
   planActions: Iterable<PlanItem>
-): Promise<UnifiedDiff> => {
+): Promise<UnifiedDiff[]> => {
   const changes = wu(planActions)
     .map(change => change.changes())
     .flatten()
   const diffCreators = wu(changes)
     .enumerate()
     .map(([change, i]) => createChangeDiff(i, change))
-  return (await Promise.all(diffCreators)).join('\n')
+  return Promise.all(diffCreators)
 }

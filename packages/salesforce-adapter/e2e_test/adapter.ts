@@ -16,6 +16,7 @@
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
 import SalesforceClient, { Credentials } from '../src/client/client'
 import SalesforceAdapter, { SalesforceAdapterParams } from '../src/adapter'
+import { SalesforceConfig } from '../src/types'
 
 export type Reals = {
   client: SalesforceClient
@@ -29,11 +30,11 @@ export type Opts = {
 const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
   ElemID => new ElemID(adapterName, name)
 
-const realAdapter = ({ adapterParams, credentials }: Opts): Reals => {
+const realAdapter = ({ adapterParams, credentials }: Opts, config?: SalesforceConfig): Reals => {
   const client = (adapterParams && adapterParams.client) || new SalesforceClient({ credentials })
   const adapter = new SalesforceAdapter({
     client,
-    config: {},
+    config: config ?? {},
     ...adapterParams || { getElemIdFunc: mockGetElemIdFunc },
   })
   return { client, adapter }

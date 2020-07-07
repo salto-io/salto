@@ -3848,7 +3848,7 @@ describe('Salesforce adapter E2E with real account', () => {
       let flow: InstanceElement
       beforeAll(async () => {
         const flowType = findObjectType(result, new ElemID(constants.SALESFORCE, 'Flow')) as ObjectType
-        flow = new InstanceElement('MyFlow', flowType, {
+        flow = await createInstance(client, {
           [constants.INSTANCE_FULL_NAME_FIELD]: 'MyFlow',
           decisions: {
             processMetadataValues: {
@@ -4034,14 +4034,14 @@ describe('Salesforce adapter E2E with real account', () => {
               objectType: 'Contact',
             },
           ],
-        })
+        },
+        flowType)
 
         await removeElementIfAlreadyExists(client, flow)
       })
 
       it('should create flow', async () => {
-        const flowInfo = await createElementAndVerify(adapter, client, flow)
-        expect(_.get(flowInfo, 'variables')[0].dataType).toEqual('SObject')
+        await createElementAndVerify(adapter, client, flow)
       })
 
       it('should update flow', async () => {

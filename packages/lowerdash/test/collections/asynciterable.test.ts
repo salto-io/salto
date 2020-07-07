@@ -16,10 +16,9 @@
 import { collections } from '../../src'
 
 const { asynciterable } = collections
+const { findAsync, mapAsync, toArrayAsync } = asynciterable
 
 describe('asynciterable', () => {
-  const { findAsync } = asynciterable
-
   const toAsyncIterable = <T>(i: Iterable<T>): AsyncIterable<T> => {
     const iter = i[Symbol.iterator]()
     return {
@@ -69,6 +68,92 @@ describe('asynciterable', () => {
     describe('when the predicate does not return true', () => {
       it('should return the value', async () => {
         expect(await findAsync(toAsyncIterable([1, 2, 3]), async () => false)).toBeUndefined()
+      })
+    })
+  })
+
+  describe('toArrayAsync', () => {
+    describe('when given an empty iterable', () => {
+      it('should return an empty array', async () => {
+        expect(await toArrayAsync(toAsyncIterable([]))).toEqual([])
+      })
+    })
+    describe('when iterable has values', () => {
+      it('should return the array values', async () => {
+        const array = [1, 2, 3, 4, 5]
+        expect(await toArrayAsync(toAsyncIterable(array))).toEqual(array)
+      })
+    })
+  })
+
+  describe('mapAsync', () => {
+    let toStringMock: jest.Mock
+    let asyncToStringMock: jest.Mock
+    let numberIdentityMock: jest.Mock
+    let iterable: AsyncIterable<number>
+    const baseArray = [1, 2, 3]
+
+    beforeEach(() => {
+      toStringMock = jest.fn().mockImplementation((v: number) => v.toString())
+      asyncToStringMock = jest.fn().mockImplementation(async (v: number): Promise<string> =>
+        v.toString())
+      numberIdentityMock = jest.fn().mockImplementation((v: number) => v)
+    })
+
+    describe('when mapFunc is sync', () => {
+      describe('when given an empty iterable', () => {
+        it('should return empty array', async () => {
+          expect(await toArrayAsync(
+            await mapAsync(toAsyncIterable([]), toStringMock)
+          )).toEqual([])
+          expect(toStringMock).toHaveBeenCalledTimes(0)
+        })
+      })
+
+      describe('when iterable has values', () => {
+        it('should return same result as a map on the original array', async () => {
+          iterable = toAsyncIterable(baseArray)
+          expect(await toArrayAsync(
+            await mapAsync(iterable, toStringMock)
+          )).toEqual(baseArray.map(v => v.toString()))
+          expect(toStringMock).toHaveBeenCalledTimes(3)
+        })
+      })
+    })
+    describe('when mapFunc is async', () => {
+      describe('when given an empty iterable', () => {
+        it('should return empty array', async () => {
+          expect(await toArrayAsync(
+            await mapAsync(toAsyncIterable([]), asyncToStringMock)
+          )).toEqual([])
+          expect(asyncToStringMock).toHaveBeenCalledTimes(0)
+        })
+      })
+
+      describe('when iterable has values', () => {
+        it('should return same result as a map on an array (not Promises)', async () => {
+          iterable = toAsyncIterable(baseArray)
+          expect(await toArrayAsync(
+            await mapAsync(iterable, asyncToStringMock)
+          )).toEqual(baseArray.map(v => v.toString()))
+          expect(asyncToStringMock).toHaveBeenCalledTimes(3)
+        })
+      })
+    })
+
+    describe('when mapFunc is called twice in a row', () => {
+      it('should call both map funcs on each element before calling on the next one', async () => {
+        iterable = toAsyncIterable(baseArray)
+        expect(await toArrayAsync(
+          await mapAsync(await mapAsync(iterable, numberIdentityMock), numberIdentityMock)
+        )).toEqual(baseArray)
+        expect(numberIdentityMock).toHaveBeenCalledTimes(6)
+        expect(numberIdentityMock).toHaveBeenNthCalledWith(1, 1, 0)
+        expect(numberIdentityMock).toHaveBeenNthCalledWith(2, 1, 0)
+        expect(numberIdentityMock).toHaveBeenNthCalledWith(3, 2, 1)
+        expect(numberIdentityMock).toHaveBeenNthCalledWith(4, 2, 1)
+        expect(numberIdentityMock).toHaveBeenNthCalledWith(5, 3, 2)
+        expect(numberIdentityMock).toHaveBeenNthCalledWith(6, 3, 2)
       })
     })
   })

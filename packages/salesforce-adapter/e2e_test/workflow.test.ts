@@ -34,8 +34,8 @@ import { WORKFLOW_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '..
 import SalesforceAdapter from '../src/adapter'
 import { findElements } from '../test/utils'
 import {
-  getInstance, getMetadata, removeIfAlreadyExists, createAndVerify, removeElementAndVerify,
-  fetchTypes, runFiltersOnFetch,
+  getMetadataInstance, getMetadata, removeMetadataIfAlreadyExists, createAndVerify,
+  removeElementAndVerify, fetchTypes, runFiltersOnFetch,
 } from './utils'
 
 const { makeArray } = collections.array
@@ -172,7 +172,7 @@ describe('workflow filter', () => {
       await verifyWorkflowInnerTypesExist()
       const rawWorkflowTypes = await fetchTypes(client, [WORKFLOW_METADATA_TYPE,
         ...Object.values(WORKFLOW_FIELD_TO_TYPE)])
-      const rawWorkflowInstance = await getInstance(client,
+      const rawWorkflowInstance = await getMetadataInstance(client,
         findElement(rawWorkflowTypes, new ElemID(SALESFORCE, WORKFLOW_METADATA_TYPE)) as ObjectType,
         baseCustomObject)
       expect(rawWorkflowInstance).toBeDefined()
@@ -213,7 +213,7 @@ describe('workflow filter', () => {
       const newInstanceName = `${baseCustomObject}.MyWorkflowAlert`
       let newAlert: InstanceElement
       beforeAll(async () => {
-        await removeIfAlreadyExists(client, alertType, newInstanceName)
+        await removeMetadataIfAlreadyExists(client, alertType, newInstanceName)
       })
 
       it('should create workflow alert', async () => {
@@ -281,7 +281,7 @@ describe('workflow filter', () => {
       const newInstanceName = `${baseCustomObject}.MyWorkflowFieldUpdate`
       let newInstance: InstanceElement
       beforeAll(async () => {
-        await removeIfAlreadyExists(client, fieldUpdateType, newInstanceName)
+        await removeMetadataIfAlreadyExists(client, fieldUpdateType, newInstanceName)
       })
 
       it('should create workflow field update', async () => {
@@ -331,7 +331,7 @@ describe('workflow filter', () => {
       const newInstanceName = `${baseCustomObject}.MyWorkflowTask`
       let newInstance: InstanceElement
       beforeAll(async () => {
-        await removeIfAlreadyExists(client, taskType, newInstanceName)
+        await removeMetadataIfAlreadyExists(client, taskType, newInstanceName)
       })
 
       it('should create workflow task', async () => {
@@ -376,7 +376,7 @@ describe('workflow filter', () => {
       const newInstanceName = `${baseCustomObject}.MyWorkflowRule`
       let newInstance: InstanceElement
       beforeAll(async () => {
-        await removeIfAlreadyExists(client, rulesType, newInstanceName)
+        await removeMetadataIfAlreadyExists(client, rulesType, newInstanceName)
       })
 
       it('should create workflow rule', async () => {

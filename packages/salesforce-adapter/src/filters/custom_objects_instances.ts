@@ -25,6 +25,7 @@ import { getNamespace } from './utils'
 import { DataManagementConfig } from '../types'
 
 const { makeArray } = collections.array
+const { mapAsync, toArrayAsync } = collections.asynciterable
 
 const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
@@ -39,24 +40,6 @@ const buildQueryString = (type: ObjectType): string => {
       return apiName(field, true)
     }).join(',')
   return `SELECT ${selectStr} FROM ${apiName(type)}`
-}
-
-const consumeAsyncIterable = async <Values, InstanceElement>(
-  itr: { [Symbol.asyncIterator]: () => AsyncIterator<Values[]> },
-  transformer: (t: Values[]) => InstanceElement[],
-): Promise<Array<InstanceElement>> => {
-  const res: InstanceElement[] = []
-  const iter = itr[Symbol.asyncIterator]()
-  const next = async (): Promise<void> => {
-    const curr = await iter.next()
-    if (curr.done) return undefined
-    if (_.isArray(curr.value) && curr.value.length > 0) {
-      res.push(...transformer(curr.value))
-    }
-    return next()
-  }
-  await next()
-  return res
 }
 
 const getObjectInstances = async (
@@ -97,19 +80,19 @@ const getObjectInstances = async (
         }))
     }
 
-    const instanceValues = transformNameValues(records)
+    const instanceValues = transformNameValues(makeArray(records))
     return instanceValues.map(recordToInstance)
   }
   const queryString = buildQueryString(object)
   const recordsIterable = await client.queryAll(queryString)
-  return consumeAsyncIterable(recordsIterable, recordsToInstances)
+  return (await toArrayAsync(await mapAsync(recordsIterable, recordsToInstances))).flat()
 }
 
 const getObjectTypesInstances = async (
   client: SalesforceClient,
   objects: ObjectType[]
 ): Promise<InstanceElement[]> =>
-  (_.flatten(await Promise.all(objects.map(o => getObjectInstances(client, o)))))
+  ((await Promise.all(objects.map(o => getObjectInstances(client, o)))).flat())
 
 const filterObjectTypes = (
   elements: Element[],

@@ -55,6 +55,10 @@ const castToListRecursively = (
   applyRecursive(type, values, castLists)
 }
 
+// FileCabinet instance path might start with '.' and we can't have NaCLs with that prefix as we
+// don't load hidden files to the workspace in the core.
+const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
+
 export const createInstanceElement = (customizationInfo: CustomizationInfo, type: ObjectType,
   getElemIdFunc?: ElemIdGetter): InstanceElement => {
   const getInstanceName = (transformedValues: Values): string => {
@@ -77,7 +81,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
 
   const getInstancePath = (instanceName: string): string[] =>
     (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)
-      ? [NETSUITE, FILE_CABINET_PATH, ...customizationInfo.path]
+      ? [NETSUITE, FILE_CABINET_PATH, ...customizationInfo.path.map(removeDotPrefix)]
       : [NETSUITE, RECORDS_PATH, type.elemID.name, instanceName])
 
   const transformPrimitive: TransformFunc = ({ value, field }) => {

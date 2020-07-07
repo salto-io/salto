@@ -1,0 +1,23 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "baseUrl": ".",
+        "declaration": true,
+        "resolveJsonModule": true,
+        "paths": {}
+    },
+    "include": [
+        "src/**/*",
+        "src/**/*.json",
+        "test/**/*",
+        "e2e_test/**/*",
+        "index.ts"
+    ],
+    "references": [
+      { "path": "../adapter-api" },
+      { "path": "../core" },
+      { "path": "../logging" },
+      { "path": "../workspace" }
+    ]
+}

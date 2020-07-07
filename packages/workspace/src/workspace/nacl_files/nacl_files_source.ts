@@ -261,10 +261,9 @@ const buildNaclFilesSource = (
               && fileChanges.length === 1
               && fileChanges[0].action === 'add'
               && isElement(fileChanges[0].data.after)
-            const naclFile = { filename, buffer }
             const parsed = shouldNotParse
               ? await createNaclFileFromChange(filename, fileChanges[0] as AdditionDiff<Element>)
-              : toParsedNaclFile(naclFile, await parseNaclFile(naclFile))
+              : toParsedNaclFile({ filename, buffer }, await parseNaclFile({ filename, buffer }))
             return { ...parsed, buffer }
           } catch (e) {
             log.error('failed to update NaCl file %s with %o changes due to: %o',

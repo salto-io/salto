@@ -13,18 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-const path = require('path')
-
-const deepMerge = require('../../build_utils/deep_merge')
-
-module.exports = deepMerge(
-    require('../../eslintrc.js'),
-    require('../../eslint/rules.js'),
-    {
-        parserOptions: {
-            tsconfigRootDir: __dirname,
-            project: path.resolve(__dirname, './tsconfig.json'),
-        },
-    },
-)
-
+module.exports = {
+    rules: {
+        'no-restricted-syntax': [
+            {
+                selector: "CallExpression[callee.object.name='JSON'][callee.property.name='stringify'][arguments.length=1]",
+                message: 'JSON.stringify usage without a replacer is disallowed. Use JSONSaltoValue instead.',
+            }
+        ]
+    }
+}

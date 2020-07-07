@@ -131,10 +131,6 @@ module.exports = {
                 selector: 'WithStatement',
                 message: '`with` is disallowed in strict mode because it makes code impossible to predict and optimize.',
             },
-            {
-                selector: "CallExpression[callee.object.name='JSON'][callee.property.name='stringify'][arguments.length=1]",
-                message: 'JSON.stringify usage without a replacer is disallowed. Use JSONSaltoValue instead.',
-            },
         ],
     },
     overrides: [

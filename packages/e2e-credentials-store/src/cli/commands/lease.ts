@@ -59,7 +59,6 @@ const commandModule = ({
       writeLine(stderr, 'No lease available')
       return 1
     }
-    // eslint-disable-next-line no-restricted-syntax
     writeLine(stdout, JSON.stringify(lease))
     return 0
   }),

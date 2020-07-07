@@ -38,7 +38,7 @@ export class GroupedNodeMap<T> extends DataNodeMap<Group<T>> {
     const toGroup = this.getData(to)
     const fromGroup = this.getData(from)
     if (!fromGroup || !toGroup || fromGroup.groupKey !== toGroup.groupKey) {
-      throw Error(`Cannot merge ${fromGroup?.groupKey} to ${toGroup?.groupKey}}`)
+      throw Error(`Cannot merge ${fromGroup} to ${toGroup}`)
     }
     // Clone toGroup so upon merge failures graph will not be "dirty"
     const toGroupClone = { groupKey: toGroup.groupKey, items: _.clone(toGroup.items) }

@@ -27,7 +27,7 @@ interface AnnoRef {
 
 type SubElementSearchResult = {
   field?: Field
-  path: string[]
+  path: ReadonlyArray<string>
 }
 
 export const isIndexPathPart = (key: string): boolean => !Number.isNaN(Number(key))
@@ -42,7 +42,7 @@ export const getDeepInnerType = (listType: ListType): ObjectType | PrimitiveType
 
 export const getSubElement = (
   baseType: TypeElement,
-  pathParts: string[]
+  pathParts: ReadonlyArray<string>
 ): SubElementSearchResult | undefined => {
   const getChildElement = (source: TypeElement, key: string): Field | TypeElement| undefined => {
     if (isIndexPathPart(key) && isListType(source)) {
@@ -82,7 +82,7 @@ export const getSubElement = (
 
 export const getField = (
   baseType: TypeElement,
-  pathParts: string[]
+  pathParts: ReadonlyArray<string>
 ): SubElementSearchResult | undefined => {
   const fieldData = getSubElement(baseType, pathParts)
   if (fieldData && fieldData.field) {
@@ -91,11 +91,11 @@ export const getField = (
   return undefined
 }
 
-export const getFieldType = (baseType: TypeElement, path: string[]):
+export const getFieldType = (baseType: TypeElement, path: ReadonlyArray<string>):
   TypeElement | undefined => {
   const getFieldInternalType = (
     fieldType: TypeElement,
-    pathParts: string[]
+    pathParts: ReadonlyArray<string>
   ): TypeElement | undefined => {
     const [curPart, ...restOfParts] = pathParts
     if (_.isEmpty(curPart)) {

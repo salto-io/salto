@@ -16,10 +16,10 @@
 import {
   BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { validateDependsOnInvalidElement } from '../src/change_validator'
-import { customTypes, fileCabinetTypes } from '../src/types'
-import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../src/constants'
-import { toChange } from './utils'
+import { validateDependsOnInvalidElement } from '../../src/change_validators/dependencies'
+import { customTypes, fileCabinetTypes } from '../../src/types'
+import { ENTITY_CUSTOM_FIELD, FILE, PATH, SCRIPT_ID } from '../../src/constants'
+import { toChange } from '../utils'
 
 describe('Change Validator', () => {
   const customFieldInstance = new InstanceElement('elementName',

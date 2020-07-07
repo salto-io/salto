@@ -61,7 +61,7 @@ export interface NetsuiteAdapterParams {
 export const findDependingInstancesFromRefs = (instance: InstanceElement): InstanceElement[] => {
   const visitedIdToInstance = new Map<string, InstanceElement>()
   const isRefToServiceId = (topLevelParent: InstanceElement, elemId: ElemID): boolean => {
-    const fieldType = getFieldType(topLevelParent.type, [...elemId.createTopLevelParentID().path])
+    const fieldType = getFieldType(topLevelParent.type, elemId.createTopLevelParentID().path)
     return isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.SERVICE_ID)
   }
 
@@ -70,8 +70,8 @@ export const findDependingInstancesFromRefs = (instance: InstanceElement): Insta
       const { topLevelParent, elemId } = value
       if (isInstanceElement(topLevelParent)
         && !visitedIdToInstance.has(topLevelParent.elemID.getFullName())
-        && isRefToServiceId(topLevelParent, elemId)
-        && elemId.adapter === NETSUITE) {
+        && elemId.adapter === NETSUITE
+        && isRefToServiceId(topLevelParent, elemId)) {
         visitedIdToInstance.set(topLevelParent.elemID.getFullName(), topLevelParent)
       }
     }
@@ -88,15 +88,16 @@ export const findDependingInstancesFromRefs = (instance: InstanceElement): Insta
 
 /**
  * This method runs recursively on all references of the changedInstance to identify dependencies
- * and then deploy the depending instances as well as part of the SDF project
+ * that eventually will be deployed as well as part of the SDF project
  */
 const getAllDependingInstances = (changedInstance: InstanceElement,
   visitedDependingIds: Set<string>): InstanceElement[] => {
   const dependingInstances = findDependingInstancesFromRefs(changedInstance)
     .filter(instance => !visitedDependingIds.has(instance.elemID.getFullName()))
   dependingInstances.forEach(instance => visitedDependingIds.add(instance.elemID.getFullName()))
-  return _.flatten(dependingInstances.map(instance =>
-    [instance, ...getAllDependingInstances(instance, visitedDependingIds)]))
+  return [changedInstance, ...dependingInstances.flatMap(
+    instance => getAllDependingInstances(instance, visitedDependingIds)
+  )]
 }
 
 export default class NetsuiteAdapter implements AdapterOperations {
@@ -175,15 +176,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
   }
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
-    const changedInstances = changeGroup.changes.map(getChangeElement) as InstanceElement[]
+    const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
     const visitedDependingIds = new Set(changedInstances.map(inst => inst.elemID.getFullName()))
-    const instancesToDeploy = _.flatten(changedInstances.map(changedInstance =>
-      [changedInstance, ...getAllDependingInstances(changedInstance, visitedDependingIds)]))
-    const customizationInfosToDeploy = instancesToDeploy.map(instance => {
-      const resAfter = resolveValues(instance, getLookUpName)
-      return toCustomizationInfo(resAfter)
-    })
-
+    const instancesToDeploy = changedInstances.flatMap(changedInstance =>
+      getAllDependingInstances(changedInstance, visitedDependingIds))
+    const customizationInfosToDeploy = instancesToDeploy
+      .map(instance => resolveValues(instance, getLookUpName))
+      .map(toCustomizationInfo)
     try {
       await this.client.deploy(customizationInfosToDeploy)
     } catch (e) {

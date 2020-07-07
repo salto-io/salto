@@ -21,7 +21,7 @@ import {
 import {
   resolvePath,
 } from '@salto-io/adapter-utils'
-import { promises } from '@salto-io/lowerdash'
+import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import { mergeElements, MergeError } from '../../merger'
 import {
@@ -134,10 +134,8 @@ export const getParsedNaclFiles = async (
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource
 ): Promise<ParsedNaclFile[]> => {
-  const naclFiles = _.reject(
-    await naclFilesStore.getFiles(await naclFilesStore.list()),
-    _.isUndefined
-  ) as NaclFile[]
+  const naclFiles = (await naclFilesStore.getFiles(await naclFilesStore.list()))
+    .filter(values.isDefined)
   const functions = getFunctions(staticFileSource)
   return parseNaclFiles(naclFiles, cache, functions)
 }
@@ -157,7 +155,7 @@ Promise<NaclFilesState> => {
     }))
 
   const mergeResult = mergeElements(
-    _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
+    Object.values(allParsed).flatMap(parsed => Object.values(parsed.elements))
   )
 
   log.info('workspace has %d elements and %d parsed NaCl files',
@@ -390,6 +388,6 @@ export const naclFilesSource = (
   staticFileSource: StaticFilesSource,
   parsedFiles?: ParsedNaclFile[],
 ): NaclFilesSource => {
-  const state = parsedFiles ? buildNaclFilesState(parsedFiles, {}) : undefined
+  const state = (parsedFiles !== undefined) ? buildNaclFilesState(parsedFiles, {}) : undefined
   return buildNaclFilesSource(naclFilesStore, cache, staticFileSource, state)
 }

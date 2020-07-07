@@ -615,4 +615,4 @@ export const createDefaultInstanceFromType = (name: string, objectType: ObjectTy
   return instance
 }
 
-export const JSONSaltoValue = (value: Value): string => safeStringify(value)
+export const safeJsonStringify = (value: Value): string => safeStringify(value)

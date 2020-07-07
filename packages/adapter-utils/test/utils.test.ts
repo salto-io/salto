@@ -29,7 +29,7 @@ import {
   naclCase, findElement, findElements, findObjectType, GetLookupNameFunc,
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
-  JSONSaltoValue,
+  safeJsonStringify,
 } from '../src/utils'
 import { mockFunction } from './common'
 
@@ -1252,7 +1252,7 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('JSONSaltoValue', () => {
+  describe('safeJsonStringify', () => {
     describe('with circular references', () => {
       const elemID = new ElemID('salto', 'obj')
       const obj = new ObjectType({
@@ -1274,7 +1274,7 @@ describe('Test utils.ts', () => {
         'target',
         obj
       )
-      const json = JSONSaltoValue(obj)
+      const json = safeJsonStringify(obj)
       const parsed = JSON.parse(json)
       it('should serialize circular deps as [Circular]', () => {
         expect(parsed.annotations.ref.topLevelParent).toEqual('[Circular]')
@@ -1301,7 +1301,7 @@ describe('Test utils.ts', () => {
         elemID.createNestedID('attr', 'target'),
         'target',
       )
-      const saltoJSON = JSONSaltoValue(obj)
+      const saltoJSON = safeJsonStringify(obj)
       // eslint-disable-next-line no-restricted-syntax
       const regJSON = JSON.stringify(obj)
       it('should serialize to the same result JSON.stringify', () => {

@@ -20,7 +20,7 @@ import { Element, ElemID, ElementMap, GLOBAL_ADAPTER } from '@salto-io/adapter-a
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
 import { collections } from '@salto-io/lowerdash'
-import { flattenElementStr, JSONSaltoValue } from '@salto-io/adapter-utils'
+import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { State, serialization, pathIndex } from '@salto-io/workspace'
 
 const { createPathIndex } = pathIndex
@@ -42,7 +42,7 @@ const deserializedPathIndex = (
   data: string
 ): pathIndex.PathIndex => new pathIndex.PathIndex(JSON.parse(data))
 const serializedPathIndex = (index: pathIndex.PathIndex): string => (
-  JSONSaltoValue(Array.from(index.entries()))
+  safeJsonStringify(Array.from(index.entries()))
 )
 export const localState = (filePath: string): State => {
   let innerStateData: Promise<StateData>
@@ -117,7 +117,7 @@ export const localState = (filePath: string): State => {
       const { elements: elementsMap, servicesUpdateDate, pathIndex: index } = (await stateData())
       const elements = Object.values(elementsMap)
       const elementsString = serialize(Object.values(elements))
-      const dateString = JSONSaltoValue(servicesUpdateDate)
+      const dateString = safeJsonStringify(servicesUpdateDate)
       const pathIndexString = serializedPathIndex(index)
       const stateText = [elementsString, dateString, pathIndexString].join(EOL)
       await mkdirp(path.dirname(currentFilePath))

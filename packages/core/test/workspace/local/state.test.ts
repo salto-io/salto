@@ -16,7 +16,7 @@
 import { EOL } from 'os'
 import { replaceContents, exists, readTextFile, rm, rename } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
-import { JSONSaltoValue } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { State, serialization } from '@salto-io/workspace'
 import { localState } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
@@ -132,8 +132,8 @@ describe('local state', () => {
     expect(onFlush).toBeDefined()
     expect(onFlush[1]).toEqual([
       serialize([mockElement]),
-      JSONSaltoValue({}),
-      JSONSaltoValue([]),
+      safeJsonStringify({}),
+      safeJsonStringify([]),
     ].join(EOL))
   })
 
@@ -148,8 +148,8 @@ describe('local state', () => {
     const saltoModificationDate = new Date(2010, 10, 10)
     const hubspotModificationDate = new Date(2011, 10, 10)
     const mockStateStr = [
-      JSONSaltoValue([]),
-      JSONSaltoValue({ salto: saltoModificationDate, hubspot: hubspotModificationDate }),
+      safeJsonStringify([]),
+      safeJsonStringify({ salto: saltoModificationDate, hubspot: hubspotModificationDate }),
     ].join(EOL)
 
     it('should return an empty object when the state does not exist', async () => {

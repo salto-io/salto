@@ -18,7 +18,7 @@ import {
   Value, isExpression, ReferenceExpression,
   TemplateExpression,
 } from '@salto-io/adapter-api'
-import { JSONSaltoValue } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { DumpedHclBlock, DumpedHclBody } from './types'
 import { isFunctionExpression } from './functions'
 import { rules } from './lexer'
@@ -65,12 +65,12 @@ const dumpMultilineString = (prim: string): string =>
 const dumpString = (prim: string, indentationLevel = 0): string => {
   const dumpedString = isMultilineString(prim)
     ? dumpMultilineString(prim)
-    : fixDoubleTemplateMarkerEscaping(JSONSaltoValue(prim))
+    : fixDoubleTemplateMarkerEscaping(safeJsonStringify(prim))
   return `${createIndentation(indentationLevel)}${dumpedString}`
 }
 
 const dumpPrimitive = (prim: Value, indentationLevel = 0): string =>
-  `${createIndentation(indentationLevel)}${JSONSaltoValue(prim)}`
+  `${createIndentation(indentationLevel)}${safeJsonStringify(prim)}`
 
 const dumpObject = (
   obj: Value, indentationLevel = 0,

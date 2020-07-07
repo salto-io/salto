@@ -16,7 +16,7 @@
 
 import path from 'path'
 import * as file from '@salto-io/file'
-import { JSONSaltoValue } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { staticFiles } from '@salto-io/workspace'
 
 import {
@@ -49,7 +49,7 @@ describe('Static Files Cache', () => {
 
   const expectedCacheKey = baseMetaData.filepath
 
-  const expectedCacheContent = JSONSaltoValue({
+  const expectedCacheContent = safeJsonStringify({
     [expectedCacheKey]: expectedResult,
   })
 

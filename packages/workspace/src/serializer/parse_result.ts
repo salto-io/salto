@@ -14,16 +14,16 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { JSONSaltoValue } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ParseResult, ParseError, SourceMap } from '../parser'
 import * as elementSerializer from './elements'
 
 
 const serializeErrors = (errors: ParseError[]): string =>
-  JSONSaltoValue(errors)
+  safeJsonStringify(errors)
 
 const serializeSourceMap = (sourceMap: SourceMap): string => (
-  JSONSaltoValue(Array.from(sourceMap.entries()))
+  safeJsonStringify(Array.from(sourceMap.entries()))
 )
 
 export const serialize = (parseResult: ParseResult): string => [

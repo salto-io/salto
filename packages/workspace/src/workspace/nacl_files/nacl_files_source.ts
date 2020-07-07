@@ -142,6 +142,34 @@ export const getParsedNaclFiles = async (
   return parseNaclFiles(naclFiles, cache, functions)
 }
 
+const buildNaclFilesState = async (newNaclFiles: ParsedNaclFile[], current?: ParsedNaclFileMap):
+Promise<NaclFilesState> => {
+  log.debug(`going to parse ${newNaclFiles.length} NaCl files`)
+  const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
+  const allParsed = _.omitBy({ ...current, ...newParsed },
+    parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
+
+  const elementsIndex: Record<string, string[]> = {}
+  Object.values(allParsed).forEach(naclFile => Object.keys(naclFile.elements)
+    .forEach(key => {
+      elementsIndex[key] = elementsIndex[key] || []
+      elementsIndex[key] = _.uniq([...elementsIndex[key], naclFile.filename])
+    }))
+
+  const mergeResult = mergeElements(
+    _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
+  )
+
+  log.info('workspace has %d elements and %d parsed NaCl files',
+    _.size(elementsIndex), _.size(allParsed))
+  return {
+    parsedNaclFiles: allParsed,
+    mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
+    mergeErrors: mergeResult.errors,
+    elementsIndex,
+  }
+}
+
 const buildNaclFilesSource = (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
@@ -164,34 +192,6 @@ const buildNaclFilesSource = (
     const key = cacheResultKey(parsed.filename, parsed.timestamp)
     await cache.put(key, { elements, errors: [] })
     return parsed
-  }
-
-  const buildNaclFilesState = async (newNaclFiles: ParsedNaclFile[], current?: ParsedNaclFileMap):
-    Promise<NaclFilesState> => {
-    log.debug(`going to parse ${newNaclFiles.length} NaCl files`)
-    const newParsed = _.keyBy(newNaclFiles, parsed => parsed.filename)
-    const allParsed = _.omitBy({ ...current, ...newParsed },
-      parsed => (_.isEmpty(parsed.elements) && _.isEmpty(parsed.errors)))
-
-    const elementsIndex: Record<string, string[]> = {}
-    Object.values(allParsed).forEach(naclFile => Object.keys(naclFile.elements)
-      .forEach(key => {
-        elementsIndex[key] = elementsIndex[key] || []
-        elementsIndex[key] = _.uniq([...elementsIndex[key], naclFile.filename])
-      }))
-
-    const mergeResult = mergeElements(
-      _.flatten(Object.values(allParsed).map(parsed => Object.values(parsed.elements)))
-    )
-
-    log.info('workspace has %d elements and %d parsed NaCl files',
-      _.size(elementsIndex), _.size(allParsed))
-    return {
-      parsedNaclFiles: allParsed,
-      mergedElements: _.keyBy(mergeResult.merged, e => e.elemID.getFullName()),
-      mergeErrors: mergeResult.errors,
-      elementsIndex,
-    }
   }
 
   let state = initState
@@ -388,4 +388,8 @@ export const naclFilesSource = (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
-): NaclFilesSource => buildNaclFilesSource(naclFilesStore, cache, staticFileSource)
+  parsedFiles?: ParsedNaclFile[],
+): NaclFilesSource => {
+  const state = parsedFiles ? buildNaclFilesState(parsedFiles, {}) : undefined
+  return buildNaclFilesSource(naclFilesStore, cache, staticFileSource, state)
+}

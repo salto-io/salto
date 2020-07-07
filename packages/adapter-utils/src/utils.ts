@@ -15,12 +15,13 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
+import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
-  CORE_ANNOTATIONS, TypeElement, isPrimitiveValue,
+  CORE_ANNOTATIONS, TypeElement,
 } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 
@@ -614,11 +615,4 @@ export const createDefaultInstanceFromType = (name: string, objectType: ObjectTy
   return instance
 }
 
-export const JSONSaltoValue = (value: Value): string => JSON.stringify(
-  value,
-  (_key: string, val: Value): unknown => (
-    isPrimitiveValue(val) || _.isPlainObject(val) || _.isArray(val)
-      ? val
-      : val.constructor.name
-  ),
-)
+export const JSONSaltoValue = (value: Value): string => safeStringify(value)

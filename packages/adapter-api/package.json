@@ -55,7 +55,7 @@
     "jest": "^24.9.0",
     "jest-circus": "^24.9.0",
     "jest-junit": "^6.4.0",
-"tsc-watch": "^2.2.1",
+    "tsc-watch": "^2.2.1",
     "typescript": "3.9.3"
   }
 }

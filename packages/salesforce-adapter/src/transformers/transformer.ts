@@ -1023,7 +1023,9 @@ export const getSObjectFieldElement = (
 
   // Handle specific field types that need to be converted from their primitive type to their
   // Salesforce field type
-  if (field.autoNumber) { // autonumber (needs to be first because its type in the field
+  if (field.idLookup && field.name === CUSTOM_OBJECT_ID_FIELD) {
+    naclFieldType = BuiltinTypes.SERVICE_ID
+  } else if (field.autoNumber) { // autonumber (needs to be first because its type in the field
     // returned from the API is string)
     naclFieldType = getFieldType(FIELD_TYPE_NAMES.AUTONUMBER)
   } else if (field.type === 'string' && !field.compoundFieldName) { // string
@@ -1138,6 +1140,28 @@ export const toMetadataInfo = (fullName: string, values: Values):
     ...values,
   })
 
+export const createInstanceServiceIds = (
+  serviceIdsValues: Values,
+  type: ObjectType,
+): ServiceIds => {
+  const typeServiceIds = (): ServiceIds => {
+    const serviceIds: ServiceIds = {
+      [ADAPTER]: SALESFORCE,
+      [METADATA_TYPE]: type.annotations[METADATA_TYPE],
+    }
+    if (type.annotations[API_NAME]) {
+      serviceIds[API_NAME] = type.annotations[API_NAME]
+    }
+    return serviceIds
+  }
+
+  return {
+    ...serviceIdsValues,
+    [ADAPTER]: SALESFORCE,
+    [OBJECT_SERVICE_ID]: toServiceIdsString(typeServiceIds()),
+  }
+}
+
 export const createInstanceElement = (values: Values, type: ObjectType,
   namespacePrefix?: string): InstanceElement => {
   const fullName = values[INSTANCE_FULL_NAME_FIELD]
@@ -1153,28 +1177,13 @@ export const createInstanceElement = (values: Values, type: ObjectType,
     return [SALESFORCE]
   }
 
-  const instanceServiceIds = (): ServiceIds => {
-    const typeServiceIds = (): ServiceIds => {
-      const serviceIds: ServiceIds = {
-        [ADAPTER]: SALESFORCE,
-        [METADATA_TYPE]: type.annotations[METADATA_TYPE],
-      }
-      if (type.annotations[API_NAME]) {
-        serviceIds[API_NAME] = type.annotations[API_NAME]
-      }
-      return serviceIds
-    }
-
-    return {
-      [INSTANCE_FULL_NAME_FIELD]: fullName,
-      [ADAPTER]: SALESFORCE,
-      [OBJECT_SERVICE_ID]: toServiceIdsString(typeServiceIds()),
-    }
-  }
-
   const typeName = type.elemID.name
   const name = (): string => (
-    Types.getElemId(naclCase(fullName), true, instanceServiceIds()).name
+    Types.getElemId(
+      naclCase(values[INSTANCE_FULL_NAME_FIELD]),
+      true,
+      createInstanceServiceIds(_.pick(values, INSTANCE_FULL_NAME_FIELD), type)
+    ).name
   )
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : name(),

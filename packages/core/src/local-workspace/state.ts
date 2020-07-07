@@ -16,27 +16,17 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
-import { Element, ElemID, ElementMap, GLOBAL_ADAPTER } from '@salto-io/adapter-api'
+import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
-import { collections } from '@salto-io/lowerdash'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
-import { State, serialization, pathIndex } from '@salto-io/workspace'
+import { serialization, pathIndex, state } from '@salto-io/workspace'
 
-const { createPathIndex } = pathIndex
-const { makeArray } = collections.array
 const { serialize, deserialize } = serialization
 
 const log = logger(module)
 
 export const STATE_EXTENSION = '.jsonl'
-
-type StateData = {
-  elements: ElementMap
-  // The date of the last fetch
-  servicesUpdateDate: Record<string, Date>
-  pathIndex: pathIndex.PathIndex
-}
 
 const deserializedPathIndex = (
   data: string
@@ -44,12 +34,12 @@ const deserializedPathIndex = (
 const serializedPathIndex = (index: pathIndex.PathIndex): string => (
   safeJsonStringify(Array.from(index.entries()))
 )
-export const localState = (filePath: string): State => {
-  let innerStateData: Promise<StateData>
+export const localState = (filePath: string): state.State => {
+  let innerStateData: Promise<state.StateData>
   let dirty = false
   let currentFilePath = filePath
 
-  const loadFromFile = async (): Promise<StateData> => {
+  const loadFromFile = async (): Promise<state.StateData> => {
     const text = await exists(currentFilePath) ? await readTextFile(currentFilePath) : undefined
     if (text === undefined) {
       return { elements: {}, servicesUpdateDate: {}, pathIndex: new pathIndex.PathIndex() }
@@ -67,48 +57,36 @@ export const localState = (filePath: string): State => {
     return { elements, servicesUpdateDate, pathIndex: index }
   }
 
-  const stateData = (): Promise<StateData> => {
+  const stateData = (): Promise<state.StateData> => {
     if (innerStateData === undefined) {
       innerStateData = loadFromFile()
     }
     return innerStateData
   }
+  const inMemState = state.buildInMemState(stateData())
 
   return {
-    getAll: async (): Promise<Element[]> => Object.values((await stateData()).elements),
-    list: async (): Promise<ElemID[]> =>
-      Object.keys((await stateData()).elements).map(n => ElemID.fromFullName(n)),
-    get: async (id: ElemID): Promise<Element> => ((await stateData()).elements[id.getFullName()]),
+    ...inMemState,
     set: async (element: Element): Promise<void> => {
-      (await stateData()).elements[element.elemID.getFullName()] = element
+      await inMemState.set(element)
       dirty = true
     },
     remove: async (id: ElemID): Promise<void> => {
-      delete (await stateData()).elements[id.getFullName()]
+      await inMemState.remove(id)
+      dirty = true
+    },
+    override: async (element: Element | Element[]): Promise<void> => {
+      await inMemState.override(element)
+      dirty = true
+    },
+    overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
+      await inMemState.overridePathIndex(unmergedElements)
       dirty = true
     },
     rename: async (name: string): Promise<void> => {
       const newFilePath = path.join(path.dirname(currentFilePath), `${name}${STATE_EXTENSION}`)
       await rename(currentFilePath, newFilePath)
       currentFilePath = newFilePath
-    },
-    override: async (element: Element | Element[]): Promise<void> => {
-      const elements = makeArray(element)
-      const newServices = _(elements).map(e => e.elemID.adapter)
-        .uniq()
-        .filter(adapter => adapter !== GLOBAL_ADAPTER)
-        .value()
-      const data = await stateData()
-      data.elements = _.keyBy(elements, e => e.elemID.getFullName())
-      data.servicesUpdateDate = {
-        ...data.servicesUpdateDate,
-        ...newServices.reduce((acc, service) => {
-          acc[service] = new Date(Date.now())
-          return acc
-        }, {} as Record<string, Date>),
-      }
-
-      dirty = true
     },
     flush: async (): Promise<void> => {
       if (!dirty) {
@@ -127,13 +105,5 @@ export const localState = (filePath: string): State => {
     clear: async (): Promise<void> => {
       await rm(filePath)
     },
-    getServicesUpdateDates: async (): Promise<Record<string, Date>> => (await stateData())
-      .servicesUpdateDate,
-    existingServices: async (): Promise<string[]> => _.keys((await stateData()).servicesUpdateDate),
-    overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
-      (await stateData()).pathIndex = createPathIndex(unmergedElements)
-      dirty = true
-    },
-    getPathIndex: async (): Promise<pathIndex.PathIndex> => (await stateData()).pathIndex,
   }
 }

@@ -25,7 +25,7 @@ import {
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
-import { State } from '../../src/workspace/state'
+import { State } from '../../src/workspace/state/interface'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource } from './static_files/common.test'
 import { DirectoryStore } from '../../src/workspace/dir_store'

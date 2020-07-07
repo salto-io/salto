@@ -16,6 +16,7 @@
 import path from 'path'
 import { readTextFile, exists, mkdirp, replaceContents, rm, rename } from '@salto-io/file'
 import { staticFiles } from '@salto-io/workspace'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 
 export const CACHE_FILENAME = 'static-file-cache'
 
@@ -43,7 +44,7 @@ export const buildLocalStaticFilesCache = (
       if (!await exists(cacheDir)) {
         await mkdirp(cacheDir)
       }
-      replaceContents(currentCacheFile, JSON.stringify((await cache)))
+      replaceContents(currentCacheFile, safeJsonStringify((await cache)))
     },
     clear: async () => {
       await rm(currentCacheFile)

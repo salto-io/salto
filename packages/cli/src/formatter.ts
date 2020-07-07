@@ -23,6 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult } from '@salto-io/core'
 import { errors, SourceFragment, parser } from '@salto-io/workspace'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import Prompts from './prompts'
 
 export const header = (txt: string): string => chalk.bold(txt)
@@ -143,7 +144,7 @@ const formatValue = (value: Element | Value): string => {
   if (value instanceof ReferenceExpression) {
     return isElement(value.value) ? value.elemId.getFullName() : formatValue(value.value)
   }
-  return JSON.stringify(value)
+  return safeJsonStringify(value)
 }
 
 const isDummyChange = (change: DetailedChange): boolean => (

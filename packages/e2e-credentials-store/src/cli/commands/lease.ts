@@ -59,7 +59,6 @@ const commandModule = ({
       writeLine(stderr, 'No lease available')
       return 1
     }
-
     writeLine(stdout, JSON.stringify(lease))
     return 0
   }),

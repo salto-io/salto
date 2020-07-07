@@ -29,6 +29,7 @@ import {
   naclCase, findElement, findElements, findObjectType, GetLookupNameFunc,
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
+  safeJsonStringify,
 } from '../src/utils'
 import { mockFunction } from './common'
 
@@ -1248,6 +1249,64 @@ describe('Test utils.ts', () => {
       })
       expect(createDefaultInstanceFromType('test', configType))
         .toEqual(new InstanceElement('test', configType, { val1: 'test' }))
+    })
+  })
+
+  describe('safeJsonStringify', () => {
+    describe('with circular references', () => {
+      const elemID = new ElemID('salto', 'obj')
+      const obj = new ObjectType({
+        elemID,
+        fields: {
+          field: {
+            type: BuiltinTypes.STRING,
+          },
+          anotherField: {
+            type: BuiltinTypes.STRING,
+          },
+        },
+        annotations: {
+          target: 'target',
+        },
+      })
+      obj.annotations.ref = new ReferenceExpression(
+        elemID.createNestedID('attr', 'target'),
+        'target',
+        obj
+      )
+      const json = safeJsonStringify(obj)
+      const parsed = JSON.parse(json)
+      it('should serialize circular deps as [Circular]', () => {
+        expect(parsed.annotations.ref.topLevelParent).toEqual('[Circular]')
+        expect(parsed.fields.field.parent).toEqual('[Circular]')
+      })
+      it('should not serialize and object which is accessed twice without '
+        + 'actually being circular as [Circulr]', () => {
+        expect(parsed.fields.field.type).not.toEqual('[Circular]')
+        expect(parsed.fields.anotherField.type).not.toEqual('[Circular]')
+      })
+    })
+    describe('without circular references', () => {
+      const elemID = new ElemID('salto', 'obj')
+      const obj = new ObjectType({
+        elemID,
+        annotationTypes: {
+          target: BuiltinTypes.STRING,
+        },
+        annotations: {
+          target: 'target',
+        },
+      })
+      obj.annotations.ref = new ReferenceExpression(
+        elemID.createNestedID('attr', 'target'),
+        'target',
+      )
+      const saltoJSON = safeJsonStringify(obj)
+      // eslint-disable-next-line no-restricted-syntax
+      const regJSON = JSON.stringify(obj)
+      it('should serialize to the same result JSON.stringify', () => {
+        expect(saltoJSON).toEqual(regJSON)
+      })
     })
   })
 })

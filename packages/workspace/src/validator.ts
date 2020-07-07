@@ -19,8 +19,9 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression, StaticFile, isPrimitiveValue,
+  isReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { UnresolvedReference, resolve, CircularReference } from './expressions'
 import { IllegalReference } from './parser/parse'
@@ -73,14 +74,7 @@ export class InvalidValueValidationError extends ValidationError {
     { elemID, value, fieldName, expectedValue }:
       { elemID: ElemID; value: Value; fieldName: string; expectedValue: unknown }
   ) {
-    const actualValueStr = JSON.stringify(
-      value,
-      (_key: string, val: Value): unknown => (
-        isPrimitiveValue(val) || _.isPlainObject(val) || _.isArray(val)
-          ? val
-          : val.constructor.name
-      ),
-    )
+    const actualValueStr = safeJsonStringify(value)
     const expectedValueStr = _.isArray(expectedValue)
       ? `one of: ${(expectedValue as []).map(v => `"${v}"`).join(', ')}`
       : `"${expectedValue}"`
@@ -312,9 +306,10 @@ export class InvalidValueTypeValidationError extends ValidationError {
   constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: TypeElement }) {
     super({
       elemID,
-      error: `Invalid value type for ${type.elemID.getFullName()} : ${JSON.stringify(value)}`,
+      error: `Invalid value type for ${type.elemID.getFullName()} : ${safeJsonStringify(value)}`,
       severity: 'Warning',
     })
+
     this.value = value
     this.type = type
   }

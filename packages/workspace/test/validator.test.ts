@@ -19,6 +19,7 @@ import {
   ReferenceExpression, PrimitiveType, PrimitiveTypes,
   ListType, getRestriction, createRestriction, VariableExpression, Variable, StaticFile,
 } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import {
   validateElements, InvalidValueValidationError, CircularReferenceValidationError,
@@ -964,7 +965,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(objVarElemId)
-        expect(errors[0].message).toMatch(`${JSON.stringify({ key: 'val' })}`)
+        expect(errors[0].message).toMatch(`${safeJsonStringify({ key: 'val' })}`)
       })
       it('should return error when the value is a reference to an element', () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')

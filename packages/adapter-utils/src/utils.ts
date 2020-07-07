@@ -15,6 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
+import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
 import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
@@ -613,3 +614,5 @@ export const createDefaultInstanceFromType = (name: string, objectType: ObjectTy
   applyInstancesDefaults([instance])
   return instance
 }
+
+export const safeJsonStringify = (value: Value): string => safeStringify(value)

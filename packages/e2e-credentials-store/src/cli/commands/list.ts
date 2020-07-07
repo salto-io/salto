@@ -64,6 +64,7 @@ const listJson: Lister = async iterable => {
     return next()
   }
   await next()
+  // eslint-disable-next-line no-restricted-syntax
   return JSON.stringify(rows)
 }
 

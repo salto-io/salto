@@ -37,7 +37,7 @@ export type ParseError = HclParseError & SaltoError
 export type ParseResult = {
   elements: Element[]
   errors: ParseError[]
-  sourceMap: SourceMap
+  sourceMap?: SourceMap
 }
 
 /**
@@ -53,7 +53,7 @@ export const parse = async (
   naclFile: Buffer,
   filename: string,
   functions: Functions = {},
-): Promise<ParseResult> => {
+): Promise<Required<ParseResult>> => {
   const srcString = naclFile.toString()
   const [patchedSrc, elements, sourceMap, errors] = await parseBuffer(
     srcString,

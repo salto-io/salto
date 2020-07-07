@@ -30,8 +30,8 @@ export const serialize = (parseResult: ParseResult): string => [
   // since the idea is to reflect the nacl files, not the state file.
   elementSerializer.serialize(parseResult.elements, 'keepRef'),
   serializeErrors(parseResult.errors),
-  serializeSourceMap(parseResult.sourceMap),
-].join(EOL)
+  parseResult.sourceMap ? serializeSourceMap(parseResult.sourceMap) : undefined,
+].filter(line => line !== undefined).join(EOL)
 
 const deserializeParseErrors = (data: string): ParseError[] =>
   JSON.parse(data)
@@ -50,6 +50,6 @@ export const deserialize = async (
   return {
     errors: deserializeParseErrors(errorsData),
     elements,
-    sourceMap: deserializeSourceMap(sourceMapData),
+    sourceMap: sourceMapData ? deserializeSourceMap(sourceMapData) : undefined,
   }
 }

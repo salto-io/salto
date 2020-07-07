@@ -90,8 +90,10 @@ describe('parseResultCache', () => {
           parseResult.elements[0].elemID.name
         )
         expect(parseResultFromCache.errors).toEqual([])
+        expect(parseResultFromCache.sourceMap).toBeDefined()
+        const sm = parseResultFromCache.sourceMap as SourceMap
         expect(
-          wu(parseResultFromCache.sourceMap.entries()).toArray()
+          wu(sm.entries()).toArray()
         ).toEqual(
           wu(parseResult.sourceMap.entries()).toArray()
         )

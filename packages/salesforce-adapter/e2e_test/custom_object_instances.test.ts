@@ -128,7 +128,7 @@ describe('custom object instances e2e', () => {
       const fields = ['IsActive', 'ProductCode', 'IsArchived']
       const result = await getRecordOfInstance(client, createdInstance, fields)
       expect(result).toBeDefined()
-      expect(_.pick(result, fields)).toMatchObject(_.pick(updatedInstance.value, fields))
+      expect(result).toMatchObject(_.pick(updatedInstance.value, fields))
     })
 
     it('should delete custom object instance', async () => {

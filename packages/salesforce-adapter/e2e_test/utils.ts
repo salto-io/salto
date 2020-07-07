@@ -29,7 +29,7 @@ import { createInstanceElement, metadataType, apiName, createMetadataTypeElement
 import { ConfigChangeSuggestion, FilterContext } from '../src/types'
 
 const { makeArray } = collections.array
-const { mapAsync, toArrayAsync } = collections.asynciterable
+const { toArrayAsync } = collections.asynciterable
 
 export const getMetadata = async (client: SalesforceClient, type: string, fullName: string):
 Promise<MetadataInfo | undefined> => {
@@ -48,10 +48,7 @@ export const getRecordOfInstance = async (
   const selectFieldsString = _.uniq(['Id'].concat(additionalFields)).join(',')
   const queryString = `SELECT ${selectFieldsString} FROM ${apiName(instance.type)} WHERE Id = '${instance.value.Id}'`
   const queryResult = await client.queryAll(queryString)
-  const records = (await toArrayAsync(await mapAsync(
-    queryResult,
-    (r: SalesforceRecord[]) => r
-  ))).flat()
+  const records = (await toArrayAsync(queryResult)).flat()
   return records[0]
 }
 

@@ -96,7 +96,7 @@ describe('asynciterable', () => {
     beforeEach(() => {
       toStringMock = jest.fn().mockImplementation((v: number) => v.toString())
       asyncToStringMock = jest.fn().mockImplementation(async (v: number): Promise<string> =>
-        Promise.resolve(v.toString()))
+        v.toString())
       numberIdentityMock = jest.fn().mockImplementation((v: number) => v)
     })
 

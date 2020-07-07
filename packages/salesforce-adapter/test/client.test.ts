@@ -241,10 +241,10 @@ describe('salesforce client', () => {
     const asyncCounter = async (
       iterator: AsyncIterable<Values[]>
     ): Promise<number> =>
-      _.sum(_.flatten(await toArrayAsync(await mapAsync(
+      _.sum((await toArrayAsync(await mapAsync(
         iterator,
         vals => makeArray(vals).map(() => 1)
-      ))))
+      ))).flat())
 
     describe('when all results are in a single query', () => {
       beforeEach(async () => {

@@ -48,10 +48,10 @@ export const getRecordOfInstance = async (
   const selectFieldsString = _.uniq(['Id'].concat(additionalFields)).join(',')
   const queryString = `SELECT ${selectFieldsString} FROM ${apiName(instance.type)} WHERE Id = '${instance.value.Id}'`
   const queryResult = await client.queryAll(queryString)
-  const records = _.flatten(await toArrayAsync(await mapAsync(
+  const records = (await toArrayAsync(await mapAsync(
     queryResult,
     (r: SalesforceRecord[]) => r
-  )))
+  ))).flat()
   return records[0]
 }
 

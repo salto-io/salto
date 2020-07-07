@@ -85,14 +85,14 @@ const getObjectInstances = async (
   }
   const queryString = buildQueryString(object)
   const recordsIterable = await client.queryAll(queryString)
-  return _.flatten(await toArrayAsync(await mapAsync(recordsIterable, recordsToInstances)))
+  return (await toArrayAsync(await mapAsync(recordsIterable, recordsToInstances))).flat()
 }
 
 const getObjectTypesInstances = async (
   client: SalesforceClient,
   objects: ObjectType[]
 ): Promise<InstanceElement[]> =>
-  (_.flatten(await Promise.all(objects.map(o => getObjectInstances(client, o)))))
+  ((await Promise.all(objects.map(o => getObjectInstances(client, o)))).flat())
 
 const filterObjectTypes = (
   elements: Element[],

@@ -18,7 +18,6 @@ import * as nodemailer from 'nodemailer'
 import { DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Config, Notification, EmailNotificationType, SlackNotificationType, SMTP, Slack } from './config'
-import { createChangeDiff } from './diff'
 
 const log = logger(module)
 
@@ -29,13 +28,8 @@ const smtpConnectionString = (smtp: SMTP): string =>
 const templateHTMLBody = (changes: DetailedChange[]): string =>
   changes.map((change: DetailedChange) => change.id.getFullName()).join('\n')
 
-const templateSlackMessage = async (changes: DetailedChange[]): Promise<string> => {
-  const diffPromises = changes
-    .map((change, ix) => createChangeDiff(ix, change))
-  const diffs = await Promise.all(diffPromises)
-  return changes
-    .map((change: DetailedChange, ix: number) => `*${change.id.getFullName()}:* \`\`\`${diffs[ix]}\`\`\``).join('\n')
-}
+const templateSlackMessage = async (changes: DetailedChange[]): Promise<string> => changes
+  .map((change: DetailedChange) => `*${change.id.getFullName()}*`).join('\n')
 
 const sendEmail = async (
   notification: Notification,

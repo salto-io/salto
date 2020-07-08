@@ -5774,32 +5774,32 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup 
       },
     }, /* Original description: The default value is F. */
     addbuttonaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_addbuttonaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_addbuttonaction),
       annotations: {
       },
     },
     createlineaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction),
       annotations: {
       },
     },
     createrecordaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction),
       annotations: {
       },
     },
     customaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction),
       annotations: {
       },
     },
     gotopageaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotopageaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotopageaction),
       annotations: {
       },
     },
     gotorecordaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_gotorecordaction),
       annotations: {
       },
     },
@@ -5809,62 +5809,62 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup 
       },
     },
     initiateworkflowaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction),
       annotations: {
       },
     },
     lockrecordaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_lockrecordaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_lockrecordaction),
       annotations: {
       },
     },
     removebuttonaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_removebuttonaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_removebuttonaction),
       annotations: {
       },
     },
     returnusererroraction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_returnusererroraction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_returnusererroraction),
       annotations: {
       },
     },
     sendcampaignemailaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendcampaignemailaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendcampaignemailaction),
       annotations: {
       },
     },
     sendemailaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendemailaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_sendemailaction),
       annotations: {
       },
     },
     setdisplaylabelaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaylabelaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaylabelaction),
       annotations: {
       },
     },
     setdisplaytypeaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaytypeaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setdisplaytypeaction),
       annotations: {
       },
     },
     setfieldmandatoryaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldmandatoryaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldmandatoryaction),
       annotations: {
       },
     },
     setfieldvalueaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldvalueaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_setfieldvalueaction),
       annotations: {
       },
     },
     subscribetorecordaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_subscribetorecordaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_subscribetorecordaction),
       annotations: {
       },
     },
     transformrecordaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_transformrecordaction),
       annotations: {
       },
     },
@@ -6722,7 +6722,7 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
       },
     }, /* Original description: The default value is F. */
     createrecordaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction),
       annotations: {
       },
     },
@@ -6732,17 +6732,17 @@ const workflow_workflowstates_workflowstate_workflowactions_workflowsublistactio
       },
     },
     returnusererroraction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_returnusererroraction),
       annotations: {
       },
     },
     sendemailaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_sendemailaction),
       annotations: {
       },
     },
     setfieldvalueaction: {
-      type: workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction,
+      type: new ListType(workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_setfieldvalueaction),
       annotations: {
       },
     },

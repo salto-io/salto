@@ -23,7 +23,7 @@ import { collections } from '@salto-io/lowerdash'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
-import { State } from './state/state'
+import { State } from './state'
 import { NaclFilesSource, NaclFile, RoutingMode } from './nacl_files/nacl_files_source'
 import { multiEnvSource } from './nacl_files/mutil_env/multi_env_source'
 import { Errors, ServiceDuplicationError, EnvDuplicationError,

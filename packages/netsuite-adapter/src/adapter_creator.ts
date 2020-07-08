@@ -21,6 +21,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SDKDownloadService } from '@salto-io/suitecloud-cli'
 import changeValidator from './change_validator'
+import { getChangeGroupIds } from './group_changes'
 import NetsuiteClient, { Credentials } from './client/client'
 import NetsuiteAdapter from './adapter'
 import { configType, NetsuiteConfig } from './config'
@@ -98,6 +99,7 @@ export const adapter: Adapter = {
   configType,
   deployModifiers: {
     changeValidator,
+    getChangeGroupIds,
   },
   install: async (): Promise<AdapterInstallResult> => {
     try {

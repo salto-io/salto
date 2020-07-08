@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, Element, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, FieldDefinition, isInstanceElement, InstanceElement, ServiceIds } from '@salto-io/adapter-api'
 import { getNamespaceFromString } from '../../src/filters/utils'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -31,6 +31,10 @@ describe('Custom Object Instances filter', () => {
   let client: SalesforceClient
   type FilterType = FilterWith<'onFetch'>
   let filter: FilterType
+
+  const NAME_FROM_GET_ELEM_ID = 'getElemIDPrefix'
+  const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
+    ElemID => new ElemID(adapterName, `${NAME_FROM_GET_ELEM_ID}${name}`)
 
   const TestCustomRecords = [
     {
@@ -118,6 +122,7 @@ describe('Custom Object Instances filter', () => {
   beforeEach(() => {
     ({ connection, client } = mockAdapter({
       adapterParams: {
+        getElemIdFunc: mockGetElemIdFunc,
       },
     }))
     filter = filterCreator(
@@ -279,6 +284,7 @@ describe('Custom Object Instances filter', () => {
 
     const notInNamespaceName = 'NotInNamespace__c'
     const objNotInNamespace = createCustomObject(notInNamespaceName)
+    const expectedFirstInstanceName = `${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Id}`
 
     beforeEach(async () => {
       elements = [simpleObject, objWithNameField, objWithAddressField, objNotInNamespace]
@@ -310,8 +316,12 @@ describe('Custom Object Instances filter', () => {
       it('should create the instances with record path acccording to object', () => {
         expect(instances[0].path).toEqual(
           [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
-            simpleName, RECORDS_PATH, TestCustomRecords[0].Id]
+            simpleName, RECORDS_PATH, expectedFirstInstanceName]
         )
+      })
+
+      it('should create the instances with ElemID name according to the getElemID func', () => {
+        expect(instances[0].elemID.name).toEqual(expectedFirstInstanceName)
       })
 
       it('should create instance with values according to objects fields', () => {
@@ -340,8 +350,12 @@ describe('Custom Object Instances filter', () => {
       it('should create the instances with record path acccording to object', () => {
         expect(instances[0].path).toEqual(
           [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
-            withNameName, RECORDS_PATH, TestCustomRecords[0].Id]
+            withNameName, RECORDS_PATH, expectedFirstInstanceName]
         )
+      })
+
+      it('should create the instances with ElemID name according to the getElemID func', () => {
+        expect(instances[0].elemID.name).toEqual(expectedFirstInstanceName)
       })
 
       it('should create instance with values according to objects fields', () => {
@@ -376,8 +390,12 @@ describe('Custom Object Instances filter', () => {
       it('should create the instances with record path acccording to object', () => {
         expect(instances[0].path).toEqual(
           [SALESFORCE, INSTALLED_PACKAGES_PATH, testNamespace, OBJECTS_PATH,
-            withAddressName, RECORDS_PATH, TestCustomRecords[0].Id]
+            withAddressName, RECORDS_PATH, expectedFirstInstanceName]
         )
+      })
+
+      it('should create the instances with ElemID name according to the getElemID func', () => {
+        expect(instances[0].elemID.name).toEqual(expectedFirstInstanceName)
       })
 
       it('should create instance with values according to objects fields', () => {

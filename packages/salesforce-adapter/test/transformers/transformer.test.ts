@@ -448,6 +448,53 @@ describe('transformer', () => {
       })
     })
 
+    describe('id field transformation', () => {
+      const origSalesforceIdField: SalesforceField = {
+        aggregatable: true,
+        cascadeDelete: false,
+        dependentPicklist: false,
+        externalId: false,
+        htmlFormatted: false,
+        autoNumber: false,
+        byteLength: 18,
+        calculated: false,
+        caseSensitive: false,
+        createable: false,
+        custom: false,
+        defaultedOnCreate: true,
+        deprecatedAndHidden: false,
+        digits: 0,
+        filterable: true,
+        groupable: true,
+        idLookup: true,
+        label: 'Record Id',
+        length: 18,
+        name: 'Id',
+        nameField: false,
+        namePointing: false,
+        nillable: false,
+        permissionable: false,
+        polymorphicForeignKey: false,
+        precision: 0,
+        queryByDistance: false,
+        restrictedPicklist: false,
+        scale: 0,
+        searchPrefilterable: false,
+        soapType: 'tns:ID',
+        sortable: true,
+        type: 'id',
+        unique: false,
+        updateable: false,
+      }
+
+      let salesforceIdField: SalesforceField
+      it('should fetch idLookup & typed id fields as serviceId', () => {
+        salesforceIdField = _.cloneDeep(origSalesforceIdField)
+        const fieldElement = getSObjectFieldElement(dummyElem, salesforceIdField, serviceIds, [])
+        expect(fieldElement.type).toEqual(BuiltinTypes.SERVICE_ID)
+      })
+    })
+
     describe('name field transformation', () => {
       const origSalesforceNameField: SalesforceField = {
         aggregatable: true,

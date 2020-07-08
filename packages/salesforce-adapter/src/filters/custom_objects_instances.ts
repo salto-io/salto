@@ -20,7 +20,7 @@ import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD, OBJECTS_PATH } from '../constants'
 import { FilterCreator } from '../filter'
-import { apiName, isCustomObject, Types } from '../transformers/transformer'
+import { apiName, isCustomObject, Types, createInstanceServiceIds } from '../transformers/transformer'
 import { getNamespace } from './utils'
 import { DataManagementConfig } from '../types'
 
@@ -56,13 +56,16 @@ const getObjectInstances = async (
         }
         return [SALESFORCE, OBJECTS_PATH, object.elemID.typeName, RECORDS_PATH, instanceName]
       }
-
-      return new InstanceElement(
-        // TODO: Handle elemID with additional logic
+      const { name } = Types.getElemId(
         record[CUSTOM_OBJECT_ID_FIELD],
+        true,
+        createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), object),
+      )
+      return new InstanceElement(
+        name,
         object,
         record,
-        getInstancePath(record[CUSTOM_OBJECT_ID_FIELD]),
+        getInstancePath(name),
       )
     }
 

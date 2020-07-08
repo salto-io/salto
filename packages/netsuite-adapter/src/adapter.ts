@@ -90,13 +90,17 @@ export const findDependingInstancesFromRefs = (instance: InstanceElement): Insta
  * This method runs recursively on all references of the changedInstance to identify dependencies
  * that eventually will be deployed as well as part of the SDF project
  */
-const getAllDependingInstances = (changedInstance: InstanceElement,
-  visitedDependingIds: Set<string>): InstanceElement[] => {
+export const getAllDependingInstances = (changedInstance: InstanceElement,
+  visitedDependingIds: Set<string>, shouldProceedFunc?: (inst: InstanceElement) => boolean):
+  InstanceElement[] => {
+  if (shouldProceedFunc !== undefined && !shouldProceedFunc(changedInstance)) {
+    return []
+  }
   const dependingInstances = findDependingInstancesFromRefs(changedInstance)
     .filter(instance => !visitedDependingIds.has(instance.elemID.getFullName()))
   dependingInstances.forEach(instance => visitedDependingIds.add(instance.elemID.getFullName()))
   return [changedInstance, ...dependingInstances.flatMap(
-    instance => getAllDependingInstances(instance, visitedDependingIds)
+    instance => getAllDependingInstances(instance, visitedDependingIds, shouldProceedFunc)
   )]
 }
 

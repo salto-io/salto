@@ -15,45 +15,45 @@
 */
 import _ from 'lodash'
 import {
-  Change, ChangeError, getChangeElement, InstanceElement, isInstanceElement,
+  Change, ChangeError, ElemID, getChangeElement, InstanceElement, isInstanceElement,
 } from '@salto-io/adapter-api'
-import { findDependingInstancesFromRefs } from '../adapter'
+import { getAllDependingInstances } from '../adapter'
 
-export const validateDependsOnInvalidElement = (invalidElementIds: Set<string>,
+export const validateDependsOnInvalidElement = (elemIdsWithValidation: string[],
   changes: ReadonlyArray<Change>): ReadonlyArray<ChangeError> => {
-  const visitedElementIds = new Set<string>()
+  const invalidElementIds = new Set<string>(elemIdsWithValidation)
+  const validElementIds = new Set<string>()
 
-  const isValidInstance = (instance: InstanceElement): boolean => {
-    if (invalidElementIds.has(instance.elemID.getFullName())) {
-      return false
+  const createShouldProceedFunc = (changedInstance: InstanceElement):
+    ((instance: InstanceElement) => boolean) =>
+    (instance: InstanceElement) => {
+      if (invalidElementIds.has(instance.elemID.getFullName())) {
+        invalidElementIds.add(instance.elemID.getFullName())
+        invalidElementIds.add(changedInstance.elemID.getFullName())
+        return false
+      }
+      return !validElementIds.has(instance.elemID.getFullName())
     }
-    if (visitedElementIds.has(instance.elemID.getFullName())) {
-      return true
-    }
-    visitedElementIds.add(instance.elemID.getFullName())
-    const dependingInstances = findDependingInstancesFromRefs(instance)
-    const invalidDependingInstances = dependingInstances
-      .filter(dependingInstance => !isValidInstance(dependingInstance))
-    if (!_.isEmpty(invalidDependingInstances)) {
-      invalidElementIds.add(instance.elemID.getFullName())
-      return false
-    }
-    return true
-  }
 
   if (invalidElementIds.size === 0) {
     return []
   }
-  const possiblyValidInstances = changes
+  changes
     .map(getChangeElement)
     .filter(isInstanceElement)
-    .filter(changedInstance => !invalidElementIds.has(changedInstance.elemID.getFullName()))
-  return possiblyValidInstances
-    .filter(changeInstance => !isValidInstance(changeInstance))
-    .map(({ elemID }) => ({
-      elemID,
+    .forEach(changedInstance => {
+      const allDependingInstances = getAllDependingInstances(changedInstance, new Set(),
+        createShouldProceedFunc(changedInstance))
+      if (!invalidElementIds.has(changedInstance.elemID.getFullName())) {
+        allDependingInstances.forEach(inst => validElementIds.add(inst.elemID.getFullName()))
+      }
+    })
+
+  return _.without(Array.from(invalidElementIds), ...elemIdsWithValidation)
+    .map(elemIdFullName => ({
+      elemID: ElemID.fromFullName(elemIdFullName),
       severity: 'Error',
       message: 'Depends on an element that has errors',
-      detailedMessage: `(${elemID.getFullName()}) depends on an element that has errors`,
+      detailedMessage: `(${elemIdFullName}) depends on an element that has errors`,
     }))
 }

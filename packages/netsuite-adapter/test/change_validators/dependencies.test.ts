@@ -63,22 +63,20 @@ describe('Change Validator', () => {
     toChange({ after: customFieldInstance })]
 
   it('should return no change errors when there are no invalid elements from other change validators', () => {
-    expect(validateDependsOnInvalidElement(new Set(), changes)).toEqual([])
+    expect(validateDependsOnInvalidElement([], changes)).toEqual([])
   })
 
   it('should return no change errors if no other change depends on an invalid element', () => {
     expect(
       validateDependsOnInvalidElement(
-        new Set(
-          [instanceWithManyRefs.elemID.getFullName(), customFieldInstance.elemID.getFullName()]
-        ),
+        [instanceWithManyRefs.elemID.getFullName(), customFieldInstance.elemID.getFullName()],
         changes
       )
     ).toEqual([])
   })
 
   it('should return change errors for all changes that depend on an invalid element including deep dependency', () => {
-    expect(validateDependsOnInvalidElement(new Set([fileInstance.elemID.getFullName()]), changes))
+    expect(validateDependsOnInvalidElement([fileInstance.elemID.getFullName()], changes))
       .toEqual(expect.arrayContaining([
         expect.objectContaining({
           elemID: dependsOn1Instance.elemID,
@@ -90,7 +88,7 @@ describe('Change Validator', () => {
 
   it('should return change error for change that depends on an invalid element', () => {
     expect(
-      validateDependsOnInvalidElement(new Set([dependsOn1Instance.elemID.getFullName()]), changes)
+      validateDependsOnInvalidElement([dependsOn1Instance.elemID.getFullName()], changes)
     ).toEqual(expect.arrayContaining([
       expect.objectContaining({
         elemID: instanceWithManyRefs.elemID,

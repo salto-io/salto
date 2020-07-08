@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { 
-  createPathIndex, serializedPathIndex, deserializedPathIndex, PathIndex
+import {
+  createPathIndex, serializedPathIndex, deserializedPathIndex, PathIndex,
 } from '../../src/workspace/path_index'
 
 jest.spyOn(PathIndex.prototype, 'push')

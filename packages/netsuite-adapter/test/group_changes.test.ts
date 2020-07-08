@@ -47,13 +47,11 @@ describe('Group Changes', () => {
       .toEqual(SDF_CHANGE_GROUP_ID)
   })
 
-  it('should set correct group id for non SDF types instances', () => {
-    expect(changeGroupIds.get(nonSdfInstance.elemID.getFullName()))
-      .toEqual(nonSdfInstance.elemID.getFullName())
+  it('should not set group id for non SDF types instances', () => {
+    expect(changeGroupIds.has(nonSdfInstance.elemID.getFullName())).toBe(false)
   })
 
-  it('should set correct group id for non SDF types', () => {
-    expect(changeGroupIds.get(dummyType.elemID.getFullName()))
-      .toEqual(dummyType.elemID.getFullName())
+  it('should not set group id for non SDF types', () => {
+    expect(changeGroupIds.has(dummyType.elemID.getFullName())).toBe(false)
   })
 })

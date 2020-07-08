@@ -30,6 +30,7 @@ export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   }
   return new Map(
     wu(changes.entries())
-      .map(([id, change]) => (isSdfChange(change) ? [id, SDF_CHANGE_GROUP_ID] : [id, String(id)]))
+      .filter(([_id, change]) => isSdfChange(change))
+      .map(([id]) => [id, SDF_CHANGE_GROUP_ID])
   )
 }

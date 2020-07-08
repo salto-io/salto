@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { createPathIndex } from '../../src/workspace/path_index'
+import { createPathIndex, serializedPathIndex, deserializedPathIndex } from '../../src/workspace/path_index'
 
 describe('create path index', () => {
   const nestedType = new ObjectType({
@@ -201,6 +201,11 @@ describe('create path index', () => {
 
       nestedObjAnnoIds.forEach(id => expect(pathIndex.get(id)).toEqual([multiPathAnnoObj.path]))
       nestedObjFieldsIds.forEach(id => expect(pathIndex.get(id)).toEqual([multiPathFieldsObj.path]))
+    })
+  })
+  describe('path index serialization', () => {
+    it('symmetric operation', () => {
+      expect(deserializedPathIndex(serializedPathIndex(pathIndex))).toEqual(pathIndex)
     })
   })
 })

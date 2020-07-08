@@ -29,7 +29,6 @@ const log = logger(module)
 export const STATE_EXTENSION = '.jsonl'
 
 export const localState = (filePath: string): state.State => {
-  let innerStateData: Promise<state.StateData>
   let dirty = false
   let currentFilePath = filePath
 
@@ -42,7 +41,7 @@ export const localState = (filePath: string): state.State => {
     const deserializedElements = (await deserialize(elementsData)).map(flattenElementStr)
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
     const index = pathIndexData
-      ? deserializedPathIndex(pathIndexData)
+      ? pathIndex.deserializedPathIndex(pathIndexData)
       : new pathIndex.PathIndex()
     const servicesUpdateDate = updateDateData
       ? _.mapValues(JSON.parse(updateDateData), dateStr => new Date(dateStr))
@@ -51,13 +50,7 @@ export const localState = (filePath: string): state.State => {
     return { elements, servicesUpdateDate, pathIndex: index }
   }
 
-  const stateData = (): Promise<state.StateData> => {
-    if (innerStateData === undefined) {
-      innerStateData = loadFromFile()
-    }
-    return innerStateData
-  }
-  const inMemState = state.buildInMemState(stateData())
+  const inMemState = state.buildInMemState(loadFromFile)
 
   return {
     ...inMemState,
@@ -86,15 +79,14 @@ export const localState = (filePath: string): state.State => {
       if (!dirty) {
         return
       }
-      const { elements: elementsMap, servicesUpdateDate, pathIndex: index } = (await stateData())
-      const elements = Object.values(elementsMap)
-      const elementsString = serialize(Object.values(elements))
-      const dateString = safeJsonStringify(servicesUpdateDate)
-      const pathIndexString = serializedPathIndex(index)
+      const elements = await inMemState.getAll()
+      const elementsString = serialize(elements)
+      const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
+      const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
       const stateText = [elementsString, dateString, pathIndexString].join(EOL)
       await mkdirp(path.dirname(currentFilePath))
       await replaceContents(currentFilePath, stateText)
-      log.debug(`finish flushing state [#elements=${Object.values(elements).length}]`)
+      log.debug(`finish flushing state [#elements=${elements.length}]`)
     },
     clear: async (): Promise<void> => {
       await rm(filePath)

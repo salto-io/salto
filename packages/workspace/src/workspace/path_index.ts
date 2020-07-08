@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
-import { ElemID, Element } from '@salto-io/adapter-api'
-import { TransformFunc, transformElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import wu from 'wu'
+import { collections } from '@salto-io/lowerdash'
+import { ElemID, Element } from '@salto-io/adapter-api'
+import { TransformFunc, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
 
 type Path = readonly string[]
 export class PathIndex extends collections.treeMap.PartialTreeMap<Path> {
@@ -90,3 +90,8 @@ export const createPathIndex = (unmergedElements: Element[]): PathIndex => {
   const pathIndex = new PathIndex(pathHints)
   return pathIndex
 }
+
+export const deserializedPathIndex = (data: string): PathIndex => new PathIndex(JSON.parse(data))
+export const serializedPathIndex = (index: PathIndex): string => (
+  safeJsonStringify(Array.from(index.entries()))
+)

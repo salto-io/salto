@@ -86,22 +86,20 @@ export const findDependingInstancesFromRefs = (instance: InstanceElement): Insta
   return wu(visitedIdToInstance.values()).toArray()
 }
 
-/**
- * This method runs recursively on all references of the changedInstance to identify dependencies
- * that eventually will be deployed as well as part of the SDF project
- */
-export const getAllDependingInstances = (changedInstance: InstanceElement,
-  visitedDependingIds: Set<string>, shouldProceedFunc?: (inst: InstanceElement) => boolean):
-  InstanceElement[] => {
-  if (shouldProceedFunc !== undefined && !shouldProceedFunc(changedInstance)) {
-    return []
+export const getAllReferencedInstances = (
+  sourceInstances: ReadonlyArray<InstanceElement>
+): ReadonlyArray<InstanceElement> => {
+  const visited = new Set<string>(sourceInstances.map(inst => inst.elemID.getFullName()))
+  const getNewReferencedInstances = (instance: InstanceElement): InstanceElement[] => {
+    const newInstances = findDependingInstancesFromRefs(instance)
+      .filter(inst => !visited.has(inst.elemID.getFullName()))
+    newInstances.forEach(inst => visited.add(inst.elemID.getFullName()))
+    return [...newInstances, ...newInstances.flatMap(getNewReferencedInstances)]
   }
-  const dependingInstances = findDependingInstancesFromRefs(changedInstance)
-    .filter(instance => !visitedDependingIds.has(instance.elemID.getFullName()))
-  dependingInstances.forEach(instance => visitedDependingIds.add(instance.elemID.getFullName()))
-  return [changedInstance, ...dependingInstances.flatMap(
-    instance => getAllDependingInstances(instance, visitedDependingIds, shouldProceedFunc)
-  )]
+  return [
+    ...sourceInstances,
+    ...sourceInstances.flatMap(getNewReferencedInstances),
+  ]
 }
 
 export default class NetsuiteAdapter implements AdapterOperations {
@@ -181,10 +179,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
     const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
-    const visitedDependingIds = new Set(changedInstances.map(inst => inst.elemID.getFullName()))
-    const instancesToDeploy = changedInstances.flatMap(changedInstance =>
-      getAllDependingInstances(changedInstance, visitedDependingIds))
-    const customizationInfosToDeploy = instancesToDeploy
+    const customizationInfosToDeploy = getAllReferencedInstances(changedInstances)
       .map(instance => resolveValues(instance, getLookUpName))
       .map(toCustomizationInfo)
     try {

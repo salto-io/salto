@@ -13,47 +13,43 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import {
-  Change, ChangeError, ElemID, getChangeElement, InstanceElement, isInstanceElement,
+  Change, ChangeError, getChangeElement, InstanceElement, isInstanceElement,
 } from '@salto-io/adapter-api'
-import { getAllDependingInstances } from '../adapter'
+import { findDependingInstancesFromRefs } from '../adapter'
 
-export const validateDependsOnInvalidElement = (elemIdsWithValidation: string[],
-  changes: ReadonlyArray<Change>): ReadonlyArray<ChangeError> => {
-  const invalidElementIds = new Set<string>(elemIdsWithValidation)
-  const validElementIds = new Set<string>()
+type ValidityStatus = 'valid' | 'invalid' | 'unknown'
 
-  const createShouldProceedFunc = (changedInstance: InstanceElement):
-    ((instance: InstanceElement) => boolean) =>
-    (instance: InstanceElement) => {
-      if (invalidElementIds.has(instance.elemID.getFullName())) {
-        invalidElementIds.add(instance.elemID.getFullName())
-        invalidElementIds.add(changedInstance.elemID.getFullName())
-        return false
-      }
-      return !validElementIds.has(instance.elemID.getFullName())
+export const validateDependsOnInvalidElement = (
+  inputInvalidElementIds: string[],
+  changes: ReadonlyArray<Change>,
+): ReadonlyArray<ChangeError> => {
+  const elemValidity = new Map<string, ValidityStatus>(
+    inputInvalidElementIds.map(id => [id, 'invalid'])
+  )
+
+  const isInvalid = (instance: InstanceElement): boolean => {
+    const status = elemValidity.get(instance.elemID.getFullName())
+    if (status !== undefined) {
+      return status === 'invalid'
     }
-
-  if (invalidElementIds.size === 0) {
-    return []
+    // Mark validity unknown to avoid reference loops
+    elemValidity.set(instance.elemID.getFullName(), 'unknown')
+    const elemIsInvalid = findDependingInstancesFromRefs(instance).some(isInvalid)
+    // Remember final validity decision to avoid checking this instance again
+    elemValidity.set(instance.elemID.getFullName(), elemIsInvalid ? 'invalid' : 'valid')
+    return elemIsInvalid
   }
-  changes
+
+  return changes
     .map(getChangeElement)
     .filter(isInstanceElement)
-    .forEach(changedInstance => {
-      const allDependingInstances = getAllDependingInstances(changedInstance, new Set(),
-        createShouldProceedFunc(changedInstance))
-      if (!invalidElementIds.has(changedInstance.elemID.getFullName())) {
-        allDependingInstances.forEach(inst => validElementIds.add(inst.elemID.getFullName()))
-      }
-    })
-
-  return _.without(Array.from(invalidElementIds), ...elemIdsWithValidation)
-    .map(elemIdFullName => ({
-      elemID: ElemID.fromFullName(elemIdFullName),
+    .filter(instance => !inputInvalidElementIds.includes(instance.elemID.getFullName()))
+    .filter(isInvalid)
+    .map(instance => ({
+      elemID: instance.elemID,
       severity: 'Error',
       message: 'Depends on an element that has errors',
-      detailedMessage: `(${elemIdFullName}) depends on an element that has errors`,
+      detailedMessage: `(${instance.elemID.getFullName()}) depends on an element that has errors`,
     }))
 }

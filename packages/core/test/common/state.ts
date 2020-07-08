@@ -15,7 +15,7 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import wu from 'wu'
-import { pathIndex, State } from '@salto-io/workspace'
+import { pathIndex, state as wsState } from '@salto-io/workspace'
 import { mockFunction } from './helpers'
 
 
@@ -23,42 +23,44 @@ export const mockState = (
   services: string[] = [],
   elements: Element[] = [],
   index?: pathIndex.PathIndex
-): State => {
+): wsState.State => {
   const state = new Map(elements.map(elem => [elem.elemID.getFullName(), elem]))
   return {
-    list: mockFunction<State['list']>().mockImplementation(
+    list: mockFunction<wsState.State['list']>().mockImplementation(
       () => Promise.resolve(wu(state.values()).toArray().map(elem => elem.elemID))
     ),
-    get: mockFunction<State['get']>().mockImplementation(
+    get: mockFunction<wsState.State['get']>().mockImplementation(
       id => Promise.resolve(state.get(id.getFullName()))
     ),
-    getAll: mockFunction<State['getAll']>().mockImplementation(
+    getAll: mockFunction<wsState.State['getAll']>().mockImplementation(
       () => Promise.resolve(wu(state.values()).toArray())
     ),
-    set: mockFunction<State['set']>().mockImplementation(
+    set: mockFunction<wsState.State['set']>().mockImplementation(
       async elem => { state.set(elem.elemID.getFullName(), elem) }
     ),
-    remove: mockFunction<State['remove']>().mockImplementation(
+    remove: mockFunction<wsState.State['remove']>().mockImplementation(
       async id => { state.delete(id.getFullName()) }
     ),
-    clear: mockFunction<State['clear']>().mockImplementation(
+    clear: mockFunction<wsState.State['clear']>().mockImplementation(
       async () => state.clear()
     ),
-    rename: mockFunction<State['rename']>().mockResolvedValue(),
-    override: mockFunction<State['override']>().mockImplementation(
+    rename: mockFunction<wsState.State['rename']>().mockResolvedValue(),
+    override: mockFunction<wsState.State['override']>().mockImplementation(
       async overrideElements => {
         state.clear()
         const elemList = Array.isArray(overrideElements) ? overrideElements : [overrideElements]
         elemList.forEach(elem => state.set(elem.elemID.getFullName(), elem))
       }
     ),
-    flush: mockFunction<State['flush']>().mockResolvedValue(),
-    getServicesUpdateDates: mockFunction<State['getServicesUpdateDates']>().mockResolvedValue(
-      Object.assign({}, ...services.map(service => ({ [service]: Date.now() })))
-    ),
-    existingServices: mockFunction<State['existingServices']>().mockResolvedValue(services),
-    overridePathIndex: mockFunction<State['overridePathIndex']>(),
-    getPathIndex: mockFunction<State['getPathIndex']>().mockResolvedValue(
+    flush: mockFunction<wsState.State['flush']>().mockResolvedValue(),
+    getServicesUpdateDates: mockFunction<wsState.State['getServicesUpdateDates']>()
+      .mockResolvedValue(
+        Object.assign({}, ...services.map(service => ({ [service]: Date.now() })))
+      ),
+    existingServices: mockFunction<wsState.State['existingServices']>()
+      .mockResolvedValue(services),
+    overridePathIndex: mockFunction<wsState.State['overridePathIndex']>(),
+    getPathIndex: mockFunction<wsState.State['getPathIndex']>().mockResolvedValue(
       index || new pathIndex.PathIndex()
     ),
   }

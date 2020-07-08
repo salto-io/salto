@@ -21,7 +21,7 @@ import * as hiddenValues from './src/workspace/hidden_values'
 import * as configSource from './src/workspace/config_source'
 import * as workspaceConfigSource from './src/workspace/workspace_config_source'
 import { WorkspaceConfig, EnvConfig } from './src/workspace/config/workspace_config_types'
-import { State } from './src/workspace/state'
+import * as state from './src/workspace/state'
 import * as dirStore from './src/workspace/dir_store'
 import * as parseCache from './src/workspace/cache'
 import * as staticFiles from './src/workspace/static_files'
@@ -53,6 +53,6 @@ export {
   loadWorkspace,
   EnvironmentsSources,
   initWorkspace,
-  State,
+  state,
   workspaceConfigSource,
 }

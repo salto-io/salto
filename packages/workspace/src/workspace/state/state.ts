@@ -13,9 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID } from '@salto-io/adapter-api'
-import { ElementsSource } from './elements_source'
-import { PathIndex } from './path_index'
+import { Element, ElemID, ElementMap } from '@salto-io/adapter-api'
+import { ElementsSource } from '../elements_source'
+import { PathIndex } from '../path_index'
+
+export type StateData = {
+  elements: ElementMap
+  // The date of the last fetch
+  servicesUpdateDate: Record<string, Date>
+  pathIndex: PathIndex
+}
 
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>

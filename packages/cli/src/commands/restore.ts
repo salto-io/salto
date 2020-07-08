@@ -46,14 +46,6 @@ type RestoreParsedCliInput = ParsedCliInput<RestoreArgs>
 
 // TODO - move to formatter.ts
 
-interface RestoreCommand extends CliCommand {
-  applyRestoreChangesToWorkspace(
-    changes: RestoreChange[],
-    workspace: Workspace,
-    workspaceTags: Tags,
-  ): Promise<boolean>
-}
-
 const createRegexFilters = (
   inputFilters: string[]
 ): {filters: RegExp[]; invalidFilters: string[]} => {
@@ -105,73 +97,12 @@ export const command = (
   inputServices?: string[],
   inputEnvironment?: string,
   inputFilters: string[] = []
-): RestoreCommand => ({
-  async execute(): Promise<CliExitCode> {
-    log.debug(`running restore command on '${workspaceDir}' [force=${force}, interactive=${
-      interactive}, dryRun=${dryRun}, detailedPlan=${detailedPlan}, listPlannedChanges=${
-      listPlannedChanges}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
-
-    const { filters, invalidFilters } = createRegexFilters(inputFilters)
-    if (!_.isEmpty(invalidFilters)) {
-      output.stderr.write(formatInvalidFilters(invalidFilters))
-      return CliExitCode.UserInputError
-    }
-
-    const { workspace, errored } = await loadWorkspace(
-      workspaceDir,
-      output,
-      {
-        force,
-        printStateRecency: true,
-        spinnerCreator,
-        sessionEnv: inputEnvironment,
-      }
-    )
-    if (errored) {
-      cliTelemetry.failure()
-      return CliExitCode.AppError
-    }
-
-    const workspaceTags = await getWorkspaceTelemetryTags(workspace)
-
-    cliTelemetry.start(workspaceTags)
-
-    outputLine(EOL, output)
-    outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
-
-    const changes = await restore(workspace, inputServices, filters)
-    if (listPlannedChanges || dryRun) {
-      printRestorePlan(changes, detailedPlan, output)
-    }
-
-    outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), output)
-    outputLine(EOL, output)
-
-    if (dryRun) {
-      cliTelemetry.success(workspaceTags)
-      return CliExitCode.Success
-    }
-
-    const updatingWsSucceeded = await this.applyRestoreChangesToWorkspace(
-      changes,
-      workspace,
-      workspaceTags,
-    )
-
-    if (updatingWsSucceeded) {
-      outputLine(formatRestoreFinish(), output)
-      cliTelemetry.success(workspaceTags)
-      return CliExitCode.Success
-    }
-    cliTelemetry.failure(workspaceTags)
-    return CliExitCode.AppError
-  },
-
-  async applyRestoreChangesToWorkspace(
+): CliCommand => {
+  const applyRestoreChangesToWorkspace = async (
     changes: RestoreChange[],
     workspace: Workspace,
     workspaceTags: Tags,
-  ): Promise<boolean> {
+  ): Promise<boolean> => {
     // If the workspace starts empty there is no point in showing a huge amount of changes
     const changesToApply = force || (await workspace.isEmpty())
       ? changes
@@ -202,8 +133,71 @@ export const command = (
     outputLine(formatStepFailed(Prompts.RESTORE_UPDATE_WORKSPACE_FAIL), output)
     outputLine(EOL, output)
     return false
-  },
-})
+  }
+
+  return {
+    async execute(): Promise<CliExitCode> {
+      log.debug(`running restore command on '${workspaceDir}' [force=${force}, interactive=${
+        interactive}, dryRun=${dryRun}, detailedPlan=${detailedPlan}, listPlannedChanges=${
+        listPlannedChanges}, isolated=${inputIsolated}], environment=${inputEnvironment}, services=${inputServices}`)
+
+      const { filters, invalidFilters } = createRegexFilters(inputFilters)
+      if (!_.isEmpty(invalidFilters)) {
+        output.stderr.write(formatInvalidFilters(invalidFilters))
+        return CliExitCode.UserInputError
+      }
+
+      const { workspace, errored } = await loadWorkspace(
+        workspaceDir,
+        output,
+        {
+          force,
+          printStateRecency: true,
+          spinnerCreator,
+          sessionEnv: inputEnvironment,
+        }
+      )
+      if (errored) {
+        cliTelemetry.failure()
+        return CliExitCode.AppError
+      }
+
+      const workspaceTags = await getWorkspaceTelemetryTags(workspace)
+
+      cliTelemetry.start(workspaceTags)
+
+      outputLine(EOL, output)
+      outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
+
+      const changes = await restore(workspace, inputServices, filters)
+      if (listPlannedChanges || dryRun) {
+        printRestorePlan(changes, detailedPlan, output)
+      }
+
+      outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_FINISH), output)
+      outputLine(EOL, output)
+
+      if (dryRun) {
+        cliTelemetry.success(workspaceTags)
+        return CliExitCode.Success
+      }
+
+      const updatingWsSucceeded = await applyRestoreChangesToWorkspace(
+        changes,
+        workspace,
+        workspaceTags,
+      )
+
+      if (updatingWsSucceeded) {
+        outputLine(formatRestoreFinish(), output)
+        cliTelemetry.success(workspaceTags)
+        return CliExitCode.Success
+      }
+      cliTelemetry.failure(workspaceTags)
+      return CliExitCode.AppError
+    },
+  }
+}
 
 const restoreBuilder = createCommandBuilder({
   options: {

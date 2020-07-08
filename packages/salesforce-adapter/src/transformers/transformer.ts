@@ -1023,11 +1023,11 @@ export const getSObjectFieldElement = (
 
   // Handle specific field types that need to be converted from their primitive type to their
   // Salesforce field type
-  if (field.idLookup && field.name === CUSTOM_OBJECT_ID_FIELD) {
-    naclFieldType = BuiltinTypes.SERVICE_ID
-  } else if (field.autoNumber) { // autonumber (needs to be first because its type in the field
+  if (field.autoNumber) { // autonumber (needs to be first because its type in the field
     // returned from the API is string)
     naclFieldType = getFieldType(FIELD_TYPE_NAMES.AUTONUMBER)
+  } else if (field.idLookup && field.type === 'id') {
+    naclFieldType = BuiltinTypes.SERVICE_ID
   } else if (field.type === 'string' && !field.compoundFieldName) { // string
     naclFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
   } else if ((field.type === 'double' && !field.compoundFieldName)) {
@@ -1178,15 +1178,13 @@ export const createInstanceElement = (values: Values, type: ObjectType,
   }
 
   const typeName = type.elemID.name
-  const name = (): string => (
-    Types.getElemId(
-      naclCase(values[INSTANCE_FULL_NAME_FIELD]),
-      true,
-      createInstanceServiceIds(_.pick(values, INSTANCE_FULL_NAME_FIELD), type)
-    ).name
+  const { name } = Types.getElemId(
+    naclCase(values[INSTANCE_FULL_NAME_FIELD]),
+    true,
+    createInstanceServiceIds(_.pick(values, INSTANCE_FULL_NAME_FIELD), type)
   )
   return new InstanceElement(
-    type.isSettings ? ElemID.CONFIG_NAME : name(),
+    type.isSettings ? ElemID.CONFIG_NAME : name,
     type,
     values,
     [...getPackagePath(), RECORDS_PATH,

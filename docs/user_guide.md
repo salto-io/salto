@@ -13,6 +13,7 @@ Salto consists of 3 main components:
 Currently, Salto supports the following business applications:
 
 - [Salesforce](https://github.com/salto-io/salto/tree/master/packages/salesforce-adapter)
+- [NetSuite](https://github.com/salto-io/salto/tree/master/packages/netsuite-adapter)
 - [HubSpot](https://github.com/salto-io/salto/tree/master/packages/hubspot-adapter)
 
 Support for other business applications is in the works.
@@ -353,7 +354,7 @@ The following flags are available for all commands:
 The workspace is structured as follows:
 
 - `salto.config` — all workspace specific internal salto files, including configuration and state files. See [Salto Configuration](salto_configuration.md) for more details.
-- Directory per adapter, named after the adapter (e.g. Salesforce, HubSpot) — NaCl definitions which are **common** across all defined environments which are configured per that adapter.
+- Directory per adapter, named after the adapter (e.g. Salesforce, NetSuite) — NaCl definitions which are **common** across all defined environments which are configured per that adapter.
 - Directory for [Static Files](#static-files) (`static-resources`).
 - envs -- inside envs, there is a directory per environment, named after the environment — NaCl definitions which are **specific** per environment. 
   Each environment directory is also divided by adapter (which applies for that environment), furthermore, includes a `static-resources` folder with files **specific** for that environment.

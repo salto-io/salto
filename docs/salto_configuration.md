@@ -6,7 +6,7 @@ This document details some of the various ways to configure the salto tool itsel
 
 ## Workspace configuration
 
-### Shared configuration
+### Workspace metadata configuration
 
 Located inside the workspace directory in `salto.config/workspace.nacl`
 
@@ -15,10 +15,19 @@ This holds information that defines the workspace itself and should be the same 
 uid: string
 baseDir: string
 name: string
-envs: Record<string, {baseDir: string; config: EnvConfig}>
 localStorage: string
 staleStateThresholdMinutes: number
 ```
+
+### envs configuration
+
+Located inside the workspace directory in `salto.config/envs.nacl`
+
+This holds information that defines the different environments that are currently in the workspace.
+```hcl
+envs: Record<string, {baseDir: string; config: EnvConfig}>
+```
+
 
 ### Local configuration
 

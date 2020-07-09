@@ -19,7 +19,7 @@ localStorage: string
 staleStateThresholdMinutes: number
 ```
 
-### envs configuration
+### Environments configuration
 
 Located inside the workspace directory in `salto.config/envs.nacl`
 

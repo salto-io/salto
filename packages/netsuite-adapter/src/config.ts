@@ -50,11 +50,22 @@ export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Ne
   + 'In order to complete the fetch operation, '
   + 'Salto needs to stop managing these items by applying the following configuration change:'
 
-export const getConfigFromConfigChanges = (
-  configSuggestions: Partial<Record<keyof NetsuiteConfig, Value>>,
-  currentConfig: NetsuiteConfig
-): InstanceElement | undefined => {
-  if (_.isEmpty(configSuggestions)) {
+const wrapAsRegex = (str: string): string => `^${str}$`
+
+const toConfigSuggestions = (failedToFetchAllAtOnce: boolean, failedTypes: string[],
+  failedFilePaths: string[]): Partial<Record<keyof NetsuiteConfig, Value>> => ({
+  ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
+  ...(!_.isEmpty(failedTypes) ? { [TYPES_TO_SKIP]: failedTypes } : {}),
+  ...(!_.isEmpty(failedFilePaths)
+    ? { [FILE_PATHS_REGEX_SKIP_LIST]: failedFilePaths.map(wrapAsRegex) }
+    : {}),
+})
+
+
+export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, failedTypes: string[],
+  failedFilePaths: string[], currentConfig: NetsuiteConfig): InstanceElement | undefined => {
+  const suggestions = toConfigSuggestions(failedToFetchAllAtOnce, failedTypes, failedFilePaths)
+  if (_.isEmpty(suggestions)) {
     return undefined
   }
   return new InstanceElement(
@@ -62,10 +73,10 @@ export const getConfigFromConfigChanges = (
     configType,
     {
       [TYPES_TO_SKIP]: makeArray(currentConfig[TYPES_TO_SKIP])
-        .concat(makeArray(configSuggestions[TYPES_TO_SKIP])),
+        .concat(makeArray(suggestions[TYPES_TO_SKIP])),
       [FILE_PATHS_REGEX_SKIP_LIST]: makeArray(currentConfig[FILE_PATHS_REGEX_SKIP_LIST])
-        .concat(makeArray(configSuggestions[FILE_PATHS_REGEX_SKIP_LIST])),
-      [FETCH_ALL_TYPES_AT_ONCE]: configSuggestions[FETCH_ALL_TYPES_AT_ONCE]
+        .concat(makeArray(suggestions[FILE_PATHS_REGEX_SKIP_LIST])),
+      [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE]
         ?? currentConfig[FETCH_ALL_TYPES_AT_ONCE],
     }
   )

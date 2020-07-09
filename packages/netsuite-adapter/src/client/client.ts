@@ -211,6 +211,11 @@ export type GetCustomObjectsResult = {
   failedToFetchAllAtOnce: boolean
 }
 
+export type ImportFileCabinetResult = {
+  elements: (FileCustomizationInfo | FolderCustomizationInfo)[]
+  failedPaths: string[]
+}
+
 export default class NetsuiteClient {
   private readonly credentials: Credentials
   private readonly authId: string
@@ -415,36 +420,51 @@ export default class NetsuiteClient {
   }
 
   private static async importFiles(filePaths: string[], executor: CommandActionExecutorType):
-    Promise<OperationResult[]> {
+    Promise<{ importedPaths: string[]; failedPaths: string[] }> {
     try {
       const operationResult = await NetsuiteClient.executeProjectAction(
         COMMANDS.IMPORT_FILES,
         { paths: filePaths },
         executor
       )
-      return [operationResult]
+      return {
+        importedPaths: makeArray(operationResult.data.results)
+          .filter(result => result.loaded)
+          .map(result => result.path),
+        failedPaths: [],
+      }
     } catch (e) {
       if (filePaths.length === 1) {
         log.debug(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
-        return []
+        return { importedPaths: [], failedPaths: filePaths }
       }
       return _.chunk(filePaths, (filePaths.length + 1) / 2)
         .filter(chunk => !_.isEmpty(chunk))
         .reduce(
-          async (prevRes, paths) =>
-            (await prevRes)
-              .concat(
-                await NetsuiteClient.importFiles(paths, executor)
+          async (prev, paths) => {
+            const prevResult = await prev
+            const newResult = await NetsuiteClient.importFiles(paths, executor)
+            return {
+              importedPaths: prevResult.importedPaths.concat(
+                newResult.importedPaths
               ),
-          Promise.resolve([] as OperationResult[]),
+              failedPaths: prevResult.failedPaths.concat(
+                newResult.failedPaths
+              ),
+            }
+          },
+          Promise.resolve(
+            { importedPaths: [] as string[], failedPaths: [] as string[] }
+          ),
         )
     }
   }
 
   @NetsuiteClient.logDecorator
-  async importFileCabinetContent(filePathRegexSkipList: RegExp[]): Promise<CustomizationInfo[]> {
+  async importFileCabinetContent(filePathRegexSkipList: RegExp[]):
+    Promise<ImportFileCabinetResult> {
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
-      fileCabinetDirPath: string): Promise<CustomizationInfo[]> => {
+      fileCabinetDirPath: string): Promise<FileCustomizationInfo[]> => {
       const filePathToAttrsPath = _.fromPairs(
         fileAttrsPaths.map(fileAttrsPath => {
           const fileName = fileAttrsPath.split(SDF_PATH_SEPARATOR).slice(-1)[0]
@@ -465,7 +485,7 @@ export default class NetsuiteClient {
     }
 
     const transformFolders = (folderAttrsPaths: string[], fileCabinetDirPath: string):
-      Promise<CustomizationInfo[]> =>
+      Promise<FolderCustomizationInfo[]> =>
       Promise.all(folderAttrsPaths.map(async attrsPath => {
         const folderPathParts = attrsPath.split(SDF_PATH_SEPARATOR)
         const xmlContent = readFile(osPath.resolve(fileCabinetDirPath, ...folderPathParts))
@@ -478,21 +498,20 @@ export default class NetsuiteClient {
       .filter(path => filePathRegexSkipList.every(regex => !regex.test(path)))
     const importFilesResults = await NetsuiteClient.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
-    const paths = _.uniq(
-      _.flatten(importFilesResults.map(importResult => makeArray(importResult.data.results)))
-        .filter(result => result.loaded)
-        .map(result => result.path)
-    )
-    const [attributesPaths, filePaths] = _.partition(paths,
+    const importedPaths = _.uniq(importFilesResults.importedPaths)
+    const [attributesPaths, filePaths] = _.partition(importedPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
       p => p.endsWith(FOLDER_ATTRIBUTES_FILE_SUFFIX))
 
     const fileCabinetDirPath = NetsuiteClient.getFileCabinetDirPath(project.projectName)
-    return _.flatten((await Promise.all(
-      [transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
-        transformFolders(folderAttrsPaths, fileCabinetDirPath)]
-    )))
+    return {
+      elements: (await Promise.all(
+        [transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
+          transformFolders(folderAttrsPaths, fileCabinetDirPath)]
+      )).flat(),
+      failedPaths: importFilesResults.failedPaths,
+    }
   }
 
   @NetsuiteClient.logDecorator

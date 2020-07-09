@@ -14,15 +14,13 @@
 * limitations under the License.
 */
 import {
-  FetchResult, InstanceElement, isInstanceElement, ObjectType, AdapterOperations, DeployResult,
-  ChangeGroup, ElemIdGetter, Element, isReferenceExpression, getChangeElement, getFieldType,
-  BuiltinTypes, ElemID, isPrimitiveType,
+  FetchResult, isInstanceElement, ObjectType, AdapterOperations, DeployResult, ChangeGroup,
+  ElemIdGetter, Element, getChangeElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
-import wu from 'wu'
+import { resolveValues } from '@salto-io/adapter-utils'
 import NetsuiteClient, { CustomizationInfo } from './client/client'
 import {
   createInstanceElement, getLookUpName, toCustomizationInfo,
@@ -31,13 +29,14 @@ import {
   customTypes, getAllTypes, fileCabinetTypes,
 } from './types'
 import {
-  SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, NETSUITE,
+  SAVED_SEARCH, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
 } from './constants'
 import replaceInstanceReferencesFilter from './filters/instance_references'
 import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
 } from './config'
+import { getAllReferencedInstances } from './reference_dependencies'
 
 const log = logger(module)
 const { makeArray } = collections.array
@@ -56,50 +55,6 @@ export interface NetsuiteAdapterParams {
   getElemIdFunc?: ElemIdGetter
   // config that is determined by the user
   config: NetsuiteConfig
-}
-
-export const findDependingInstancesFromRefs = (instance: InstanceElement): InstanceElement[] => {
-  const visitedIdToInstance = new Map<string, InstanceElement>()
-  const isRefToServiceId = (topLevelParent: InstanceElement, elemId: ElemID): boolean => {
-    const fieldType = getFieldType(topLevelParent.type, elemId.createTopLevelParentID().path)
-    return isPrimitiveType(fieldType) && fieldType.isEqual(BuiltinTypes.SERVICE_ID)
-  }
-
-  const createDependingElementsCallback: TransformFunc = ({ value }) => {
-    if (isReferenceExpression(value)) {
-      const { topLevelParent, elemId } = value
-      if (isInstanceElement(topLevelParent)
-        && !visitedIdToInstance.has(topLevelParent.elemID.getFullName())
-        && elemId.adapter === NETSUITE
-        && isRefToServiceId(topLevelParent, elemId)) {
-        visitedIdToInstance.set(topLevelParent.elemID.getFullName(), topLevelParent)
-      }
-    }
-    return value
-  }
-
-  transformElement({
-    element: instance,
-    transformFunc: createDependingElementsCallback,
-    strict: true,
-  })
-  return wu(visitedIdToInstance.values()).toArray()
-}
-
-export const getAllReferencedInstances = (
-  sourceInstances: ReadonlyArray<InstanceElement>
-): ReadonlyArray<InstanceElement> => {
-  const visited = new Set<string>(sourceInstances.map(inst => inst.elemID.getFullName()))
-  const getNewReferencedInstances = (instance: InstanceElement): InstanceElement[] => {
-    const newInstances = findDependingInstancesFromRefs(instance)
-      .filter(inst => !visited.has(inst.elemID.getFullName()))
-    newInstances.forEach(inst => visited.add(inst.elemID.getFullName()))
-    return [...newInstances, ...newInstances.flatMap(getNewReferencedInstances)]
-  }
-  return [
-    ...sourceInstances,
-    ...sourceInstances.flatMap(getNewReferencedInstances),
-  ]
 }
 
 export default class NetsuiteAdapter implements AdapterOperations {

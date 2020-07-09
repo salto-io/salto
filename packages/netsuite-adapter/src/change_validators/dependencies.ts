@@ -16,7 +16,7 @@
 import {
   Change, ChangeError, getChangeElement, InstanceElement, isInstanceElement,
 } from '@salto-io/adapter-api'
-import { findDependingInstancesFromRefs } from '../adapter'
+import { findDependingInstancesFromRefs } from '../reference_dependencies'
 
 type ValidityStatus = 'valid' | 'invalid' | 'unknown'
 

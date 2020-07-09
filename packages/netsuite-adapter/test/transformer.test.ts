@@ -475,6 +475,13 @@ describe('Transformer', () => {
       expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_SCRIPT_ID))
     })
 
+    it('should encode to html chars', () => {
+      instance.value.label = 'Golf & Co'
+      const customizationInfo = toCustomizationInfo(instance)
+      const xmlContent = convertToXmlContent(customizationInfo)
+      expect(xmlContent).toEqual(removeLineBreaks(XML_TEMPLATES.WITH_HTML_CHARS))
+    })
+
     it('should transform ordered values for forms', () => {
       const transactionFormInstance = new InstanceElement('elementName',
         customTypes[TRANSACTION_FORM], {

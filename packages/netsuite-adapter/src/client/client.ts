@@ -190,6 +190,7 @@ export const convertToXmlContent = (customizationInfo: CustomizationInfo): strin
     format: false,
     ignoreAttributes: false,
     cdataTagName: CDATA_TAG_NAME,
+    tagValueProcessor: val => he.encode(val, { useNamedReferences: true }),
   }).parse({ [customizationInfo.typeName]: customizationInfo.values })
 
 const writeFileInFolder = async (folderPath: string, filename: string, content: string):

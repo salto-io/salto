@@ -50,7 +50,8 @@ export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Ne
   + 'In order to complete the fetch operation, '
   + 'Salto needs to stop managing these items by applying the following configuration change:'
 
-const wrapAsRegex = (str: string): string => `^${str}$`
+// create escaped regex string that will match the new RegExp() input format
+const wrapAsRegex = (str: string): string => `^${_.escapeRegExp(str)}$`
 
 const toConfigSuggestions = (failedToFetchAllAtOnce: boolean, failedTypes: string[],
   failedFilePaths: string[]): Partial<Record<keyof NetsuiteConfig, Value>> => ({

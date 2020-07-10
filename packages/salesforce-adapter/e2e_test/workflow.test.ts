@@ -30,7 +30,10 @@ import {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD, WORKFLOW_TASKS_FIELD,
   WORKFLOW_FIELD_TO_TYPE,
 } from '../src/filters/workflow'
-import { WORKFLOW_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../src/constants'
+import {
+  SALESFORCE, INSTANCE_FULL_NAME_FIELD, WORKFLOW_METADATA_TYPE,
+  WORKFLOW_FIELD_UPDATE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_TASK_METADATA_TYPE,
+} from '../src/constants'
 import SalesforceAdapter from '../src/adapter'
 import { findElements } from '../test/utils'
 import {
@@ -82,7 +85,7 @@ describe('workflow filter', () => {
     }
 
     const verifyHasWorkflowFieldUpdate = async (): Promise<void> => {
-      await client.upsert('WorkflowFieldUpdate', {
+      await client.upsert(WORKFLOW_FIELD_UPDATE_METADATA_TYPE, {
         fullName: `${baseCustomObject}.TestWorkflowFieldUpdate`,
         name: 'TestWorkflowFieldUpdate',
         description: 'E2E Fetch WorkflowFieldUpdate',
@@ -94,7 +97,7 @@ describe('workflow filter', () => {
     }
 
     const verifyHasWorkflowTask = async (): Promise<void> => {
-      await client.upsert('WorkflowTask', {
+      await client.upsert(WORKFLOW_TASK_METADATA_TYPE, {
         fullName: `${baseCustomObject}.TestWorkflowTask`,
         assignedTo: 'CEO',
         assignedToType: 'role',
@@ -109,7 +112,7 @@ describe('workflow filter', () => {
     }
 
     const verifyHasWorkflowRule = async (): Promise<void> => {
-      await client.upsert('WorkflowRule', {
+      await client.upsert(WORKFLOW_RULE_METADATA_TYPE, {
         fullName: `${baseCustomObject}.TestWorkflowRule`,
         actions: [
           {

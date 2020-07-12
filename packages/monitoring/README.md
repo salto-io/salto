@@ -15,7 +15,6 @@ monitoring {
   triggers = [
     {
       name = "example"
-      title = "super cool title"
       elementIdsRegex = [
       	".*hello.*"
       ]
@@ -24,7 +23,7 @@ monitoring {
   notifications = [
   	{
   	  type = "email"
-  	  subject = "Salto | New Alert"
+  	  title = "Salto | New Alert"
   	  from = "alerts@salto.io"
   	  to = [
   	  	"test@salto.io"

@@ -15,6 +15,7 @@ Salto consists of 3 main components:
 Currently, Salto supports the following services:
 
 - [Salesforce](https://github.com/salto-io/salto/tree/master/packages/salesforce-adapter)
+- [NetSuite](https://github.com/salto-io/salto/tree/master/packages/netsuite-adapter)
 - [HubSpot](https://github.com/salto-io/salto/tree/master/packages/hubspot-adapter)
 
 Support for other services is in the works.

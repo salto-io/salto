@@ -79,7 +79,7 @@ const getElementPathHints = (element: Element): Iterable<[string, Path[]]> => {
     if (path && element.path) {
       pathHints[path.getFullName()] = [element.path]
     }
-    return value
+    return _.isArrayLikeObject(value) ? undefined : value
   }
   transformElement({ element, transformFunc, strict: false })
   return wu(_.entries(pathHints))

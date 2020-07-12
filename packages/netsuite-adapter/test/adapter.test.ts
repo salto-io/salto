@@ -15,9 +15,11 @@
 */
 
 import {
-  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement, ServiceIds,
+  ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult, getChangeElement,
+  ServiceIds, ReferenceExpression, ObjectType, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { resolveValues } from '@salto-io/adapter-utils'
 import createClient from './client/client'
 import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
@@ -25,7 +27,7 @@ import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
   FILE_PATHS_REGEX_SKIP_LIST,
 } from '../src/constants'
-import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
+import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
   convertToCustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo,
 } from '../src/client/client'
@@ -33,7 +35,7 @@ import { FilterCreator } from '../src/filter'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 
 jest.mock('../src/client/sdf_root_cli_path', () => ({
-  getRootCLIPath: jest.fn().mockResolvedValue('path/to/cli'),
+  getRootCLIPath: jest.fn().mockReturnValue('path/to/cli'),
 }))
 
 jest.mock('../src/config', () => ({
@@ -254,6 +256,7 @@ describe('Adapter', () => {
     const fileInstance = new InstanceElement('fileInstance', fileCabinetTypes[FILE], {
       [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
     })
+
     const folderInstance = new InstanceElement('folderInstance', fileCabinetTypes[FOLDER], {
       [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
     })
@@ -262,12 +265,13 @@ describe('Adapter', () => {
       instance = origInstance.clone()
       client.deploy = jest.fn().mockImplementation(() => Promise.resolve())
     })
-    describe('add', () => {
-      const adapterAdd = (after: ChangeDataType): Promise<DeployResult> => netsuiteAdapter.deploy({
-        groupID: after.elemID.getFullName(),
-        changes: [{ action: 'add', data: { after } }],
-      })
 
+    const adapterAdd = (after: ChangeDataType): Promise<DeployResult> => netsuiteAdapter.deploy({
+      groupID: after.elemID.getFullName(),
+      changes: [{ action: 'add', data: { after } }],
+    })
+
+    describe('add', () => {
       it('should add custom type instance', async () => {
         const result = await adapterAdd(instance)
         expect(result.errors).toHaveLength(0)
@@ -388,6 +392,48 @@ describe('Adapter', () => {
         expect(client.deploy)
           .toHaveBeenCalledWith([toCustomizationInfo(expectedResolvedAfter)])
         expect(post).toEqual(after)
+      })
+    })
+
+    describe('depending instances', () => {
+      const dependsOn1Instance = new InstanceElement('dependsOn1Instance', customTypes[ENTITY_CUSTOM_FIELD], {
+        [SCRIPT_ID]: 'custentity_depends_on_1_instance',
+        label: new ReferenceExpression(fileInstance.elemID.createNestedID(PATH),
+          fileInstance.value[PATH], fileInstance),
+      })
+
+      const anotherAdapterInstance = new InstanceElement(
+        'anotherAdapterInstance',
+        new ObjectType({ elemID: new ElemID('another', 'type'),
+          fields: {
+            id: { type: BuiltinTypes.SERVICE_ID },
+          } }),
+        { id: 'serviceIdValue' },
+      )
+
+      const instanceWithManyRefs = new InstanceElement('dependsOn2Instances', customTypes[ENTITY_CUSTOM_FIELD], {
+        [SCRIPT_ID]: 'custentity_depends_on_2',
+        label: new ReferenceExpression(dependsOn1Instance.elemID.createNestedID(SCRIPT_ID),
+          dependsOn1Instance.value[SCRIPT_ID], dependsOn1Instance),
+        description: new ReferenceExpression(origInstance.elemID.createNestedID('label'),
+          origInstance.value.label, origInstance),
+        help: new ReferenceExpression(anotherAdapterInstance.elemID.createNestedID('id'),
+          anotherAdapterInstance.value.id, anotherAdapterInstance),
+      })
+
+      it('should deploy depending', async () => {
+        const result = await adapterAdd(instanceWithManyRefs)
+        expect(result.errors).toHaveLength(0)
+        expect(result.appliedChanges).toHaveLength(1)
+        expect(client.deploy).toHaveBeenCalledWith(expect.arrayContaining(
+          [toCustomizationInfo(resolveValues(instanceWithManyRefs, getLookUpName)),
+            toCustomizationInfo(resolveValues(dependsOn1Instance, getLookUpName)),
+            toCustomizationInfo(resolveValues(fileInstance, getLookUpName))]
+        ))
+        expect(client.deploy).not.toHaveBeenCalledWith(expect.arrayContaining(
+          [toCustomizationInfo(resolveValues(origInstance, getLookUpName)),
+            toCustomizationInfo(resolveValues(anotherAdapterInstance, getLookUpName))]
+        ))
       })
     })
   })

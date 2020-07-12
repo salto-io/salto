@@ -14,13 +14,12 @@
 * limitations under the License.
 */
 import {
-  FetchResult, InstanceElement, isInstanceElement, ObjectType, AdapterOperations, DeployResult,
-  ChangeGroup, ElemIdGetter, Element,
+  FetchResult, isInstanceElement, ObjectType, AdapterOperations, DeployResult, ChangeGroup,
+  ElemIdGetter, Element, getChangeElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
-import { AdditionDiff, ModificationDiff } from '@salto-io/dag'
 import NetsuiteClient from './client/client'
 import {
   createInstanceElement, getLookUpName, toCustomizationInfo,
@@ -36,6 +35,7 @@ import { FilterCreator } from './filter'
 import {
   getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, NetsuiteConfig,
 } from './config'
+import { getAllReferencedInstances } from './reference_dependencies'
 
 const { makeArray } = collections.array
 
@@ -128,13 +128,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
   }
 
   public async deploy(changeGroup: ChangeGroup): Promise<DeployResult> {
-    const customizationInfosToDeploy = (changeGroup.changes as (AdditionDiff<InstanceElement>
-      | ModificationDiff<InstanceElement>)[])
-      .map(change => {
-        const resAfter = resolveValues(change.data.after, getLookUpName)
-        return toCustomizationInfo(resAfter)
-      })
-
+    const changedInstances = changeGroup.changes.map(getChangeElement).filter(isInstanceElement)
+    const customizationInfosToDeploy = getAllReferencedInstances(changedInstances)
+      .map(instance => resolveValues(instance, getLookUpName))
+      .map(toCustomizationInfo)
     try {
       await this.client.deploy(customizationInfosToDeploy)
     } catch (e) {

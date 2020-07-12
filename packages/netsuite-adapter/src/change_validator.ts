@@ -18,6 +18,7 @@ import { createChangeValidator } from '@salto-io/adapter-utils'
 import removeCustomizationValidator from './change_validators/remove_customization'
 import instanceChangesValidator from './change_validators/instance_changes'
 import serviceIdsChangesValidator from './change_validators/service_ids_changes'
+import { validateDependsOnInvalidElement } from './change_validators/dependencies'
 
 
 const changeValidators: ChangeValidator[] = [
@@ -26,4 +27,14 @@ const changeValidators: ChangeValidator[] = [
   serviceIdsChangesValidator,
 ]
 
-export default createChangeValidator(changeValidators)
+/**
+ * This method runs all change validators and then walks recursively on all references of the valid
+ * changes to detect changes that depends on invalid ones and then generate errors for them as well
+ */
+const validateChangesAndDependingElements: ChangeValidator = async changes => {
+  const changeErrors = await createChangeValidator(changeValidators)(changes)
+  const invalidElementIds = changeErrors.map(error => error.elemID.getFullName())
+  return changeErrors.concat(validateDependsOnInvalidElement(invalidElementIds, changes))
+}
+
+export default validateChangesAndDependingElements

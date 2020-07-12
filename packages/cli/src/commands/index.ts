@@ -27,7 +27,7 @@ export default [
   initBuilder,
   fetchBuilder,
   deployBuilder,
+  restoreBuilder,
   servicesBuilder,
   envsBuilder,
-  restoreBuilder,
 ] as YargsCommandBuilder[]

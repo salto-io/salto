@@ -14,8 +14,11 @@
 * limitations under the License.
 */
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { createPathIndex, serializedPathIndex, deserializedPathIndex } from '../../src/workspace/path_index'
+import {
+  createPathIndex, serializedPathIndex, deserializedPathIndex, PathIndex,
+} from '../../src/workspace/path_index'
 
+jest.spyOn(PathIndex.prototype, 'push')
 describe('create path index', () => {
   const nestedType = new ObjectType({
     elemID: new ElemID('salto', 'nested'),
@@ -206,6 +209,15 @@ describe('create path index', () => {
   describe('path index serialization', () => {
     it('symmetric operation', () => {
       expect(deserializedPathIndex(serializedPathIndex(pathIndex))).toEqual(pathIndex)
+    })
+  })
+  describe('complexity', () => {
+    it('should not set pathes for unmergeable elements', () => {
+      const mockPush = PathIndex.prototype.push as jest.Mock
+      expect(mockPush).not.toHaveBeenCalledWith([
+        'salto.singlePathObj.instance.multiPathInst.nested.list',
+        ['salto', 'inst', 'nested', '1'],
+      ])
     })
   })
 })

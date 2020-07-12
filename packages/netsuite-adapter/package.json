@@ -27,7 +27,6 @@
   "dependencies": {
     "@salto-io/adapter-api": "0.1.19",
     "@salto-io/adapter-utils": "0.1.19",
-    "@salto-io/dag": "0.1.19",
     "@salto-io/file": "0.1.19",
     "@salto-io/logging": "0.1.19",
     "@salto-io/lowerdash": "0.1.19",

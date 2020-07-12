@@ -34,7 +34,7 @@ export const SlackNotificationType: NotificationType = 'slack'
 
 export type Notification = {
   type: NotificationType
-  subject: string
+  title: string
   from: string
   to: string[]
   triggers: string[]

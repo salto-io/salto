@@ -21,7 +21,6 @@ describe('config', () => {
     expect(() => config.validateConfig({
       triggers: [{
         name: 'example',
-        title: 'title',
         elementIdsRegex: ['*'],
       }],
       notifications: [],
@@ -42,12 +41,11 @@ describe('config', () => {
     expect(() => config.validateConfig({
       triggers: [{
         name: 'example',
-        title: 'title',
         elementIdsRegex: ['*'],
       }],
       notifications: [{
         type: 'email',
-        subject: 'subject',
+        title: 'title',
         from: 'a@b.com',
         to: ['b@a.com'],
         triggers: ['example-not-exists'],

@@ -42,6 +42,9 @@ monitoring {
   	username = "alerts@salto.io"
   	password = "supersecret"
   }
+  slack {
+    token = "xoxb-thisis-nota-validtoken"
+  }
 }
 ```
 

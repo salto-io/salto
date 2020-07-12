@@ -28,8 +28,12 @@ const smtpConnectionString = (smtp: SMTP): string =>
 const templateHTMLBody = (changes: DetailedChange[]): string =>
   changes.map((change: DetailedChange) => change.id.getFullName()).join('\n')
 
-const templateSlackMessage = async (changes: DetailedChange[]): Promise<string> => changes
-  .map((change: DetailedChange) => `*${change.id.getFullName()}*`).join('\n')
+const templateSlackMessage = async (
+  subject: string, changes: DetailedChange[]): Promise<string> => {
+  const changesFullName = changes
+    .map((change: DetailedChange) => change.id.getFullName())
+  return [`*${subject}*`, ...changesFullName].join('\n')
+}
 
 const sendEmail = async (
   notification: Notification,
@@ -70,7 +74,7 @@ const sendSlackMessage = async (
   try {
     const client = new WebClient(config.token)
 
-    const message = await templateSlackMessage(changes)
+    const message = await templateSlackMessage(notification.subject, changes)
     const postMessagePromises = notification.to
       .map((to: string) => client.chat.postMessage({
         username: notification.from,

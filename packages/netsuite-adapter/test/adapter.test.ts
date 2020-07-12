@@ -25,7 +25,7 @@ import NetsuiteAdapter from '../src/adapter'
 import { customTypes, fileCabinetTypes, getAllTypes } from '../src/types'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, TYPES_TO_SKIP,
-  FETCH_ALL_TYPES_AT_ONCE,
+  FILE_PATHS_REGEX_SKIP_LIST,
 } from '../src/constants'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
@@ -56,8 +56,12 @@ const secondDummyFilter: FilterCreator = () => ({
 })
 
 describe('Adapter', () => {
+  const filePathRegexStr = '^Some/File/Regex$'
   const client = createClient()
-  const config = { [TYPES_TO_SKIP]: [TRANSACTION_FORM] }
+  const config = {
+    [TYPES_TO_SKIP]: [TRANSACTION_FORM],
+    [FILE_PATHS_REGEX_SKIP_LIST]: [filePathRegexStr],
+  }
   const netsuiteAdapter = new NetsuiteAdapter({
     client,
     filtersCreators: [firstDummyFilter, secondDummyFilter],
@@ -67,10 +71,19 @@ describe('Adapter', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    client.getCustomObjects = jest.fn().mockResolvedValue({
+      elements: [],
+      failedTypes: [],
+      failedToFetchAllAtOnce: false,
+    })
+    client.importFileCabinetContent = jest.fn().mockResolvedValue({
+      elements: [],
+      failedPaths: [],
+    })
   })
 
   describe('fetch', () => {
-    it('should fetch all types and instances that are not in typesToSkip', async () => {
+    it('should fetch all types and instances that are not in skip lists', async () => {
       const folderCustomizationInfo: FolderCustomizationInfo = {
         typeName: FOLDER,
         values: {
@@ -91,7 +104,10 @@ describe('Adapter', () => {
         + '</entitycustomfield>'
       const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id')
       client.importFileCabinetContent = jest.fn()
-        .mockResolvedValue([folderCustomizationInfo, fileCustomizationInfo])
+        .mockResolvedValue({
+          elements: [folderCustomizationInfo, fileCustomizationInfo],
+          failedPaths: [],
+        })
       client.getCustomObjects = jest.fn().mockResolvedValue({
         elements: [customTypeInfo],
         failedTypes: [],
@@ -102,6 +118,7 @@ describe('Adapter', () => {
         _.pull(Object.keys(customTypes), SAVED_SEARCH, TRANSACTION_FORM),
         true,
       )
+      expect(client.importFileCabinetContent).toHaveBeenCalledWith([new RegExp(filePathRegexStr)])
       expect(elements).toHaveLength(getAllTypes().length + 3)
       const customFieldType = customTypes[ENTITY_CUSTOM_FIELD]
       expect(elements).toContainEqual(customFieldType)
@@ -117,24 +134,17 @@ describe('Adapter', () => {
     })
 
     it('should fail when getCustomObjects fails', async () => {
-      client.importFileCabinetContent = jest.fn().mockResolvedValue([])
       client.getCustomObjects = jest.fn().mockImplementation(async () => {
         throw new Error('Dummy error')
       })
       await expect(netsuiteAdapter.fetch()).rejects.toThrow()
     })
 
-    it('should handle exceptions during importFileCabinetContent', async () => {
+    it('should fail when importFileCabinetContent fails', async () => {
       client.importFileCabinetContent = jest.fn().mockImplementation(async () => {
         throw new Error('Dummy error')
       })
-      client.getCustomObjects = jest.fn().mockResolvedValue({
-        elements: [],
-        failedTypes: [],
-        failedToFetchAllAtOnce: false,
-      })
-      const { elements } = await netsuiteAdapter.fetch()
-      expect(elements).toHaveLength(getAllTypes().length)
+      await expect(netsuiteAdapter.fetch()).rejects.toThrow()
     })
 
     it('should ignore instances of unknown type', async () => {
@@ -142,7 +152,6 @@ describe('Adapter', () => {
         + '  <label>elementName</label>'
         + '</unknowntype>'
       const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'unknown')
-      client.importFileCabinetContent = jest.fn().mockResolvedValue([])
       client.getCustomObjects = jest.fn().mockResolvedValue({
         elements: [customTypeInfo],
         failedTypes: [],
@@ -181,21 +190,14 @@ describe('Adapter', () => {
     })
 
     it('should return only the elements when having no config changes', async () => {
-      client.importFileCabinetContent = jest.fn().mockResolvedValue([])
-      client.getCustomObjects = jest.fn().mockResolvedValue({
-        elements: [],
-        failedTypes: [],
-        failedToFetchAllAtOnce: false,
-      })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
       const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith({}, config)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], [], config)
       expect(fetchResult.updatedConfig).toBeUndefined()
     })
 
     it('should call getConfigFromConfigChanges with failed types', async () => {
-      client.importFileCabinetContent = jest.fn().mockResolvedValue([])
       client.getCustomObjects = jest.fn().mockResolvedValue({
         elements: [],
         failedTypes: ['TypeA', 'TypeB'],
@@ -205,14 +207,25 @@ describe('Adapter', () => {
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue(updatedConfig)
       const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChanges).toHaveBeenCalledWith({
-        [TYPES_TO_SKIP]: ['TypeA', 'TypeB'],
-      }, config)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, ['TypeA', 'TypeB'], [], config)
+      expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
+    })
+
+    it('should call getConfigFromConfigChanges with failed file paths', async () => {
+      client.importFileCabinetContent = jest.fn().mockResolvedValue({
+        elements: [],
+        failedPaths: ['/path/to/file'],
+        failedToFetchAllAtOnce: false,
+      })
+      const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
+      const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
+      getConfigFromConfigChangesMock.mockReturnValue(updatedConfig)
+      const fetchResult = await netsuiteAdapter.fetch()
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(false, [], ['/path/to/file'], config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })
 
     it('should call getConfigFromConfigChanges with false for fetchAllAtOnce', async () => {
-      client.importFileCabinetContent = jest.fn().mockResolvedValue([])
       client.getCustomObjects = jest.fn().mockResolvedValue({
         elements: [],
         failedTypes: [],
@@ -222,9 +235,7 @@ describe('Adapter', () => {
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue(updatedConfig)
       const fetchResult = await netsuiteAdapter.fetch()
-      expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith({
-        [FETCH_ALL_TYPES_AT_ONCE]: false,
-      }, config)
+      expect(getConfigFromConfigChangesMock).toHaveBeenCalledWith(true, [], [], config)
       expect(fetchResult.updatedConfig?.config.isEqual(updatedConfig)).toBe(true)
     })
   })

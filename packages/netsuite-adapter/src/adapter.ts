@@ -17,11 +17,10 @@ import {
   FetchResult, isInstanceElement, ObjectType, AdapterOperations, DeployResult, ChangeGroup,
   ElemIdGetter, Element, getChangeElement,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { resolveValues } from '@salto-io/adapter-utils'
-import NetsuiteClient, { CustomizationInfo } from './client/client'
+import NetsuiteClient from './client/client'
 import {
   createInstanceElement, getLookUpName, toCustomizationInfo,
 } from './transformer'
@@ -38,7 +37,6 @@ import {
 } from './config'
 import { getAllReferencedInstances } from './reference_dependencies'
 
-const log = logger(module)
 const { makeArray } = collections.array
 
 export interface NetsuiteAdapterParams {
@@ -97,18 +95,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const customTypesToFetch = _.pull(Object.keys(customTypes), ...this.typesToSkip)
     const getCustomObjectsResult = this.client.getCustomObjects(customTypesToFetch,
       this.fetchAllTypesAtOnce)
-    const fileCabinetContent = this.client.importFileCabinetContent(this.filePathRegexSkipList)
-      .catch(e => {
-        log.error('failed to import file cabinet content. reason: %o', e)
-        return [] as CustomizationInfo[]
-      })
+    const importFileCabinetResult = this.client.importFileCabinetContent(this.filePathRegexSkipList)
     const {
       elements: customObjects,
       failedTypes,
       failedToFetchAllAtOnce,
     } = await getCustomObjectsResult
+    const {
+      elements: fileCabinetContent,
+      failedPaths: failedFilePaths,
+    } = await importFileCabinetResult
 
-    const customizationInfos = _.flatten(await Promise.all([customObjects, fileCabinetContent]))
+    const customizationInfos = [...customObjects, ...fileCabinetContent]
     const instances = customizationInfos.map(customizationInfo => {
       const type = customTypes[customizationInfo.typeName]
         ?? fileCabinetTypes[customizationInfo.typeName]
@@ -117,11 +115,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }).filter(isInstanceElement)
     const elements = [...getAllTypes(), ...instances]
     this.runFiltersOnFetch(elements)
-    const config = getConfigFromConfigChanges({
-      ...(failedToFetchAllAtOnce ? { [FETCH_ALL_TYPES_AT_ONCE]: false } : {}),
-      ...(!_.isEmpty(failedTypes) ? { [TYPES_TO_SKIP]: failedTypes } : {}),
-    }, this.userConfig)
-
+    const config = getConfigFromConfigChanges(failedToFetchAllAtOnce, failedTypes, failedFilePaths,
+      this.userConfig)
     if (_.isUndefined(config)) {
       return { elements }
     }

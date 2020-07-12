@@ -15,6 +15,7 @@
 */
 import * as Diff from 'diff'
 import * as Diff2Html from 'diff2html'
+import * as html2pdf from 'html-pdf'
 import { PlanItem } from '@salto-io/core'
 import { parser } from '@salto-io/workspace'
 import {
@@ -81,49 +82,54 @@ const orderByAfterElement = (before: Element, after: Element): Element => {
   return before
 }
 
-export const getActionName = (
+const getElementName = (change: Change): string => getChangeElement(change).elemID.getFullName()
+
+const actionToHTML = (klass: string, text: string): string =>
+  `<span class="d2h-tag d2h-${klass} d2h-${klass}-tag">${text.toUpperCase()}</span></span>`
+
+const getActionHTMLElement = (
   change: Change,
-  presentSimpleForm = true
 ): string => {
-  const getActionType = (): string => {
-    if (change.action === 'modify') return (presentSimpleForm) ? 'Modify' : 'Modifing'
-    if (change.action === 'remove') return (presentSimpleForm) ? 'Delete' : 'Deleting'
-    return (presentSimpleForm) ? 'Add' : 'Adding'
+  switch (change.action) {
+    case 'modify':
+      return actionToHTML('changed', 'modify')
+    case 'remove':
+      return actionToHTML('deleted', 'remove')
+    default:
+      return actionToHTML('added', 'add')
   }
-  const changeElement = getChangeElement(change)
-  return `${getActionType()} ${changeElement.elemID.getFullName()}`
 }
 
 export const createChangeDiff = async (
-  stepIndex: number,
   change: Change,
 ): Promise<UnifiedDiff> => {
-  const step = `Step ${stepIndex} - `
-  const patchName = `${step}${getActionName(change)}`
+  const changedElementName = getElementName(change)
   const changeData = change.data as { before?: Element; after?: Element }
-  if (changeData.before && changeData.after) {
-    return Diff.createPatch(
-      patchName,
+  return changeData.before && changeData.after
+    ? Diff.createPatch(
+      changedElementName,
       await dumpElements([orderByAfterElement(changeData.before, changeData.after)]),
       await dumpElements([changeData.after]),
     )
-  }
-  return Diff.createPatch(
-    patchName,
-    changeData.before ? await dumpElements([changeData.before]) : '',
-    changeData.after ? await dumpElements([changeData.after]) : '',
-  )
+    : Diff.createPatch(
+      changedElementName,
+      changeData.before ? await dumpElements([changeData.before]) : '',
+      changeData.after ? await dumpElements([changeData.after]) : '',
+    )
 }
 
-export const renderDiffView = (diff: UnifiedDiff[]): string => {
-  const joinedDiff = diff.join('\n')
-  const htmlDiff = joinedDiff.length > 0
-    ? Diff2Html.html(joinedDiff)
-    : ''
-  const prompt = joinedDiff.length > 0
+const transformDiff = (change: Change, diff: UnifiedDiff): UnifiedDiff => {
+  const actionElement = getActionHTMLElement(change)
+  return Diff2Html.html(diff, { drawFileList: false })
+    .replace(actionToHTML('changed', 'changed'), actionElement)
+}
+
+export const renderHTMLDiffView = async (diff: UnifiedDiff[]): Promise<Buffer> => {
+  const htmlDiff = diff.join('\n')
+  const prompt = diff.length > 0
     ? 'Salto will perform the following changes'
     : 'Nothing to do'
-  return `<!DOCTYPE html>
+  return Buffer.from(`<!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
@@ -178,11 +184,11 @@ export const renderDiffView = (diff: UnifiedDiff[]): string => {
         .selecting-left .d2h-code-line,.selecting-left .d2h-code-line *,.selecting-left .d2h-code-side-line,.selecting-left .d2h-code-side-line *,.selecting-right td.d2h-code-linenumber,.selecting-right td.d2h-code-linenumber *,.selecting-right td.d2h-code-side-linenumber,.selecting-right td.d2h-code-side-linenumber *{-webkit-touch-callout:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
         .selecting-left .d2h-code-line ::-moz-selection,.selecting-left .d2h-code-line::-moz-selection,.selecting-left .d2h-code-side-line ::-moz-selection,.selecting-left .d2h-code-side-line::-moz-selection,.selecting-right td.d2h-code-linenumber::-moz-selection,.selecting-right td.d2h-code-side-linenumber ::-moz-selection,.selecting-right td.d2h-code-side-linenumber::-moz-selection{background:0 0}
         .selecting-left .d2h-code-line ::selection,.selecting-left .d2h-code-line::selection,.selecting-left .d2h-code-side-line ::selection,.selecting-left .d2h-code-side-line::selection,.selecting-right td.d2h-code-linenumber::selection,.selecting-right td.d2h-code-side-linenumber ::selection,.selecting-right td.d2h-code-side-linenumber::selection{background:0 0}
-        body {background-color: white;}
+        body {background-color: white; font-family: Arial, Helvetica, sans-serif}
         div#container {width: 90%;margin: auto;padding-top: 20px;}
         tbody.d2h-diff-tbody {background-color: #fff;}
         .text {color: black;}
-        p.text {font-size: 1.3em;}
+        p.text {font-size: 1em;}
         .d2h-wrapper {padding-top: 7px;}
         .d2h-file-wrapper {border-radius: 5px;margin-bottom: 2em;color: #1e1e1e;}
         .d2h-file-header {height: auto;padding: 0.5em;}
@@ -196,7 +202,17 @@ export const renderDiffView = (diff: UnifiedDiff[]): string => {
         ${htmlDiff}
       </div>
     </body>
-    </html>`
+    </html>`)
+}
+
+export const renderPDFDiffView = async (diff: UnifiedDiff[]): Promise<Buffer> => {
+  const html = await renderHTMLDiffView(diff)
+  return new Promise((resolve, reject) => {
+    html2pdf.create(html.toString(), { format: 'A4', orientation: 'landscape' }).toBuffer((err: Error, result: Buffer) => {
+      if (err) return reject(new Error('Failed to create PDF file'))
+      return resolve(result)
+    })
+  })
 }
 
 export const createPlanDiff = async (
@@ -205,8 +221,11 @@ export const createPlanDiff = async (
   const changes = wu(planActions)
     .map(change => change.changes())
     .flatten()
-  const diffCreators = wu(changes)
-    .enumerate()
-    .map(([change, i]) => createChangeDiff(i, change))
-  return Promise.all(diffCreators)
+    .toArray()
+
+  const diffCreators = await Promise.all(wu(changes)
+    .map(change => createChangeDiff(change)))
+
+  return changes
+    .map((change: Change, i: number) => transformDiff(change, diffCreators[i]))
 }

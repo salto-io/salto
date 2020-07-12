@@ -23,7 +23,7 @@ import simpleGit from 'simple-git'
 import wu from 'wu'
 import _ from 'lodash'
 import { mapTriggerNameToChanges } from './trigger'
-import { createPlanDiff, renderDiffView } from './diff'
+import { createPlanDiff, renderPDFDiffView } from './diff'
 import { notify } from './notification'
 import { readConfigFile, Config, validateConfig, Notification } from './config'
 import { out, err } from './logger'
@@ -116,8 +116,8 @@ const main = async (): Promise<number> => {
     out('Find changes using salto preview')
     const plan = await preview(ws)
 
-    out('Rendering html diff')
-    const htmlDiff = renderDiffView(await createPlanDiff(plan.itemsByEvalOrder()))
+    out('Rendering diff file')
+    const diff = await renderPDFDiffView(await createPlanDiff(plan.itemsByEvalOrder()))
 
     const changeGroups = wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
     const sortedChanges = wu(changeGroups)
@@ -134,7 +134,7 @@ const main = async (): Promise<number> => {
         (changes: DetailedChange[], triggerName: string) =>
           notification.triggers.includes(triggerName) && changes.length > 0)
       if (!_.isEmpty(triggered)) {
-        return notify(notification, _.flatten(_.values(triggered)), config, htmlDiff)
+        return notify(notification, _.flatten(_.values(triggered)), config, diff)
       }
       return false
     })

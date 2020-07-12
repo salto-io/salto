@@ -37,7 +37,7 @@ const sendEmail = async (
   notification: Notification,
   changes: DetailedChange[],
   smtp: SMTP,
-  attachment: string):
+  attachment: Buffer):
   Promise<boolean> => {
   const transporter = nodemailer.createTransport(smtpConnectionString(smtp))
   const mailOptions = {
@@ -47,9 +47,9 @@ const sendEmail = async (
     text: templateHTMLBody(changes),
     attachments: [
       {
-        filename: 'diff.html',
+        filename: 'detailed-changes-report.pdf',
         content: attachment,
-        contentType: 'text/html',
+        contentType: 'application/pdf',
       },
     ],
   }
@@ -67,7 +67,7 @@ const sendSlackMessage = async (
   notification: Notification,
   changes: DetailedChange[],
   config: Slack,
-  attachment: string):
+  attachment: Buffer):
   Promise<boolean> => {
   try {
     const client = new WebClient(config.token)
@@ -84,9 +84,9 @@ const sendSlackMessage = async (
     await client.files.upload({
       channels: notification.to.join(','),
       title: 'Detailed changes report',
-      filetype: 'html',
-      filename: 'diff.html',
-      content: attachment,
+      filetype: 'pdf',
+      filename: 'detailed-changes-report.pdf',
+      file: attachment,
     })
     out(`Sent slack message successfully to ${notification.to.join(',')}`)
   } catch (e) {
@@ -100,7 +100,7 @@ export const notify = async (
   notification: Notification,
   changes: DetailedChange[],
   config: Config,
-  attachment: string):
+  attachment: Buffer):
   Promise<boolean> => {
   switch (notification.type) {
     case EmailNotificationType:

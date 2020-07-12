@@ -17,7 +17,6 @@
     "references": [
       { "path": "../adapter-api" },
       { "path": "../core" },
-      { "path": "../logging" },
       { "path": "../workspace" }
     ]
 }

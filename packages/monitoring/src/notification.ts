@@ -16,10 +16,8 @@
 import { WebClient } from '@slack/web-api'
 import * as nodemailer from 'nodemailer'
 import { DetailedChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { Config, Notification, EmailNotificationType, SlackNotificationType, SMTP, Slack } from './config'
-
-const log = logger(module)
+import { out, err } from './logger'
 
 const smtpProtocol = (ssl: boolean): string => `smtp${ssl ? 's' : ''}`
 const smtpConnectionString = (smtp: SMTP): string =>
@@ -57,9 +55,9 @@ const sendEmail = async (
   }
   try {
     await transporter.sendMail(mailOptions)
-    log.info(`Sent mail successfully to ${notification.to.join(',')}`)
+    out(`Sent mail successfully to ${notification.to.join(',')}`)
   } catch (e) {
-    log.error(`Failed to send mail to ${notification.to.join(',')}`)
+    err(`Failed to send mail to ${notification.to.join(',')}`)
     return false
   }
   return true
@@ -90,9 +88,9 @@ const sendSlackMessage = async (
       filename: 'diff.html',
       content: attachment,
     })
-    log.info(`Sent slack message successfully to ${notification.to.join(',')}`)
+    out(`Sent slack message successfully to ${notification.to.join(',')}`)
   } catch (e) {
-    log.error(`Failed to send slack message to ${notification.to.join(',')}`)
+    err(`Failed to send slack message to ${notification.to.join(',')}`)
     return false
   }
   return true

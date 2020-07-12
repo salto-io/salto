@@ -19,7 +19,6 @@ import * as config from '../src/config'
 describe('config', () => {
   it('should throw invalid regex', () => {
     expect(() => config.validateConfig({
-      env: 'test',
       triggers: [{
         name: 'example',
         title: 'title',
@@ -41,7 +40,6 @@ describe('config', () => {
 
   it('should throw invalid trigger', () => {
     expect(() => config.validateConfig({
-      env: 'test',
       triggers: [{
         name: 'example',
         title: 'title',

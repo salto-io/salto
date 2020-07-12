@@ -22,7 +22,6 @@ import { Trigger } from './trigger'
 const { parse } = parser
 
 export interface Config {
-  env: string
   triggers: Trigger[]
   notifications: Notification[]
   smtp: SMTP

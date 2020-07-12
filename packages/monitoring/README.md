@@ -12,7 +12,6 @@ yarn ; yarn build
 
 ```hcl
 monitoring {
-  env = "envName"
   triggers = [
     {
       name = "example"

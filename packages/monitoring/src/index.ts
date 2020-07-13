@@ -16,7 +16,7 @@
 import fs from 'fs'
 import path from 'path'
 import sourceMapSupport from 'source-map-support'
-import { loadLocalWorkspace, fetch, preview, FetchChange } from '@salto-io/core'
+import { loadLocalWorkspace, fetch, preview, FetchChange, Plan } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { ElemID, DetailedChange } from '@salto-io/adapter-api'
 import yargs from 'yargs'
@@ -24,8 +24,8 @@ import simpleGit from 'simple-git'
 import wu from 'wu'
 import _ from 'lodash'
 import { mapTriggerNameToChanges } from './trigger'
-import { createPlanDiff, renderPDFDiffView } from './diff'
-import { notify } from './notification'
+import { createPlanDiff, renderDiffView, PDF } from './diff'
+import { notify, subTitle } from './notification'
 import { readConfigFile, Config, validateConfig, Notification } from './config'
 import { out, err } from './logger'
 
@@ -68,6 +68,36 @@ const addMissingEmptyChanges = (changes: DetailedChange[]): DetailedChange[] => 
     .flatten()
     .value()
   return [...changes, ...missingChanges]
+}
+
+const notifyTriggered = async (
+  notification: Notification,
+  triggerNameToChanges: Record<string, DetailedChange[]>,
+  config: Config): Promise<boolean> => {
+  const triggered = _.pickBy(triggerNameToChanges, (changes, triggerName) =>
+    notification.triggers.includes(triggerName) && changes.length > 0)
+
+  if (!_.isEmpty(triggered)) {
+    const changes = _.flatten(_.values(triggered))
+    const diff = await renderDiffView(
+      await createPlanDiff(changes),
+      { fileType: PDF, title: notification.title, subtitle: subTitle }
+    )
+    return notify(notification, changes, config, diff)
+  }
+  return false
+}
+
+const sortDetailedChanges = (plan: Plan): DetailedChange[] => {
+  const detailedChangeGroups = wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
+  return wu(detailedChangeGroups)
+    .map(changes => [...changes])
+    // Fill in all missing "levels" of each change group
+    .map(addMissingEmptyChanges)
+    // Sort changes so they show up nested correctly
+    .map(changes => _.sortBy(changes, change => change.id.getFullName()))
+    .flatten()
+    .toArray()
 }
 
 const main = async (): Promise<number> => {
@@ -116,30 +146,12 @@ const main = async (): Promise<number> => {
 
     out('Find changes using salto preview')
     const plan = await preview(ws)
+    const sortedChanges = sortDetailedChanges(plan)
 
-    out('Rendering diff file')
-    const diff = await renderPDFDiffView(await createPlanDiff(plan.itemsByEvalOrder()))
-
-    const changeGroups = wu(plan.itemsByEvalOrder()).map(item => item.detailedChanges())
-    const sortedChanges = wu(changeGroups)
-      .map(changes => [...changes])
-      // Fill in all missing "levels" of each change group
-      .map(addMissingEmptyChanges)
-      // Sort changes so they show up nested correctly
-      .map(changes => _.sortBy(changes, change => change.id.getFullName()))
-      .toArray()
-
-    const triggerNameToChanges = mapTriggerNameToChanges(config.triggers, _.flatten(sortedChanges))
-    const notifyPromises = config.notifications.map((notification: Notification) => {
-      const triggered = _.pickBy(triggerNameToChanges,
-        (changes: DetailedChange[], triggerName: string) =>
-          notification.triggers.includes(triggerName) && changes.length > 0)
-      if (!_.isEmpty(triggered)) {
-        return notify(notification, _.flatten(_.values(triggered)), config, diff)
-      }
-      return false
-    })
-    await Promise.all(_.flatten(notifyPromises).filter(n => n !== false))
+    const triggerNameToChanges = mapTriggerNameToChanges(config.triggers, sortedChanges)
+    const notifyPromises = config.notifications
+      .map(notification => notifyTriggered(notification, triggerNameToChanges, config))
+    await Promise.all(notifyPromises)
   } catch (e) {
     err(e.message)
     return 1

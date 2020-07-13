@@ -19,7 +19,7 @@ import { DetailedChange } from '@salto-io/adapter-api'
 import { Config, Notification, EmailNotificationType, SlackNotificationType, SMTP, Slack } from './config'
 import { out, err } from './logger'
 
-const subTitle = 'The following elements have changed:'
+export const subTitle = 'The following elements have changed:'
 
 const smtpProtocol = (ssl: boolean): string => `smtp${ssl ? 's' : ''}`
 const smtpConnectionString = (smtp: SMTP): string =>

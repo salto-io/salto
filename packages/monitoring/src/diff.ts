@@ -19,7 +19,6 @@ import * as html2pdf from 'html-pdf'
 import { parser } from '@salto-io/workspace'
 import {
   Element,
-  getChangeElement,
   isObjectType,
   isInstanceElement,
   isField,
@@ -27,7 +26,7 @@ import {
   isPrimitiveType,
   PrimitiveType,
   Field,
-  Value, Change,
+  Value, Change, DetailedChange,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
 import _ from 'lodash'
@@ -90,7 +89,7 @@ const orderByAfterElement = (before: Element, after: Element): Element => {
   return before
 }
 
-const getElementName = (change: Change): string => getChangeElement(change).elemID.getFullName()
+const getElementName = (change: DetailedChange): string => change.id.getFullName()
 
 const actionToHTML = (klass: string, text: string): string =>
   `<span class="d2h-tag d2h-${klass} d2h-${klass}-tag">${text.toUpperCase()}</span></span>`
@@ -228,7 +227,7 @@ export const renderDiffView = async (
 }
 
 export const createChangeDiff = async (
-  change: Change,
+  change: DetailedChange,
 ): Promise<UnifiedDiff> => {
   const changedElementName = getElementName(change)
   const changeData = change.data as { before?: Element; after?: Element }
@@ -246,7 +245,7 @@ export const createChangeDiff = async (
 }
 
 export const createPlanDiff = async (
-  changes: Change[]
+  changes: DetailedChange[]
 ): Promise<UnifiedDiff> => {
   const diffCreators = await Promise.all(wu(changes)
     .map(change => createChangeDiff(change)))

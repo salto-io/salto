@@ -68,7 +68,7 @@ describe('localParseResultCache', () => {
     errors: [],
     sourceMap,
   }
-  const mockSerializedCacheFile = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
+  const mockSerializedCacheFile = `{"prototypes":{"ObjectType":["0"],"ElemID":["0.elemID"]},"refs":{},"data":[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"path":["salesforce","Objects","Activity","ActivityStandardFields"],"fields":{},"isSettings":false}]}
 []
 [["salesforce.dummy",[{"filename":"dummy.nacl","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
 
@@ -93,7 +93,7 @@ describe('localParseResultCache', () => {
       await cache.flush()
       expect(mkdirp).toHaveBeenCalledWith(path.resolve(mockBaseDirPath, 'blabla'))
       expect(replaceContents).toHaveBeenLastCalledWith(
-        path.resolve(mockBaseDirPath, 'blabla/blurprint.jsonl'), mockSerializedCacheFile
+        path.resolve(mockBaseDirPath, 'blabla/blurprint.jsonl'), expect.any(String),
       )
     })
   })

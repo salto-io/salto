@@ -25,6 +25,7 @@ import * as validators from './validators'
 import * as stack from './stack'
 import * as hash from './hash'
 import * as values from './values'
+import * as serialization from './serialization'
 
 export {
   collections,
@@ -39,4 +40,5 @@ export {
   stack,
   hash,
   values,
+  serialization,
 }

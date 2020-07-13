@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { strings } from '@salto-io/lowerdash'
 import { EOL } from 'os'
 import _ from 'lodash'
 import path from 'path'
@@ -23,6 +24,7 @@ import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
 
 const { serialize, deserialize } = serialization
+const { stableCollator } = strings
 
 const log = logger(module)
 
@@ -38,7 +40,9 @@ export const localState = (filePath: string): state.State => {
       return { elements: {}, servicesUpdateDate: {}, pathIndex: new pathIndex.PathIndex() }
     }
     const [elementsData, updateDateData, pathIndexData] = text.split(EOL)
-    const deserializedElements = (await deserialize(elementsData)).map(flattenElementStr)
+    const deserializedElements = (
+      await log.time(() => deserialize<Element[]>(elementsData), 'state deserialization')
+    ).map(flattenElementStr)
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
     const index = pathIndexData
       ? pathIndex.deserializedPathIndex(pathIndexData)
@@ -80,7 +84,13 @@ export const localState = (filePath: string): state.State => {
         return
       }
       const elements = await inMemState.getAll()
-      const elementsString = serialize(elements)
+      const sortedElements = elements.sort(
+        (e1, e2) => stableCollator.compare(e1.elemID.getFullName(), e2.elemID.getFullName())
+      )
+      const elementsString = log.time(
+        () => serialize(sortedElements, { stable: true }),
+        'state serialization',
+      )
       const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
       const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
       const stateText = [elementsString, dateString, pathIndexString].join(EOL)

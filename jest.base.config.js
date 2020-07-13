@@ -22,6 +22,7 @@ module.exports = {
       : '<rootDir>/dist/test/**/*.test.js'
   ],
   testRunner: "jest-circus/runner",
+  snapshotResolver: `${__dirname}/jest.snapshot-resolver`,
   collectCoverage: true,
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'json-summary'],
   collectCoverageFrom: [
@@ -32,7 +33,6 @@ module.exports = {
     '!coverage/**',
     '!dist/test/**',
     '!dist/e2e_test/**',
-    
   ],
 }
 

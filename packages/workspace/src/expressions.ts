@@ -14,19 +14,21 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-
+import { logger } from '@salto-io/logging'
 import {
   ElemID, Element, isObjectType, isInstanceElement, Value,
   ReferenceExpression, TemplateExpression, isVariable,
-  isReferenceExpression, isVariableExpression,
+  isReferenceExpression, isVariableExpression, Field, BuiltinTypes, TypeElement, isListType,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
 } from '@salto-io/adapter-utils'
 
+const log = logger(module)
+
 type Resolver<T> = (
   v: T,
-  contextElements: Record<string, Element[]>,
+  contextElements: Record<string, Element>,
   visited?: Set<string>
 ) => Value
 
@@ -43,7 +45,7 @@ let resolveTemplateExpression: Resolver<TemplateExpression>
 
 const resolveMaybeExpression: Resolver<Value> = (
   value: Value,
-  contextElements: Record<string, Element[]>,
+  contextElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): Value => {
   if (isReferenceExpression(value)) {
@@ -59,7 +61,7 @@ const resolveMaybeExpression: Resolver<Value> = (
 
 resolveReferenceExpression = (
   expression: ReferenceExpression,
-  contextElements: Record<string, Element[]>,
+  contextElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): ReferenceExpression => {
   const { traversalParts } = expression
@@ -74,7 +76,6 @@ resolveReferenceExpression = (
   const { parent } = fullElemID.createTopLevelParentID()
   // Validation should throw an error if there is no match, or more than one match
   const rootElement = contextElements[parent.getFullName()]
-    && contextElements[parent.getFullName()][0]
 
   if (!rootElement) {
     return expression.createWithValue(new UnresolvedReference(fullElemID))
@@ -106,7 +107,7 @@ resolveReferenceExpression = (
 
 resolveTemplateExpression = (
   expression: TemplateExpression,
-  contextElements: Record<string, Element[]>,
+  contextElements: Record<string, Element>,
   visited: Set<string> = new Set<string>(),
 ): Value => expression.parts
   .map(p => {
@@ -117,15 +118,50 @@ resolveTemplateExpression = (
 
 const resolveElement = (
   element: Element,
-  contextElements: Record<string, Element[]>
+  contextElements: Record<string, Element>
 ): void => {
   const referenceCloner = (v: Value): Value => resolveMaybeExpression(v, contextElements)
+
   if (isInstanceElement(element)) {
     element.value = _.cloneDeepWith(element.value, referenceCloner)
   }
 
   if (isObjectType(element)) {
-    element.fields = _.cloneDeepWith(element.fields, referenceCloner)
+    const ensureCopyExistsOnce = (field: Field, source: Element): Element => {
+      const name = source.elemID.getFullName()
+      let result = contextElements[name]
+      if (!result) {
+        if (!isListType(source)) {
+          // TODO: find out why this is happening e.g, for
+          // TODO: "element salesforce.Text at field AccountNumber in salesforce.Account"
+          log.warn(
+            'Cannot find element %s at field %s in %s',
+            field.type.elemID.getFullName(),
+            field.name, field.parent.elemID.getFullName(),
+          )
+        }
+        result = _.clone(source)
+        // eslint-disable-next-line @typescript-eslint/no-use-before-define
+        resolveElement(result, contextElements)
+        contextElements[name] = result
+      }
+      return result
+    }
+
+    // keep references (e.g, parent, type)
+    element.fields = _.mapValues(
+      element.fields,
+      field => {
+        const result = new Field(
+          element,
+          field.name,
+          ensureCopyExistsOnce(field, field.type) as TypeElement,
+          _.cloneDeepWith(field.annotations, referenceCloner),
+        )
+        result.annotationTypes = _.cloneDeepWith(field.annotationTypes, referenceCloner)
+        return result
+      }
+    )
   }
 
   if (isVariable(element)) {
@@ -133,17 +169,18 @@ const resolveElement = (
   }
 
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
+  element.annotationTypes = _.cloneDeepWith(element.annotationTypes, referenceCloner)
 }
 
 export const resolve = (elements: readonly Element[],
   additionalContext: ReadonlyArray<Element> = []): Element[] => {
-  const additionalContextElements = _.groupBy(additionalContext, e => e.elemID.getFullName())
   // intentionally shallow clone because in resolve element we replace only top level properties
   const clonedElements = elements.map(_.clone)
-  const contextElements = {
-    ...additionalContextElements,
-    ..._.groupBy(clonedElements, e => e.elemID.getFullName()),
-  }
+  const contextElements = Object.fromEntries([
+    ...Object.values(BuiltinTypes),
+    ...additionalContext,
+    ...clonedElements,
+  ].map(e => [e.elemID.getFullName(), e]))
   clonedElements.forEach(e => resolveElement(e, contextElements))
   return clonedElements
 }

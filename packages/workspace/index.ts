@@ -28,7 +28,7 @@ import * as staticFiles from './src/workspace/static_files'
 import * as parser from './src/parser'
 import * as merger from './src/merger'
 import * as expressions from './src/expressions'
-import * as serialization from './src/serializer/elements'
+import * as serialization from './src/serializer'
 import * as pathIndex from './src/workspace/path_index'
 
 export {

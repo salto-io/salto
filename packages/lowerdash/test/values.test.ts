@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isDefined } from '../src/values'
+import { isDefined, isPrimitive } from '../src/values'
 
 describe('isDefined', () => {
   describe('with undefined value', () => {
@@ -40,5 +40,55 @@ describe('isDefined', () => {
     it('should return true with object', () => {
       expect(isDefined({})).toBeTruthy()
     })
+  })
+})
+
+describe('isPrimitive', () => {
+  test('returns true for undefined', () => {
+    expect(isPrimitive(undefined)).toBe(true)
+  })
+  test('returns true for null', () => {
+    expect(isPrimitive(null)).toBe(true)
+  })
+  test('returns true for a number', () => {
+    expect(isPrimitive(12)).toBe(true)
+  })
+  test('returns true for NaN', () => {
+    expect(isPrimitive(NaN)).toBe(true)
+  })
+  test('returns true for positive infinity', () => {
+    expect(isPrimitive(Infinity)).toBe(true)
+  })
+  test('returns true for negative infinity', () => {
+    expect(isPrimitive(-Infinity)).toBe(true)
+  })
+  test('returns true for an empty string', () => {
+    expect(isPrimitive('')).toBe(true)
+  })
+  test('returns true for an non-empty string', () => {
+    expect(isPrimitive('a')).toBe(true)
+  })
+  test('returns true for true', () => {
+    expect(isPrimitive(true)).toBe(true)
+  })
+  test('returns true for false', () => {
+    expect(isPrimitive(false)).toBe(true)
+  })
+
+  test('returns false for an array', () => {
+    expect(isPrimitive([])).toBe(false)
+  })
+  test('returns false for an object', () => {
+    expect(isPrimitive({})).toBe(false)
+  })
+  test('returns false for a function', () => {
+    expect(isPrimitive(() => undefined)).toBe(false)
+  })
+  test('returns false for a class', () => {
+    expect(isPrimitive(class Foo {})).toBe(false)
+  })
+  test('returns false for a class instance', () => {
+    class Foo {}
+    expect(isPrimitive(new Foo())).toBe(false)
   })
 })

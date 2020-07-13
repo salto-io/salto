@@ -15,6 +15,7 @@
 */
 import { SalesforceClient, testHelpers as salesforceTestHelpers, Credentials } from '@salto-io/salesforce-adapter'
 import path from 'path'
+import { logger } from '@salto-io/logging'
 import { Plan } from '@salto-io/core'
 import { parser } from '@salto-io/workspace'
 import { strings } from '@salto-io/lowerdash'
@@ -39,6 +40,8 @@ import {
 import * as templates from './helpers/templates'
 
 const { dumpElements } = parser
+
+const log = logger(module)
 
 describe('multi env tests', () => {
   jest.setTimeout(15 * 60 * 1000)
@@ -183,7 +186,9 @@ describe('multi env tests', () => {
   // Setup the test env
   beforeAll(async () => {
     env1CredsLease = await salesforceTestHelpers().credentials()
+    log.info('env1 using credentials: %s', env1CredsLease.id)
     env2CredsLease = await salesforceTestHelpers().credentials('ENV_2')
+    log.info('env2 using credentials: %s', env2CredsLease.id)
     env1Creds = env1CredsLease.value
     env2Creds = env2CredsLease.value
     env1Client = new SalesforceClient({ credentials: env1Creds })
@@ -276,8 +281,8 @@ describe('multi env tests', () => {
     })
 
     describe('have empty previews', () => {
-      let env1Plan: Plan | undefined
-      let env2Plan: Plan | undefined
+      let env1Plan: Plan
+      let env2Plan: Plan
       beforeAll(async () => {
         await runSetEnv(baseDir, ENV1_NAME)
         env1Plan = await runPreviewGetPlan(baseDir)
@@ -285,8 +290,8 @@ describe('multi env tests', () => {
         env2Plan = await runPreviewGetPlan(baseDir)
       })
       it('should have empty previews for all envs', async () => {
-        expect(env1Plan?.size).toBe(0)
-        expect(env2Plan?.size).toBe(0)
+        expect([...env1Plan]).toHaveLength(0)
+        expect([...env2Plan]).toHaveLength(0)
       })
     })
   })

@@ -204,7 +204,7 @@ export const loadValidWorkspace = async (
   return workspace
 }
 
-export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan | undefined> => {
+export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan> => {
   // using force=true because there are workspace warnings
   const workspace = await loadValidWorkspace(fetchOutputDir, true /* force */)
   return preview(workspace, services)

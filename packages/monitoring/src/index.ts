@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import fs from 'fs'
+import path from 'path'
 import sourceMapSupport from 'source-map-support'
 import { loadLocalWorkspace, fetch, preview, FetchChange } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
@@ -143,7 +144,7 @@ const main = async (): Promise<number> => {
     err(e.message)
     return 1
   } finally {
-    if (fs.existsSync(stateFilePath(args.env as string))) {
+    if (fs.existsSync(path.join(args.workspace as string, stateFilePath(args.env as string)))) {
       await git.checkout(['HEAD', stateFilePath(args.env as string)])
     }
   }

@@ -17,6 +17,7 @@ import {
   ElemID, InstanceElement, ReferenceExpression, ServiceIds, StaticFile,
 } from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
   ADDRESS_FORM, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD, SCRIPT_ID, TRANSACTION_FORM,
@@ -307,12 +308,31 @@ describe('Transformer', () => {
             'Inner EmailTemplates Folder', 'content.html'])
       })
 
+      it('should create instance path correctly for file instance when it has . prefix', () => {
+        const fileCustomizationInfoWithDotPrefix = _.clone(fileCustomizationInfo)
+        fileCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder', '..hiddenFile.xml']
+        const result = createInstanceElement(fileCustomizationInfoWithDotPrefix,
+          fileCabinetTypes[FILE], mockGetElemIdFunc)
+        expect(result.path).toEqual(
+          [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder', '_hiddenFile.xml']
+        )
+      })
+
       it('should create instance path correctly for folder instance', () => {
         const result = createInstanceElement(folderCustomizationInfo, fileCabinetTypes[FOLDER],
           mockGetElemIdFunc)
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
             'Inner EmailTemplates Folder'])
+      })
+
+      it('should create instance path correctly for folder instance when it has . prefix', () => {
+        const folderCustomizationInfoWithDotPrefix = _.clone(folderCustomizationInfo)
+        folderCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder']
+        const result = createInstanceElement(folderCustomizationInfoWithDotPrefix,
+          fileCabinetTypes[FOLDER], mockGetElemIdFunc)
+        expect(result.path)
+          .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder'])
       })
 
       it('should transform path field correctly', () => {

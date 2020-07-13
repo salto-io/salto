@@ -97,6 +97,7 @@ const sortDetailedChanges = (plan: Plan): DetailedChange[] => {
     // Sort changes so they show up nested correctly
     .map(changes => _.sortBy(changes, change => change.id.getFullName()))
     .flatten()
+    .filter(change => !_.isUndefined(change.data.before || change.data.after))
     .toArray()
 }
 

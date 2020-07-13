@@ -19,6 +19,8 @@ import { DetailedChange } from '@salto-io/adapter-api'
 import { Config, Notification, EmailNotificationType, SlackNotificationType, SMTP, Slack } from './config'
 import { out, err } from './logger'
 
+const subTitle = 'The following elements have changed:'
+
 const smtpProtocol = (ssl: boolean): string => `smtp${ssl ? 's' : ''}`
 const smtpConnectionString = (smtp: SMTP): string =>
   `${smtpProtocol(smtp.ssl)}://${smtp.username}:${smtp?.password}@${smtp.host}:${smtp.port}`
@@ -28,9 +30,10 @@ const templateHTMLBody = (changes: DetailedChange[]): string =>
 
 const templateSlackMessage = async (
   title: string, changes: DetailedChange[]): Promise<string> => {
-  const changesFullName = changes
-    .map((change: DetailedChange) => change.id.getFullName())
-  return [`*${title}*`, ...changesFullName].join('\n')
+  const changesBlock = changes
+    .map((change: DetailedChange) => `• ${change.id.getFullName()}`)
+    .join('\n')
+  return [`*${title}*`, subTitle, `\`\`\`${changesBlock}\`\`\``].join('\n')
 }
 
 const sendEmail = async (

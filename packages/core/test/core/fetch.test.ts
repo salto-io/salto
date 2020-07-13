@@ -20,7 +20,6 @@ import {
   isModificationDiff, ListType, FieldDefinition, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
-import { hiddenValues } from '@salto-io/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents,
@@ -74,8 +73,8 @@ describe('fetch', () => {
     hidden: 'Hidden',
   })
 
-  // Workspace elements should not contains hidden values
-  const workspaceInstance = hiddenValues.removeHiddenFieldsValues(hiddenInstance)
+  // // Workspace elements should not contains hidden values
+  // const workspaceInstance = hiddenValues.removeHiddenFieldsValues(hiddenInstance)
 
   const newTypeBaseModified = new ObjectType({
     elemID: newTypeID,
@@ -232,7 +231,7 @@ describe('fetch', () => {
 
         const result = await fetchChanges(
           mockAdapters,
-          [newTypeMerged, workspaceInstance],
+          [newTypeMerged, hiddenInstance],
           [newTypeMerged, hiddenInstance],
           [],
         )
@@ -263,7 +262,7 @@ describe('fetch', () => {
 
         const result = await fetchChanges(
           mockAdapters,
-          [typeWithField, workspaceInstance],
+          [typeWithField, hiddenInstance],
           [typeWithField, hiddenInstance],
           [],
         )
@@ -271,13 +270,14 @@ describe('fetch', () => {
       })
 
       it('should return the change with no conflict', () => {
-        expect(changes).toHaveLength(2)
+        expect(changes).toHaveLength(3)
         changes.forEach(c => expect(c.pendingChange).toBeUndefined())
       })
 
-      it('shouldn remove hidden values from changes', () => {
+      it('shouldn not remove hidden values from changes', () => {
         changes.forEach(c => expect(isModificationDiff(c.change)).toEqual(true))
-        changes.forEach(c => expect(getChangeElement(c.change)).not.toEqual(hiddenChangedVal))
+        expect(changes.some(c => (getChangeElement(c.change)) === hiddenChangedVal))
+          .toBeTruthy()
       })
     })
     describe('when a progressEmitter is provided', () => {
@@ -609,15 +609,14 @@ describe('fetch', () => {
         changes = [...result.changes]
       })
 
-      it('should return the change with no conflict', () => {
+      it('should return the changes with no conflict', () => {
         expect(changes).toHaveLength(2)
         changes.forEach(c => expect(c.pendingChange).toBeUndefined())
       })
 
-      it('shouldn\'t remove hidden values from changes', () => {
-        const fetchedInst = getChangeElement(changes[1].change)
-        expect(fetchedInst.value.hidden).toBeUndefined()
-        expect(fetchedInst.value.notHidden).toEqual('notHidden')
+      it('changes should be equal to the service elements', () => {
+        expect(getChangeElement(changes[0].change)).toEqual(typeWithField)
+        expect(getChangeElement(changes[1].change)).toEqual(hiddenInstance)
       })
     })
 
@@ -625,7 +624,7 @@ describe('fetch', () => {
       it('should call applyInstancesDefaults', async () => {
         // spyOn where utils is defined https://stackoverflow.com/a/53307822
         mockAdapters.dummy.fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [workspaceInstance] })
+          Promise.resolve({ elements: [hiddenInstance] })
         )
         await fetchChanges(
           mockAdapters,
@@ -633,7 +632,7 @@ describe('fetch', () => {
           [],
           [],
         )
-        expect(utils.applyInstancesDefaults).toHaveBeenCalledWith([workspaceInstance])
+        expect(utils.applyInstancesDefaults).toHaveBeenCalledWith([hiddenInstance])
       })
     })
   })

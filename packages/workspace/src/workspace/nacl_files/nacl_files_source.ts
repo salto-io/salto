@@ -16,10 +16,11 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, ElementMap, Value, DetailedChange, isElement,
+  Element, ElemID, ElementMap, Value, DetailedChange, isElement, isAdditionDiff,
+  CORE_ANNOTATIONS, InstanceElement, isInstanceElement, isType,
 } from '@salto-io/adapter-api'
 import {
-  resolvePath,
+  resolvePath, transformElement, TransformFunc,
 } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
@@ -234,12 +235,44 @@ const buildNaclFilesSource = (
   }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
+    const isChangeHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
+        && isAdditionDiff(change)
+      && isType(change.data.after) // TODO: replace with isTopLevel
+        && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+
+
+    const removeHiddenFieldsValues = (change: DetailedChange): DetailedChange => {
+      if (change.id.idType === 'instance'
+        && isAdditionDiff(change)
+        && isInstanceElement(change.data.after)
+      ) {
+        const instance = change.data.after as InstanceElement
+        const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
+          if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
+            return undefined
+          }
+          return value
+        }
+
+        change.data.after = transformElement({
+          element: instance,
+          transformFunc: removeHiddenFieldValue,
+          strict: false,
+        }) || {}
+      }
+      return change
+    }
+
+    const changesAfterHiddenRemoved = changes.filter(e => !isChangeHiddenType(e))
+      .map(e => removeHiddenFieldsValues(e))
+
+
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
       return naclFile ? naclFile.buffer : ''
     }
 
-    const naclFiles = _(await Promise.all(changes
+    const naclFiles = _(await Promise.all(changesAfterHiddenRemoved
       .map(change => change.id)
       .map(elemID => getElementNaclFiles(elemID))))
       .flatten().uniq().value()
@@ -255,7 +288,7 @@ const buildNaclFilesSource = (
       return acc
     }, new SourceMap())
 
-    const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
+    const changesToUpdate = getChangesToUpdate(changesAfterHiddenRemoved, mergedSourceMap)
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))

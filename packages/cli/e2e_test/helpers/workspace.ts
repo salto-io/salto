@@ -200,11 +200,13 @@ export const loadValidWorkspace = async (
   force = false
 ): Promise<Workspace> => {
   const { workspace, errored } = await loadWorkspace(fetchOutputDir, mockCliOutput(), { force })
-  expect(errored).toBeFalsy()
+  if (errored) {
+    expect(await workspace.errors()).toHaveLength(0) // show errors
+  }
   return workspace
 }
 
-export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan | undefined> => {
+export const runPreviewGetPlan = async (fetchOutputDir: string): Promise<Plan> => {
   // using force=true because there are workspace warnings
   const workspace = await loadValidWorkspace(fetchOutputDir, true /* force */)
   return preview(workspace, services)
@@ -238,7 +240,7 @@ export const verifyChanges = (plan: Plan,
     .map(change => ({ action: change.action, element: getChangedElementName(change) }))
     .sort(compareChanges)
 
-  expect(expectedChanges.sort(compareChanges)).toEqual(changes)
+  expect(changes.sort(compareChanges)).toEqual(expectedChanges.sort(compareChanges))
 }
 
 const findInstance = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
@@ -253,10 +255,16 @@ export const verifyInstance = (elements: ReadonlyArray<Element>, adapter: string
     expect(newInstance.value[key]).toEqual(value))
 }
 
-export const verifyObject = (elements: ReadonlyArray<Element>, adapter: string, typeName: string,
-  expectedAnnotationTypes: TypeMap, expectedAnnotations: Values,
-  expectedFieldAnnotations: Record<string, Values>): ObjectType => {
+export const verifyObject = (
+  elements: ReadonlyArray<Element>,
+  adapter: string,
+  typeName: string,
+  expectedAnnotationTypes: TypeMap,
+  expectedAnnotations: Values,
+  expectedFieldAnnotations: Record<string, Values>
+): ObjectType => {
   const object = findElement(elements, new ElemID(adapter, typeName)) as ObjectType
+  expect(object).toBeDefined()
   Object.entries(expectedAnnotationTypes).forEach(([key, value]) =>
     expect(object.annotationTypes[key]).toEqual(value))
   Object.entries(expectedAnnotations).forEach(([key, value]) =>

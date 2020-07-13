@@ -14,3 +14,9 @@
 * limitations under the License.
 */
 export const isDefined = <T>(val: T | undefined): val is T => val !== undefined
+
+export const isPrimitive = (
+  value: unknown
+): value is undefined | null | 'string' | 'number' | 'boolean' => (
+  value === undefined || value === null || ['string', 'number', 'boolean'].includes(typeof value)
+)

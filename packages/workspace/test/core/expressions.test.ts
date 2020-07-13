@@ -15,9 +15,19 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, BuiltinTypes, InstanceElement, Element,
-  ReferenceExpression, VariableExpression, TemplateExpression, ListType, Variable,
-  isVariableExpression, isReferenceExpression, StaticFile,
+  ElemID,
+  ObjectType,
+  BuiltinTypes,
+  InstanceElement,
+  Element,
+  ReferenceExpression,
+  VariableExpression,
+  TemplateExpression,
+  ListType,
+  Variable,
+  isVariableExpression,
+  isReferenceExpression,
+  StaticFile,
 } from '@salto-io/adapter-api'
 import {
   TestFuncImpl,
@@ -185,6 +195,12 @@ describe('Test Salto Expressions', () => {
       const element = findResolved<Variable>(varRef)
       expect(isReferenceExpression(element.value)).toBe(true)
       expect(element.value.value).toEqual('simple')
+    })
+
+    it('should keep JS refs in Field', () => {
+      const element = findResolved<ObjectType>(objectRef)
+      expect(element.fields.ref.type).toBe(BuiltinTypes.STRING)
+      expect(element.fields.ref.parent).toBe(element)
     })
 
     describe('functions', () => {

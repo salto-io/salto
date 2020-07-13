@@ -1,0 +1,379 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`jsonSerializer refs when a custom reviver is specified should call it correctly 1`] = `
+Array [
+  Array [
+    Object {
+      "x": 12,
+      "y": 13,
+    },
+    "x",
+    12,
+  ],
+  Array [
+    Object {
+      "x": 12,
+      "y": 13,
+    },
+    "y",
+    13,
+  ],
+  Array [
+    Object {
+      "el1o1": Array [
+        "a",
+        "b",
+      ],
+    },
+    "el1o1",
+    Object {
+      "x": 12,
+      "y": 13,
+    },
+  ],
+  Array [
+    Array [
+      Object {
+        "el1o1": Array [
+          "a",
+          "b",
+        ],
+      },
+      Object {
+        "el2o1": Object {
+          "x": 12,
+          "y": 13,
+        },
+        "el2o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+        "el2z": 16,
+      },
+      Object {
+        "el3o1": Object {
+          "parent": [Circular],
+          "x": 12,
+          "y": 13,
+        },
+        "el3o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+      },
+    ],
+    "0",
+    Object {
+      "el1o1": Array [
+        "a",
+        "b",
+      ],
+    },
+  ],
+  Array [
+    Object {
+      "x": 14,
+      "y": 15,
+    },
+    "x",
+    14,
+  ],
+  Array [
+    Object {
+      "x": 14,
+      "y": 15,
+    },
+    "y",
+    15,
+  ],
+  Array [
+    Object {
+      "el2o1": Object {
+        "x": 12,
+        "y": 13,
+      },
+      "el2o2": Object {
+        "x": 14,
+        "y": 15,
+      },
+      "el2z": 16,
+    },
+    "el2o2",
+    Object {
+      "x": 14,
+      "y": 15,
+    },
+  ],
+  Array [
+    Object {
+      "el2o1": Object {
+        "x": 12,
+        "y": 13,
+      },
+      "el2o2": Object {
+        "x": 14,
+        "y": 15,
+      },
+      "el2z": 16,
+    },
+    "el2z",
+    16,
+  ],
+  Array [
+    Array [
+      Object {
+        "el1o1": Array [
+          "a",
+          "b",
+        ],
+      },
+      Object {
+        "el2o1": Object {
+          "x": 12,
+          "y": 13,
+        },
+        "el2o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+        "el2z": 16,
+      },
+      Object {
+        "el3o1": Object {
+          "parent": [Circular],
+          "x": 12,
+          "y": 13,
+        },
+        "el3o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+      },
+    ],
+    "1",
+    Object {
+      "el2o1": Object {
+        "x": 12,
+        "y": 13,
+      },
+      "el2o2": Object {
+        "x": 14,
+        "y": 15,
+      },
+      "el2z": 16,
+    },
+  ],
+  Array [
+    Object {
+      "parent": Object {
+        "el3o1": [Circular],
+        "el3o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+      },
+      "x": 12,
+      "y": 13,
+    },
+    "x",
+    12,
+  ],
+  Array [
+    Object {
+      "parent": Object {
+        "el3o1": [Circular],
+        "el3o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+      },
+      "x": 12,
+      "y": 13,
+    },
+    "y",
+    13,
+  ],
+  Array [
+    Object {
+      "el3o1": Object {
+        "parent": [Circular],
+        "x": 12,
+        "y": 13,
+      },
+      "el3o2": Object {
+        "x": 14,
+        "y": 15,
+      },
+    },
+    "el3o1",
+    Object {
+      "parent": Object {
+        "el3o1": [Circular],
+        "el3o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+      },
+      "x": 12,
+      "y": 13,
+    },
+  ],
+  Array [
+    Object {
+      "el3o1": Object {
+        "parent": [Circular],
+        "x": 12,
+        "y": 13,
+      },
+      "el3o2": Object {
+        "x": 14,
+        "y": 15,
+      },
+    },
+    "el3z",
+    16,
+  ],
+  Array [
+    Array [
+      Object {
+        "el1o1": Array [
+          "a",
+          "b",
+        ],
+      },
+      Object {
+        "el2o1": Object {
+          "x": 12,
+          "y": 13,
+        },
+        "el2o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+        "el2z": 16,
+      },
+      Object {
+        "el3o1": Object {
+          "parent": [Circular],
+          "x": 12,
+          "y": 13,
+        },
+        "el3o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+      },
+    ],
+    "2",
+    Object {
+      "el3o1": Object {
+        "parent": [Circular],
+        "x": 12,
+        "y": 13,
+      },
+      "el3o2": Object {
+        "x": 14,
+        "y": 15,
+      },
+    },
+  ],
+  Array [
+    Object {
+      "": Array [
+        Object {
+          "el1o1": Array [
+            "a",
+            "b",
+          ],
+        },
+        Object {
+          "el2o1": Object {
+            "x": 12,
+            "y": 13,
+          },
+          "el2o2": Object {
+            "x": 14,
+            "y": 15,
+          },
+          "el2z": 16,
+        },
+        Object {
+          "el3o1": Object {
+            "parent": [Circular],
+            "x": 12,
+            "y": 13,
+          },
+          "el3o2": Object {
+            "x": 14,
+            "y": 15,
+          },
+        },
+      ],
+    },
+    "",
+    Array [
+      Object {
+        "el1o1": Array [
+          "a",
+          "b",
+        ],
+      },
+      Object {
+        "el2o1": Object {
+          "x": 12,
+          "y": 13,
+        },
+        "el2o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+        "el2z": 16,
+      },
+      Object {
+        "el3o1": Object {
+          "parent": [Circular],
+          "x": 12,
+          "y": 13,
+        },
+        "el3o2": Object {
+          "x": 14,
+          "y": 15,
+        },
+      },
+    ],
+  ],
+]
+`;
+
+exports[`jsonSerializer refs when a custom reviver is specified should modify the result 1`] = `
+Array [
+  Object {
+    "el1o1": Array [
+      "a",
+      "b",
+    ],
+  },
+  Object {
+    "el2o1": Object {
+      "x": 12,
+      "y": 13,
+    },
+    "el2o2": Object {
+      "x": 14,
+      "y": 15,
+    },
+    "el2z": 16,
+  },
+  Object {
+    "el3o1": Object {
+      "parent": [Circular],
+      "x": 12,
+      "y": 13,
+    },
+    "el3o2": Object {
+      "x": 14,
+      "y": 15,
+    },
+  },
+]
+`;

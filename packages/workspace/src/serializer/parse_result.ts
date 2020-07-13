@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
+import { Element } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ParseResult, ParseError, SourceMap } from '../parser'
-import * as elementSerializer from './elements'
+import { deserialize as deserializeElements, StaticFileReviver } from './deserializer'
+import { serializeWeakElements as serializeElements } from './serializer'
 
 
 const serializeErrors = (errors: ParseError[]): string =>
@@ -27,9 +29,7 @@ const serializeSourceMap = (sourceMap: SourceMap): string => (
 )
 
 export const serialize = (parseResult: ParseResult): string => [
-  // When serializing for the cache, keep reference expressions
-  // since the idea is to reflect the nacl files, not the state file.
-  elementSerializer.serialize(parseResult.elements, 'keepRef'),
+  serializeElements(parseResult.elements),
   serializeErrors(parseResult.errors),
   parseResult.sourceMap ? serializeSourceMap(parseResult.sourceMap) : undefined,
 ].filter(line => line !== undefined).join(EOL)
@@ -44,10 +44,10 @@ const deserializeSourceMap = (data: string): SourceMap => {
 
 export const deserialize = async (
   data: string,
-  staticFileReviver?: elementSerializer.StaticFileReviver,
+  staticFileReviver?: StaticFileReviver,
 ): Promise<ParseResult> => {
   const [elementsData, errorsData, sourceMapData] = data.split(EOL)
-  const elements = await elementSerializer.deserialize(elementsData, staticFileReviver)
+  const elements = await deserializeElements<Element[]>(elementsData, staticFileReviver)
   return {
     errors: deserializeParseErrors(errorsData),
     elements,

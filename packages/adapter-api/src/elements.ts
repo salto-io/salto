@@ -114,7 +114,7 @@ export type TypeMap = Record<string, TypeElement>
 
 export class ListType extends Element {
   public constructor(
-   public innerType: TypeElement
+    public innerType: TypeElement,
   ) {
     super({
       elemID: new ElemID('', `list<${innerType.elemID.getFullName()}>`),
@@ -345,40 +345,31 @@ export function isElement(value: any): value is Element {
   return value && value.elemID && value.elemID instanceof ElemID
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isInstanceElement(element: any): element is InstanceElement {
+export function isInstanceElement(element: unknown): element is InstanceElement {
   return element instanceof InstanceElement
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isObjectType(element: any): element is ObjectType {
+export function isObjectType(element: unknown): element is ObjectType {
   return element instanceof ObjectType
 }
 
-export function isPrimitiveType(
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  element: any,
-): element is PrimitiveType {
+export function isPrimitiveType(element: unknown): element is PrimitiveType {
   return element instanceof PrimitiveType
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isListType(element: any): element is ListType {
+export function isListType(element: unknown): element is ListType {
   return element instanceof ListType
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isVariable(element: any): element is Variable {
+export function isVariable(element: unknown): element is Variable {
   return element instanceof Variable
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isType(element: any): element is TypeElement {
+export function isType(element: unknown): element is TypeElement {
   return isPrimitiveType(element) || isObjectType(element) || isListType(element)
 }
 
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-export function isField(element: any): element is Field {
+export function isField(element: unknown): element is Field {
   return element instanceof Field
 }
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { hash as hashUtils, types } from '@salto-io/lowerdash'
+import { hash as hashUtils, types, values } from '@salto-io/lowerdash'
 import { ElemID } from './element_id'
 // There is a real cycle here and alternatively elements.ts should be defined in the same file
 // eslint-disable-next-line import/no-cycle
@@ -44,8 +44,8 @@ export type StaticFileParameters = {
 } & HashOrContent
 
 export class StaticFile {
-  public readonly filepath: string
-  public readonly hash: string
+  readonly filepath: string
+  readonly hash: string
   protected internalContent?: Buffer
   constructor(params: StaticFileParameters) {
     this.filepath = params.filepath
@@ -135,31 +135,25 @@ export const isEqualValues = (first: Value, second: Value): boolean => _.isEqual
   }
 )
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isReferenceExpression = (value: any): value is ReferenceExpression => (
+export const isReferenceExpression = (value: unknown): value is ReferenceExpression => (
   value instanceof ReferenceExpression
 )
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isVariableExpression = (value: any): value is VariableExpression => (
+export const isVariableExpression = (value: unknown): value is VariableExpression => (
   value instanceof VariableExpression
 )
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isTemplateExpression = (value: any): value is TemplateExpression => (
+export const isTemplateExpression = (value: unknown): value is TemplateExpression => (
   value instanceof TemplateExpression
 )
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isExpression = (value: any): value is Expression => (
+export const isExpression = (value: unknown): value is Expression => (
   isReferenceExpression(value) || isTemplateExpression(value)
 )
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isStaticFile = (value: any): value is StaticFile => (
+export const isStaticFile = (value: unknown): value is StaticFile => (
   value instanceof StaticFile
 )
 
-export const isPrimitiveValue = (value: Value): value is PrimitiveValue => (
-  value === undefined || value === null || ['string', 'number', 'boolean'].includes(typeof value)
-)
+// TODO: impl includes undefined and null, missing from type guard def
+export const isPrimitiveValue = values.isPrimitive as (value: unknown) => value is PrimitiveValue

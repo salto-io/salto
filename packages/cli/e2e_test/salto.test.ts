@@ -16,6 +16,7 @@
 import path from 'path'
 import wu from 'wu'
 import tmp from 'tmp-promise'
+import { logger } from '@salto-io/logging'
 import { strings } from '@salto-io/lowerdash'
 import { copyFile, rm, mkdirp, exists } from '@salto-io/file'
 import { testHelpers as salesforceTestHelpers, SalesforceClient, Credentials } from '@salto-io/salesforce-adapter'
@@ -41,6 +42,8 @@ import {
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
+
+const log = logger(module)
 
 let lastPlan: Plan
 let credsLease: CredsLease<Credentials>
@@ -105,11 +108,13 @@ describe('cli e2e', () => {
 
   beforeAll(async () => {
     homePath = tmp.dirSync().name
+    log.info('home directory for this test is "%s"', homePath)
     fetchOutputDir = `${homePath}/NACL/test_fetch`
     localStorageDir = `${homePath}/.salto/test_fetch`
     localWorkspaceDir = `${homePath}/e2e-375e3f65-be66-4fdc-a561-4c4f9735db94`
     statePath = `${fetchOutputDir}/salto.config/states/default.jsonl`
     randomString = strings.insecureRandomString({ alphabet: strings.LOWERCASE, length: 12 })
+    log.info('unique suffix for elements in this test is "%s"', randomString)
     newInstanceElemName = NEW_INSTANCE_BASE_ELEM_NAME + randomString
     newInstance2ElemName = NEW_INSTANCE2_BASE_ELEM_NAME + randomString
     newInstanceFullName = `${NEW_INSTANCE_BASE_ELEM_NAME}${randomString}`

@@ -276,7 +276,7 @@ const buildNaclFilesSource = (
                 await parseNaclFile({ filename, buffer }, cache, functions))
             return { ...parsed, buffer }
           } catch (e) {
-            log.error('failed to update NaCl file %s with %o changes due to: %o',
+            log.error('failed to update NaCl file "%s" with %o changes due to: %o',
               filename, fileChanges, e)
             return undefined
           }

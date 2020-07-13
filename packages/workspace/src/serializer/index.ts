@@ -13,4 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { serialize, deserialize } from './elements'
+export { serialize } from './serializer'
+export { deserialize } from './deserializer'

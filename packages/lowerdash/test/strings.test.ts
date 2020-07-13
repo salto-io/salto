@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { strings } from '../src/index'
+import { describe } from 'jest-circus'
+import { strings } from '../src'
 
 describe('strings', () => {
   describe('insecureRandomString', () => {
-    describe('when given no paramters', () => {
+    describe('when given no arguments', () => {
       let s: string
       beforeEach(() => {
         s = strings.insecureRandomString()
@@ -62,6 +63,15 @@ describe('strings', () => {
 
       it('generates a string from the given alphabet', () => {
         expect(s).toMatch(/[abc]{10}/)
+      })
+    })
+  })
+
+  describe('stableCollator', () => {
+    const { stableCollator } = strings
+    describe('when used to sort', () => {
+      it('should sort', () => {
+        expect(['b', 'a'].sort(stableCollator.compare)).toEqual(['a', 'b'])
       })
     })
   })

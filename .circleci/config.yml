@@ -164,7 +164,7 @@ jobs:
           no_output_timeout: 20m
           environment:
             RUN_E2E_TESTS: '1'
-            SALTO_LOG_LEVEL: 'warn'
+            SALTO_LOG_LEVEL: 'debug'
             # enable telemetry for end2end so we can count more events
             # webpack configuration is irrelevant in this case and therefore
             # we explicitly configure it in here

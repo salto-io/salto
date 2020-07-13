@@ -345,7 +345,9 @@ export const findInstances = (
 
 export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
   const { parent, path } = fullElemID.createTopLevelParentID()
-  if (!_.isEqual(parent, rootElement.elemID)) return undefined
+  if (!_.isEqual(parent, rootElement.elemID)) {
+    return undefined
+  }
 
   if (_.isEmpty(path)) {
     return rootElement

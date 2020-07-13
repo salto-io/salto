@@ -31,3 +31,5 @@ yarn-error.log
 
 .eslintcache
 
+/report.202*.json
+

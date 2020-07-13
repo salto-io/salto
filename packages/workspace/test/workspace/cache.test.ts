@@ -17,7 +17,7 @@ import wu from 'wu'
 import { ObjectType, ElemID } from '@salto-io/adapter-api'
 import { mockDirStore } from '../common/nacl_file_store'
 import { parseResultCache } from '../../src/workspace/cache'
-import * as serializer from '../../src/serializer/elements'
+import * as serializer from '../../src/serializer/serializer'
 import { StaticFilesSource } from '../../src/workspace/static_files'
 import { SourceMap } from '../../src/parser'
 
@@ -47,7 +47,8 @@ describe('parseResultCache', () => {
     errors: [],
     sourceMap,
   }
-  const mockSerializedCacheFile = `[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]
+
+  const mockSerializedCacheFile = `{"prototypes":{"ObjectType":["0"],"ElemID":["0.elemID"]},"refs":{},"data":[{"elemID":{"adapter":"salesforce","typeName":"dummy","idType":"type","nameParts":[]},"annotations":{},"annotationTypes":{},"fields":{},"isSettings":false}]}
 []
 [["salesforce.dummy",[{"filename":"dummy.nacl","start":{"line":1,"col":1,"byte":2},"end":{"line":12,"col":3,"byte":4}}]]]`
 
@@ -64,17 +65,16 @@ describe('parseResultCache', () => {
         lastModified: 0,
       }, parseResult)
       expect(dirStore.set as jest.Mock)
-        .toHaveBeenCalledWith({ filename: 'blabla/blurprint.jsonl', buffer: mockSerializedCacheFile })
+        .toHaveBeenCalledWith({ filename: 'blabla/blurprint.jsonl', buffer: expect.stringMatching(/dummy/) })
     })
 
     it('serializes with cache mode', async () => {
-      jest.spyOn(serializer, 'serialize')
+      jest.spyOn(serializer, 'serializeWeakElements')
       await cache.put({
         filename: 'blabla/blurprint.nacl',
         lastModified: 0,
       }, parseResult)
-      expect((serializer.serialize as jest.Mock).mock.calls.length).toBe(1)
-      expect((serializer.serialize as jest.Mock).mock.calls[0][1]).toEqual('keepRef')
+      expect((serializer.serializeWeakElements as jest.Mock).mock.calls.length).toBe(1)
     })
   })
 

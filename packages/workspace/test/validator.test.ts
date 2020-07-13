@@ -31,7 +31,13 @@ import { MissingStaticFile, AccessDeniedStaticFile } from '../src/workspace/stat
 import { IllegalReference } from '../src/parser/parse'
 
 describe('Elements validation', () => {
-  const baseElemID = new ElemID('salto', 'simple')
+  let currentId = 0
+  const uniqueId = (): string => {
+    currentId += 1
+    return `id_${currentId}`
+  }
+
+  const baseElemID = new ElemID('salto', uniqueId())
   const simpleType = new ObjectType({
     elemID: baseElemID,
     fields: {
@@ -55,7 +61,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedType'),
+    elemID: new ElemID('salto', uniqueId(), 'type', 'restrictedType'),
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['val1', 'val2'] }),
@@ -63,7 +69,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedRangeType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeType'),
+    elemID: new ElemID('salto', uniqueId(), 'type', 'restrictedRangeType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
@@ -73,7 +79,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedRangeNoMinType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMinType'),
+    elemID: new ElemID('salto', uniqueId(), 'type', 'restrictedRangeNoMinType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ max: 10 }),
@@ -81,7 +87,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedRangeNoMaxType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRangeNoMaxType'),
+    elemID: new ElemID('salto', uniqueId(), 'type', 'restrictedRangeNoMaxType'),
     primitive: PrimitiveTypes.NUMBER,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ min: 1 }),
@@ -89,7 +95,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedRegexOnlyLowerType = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedRegexOnlyLowerType'),
+    elemID: new ElemID('salto', uniqueId(), 'type', 'restrictedRegexOnlyLowerType'),
     primitive: PrimitiveTypes.STRING,
     annotations: {
       [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^[a-z]*$' }),
@@ -97,7 +103,7 @@ describe('Elements validation', () => {
   })
 
   const restrictedAnnotation = new PrimitiveType({
-    elemID: new ElemID('salto', 'simple', 'type', 'restrictedAnnotation'),
+    elemID: new ElemID('salto', uniqueId(), 'type', 'restrictedAnnotation'),
     primitive: PrimitiveTypes.STRING,
     annotationTypes: {
       temp: restrictedType,
@@ -246,7 +252,7 @@ describe('Elements validation', () => {
     })
 
     it('should allow list of object annotation value when annotationType is object', () => {
-      const elemID = new ElemID('salto', 'simple')
+      const elemID = new ElemID('salto', uniqueId())
       const objWithListAnnotation = new ObjectType({
         elemID,
         annotationTypes: {
@@ -264,7 +270,7 @@ describe('Elements validation', () => {
     })
 
     it('should allow list of primitive annotation value when annotationType is primitive', () => {
-      const elemID = new ElemID('salto', 'simple')
+      const elemID = new ElemID('salto', uniqueId())
       const objWithListAnnotation = new ObjectType({
         elemID,
         annotationTypes: {
@@ -279,7 +285,7 @@ describe('Elements validation', () => {
     })
 
     it('should return error for list of primitive annotation value when annotationType is an object', () => {
-      const elemID = new ElemID('salto', 'simple')
+      const elemID = new ElemID('salto', uniqueId())
       const objWithListAnnotation = new ObjectType({
         elemID,
         annotationTypes: {
@@ -297,7 +303,7 @@ describe('Elements validation', () => {
     })
 
     it('should return error for list of object annotation value when annotationType is a primitive', () => {
-      const elemID = new ElemID('salto', 'simple')
+      const elemID = new ElemID('salto', uniqueId())
       const objWithListAnnotation = new ObjectType({
         elemID,
         fields: {

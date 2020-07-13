@@ -13,18 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import path from 'path'
+import { readFileSync } from 'fs'
 import {
-  PrimitiveType, PrimitiveTypes, ElemID, isInstanceElement, ListType,
+  PrimitiveType, PrimitiveTypes, ElemID, ListType,
   ObjectType, InstanceElement, TemplateExpression, ReferenceExpression, Variable,
-  VariableExpression, StaticFile,
+  VariableExpression, StaticFile, Element,
 } from '@salto-io/adapter-api'
+import { serializeWeakElements } from '../../src/serializer/serializer'
 import {
   TestFuncImpl,
 } from '../parser/functions.test'
 
-import { serialize, deserialize, SALTO_CLASS_FIELD } from '../../src/serializer/elements'
+import { serialize, deserialize } from '../../src/serializer'
 import { resolve } from '../../src/expressions'
+
+test('manual snapshot', async () => {
+  const s = readFileSync(path.join(
+    __dirname, '..', '..', '..', 'test', 'serializer', 'sample_state.json'
+  ), { encoding: 'utf-8' })
+  const elements = await deserialize<Element[]>(s)
+  const elementMap = new Map<string, Element>(elements.map(e => [e.elemID.getFullName(), e]))
+  expect(elementMap.size).toEqual(elements.length)
+  const e = elementMap.get('salesforce.CustomTab') as ObjectType
+  expect(e).toBeDefined()
+  expect(e.fields.actionOverrides.type).toBeTruthy()
+})
 
 describe('State/cache serialization', () => {
   const strType = new PrimitiveType({
@@ -70,16 +84,6 @@ describe('State/cache serialization', () => {
 
   const instance = new InstanceElement(
     'me',
-    model,
-    { name: 'me', num: 7 },
-    ['path', 'test'],
-    { test: 'annotation' },
-  )
-
-  class SubInstanceElement extends InstanceElement { }
-
-  const subInstance = new SubInstanceElement(
-    'sub_me',
     model,
     { name: 'me', num: 7 },
     ['path', 'test'],
@@ -152,45 +156,28 @@ describe('State/cache serialization', () => {
   })
 
   const elements = [strType, numType, boolType, model, strListType, variable, instance,
-    subInstance, refInstance, refInstance2, refInstance3, templateRefInstance, functionRefInstance,
+    refInstance, refInstance2, refInstance3, templateRefInstance, functionRefInstance,
     settings, config]
 
   it('should serialize and deserialize all element types', async () => {
     const serialized = serialize(elements)
     const deserialized = await deserialize(serialized)
-    const sortedElements = _.sortBy(elements, e => e.elemID.getFullName())
-    expect(deserialized).toEqual(sortedElements)
-  })
-
-  it('should serialize and deserialize without relying on the constructor name', async () => {
-    const serialized = serialize([subInstance])
-    expect(serialized).not.toMatch(subInstance.constructor.name)
-  })
-
-
-  it('should not serialize resolved values', async () => {
-    // TemplateExpressions are discarded
-    const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
-    const serialized = serialize(resolve(elementsToSerialize), 'keepRef')
-    const deserialized = await deserialize(serialized)
-    const sortedElements = _.sortBy(elementsToSerialize, e => e.elemID.getFullName())
-
-    expect(deserialized).toEqual(sortedElements)
+    expect(deserialized).toEqual(elements)
   })
 
   // Serializing our nacls to the state file should be the same as serializing the result of fetch
   it('should serialize resolved values to state', async () => {
     const elementsToSerialize = elements.filter(e => e.elemID.name !== 'also_me_template')
     const serialized = serialize(resolve(elementsToSerialize))
-    const deserialized = await deserialize(serialized)
+    const deserialized = await deserialize<unknown[]>(serialized)
     const refInst = deserialized.find(
-      e => e.elemID.getFullName() === refInstance.elemID.getFullName()
+      e => (e as Element).elemID.getFullName() === refInstance.elemID.getFullName()
     ) as InstanceElement
     const refInst2 = deserialized.find(
-      e => e.elemID.getFullName() === refInstance2.elemID.getFullName()
+      e => (e as Element).elemID.getFullName() === refInstance2.elemID.getFullName()
     ) as InstanceElement
     const refInst3 = deserialized.find(
-      e => e.elemID.getFullName() === refInstance3.elemID.getFullName()
+      e => (e as Element).elemID.getFullName() === refInstance3.elemID.getFullName()
     ) as InstanceElement
     expect(refInst.value.name).toEqual('I am a var')
     expect(refInst.value.num).toEqual(7)
@@ -200,57 +187,37 @@ describe('State/cache serialization', () => {
     expect(refInst3.value.name.elemId.getFullName()).toEqual(instance.elemID.getFullName())
   })
 
-  it('should create the same result for the same input regardless of elements order', () => {
-    const serialized = serialize(elements)
-    const shuffledSer = serialize(_.shuffle(elements))
-    expect(serialized).toEqual(shuffledSer)
-  })
-
-  it('should create the same result for the same input regardless of values order', () => {
-    const serialized = serialize(elements)
-    const shuffledConfig = _.last(elements) as InstanceElement
-    // We maintain values but shuffle set order
-    shuffledConfig.value.num = 5
-    shuffledConfig.value.name = 'other'
-    const shuffledSer = serialize([
-      ...elements.slice(0, -1),
-      shuffledConfig,
-    ])
-    expect(serialized).toEqual(shuffledSer)
-  })
-
   describe('functions', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let funcElement: InstanceElement
     beforeAll(async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')
       const serialized = serialize(elementsToSerialize)
-      funcElement = (await deserialize(serialized))[0] as InstanceElement
+      funcElement = (await deserialize<unknown[]>(serialized))[0] as InstanceElement
     })
 
-    it('single parameter', () => {
+    test('single parameter', () => {
       expect(funcElement.value).toHaveProperty('singleparam', { funcName: 'funcadelic', parameters: ['aaa'] })
     })
-    it('multiple parameters', () => {
+    test('multiple parameters', () => {
       expect(funcElement.value).toHaveProperty('multipleparams', { funcName: 'george', parameters: [false, 321] })
     })
-    it('list', () => {
+    test('list', () => {
       expect(funcElement.value).toHaveProperty('withlist', { funcName: 'washington', parameters: ['ZOMG', [3, 2, 1]] })
     })
-    it('object', () => {
+    test('object', () => {
       expect(funcElement.value).toHaveProperty('withobject', { funcName: 'maggot', parameters: [{ aa: '312' }] })
     })
-    it('mixed', () => {
+    test('mixed', () => {
       expect(funcElement.value).toHaveProperty('mixed', {
         funcName: 'brain',
         parameters: [1, [1, { aa: '312' }], false, 'aaa'],
       })
     })
-    it('file', () => {
+    test('file', () => {
       expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'hash' })
       expect(funcElement.value.file).toBeInstanceOf(StaticFile)
     })
-    it('nested parameter', () => {
+    test('nested parameter', () => {
       expect(funcElement.value).toHaveProperty('nested', {
         WAT: {
           funcName: 'nestalicous',
@@ -259,30 +226,31 @@ describe('State/cache serialization', () => {
       })
     })
   })
+
+  describe('serializeWeakElements', () => {
+    it('should not serialize resolved values', async () => {
+      // TemplateExpressions are discarded
+      const elementsToSerialize = [templateRefInstance]
+      // TODO: move serializeWeakElements tests to a different describe block
+      const serialized = serializeWeakElements(resolve(elementsToSerialize))
+      const deserialized = await deserialize(serialized) as typeof templateRefInstance
+
+      expect(deserialized.value).toBeUndefined()
+    })
+  })
+
   describe('with custom static files reviver', () => {
     it('should alter static files', async () => {
       const elementsToSerialize = elements.filter(e => e.elemID.name === 'also_me_function')
       const serialized = serialize(elementsToSerialize)
-      const funcElement = (await deserialize(
+      const deserialized = await deserialize<unknown[]>(
         serialized,
         x => Promise.resolve(new StaticFile({ filepath: x.filepath, hash: 'ZOMGZOMGZOMG' }))
-      ))[0] as InstanceElement
+      )
+      const funcElement = deserialized[0] as InstanceElement
 
       expect(funcElement.value).toHaveProperty('file', { filepath: 'some/path.ext', hash: 'ZOMGZOMGZOMG' })
       expect(funcElement.value.file).toBeInstanceOf(StaticFile)
-    })
-  })
-  describe('when a field collides with the hidden class name attribute', () => {
-    let deserialized: InstanceElement
-    beforeEach(async () => {
-      const classNameInst = new InstanceElement('ClsName', model, { [SALTO_CLASS_FIELD]: 'bla' })
-      deserialized = (await deserialize(serialize([classNameInst])))[0] as InstanceElement
-    })
-    it('should keep deserialize the instance', () => {
-      expect(isInstanceElement(deserialized)).toBeTruthy()
-    })
-    it('should keep the original value', () => {
-      expect(deserialized.value[SALTO_CLASS_FIELD]).toEqual('bla')
     })
   })
 })

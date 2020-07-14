@@ -19,45 +19,50 @@ import {
   InstanceElement, ChangeError, isAdditionDiff,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
+import { resolveValues } from '@salto-io/adapter-utils'
 import { FIELD_ANNOTATIONS } from '../constants'
-import { isCustomObject } from '../transformers/transformer'
+import { isCustomObject, getLookUpName } from '../transformers/transformer'
 
 const getUpdateErrorsForNonUpdateableFields = (
   before: InstanceElement,
   after: InstanceElement
-): ReadonlyArray<ChangeError> => (
-  Object.values(after.type.fields)
+): ReadonlyArray<ChangeError> => {
+  const beforeResoleved = resolveValues(before, getLookUpName)
+  const afterResolved = resolveValues(after, getLookUpName)
+  return Object.values(afterResolved.type.fields)
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.UPDATEABLE])
     .map(field => {
-      if (after.value[field.name] !== before.value[field.name]) {
+      if (afterResolved.value[field.name] !== beforeResoleved.value[field.name]) {
         return {
-          elemID: before.elemID,
+          elemID: beforeResoleved.elemID,
           severity: 'Warning',
-          message: `Unable to edit ${after.elemID.typeName}.${field.name} because it is a non-updateable field.`,
-          detailedMessage: `Unable to edit ${field.name} inside ${before.elemID.getFullName()} because it is a non-updateable field.`,
+          message: `Unable to edit ${afterResolved.elemID.typeName}.${field.name} because it is a non-updateable field.`,
+          detailedMessage: `Unable to edit ${field.name} inside ${beforeResoleved.elemID.getFullName()} because it is a non-updateable field.`,
         } as ChangeError
       }
       return undefined
     }).filter(values.isDefined)
-)
+}
 
 const getCreateErrorsForNonCreatableFields = (
   after: InstanceElement
-): ReadonlyArray<ChangeError> => (
-  Object.values(after.type.fields)
+): ReadonlyArray<ChangeError> => {
+  const afterResolved = resolveValues(after, getLookUpName)
+  return Object.values(afterResolved.type.fields)
     .filter(field => !field.annotations[FIELD_ANNOTATIONS.CREATABLE])
     .map(field => {
-      if (!_.isUndefined(after.value[field.name])) {
+      if (!_.isUndefined(afterResolved.value[field.name])) {
         return {
-          elemID: after.elemID,
+          elemID: afterResolved.elemID,
           severity: 'Warning',
-          message: `Unable to create ${after.elemID.typeName}.${field.name} because it is a non-creatable field.`,
-          detailedMessage: `Unable to create ${field.name} inside ${after.elemID.getFullName()} because it is a non-creatable field.`,
+          message: `Unable to create ${afterResolved.elemID.typeName}.${field.name} because it is a non-creatable field.`,
+          detailedMessage: `Unable to create ${field.name} inside ${afterResolved.elemID.getFullName()} because it is a non-creatable field.`,
         } as ChangeError
       }
       return undefined
     }).filter(values.isDefined)
-)
+}
+
 
 const changeValidator: ChangeValidator = async changes => {
   const updateChangeErrors = changes

@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import { Workspace, parser } from '@salto-io/workspace'
-import { EditorWorkspace } from '../../src/salto/workspace'
-import { getDiagnostics } from '../../src/salto/diagnostics'
+import { EditorWorkspace } from '../src/workspace'
+import { getDiagnostics } from '../src/diagnostics'
 import { mockWorkspace, mockErrors, mockFunction } from './workspace'
 
 describe('diagnostics', () => {

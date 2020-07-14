@@ -15,8 +15,8 @@
 */
 import { ElemID } from '@salto-io/adapter-api'
 import path from 'path'
-import { EditorWorkspace } from '../../src/salto/workspace'
-import { getPositionContext } from '../../src/salto/context'
+import { EditorWorkspace } from '../src/workspace'
+import { getPositionContext } from '../src/context'
 import { mockWorkspace } from './workspace'
 
 // TODO: should enable this
@@ -24,7 +24,7 @@ describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
   const naclFilename = 'context.nacl'
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls`)
+    const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
     workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, naclFilename)))
   })
 

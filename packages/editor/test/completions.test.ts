@@ -16,11 +16,11 @@
 import _ from 'lodash'
 import { INSTANCE_ANNOTATIONS, ElemID } from '@salto-io/adapter-api'
 import path from 'path'
-import { EditorWorkspace } from '../../src/salto/workspace'
-import { getPositionContext } from '../../src/salto/context'
+import { EditorWorkspace } from '../src/workspace'
+import { getPositionContext } from '../src/context'
 import {
   provideWorkspaceCompletionItems, SaltoCompletion,
-} from '../../src/salto/completions/provider'
+} from '../src/completions/provider'
 import { mockWorkspace } from './workspace'
 
 interface Pos {
@@ -76,7 +76,7 @@ describe('Test auto complete', () => {
   let workspace: EditorWorkspace
   const naclFileName = 'all.nacl'
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls/`)
+    const baseDir = path.resolve(`${__dirname}/../../test/test-nacls/`)
     workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.nacl')))
   })
 

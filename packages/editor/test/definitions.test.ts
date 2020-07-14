@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import path from 'path'
-import { EditorWorkspace } from '../../src/salto/workspace'
-import { provideWorkspaceDefinition } from '../../src/salto/definitions'
-import { getPositionContext } from '../../src/salto/context'
+import { EditorWorkspace } from '../src/workspace'
+import { provideWorkspaceDefinition } from '../src/definitions'
+import { getPositionContext } from '../src/context'
 import { mockWorkspace } from './workspace'
 
 // TODO: enable this
@@ -25,7 +25,7 @@ describe('Test go to definitions', () => {
   const naclFileName = 'all.nacl'
 
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls`)
+    const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
     workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.nacl')))
   })
 

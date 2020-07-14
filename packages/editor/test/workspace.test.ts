@@ -14,22 +14,20 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { workspaceConfigTypes } from '@salto-io/core'
-import { EditorWorkspace } from '../../src/salto/workspace'
+import { EditorWorkspace } from '../src/workspace'
 import { mockWorkspace } from './workspace'
 
 describe('workspace', () => {
-  const workspaceBaseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls`)
+  const workspaceBaseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
   const naclFileName = path.join(workspaceBaseDir, 'all.nacl')
   const validate = async (workspace: EditorWorkspace, elements: number):
   Promise<void> => {
     const wsElements = await workspace.elements
-    expect(workspaceConfigTypes.every(type => wsElements.includes(type))).toBeTruthy()
     expect(wsElements && wsElements.length).toBe(elements)
   }
   it('should initiate a workspace', async () => {
     const workspace = new EditorWorkspace(workspaceBaseDir, await mockWorkspace(naclFileName))
-    await validate(workspace, 22)
+    await validate(workspace, 18)
   })
 
   it('should collect errors', async () => {
@@ -55,7 +53,7 @@ describe('workspace', () => {
     await workspace.awaitAllUpdates()
     expect(workspace.elements).toBeDefined()
     expect(workspace.hasErrors()).toBeTruthy()
-    await validate(workspace, 22)
+    await validate(workspace, 18)
   })
 
   it('should support file removal', async () => {

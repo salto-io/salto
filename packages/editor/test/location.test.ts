@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { EditorWorkspace } from '../../src/salto/workspace'
-import { getQueryLocations } from '../../src/salto/location'
+import { EditorWorkspace } from '../src/workspace'
+import { getQueryLocations } from '../src/location'
 import { mockWorkspace } from './workspace'
 
 // eslint-disable-next-line jest/no-disabled-tests
 describe('workspace query locations', () => {
   let workspace: EditorWorkspace
-  const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls/`)
+  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls/`)
   const naclFileName = path.join(baseDir, 'all.nacl')
 
   beforeAll(async () => {

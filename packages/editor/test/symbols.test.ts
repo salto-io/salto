@@ -15,14 +15,14 @@
 */
 import * as path from 'path'
 
-import { EditorWorkspace } from '../../src/salto/workspace'
-import { getPositionContext } from '../../src/salto/context'
-import { SaltoSymbolKind, createSaltoSymbol } from '../../src/salto/symbols'
+import { EditorWorkspace } from '../src/workspace'
+import { getPositionContext } from '../src/context'
+import { SaltoSymbolKind, createSaltoSymbol } from '../src/symbols'
 import { mockWorkspace } from './workspace'
 
 describe('Cursor context resolver', () => {
   let workspace: EditorWorkspace
-  const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls`)
+  const baseDir = path.resolve(`${__dirname}/../../test/test-nacls`)
   const naclFilename = path.join(baseDir, 'all.nacl')
   beforeAll(async () => {
     workspace = new EditorWorkspace(baseDir, await mockWorkspace(naclFilename))

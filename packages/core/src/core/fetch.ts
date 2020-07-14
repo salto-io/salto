@@ -73,7 +73,12 @@ export const getDetailedChanges = async (
   after: ReadonlyArray<Element>,
   additionalResolveContext?: ReadonlyArray<Element>,
 ): Promise<Iterable<DetailedChange>> =>
-  wu((await getPlan({ before, after, additionalResolveContext })).itemsByEvalOrder())
+  wu((await getPlan({
+    before,
+    after,
+    additionalResolveContext,
+    dependencyChangers: [],
+  })).itemsByEvalOrder())
     .map(item => item.detailedChanges())
     .flatten()
 

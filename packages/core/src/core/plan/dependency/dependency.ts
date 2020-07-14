@@ -50,6 +50,9 @@ const updateDeps = (
 export const addNodeDependencies = (
   changers: ReadonlyArray<DependencyChanger>
 ): PlanTransformer => graph => log.time(async () => {
+  if (changers.length === 0) {
+    return graph
+  }
   const changeData = new Map(wu(graph.keys()).map(id => [id, graph.getData(id)]))
   const outputDependencies = changers.reduce(
     async (deps, changer) => updateDeps(await deps, await changer(changeData, await deps)),

@@ -918,43 +918,41 @@ describe('NodeMap', () => {
     })
   })
 
-  describe('tryTransform', () => {
-    let transformResult: NodeMap
+  describe('doesCreateCycle', () => {
+    let modificationResult: boolean
+    let origGraph: NodeMap
 
-    describe('when the transformation does not create a cycle', () => {
+    beforeEach(() => {
+      subject.addNode(1, [2])
+      subject.addNode(2, [3, 4])
+      origGraph = subject.clone()
+    })
+
+    describe('when the modification does not create a cycle', () => {
       beforeEach(() => {
-        subject.addNode(1, [2])
-        subject.addNode(2, [3, 4])
-        const [result] = subject.tryTransform(nm => [...nm.deleteNode(1)][0])
-        transformResult = result
+        modificationResult = subject.doesCreateCycle(new Map([[1, new Set([3, 4])]]), 1)
       })
 
-      it('should return a new NodeMap', () => {
-        expect(transformResult).not.toBe(subject)
+      it('should return true', () => {
+        expect(modificationResult).toBeFalsy()
       })
 
-      it('should return the transformed NodeMap', () => {
-        expect(transformResult.nodes()).not.toContain(1)
+      it('should not modify the graph', () => {
+        expect(subject).toEqual(origGraph)
       })
     })
 
-    describe('when the transformation creates a cycle', () => {
+    describe('when the modification creates a cycle', () => {
       beforeEach(() => {
-        subject.addNode(1, [2])
-        const [result] = subject.tryTransform(nm => {
-          nm.addNode(2, [3])
-          nm.addNode(3, [1, 2])
-          return 2
-        })
-        transformResult = result
+        modificationResult = subject.doesCreateCycle(new Map([[3, new Set([1])]]), 3)
       })
 
-      it('should return the original NodeMap', () => {
-        expect(transformResult).toBe(subject)
+      it('should return false', () => {
+        expect(modificationResult).toBeTruthy()
       })
 
-      it('should return the untransformed NodeMap', () => {
-        expect(transformResult.nodes()).not.toContain(3)
+      it('should not modify the graph', () => {
+        expect(subject).toEqual(origGraph)
       })
     })
   })

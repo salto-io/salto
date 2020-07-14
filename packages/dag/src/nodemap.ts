@@ -142,10 +142,10 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 
   // deletes a node and returns the affected nodes (nodes that depend on the deleted node)
-  deleteNode(id: NodeId): NodeId[] {
-    this.delete(id)
+  deleteNode(...ids: ReadonlyArray<NodeId>): NodeId[] {
+    ids.forEach(id => this.delete(id))
     return wu(this)
-      .filter(([_n, deps]) => deps.delete(id))
+      .filter(([_n, deps]) => ids.map(id => deps.delete(id)).some(deleted => deleted))
       .map(([affectedNode]) => affectedNode)
       // evaluate the iterator, so deps will be deleted even if the return value is disregarded
       .toArray()
@@ -261,12 +261,20 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return this.clone().walkSyncDestructive(handler)
   }
 
-  tryTransform(transform: (nodeMap: this) => NodeId): [this, boolean] {
-    const transformed = this.clone()
-    const affectedNodeId = transform(transformed)
-    const hasCycles = transformed.hasCycle(affectedNodeId)
-    const result = hasCycles ? this : transformed
-    return [result, !hasCycles]
+  private setMany(newEdges: Map<NodeId, Set<NodeId>>): void {
+    wu(newEdges.entries()).forEach(
+      ([id, deps]) => {
+        this.set(id, deps)
+      }
+    )
+  }
+
+  doesCreateCycle(changes: Map<NodeId, Set<NodeId>>, findCycleFrom: NodeId): boolean {
+    const origEdges = new Map(wu(changes.keys()).map(id => [id, this.get(id)]))
+    this.setMany(changes)
+    const createsCycle = this.hasCycle(findCycleFrom)
+    this.setMany(origEdges)
+    return createsCycle
   }
 
   reverse(): this {
@@ -325,9 +333,9 @@ export class DataNodeMap<T> extends AbstractNodeMap {
     this.nodeData.set(id, data)
   }
 
-  deleteNode(id: NodeId): NodeId[] {
-    this.nodeData.delete(id)
-    return super.deleteNode(id)
+  deleteNode(...ids: ReadonlyArray<NodeId>): NodeId[] {
+    ids.forEach(id => this.nodeData.delete(id))
+    return super.deleteNode(...ids)
   }
 
   cloneWithout(ids: Set<NodeId>): this {

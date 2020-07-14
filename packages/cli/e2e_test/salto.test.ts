@@ -24,7 +24,7 @@ import { Workspace, parser } from '@salto-io/workspace'
 // eslint-disable-next-line no-restricted-imports
 import {
   API_NAME, CUSTOM_OBJECT, INSTANCE_FULL_NAME_FIELD, SALESFORCE, SALESFORCE_CUSTOM_SUFFIX,
-  API_NAME_SEPERATOR, OBJECTS_PATH, METADATA_TYPE,
+  API_NAME_SEPARATOR, OBJECTS_PATH, METADATA_TYPE,
 } from '@salto-io/salesforce-adapter/dist/src/constants'
 import {
   BuiltinTypes, ObjectType,
@@ -47,7 +47,7 @@ let credsLease: CredsLease<Credentials>
 const apiNameAnno = (
   obj: string,
   field: string
-): Record<string, string> => ({ [API_NAME]: [obj, field].join(API_NAME_SEPERATOR) })
+): Record<string, string> => ({ [API_NAME]: [obj, field].join(API_NAME_SEPARATOR) })
 
 describe('cli e2e', () => {
   jest.setTimeout(15 * 60 * 1000)

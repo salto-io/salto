@@ -56,7 +56,7 @@ export class PathIndex extends collections.treeMap.PartialTreeMap<Path> {
   }
 
   get(id: string): Path[] | undefined {
-    const path = id.split(this.seperator)
+    const path = id.split(this.separator)
     const entry = collections.treeMap.TreeMap.getFromPath(this.data, path, false, true)
     return entry?.value
   }

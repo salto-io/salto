@@ -25,7 +25,7 @@ export class TreeMap<T> implements Map<string, T[]> {
   [Symbol.toStringTag] = 'TreeMap'
   protected data: TreeMapEntry<T> = { children: {}, value: [] }
 
-  constructor(entries: Iterable<[string, T[]]> = [], public seperator = '.') {
+  constructor(entries: Iterable<[string, T[]]> = [], public separator = '.') {
     wu(entries).forEach(([key, value]) => this.push(key, ...value))
   }
 
@@ -86,7 +86,7 @@ export class TreeMap<T> implements Map<string, T[]> {
       .flatten(true)
     return _.isEmpty(entry.value)
       ? childEntries
-      : wu.chain([[prefix.join(this.seperator), entry.value]], childEntries)
+      : wu.chain([[prefix.join(this.separator), entry.value]], childEntries)
   }
 
   [Symbol.iterator](): IterableIterator<[string, T[]]> {
@@ -96,7 +96,7 @@ export class TreeMap<T> implements Map<string, T[]> {
   get size(): number { return wu.reduce(count => count + 1, 0, this) }
 
   push(id: string, ...values: T[]): void {
-    const key = id.split(this.seperator)
+    const key = id.split(this.separator)
     const valuesList = TreeMap.getFromPath(this.data, key)
     if (valuesList !== undefined) {
       valuesList.value.push(...values)
@@ -106,19 +106,19 @@ export class TreeMap<T> implements Map<string, T[]> {
   }
 
   set(id: string, source: T[]): this {
-    const path = id.split(this.seperator)
+    const path = id.split(this.separator)
     TreeMap.setToPath(this.data, path, source)
     return this
   }
 
   get(id: string): T[] | undefined {
-    const path = id.split(this.seperator)
+    const path = id.split(this.separator)
     const entry = TreeMap.getFromPath(this.data, path)
     return entry?.value
   }
 
   has(id: string): boolean {
-    const path = id.split(this.seperator)
+    const path = id.split(this.separator)
     return TreeMap.getFromPath(this.data, path) !== undefined
   }
 
@@ -127,7 +127,7 @@ export class TreeMap<T> implements Map<string, T[]> {
   }
 
   mount(baseId: string, otherMap: TreeMap<T>): void {
-    const path = baseId.split(this.seperator)
+    const path = baseId.split(this.separator)
     TreeMap.mountToPath(this.data, path, otherMap.data)
   }
 
@@ -136,7 +136,7 @@ export class TreeMap<T> implements Map<string, T[]> {
   }
 
   delete(id: string): boolean {
-    const path = id.split(this.seperator)
+    const path = id.split(this.separator)
     const lastPart = path.pop()
     const entry = TreeMap.getFromPath(this.data, path)
     if (entry !== undefined && lastPart) {

@@ -26,13 +26,15 @@ import {
   isPrimitiveType,
   PrimitiveType,
   Field,
-  Value, Change, DetailedChange,
+  Value, Change, DetailedChange, isElement,
 } from '@salto-io/adapter-api'
 import wu from 'wu'
 import _ from 'lodash'
 
 export type UnifiedDiff = string
 const { dumpElements } = parser
+
+type ChangeData = { before?: Element; after?: Element }
 
 export const PDF = 'PDF'
 export const HTML = 'HTML'
@@ -230,18 +232,25 @@ export const createChangeDiff = async (
   change: DetailedChange,
 ): Promise<UnifiedDiff> => {
   const changedElementName = getElementName(change)
-  const changeData = change.data as { before?: Element; after?: Element }
-  return changeData.before && changeData.after
-    ? Diff.createPatch(
-      changedElementName,
-      await dumpElements([orderByAfterElement(changeData.before, changeData.after)]),
-      await dumpElements([changeData.after]),
-    )
-    : Diff.createPatch(
-      changedElementName,
-      changeData.before ? await dumpElements([changeData.before]) : '',
-      changeData.after ? await dumpElements([changeData.after]) : '',
-    )
+  const data = change.data as ChangeData
+  const dump = async (element: Element | string | undefined): Promise<string> => {
+    if (isElement(element)) {
+      return dumpElements([element])
+    }
+    if (_.isString(element)) {
+      return element
+    }
+    return ''
+  }
+
+  data.before = (data.before && data.after)
+    ? orderByAfterElement(data.before, data.after)
+    : data.before
+  return Diff.createPatch(
+    changedElementName,
+    await dump(data.before),
+    await dump(data.after),
+  )
 }
 
 export const createPlanDiff = async (

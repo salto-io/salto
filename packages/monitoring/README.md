@@ -40,10 +40,10 @@ monitoring {
   	username = "alerts@salto.io"
   	password = "supersecret"
   }
-  slack {
+  slack = {
     token = "xoxb-thisis-nota-validtoken"
   }
-  telemetry {
+  telemetry = {
     id = "clientuniqueid"
     url = "https://telemetry.salto.io"
     token = "supersecrettelemetrytoken"

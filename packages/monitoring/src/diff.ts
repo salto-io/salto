@@ -210,10 +210,11 @@ const renderHTMLDiffView = async (
 const renderPDFDiffView = async (diff: UnifiedDiff, options?: DiffViewOptions): Promise<Buffer> => {
   const html = await renderHTMLDiffView(diff, options)
   return new Promise((resolve, reject) => {
-    html2pdf.create(html.toString(), { format: 'A4', orientation: 'landscape' }).toBuffer((err: Error, result: Buffer) => {
-      if (err) return reject(new Error('Failed to create PDF file'))
-      return resolve(result)
-    })
+    html2pdf.create(html.toString(), { format: 'A4', orientation: 'landscape' })
+      .toBuffer((err: Error, result: Buffer) => {
+        if (err) return reject(new Error('Failed to create PDF file'))
+        return resolve(result)
+      })
   })
 }
 

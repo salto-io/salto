@@ -19,10 +19,8 @@ import * as config from '../src/config'
 describe('config', () => {
   it('should throw invalid regex', () => {
     expect(() => config.validateConfig({
-      env: 'test',
       triggers: [{
         name: 'example',
-        title: 'title',
         elementIdsRegex: ['*'],
       }],
       notifications: [],
@@ -41,15 +39,13 @@ describe('config', () => {
 
   it('should throw invalid trigger', () => {
     expect(() => config.validateConfig({
-      env: 'test',
       triggers: [{
         name: 'example',
-        title: 'title',
         elementIdsRegex: ['*'],
       }],
       notifications: [{
         type: 'email',
-        subject: 'subject',
+        title: 'title',
         from: 'a@b.com',
         to: ['b@a.com'],
         triggers: ['example-not-exists'],

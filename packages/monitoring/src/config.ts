@@ -22,7 +22,6 @@ import { Trigger } from './trigger'
 const { parse } = parser
 
 export interface Config {
-  env: string
   triggers: Trigger[]
   notifications: Notification[]
   smtp: SMTP
@@ -35,7 +34,7 @@ export const SlackNotificationType: NotificationType = 'slack'
 
 export type Notification = {
   type: NotificationType
-  subject: string
+  title: string
   from: string
   to: string[]
   triggers: string[]

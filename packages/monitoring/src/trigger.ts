@@ -18,7 +18,6 @@ import { DetailedChange } from '@salto-io/adapter-api'
 
 export type Trigger = {
   name: string
-  title: string
   elementIdsRegex: string[]
 }
 

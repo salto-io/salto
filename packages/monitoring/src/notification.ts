@@ -16,10 +16,10 @@
 import { WebClient } from '@slack/web-api'
 import * as nodemailer from 'nodemailer'
 import { DetailedChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { Config, Notification, EmailNotificationType, SlackNotificationType, SMTP, Slack } from './config'
+import { out, err } from './logger'
 
-const log = logger(module)
+export const subTitle = 'The following elements have changed:'
 
 const smtpProtocol = (ssl: boolean): string => `smtp${ssl ? 's' : ''}`
 const smtpConnectionString = (smtp: SMTP): string =>
@@ -29,37 +29,38 @@ const templateHTMLBody = (changes: DetailedChange[]): string =>
   changes.map((change: DetailedChange) => change.id.getFullName()).join('\n')
 
 const templateSlackMessage = async (
-  subject: string, changes: DetailedChange[]): Promise<string> => {
-  const changesFullName = changes
-    .map((change: DetailedChange) => change.id.getFullName())
-  return [`*${subject}*`, ...changesFullName].join('\n')
+  title: string, changes: DetailedChange[]): Promise<string> => {
+  const changesBlock = changes
+    .map((change: DetailedChange) => `• ${change.id.getFullName()}`)
+    .join('\n')
+  return [`*${title}*`, subTitle, `\`\`\`${changesBlock}\`\`\``].join('\n')
 }
 
 const sendEmail = async (
   notification: Notification,
   changes: DetailedChange[],
   smtp: SMTP,
-  attachment: string):
+  attachment: Buffer):
   Promise<boolean> => {
   const transporter = nodemailer.createTransport(smtpConnectionString(smtp))
   const mailOptions = {
     from: notification.from,
     to: notification.to,
-    subject: notification.subject,
+    subject: notification.title,
     text: templateHTMLBody(changes),
     attachments: [
       {
-        filename: 'diff.html',
+        filename: 'detailed-changes-report.pdf',
         content: attachment,
-        contentType: 'text/html',
+        contentType: 'application/pdf',
       },
     ],
   }
   try {
     await transporter.sendMail(mailOptions)
-    log.info(`Sent mail successfully to ${notification.to.join(',')}`)
+    out(`Sent mail successfully to ${notification.to.join(',')}`)
   } catch (e) {
-    log.error(`Failed to send mail to ${notification.to.join(',')}`)
+    err(`Failed to send mail to ${notification.to.join(',')}`)
     return false
   }
   return true
@@ -69,12 +70,12 @@ const sendSlackMessage = async (
   notification: Notification,
   changes: DetailedChange[],
   config: Slack,
-  attachment: string):
+  attachment: Buffer):
   Promise<boolean> => {
   try {
     const client = new WebClient(config.token)
 
-    const message = await templateSlackMessage(notification.subject, changes)
+    const message = await templateSlackMessage(notification.title, changes)
     const postMessagePromises = notification.to
       .map((to: string) => client.chat.postMessage({
         username: notification.from,
@@ -86,13 +87,13 @@ const sendSlackMessage = async (
     await client.files.upload({
       channels: notification.to.join(','),
       title: 'Detailed changes report',
-      filetype: 'html',
-      filename: 'diff.html',
-      content: attachment,
+      filetype: 'pdf',
+      filename: 'detailed-changes-report.pdf',
+      file: attachment,
     })
-    log.info(`Sent slack message successfully to ${notification.to.join(',')}`)
+    out(`Sent slack message successfully to ${notification.to.join(',')}`)
   } catch (e) {
-    log.error(`Failed to send slack message to ${notification.to.join(',')}`)
+    err(`Failed to send slack message to ${notification.to.join(',')}`)
     return false
   }
   return true
@@ -102,7 +103,7 @@ export const notify = async (
   notification: Notification,
   changes: DetailedChange[],
   config: Config,
-  attachment: string):
+  attachment: Buffer):
   Promise<boolean> => {
   switch (notification.type) {
     case EmailNotificationType:

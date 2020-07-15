@@ -26,7 +26,7 @@ import { SALESFORCE, CUSTOM_OBJECT, CUSTOM_FIELD } from '../constants'
 import { apiName, isCustomObject, metadataType } from '../transformers/transformer'
 
 // ApiName -> MetadataType -> ElemID
-type ApiNameMapping = Record<string, Record<string, ElemID>>
+export type ApiNameMapping = Record<string, Record<string, ElemID>>
 
 const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'Role', 'field', 'parentRole'), 'Role'],
@@ -42,7 +42,6 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'ProfileObjectPermissions', 'field', 'object'), CUSTOM_OBJECT],
   [new ElemID(SALESFORCE, 'FlowActionCall', 'field', 'actionName'), 'WorkflowAlert'],
   [new ElemID(SALESFORCE, 'WorkflowAlert', 'field', 'template'), 'EmailTemplate'],
-  [new ElemID(SALESFORCE, 'WorkflowActionReference', 'field', 'name'), 'WorkflowAlert'],
   [new ElemID(SALESFORCE, 'WorkflowEmailRecipient', 'field', 'recipient'), 'Role'],
   [new ElemID(SALESFORCE, 'FilterItem', 'field', 'field'), CUSTOM_FIELD],
   [new ElemID(SALESFORCE, 'DashboardComponent', 'field', 'report'), 'Report'],

@@ -37,6 +37,8 @@ import {
 } from './transformers/transformer'
 import { toMetadataPackageZip } from './transformers/xml_transformer'
 import layoutFilter from './filters/layouts'
+import workflowFieldUpdateFilter from './filters/workflow_field_update'
+import workflowRuleFilter from './filters/workflow_rule'
 import customObjectsFilter from './filters/custom_objects'
 import customObjectsSplitFilter from './filters/custom_object_split'
 import customObjectsInstancesFilter from './filters/custom_objects_instances'
@@ -83,6 +85,9 @@ export const DEFAULT_FILTERS = [
   customObjectsInstancesFilter,
   removeFieldsFilter,
   layoutFilter,
+  // workflowFieldUpdateFilter and workflowRuleFilter depend on workflowFilter
+  workflowFieldUpdateFilter,
+  workflowRuleFilter,
   // profilePermissionsFilter depends on layoutFilter because layoutFilter
   // changes ElemIDs that the profile references
   profilePermissionsFilter,

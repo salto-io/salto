@@ -262,6 +262,14 @@ export const CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE = 'CustomObjectTranslation'
 export const SHARING_RULES_TYPE = 'SharingRules'
 export const LAYOUT_TYPE_ID_METADATA_TYPE = 'Layout'
 export const LAYOUT_ITEM_METADATA_TYPE = 'LayoutItem'
+export const WORKFLOW_ACTION_ALERT_METADATA_TYPE = 'WorkflowAlert'
+export const WORKFLOW_ACTION_REFERENCE_METADATA_TYPE = 'WorkflowActionReference'
+export const WORKFLOW_FIELD_UPDATE_METADATA_TYPE = 'WorkflowFieldUpdate'
+export const WORKFLOW_FLOW_ACTION_METADATA_TYPE = 'WorkflowFlowAction'
+export const WORKFLOW_KNOWLEDGE_PUBLISH_METADATA_TYPE = 'WorkflowKnowledgePublish'
+export const WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE = 'WorkflowOutboundMessage'
+export const WORKFLOW_RULE_METADATA_TYPE = 'WorkflowRule'
+export const WORKFLOW_TASK_METADATA_TYPE = 'WorkflowTask'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/

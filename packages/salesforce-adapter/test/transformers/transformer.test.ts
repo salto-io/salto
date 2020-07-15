@@ -32,7 +32,9 @@ import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE,
   CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
-  TYPES_PATH, SALESFORCE,
+  TYPES_PATH, SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+  WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+  WORKFLOW_ACTION_ALERT_METADATA_TYPE,
 } from '../../src/constants'
 import { CustomField, FilterItem, CustomObject, CustomPicklistValue, SalesforceRecord } from '../../src/client/types'
 import SalesforceClient from '../../src/client/client'
@@ -1384,6 +1386,77 @@ describe('transformer', () => {
             'layoutSections', '0', 'layoutColumns', '0', 'layoutItems', '0', 'field'
           ),
         })).toEqual('Test__c')
+      })
+    })
+    describe('with fields in workflow field update instance', () => {
+      const workflowFieldUpdate = new ObjectType({
+        elemID: new ElemID(
+          SALESFORCE,
+          WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+        ),
+        fields: { field: { type: BuiltinTypes.STRING } },
+      })
+      const mockWorkflowFieldUpdateInstance = new InstanceElement(
+        'User_test1',
+        workflowFieldUpdate,
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'User.test1',
+          field: 'test',
+        },
+      )
+      it('should resolve to relative api name', () => {
+        const testField = refObject.fields.test
+        expect(getLookUpName({
+          ref: new ReferenceExpression(testField.elemID, testField, refObject),
+          field: workflowFieldUpdate.fields.field,
+          path: mockWorkflowFieldUpdateInstance.elemID.createNestedID('field'),
+        })).toEqual('Test__c')
+      })
+    })
+    describe('with fields in workflow rule instance', () => {
+      const workflowActionReference = new ObjectType({
+        elemID: new ElemID(
+          SALESFORCE,
+          WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+        ),
+        fields: {
+          name: { type: BuiltinTypes.STRING },
+          type: { type: BuiltinTypes.STRING },
+        },
+      })
+      const workflowRule = new ObjectType({
+        elemID: new ElemID(
+          SALESFORCE,
+          WORKFLOW_RULE_METADATA_TYPE,
+        ),
+        fields: { actions: { type: workflowActionReference } },
+      })
+      const mockWorkflowRuleInstance = new InstanceElement(
+        'User_rule1',
+        workflowRule,
+        {
+          [INSTANCE_FULL_NAME_FIELD]: 'User.rule1',
+          actions: [{
+            name: 'alert1',
+            type: 'Alert',
+          }],
+        },
+      )
+      const workflowAlert = new ObjectType({ elemID: new ElemID(
+        SALESFORCE,
+        WORKFLOW_ACTION_ALERT_METADATA_TYPE,
+      ) })
+      const mockAlertInstance = new InstanceElement(
+        'Opportunity_alert1',
+        workflowAlert,
+        { [INSTANCE_FULL_NAME_FIELD]: 'Opportunity.alert1' },
+      )
+      it('should resolve to relative api name', () => {
+        expect(getLookUpName({
+          ref: new ReferenceExpression(mockAlertInstance.elemID, mockAlertInstance),
+          field: workflowActionReference.fields.name,
+          path: mockWorkflowRuleInstance.elemID.createNestedID('actions', '0', 'name'),
+        })).toEqual('alert1')
       })
     })
     describe('with all other cases', () => {

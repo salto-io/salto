@@ -15,7 +15,7 @@
 */
 import * as vscode from 'vscode'
 import { loadLocalWorkspace } from '@salto-io/core'
-import { diagnostics, workspace as ws } from '@salto-io/editor'
+import { diagnostics, workspace as ws } from '@salto-io/lang-server'
 import { onTextChangeEvent, onFileChange, onFileDelete, onFileOpen, createReportErrorsEventListener } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,

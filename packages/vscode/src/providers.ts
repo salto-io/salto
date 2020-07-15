@@ -17,7 +17,7 @@ import * as vscode from 'vscode'
 import path from 'path'
 import wu from 'wu'
 import { provider, context as ctx, definitions,
-  usage, workspace as ws, location } from '@salto-io/editor'
+  usage, workspace as ws, location } from '@salto-io/lang-server'
 import {
   saltoPosToVsPos, vsPosToSaltoPos, buildVSDefinitions, buildVSCompletionItems,
   buildVSSymbol, toVSFileName, sourceRangeToFoldRange,

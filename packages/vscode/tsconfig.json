@@ -25,10 +25,8 @@
         "e2e_test/**/*"
     ],
     "references": [
-      { "path": "../adapter-api" },
-      { "path": "../adapter-utils" },
       { "path": "../core" },
-      { "path": "../editor" },
+      { "path": "../lang-server" },
       { "path": "../file" },
       { "path": "../workspace" },
     ]

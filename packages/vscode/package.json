@@ -116,21 +116,16 @@
         "generate-yarn-lock": "yarn workspaces run generate-lock-entry | sed '1,2d' | sed -n -e :a -e '1,1!{P;N;D;};N;ba' >> yarn.lock"
     },
     "dependencies": {
-        "@salto-io/adapter-api": "0.1.19",
-        "@salto-io/adapter-utils": "0.1.19",
         "@salto-io/core": "0.1.19",
-        "@salto-io/editor": "0.1.19",
+        "@salto-io/lang-server": "0.1.19",
         "@salto-io/file": "0.1.19",
         "@salto-io/workspace": "0.1.19",
         "copy-paste": "^1.3.0",
-        "diff": "^4.0.1",
         "lodash": "^4.17.15",
         "wu": "^2.1.0"
     },
     "devDependencies": {
         "@types/copy-paste": "^1.1.30",
-        "@types/diff": "^4.0.2",
-        "@types/glob": "^7.1.1",
         "@types/jest-cli": "^23.6.0",
         "@types/node": "^12.7.1",
         "@types/vscode": "^1.36",

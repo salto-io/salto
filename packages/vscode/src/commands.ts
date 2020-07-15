@@ -16,7 +16,7 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { copy as copyToClipboard } from 'copy-paste'
-import { context, workspace as ws } from '@salto-io/editor'
+import { context, workspace as ws } from '@salto-io/lang-server'
 import { vsPosToSaltoPos } from './adapters'
 
 export const createCopyReferenceCommand = (

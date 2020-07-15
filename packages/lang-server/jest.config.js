@@ -18,8 +18,8 @@ const deepMerge = require('../../build_utils/deep_merge')
 module.exports = deepMerge(
   require('../../jest.base.config.js'),
   {
-    name: 'salto-editor',
-    displayName: 'salto-editor',
+    name: 'salto-lang-server',
+    displayName: 'salto-lang-server',
     rootDir: `${__dirname}`,
     collectCoverageFrom: [
       // This file is only used as a bridge with vsc. The overhead of mocking vsc has bad ROI.

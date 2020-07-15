@@ -18,7 +18,7 @@ import * as path from 'path'
 import { nacl } from '@salto-io/workspace'
 import { readTextFile } from '@salto-io/file'
 import _ from 'lodash'
-import { diagnostics, workspace as ws } from '@salto-io/editor'
+import { diagnostics, workspace as ws } from '@salto-io/lang-server'
 import { toVSDiagnostics } from './adapters'
 
 const { FILE_EXTENSION } = nacl

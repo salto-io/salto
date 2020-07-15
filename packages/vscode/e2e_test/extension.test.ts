@@ -17,7 +17,7 @@ import readdirp from 'readdirp'
 import tmp from 'tmp-promise'
 import { SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
 import { copyFile, rm, mkdirp } from '@salto-io/file'
-import { workspace as ws, context, provider, diagnostics, definitions } from '@salto-io/editor'
+import { workspace as ws, context, provider, diagnostics, definitions } from '@salto-io/lang-server'
 
 // TODO: enable this back - tests fails
 // eslint-disable-next-line jest/no-disabled-tests

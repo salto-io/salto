@@ -43,6 +43,12 @@ monitoring {
   slack {
     token = "xoxb-thisis-nota-validtoken"
   }
+  telemetry {
+    id = "clientuniqueid"
+    url = "https://telemetry.salto.io"
+    token = "supersecrettelemetrytoken"
+    enabled = true
+  }
 }
 ```
 

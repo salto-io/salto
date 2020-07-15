@@ -34,6 +34,12 @@ describe('config', () => {
       slack: {
         token: '',
       },
+      telemetry: {
+        id: 'id',
+        url: 'http://url.com',
+        token: 'supersecrettoken',
+        enabled: true,
+      },
     })).toThrow()
   })
 
@@ -59,6 +65,12 @@ describe('config', () => {
       },
       slack: {
         token: '',
+      },
+      telemetry: {
+        id: 'id',
+        url: 'http://url.com',
+        token: 'supersecrettoken',
+        enabled: true,
       },
     })).toThrow()
   })

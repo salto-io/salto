@@ -15,8 +15,10 @@
 */
 import { existsSync, readFileSync } from 'fs'
 import _ from 'lodash'
+import uuidv4 from 'uuid/v4'
 import { parser } from '@salto-io/workspace'
 import { InstanceElement } from '@salto-io/adapter-api'
+import { telemetrySender, Telemetry } from '@salto-io/core'
 import { Trigger } from './trigger'
 
 const { parse } = parser
@@ -26,6 +28,14 @@ export interface Config {
   notifications: Notification[]
   smtp: SMTP
   slack: Slack
+  telemetry: TelemetryConfig
+}
+
+export type TelemetryConfig = {
+  id: string
+  url: string
+  token: string
+  enabled: boolean
 }
 
 export type NotificationType = string
@@ -91,6 +101,15 @@ const validateNotificationTypeConfig = (config: Config): void => {
     throw new Error('slack config is required for slack notification')
   }
 }
+
+export const getTelemetry = (config: Config): Telemetry => telemetrySender(
+  config.telemetry,
+  {
+    installationID: config.telemetry.id,
+    app: 'monitoring',
+    sessionID: uuidv4(),
+  }
+)
 
 export const validateConfig = (config: Config): void => {
   validateRegex(config)

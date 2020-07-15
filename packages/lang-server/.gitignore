@@ -1,0 +1,4 @@
+.history
+coverage
+dist
+/yarn.lock

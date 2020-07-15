@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import * as path from 'path'
+import { readFileSync } from 'fs'
 import _ from 'lodash'
 import { Workspace, parser, errors as wsErrors,
   merger, configSource as cs } from '@salto-io/workspace'
-import { readTextFile } from '@salto-io/file'
 import { ElemID, ObjectType, BuiltinTypes, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 
 const { parse } = parser
@@ -103,8 +103,7 @@ const buildMockWorkspace = async (
   } as unknown as Workspace
 }
 
-export const mockWorkspace = async (naclFile?: string,
-): Promise<Workspace> => {
-  const buffer = naclFile ? await readTextFile(naclFile) : 'blabla'
+export const mockWorkspace = async (naclFile?: string): Promise<Workspace> => {
+  const buffer = naclFile ? readFileSync(naclFile, { encoding: 'utf8' }) : 'blabla'
   return buildMockWorkspace(naclFile, buffer)
 }

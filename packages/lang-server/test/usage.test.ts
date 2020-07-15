@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import * as path from 'path'
-import { EditorWorkspace } from '../../src/salto/workspace'
-import { provideWorkspaceReferences } from '../../src/salto/usage'
-import { SaltoElemLocation } from '../../src/salto/location'
+import { EditorWorkspace } from '../src/workspace'
+import { provideWorkspaceReferences } from '../src/usage'
+import { SaltoElemLocation } from '../src/location'
 import { mockWorkspace } from './workspace'
-import { getPositionContext, PositionContext, GLOBAL_RANGE } from '../../src/salto/context'
+import { getPositionContext, PositionContext, GLOBAL_RANGE } from '../src/context'
 
 describe('Test go to definitions', () => {
   let workspace: EditorWorkspace
@@ -28,7 +28,7 @@ describe('Test go to definitions', () => {
   ): number[] => defs.map(d => d.range.start.line).sort((a, b) => a - b)
 
   beforeAll(async () => {
-    const baseDir = path.resolve(`${__dirname}/../../../test/salto/test-nacls/`)
+    const baseDir = path.resolve(`${__dirname}/../../test/test-nacls/`)
     workspace = new EditorWorkspace(baseDir, await mockWorkspace(path.join(baseDir, 'all.nacl')))
   })
 

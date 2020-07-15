@@ -18,15 +18,14 @@ import * as path from 'path'
 import { nacl } from '@salto-io/workspace'
 import { readTextFile } from '@salto-io/file'
 import _ from 'lodash'
-import { EditorWorkspace } from './salto/workspace'
-import { getDiagnostics } from './salto/diagnostics'
+import { diagnostics, workspace as ws } from '@salto-io/lang-server'
 import { toVSDiagnostics } from './adapters'
 
 const { FILE_EXTENSION } = nacl
 
 const DIAG_IDLE_PERIOD = 500
 export const createReportErrorsEventListener = (
-  workspace: EditorWorkspace,
+  workspace: ws.EditorWorkspace,
   diagCollection: vscode.DiagnosticCollection
 ): (
 ) => void => _.debounce(
@@ -34,7 +33,7 @@ export const createReportErrorsEventListener = (
     await workspace.awaitAllUpdates()
     const newDiag = toVSDiagnostics(
       workspace.baseDir,
-      await getDiagnostics(workspace)
+      await diagnostics.getDiagnostics(workspace)
     )
     diagCollection.set(newDiag)
   },
@@ -46,7 +45,7 @@ export const createReportErrorsEventListener = (
 // reparse the file that changed.
 export const onTextChangeEvent = (
   event: vscode.TextDocumentChangeEvent,
-  workspace: EditorWorkspace
+  workspace: ws.EditorWorkspace
 ): void => {
   if (path.extname(event.document.fileName) === FILE_EXTENSION) {
     const naclFile = { filename: event.document.fileName, buffer: event.document.getText() }
@@ -59,7 +58,7 @@ export const onFileOpen = (): void => {
 }
 
 export const onFileDelete = (
-  workspace: EditorWorkspace,
+  workspace: ws.EditorWorkspace,
   filename: string
 ): Promise<void> => {
   workspace.removeNaclFiles(filename)
@@ -67,7 +66,7 @@ export const onFileDelete = (
 }
 
 export const onFileChange = async (
-  workspace: EditorWorkspace,
+  workspace: ws.EditorWorkspace,
   filename: string
 ): Promise<void> => {
   const buffer = await readTextFile(filename)

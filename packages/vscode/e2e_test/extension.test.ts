@@ -17,18 +17,13 @@ import readdirp from 'readdirp'
 import tmp from 'tmp-promise'
 import { SALTO_HOME_VAR, initLocalWorkspace } from '@salto-io/core'
 import { copyFile, rm, mkdirp } from '@salto-io/file'
-import { EditorWorkspace } from '../src/salto/workspace'
-import { getPositionContext } from '../src/salto/context'
-import { provideWorkspaceCompletionItems } from '../src/salto/completions/provider'
-import { getDiagnostics } from '../src/salto/diagnostics'
-import { provideWorkspaceDefinition } from '../src/salto/definitions'
-
+import { workspace as ws, context, provider, diagnostics, definitions } from '@salto-io/lang-server'
 
 // TODO: enable this back - tests fails
 // eslint-disable-next-line jest/no-disabled-tests
 describe.skip('extension e2e', () => {
   const wsNaclFiles = `${__dirname}/../../e2e_test/test-workspace`
-  let workspace: EditorWorkspace
+  let workspace: ws.EditorWorkspace
   let wsPath: string; let
     homePath: string
 
@@ -45,7 +40,7 @@ describe.skip('extension e2e', () => {
     naclFiles
       .forEach(naclFile => { copyFile(naclFile.fullPath, `${wsPath}/${naclFile.basename}`) })
 
-    workspace = new EditorWorkspace(wsPath, await initLocalWorkspace(wsPath, 'default'))
+    workspace = new ws.EditorWorkspace(wsPath, await initLocalWorkspace(wsPath, 'default'))
   })
 
   afterAll(async () => {
@@ -56,8 +51,8 @@ describe.skip('extension e2e', () => {
   it('should suggest type and instances completions', async () => {
     const pos = { line: 10, col: 0 }
     const filename = 'extra.nacl'
-    const ctx = await getPositionContext(workspace, filename, pos)
-    const suggestions = await provideWorkspaceCompletionItems(workspace, ctx, '', pos)
+    const ctx = await context.getPositionContext(workspace, filename, pos)
+    const suggestions = await provider.provideWorkspaceCompletionItems(workspace, ctx, '', pos)
     expect(suggestions.map(s => s.label).sort()).toEqual(
       ['boolean', 'number', '@salto-io/core', '@salto-io/core_complex', '@salto-io/core_complex2', '@salto-io/core_num', '@salto-io/core_number',
         '@salto-io/core_obj', '@salto-io/core_str', '@salto-io/core_string', 'serviceid', 'string', 'type']
@@ -65,7 +60,7 @@ describe.skip('extension e2e', () => {
   })
 
   it('should diagnostics on errors', async () => {
-    const diag = await getDiagnostics(workspace)
+    const diag = await diagnostics.getDiagnostics(workspace)
     const err = diag['error.nacl'][0]
     expect(err.msg).toContain(
       'Error merging @salto-io/core.complex.instance.inst1: duplicate key str'
@@ -81,8 +76,8 @@ describe.skip('extension e2e', () => {
     async () => {
       const pos = { line: 6, col: 9 }
       const filename = 'extra.nacl'
-      const ctx = await getPositionContext(workspace, filename, pos)
-      const defs = await provideWorkspaceDefinition(workspace, ctx, '@salto-io/core_complex')
+      const ctx = await context.getPositionContext(workspace, filename, pos)
+      const defs = await definitions.provideWorkspaceDefinition(workspace, ctx, '@salto-io/core_complex')
       expect(defs.length).toBe(2)
       expect(defs[0].fullname).toBe('@salto-io/core.complex')
       expect(defs[0].filename).toBe('complex_type.nacl')

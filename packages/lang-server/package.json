@@ -1,0 +1,51 @@
+{
+  "name": "@salto-io/lang-server",
+  "version": "0.1.19",
+  "license": "Apache-2.0",
+  "description": "Salto lang server",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/salto-io/salto"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src",
+    "test",
+    "index.ts"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "yarn concurrently \"yarn lint\" \"yarn build-ts\"",
+    "test": "jest",
+    "clean": "rm -rf ./dist .eslintcache",
+    "clean-ts": "../../build_utils/clean-old-ts.sh",
+    "clean-ts-test": "yarn clean-ts && yarn test",
+    "watch-test": "yarn tsc-watch --onSuccess 'yarn clean-ts-test'",
+    "build-ts": "tsc -b && yarn clean-ts",
+    "watch-ts": "tsc -b -w",
+    "lint": "eslint --cache --max-warnings 0 --ext .js,.jsx,.ts,.tsx ./",
+    "lint-fix": "yarn lint --fix"
+  },
+  "dependencies": {
+    "@salto-io/adapter-api": "0.1.19",
+    "@salto-io/adapter-utils": "0.1.19",
+    "@salto-io/workspace": "0.1.19",
+    "lodash": "^4.17.15",
+    "wu": "^2.1.0"
+  },
+  "devDependencies": {
+    "@types/jest-cli": "^23.6.0",
+    "@types/node": "^12.7.1",
+    "@typescript-eslint/parser": "2.31.0",
+    "eslint-plugin-header": "^3.0.0",
+    "jest-circus": "^24.9.0",
+    "jest-cli": "^24.8.0",
+    "jest-core": "^0.0.0",
+    "tslint": "^5.12.1",
+    "typescript": "3.9.3"
+  }
+}

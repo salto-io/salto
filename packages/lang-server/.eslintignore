@@ -1,0 +1,4 @@
+/dist
+*.d.ts
+*.config.js
+coverage

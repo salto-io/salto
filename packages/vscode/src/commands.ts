@@ -16,12 +16,11 @@
 import * as vscode from 'vscode'
 import _ from 'lodash'
 import { copy as copyToClipboard } from 'copy-paste'
-import { getPositionContext } from './salto/context'
-import { EditorWorkspace } from './salto/workspace'
+import { context, workspace as ws } from '@salto-io/lang-server'
 import { vsPosToSaltoPos } from './adapters'
 
 export const createCopyReferenceCommand = (
-  workspace: EditorWorkspace
+  workspace: ws.EditorWorkspace
 ): (
 ) => Promise<void> => async () => {
   const editor = vscode.window.activeTextEditor
@@ -31,7 +30,7 @@ export const createCopyReferenceCommand = (
   const position = editor.selection.active
   await workspace.awaitAllUpdates()
   const saltoPos = vsPosToSaltoPos(position)
-  const ctx = await getPositionContext(
+  const ctx = await context.getPositionContext(
     workspace,
     editor.document.fileName,
     saltoPos

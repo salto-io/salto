@@ -15,8 +15,7 @@
 */
 import * as vscode from 'vscode'
 import { loadLocalWorkspace } from '@salto-io/core'
-import { EditorWorkspace } from './salto/workspace'
-import { getDiagnostics } from './salto/diagnostics'
+import { diagnostics, workspace as ws } from '@salto-io/lang-server'
 import { onTextChangeEvent, onFileChange, onFileDelete, onFileOpen, createReportErrorsEventListener } from './events'
 import {
   createCompletionsProvider, createDefinitionsProvider, createReferenceProvider,
@@ -37,7 +36,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
   const { name, rootPath } = vscode.workspace
   if (name && rootPath) {
     const diagCollection = vscode.languages.createDiagnosticCollection('@salto-io/core')
-    const workspace = new EditorWorkspace(rootPath, await loadLocalWorkspace(rootPath))
+    const workspace = new ws.EditorWorkspace(rootPath, await loadLocalWorkspace(rootPath))
 
     const completionProvider = vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', pattern: { base: rootPath, pattern: '**/*.nacl' } },
@@ -91,7 +90,7 @@ const onActivate = async (context: vscode.ExtensionContext): Promise<void> => {
     fileWatcher.onDidDelete((uri: vscode.Uri) => onFileDelete(workspace, uri.fsPath))
     const newDiag = toVSDiagnostics(
       workspace.baseDir,
-      await getDiagnostics(workspace)
+      await diagnostics.getDiagnostics(workspace)
     )
     diagCollection.set(newDiag)
   }

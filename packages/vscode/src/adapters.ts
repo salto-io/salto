@@ -17,40 +17,37 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import _ from 'lodash'
 import { parser } from '@salto-io/workspace'
-import { EditorPosition, PositionContext } from './salto/context'
-import { SaltoCompletion } from './salto/completions/provider'
-import { createSaltoSymbol, SaltoSymbolKind } from './salto/symbols'
-import { SaltoDiagnostic, WorkspaceSaltoDiagnostics } from './salto/diagnostics'
+import { context as ctx, provider, symbols, diagnostics } from '@salto-io/lang-server'
 
 type ReadonlyDiagsItem = [vscode.Uri, ReadonlyArray<vscode.Diagnostic>]
 type ReadonlyDiags = ReadonlyArray<ReadonlyDiagsItem>
 
 export const saltoPosToVsPos = (
-  pos: EditorPosition
+  pos: ctx.EditorPosition
 ): vscode.Position => new vscode.Position(pos.line - 1, pos.col - 1)
 
-export const vsPosToSaltoPos = (pos: vscode.Position): EditorPosition => ({
+export const vsPosToSaltoPos = (pos: vscode.Position): ctx.EditorPosition => ({
   line: pos.line + 1,
   col: pos.character + 1,
 })
 
 const AUTO_FOLD_ELEMENT_NAMES: string[] = []
 
-const kindMap: {[key in SaltoSymbolKind]: vscode.SymbolKind} = {
-  [SaltoSymbolKind.Field]: vscode.SymbolKind.Field,
-  [SaltoSymbolKind.Array]: vscode.SymbolKind.Array,
-  [SaltoSymbolKind.Type]: vscode.SymbolKind.Class,
-  [SaltoSymbolKind.Instance]: vscode.SymbolKind.Variable,
-  [SaltoSymbolKind.Annotation]: vscode.SymbolKind.Variable,
-  [SaltoSymbolKind.File]: vscode.SymbolKind.File,
-  [SaltoSymbolKind.Attribute]: vscode.SymbolKind.Variable,
+const kindMap: {[key in symbols.SaltoSymbolKind]: vscode.SymbolKind} = {
+  [symbols.SaltoSymbolKind.Field]: vscode.SymbolKind.Field,
+  [symbols.SaltoSymbolKind.Array]: vscode.SymbolKind.Array,
+  [symbols.SaltoSymbolKind.Type]: vscode.SymbolKind.Class,
+  [symbols.SaltoSymbolKind.Instance]: vscode.SymbolKind.Variable,
+  [symbols.SaltoSymbolKind.Annotation]: vscode.SymbolKind.Variable,
+  [symbols.SaltoSymbolKind.File]: vscode.SymbolKind.File,
+  [symbols.SaltoSymbolKind.Attribute]: vscode.SymbolKind.Variable,
 }
 
 export const buildVSSymbol = (
-  context: PositionContext,
+  context: ctx.PositionContext,
   filename: string
 ): vscode.SymbolInformation => {
-  const saltoSymbol = createSaltoSymbol(context)
+  const saltoSymbol = symbols.createSaltoSymbol(context)
   return {
     kind: kindMap[saltoSymbol.type],
     location: {
@@ -62,15 +59,15 @@ export const buildVSSymbol = (
     },
     name: saltoSymbol.name,
     containerName: context.parent
-      ? createSaltoSymbol(context.parent).name
+      ? symbols.createSaltoSymbol(context.parent).name
       : '',
   }
 }
 
 export const buildVSDefinitions = (
-  context: PositionContext,
+  context: ctx.PositionContext,
 ): vscode.DocumentSymbol => {
-  const saltoSymbol = createSaltoSymbol(context)
+  const saltoSymbol = symbols.createSaltoSymbol(context)
   const range = new vscode.Range(
     saltoPosToVsPos(saltoSymbol.range.start),
     saltoPosToVsPos(saltoSymbol.range.end)
@@ -89,7 +86,7 @@ export const buildVSDefinitions = (
 }
 
 export const buildVSCompletionItems = (
-  completion: SaltoCompletion[]
+  completion: provider.SaltoCompletion[]
 ): vscode.CompletionItem[] => (
   completion.map(({
     label, insertText, filterText,
@@ -107,7 +104,7 @@ export const toVSFileName = (
 ): string => path.resolve(workspaceBaseDir, filename)
 
 const toVSDiagnostic = (
-  diag: SaltoDiagnostic
+  diag: diagnostics.SaltoDiagnostic
 ): vscode.Diagnostic => ({
   message: diag.msg,
   severity: diag.severity === 'Error'
@@ -121,7 +118,7 @@ const toVSDiagnostic = (
 
 export const toVSDiagnostics = (
   workspaceBaseDir: string,
-  workspaceDiag: WorkspaceSaltoDiagnostics
+  workspaceDiag: diagnostics.WorkspaceSaltoDiagnostics
 ): ReadonlyDiags => _(workspaceDiag)
   .mapValues(diags => diags.map(toVSDiagnostic))
   .entries()

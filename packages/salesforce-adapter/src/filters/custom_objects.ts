@@ -31,7 +31,7 @@ import { UNSUPPORTED_SYSTEM_FIELDS, SYSTEM_FIELDS } from '../types'
 import {
   API_NAME, CUSTOM_OBJECT, METADATA_TYPE, SALESFORCE, INSTANCE_FULL_NAME_FIELD,
   LABEL, FIELD_DEPENDENCY_FIELDS, LOOKUP_FILTER_FIELDS,
-  VALUE_SETTINGS_FIELDS, API_NAME_SEPERATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
+  VALUE_SETTINGS_FIELDS, API_NAME_SEPARATOR, FIELD_ANNOTATIONS, VALUE_SET_DEFINITION_FIELDS,
   VALUE_SET_FIELDS, DEFAULT_VALUE_FORMULA, FIELD_TYPE_NAMES, OBJECTS_PATH, INSTALLED_PACKAGES_PATH,
   FORMULA, LEAD_CONVERT_SETTINGS_METADATA_TYPE, ASSIGNMENT_RULES_METADATA_TYPE,
   WORKFLOW_METADATA_TYPE, QUICK_ACTION_METADATA_TYPE, CUSTOM_TAB_METADATA_TYPE,
@@ -152,7 +152,7 @@ const transfromAnnotationsNames = (fields: Values, parentName: string): Values =
         annotations[CORE_ANNOTATIONS.REQUIRED] = v
         break
       case INSTANCE_FULL_NAME_FIELD:
-        annotations[API_NAME] = [parentName, v].join(API_NAME_SEPERATOR)
+        annotations[API_NAME] = [parentName, v].join(API_NAME_SEPARATOR)
         break
       case FIELD_ANNOTATIONS.DEFAULT_VALUE:
         if (typeName === FIELD_TYPE_NAMES.CHECKBOX) {
@@ -283,7 +283,7 @@ const createNestedMetadataInstances = (instance: InstanceElement,
         const fullName = [
           instance.value[INSTANCE_FULL_NAME_FIELD],
           nestedInstance[INSTANCE_FULL_NAME_FIELD],
-        ].join(API_NAME_SEPERATOR)
+        ].join(API_NAME_SEPARATOR)
         const elemIdName = naclCase(fullName)
         nestedInstance[INSTANCE_FULL_NAME_FIELD] = fullName
         return new InstanceElement(elemIdName, type, nestedInstance,

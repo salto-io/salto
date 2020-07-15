@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { TreeMap } from '../../src/collections/tree_map'
 
 describe('tree map', () => {
-  const seperator = '|'
+  const separator = '|'
 
   const baseEntries: [string, string[]][] = [
     ['salesforce|test', ['test']],
@@ -29,13 +29,13 @@ describe('tree map', () => {
   ]
 
   it('should add all values', () => {
-    const sourceMap = new TreeMap(baseEntries, seperator)
+    const sourceMap = new TreeMap(baseEntries, separator)
     expect(wu(sourceMap.entries()).toArray()).toEqual(baseEntries)
     expect(sourceMap.size).toEqual(5)
   })
 
   it('should set non exsiting coplex key', () => {
-    const sourceMap = new TreeMap([], seperator)
+    const sourceMap = new TreeMap([], separator)
     const value = ['new_value']
     const key = 'a|b|c'
     sourceMap.set(key, value)
@@ -43,7 +43,7 @@ describe('tree map', () => {
   })
 
   it('should return proper has value', () => {
-    const sourceMap = new TreeMap([], seperator)
+    const sourceMap = new TreeMap([], separator)
     const value = ['new_value']
     const key = 'a|b|c'
     sourceMap.set(key, value)
@@ -52,7 +52,7 @@ describe('tree map', () => {
   })
 
   it('should delete keys', () => {
-    const sourceMap = new TreeMap([], seperator)
+    const sourceMap = new TreeMap([], separator)
     const value = ['new_value']
     const key = 'a|b|c'
     sourceMap.set(key, value)
@@ -63,14 +63,14 @@ describe('tree map', () => {
   })
 
   it('should delete all entries on clear', () => {
-    const sourceMap = new TreeMap(baseEntries, seperator)
+    const sourceMap = new TreeMap(baseEntries, separator)
     expect(wu(sourceMap.keys()).toArray()).toEqual(baseEntries.map(([k, _v]) => k))
     sourceMap.clear()
     expect(wu(sourceMap.keys()).toArray()).toEqual([])
   })
 
   it('should update an existing value', () => {
-    const sourceMap = new TreeMap([], seperator)
+    const sourceMap = new TreeMap([], separator)
     const value = ['value']
     const key = 'a|b|c'
     sourceMap.set(key, value)
@@ -81,7 +81,7 @@ describe('tree map', () => {
   })
 
   it('should allow push operations', () => {
-    const sourceMap = new TreeMap([], seperator)
+    const sourceMap = new TreeMap([], separator)
     const value = 'new_value'
     const key = 'salto|type|instance|test|foo'
     sourceMap.set(key, [value])
@@ -93,7 +93,7 @@ describe('tree map', () => {
   })
 
   it('should update partial key without deleting its children', () => {
-    const sourceMap = new TreeMap([], seperator)
+    const sourceMap = new TreeMap([], separator)
     const value = ['value']
     const key = 'a|b|c'
     sourceMap.set(key, value)
@@ -106,7 +106,7 @@ describe('tree map', () => {
   })
 
   it('should push partial key without deleting its children', () => {
-    const sourceMap = new TreeMap([], seperator)
+    const sourceMap = new TreeMap([], separator)
     const value = ['value']
     const key = 'salto|type|instance|test|foo'
     sourceMap.set(key, value)
@@ -119,22 +119,22 @@ describe('tree map', () => {
   })
 
   it('should return undefined for a non-existing value', () => {
-    const sourceMap = new TreeMap([], seperator)
+    const sourceMap = new TreeMap([], separator)
     expect(sourceMap.get('eagle|has|landed')).toBeUndefined()
   })
 
   it('should return all keys', () => {
-    const sourceMap = new TreeMap(baseEntries, seperator)
+    const sourceMap = new TreeMap(baseEntries, separator)
     expect(wu(sourceMap.keys()).toArray()).toEqual(baseEntries.map(([k, _v]) => k))
   })
 
   it('should return all values', () => {
-    const sourceMap = new TreeMap(baseEntries, seperator)
+    const sourceMap = new TreeMap(baseEntries, separator)
     expect(wu(sourceMap.values()).toArray()).toEqual(baseEntries.map(([_k, v]) => v))
   })
 
   it('should support forEach', () => {
-    const sourceMap = new TreeMap(_.cloneDeep(baseEntries), seperator)
+    const sourceMap = new TreeMap(_.cloneDeep(baseEntries), separator)
     wu(sourceMap.values()).toArray()
     sourceMap.forEach(v => v.push('pushed_value'))
     expect(wu(sourceMap.values()).toArray())
@@ -142,25 +142,25 @@ describe('tree map', () => {
   })
 
   it('should allow mount operations when prefix is new', () => {
-    const sourceMap = new TreeMap(baseEntries, seperator)
-    const mountMap = new TreeMap(baseEntries, seperator)
+    const sourceMap = new TreeMap(baseEntries, separator)
+    const mountMap = new TreeMap(baseEntries, separator)
     const mountKey = 'mount|key'
     sourceMap.mount(mountKey, mountMap)
     baseEntries.forEach(([key, ranges]) => {
       expect(sourceMap.get(key)).toEqual(ranges)
-      expect(sourceMap.get([mountKey, key].join(seperator))).toEqual(ranges)
+      expect(sourceMap.get([mountKey, key].join(separator))).toEqual(ranges)
     })
   })
 
   it('should allow mount operations when prefix is old', () => {
-    const sourceMap = new TreeMap(baseEntries, seperator)
-    const mountMap = new TreeMap(baseEntries, seperator)
+    const sourceMap = new TreeMap(baseEntries, separator)
+    const mountMap = new TreeMap(baseEntries, separator)
     const mountKey = 'mount|key'
     sourceMap.set(mountKey, ['mount_value'])
     sourceMap.mount(mountKey, mountMap)
     baseEntries.forEach(([key, ranges]) => {
       expect(sourceMap.get(key)).toEqual(ranges)
-      expect(sourceMap.get([mountKey, key].join(seperator))).toEqual(ranges)
+      expect(sourceMap.get([mountKey, key].join(separator))).toEqual(ranges)
     })
   })
 
@@ -172,8 +172,8 @@ describe('tree map', () => {
       ['salesforce|test|a|b', ['test_a_b']], // Merge Leaf
       ['new', ['new']],
     ]
-    const newSourceMap = new TreeMap(newEntries, seperator)
-    const sourceMap = new TreeMap(baseEntries, seperator)
+    const newSourceMap = new TreeMap(newEntries, separator)
+    const sourceMap = new TreeMap(baseEntries, separator)
     sourceMap.merge(newSourceMap);
     [...baseEntries, ...newEntries].forEach(([key, values]) => {
       values.forEach(

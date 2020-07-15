@@ -37,7 +37,7 @@ import {
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, DESCRIPTION,
   HELP_TEXT, BUSINESS_STATUS, FORMULA_TYPE_NAME,
   SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
-  CUSTOM_VALUE, API_NAME_SEPERATOR, MAX_METADATA_RESTRICTION_VALUES,
+  CUSTOM_VALUE, API_NAME_SEPARATOR, MAX_METADATA_RESTRICTION_VALUES,
   VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
   RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
@@ -87,7 +87,7 @@ const fullApiName = (elem: Element): string => {
 }
 
 export const relativeApiName = (name: string): string => (
-  _.last(name.split(API_NAME_SEPERATOR)) as string
+  _.last(name.split(API_NAME_SEPARATOR)) as string
 )
 
 export const apiName = (elem: Element, relative = false): string => {
@@ -990,7 +990,7 @@ export const getSObjectFieldElement = (
   objCompoundFieldNames: string[] = [],
   systemFields: string[] = []
 ): Field => {
-  const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPERATOR)
+  const fieldApiName = [parentServiceIds[API_NAME], field.name].join(API_NAME_SEPARATOR)
   const serviceIds = {
     [ADAPTER]: SALESFORCE,
     [API_NAME]: fieldApiName,

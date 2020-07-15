@@ -614,7 +614,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const deletedObjects = getDeletedObjectsNames(
       makeArray(oldInstance.value[fieldName]), makeArray(newInstance.value[fieldName])
     ).map(o => (withObjectPrefix ? [oldInstance.value.fullName, o] : [o])
-      .join(constants.API_NAME_SEPERATOR))
+      .join(constants.API_NAME_SEPARATOR))
     if (!_.isEmpty(deletedObjects)) {
       await this.client.delete(metadataTypeName, deletedObjects)
     }

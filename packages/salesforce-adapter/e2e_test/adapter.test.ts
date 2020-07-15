@@ -78,7 +78,7 @@ describe('Salesforce adapter E2E with real account', () => {
   const apiNameAnno = (object: string, field: string): string => [
     object,
     field,
-  ].join(constants.API_NAME_SEPERATOR)
+  ].join(constants.API_NAME_SEPARATOR)
 
   const gvsName = 'TestGlobalValueSet'
   const accountApiName = 'Account'
@@ -3109,7 +3109,7 @@ describe('Salesforce adapter E2E with real account', () => {
       const lookupFieldApiFullName = [
         customObjectName,
         lookupFieldApiName,
-      ].join(constants.API_NAME_SEPERATOR)
+      ].join(constants.API_NAME_SEPARATOR)
       const oldElement = new ObjectType({
         elemID: mockElemID,
         fields: { [fieldName]: {

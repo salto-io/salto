@@ -24,7 +24,7 @@ import { collections } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { findElements } from '@salto-io/adapter-utils'
 import { API_NAME, LABEL, CUSTOM_OBJECT,
-  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
+  METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
 import { JSONBool } from '../client/types'
 import { isCustomObject, metadataType, apiName, defaultApiName } from '../transformers/transformer'
 
@@ -79,7 +79,7 @@ export const addApiName = (elem: TypeElement | Field, name?: string, parentName?
 void => {
   if (!elem.annotations[API_NAME]) {
     const newApiName = name ?? defaultApiName(elem)
-    const fullApiName = parentName ? [parentName, newApiName].join(API_NAME_SEPERATOR) : newApiName
+    const fullApiName = parentName ? [parentName, newApiName].join(API_NAME_SEPARATOR) : newApiName
     elem.annotations[API_NAME] = fullApiName
     log.debug(`added API_NAME=${fullApiName} to ${elem.elemID.name}`)
   }
@@ -152,7 +152,7 @@ export const addObjectParentReference = (instance: InstanceElement,
 }
 
 export const fullApiName = (parent: string, child: string): string =>
-  ([parent, child].join(API_NAME_SEPERATOR))
+  ([parent, child].join(API_NAME_SEPARATOR))
 
 export const parentApiNameToMetadataTypeInstances = (elements: Element[], type: string):
 Dictionary<InstanceElement[]> => _(getInstancesOfMetadataType(elements, type))

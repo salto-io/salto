@@ -28,7 +28,7 @@ import filterCreator, {
 } from '../../src/filters/workflow'
 import mockClient from '../client'
 import {
-  API_NAME_SEPERATOR, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, WORKFLOW_METADATA_TYPE,
+  API_NAME_SEPARATOR, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE, WORKFLOW_METADATA_TYPE,
   METADATA_TYPE,
 } from '../../src/constants'
 
@@ -42,7 +42,7 @@ describe('Workflow filter', () => {
   const workflowInstanceName = 'Account'
   const generateWorkFlowInstance = (beforeFetch = false): InstanceElement => {
     const workflowObjectType = new ObjectType({ elemID: WORKFLOW_TYPE_ID })
-    const fullNamePrefix = beforeFetch ? '' : `${workflowInstanceName}${API_NAME_SEPERATOR}`
+    const fullNamePrefix = beforeFetch ? '' : `${workflowInstanceName}${API_NAME_SEPARATOR}`
     return new InstanceElement('Account',
       workflowObjectType,
       {

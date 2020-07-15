@@ -112,7 +112,7 @@ describe('Custom Object Instances References filter', () => {
     }
   )
 
-  beforeEach(() => {
+  beforeAll(() => {
     ({ client } = mockAdapter({
       adapterParams: {
       },
@@ -169,7 +169,7 @@ describe('Custom Object Instances References filter', () => {
       masterToInstance,
       refFromEmptyRefsInstance,
     ]
-    beforeEach(async () => {
+    beforeAll(async () => {
       elements = originalElements.map(e => e.clone())
       await filter.onFetch(elements)
     })

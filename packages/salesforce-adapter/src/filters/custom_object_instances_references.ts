@@ -21,6 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { isCustomObject, Types, apiName } from '../transformers/transformer'
+import { FIELD_ANNOTATIONS, CUSTOM_OBJECT_ID_FIELD } from '../constants'
 
 const replaceReferenceValues = (
   values: Values,
@@ -36,12 +37,13 @@ const replaceReferenceValues = (
   )
 
   const replacer = (val: Value, field: Field): Value => {
-    if (field.annotations.referenceTo === undefined || !_.isArray(field.annotations.referenceTo)) {
+    if (field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] === undefined
+        || !_.isArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])) {
       return val
     }
     const refToInstance = instances.find(instance =>
-      field.annotations.referenceTo.includes(apiName(instance.type, true))
-      && instance.value.Id === val)
+      field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO].includes(apiName(instance.type, true))
+      && instance.value[CUSTOM_OBJECT_ID_FIELD] === val)
     return (refToInstance === undefined) ? val : new ReferenceExpression(refToInstance.elemID)
   }
 

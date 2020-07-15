@@ -19,11 +19,12 @@ import { Telemetry, Tags } from '@salto-io/core'
 import { TelemetryEventNames, MonitoringTelemetry, TelemetryOptions } from './types'
 
 const SEPARATOR = '.'
+const MONITORING_PARTS = ['monitoring_tool']
 
 export const buildEventName = (
   action: keyof TelemetryEventNames,
   eventParts: string[] = [],
-): string => [...eventParts, action].join(SEPARATOR)
+): string => [...MONITORING_PARTS, ...eventParts, action].join(SEPARATOR)
 
 export const getMonitoringTelemetry = (sender: Telemetry): MonitoringTelemetry => {
   const sendCount = (name: string, value: number, tags?: Tags): void => {

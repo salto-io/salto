@@ -45,6 +45,8 @@ type DiffViewOptions = {
   subtitle: string
 }
 
+const diffContextSize = 25
+
 const orderByAfterElement = (before: Element, after: Element): Element => {
   const orderMapBy = (
     targetMap: Record<string, Value | Element | Field>,
@@ -250,6 +252,9 @@ export const createChangeDiff = async (
     changedElementName,
     await dump(data.before),
     await dump(data.after),
+    undefined,
+    undefined,
+    { context: diffContextSize }
   )
 }
 

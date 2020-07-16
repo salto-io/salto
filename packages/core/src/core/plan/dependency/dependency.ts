@@ -51,6 +51,7 @@ export const addNodeDependencies = (
   changers: ReadonlyArray<DependencyChanger>
 ): PlanTransformer => graph => log.time(async () => {
   if (changers.length === 0) {
+    // If there are no changers we return here to avoid creating changeData for no reason
     return graph
   }
   const changeData = new Map(wu(graph.keys()).map(id => [id, graph.getData(id)]))

@@ -136,6 +136,7 @@ export const filterInvalidChanges = async (
   }
 
   if (Object.keys(changeValidators).length === 0) {
+    // Shortcut to avoid grouping all changes if there are no validators to run
     return { changeErrors: [], validDiffGraph: diffGraph }
   }
 

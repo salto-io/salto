@@ -37,7 +37,7 @@
     "@salto-io/logging": "0.1.19",
     "@salto-io/lowerdash": "0.1.19",
     "fuse.js": "^3.4.5",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "moo": "^0.5.1",
     "nearley": "2.19.2",
     "wu": "^2.1.0"

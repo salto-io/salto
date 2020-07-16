@@ -37,7 +37,7 @@
     "humanize-duration": "^3.22.0",
     "jest-circus": "^24.9.0",
     "jest-environment-node": "^24.9.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "wu": "^2.1.0",
     "yargs": "^13.3.0"
   },

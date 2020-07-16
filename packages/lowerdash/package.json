@@ -30,7 +30,7 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "stacktrace-parser": "^0.1.9",
     "wu": "^2.1.0"
   },

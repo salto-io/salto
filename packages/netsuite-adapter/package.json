@@ -33,7 +33,7 @@
     "@salto-io/suitecloud-cli": "1.0.2-salto-9",
     "fast-xml-parser": "^3.15.0",
     "he": "^1.2.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "wu": "^2.1.0"
   },
   "devDependencies": {

@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { 
-  Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement,
+import {
+  Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement,
+  ReferenceExpression, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'

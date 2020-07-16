@@ -22,7 +22,7 @@ import filterCreator from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
   LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
-  OBJECTS_PATH, RECORDS_PATH,
+  OBJECTS_PATH, RECORDS_PATH, FIELD_ANNOTATIONS,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
@@ -51,6 +51,8 @@ describe('Custom Object Instances filter', () => {
       FirstName: 'First',
       LastName: 'Last',
       TestField: 'Test',
+      Father: 'hijklmn',
+      Grandfather: 'hijklmn',
     },
     {
       attributes: {
@@ -65,6 +67,8 @@ describe('Custom Object Instances filter', () => {
       FirstName: 'Firstizen',
       LastName: 'Lastizen',
       TestField: 'testizen',
+      Father: 'badId',
+      Grandfather: 'abcdefg',
     },
   ]
 
@@ -417,6 +421,129 @@ describe('Custom Object Instances filter', () => {
           city: 'city',
           counry: 'country',
         })
+      })
+    })
+  })
+
+  describe('When some CustomObjects are from the nameBasedID namespace', () => {
+    let elements: Element[]
+    const grandfatherObjectName = `${nameBasedNamespace}__grandfather__c`
+    const grandfatherObject = createCustomObject(grandfatherObjectName)
+
+    const fatherObjectName = `${nameBasedNamespace}__father__c`
+    const fatherObject = createCustomObject(
+      fatherObjectName,
+      {
+        Grandfather: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'master field',
+            [API_NAME]: 'MasterField',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandfatherObjectName],
+          },
+        },
+      }
+    )
+
+    const grandsonObjectName = `${nameBasedNamespace}__grandson__c`
+    const grandsonObject = createCustomObject(
+      grandsonObjectName,
+      {
+        Father: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'master field',
+            [API_NAME]: 'MasterField',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [fatherObjectName],
+          },
+        },
+      }
+    )
+
+    const orphanObjectName = `${nameBasedNamespace}__orphan__c`
+    const orphanObject = createCustomObject(
+      orphanObjectName,
+      {
+        Father: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'master field',
+            [API_NAME]: 'MasterField',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: ['noSuchObject'],
+          },
+        },
+      }
+    )
+
+    beforeEach(async () => {
+      elements = [grandfatherObject, fatherObject, grandsonObject, orphanObject]
+      await filter.onFetch(elements)
+    })
+
+    it('should add instances per namespaced object', () => {
+      // 2 new instances per namespaced object because of TestCustomRecords's length
+      expect(elements.length).toEqual(12)
+      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(8)
+    })
+
+    describe('grandfather object (no master)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === grandfatherObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on record name only', () => {
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
+      })
+    })
+
+    describe('father object (master is grandfather)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === fatherObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on grandfatherName + father', () => {
+        const grandfatherName = TestCustomRecords[1].Name
+        const fatherName = TestCustomRecords[0].Name
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandfatherName}___${fatherName}`)
+      })
+    })
+
+    describe('grandson object (master is father who has grandfather as master)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === grandsonObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on grandfatherName + father + grandson if all exist', () => {
+        const grandfatherName = TestCustomRecords[0].Name
+        const fatherName = TestCustomRecords[1].Name
+        const grandsonName = TestCustomRecords[0].Name
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandfatherName}___${fatherName}___${grandsonName}`)
+      })
+
+      it('should base elemID on grandon name only if no record with references father id', () => {
+        expect(instances[1].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[1].Name}`)
+      })
+    })
+
+    describe('orphan object (master non-existance)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === orphanObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on record name only', () => {
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
       })
     })
   })

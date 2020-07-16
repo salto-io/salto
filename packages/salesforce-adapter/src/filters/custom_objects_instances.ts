@@ -99,10 +99,12 @@ const objectsRecordToInstances = (
           const objectRecords = objectToIdsToRecords[objectName]
           if (objectRecords === undefined) {
             log.warn(`failed to find object name ${objectName} when looking for master`)
+            return undefined
           }
           const rec = objectRecords[masterId]
-          if (objectRecords === undefined) {
+          if (rec === undefined) {
             log.warn(`failed to find record with id ${masterId} in ${objectRecords} when looking for master`)
+            return undefined
           }
           return getRecordSaltoName(rec, objectNameToObject[objectName])
         }).find(isDefined)

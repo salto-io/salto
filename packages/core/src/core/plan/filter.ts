@@ -135,6 +135,10 @@ export const filterInvalidChanges = async (
     return validDiffGraph
   }
 
+  if (Object.keys(changeValidators).length === 0) {
+    return { changeErrors: [], validDiffGraph: diffGraph }
+  }
+
   const changesByAdapter = collections.iterable.groupBy(
     wu(diffGraph.keys()).map(changeId => diffGraph.getData(changeId)),
     change => getChangeElement(change).elemID.adapter,

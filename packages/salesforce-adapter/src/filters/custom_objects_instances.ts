@@ -32,6 +32,14 @@ const { toArrayAsync } = collections.asynciterable
 
 const log = logger(module)
 
+const masterDetailNamesSeparator = '___'
+
+const objectsToAdditionalNameFields: Record<string, string[]> = {
+  PricebookEntry: ['Pricebook2Id'],
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  SBQQ__CustomAction__c: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c'],
+}
+
 const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
     && field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID))
@@ -46,8 +54,6 @@ const buildQueryString = (type: ObjectType): string => {
     }).join(',')
   return `SELECT ${selectStr} FROM ${apiName(type)}`
 }
-
-const masterDetailNamesSeparator = '___'
 
 const getObjectRecords = async (
   client: SalesforceClient,
@@ -85,32 +91,40 @@ const objectsRecordToInstances = (
       return saltoName
     }
     const selfName = record.Name
-    const masterFields = _.pickBy(
+    const prefixField = _.pickBy(
       object.fields,
-      (field => isPrimitiveType(field.type)
+      (field => (isPrimitiveType(field.type)
         && Types.primitiveDataTypes.MasterDetail.isEqual(field.type))
+        || (objectsToAdditionalNameFields[apiName(object)]?.includes(field.name))
+      )
     )
-    const masterNames = Object.values(_.mapValues(
-      masterFields,
+    const prefixNames = Object.values(_.mapValues(
+      prefixField,
       (field: Field, fieldName: string) => {
+        const fieldValue = record[fieldName]
+        // If it's a special case of using a non-ref field simply use the value
+        if (!(isPrimitiveType(field.type)
+          && (Types.primitiveDataTypes.MasterDetail.isEqual(field.type)
+          || Types.primitiveDataTypes.Lookup.isEqual(field.type)))) {
+          return fieldValue.toString()
+        }
         const objectNames = field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] as string[]
-        const masterId = record[fieldName]
         return objectNames.map(objectName => {
           const objectRecords = objectToIdsToRecords[objectName]
           if (objectRecords === undefined) {
             log.warn(`failed to find object name ${objectName} when looking for master`)
             return undefined
           }
-          const rec = objectRecords[masterId]
+          const rec = objectRecords[fieldValue]
           if (rec === undefined) {
-            log.warn(`failed to find record with id ${masterId} in ${objectRecords} when looking for master`)
+            log.warn(`failed to find record with id ${fieldValue} in ${objectRecords} when looking for master`)
             return undefined
           }
           return getRecordSaltoName(rec, objectNameToObject[objectName])
         }).find(isDefined)
       }
     )).filter(isDefined)
-    const fullName = [...masterNames, selfName].join(masterDetailNamesSeparator)
+    const fullName = [...prefixNames, selfName].join(masterDetailNamesSeparator)
     setSaltoName(fullName)
     return fullName
   }

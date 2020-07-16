@@ -41,6 +41,7 @@ export type FilterContext = {
 export type DataManagementConfig = {
   name: string
   enabled: boolean
+  isNameBasedID: boolean
   includeNamespaces?: string[]
   includeObjects?: string[]
   excludeObjects?: string[]
@@ -146,6 +147,7 @@ export const configType = new ObjectType({
           {
             name: 'CPQ',
             enabled: false,
+            isNameBasedID: true,
             includeNamespaces: ['SBQQ'],
             includeObjects: [
               'Product2',

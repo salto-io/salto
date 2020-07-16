@@ -44,6 +44,7 @@ describe('custom object instances e2e', () => {
       {
         name: 'testDataManagementConfig',
         enabled: true,
+        isNameBasedID: false,
         includeObjects: [productTwoMetadataName],
       },
     ],

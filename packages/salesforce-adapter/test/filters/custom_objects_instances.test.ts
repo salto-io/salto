@@ -115,6 +115,7 @@ describe('Custom Object Instances filter', () => {
   const testNamespace = 'TestNamespace'
   const disabledNamespace = 'DisabledNamespace'
   const anotherNamespace = 'AnotherNamespace'
+  const nameBasedNamespace = 'NameBasedNamespace'
   const includeObjectName = 'IncludeThisObject'
   const excludeObjectName = 'TestNamespace__ExcludeMe__c'
   const excludeOverrideObjectName = 'ExcludeOverrideObject'
@@ -132,24 +133,34 @@ describe('Custom Object Instances filter', () => {
             {
               name: 'enabledWithNamespace',
               enabled: true,
+              isNameBasedID: false,
               includeNamespaces: [testNamespace],
               excludeObjects: [excludeObjectName],
             },
             {
               name: 'disabledWithNamespace',
               enabled: false,
+              isNameBasedID: false,
               includeNamespaces: [disabledNamespace],
             },
             {
               name: 'enabledWithNamespaceAndObject',
               enabled: true,
+              isNameBasedID: false,
               includeNamespaces: [anotherNamespace],
               includeObjects: [includeObjectName, excludeOverrideObjectName],
             },
             {
               name: 'enabledWithExcludeObject',
               enabled: true,
+              isNameBasedID: false,
               excludeObjects: [excludeOverrideObjectName],
+            },
+            {
+              name: 'enabledWithNameID',
+              enabled: true,
+              isNameBasedID: true,
+              includeNamespaces: [nameBasedNamespace],
             },
           ],
         } }

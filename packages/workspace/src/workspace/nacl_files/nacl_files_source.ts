@@ -37,6 +37,7 @@ import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
 
 import { Functions } from '../../parser/functions'
+import { createRemoveChange } from './mutil_env/projections'
 
 const { withLimitedConcurrency } = promises.array
 
@@ -236,12 +237,12 @@ const buildNaclFilesSource = (
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
     const isChangeHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
-        && isAdditionDiff(change)
+      && isAdditionDiff(change)
       && isType(change.data.after) // TODO: replace with isTopLevel
-        && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+      && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
 
 
-    const removeHiddenFieldsValues = (change: DetailedChange): DetailedChange => {
+    const removeHiddenTypesOrFieldsValues = (change: DetailedChange): DetailedChange => {
       if (change.id.idType === 'instance'
         && isAdditionDiff(change)
         && isInstanceElement(change.data.after)
@@ -259,12 +260,28 @@ const buildNaclFilesSource = (
           transformFunc: removeHiddenFieldValue,
           strict: false,
         }) || {}
+
+        return change
+      }
+
+      if (change.id.idType === 'attr'
+        && isAdditionDiff(change)
+        && change.id.getFullNameParts().length === 4
+        && change.id.name === CORE_ANNOTATIONS.HIDDEN
+        && change.data.after === true) {
+        const parentID = change.id.createTopLevelParentID().parent
+        return createRemoveChange(
+          true, // actually the value isn't relevant in remove change
+          parentID,
+          change.path
+        )
       }
       return change
     }
 
+
     const changesAfterHiddenRemoved = changes.filter(e => !isChangeHiddenType(e))
-      .map(e => removeHiddenFieldsValues(e))
+      .map(e => removeHiddenTypesOrFieldsValues(e))
 
 
     const getNaclFileData = async (filename: string): Promise<string> => {

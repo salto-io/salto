@@ -25,13 +25,15 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger } from '@salto-io/workspace'
+import { hiddenValues, merger } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 
 const { mergeElements } = merger
 
 const log = logger(module)
+
+const { removeHiddenValuesAndHiddenTypes } = hiddenValues
 
 export type FetchChange = {
   // The actual change to apply to the workspace
@@ -282,7 +284,7 @@ const calcFetchChanges = async (
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
-    workspaceElements,
+    removeHiddenValuesAndHiddenTypes(workspaceElements),
     mergedServiceElements
   ), 'finished to calculate service-workspace changes')
 

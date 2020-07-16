@@ -73,7 +73,14 @@ jobs:
 
       - run: yarn config set cache-folder /mnt/ramdisk/yarn-cache
 
-      - run: yarn --frozen-lockfile
+      - run: yarn
+
+      - run:
+          # As a workaround to the --frozen-lockfile flag not working with workspaces
+          # (see: https://github.com/yarnpkg/yarn/issues/4098)
+          # we use a regular `yarn` and add an explicit test that the yarn.lock file is unchanged
+          name: ensure yarn.lock file is up to date
+          command: "! git diff --name-only | grep yarn.lock"
 
       - run:
           name: fix eslint cache

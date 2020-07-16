@@ -14,14 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import {
-  Element, isInstanceElement, Values, ObjectType, Field, isPrimitiveType, Value, InstanceElement,
+  Element, isInstanceElement, Values, ObjectType, Field, isPrimitiveType, InstanceElement,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { isCustomObject, Types, apiName } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, CUSTOM_OBJECT_ID_FIELD } from '../constants'
+
+const { makeArray } = collections.array
 
 const replaceReferenceValues = (
   values: Values,
@@ -36,20 +39,29 @@ const replaceReferenceValues = (
     )
   )
 
-  const replacer = (val: Value, field: Field): Value => {
-    if (field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] === undefined
-        || !_.isArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO])) {
-      return val
-    }
-    const refToInstance = instances.find(instance =>
-      field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO].includes(apiName(instance.type, true))
-      && instance.value[CUSTOM_OBJECT_ID_FIELD] === val)
-    return (refToInstance === undefined) ? val : new ReferenceExpression(refToInstance.elemID)
-  }
+  const instancesByType = _.mapValues(
+    _.groupBy(
+      instances,
+      instance => apiName(instance.type, true)
+    ),
+    typeInstances =>
+      _.keyBy(
+        typeInstances,
+        inst => inst.value[CUSTOM_OBJECT_ID_FIELD]
+      )
+  ) as Record<string, Record<string, InstanceElement>>
 
-  const transformFunc: TransformFunc = ({ value, field }) => (
-    !_.isUndefined(field) && shouldReplace(field) ? replacer(value, field) : value
-  )
+  const transformFunc: TransformFunc = ({ value, field }) => {
+    if (_.isUndefined(field) || !shouldReplace(field)) {
+      return value
+    }
+    const refTo = makeArray(field?.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+    const refTarget = refTo
+      .map(typeName => instancesByType[typeName]?.[value])
+      .filter(lowerdashValues.isDefined)
+      .pop()
+    return refTarget === undefined ? value : new ReferenceExpression(refTarget.elemID)
+  }
 
   return transformValues(
     {
@@ -58,11 +70,12 @@ const replaceReferenceValues = (
       transformFunc,
       strict: false,
     }
-  ) || values
+  ) ?? values
 }
 
 const replaceLookupsWithReferences = (elements: Element[]): void => {
-  const customObjectInstances = elements.filter(isInstanceElement)
+  const customObjectInstances = elements
+    .filter(isInstanceElement)
     .filter(e => isCustomObject(e.type))
   customObjectInstances.forEach(instance => {
     instance.value = replaceReferenceValues(

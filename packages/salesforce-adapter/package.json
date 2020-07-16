@@ -43,7 +43,7 @@
     "jsforce": "https://github.com/salto-io/jsforce.git",
     "jsforce-types": "https://github.com/salto-io/jsforce-types.git",
     "jszip": "^3.2.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "requestretry": "^4.0.2",
     "stream": "0.0.2",
     "wu": "^2.1.0"

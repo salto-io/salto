@@ -35,7 +35,7 @@
     "@salto-io/logging": "0.1.19",
     "@salto-io/lowerdash": "0.1.19",
     "hubspot": "^2.3.8",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "request-promise": "^4.2.5",
     "requestretry": "^4.0.2"
   },

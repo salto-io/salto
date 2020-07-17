@@ -58,10 +58,12 @@ const mockCliTelementy: CliTelemetry = {
   stacktrace: () => jest.fn(),
 }
 
-const mockTelemetry = telemetrySender(
+const telemetry = telemetrySender(
   { url: 'http://0.0.0.0', token: '1234', enabled: false },
   { installationID: 'abcd', app: 'test' },
 )
+
+export const cleanup = async (): Promise<void> => telemetry.stop(0)
 
 export const runAddSalesforceService = async (
   workspaceDir: string, credentials: InstanceElement
@@ -139,7 +141,7 @@ export const runFetch = async (
     fetchOutputDir,
     true,
     false,
-    mockTelemetry,
+    telemetry,
     mockCliOutput(),
     mockSpinnerCreator([]),
     isolated,
@@ -173,7 +175,7 @@ export const runDeploy = async ({
     force,
     dryRun,
     detailedPlan,
-    getCliTelemetry(mockTelemetry, 'deploy'),
+    getCliTelemetry(telemetry, 'deploy'),
     output,
     mockSpinnerCreator([]),
     services

@@ -37,6 +37,7 @@ import {
   editNaclFile, loadValidWorkspace, runDeploy, runFetch, verifyChanges, verifyInstance,
   verifyObject, runEmptyPreview, runSalesforceLogin,
   runPreview,
+  cleanup as workspaceHelpersCleanup,
 } from './helpers/workspace'
 import { instanceExists, objectExists, getSalesforceCredsInstance } from './helpers/salesforce'
 
@@ -68,6 +69,8 @@ describe('cli e2e', () => {
       () => Promise.resolve('default')
     )
   })
+
+  afterAll(workspaceHelpersCleanup)
 
   const addModelNaclFile = `${__dirname}/../../e2e_test/NACL/add.nacl`
   const workspaceConfigFile = `${__dirname}/../../e2e_test/NACL/salto.config/workspace.nacl`

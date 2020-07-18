@@ -26,6 +26,7 @@ import {
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
+/* eslint-disable @typescript-eslint/camelcase */
 describe('Custom Object Instances filter', () => {
   let connection: Connection
   let client: SalesforceClient
@@ -53,6 +54,9 @@ describe('Custom Object Instances filter', () => {
       TestField: 'Test',
       Father: 'hijklmn',
       Grandfather: 'hijklmn',
+      Pricebook2Id: 'hijklmn',
+      SBQQ__Location__c: 'Quote',
+      SBQQ__DisplayOrder__c: 2,
     },
     {
       attributes: {
@@ -69,6 +73,9 @@ describe('Custom Object Instances filter', () => {
       TestField: 'testizen',
       Father: 'badId',
       Grandfather: 'abcdefg',
+      Pricebook2Id: 'abcdefg',
+      SBQQ__Location__c: 'Quote',
+      SBQQ__DisplayOrder__c: 3,
     },
   ]
 
@@ -165,6 +172,7 @@ describe('Custom Object Instances filter', () => {
               enabled: true,
               isNameBasedID: true,
               includeNamespaces: [nameBasedNamespace],
+              includeObjects: ['PricebookEntry', 'SBQQ__CustomAction__c'],
             },
           ],
         } }
@@ -427,6 +435,7 @@ describe('Custom Object Instances filter', () => {
 
   describe('When some CustomObjects are from the nameBasedID namespace', () => {
     let elements: Element[]
+
     const grandfatherObjectName = `${nameBasedNamespace}__grandfather__c`
     const grandfatherObject = createCustomObject(grandfatherObjectName)
 
@@ -440,6 +449,49 @@ describe('Custom Object Instances filter', () => {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
             [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandfatherObjectName],
+          },
+        },
+      }
+    )
+
+    const pricebookEntryName = 'PricebookEntry'
+    const pricebookEntryObject = createCustomObject(
+      pricebookEntryName,
+      {
+        Pricebook2Id: {
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [LABEL]: 'Pricebook2Id field',
+            [API_NAME]: 'Pricebook2Id',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandfatherObjectName],
+          },
+        },
+      }
+    )
+
+    const SBQQCustomActionName = 'SBQQ__CustomAction__c'
+    const SBQQCustomActionObject = createCustomObject(
+      SBQQCustomActionName,
+      {
+        SBQQ__Location__c: {
+          type: Types.primitiveDataTypes.Checkbox,
+          annotations: {
+            [LABEL]: 'Location checkbox field',
+            [API_NAME]: 'SBQQ__Location__c',
+            [FIELD_ANNOTATIONS.VALUE_SET]: [
+              {
+                fullName: 'Quote',
+                default: true,
+                label: 'Quote',
+              },
+            ],
+          },
+        },
+        SBQQ__DisplayOrder__c: {
+          type: Types.primitiveDataTypes.Number,
+          annotations: {
+            [LABEL]: 'Display order',
+            [API_NAME]: 'SBQQ__DisplayOrder__c',
           },
         },
       }
@@ -476,14 +528,17 @@ describe('Custom Object Instances filter', () => {
     )
 
     beforeEach(async () => {
-      elements = [grandfatherObject, fatherObject, grandsonObject, orphanObject]
+      elements = [
+        grandfatherObject, fatherObject, grandsonObject, orphanObject,
+        pricebookEntryObject, SBQQCustomActionObject,
+      ]
       await filter.onFetch(elements)
     })
 
     it('should add instances per namespaced object', () => {
       // 2 new instances per namespaced object because of TestCustomRecords's length
-      expect(elements.length).toEqual(12)
-      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(8)
+      expect(elements.length).toEqual(18)
+      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(12)
     })
 
     describe('grandfather object (no master)', () => {
@@ -544,6 +599,37 @@ describe('Custom Object Instances filter', () => {
 
       it('should base elemID on record name only', () => {
         expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
+      })
+    })
+
+    describe('PricebookEntry object (special case - Lookup)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === pricebookEntryObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on Pricebook2Id lookup name + the entry', () => {
+        const pricebookLookupName = TestCustomRecords[1].Name
+        const pricebookEntry = TestCustomRecords[0].Name
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${pricebookLookupName}___${pricebookEntry}`)
+      })
+    })
+
+    describe('SBQQ__CustomAction__c object (special case - base on record values besides name)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === SBQQCustomActionObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on Name + displayOrder + location', () => {
+        const recordName = TestCustomRecords[0].Name
+        const recordLocation = TestCustomRecords[0].SBQQ__Location__c
+        const recordDisplayOrder = TestCustomRecords[0].SBQQ__DisplayOrder__c
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${recordLocation}___${recordDisplayOrder}___${recordName}`)
       })
     })
   })

@@ -34,6 +34,8 @@ const log = logger(module)
 
 const masterDetailNamesSeparator = '___'
 
+// This will be exctracted to a config once we have more knowledge
+// on naming "patterns"
 const objectsToAdditionalNameFields: Record<string, string[]> = {
   PricebookEntry: ['Pricebook2Id'],
   // eslint-disable-next-line @typescript-eslint/camelcase

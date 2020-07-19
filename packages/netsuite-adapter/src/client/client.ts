@@ -27,7 +27,7 @@ import type {
 
 import { collections, decorators, hash } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
-import { mkdirp, readDir, readFile, writeFile } from '@salto-io/file'
+import { mkdirp, readDir, readFile, writeFile, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import he from 'he'
@@ -331,6 +331,11 @@ export default class NetsuiteClient {
     return { projectName, executor }
   }
 
+  private static async deleteProject(projectName: string): Promise<void> {
+    log.debug(`Deleting project: ${projectName}`)
+    await rm(NetsuiteClient.getProjectPath(projectName))
+  }
+
   @NetsuiteClient.logDecorator
   async getCustomObjects(typeNames: string[], fetchAllAtOnce: boolean):
     Promise<GetCustomObjectsResult> {
@@ -353,6 +358,7 @@ export default class NetsuiteClient {
           additionalFilename.split(FILE_SEPARATOR)[2], (await additionalFileContent).toString())
       })
     )
+    await NetsuiteClient.deleteProject(projectName)
     return { elements, failedTypes, failedToFetchAllAtOnce }
   }
 
@@ -505,11 +511,13 @@ export default class NetsuiteClient {
       p => p.endsWith(FOLDER_ATTRIBUTES_FILE_SUFFIX))
 
     const fileCabinetDirPath = NetsuiteClient.getFileCabinetDirPath(project.projectName)
+    const elements = (await Promise.all(
+      [transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
+        transformFolders(folderAttrsPaths, fileCabinetDirPath)]
+    )).flat()
+    await NetsuiteClient.deleteProject(project.projectName)
     return {
-      elements: (await Promise.all(
-        [transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
-          transformFolders(folderAttrsPaths, fileCabinetDirPath)]
-      )).flat(),
+      elements,
       failedPaths: importFilesResults.failedPaths,
     }
   }
@@ -532,6 +540,7 @@ export default class NetsuiteClient {
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
     await NetsuiteClient.runDeployCommands(project)
+    await NetsuiteClient.deleteProject(project.projectName)
   }
 
   private static async runDeployCommands({ executor }: Project): Promise<void> {

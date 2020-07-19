@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { readFile, readDir, writeFile, mkdirp } from '@salto-io/file'
+import { readFile, readDir, writeFile, mkdirp, rm } from '@salto-io/file'
 import osPath from 'path'
 import mockClient, { DUMMY_CREDENTIALS } from './client'
 import NetsuiteClient, {
@@ -47,11 +47,13 @@ jest.mock('@salto-io/file', () => ({
   }),
   writeFile: jest.fn(),
   mkdirp: jest.fn(),
+  rm: jest.fn(),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock
 const writeFileMock = writeFile as jest.Mock
 const mkdirpMock = mkdirp as jest.Mock
+const rmMock = rm as jest.Mock
 
 jest.mock('@salto-io/lowerdash', () => ({
   ...jest.requireActual('@salto-io/lowerdash'),
@@ -265,6 +267,7 @@ describe('netsuite client', () => {
       expect(failedTypes).toHaveLength(0)
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(3)
+      expect(rmMock).toHaveBeenCalledTimes(1)
       expect(customizationInfos).toHaveLength(2)
       expect(customizationInfos).toEqual([{
         typeName: 'TypeA',
@@ -304,6 +307,7 @@ describe('netsuite client', () => {
         return Promise.resolve({ status: 'SUCCESS' })
       })
       await expect(client.importFileCabinetContent([])).rejects.toThrow()
+      expect(rmMock).toHaveBeenCalledTimes(0)
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
@@ -417,6 +421,7 @@ describe('netsuite client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importFilesCommandMatcher)
       expect(elements).toHaveLength(2)
       expect(failedPaths).toEqual([failedPath])
+      expect(rmMock).toHaveBeenCalledTimes(1)
     })
 
     it('should succeed when having duplicated paths', async () => {
@@ -591,6 +596,7 @@ describe('netsuite client', () => {
         path: ['Templates', 'E-mail Templates', 'InnerFolder'],
       }])
       expect(failedPaths).toHaveLength(0)
+      expect(rmMock).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -708,6 +714,7 @@ describe('netsuite client', () => {
         expect(writeFileMock).toHaveBeenCalledTimes(1)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>')
+        expect(rmMock).toHaveBeenCalledTimes(1)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
@@ -737,6 +744,7 @@ describe('netsuite client', () => {
           '<file><description>file description</description></file>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
           'dummy file content')
+        expect(rmMock).toHaveBeenCalledTimes(1)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)

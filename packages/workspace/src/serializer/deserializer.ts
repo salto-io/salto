@@ -41,6 +41,9 @@ export const deserialize = async <T = unknown>(
   }
 
   function reviver(this: unknown, propName: string, propValue: unknown): unknown {
+    if (typeof propValue === 'string') {
+      return Buffer.from(propValue).toString()
+    }
     if (isStaticFile(propValue)) {
       onStaticFileDeserialized(propValue, this, propName)
     }

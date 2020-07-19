@@ -75,4 +75,23 @@ describe('strings', () => {
       })
     })
   })
+
+  describe('detachStrings', () => {
+    const { detachStrings } = strings
+
+    class MyClass { x = 100 }
+
+    const el1 = { a: 12, aString: '13', cycle: undefined as unknown, isUndefined: undefined }
+    const el2 = { foo: { anotherString: '14', f: (x: number): number => x * 2 }, myInstance: new MyClass() }
+    const r = [el1, el2]
+    el1.cycle = r
+
+    it('does not change input', () => {
+      expect(detachStrings(r)).toEqual(r)
+      expect(el1).toHaveProperty('isUndefined', undefined)
+      expect(el2.foo.f(3)).toEqual(6)
+      expect(el2.myInstance).toBeInstanceOf(MyClass)
+      expect(el2.myInstance.x).toEqual(100)
+    })
+  })
 })

@@ -27,7 +27,7 @@ import {
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues,
   naclCase, findElement, findElements, findObjectType, GetLookupNameFunc,
-  findInstances, flattenElementStr, valuesDeepSome, filterByID,
+  findInstances, valuesDeepSome, filterByID,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   safeJsonStringify,
 } from '../src/utils'
@@ -161,18 +161,6 @@ describe('Test utils.ts', () => {
       [INSTANCE_ANNOTATIONS.DEPENDS_ON]: valueRef,
     },
   )
-
-  const mockPrim = new PrimitiveType({
-    elemID: new ElemID('mockAdapter', 'prim'),
-    primitive: PrimitiveTypes.STRING,
-    annotationTypes: {
-      str: mockStrType,
-    },
-    annotations: {
-      str: 'STR',
-    },
-  })
-  const mockList = new ListType(mockPrim)
 
   describe('transformValues func', () => {
     let resp: Values
@@ -860,32 +848,6 @@ describe('Test utils.ts', () => {
     })
   })
 
-  describe('flattenElementStr function', () => {
-    it('should not modifiy an object type', () => {
-      const flatObj = flattenElementStr(mockType)
-      expect(flatObj).toEqual(mockType)
-    })
-
-    it('should not modify a primitive type', () => {
-      const flatPrim = flattenElementStr(mockPrim)
-      expect(flatPrim).toEqual(mockPrim)
-    })
-
-    it('should not modify an instance type', () => {
-      const flatInst = flattenElementStr(mockInstance)
-      expect(flatInst).toEqual(mockInstance)
-    })
-
-    it('should not modify a field', () => {
-      const flatField = flattenElementStr(mockType.fields.str)
-      expect(flatField).toEqual(mockType.fields.str)
-    })
-
-    it('should not modify a list type', () => {
-      const flatList = flattenElementStr(mockList)
-      expect(flatList).toEqual(mockList)
-    })
-  })
   describe('valuesDeepSome', () => {
     const predicate = (v: Value): boolean => v === 42
     it('should find if primitive', () => {

@@ -13,6 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { walkBottomUpDepthFirst } from './walker'
+
 export const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 export const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz'
 
@@ -36,3 +38,29 @@ const collatorOptions = {
 }
 
 export const stableCollator = Intl.Collator(collatorOptions.locale, collatorOptions)
+
+// This method solves a memory leak which takes place when we use slices
+// from a large string in order to populate the strings in the elements.
+// v8 will attempt to optimize the slicing operation by internally representing
+// the slices string as a pointer to the large string with a start and finish indexes
+// for the slice. As a result - the original string will not be evacuated from memory.
+// to solve this we need to force v8 to change the sliced string representation to a
+// regular string.
+export const detachString = (s: string): string => Buffer.from(s).toString()
+
+export const detachStrings = <T>(v: T): T => {
+  walkBottomUpDepthFirst(
+    v,
+    function replacer(propName, propValue) {
+      if (
+        typeof propValue === 'string'
+        /* istanbul ignore next */
+        && Object.getOwnPropertyDescriptor(this, propName)?.writable
+      ) {
+        this[propName] = detachString(propValue)
+      }
+    },
+  )
+
+  return v
+}

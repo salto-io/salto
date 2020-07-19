@@ -22,15 +22,17 @@ import {
   ADAPTER, FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange,
 } from '@salto-io/adapter-api'
 import {
-  applyInstancesDefaults, resolvePath, flattenElementStr,
+  applyInstancesDefaults, resolvePath,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { strings } from '@salto-io/lowerdash'
 import { merger, hiddenValues } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 
 const { mergeElements } = merger
 const { removeHiddenValuesAndHiddenTypes } = hiddenValues
+const { detachStrings } = strings
 
 const log = logger(module)
 
@@ -236,12 +238,12 @@ const fetchAndProcessMergeErrors = async (
         .map(async adapter => {
           const fetchResult = await adapter.fetch()
           // We need to flatten the elements string to avoid a memory leak. See docs
-          // of the flattenElementStr method for more details.
+          // of the detachStrings method for more details.
           const { updatedConfig } = fetchResult
           return {
-            elements: fetchResult.elements.map(flattenElementStr),
+            elements: detachStrings(fetchResult.elements),
             updatedConfig: updatedConfig
-              ? { config: flattenElementStr(updatedConfig.config), message: updatedConfig.message }
+              ? { config: detachStrings(updatedConfig.config), message: updatedConfig.message }
               : undefined,
           }
         })

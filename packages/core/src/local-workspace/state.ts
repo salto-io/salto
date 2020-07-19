@@ -20,7 +20,7 @@ import path from 'path'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
-import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
 
 const { serialize, deserialize } = serialization
@@ -42,7 +42,7 @@ export const localState = (filePath: string): state.State => {
     const [elementsData, updateDateData, pathIndexData] = text.split(EOL)
     const deserializedElements = (
       await log.time(() => deserialize<Element[]>(elementsData), 'state deserialization')
-    ).map(flattenElementStr)
+    )
     const elements = _.keyBy(deserializedElements, e => e.elemID.getFullName())
     const index = pathIndexData
       ? pathIndex.deserializedPathIndex(pathIndexData)

@@ -16,7 +16,7 @@
 import {
   Element, SaltoError, SaltoErrorSeverity,
 } from '@salto-io/adapter-api'
-import { flattenElementStr } from '@salto-io/adapter-utils'
+import { strings } from '@salto-io/lowerdash'
 import {
   SourceRange as InternalSourceRange,
   HclParseError,
@@ -26,6 +26,8 @@ import {
   Functions,
 } from './functions'
 import { SourceMap } from './source_map'
+
+const { detachStrings } = strings
 
 export { parseElemID } from './internal/converter/elements'
 export { IllegalReference } from './internal/converter/values'
@@ -65,7 +67,7 @@ export const parse = async (
     .map(error => restoreErrorOrigRanges(patchedSrc, error))
     .map(error => ({ severity: 'Error' as SaltoErrorSeverity, ...error }))
   return {
-    elements: elements.map(flattenElementStr),
+    elements: detachStrings(elements),
     sourceMap,
     errors: fixedErrors,
   }

@@ -16,10 +16,15 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalDiff,
+  CORE_ANNOTATIONS, isAdditionDiff,
+  isType, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import {
+  transformElement, TransformFunc,
+} from '@salto-io/adapter-utils'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -33,6 +38,9 @@ import {
   addHiddenValuesAndHiddenTypes,
 } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
+import {
+  createAddChange, createRemoveChange,
+} from './nacl_files/mutil_env/projections'
 
 const log = logger(module)
 
@@ -136,6 +144,75 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )
   )
 
+  const isChangeHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
+    && isAdditionDiff(change)
+    && isType(change.data.after)
+    && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+
+
+  const removeHiddenTypesOrFieldsValues = async (
+    change: DetailedChange
+  ): Promise<DetailedChange> => {
+    if (change.id.idType === 'instance'
+      && isAdditionDiff(change)
+      && isInstanceElement(change.data.after)
+    ) {
+      const instance = change.data.after as InstanceElement
+      const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
+        if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
+          return undefined
+        }
+        return value
+      }
+
+      change.data.after = transformElement({
+        element: instance,
+        transformFunc: removeHiddenFieldValue,
+        strict: false,
+      }) || {}
+
+      return change
+    }
+
+    if (change.id.idType === 'attr'
+      && isAdditionDiff(change)
+      && change.id.getFullNameParts().length === 4
+      && change.id.name === CORE_ANNOTATIONS.HIDDEN
+      && change.data.after === true) {
+      const parentID = change.id.createTopLevelParentID().parent
+      return createRemoveChange(
+        true, // actually the value isn't relevant in remove change
+        parentID,
+        change.path
+      )
+    }
+
+    if (change.id.idType === 'attr'
+      && isRemovalDiff(change)
+      && change.id.name === CORE_ANNOTATIONS.HIDDEN
+      && change.data.before === true) {
+      const topLevelParentID = change.id.createTopLevelParentID()
+
+      return createAddChange(
+        await state().get(topLevelParentID.parent), // The top level element
+        topLevelParentID.parent,
+      )
+    }
+    return change
+  }
+
+  const updateNaclFiles = async (
+    changes: DetailedChange[],
+    mode?: RoutingMode
+  ): Promise<void> => {
+    const changesAfterHiddenRemoved = await Promise.all(changes.filter(
+      change => !isChangeHiddenType(change)
+    )
+      .map(change => removeHiddenTypesOrFieldsValues(change)))
+    await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
+  }
+
+
   const getSourceFragment = async (
     sourceRange: SourceRange, subRange?: SourceRange): Promise<SourceFragment> => {
     const naclFile = await naclFilesSource.getNaclFile(sourceRange.filename)
@@ -219,7 +296,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       return naclFilesOnly ? isNaclFilesSourceEmpty : isNaclFilesSourceEmpty && isStateEmpty
     },
     setNaclFiles: naclFilesSource.setNaclFiles,
-    updateNaclFiles: naclFilesSource.updateNaclFiles,
+    updateNaclFiles,
     removeNaclFiles: naclFilesSource.removeNaclFiles,
     getSourceMap: naclFilesSource.getSourceMap,
     getSourceRanges: naclFilesSource.getSourceRanges,

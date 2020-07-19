@@ -16,11 +16,10 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, ElemID, ElementMap, Value, DetailedChange, isElement, isAdditionDiff,
-  CORE_ANNOTATIONS, InstanceElement, isInstanceElement, isType,
+  Element, ElemID, ElementMap, Value, DetailedChange, isElement,
 } from '@salto-io/adapter-api'
 import {
-  resolvePath, transformElement, TransformFunc,
+  resolvePath,
 } from '@salto-io/adapter-utils'
 import { promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
@@ -37,7 +36,6 @@ import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
 
 import { Functions } from '../../parser/functions'
-import { createRemoveChange } from './mutil_env/projections'
 
 const { withLimitedConcurrency } = promises.array
 
@@ -236,61 +234,12 @@ const buildNaclFilesSource = (
   }
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
-    const isChangeHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
-      && isAdditionDiff(change)
-      && isType(change.data.after) // TODO: replace with isTopLevel
-      && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
-
-
-    const removeHiddenTypesOrFieldsValues = (change: DetailedChange): DetailedChange => {
-      if (change.id.idType === 'instance'
-        && isAdditionDiff(change)
-        && isInstanceElement(change.data.after)
-      ) {
-        const instance = change.data.after as InstanceElement
-        const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
-          if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-            return undefined
-          }
-          return value
-        }
-
-        change.data.after = transformElement({
-          element: instance,
-          transformFunc: removeHiddenFieldValue,
-          strict: false,
-        }) || {}
-
-        return change
-      }
-
-      if (change.id.idType === 'attr'
-        && isAdditionDiff(change)
-        && change.id.getFullNameParts().length === 4
-        && change.id.name === CORE_ANNOTATIONS.HIDDEN
-        && change.data.after === true) {
-        const parentID = change.id.createTopLevelParentID().parent
-        return createRemoveChange(
-          true, // actually the value isn't relevant in remove change
-          parentID,
-          change.path
-        )
-      }
-      return change
-    }
-
-
-    const changesAfterHiddenRemoved = changes.filter(e => !isChangeHiddenType(e))
-      .map(e => removeHiddenTypesOrFieldsValues(e))
-
-
     const getNaclFileData = async (filename: string): Promise<string> => {
       const naclFile = await naclFilesStore.get(filename)
       return naclFile ? naclFile.buffer : ''
     }
 
-    const naclFiles = _(await Promise.all(changesAfterHiddenRemoved
-      .map(change => change.id)
+    const naclFiles = _(await Promise.all(changes.map(change => change.id)
       .map(elemID => getElementNaclFiles(elemID))))
       .flatten().uniq().value()
     const { parsedNaclFiles } = await getState()
@@ -305,7 +254,7 @@ const buildNaclFilesSource = (
       return acc
     }, new SourceMap())
 
-    const changesToUpdate = getChangesToUpdate(changesAfterHiddenRemoved, mergedSourceMap)
+    const changesToUpdate = getChangesToUpdate(changes, mergedSourceMap)
     const updatedNaclFiles = (await withLimitedConcurrency(
       _(changesToUpdate)
         .map(change => getChangeLocations(change, mergedSourceMap))

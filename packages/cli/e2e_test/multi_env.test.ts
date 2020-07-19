@@ -23,7 +23,19 @@ import { writeFile, rm } from '@salto-io/file'
 import { isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { addElements, objectExists, naclNameToSFName, instanceExists, removeElements, getSalesforceCredsInstance } from './helpers/salesforce'
-import { ensureFilesExist, runInit, runSetEnv, runFetch, runPreviewGetPlan, runAddSalesforceService, runCreateEnv, runDeploy, ensureFilesDontExist, getNaclFileElements } from './helpers/workspace'
+import {
+  ensureFilesExist,
+  runInit,
+  runSetEnv,
+  runFetch,
+  runPreviewGetPlan,
+  runAddSalesforceService,
+  runCreateEnv,
+  runDeploy,
+  ensureFilesDontExist,
+  getNaclFileElements,
+  cleanup as workspaceHelpersCleanup,
+} from './helpers/workspace'
 import * as templates from './helpers/templates'
 
 const { dumpElements } = parser
@@ -195,6 +207,7 @@ describe('multi env tests', () => {
     if (env2CredsLease.return) {
       await env2CredsLease.return()
     }
+    await workspaceHelpersCleanup()
   })
 
   describe('init envs', () => {

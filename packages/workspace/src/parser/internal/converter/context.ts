@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { types } from 'util'
+import isPromise from 'is-promise'
 import { Value } from '@salto-io/adapter-api'
 import { Functions } from '../../functions'
 import { ValuePromiseWatcher, isLexerToken, InternalParseRes, Token } from './types'
@@ -48,7 +48,7 @@ export const setErrorRecoveryMode = (): void => {
 }
 
 export const addValuePromiseWatcher = (parent: Value, key: string | number): void => {
-  if (types.isPromise(parent[key])) {
+  if (isPromise(parent[key])) {
     valuePromiseWatchers.push({ parent, key })
   }
 }

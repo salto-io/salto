@@ -18,7 +18,7 @@ declare module '@salto-io/suitecloud-cli' {
   import { Value, Values } from '@salto-io/adapter-api'
 
   interface SDKDownloadServiceI {
-    download(): Promise<void>
+    download(): Promise<{success: boolean; errors: string[]}>
   }
 
   export class CommandsMetadataService {

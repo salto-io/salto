@@ -27,7 +27,7 @@ jest.mock('../src/adapter')
 jest.mock('@salto-io/suitecloud-cli')
 
 const mockDownload = cli.SDKDownloadService.download as jest.Mock
-mockDownload.mockResolvedValue(undefined)
+mockDownload.mockResolvedValue({ errors: [], success: true })
 
 describe('NetsuiteAdapter creator', () => {
   const credentials = new InstanceElement(
@@ -130,10 +130,18 @@ describe('NetsuiteAdapter creator', () => {
         expect(mockDownload).toHaveBeenCalled()
       }
     })
-    it('when installation fails', async () => {
+    it('when installation fails with an expection', async () => {
       mockDownload.mockImplementationOnce(() => {
         throw new Error('FAILED')
       })
+      if (adapter.install) {
+        const res = await adapter.install()
+        expect(res.success).toBeFalsy()
+        expect(res.errors).toEqual(['FAILED'])
+      }
+    })
+    it('when installation fails with sdf errors in return value', async () => {
+      mockDownload.mockImplementationOnce(() => ({ errors: ['FAILED'], success: false }))
       if (adapter.install) {
         const res = await adapter.install()
         expect(res.success).toBeFalsy()

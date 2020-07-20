@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ServiceIds } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import * as cli from '@salto-io/suitecloud-cli'
 import { adapter, DEFAULT_SDF_CONCURRENCY } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
@@ -21,6 +21,7 @@ import NetsuiteAdapter from '../src/adapter'
 import {
   TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
 } from '../src/constants'
+import { mockGetElemIdFunc } from './utils'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -86,9 +87,6 @@ describe('NetsuiteAdapter creator', () => {
   })
 
   describe('adapter creation', () => {
-    const mockGetElemIdFunc = (adapterName: string, _serviceIds: ServiceIds, name: string):
-      ElemID => new ElemID(adapterName, name)
-
     it('should create the adapter correctly', () => {
       adapter.operations({ credentials, config, getElemIdFunc: mockGetElemIdFunc })
       expect(NetsuiteAdapter).toHaveBeenCalledWith({

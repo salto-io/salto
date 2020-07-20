@@ -26,6 +26,7 @@ import {
   ChangeDataType,
   isFieldChange,
   AdapterInstallResult,
+  isRemovalDiff,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -52,6 +53,7 @@ import {
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
+import { detailedCompare } from './core/plan/plan_item'
 
 const log = logger(module)
 
@@ -128,12 +130,24 @@ export const deploy = async (
     })
   }
 
-  const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
+  const postDeployAction = async (
+    item: PlanItem,
+    appliedChanges: ReadonlyArray<Change>
+  ): Promise<void> => {
+    console.log('%o', item)
     await promises.array.series(appliedChanges.map(change => async () => {
       const updatedElement = await getUpdatedElement(change)
       const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
         ? workspace.state().remove(updatedElement.elemID)
         : workspace.state().set(updatedElement)
+
+      if (!isRemovalDiff(change) && !isFieldChange(change)) {
+        const itemChange = item.items.get(`${updatedElement.elemID.getFullName()}/${change.action}`)
+        if (itemChange !== undefined && !isRemovalDiff(itemChange)) {
+          const detailedChanges = detailedCompare(itemChange.data.after, updatedElement)
+          console.log(detailedChanges)
+        }
+      }
       await stateUpdate
       changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
     }))

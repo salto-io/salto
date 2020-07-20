@@ -56,7 +56,7 @@ export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
+  postDeployAction: (item: PlanItem, appliedChanges: ReadonlyArray<Change>) => Promise<void>
 ): Promise<DeployError[]> => {
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
@@ -65,7 +65,7 @@ export const deployActions = async (
       try {
         const appliedChanges = await deployAction(item, adapters)
         reportProgress(item, 'finished')
-        await postDeployAction(appliedChanges)
+        await postDeployAction(item, appliedChanges)
       } catch (error) {
         reportProgress(item, 'error', error.message ?? String(error))
         throw error

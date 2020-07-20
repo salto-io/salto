@@ -425,8 +425,6 @@ export const generateServiceIdToStateElemId = (stateElements: Element[]): Record
 
 export const createElemIdGetter = (stateElements: Element[]): ElemIdGetter => {
   const serviceIdToStateElemId = generateServiceIdToStateElemId(stateElements)
-  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
-    const stateElemId = serviceIdToStateElemId[toServiceIdsString(serviceIds)]
-    return stateElemId || new ElemID(adapterName, name)
-  }
+  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
+    serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
 }

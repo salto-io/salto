@@ -144,7 +144,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )
   )
 
-  const isChangeHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
+  const isChangeNewHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
     && isAdditionDiff(change)
     && isType(change.data.after)
     && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
@@ -206,7 +206,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     mode?: RoutingMode
   ): Promise<void> => {
     const changesAfterHiddenRemoved = await Promise.all(changes.filter(
-      change => !isChangeHiddenType(change)
+      change => !isChangeNewHiddenType(change)
     )
       .map(change => removeHiddenTypesOrFieldsValues(change)))
     await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)

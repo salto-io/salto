@@ -38,6 +38,15 @@ type salesforce.lead {
   salesforce.text empty {}
 }
 
+type salesforce.AccountIntelligenceSettings {
+  boolean enableAccountLogos {
+  }
+  boolean enableAutomatedAccountFields {
+  }
+  boolean enableNewsStories {
+  }
+}
+
 type salesforce.WithAnnotationsBlock {
   annotations {
     string firstAnnotation {

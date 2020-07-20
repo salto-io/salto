@@ -22,6 +22,10 @@ import {
 import {
   findElement,
 } from '@salto-io/adapter-utils'
+// eslint-disable-next-line no-restricted-imports
+import {
+  METADATA_TYPE,
+} from '@salto-io/salesforce-adapter/dist/src/constants'
 import { WorkspaceConfigSource } from '../../src/workspace/workspace_config_source'
 import { ConfigSource } from '../../src/workspace/config_source'
 import { naclFilesSource, NaclFilesSource } from '../../src/workspace/nacl_files'
@@ -299,6 +303,84 @@ describe('workspace', () => {
       },
     )
 
+    const queueSobjectHiddenSubType = new ObjectType({
+      elemID: new ElemID('salesforce', 'QueueSobject', 'type', ''),
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+        [METADATA_TYPE]: 'QueueSobject',
+      },
+      path: ['salesforce', 'Types', 'Subtypes', 'QueueSobject'],
+    })
+
+    queueSobjectHiddenSubType.fields.str = new Field(
+      queueSobjectHiddenSubType,
+      'str',
+      BuiltinTypes.STRING,
+    )
+
+
+    const accountInsightsSettingsType = new ObjectType({
+      elemID: new ElemID('salesforce', 'AccountInsightsSettings', 'type'),
+      annotations: {
+        [METADATA_TYPE]: 'AccountInsightsSettings',
+      },
+      path: ['salesforce', 'Types', 'AccountInsightsSettings'],
+    })
+
+    const queueHiddenType = new ObjectType({
+      elemID: new ElemID('salesforce', 'Queue', 'type', ''),
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+        [METADATA_TYPE]: 'Queue',
+      },
+      fields: {
+        queueSobjectHidden: new Field(
+          queueSobjectHiddenSubType,
+          'queueSobjectHidden',
+          queueSobjectHiddenSubType,
+          {
+            [CORE_ANNOTATIONS.HIDDEN]: true,
+          },
+        ),
+        queueSobjectNotHidden: new Field(
+          queueSobjectHiddenSubType,
+          'queueSobjectNotHidden',
+          queueSobjectHiddenSubType,
+          {},
+        ),
+        numHidden: new Field(
+          queueSobjectHiddenSubType,
+          'numHidden',
+          BuiltinTypes.NUMBER,
+          {
+            [CORE_ANNOTATIONS.HIDDEN]: true,
+          },
+        ),
+        boolNotHidden: new Field(
+          queueSobjectHiddenSubType,
+          'boolNotHidden',
+          BuiltinTypes.BOOLEAN,
+        ),
+      },
+      path: ['salesforce', 'Types', 'Queue'],
+      isSettings: false,
+    })
+
+    const queueInstance = new InstanceElement(
+      'queueInstance',
+      queueHiddenType,
+      {
+        queueSobjectHidden: {
+          str: 'text',
+        },
+        queueSobjectNotHidden: {
+          str: 'text2',
+        },
+        numHidden: 123,
+        boolNotHidden: false,
+      },
+      ['Records', 'Queue', 'queueInstance'],
+    )
     const changes: DetailedChange[] = [
       {
         path: ['file'],
@@ -425,7 +507,53 @@ describe('workspace', () => {
         action: 'add',
         data: { after: BuiltinTypes.NUMBER },
       },
+      { // new Hidden type (should be removed)
+        id: new ElemID('salesforce', 'Queue', 'type', ''),
+        action: 'add',
+        data: {
+          after: queueHiddenType,
+        },
+      },
+      { // new Hidden (sub) type (should be removed)
+        id: new ElemID('salesforce', 'QueueSobject', 'type', ''),
+        action: 'add',
+        data: {
+          after: queueSobjectHiddenSubType,
+        },
+      },
+      { // when Hidden type change to be not hidden
+        id: new ElemID('salesforce', 'AccountInsightsSettings', 'attr', '_hidden'),
+        action: 'remove',
+        data: {
+          before: true,
+        },
+      },
+      { // when type change to be hidden
+        id: new ElemID('salesforce', 'AccountIntelligenceSettings', 'attr', '_hidden'),
+        action: 'add',
+        data: {
+          after: true,
+        },
+        path: ['salesforce', 'Types', 'AccountIntelligenceSettings'],
+      },
+      { // new instance
+        id: new ElemID('salesforce', 'Queue', 'instance', 'queueInstance'),
+        action: 'add',
+        data: {
+          after: queueInstance,
+        },
+      },
     ]
+
+    // New elements
+    let newHiddenType: ObjectType
+    let newHiddenSubType: ObjectType
+    let newNotHiddenType: ObjectType
+    let newInstance: InstanceElement
+
+    // Changed elements
+    let typeBecameNotHidden: ObjectType
+    let typeBecameHidden: ObjectType
 
     let lead: ObjectType
     let elemMap: Record<string, Element>
@@ -433,10 +561,41 @@ describe('workspace', () => {
     const dirStore = mockDirStore()
 
     beforeAll(async () => {
-      workspace = await createWorkspace(dirStore)
+      const getResultMock = (_id: ElemID):
+        Promise<ObjectType> => Promise.resolve(
+        accountInsightsSettingsType
+      )
+      const mockGet = jest.fn().mockImplementation(getResultMock)
+      const mockState = {
+        get: mockGet,
+        getAll: jest.fn().mockImplementation(() => Promise.resolve([])),
+      }
+
+      workspace = await createWorkspace(dirStore, mockState as unknown as State)
+
+      // Ensure workspace elements contains AccountIntelligenceSettings
+      expect(
+        getElemMap(
+          await workspace.elements()
+        )['salesforce.AccountIntelligenceSettings'] as ObjectType
+      )
+        .toBeDefined()
+
       await workspace.updateNaclFiles(changes)
+      expect(mockGet).toHaveBeenCalledTimes(1)
       elemMap = getElemMap(await workspace.elements())
       lead = elemMap['salesforce.lead'] as ObjectType
+
+      // New types (first time returned from service)
+      newHiddenType = elemMap['salesforce.Queue'] as ObjectType
+      newHiddenSubType = elemMap['salesforce.QueueSobject'] as ObjectType
+      newNotHiddenType = elemMap['salesforce.new_elem'] as ObjectType
+
+      // Changed types
+      typeBecameNotHidden = elemMap['salesforce.AccountInsightsSettings'] as ObjectType
+      typeBecameHidden = elemMap['salesforce.AccountIntelligenceSettings'] as ObjectType
+
+      newInstance = elemMap['salesforce.Queue.instance.queueInstance'] as InstanceElement
     })
 
     it('should not cause parse errors', async () => {
@@ -509,6 +668,38 @@ describe('workspace', () => {
       const myFormula = /'''\nThis\nis\nmultiline\n'''/
       expect(setNaclFile.mock.calls[0][0].buffer).toMatch(myFormula)
     })
+
+    it('should remove new hidden types', () => {
+      expect(newHiddenType).toBeUndefined()
+      expect(newHiddenSubType).toBeUndefined()
+    })
+
+    it('should not remove new type', () => {
+      expect(newNotHiddenType).toBeDefined()
+    })
+
+    it('should add the type that change from hidden to not hidden ', () => {
+      expect(typeBecameNotHidden).toBeDefined()
+      expect(typeBecameNotHidden).toEqual(accountInsightsSettingsType)
+    })
+
+    it('should remove the type that became to be hidden', () => {
+      expect(typeBecameHidden).toBeUndefined()
+    })
+
+    it('should add new instance without hidden fields values', () => {
+      expect(newInstance).toBeDefined()
+      expect(newInstance).not.toEqual(queueInstance)
+
+      // Hidden fields values should be undefined
+      expect(newInstance.value.queueSobjectHidden).toBeUndefined()
+      expect(newInstance.value.numHidden).toBeUndefined()
+
+      // Not hidden fields values should be defined
+      expect(newInstance.value.queueSobjectNotHidden).toBeDefined()
+      expect(newInstance.value.boolNotHidden).toEqual(false)
+    })
+
     it('should not fail in case one of the changes fails', async () => {
       jest.spyOn(dump, 'dumpValues').mockImplementationOnce(() => { throw new Error('failed') })
       const change1: DetailedChange = {

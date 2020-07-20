@@ -52,8 +52,8 @@ describe('Custom Object Instances filter', () => {
       FirstName: 'First',
       LastName: 'Last',
       TestField: 'Test',
-      Father: 'hijklmn',
-      Grandfather: 'hijklmn',
+      Parent: 'hijklmn',
+      Grandparent: 'hijklmn',
       Pricebook2Id: 'hijklmn',
       SBQQ__Location__c: 'Quote',
       SBQQ__DisplayOrder__c: 2,
@@ -71,8 +71,8 @@ describe('Custom Object Instances filter', () => {
       FirstName: 'Firstizen',
       LastName: 'Lastizen',
       TestField: 'testizen',
-      Father: 'badId',
-      Grandfather: 'abcdefg',
+      Parent: 'badId',
+      Grandparent: 'abcdefg',
       Pricebook2Id: 'abcdefg',
       SBQQ__Location__c: 'Quote',
       SBQQ__DisplayOrder__c: 3,
@@ -436,19 +436,19 @@ describe('Custom Object Instances filter', () => {
   describe('When some CustomObjects are from the nameBasedID namespace', () => {
     let elements: Element[]
 
-    const grandfatherObjectName = `${nameBasedNamespace}__grandfather__c`
-    const grandfatherObject = createCustomObject(grandfatherObjectName)
+    const grandparentObjectName = `${nameBasedNamespace}__grandparent__c`
+    const grandparentObject = createCustomObject(grandparentObjectName)
 
-    const fatherObjectName = `${nameBasedNamespace}__father__c`
-    const fatherObject = createCustomObject(
-      fatherObjectName,
+    const parentObjectName = `${nameBasedNamespace}__parent__c`
+    const parentObject = createCustomObject(
+      parentObjectName,
       {
-        Grandfather: {
+        Grandparent: {
           type: Types.primitiveDataTypes.MasterDetail,
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandfatherObjectName],
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
           },
         },
       }
@@ -463,7 +463,7 @@ describe('Custom Object Instances filter', () => {
           annotations: {
             [LABEL]: 'Pricebook2Id field',
             [API_NAME]: 'Pricebook2Id',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandfatherObjectName],
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
           },
         },
       }
@@ -501,12 +501,12 @@ describe('Custom Object Instances filter', () => {
     const grandsonObject = createCustomObject(
       grandsonObjectName,
       {
-        Father: {
+        Parent: {
           type: Types.primitiveDataTypes.MasterDetail,
           annotations: {
             [LABEL]: 'master field',
             [API_NAME]: 'MasterField',
-            [FIELD_ANNOTATIONS.REFERENCE_TO]: [fatherObjectName],
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [parentObjectName],
           },
         },
       }
@@ -516,7 +516,7 @@ describe('Custom Object Instances filter', () => {
     const orphanObject = createCustomObject(
       orphanObjectName,
       {
-        Father: {
+        Parent: {
           type: Types.primitiveDataTypes.MasterDetail,
           annotations: {
             [LABEL]: 'master field',
@@ -529,7 +529,7 @@ describe('Custom Object Instances filter', () => {
 
     beforeEach(async () => {
       elements = [
-        grandfatherObject, fatherObject, grandsonObject, orphanObject,
+        grandparentObject, parentObject, grandsonObject, orphanObject,
         pricebookEntryObject, SBQQCustomActionObject,
       ]
       await filter.onFetch(elements)
@@ -541,11 +541,11 @@ describe('Custom Object Instances filter', () => {
       expect(elements.filter(e => isInstanceElement(e)).length).toEqual(12)
     })
 
-    describe('grandfather object (no master)', () => {
+    describe('grandparent object (no master)', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === grandfatherObject
+          e => isInstanceElement(e) && e.type === grandparentObject
         ) as InstanceElement[]
       })
 
@@ -554,22 +554,22 @@ describe('Custom Object Instances filter', () => {
       })
     })
 
-    describe('father object (master is grandfather)', () => {
+    describe('parent object (master is grandparent)', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
-          e => isInstanceElement(e) && e.type === fatherObject
+          e => isInstanceElement(e) && e.type === parentObject
         ) as InstanceElement[]
       })
 
-      it('should base elemID on grandfatherName + father', () => {
-        const grandfatherName = TestCustomRecords[1].Name
-        const fatherName = TestCustomRecords[0].Name
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandfatherName}___${fatherName}`)
+      it('should base elemID on grandparentName + parent', () => {
+        const grandparentName = TestCustomRecords[1].Name
+        const parentName = TestCustomRecords[0].Name
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}`)
       })
     })
 
-    describe('grandson object (master is father who has grandfather as master)', () => {
+    describe('grandson object (master is parent who has grandparent as master)', () => {
       let instances: InstanceElement[]
       beforeEach(() => {
         instances = elements.filter(
@@ -577,14 +577,14 @@ describe('Custom Object Instances filter', () => {
         ) as InstanceElement[]
       })
 
-      it('should base elemID on grandfatherName + father + grandson if all exist', () => {
-        const grandfatherName = TestCustomRecords[0].Name
-        const fatherName = TestCustomRecords[1].Name
+      it('should base elemID on grandparentName + parent + grandson if all exist', () => {
+        const grandparentName = TestCustomRecords[0].Name
+        const parentName = TestCustomRecords[1].Name
         const grandsonName = TestCustomRecords[0].Name
-        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandfatherName}___${fatherName}___${grandsonName}`)
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}___${grandsonName}`)
       })
 
-      it('should base elemID on grandon name only if no record with references father id', () => {
+      it('should base elemID on grandon name only if no record with references parent id', () => {
         expect(instances[1].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[1].Name}`)
       })
     })

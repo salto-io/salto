@@ -15,11 +15,11 @@
 */
 import { ElemID, InstanceElement, ObjectType, ServiceIds } from '@salto-io/adapter-api'
 import * as cli from '@salto-io/suitecloud-cli'
-import { adapter } from '../src/adapter_creator'
+import { adapter, DEFAULT_SDF_CONCURRENCY } from '../src/adapter_creator'
 import NetsuiteClient from '../src/client/client'
 import NetsuiteAdapter from '../src/adapter'
 import {
-  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+  TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE, SDF_CONCURRENCY_LIMIT,
 } from '../src/constants'
 
 jest.mock('../src/client/client')
@@ -40,6 +40,7 @@ describe('NetsuiteAdapter creator', () => {
     },
   )
 
+  const sdfConcurrencyLimit = 2
   const config = new InstanceElement(
     ElemID.CONFIG_NAME,
     adapter.configType as ObjectType,
@@ -47,6 +48,7 @@ describe('NetsuiteAdapter creator', () => {
       [TYPES_TO_SKIP]: ['test1'],
       [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
       [FETCH_ALL_TYPES_AT_ONCE]: false,
+      [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
       notExist: ['not exist'],
     }
   )
@@ -65,9 +67,20 @@ describe('NetsuiteAdapter creator', () => {
 
   describe('client creation', () => {
     it('should create the client correctly', () => {
-      adapter.operations({ credentials })
+      adapter.operations({ credentials, config })
       expect(NetsuiteClient).toHaveBeenCalledWith({
         credentials: credentials.value,
+        sdfConcurrencyLimit,
+      })
+    })
+
+    it('should create the client with default SDF_CONCURRENCY_LIMIT', () => {
+      const configWithoutConcurrencyLimit = config.clone()
+      delete configWithoutConcurrencyLimit.value[SDF_CONCURRENCY_LIMIT]
+      adapter.operations({ credentials, config: configWithoutConcurrencyLimit })
+      expect(NetsuiteClient).toHaveBeenCalledWith({
+        credentials: credentials.value,
+        sdfConcurrencyLimit: DEFAULT_SDF_CONCURRENCY,
       })
     })
   })
@@ -84,6 +97,7 @@ describe('NetsuiteAdapter creator', () => {
           [TYPES_TO_SKIP]: ['test1'],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^/Templates.*'],
           [FETCH_ALL_TYPES_AT_ONCE]: false,
+          [SDF_CONCURRENCY_LIMIT]: sdfConcurrencyLimit,
         },
         getElemIdFunc: mockGetElemIdFunc,
       })

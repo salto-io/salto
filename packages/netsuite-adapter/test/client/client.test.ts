@@ -310,9 +310,9 @@ describe('netsuite client', () => {
       expect(rmMock).toHaveBeenCalledTimes(0)
     })
 
-    it('should fail when SETUP_ACCOUNT has failed', async () => {
+    it('should fail when LIST_FILES has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
+        if (context.commandName === COMMANDS.LIST_FILES) {
           return Promise.resolve({ status: 'ERROR' })
         }
         return Promise.resolve({ status: 'SUCCESS' })
@@ -320,9 +320,9 @@ describe('netsuite client', () => {
       await expect(client.importFileCabinetContent([])).rejects.toThrow()
     })
 
-    it('should fail when LIST_FILES has failed', async () => {
+    it('should fail when SETUP_ACCOUNT has failed', async () => {
       mockExecuteAction.mockImplementation(context => {
-        if (context.commandName === COMMANDS.LIST_FILES) {
+        if (context.commandName === COMMANDS.SETUP_ACCOUNT) {
           return Promise.resolve({ status: 'ERROR' })
         }
         return Promise.resolve({ status: 'SUCCESS' })

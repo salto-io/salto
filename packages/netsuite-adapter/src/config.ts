@@ -16,10 +16,12 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes,
+  InstanceElement, ElemID, Value, ObjectType, ListType, BuiltinTypes, CORE_ANNOTATIONS,
+  createRestriction,
 } from '@salto-io/adapter-api'
 import {
   FETCH_ALL_TYPES_AT_ONCE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, NETSUITE,
+  SDF_CONCURRENCY_LIMIT,
 } from './constants'
 
 const { makeArray } = collections.array
@@ -37,6 +39,14 @@ export const configType = new ObjectType({
     [FETCH_ALL_TYPES_AT_ONCE]: {
       type: BuiltinTypes.BOOLEAN,
     },
+    [SDF_CONCURRENCY_LIMIT]: {
+      type: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
+        }),
+      },
+    },
   },
 })
 
@@ -44,6 +54,7 @@ export type NetsuiteConfig = {
   [TYPES_TO_SKIP]?: string[]
   [FILE_PATHS_REGEX_SKIP_LIST]?: string[]
   [FETCH_ALL_TYPES_AT_ONCE]?: boolean
+  [SDF_CONCURRENCY_LIMIT]?: number
 }
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite. '
@@ -79,6 +90,7 @@ export const getConfigFromConfigChanges = (failedToFetchAllAtOnce: boolean, fail
         .concat(makeArray(suggestions[FILE_PATHS_REGEX_SKIP_LIST])),
       [FETCH_ALL_TYPES_AT_ONCE]: suggestions[FETCH_ALL_TYPES_AT_ONCE]
         ?? currentConfig[FETCH_ALL_TYPES_AT_ONCE],
+      [SDF_CONCURRENCY_LIMIT]: currentConfig[SDF_CONCURRENCY_LIMIT],
     }
   )
 }

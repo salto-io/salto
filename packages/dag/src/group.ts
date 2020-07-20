@@ -41,6 +41,7 @@ GroupedNodeMap<T> => log.time(() => {
       const mergeCandidate = mergeCandidates.get(key)
       if (mergeCandidate !== undefined) {
         const candidateDeps = new Set(
+          // Skip edges to mergeCandidate to avoid self reference cycle
           wu.chain(newDeps, graph.get(mergeCandidate)).filter(dep => dep !== mergeCandidate)
         )
         if (!graph.doesCreateCycle(new Map([[mergeCandidate, candidateDeps]]), mergeCandidate)) {

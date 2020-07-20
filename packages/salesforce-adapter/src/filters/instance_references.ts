@@ -29,7 +29,6 @@ import { apiName, isCustomObject, metadataType } from '../transformers/transform
 export type ApiNameMapping = Record<string, Record<string, ElemID>>
 
 const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
-  [new ElemID(SALESFORCE, 'Role', 'field', 'parentRole'), 'Role'],
   [new ElemID(SALESFORCE, 'ProfileApplicationVisibility', 'field', 'application'), 'CustomApplication'],
   [new ElemID(SALESFORCE, 'ProfileLayoutAssignment', 'field', 'layout'), 'Layout'],
   [new ElemID(SALESFORCE, 'ProfileFlowAccess', 'field', 'flow'), 'Flow'],
@@ -41,7 +40,6 @@ const fieldToTypeMappingDefs: Array<[ElemID, string]> = [
   [new ElemID(SALESFORCE, 'ProfileFieldLevelSecurity', 'field', 'field'), CUSTOM_FIELD],
   [new ElemID(SALESFORCE, 'ProfileObjectPermissions', 'field', 'object'), CUSTOM_OBJECT],
   [new ElemID(SALESFORCE, 'FlowActionCall', 'field', 'actionName'), 'WorkflowAlert'],
-  [new ElemID(SALESFORCE, 'WorkflowAlert', 'field', 'template'), 'EmailTemplate'],
   [new ElemID(SALESFORCE, 'WorkflowEmailRecipient', 'field', 'recipient'), 'Role'],
   [new ElemID(SALESFORCE, 'FilterItem', 'field', 'field'), CUSTOM_FIELD],
   [new ElemID(SALESFORCE, 'DashboardComponent', 'field', 'report'), 'Report'],

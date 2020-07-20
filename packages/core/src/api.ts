@@ -31,7 +31,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, hiddenValues } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -52,8 +52,6 @@ import {
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
-
-const { addHiddenValuesAndHiddenTypes } = hiddenValues
 
 const log = logger(module)
 
@@ -90,10 +88,7 @@ export const preview = async (
   const stateElements = await workspace.state().getAll()
   return getPlan({
     before: filterElementsByServices(stateElements, services),
-    after: addHiddenValuesAndHiddenTypes(
-      filterElementsByServices(await workspace.elements(), services),
-      stateElements
-    ),
+    after: filterElementsByServices(await workspace.elements(), services),
     changeValidators: getAdapterChangeValidators(),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(),

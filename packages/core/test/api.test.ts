@@ -31,6 +31,10 @@ import {
   DetailedChange,
 } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
+// eslint-disable-next-line no-restricted-imports
+import {
+  addHiddenValuesAndHiddenTypes,
+} from '@salto-io/workspace/dist/src/workspace/hidden_values'
 import * as api from '../src/api'
 
 import * as plan from '../src/core/plan'
@@ -63,13 +67,25 @@ const mockConfigInstance = new InstanceElement(ElemID.CONFIG_NAME, mockConfigTyp
   sandbox: false,
 })
 
-const mockWorkspace = (elements: Element[] = [],
-  name?: string,
-  index?: workspace.pathIndex.PathIndex,
-  stateElements?: Element[]): workspace.Workspace => {
+const mockWorkspace = ({
+  elements = [],
+  name = undefined,
+  index = undefined,
+  stateElements = undefined,
+}: {
+  elements?: Element[]
+  name?: string
+  index?: workspace.pathIndex.PathIndex
+  stateElements?: Element[]
+}): workspace.Workspace => {
   const state = mockState(SERVICES, stateElements || elements, index)
   return {
-    elements: () => Promise.resolve(elements),
+    elements: async () => Promise.resolve(
+      addHiddenValuesAndHiddenTypes(
+        elements,
+        await state.getAll()
+      )
+    ),
     name,
     envs: () => ['default'],
     currentEnv: 'default',
@@ -104,7 +120,14 @@ jest.mock('@salto-io/workspace', () => ({
       _defaultEnvName: string,
       workspaceName?: string
     ):
-      Promise<workspace.Workspace> => Promise.resolve(mockWorkspace([], workspaceName))
+      Promise<workspace.Workspace> => Promise.resolve(
+      mockWorkspace(
+        {
+          elements: [],
+          name: workspaceName,
+        }
+      )
+    )
   ),
 }))
 
@@ -153,7 +176,7 @@ describe('api.ts', () => {
     })
 
     const stateElements = [{ elemID: new ElemID(mockService, 'test') }]
-    const ws = mockWorkspace()
+    const ws = mockWorkspace({})
     const mockFlush = ws.flush as jest.Mock
     const mockedState = { ...mockState(), list: jest.fn().mockResolvedValue(stateElements) }
     ws.state = jest.fn().mockReturnValue(mockedState)
@@ -196,7 +219,12 @@ describe('api.ts', () => {
     workspaceInstance.value = { regField: 'regValue' }
 
     const workspaceElements = [workspaceInstance, typeWithHiddenField, variable]
-    const ws = mockWorkspace(workspaceElements)
+    const ws = mockWorkspace(
+      {
+        elements: workspaceElements,
+        stateElements,
+      }
+    )
     const mockFlush = ws.flush as jest.Mock
     const mockedState = { ...mockState(), getAll: jest.fn().mockResolvedValue(stateElements) }
     ws.state = jest.fn().mockReturnValue(mockedState)
@@ -244,7 +272,9 @@ describe('api.ts', () => {
     const mockedToChangesWithPath = fetch.toChangesWithPath as jest.Mock
     mockedToChangesWithPath.mockImplementation(() => (change: fetch.FetchChange) => [change])
 
-    const ws = mockWorkspace(mockElements.getAllElements())
+    const ws = mockWorkspace({
+      elements: mockElements.getAllElements(),
+    })
     const mockFlush = ws.flush as jest.Mock
     let result: api.DeployResult
 
@@ -327,7 +357,9 @@ describe('api.ts', () => {
         primitive: PrimitiveTypes.STRING,
       }),
     ]
-    const ws = mockWorkspace(elements)
+    const ws = mockWorkspace({
+      elements,
+    })
     beforeEach(() => {
       jest.clearAllMocks()
     })
@@ -377,7 +409,7 @@ describe('api.ts', () => {
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
           validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
         }
-        const wsp = mockWorkspace()
+        const wsp = mockWorkspace({})
         await api.addAdapter(wsp, serviceName)
         expect((wsp.addService as jest.Mock).call).toHaveLength(1)
       })
@@ -401,13 +433,13 @@ describe('api.ts', () => {
       adapterCreators[serviceName] = mockAdapterWithInstall
 
       it('should invoke the adapter install method', async () => {
-        const wsp = mockWorkspace()
+        const wsp = mockWorkspace({})
         await api.addAdapter(wsp, serviceName)
         expect(mockAdapterWithInstall.install).toHaveBeenCalled()
       })
       it('should throw an error if the adapter failed to install', async () => {
         mockAdapterWithInstall.install.mockResolvedValueOnce({ success: false })
-        const wsp = mockWorkspace()
+        const wsp = mockWorkspace({})
         return expect(api.addAdapter(wsp, serviceName)).rejects
           .toThrow()
       })
@@ -417,7 +449,12 @@ describe('api.ts', () => {
   describe('restore', () => {
     it('should return all changes as fetch changes', async () => {
       const index = workspace.pathIndex.createPathIndex([])
-      const ws = mockWorkspace([], 'restore', index, [])
+      const ws = mockWorkspace({
+        elements: [],
+        name: 'restore',
+        index,
+        stateElements: [],
+      })
       const changes = await api.restore(ws)
       expect(changes).toHaveLength(1)
       expect(_.keys(changes[0])).toEqual(['change', 'serviceChange'])

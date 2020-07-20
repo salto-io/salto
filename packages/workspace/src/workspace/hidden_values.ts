@@ -36,17 +36,6 @@ export const addHiddenValuesAndHiddenTypes = (
 ): Element[] => {
   const stateElementsMap = _.keyBy(stateElements, e => e.elemID.getFullName())
 
-  // const returnHiddenTypeForInstance = (instance: InstanceElement): ObjectType => {
-  //   const stateType = stateElementsMap[instance.type.elemID.getFullName()]
-  //   if (stateType !== undefined
-  //         && isHiddenType(stateType)
-  //             && isObjectType(stateType)) {
-  //     // return the appropriate (hidden) type
-  //     return stateType
-  //   }
-  //   return instance.type
-  // }
-
   const generateValuesWithHiddenFields = (instance: InstanceElement): Values => {
     const stateElement = stateElementsMap[instance.elemID.getFullName()]
     if (isInstanceElement(stateElement)) {

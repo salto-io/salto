@@ -22,9 +22,6 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import {
-  transformElement, TransformFunc,
-} from '@salto-io/adapter-utils'
 import { validateElements } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
 import { ConfigSource } from './config_source'
@@ -36,6 +33,7 @@ import { Errors, ServiceDuplicationError, EnvDuplicationError,
 import { EnvConfig } from './config/workspace_config_types'
 import {
   addHiddenValuesAndHiddenTypes,
+  removeHiddenValuesForInstance,
 } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
 import {
@@ -144,36 +142,28 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )
   )
 
+  // Determine if change is new type addition (add action)
   const isChangeNewHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
     && isAdditionDiff(change)
     && isType(change.data.after)
     && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
 
 
-  const removeHiddenTypesOrFieldsValues = async (
+  const handleHiddenForTypesAndInstances = async (
     change: DetailedChange
   ): Promise<DetailedChange> => {
+    // Handling new instance addition: removing all hidden (fields) values
     if (change.id.idType === 'instance'
       && isAdditionDiff(change)
       && isInstanceElement(change.data.after)
     ) {
       const instance = change.data.after as InstanceElement
-      const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
-        if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-          return undefined
-        }
-        return value
-      }
-
-      change.data.after = transformElement({
-        element: instance,
-        transformFunc: removeHiddenFieldValue,
-        strict: false,
-      }) || {}
-
+      change.data.after = removeHiddenValuesForInstance(instance)
       return change
     }
 
+    // Handling type changed to hidden: when action is addition of hidden annotation (true)
+    // We return remove change with the parentID (the top level element)
     if (change.id.idType === 'attr'
       && isAdditionDiff(change)
       && change.id.getFullNameParts().length === 4
@@ -187,6 +177,10 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
       )
     }
 
+    // Handling type changed from hidden (to not hidden):
+    // when action is removal of hidden annotation (was true)
+    //
+    // We return addition change with the top level element (from state)
     if (change.id.idType === 'attr'
       && isRemovalDiff(change)
       && change.id.name === CORE_ANNOTATIONS.HIDDEN
@@ -208,7 +202,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     const changesAfterHiddenRemoved = await Promise.all(changes.filter(
       change => !isChangeNewHiddenType(change)
     )
-      .map(change => removeHiddenTypesOrFieldsValues(change)))
+      .map(change => handleHiddenForTypesAndInstances(change)))
     await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
   }
 
@@ -292,8 +286,7 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )),
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = _.isEmpty(await naclFilesSource.getAll())
-      const isStateEmpty = _.isEmpty(await state().getAll())
-      return naclFilesOnly ? isNaclFilesSourceEmpty : isNaclFilesSourceEmpty && isStateEmpty
+      return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
     },
     setNaclFiles: naclFilesSource.setNaclFiles,
     updateNaclFiles,

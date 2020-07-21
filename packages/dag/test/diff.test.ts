@@ -97,7 +97,8 @@ describe('DiffGraph functions', () => {
         graph.addNode('remove', [], diffNode(1, 'remove', 'data'))
         graph.addNode('add', [], diffNode(2, 'add', 'data'))
 
-        subject = await mergeNodesToModify(graph)
+        subject = graph.clone()
+        mergeNodesToModify(subject)
       })
       it('should not merge nodes', () => {
         expect(subject.size).toBe(2)
@@ -113,7 +114,8 @@ describe('DiffGraph functions', () => {
           graph.addNode(5, [1], diffNode(4, 'add', ''))
           graph.addNode(6, [2], diffNode(5, 'add', ''))
 
-          subject = await mergeNodesToModify(graph)
+          subject = graph.clone()
+          mergeNodesToModify(subject)
         })
         it('should merge the nodes', () => {
           expect(subject.size).toBe(graph.size - 1)
@@ -152,7 +154,8 @@ describe('DiffGraph functions', () => {
           graph.addNode(2, [1, 3], diffNode(1, 'remove', 'before'))
           graph.addNode(3, [1], diffNode(2, 'add', 'data'))
 
-          subject = await mergeNodesToModify(graph)
+          subject = graph.clone()
+          mergeNodesToModify(subject)
         })
         it('should not merge the nodes', () => {
           expect(subject).toEqual(graph)

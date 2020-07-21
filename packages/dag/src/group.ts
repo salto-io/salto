@@ -16,6 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { NodeId, DataNodeMap } from './nodemap'
 
 const log = logger(module)
@@ -25,71 +26,49 @@ export interface Group<T> {
   items: Map<NodeId, T>
 }
 
-export class GroupedNodeMap<T> extends DataNodeMap<Group<T>> {
-  getItems(groupId: NodeId): Map<NodeId, T> {
-    return _.get(this.getData(groupId) || {}, 'items')
-  }
-
-  getGroupIdFromItemId(nodeId: NodeId): NodeId | undefined {
-    return wu(this.nodes()).find(g => this.getItems(g).has(nodeId))
-  }
-
-  merge(from: NodeId, to: NodeId): void {
-    const toGroup = this.getData(to)
-    const fromGroup = this.getData(from)
-    if (!fromGroup || !toGroup || fromGroup.groupKey !== toGroup.groupKey) {
-      throw Error(`Cannot merge ${fromGroup} to ${toGroup}`)
-    }
-    // Clone toGroup so upon merge failures graph will not be "dirty"
-    const toGroupClone = { groupKey: toGroup.groupKey, items: _.clone(toGroup.items) }
-    wu(fromGroup.items.entries()).forEach(([id, item]) => toGroupClone.items.set(id, item))
-    this.setData(to, toGroupClone)
-    this.get(from).forEach(dep => {
-      if (dep !== to) {
-        this.get(to).add(dep)
-      }
-    })
-    this.deleteNode(from)
-  }
-}
+export type GroupedNodeMap<T> = DataNodeMap<Group<T>>
 
 export const buildGroupedGraph = <T>(source: DataNodeMap<T>, groupKey: (id: NodeId) => string):
 GroupedNodeMap<T> => log.time(() => {
     const mergeCandidates = new Map<string, NodeId>()
-    return (wu(source.evaluationOrder())
+    const itemToGroupId = new Map<NodeId, NodeId>()
 
-      .map((nodeId: NodeId): Group<T> | undefined => {
-        const node = source.getData(nodeId)
-        if (!node) return undefined
-        const groupNodes = {
-          groupKey: groupKey(nodeId),
-          items: new Map<NodeId, T>([[nodeId, node]]),
+    const getOrCreateGroupNode = (
+      graph: GroupedNodeMap<T>,
+      key: string,
+      newDeps: ReadonlySet<NodeId>,
+    ): NodeId => {
+      const mergeCandidate = mergeCandidates.get(key)
+      if (mergeCandidate !== undefined) {
+        const candidateDeps = new Set(
+          // Skip edges to mergeCandidate to avoid self reference cycle
+          wu.chain(newDeps, graph.get(mergeCandidate)).filter(dep => dep !== mergeCandidate)
+        )
+        if (!graph.doesCreateCycle(new Map([[mergeCandidate, candidateDeps]]), mergeCandidate)) {
+          graph.set(mergeCandidate, candidateDeps)
+          return mergeCandidate
         }
-        return groupNodes
-      })
-      .reject(_.isUndefined) as wu.WuIterable<Group<T>>)
+      }
+      // Cannot merge to existing node, create a new one
+      const groupId = _.uniqueId(`${key}-`)
+      graph.addNode(groupId, newDeps, { groupKey: key, items: new Map() })
+      // mergeCandidates should point to the latest node of a given key
+      mergeCandidates.set(key, groupId)
+      return groupId
+    }
 
-      .reduce((result, group) =>
-        log.time(() => {
-          const deps = wu(group.items.keys())
-            .map(nodeId => source.get(nodeId)).flatten()
-            .map(dep => result.getGroupIdFromItemId(dep))
-            .reject(_.isUndefined) as Iterable<NodeId>
-          const groupId = _.uniqueId(`${group.groupKey}-`)
-          result.addNode(groupId, deps, group)
-
-          // Try to merge with existing node
-          const mergeCandidate = mergeCandidates.get(group.groupKey)
-          if (mergeCandidate) {
-            const [transformed, success] = result.tryTransform(groupGraph => {
-              groupGraph.merge(groupId, mergeCandidate)
-              return mergeCandidate
-            })
-            if (success) return transformed
-          }
-
-          // If merge failed, we need to update state of mergeCandidates
-          mergeCandidates.set(group.groupKey, groupId)
-          return result
-        }, 'merge nodes to group %o', group.groupKey), new GroupedNodeMap<T>())
+    return wu(source.evaluationOrder())
+      .reduce((result, nodeId) => {
+        const deps = new Set(
+          wu(source.get(nodeId))
+            .map(depId => itemToGroupId.get(depId))
+            .filter(values.isDefined)
+        )
+        const nodeGroupKey = groupKey(nodeId)
+        const groupId = getOrCreateGroupNode(result, nodeGroupKey, deps)
+        // Add item to the group node (the dependencies are handled by getOrCreateGroupNode)
+        result.getData(groupId).items.set(nodeId, source.getData(nodeId))
+        itemToGroupId.set(nodeId, groupId)
+        return result
+      }, new DataNodeMap<Group<T>>())
   }, 'build grouped graph for %o nodes', source.size)

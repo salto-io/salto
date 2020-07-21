@@ -15,7 +15,7 @@
 */
 import wu from 'wu'
 import _ from 'lodash'
-import { GroupedNodeMap } from '@salto-io/dag'
+import { DataNodeMap, Group } from '@salto-io/dag'
 import {
   BuiltinTypes, Change, Element, ElemID, getChangeElement, InstanceElement,
   ObjectType, CORE_ANNOTATIONS, SaltoError, Values, ListType, DetailedChange,
@@ -347,7 +347,7 @@ const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): C
 }
 
 export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement } => {
-  const result = new GroupedNodeMap<Change>()
+  const result = new DataNodeMap<Group<Change>>()
   const configElemID = new ElemID('salesforce')
   const configType = new ObjectType({
     elemID: configElemID,
@@ -389,7 +389,7 @@ export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement
 }
 
 export const preview = (): Plan => {
-  const result = new GroupedNodeMap<Change>()
+  const result = new DataNodeMap<Group<Change>>()
 
   const leadPlanItem = toPlanItem(
     createChange('modify', 'lead'),

@@ -17,7 +17,7 @@ import wu from 'wu'
 import {
   Change, ObjectType, isObjectType, ElemID, getChangeElement, ChangeDataType,
 } from '@salto-io/adapter-api'
-import { GroupedNodeMap, Group } from '@salto-io/dag'
+import { Group, DataNodeMap } from '@salto-io/dag'
 import { Plan, PlanItem, PlanItemId } from '../../src/core/plan'
 import { addPlanItemAccessors } from '../../src/core/plan/plan_item'
 import { getAllElements } from './elements'
@@ -27,7 +27,7 @@ export const createPlan = (changeGroups: Change[][]): Plan => {
     groupKey: getChangeElement(changes[0]).elemID.createTopLevelParentID().parent.getFullName(),
     items: new Map(changes.map((change, idx) => [`${idx}`, change])),
   })
-  const graph = new GroupedNodeMap<Change>(
+  const graph = new DataNodeMap<Group<Change>>(
     changeGroups.map((_changes, idx) => [`${idx}`, new Set()]),
     new Map(changeGroups.map((changes, idx) => [`${idx}`, toGroup(changes)])),
   )

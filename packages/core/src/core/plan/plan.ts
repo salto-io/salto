@@ -16,7 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType, ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement, isAdditionOrRemovalDiff, isFieldChange } from '@salto-io/adapter-api'
-import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, removeEdges } from '@salto-io/dag'
+import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, removeEdges, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
@@ -134,7 +134,8 @@ const addModifyNodes = (
   addDependencies: PlanTransformer
 ): PlanTransformer => {
   const runMergeStep: PlanTransformer = async stepGraph => {
-    const mergedGraph = await addDependencies(stepGraph).then(mergeNodesToModify)
+    const mergedGraph = await addDependencies(stepGraph)
+    mergeNodesToModify(mergedGraph)
     if (stepGraph.size !== mergedGraph.size) {
       // Some of the nodes were merged, this may enable other nodes to be merged
       // Note that with each iteration that changes the size we merge at least one node pair
@@ -151,7 +152,7 @@ const removeRedundantFieldChanges = (
 ): GroupedNodeMap<Change<ChangeDataType>> => (
   // If we add / remove an object type, we can omit all the field add / remove
   // changes from the same group since they are included in the parent change
-  new GroupedNodeMap<Change<ChangeDataType>>(
+  new DataNodeMap<Group<Change<ChangeDataType>>>(
     graph.entries(),
     new Map(wu(graph.keys()).map(key => {
       const group = graph.getData(key)

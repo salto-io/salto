@@ -44,6 +44,7 @@ export const configType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
+          max: 50,
         }),
       },
     },

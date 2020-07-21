@@ -397,7 +397,7 @@ export default class NetsuiteClient {
     executor: CommandActionExecutorType): Promise<string[]> {
     const failedTypes: string[] = []
     log.debug('Fetching custom objects one by one')
-    await withLimitedConcurrency(
+    await withLimitedConcurrency( // limit the number of open promises
       typeNames.map(typeName => async () => {
         try {
           log.debug(`About to objects of type: ${typeName}`)
@@ -452,7 +452,7 @@ export default class NetsuiteClient {
         log.debug(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
         return { importedPaths: [], failedPaths: filePaths }
       }
-      const importResults = await withLimitedConcurrency(
+      const importResults = await withLimitedConcurrency( // limit the number of open promises
         _.chunk(filePaths, (filePaths.length + 1) / 2)
           .filter(chunk => !_.isEmpty(chunk))
           .map(paths => () => this.importFiles(paths, executor)),

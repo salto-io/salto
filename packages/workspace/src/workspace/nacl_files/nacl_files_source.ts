@@ -239,8 +239,7 @@ const buildNaclFilesSource = (
       return naclFile ? naclFile.buffer : ''
     }
 
-    const naclFiles = _(await Promise.all(changes
-      .map(change => change.id)
+    const naclFiles = _(await Promise.all(changes.map(change => change.id)
       .map(elemID => getElementNaclFiles(elemID))))
       .flatten().uniq().value()
     const { parsedNaclFiles } = await getState()

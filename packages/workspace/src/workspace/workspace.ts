@@ -16,7 +16,9 @@
 import _ from 'lodash'
 import path from 'path'
 import {
-  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange,
+  Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, isRemovalDiff,
+  CORE_ANNOTATIONS, isAdditionDiff,
+  isType, isInstanceElement,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -31,8 +33,12 @@ import { Errors, ServiceDuplicationError, EnvDuplicationError,
 import { EnvConfig } from './config/workspace_config_types'
 import {
   addHiddenValuesAndHiddenTypes,
+  removeHiddenValuesForInstance,
 } from './hidden_values'
 import { WorkspaceConfigSource } from './workspace_config_source'
+import {
+  createAddChange, createRemoveChange,
+} from './nacl_files/mutil_env/projections'
 
 const log = logger(module)
 
@@ -136,6 +142,71 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )
   )
 
+  // Determine if change is new type addition (add action)
+  const isChangeNewHiddenType = (change: DetailedChange): boolean => change.id.idType === 'type'
+    && isAdditionDiff(change)
+    && isType(change.data.after)
+    && change.data.after.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+
+
+  const handleHiddenForTypesAndInstances = async (
+    change: DetailedChange
+  ): Promise<DetailedChange> => {
+    // Handling new instance addition: removing all hidden (fields) values
+    if (change.id.idType === 'instance'
+      && isAdditionDiff(change)
+      && isInstanceElement(change.data.after)
+    ) {
+      const instance = change.data.after as InstanceElement
+      change.data.after = removeHiddenValuesForInstance(instance)
+      return change
+    }
+
+    // Handling type changed to hidden: when action is addition of hidden annotation (true)
+    // We return remove change with the parentID (the top level element)
+    if (change.id.idType === 'attr'
+      && isAdditionDiff(change)
+      && change.id.getFullNameParts().length === 4
+      && change.id.name === CORE_ANNOTATIONS.HIDDEN
+      && change.data.after === true) {
+      const parentID = change.id.createTopLevelParentID().parent
+      return createRemoveChange(
+        true, // actually the value isn't relevant in remove change
+        parentID,
+        change.path
+      )
+    }
+
+    // Handling type changed from hidden (to not hidden):
+    // when action is removal of hidden annotation (was true)
+    //
+    // We return addition change with the top level element (from state)
+    if (change.id.idType === 'attr'
+      && isRemovalDiff(change)
+      && change.id.name === CORE_ANNOTATIONS.HIDDEN
+      && change.data.before === true) {
+      const topLevelParentID = change.id.createTopLevelParentID()
+
+      return createAddChange(
+        await state().get(topLevelParentID.parent), // The top level element
+        topLevelParentID.parent,
+      )
+    }
+    return change
+  }
+
+  const updateNaclFiles = async (
+    changes: DetailedChange[],
+    mode?: RoutingMode
+  ): Promise<void> => {
+    const changesAfterHiddenRemoved = await Promise.all(changes.filter(
+      change => !isChangeNewHiddenType(change)
+    )
+      .map(change => handleHiddenForTypesAndInstances(change)))
+    await naclFilesSource.updateNaclFiles(changesAfterHiddenRemoved, mode)
+  }
+
+
   const getSourceFragment = async (
     sourceRange: SourceRange, subRange?: SourceRange): Promise<SourceFragment> => {
     const naclFile = await naclFilesSource.getNaclFile(sourceRange.filename)
@@ -215,11 +286,10 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     )),
     isEmpty: async (naclFilesOnly = false): Promise<boolean> => {
       const isNaclFilesSourceEmpty = _.isEmpty(await naclFilesSource.getAll())
-      const isStateEmpty = _.isEmpty(await state().getAll())
-      return naclFilesOnly ? isNaclFilesSourceEmpty : isNaclFilesSourceEmpty && isStateEmpty
+      return isNaclFilesSourceEmpty && (naclFilesOnly || _.isEmpty(await state().getAll()))
     },
     setNaclFiles: naclFilesSource.setNaclFiles,
-    updateNaclFiles: naclFilesSource.updateNaclFiles,
+    updateNaclFiles,
     removeNaclFiles: naclFilesSource.removeNaclFiles,
     getSourceMap: naclFilesSource.getSourceMap,
     getSourceRanges: naclFilesSource.getSourceRanges,

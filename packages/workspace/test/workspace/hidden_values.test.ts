@@ -24,8 +24,7 @@ import {
 } from '@salto-io/salesforce-adapter/dist/src/constants'
 import {
   addHiddenValuesAndHiddenTypes,
-  removeHiddenFieldsValues,
-  removeHiddenValuesAndHiddenTypes,
+  removeHiddenValuesForInstance,
 } from '../../src/workspace/hidden_values'
 
 describe('hidden_values.ts', () => {
@@ -160,21 +159,7 @@ describe('hidden_values.ts', () => {
   delete instanceWithoutHiddenValues.value.hiddenObj
 
 
-  describe('removeHiddenFieldsValues func', () => {
-    describe('type', () => {
-      const objType = new ObjectType({ elemID: new ElemID('dummyAdapter', 'dummy') })
-
-      let resp: Element
-      beforeAll(async () => {
-        resp = removeHiddenFieldsValues(objType)
-      })
-
-      it('should not change type (for now...)', () => {
-        expect(resp.isEqual(objType)).toBeTruthy()
-      })
-    })
-
-
+  describe('removeHiddenValuesForInstance func', () => {
     describe('instance', () => {
       const instanceAfterHiddenRemoved = instanceWithoutHiddenValues.clone()
 
@@ -182,7 +167,7 @@ describe('hidden_values.ts', () => {
 
       let resp: Element
       beforeAll(async () => {
-        resp = removeHiddenFieldsValues(clonedHiddenInstance)
+        resp = removeHiddenValuesForInstance(clonedHiddenInstance)
       })
 
       it('should remove hidden values ', () => {
@@ -195,33 +180,6 @@ describe('hidden_values.ts', () => {
     })
   })
 
-  describe('removeHiddenValuesAndHiddenTypes func', () => {
-    const elements = [hiddenType.clone(), notHiddenType.clone(), hiddenInstance.clone()]
-    let resp: Element[]
-    beforeAll(async () => {
-      resp = removeHiddenValuesAndHiddenTypes(elements)
-    })
-
-    it('should remove hidden type', () => {
-      expect(resp).toHaveLength(elements.length - 1)
-      expect(resp).not.toContain(hiddenType)
-    })
-
-    it('should not change notHiddenType', () => {
-      expect((resp[0] as ObjectType).isEqual(notHiddenType)).toBeTruthy()
-    })
-
-    it('should remove all hidden (fields) values in instance', () => {
-      const instanceAfterRemoveHidden = resp[1] as InstanceElement
-
-      // checking instance existence
-      expect(instanceAfterRemoveHidden.elemID.getFullName())
-        .toEqual(hiddenInstance.elemID.getFullName())
-
-      // checking hidden values removal
-      expect(instanceAfterRemoveHidden).toEqual(instanceWithoutHiddenValues)
-    })
-  })
 
   describe('addHiddenValuesAndHiddenTypes func', () => {
     // workspace elements should not contain hidden values

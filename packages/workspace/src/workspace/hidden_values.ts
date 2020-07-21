@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import {
   CORE_ANNOTATIONS, Element, InstanceElement,
-  isInstanceElement, isType, Values, isListType, TypeElement,
+  isInstanceElement, isType, Values, isListType,
+  TypeElement,
 } from '@salto-io/adapter-api'
 import {
   transformElement, TransformFunc, transformValues,
@@ -35,17 +35,6 @@ export const addHiddenValuesAndHiddenTypes = (
   stateElements: ReadonlyArray<Element>,
 ): Element[] => {
   const stateElementsMap = _.keyBy(stateElements, e => e.elemID.getFullName())
-
-  // const returnHiddenTypeForInstance = (instance: InstanceElement): ObjectType => {
-  //   const stateType = stateElementsMap[instance.type.elemID.getFullName()]
-  //   if (stateType !== undefined
-  //         && isHiddenType(stateType)
-  //             && isObjectType(stateType)) {
-  //     // return the appropriate (hidden) type
-  //     return stateType
-  //   }
-  //   return instance.type
-  // }
 
   const generateValuesWithHiddenFields = (instance: InstanceElement): Values => {
     const stateElement = stateElementsMap[instance.elemID.getFullName()]
@@ -122,27 +111,18 @@ export const addHiddenValuesAndHiddenTypes = (
   return elementsWithUpdatedTypes.concat(hiddenTypes)
 }
 
-export const removeHiddenFieldsValues = (elem: Element):
-  Element => {
-  if (isInstanceElement(elem)) {
-    const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
-      if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
-        return undefined
-      }
-      return value
+export const removeHiddenValuesForInstance = (instance: InstanceElement):
+  InstanceElement => {
+  const removeHiddenFieldValue: TransformFunc = ({ value, field }) => {
+    if (field?.annotations[CORE_ANNOTATIONS.HIDDEN] === true) {
+      return undefined
     }
-
-    return transformElement({
-      element: elem,
-      transformFunc: removeHiddenFieldValue,
-      strict: false,
-    }) || {}
+    return value
   }
-  return elem
-}
 
-export const removeHiddenValuesAndHiddenTypes = (elements: Iterable<Element>):
-  Element[] => wu(elements)
-  .filter(e => !isHiddenType(e))
-  .map(elem => removeHiddenFieldsValues(elem))
-  .toArray()
+  return transformElement({
+    element: instance,
+    transformFunc: removeHiddenFieldValue,
+    strict: false,
+  }) || {}
+}

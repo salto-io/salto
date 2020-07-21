@@ -31,7 +31,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, hiddenValues } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -52,8 +52,6 @@ import {
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
-
-const { addHiddenValuesAndHiddenTypes, removeHiddenValuesAndHiddenTypes } = hiddenValues
 
 const log = logger(module)
 
@@ -90,10 +88,7 @@ export const preview = async (
   const stateElements = await workspace.state().getAll()
   return getPlan({
     before: filterElementsByServices(stateElements, services),
-    after: addHiddenValuesAndHiddenTypes(
-      filterElementsByServices(await workspace.elements(), services),
-      stateElements
-    ),
+    after: filterElementsByServices(await workspace.elements(), services),
     changeValidators: getAdapterChangeValidators(),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers()),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(),
@@ -145,9 +140,10 @@ export const deploy = async (
   }
   const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)
 
-  // Remove hidden Types and hidden values inside instances
-  const elementsAfterHiddenRemoval = removeHiddenValuesAndHiddenTypes(changedElements.values())
-    .map(e => e.clone())
+  // Clone the elements because getDetailedChanges can change its input
+  const clonedElements = wu(changedElements.values()).map(e => e.clone())
+    .toArray()
+
   const workspaceElements = await workspace.elements()
   const relevantWorkspaceElements = workspaceElements
     .filter(e => changedElements.has(e.elemID.getFullName()))
@@ -157,7 +153,7 @@ export const deploy = async (
   // with the value of a reference.
   const changes = wu(await getDetailedChanges(
     relevantWorkspaceElements,
-    elementsAfterHiddenRemoval,
+    clonedElements,
     workspaceElements
   )).map(change => ({ change, serviceChange: change }))
     .map(toChangesWithPath(name => collections.array.makeArray(changedElements.get(name))))

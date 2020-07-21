@@ -25,12 +25,11 @@ import {
   applyInstancesDefaults, resolvePath, flattenElementStr,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, hiddenValues } from '@salto-io/workspace'
+import { merger } from '@salto-io/workspace'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
 
 const { mergeElements } = merger
-const { removeHiddenValuesAndHiddenTypes } = hiddenValues
 
 const log = logger(module)
 
@@ -279,27 +278,24 @@ const calcFetchChanges = async (
   stateElements: ReadonlyArray<Element>,
   workspaceElements: ReadonlyArray<Element>
 ): Promise<Iterable<FetchChange>> => {
-  const serviceElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(serviceElements)
-  const mergedServiceElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(mergedServiceElements)
-  const stateElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(stateElements)
-  const workspaceElementsHiddenRemoved = removeHiddenValuesAndHiddenTypes(workspaceElements)
   const serviceChanges = await log.time(() =>
-    getDetailedChanges(stateElementsHiddenRemoved, mergedServiceElementsHiddenRemoved),
+    getDetailedChanges(stateElements, mergedServiceElements),
   'finished to calculate service-state changes')
   const pendingChanges = await log.time(() => getChangeMap(
-    stateElementsHiddenRemoved,
-    workspaceElementsHiddenRemoved
+    stateElements,
+    workspaceElements
   ), 'finished to calculate pending changes')
 
   const workspaceToServiceChanges = await log.time(() => getChangeMap(
-    workspaceElementsHiddenRemoved,
-    mergedServiceElementsHiddenRemoved
+    workspaceElements,
+    mergedServiceElements
   ), 'finished to calculate service-workspace changes')
 
   const serviceElementsMap: Record<string, Element[]> = _.groupBy(
-    serviceElementsHiddenRemoved,
+    serviceElements,
     se => se.elemID.getFullName()
   )
+
   return wu(serviceChanges)
     .map(toFetchChanges(pendingChanges, workspaceToServiceChanges))
     .flatten()
@@ -335,8 +331,7 @@ export const fetchChanges = async (
   const isFirstFetch = _.isEmpty(workspaceElements.concat(stateElements)
     .filter(e => !e.elemID.isConfig()))
   const changes = isFirstFetch
-    ? removeHiddenValuesAndHiddenTypes(serviceElements)
-      .map(toAddFetchChange)
+    ? serviceElements.map(toAddFetchChange)
     : await calcFetchChanges(
       serviceElements,
       processErrorsResult.keptElements,
@@ -435,8 +430,6 @@ export const generateServiceIdToStateElemId = (stateElements: Element[]): Record
 
 export const createElemIdGetter = (stateElements: Element[]): ElemIdGetter => {
   const serviceIdToStateElemId = generateServiceIdToStateElemId(stateElements)
-  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
-    const stateElemId = serviceIdToStateElemId[toServiceIdsString(serviceIds)]
-    return stateElemId || new ElemID(adapterName, name)
-  }
+  return (adapterName: string, serviceIds: ServiceIds, name: string): ElemID =>
+    serviceIdToStateElemId[toServiceIdsString(serviceIds)] || new ElemID(adapterName, name)
 }

@@ -30,6 +30,7 @@ import {
   findInstances, flattenElementStr, valuesDeepSome, filterByID,
   flatValues, mapKeysRecursive, createDefaultInstanceFromType, applyInstancesDefaults,
   safeJsonStringify,
+  setPath,
 } from '../src/utils'
 import { mockFunction } from './common'
 
@@ -754,6 +755,54 @@ describe('Test utils.ts', () => {
       it('should be replaced with _', () => {
         expect(naclCase('Analytics Cloud Integration User')).toEqual('Analytics_Cloud_Integration_User')
       })
+    })
+  })
+
+  describe('set path func', () => {
+    let clonedMockType: ObjectType
+    beforeEach(() => {
+      clonedMockType = mockType.clone()
+    })
+
+    it('should do nothing when base elem is not parent of full elemID', () => {
+      setPath(clonedMockType, new ElemID('salto', 'nope'), 'value')
+      expect(clonedMockType.isEqual(mockType)).toBeTruthy()
+    })
+
+    it('should do nothing when trying to set whole element', () => {
+      setPath(clonedMockType, clonedMockType.elemID, new ObjectType({ elemID: new ElemID('new') }))
+      expect(clonedMockType.isEqual(mockType)).toBeTruthy()
+    })
+
+    it('should do add value even for currently non existing path', () => {
+      setPath(clonedMockType, mockElem.createNestedID('field', 'nope'), 'value')
+      expect(clonedMockType.fields.nope).toEqual('value')
+    })
+
+    it('should set a field annotation path', () => {
+      setPath(clonedMockType, clonedMockType.fields.str.elemID.createNestedID('testAnno'), 'NEW TEST FIELD ANNO')
+      expect(clonedMockType.fields.str.annotations.testAnno).toEqual('NEW TEST FIELD ANNO')
+    })
+
+    it('should set an annotation path', () => {
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('attr', 'testAnno'), 'NEW TEST ANNO')
+      expect(clonedMockType.annotations.testAnno).toEqual('NEW TEST ANNO')
+    })
+
+    it('should set annotation type path', () => {
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno',), BuiltinTypes.NUMBER)
+      expect(clonedMockType.annotationTypes.testAnno).toEqual(BuiltinTypes.NUMBER)
+    })
+
+    it('should set an annotation type anno path', () => {
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno'), 'NEW TEST ANNO TYPE')
+      expect(clonedMockType.annotationTypes.testAnno.annotations.testAnno).toEqual('NEW TEST ANNO TYPE')
+    })
+
+    it('should set an instance value path', () => {
+      const clonedMockInstance = mockInstance.clone()
+      setPath(clonedMockInstance, clonedMockInstance.elemID.createNestedID('str'), 'new val')
+      expect(clonedMockInstance.value.str).toEqual('new val')
     })
   })
 

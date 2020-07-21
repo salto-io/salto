@@ -147,7 +147,7 @@ export const deploy = async (
           const detailedChanges = detailedCompare(itemChange.data.after, updatedElement)
           detailedChanges.forEach(detailedChange => {
             if (!isRemovalDiff(detailedChange)) {
-              setPath(updatedElement, detailedChange.id, detailedChange.data.after)
+              setPath(itemChange.data.after, detailedChange.id, detailedChange.data.after)
             }
           })
         }

@@ -476,7 +476,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       if (post.type.fields[constants.CUSTOM_OBJECT_ID_FIELD] !== undefined) {
         // Currently called with one instance so result is a single element array
         post.value[constants.CUSTOM_OBJECT_ID_FIELD] = result[0]?.id
-        post.value.IsDeleted = true
       }
     } else {
       addInstanceDefaults(post)

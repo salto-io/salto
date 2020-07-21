@@ -17,13 +17,15 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
-import customObjectInstances from './change_validators/custom_object_instances'
+import customObjectInstancesValidator from './change_validators/custom_object_instances'
+import unknownFieldValidator from './change_validators/unknown_field'
 
 
 const changeValidators: ChangeValidator[] = [
   packageValidator,
   picklistStandardFieldValidator,
-  customObjectInstances,
+  customObjectInstancesValidator,
+  unknownFieldValidator,
 ]
 
 export default createChangeValidator(changeValidators)

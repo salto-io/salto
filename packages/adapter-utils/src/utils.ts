@@ -343,39 +343,58 @@ export const findInstances = (
   return instances.filter(e => e.type.elemID.isEqual(typeID))
 }
 
-export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+const getValuesAndRelativePath = (
+  rootElement: Element,
+  fullElemID: ElemID
+): { val: Values | undefined; path: Readonly<string[]> | undefined } => {
   const { parent, path } = fullElemID.createTopLevelParentID()
-  if (!_.isEqual(parent, rootElement.elemID)) return undefined
-
-  if (_.isEmpty(path)) {
-    return rootElement
-  }
-
+  if (!_.isEqual(parent, rootElement.elemID)) return { val: undefined, path: undefined }
   if (isInstanceElement(rootElement) && fullElemID.idType === 'instance') {
-    return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement
+    return !_.isEmpty(path)
+      ? { val: rootElement.value, path } : { val: rootElement, path: undefined }
   }
 
   if (isObjectType(rootElement) && fullElemID.idType === 'field') {
     const fieldName = path[0]
     const fieldAnnoPath = path.slice(1)
     const field = rootElement.fields[fieldName]
-    if (_.isEmpty(fieldAnnoPath)) return field
-    return _.get(field?.annotations, fieldAnnoPath)
+    if (_.isEmpty(fieldAnnoPath)) return { val: field, path: undefined }
+    return { val: field?.annotations, path: fieldAnnoPath }
   }
 
   if (isType(rootElement) && fullElemID.idType === 'attr') {
-    return _.get(rootElement.annotations, path)
+    return { val: rootElement.annotations, path }
   }
 
   if (isType(rootElement) && fullElemID.idType === 'annotation') {
     const annoTypeName = path[0]
     const annoTypePath = path.slice(1)
     const anno = rootElement.annotationTypes[annoTypeName]
-    if (_.isEmpty(annoTypePath)) return anno
-    return _.get(anno?.annotations, annoTypePath)
+    if (_.isEmpty(annoTypePath)) return { val: anno, path: undefined }
+    return { val: anno?.annotations, path: annoTypePath }
+  }
+  return { val: undefined, path: undefined }
+}
+
+export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value): void => {
+  const { val, path } = getValuesAndRelativePath(rootElement, fullElemID)
+  if (!_.isUndefined(val) && !_.isUndefined(path) && !_.isEmpty(path)) {
+    _.set(val, path, value)
+  }
+}
+
+export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+  const { val, path } = getValuesAndRelativePath(rootElement, fullElemID)
+
+  if (_.isUndefined(path) || _.isEmpty(path)) {
+    return val
   }
 
-  return undefined
+  if (_.isUndefined(val)) {
+    return undefined
+  }
+
+  return _.get(val, path)
 }
 
 const flatStr = (str: string): string => `${Buffer.from(str).toString()}`

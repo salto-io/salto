@@ -28,6 +28,7 @@ import {
   AdapterInstallResult,
   isRemovalDiff,
 } from '@salto-io/adapter-api'
+import { setPath } from '@salto-io/adapter-utils'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -134,7 +135,6 @@ export const deploy = async (
     item: PlanItem,
     appliedChanges: ReadonlyArray<Change>
   ): Promise<void> => {
-    console.log('%o', item)
     await promises.array.series(appliedChanges.map(change => async () => {
       const updatedElement = await getUpdatedElement(change)
       const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
@@ -145,7 +145,11 @@ export const deploy = async (
         const itemChange = item.items.get(`${updatedElement.elemID.getFullName()}/${change.action}`)
         if (itemChange !== undefined && !isRemovalDiff(itemChange)) {
           const detailedChanges = detailedCompare(itemChange.data.after, updatedElement)
-          console.log(detailedChanges)
+          detailedChanges.forEach(detailedChange => {
+            if (!isRemovalDiff(detailedChange)) {
+              setPath(updatedElement, detailedChange.id, detailedChange.data.after)
+            }
+          })
         }
       }
       await stateUpdate

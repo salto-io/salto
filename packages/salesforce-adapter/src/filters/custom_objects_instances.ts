@@ -106,14 +106,10 @@ const typesRecordsToInstances = (
       }
       const referenceToTypeNames = field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] as string[]
       return referenceToTypeNames.map(typeName => {
-        const typeRecords = recordByIdAndType[typeName]
-        if (typeRecords === undefined) {
-          log.warn(`failed to find object name ${typeName} when looking for master`)
-          return undefined
-        }
-        const rec = typeRecords[fieldValue]
+        const rec = recordByIdAndType[typeName] !== undefined
+          ? recordByIdAndType[typeName][fieldValue] : undefined
         if (rec === undefined) {
-          log.warn(`failed to find record with id ${fieldValue} in ${typeRecords} when looking for master`)
+          log.warn(`failed to find record with id ${fieldValue} of type ${typeName} when looking for parent`)
           return undefined
         }
         return getRecordSaltoName(rec, typeByName[typeName])

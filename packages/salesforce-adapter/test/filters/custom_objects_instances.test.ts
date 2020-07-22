@@ -22,10 +22,11 @@ import filterCreator from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
   LABEL, CUSTOM_OBJECT, API_NAME, METADATA_TYPE, SALESFORCE, INSTALLED_PACKAGES_PATH,
-  OBJECTS_PATH, RECORDS_PATH,
+  OBJECTS_PATH, RECORDS_PATH, FIELD_ANNOTATIONS,
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
+/* eslint-disable @typescript-eslint/camelcase */
 describe('Custom Object Instances filter', () => {
   let connection: Connection
   let client: SalesforceClient
@@ -51,6 +52,11 @@ describe('Custom Object Instances filter', () => {
       FirstName: 'First',
       LastName: 'Last',
       TestField: 'Test',
+      Parent: 'hijklmn',
+      Grandparent: 'hijklmn',
+      Pricebook2Id: 'hijklmn',
+      SBQQ__Location__c: 'Quote',
+      SBQQ__DisplayOrder__c: 2,
     },
     {
       attributes: {
@@ -65,6 +71,11 @@ describe('Custom Object Instances filter', () => {
       FirstName: 'Firstizen',
       LastName: 'Lastizen',
       TestField: 'testizen',
+      Parent: 'badId',
+      Grandparent: 'abcdefg',
+      Pricebook2Id: 'abcdefg',
+      SBQQ__Location__c: 'Quote',
+      SBQQ__DisplayOrder__c: 3,
     },
   ]
 
@@ -115,6 +126,7 @@ describe('Custom Object Instances filter', () => {
   const testNamespace = 'TestNamespace'
   const disabledNamespace = 'DisabledNamespace'
   const anotherNamespace = 'AnotherNamespace'
+  const nameBasedNamespace = 'NameBasedNamespace'
   const includeObjectName = 'IncludeThisObject'
   const excludeObjectName = 'TestNamespace__ExcludeMe__c'
   const excludeOverrideObjectName = 'ExcludeOverrideObject'
@@ -132,24 +144,35 @@ describe('Custom Object Instances filter', () => {
             {
               name: 'enabledWithNamespace',
               enabled: true,
+              isNameBasedID: false,
               includeNamespaces: [testNamespace],
               excludeObjects: [excludeObjectName],
             },
             {
               name: 'disabledWithNamespace',
               enabled: false,
+              isNameBasedID: false,
               includeNamespaces: [disabledNamespace],
             },
             {
               name: 'enabledWithNamespaceAndObject',
               enabled: true,
+              isNameBasedID: false,
               includeNamespaces: [anotherNamespace],
               includeObjects: [includeObjectName, excludeOverrideObjectName],
             },
             {
               name: 'enabledWithExcludeObject',
               enabled: true,
+              isNameBasedID: false,
               excludeObjects: [excludeOverrideObjectName],
+            },
+            {
+              name: 'enabledWithNameID',
+              enabled: true,
+              isNameBasedID: true,
+              includeNamespaces: [nameBasedNamespace],
+              includeObjects: ['PricebookEntry', 'SBQQ__CustomAction__c'],
             },
           ],
         } }
@@ -406,6 +429,207 @@ describe('Custom Object Instances filter', () => {
           city: 'city',
           counry: 'country',
         })
+      })
+    })
+  })
+
+  describe('When some CustomObjects are from the nameBasedID namespace', () => {
+    let elements: Element[]
+
+    const grandparentObjectName = `${nameBasedNamespace}__grandparent__c`
+    const grandparentObject = createCustomObject(grandparentObjectName)
+
+    const parentObjectName = `${nameBasedNamespace}__parent__c`
+    const parentObject = createCustomObject(
+      parentObjectName,
+      {
+        Grandparent: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'master field',
+            [API_NAME]: 'MasterField',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
+          },
+        },
+      }
+    )
+
+    const pricebookEntryName = 'PricebookEntry'
+    const pricebookEntryObject = createCustomObject(
+      pricebookEntryName,
+      {
+        Pricebook2Id: {
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [LABEL]: 'Pricebook2Id field',
+            [API_NAME]: 'Pricebook2Id',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [grandparentObjectName],
+          },
+        },
+      }
+    )
+
+    const SBQQCustomActionName = 'SBQQ__CustomAction__c'
+    const SBQQCustomActionObject = createCustomObject(
+      SBQQCustomActionName,
+      {
+        SBQQ__Location__c: {
+          type: Types.primitiveDataTypes.Checkbox,
+          annotations: {
+            [LABEL]: 'Location checkbox field',
+            [API_NAME]: 'SBQQ__Location__c',
+            [FIELD_ANNOTATIONS.VALUE_SET]: [
+              {
+                fullName: 'Quote',
+                default: true,
+                label: 'Quote',
+              },
+            ],
+          },
+        },
+        SBQQ__DisplayOrder__c: {
+          type: Types.primitiveDataTypes.Number,
+          annotations: {
+            [LABEL]: 'Display order',
+            [API_NAME]: 'SBQQ__DisplayOrder__c',
+          },
+        },
+      }
+    )
+
+    const grandsonObjectName = `${nameBasedNamespace}__grandson__c`
+    const grandsonObject = createCustomObject(
+      grandsonObjectName,
+      {
+        Parent: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'master field',
+            [API_NAME]: 'MasterField',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [parentObjectName],
+          },
+        },
+      }
+    )
+
+    const orphanObjectName = `${nameBasedNamespace}__orphan__c`
+    const orphanObject = createCustomObject(
+      orphanObjectName,
+      {
+        Parent: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'master field',
+            [API_NAME]: 'MasterField',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: ['noSuchObject'],
+          },
+        },
+      }
+    )
+
+    beforeEach(async () => {
+      elements = [
+        grandparentObject, parentObject, grandsonObject, orphanObject,
+        pricebookEntryObject, SBQQCustomActionObject,
+      ]
+      await filter.onFetch(elements)
+    })
+
+    it('should add instances per namespaced object', () => {
+      // 2 new instances per namespaced object because of TestCustomRecords's length
+      expect(elements.length).toEqual(18)
+      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(12)
+    })
+
+    describe('grandparent object (no master)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === grandparentObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on record name only', () => {
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
+      })
+    })
+
+    describe('parent object (master is grandparent)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === parentObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on grandparentName + parent', () => {
+        const grandparentName = TestCustomRecords[1].Name
+        const parentName = TestCustomRecords[0].Name
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}`)
+      })
+    })
+
+    describe('grandson object (master is parent who has grandparent as master)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === grandsonObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on grandparentName + parent + grandson if all exist', () => {
+        const grandparentName = TestCustomRecords[0].Name
+        const parentName = TestCustomRecords[1].Name
+        const grandsonName = TestCustomRecords[0].Name
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${grandparentName}___${parentName}___${grandsonName}`)
+      })
+
+      it('should base elemID on grandon name only if no record with references parent id', () => {
+        expect(instances[1].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[1].Name}`)
+      })
+    })
+
+    describe('orphan object (master non-existance)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === orphanObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on record name only', () => {
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
+      })
+    })
+
+    describe('PricebookEntry object (special case - Lookup)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === pricebookEntryObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on Pricebook2Id lookup name + the entry', () => {
+        const pricebookLookupName = TestCustomRecords[1].Name
+        const pricebookEntry = TestCustomRecords[0].Name
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${pricebookLookupName}___${pricebookEntry}`)
+      })
+    })
+
+    describe('SBQQ__CustomAction__c object (special case - base on record values besides name)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === SBQQCustomActionObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on Name + displayOrder + location', () => {
+        const recordName = TestCustomRecords[0].Name
+        const recordLocation = TestCustomRecords[0].SBQQ__Location__c
+        const recordDisplayOrder = TestCustomRecords[0].SBQQ__DisplayOrder__c
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${recordLocation}___${recordDisplayOrder}___${recordName}`)
       })
     })
   })

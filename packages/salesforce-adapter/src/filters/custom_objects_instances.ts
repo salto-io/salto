@@ -14,18 +14,36 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
-import { InstanceElement, ObjectType, Element, isObjectType, Field } from '@salto-io/adapter-api'
+import { collections, values, promises } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import { InstanceElement, ObjectType, Element, isObjectType, Field, isPrimitiveType } from '@salto-io/adapter-api'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
-import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD, OBJECTS_PATH } from '../constants'
+import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD, OBJECTS_PATH, FIELD_ANNOTATIONS } from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds } from '../transformers/transformer'
 import { getNamespace } from './utils'
 import { DataManagementConfig } from '../types'
 
+const { mapValuesAsync } = promises.object
+const { isDefined } = values
 const { makeArray } = collections.array
-const { mapAsync, toArrayAsync } = collections.asynciterable
+const { toArrayAsync } = collections.asynciterable
+
+const log = logger(module)
+
+type TypeName = string
+type RecordID = string
+
+const masterDetailNamesSeparator = '___'
+
+// This will be exctracted to a config once we have more knowledge
+// on naming "patterns"
+const typeToAdditionalNameFields: Record<TypeName, string[]> = {
+  PricebookEntry: ['Pricebook2Id'],
+  // eslint-disable-next-line @typescript-eslint/camelcase
+  SBQQ__CustomAction__c: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c'],
+}
 
 const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
@@ -42,60 +60,142 @@ const buildQueryString = (type: ObjectType): string => {
   return `SELECT ${selectStr} FROM ${apiName(type)}`
 }
 
-const getObjectInstances = async (
+const getTypeRecords = async (
   client: SalesforceClient,
-  object: ObjectType
-): Promise<Array<InstanceElement>> => {
-  const recordsToInstances = (records: SalesforceRecord[]): InstanceElement[] => {
-    const recordToInstance = (record: SalesforceRecord): InstanceElement => {
-      const getInstancePath = (instanceName: string): string[] => {
-        const objectNamespace = getNamespace(object)
-        if (objectNamespace) {
-          return [SALESFORCE, INSTALLED_PACKAGES_PATH, objectNamespace, OBJECTS_PATH,
-            object.elemID.typeName, RECORDS_PATH, instanceName]
-        }
-        return [SALESFORCE, OBJECTS_PATH, object.elemID.typeName, RECORDS_PATH, instanceName]
+  type: ObjectType
+): Promise<Record<RecordID, SalesforceRecord>> => {
+  const queryString = buildQueryString(type)
+  const recordsIterable = await client.queryAll(queryString)
+  return _.keyBy(
+    (await toArrayAsync(recordsIterable)).flat(),
+    record => record[CUSTOM_OBJECT_ID_FIELD]
+  )
+}
+
+const typesRecordsToInstances = (
+  recordByIdAndType: Record<TypeName, Record<RecordID, SalesforceRecord>>,
+  typeByName: Record<TypeName, ObjectType>,
+  nameBasedTypes: ObjectType[],
+): InstanceElement[] => {
+  const saltoNameByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
+  const setSaltoName = (type: ObjectType, recordId: string, saltoName: string): void => {
+    if (saltoNameByIdAndType[apiName(type)] === undefined) {
+      saltoNameByIdAndType[apiName(type)] = {}
+    }
+    saltoNameByIdAndType[apiName(type)][recordId] = saltoName
+  }
+  const getSaltoName = (type: ObjectType, recordId: string): string | undefined =>
+    saltoNameByIdAndType[apiName(type)]?.[recordId]
+
+  const isPrefixField = (type: ObjectType, field: Field): boolean =>
+    (isPrimitiveType(field.type)
+      && Types.primitiveDataTypes.MasterDetail.isEqual(field.type))
+      || (typeToAdditionalNameFields[apiName(type)]?.includes(field.name))
+
+  const getRecordSaltoName = (
+    record: SalesforceRecord,
+    type: ObjectType,
+  ): string => {
+    const fieldToPrefixName = (fieldName: string, field: Field): string | undefined => {
+      const fieldValue = record[fieldName]
+      // If it's a special case of using a non-ref field simply use the value
+      if (!(isPrimitiveType(field.type)
+        && (Types.primitiveDataTypes.MasterDetail.isEqual(field.type)
+        || Types.primitiveDataTypes.Lookup.isEqual(field.type)))) {
+        return fieldValue.toString()
       }
-      const { name } = Types.getElemId(
-        record[CUSTOM_OBJECT_ID_FIELD],
-        true,
-        createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), object),
-      )
-      return new InstanceElement(
-        name,
-        object,
-        record,
-        getInstancePath(name),
-      )
+      const referenceToTypeNames = field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] as string[]
+      return referenceToTypeNames.map(typeName => {
+        const rec = recordByIdAndType[typeName] !== undefined
+          ? recordByIdAndType[typeName][fieldValue] : undefined
+        if (rec === undefined) {
+          log.warn(`failed to find record with id ${fieldValue} of type ${typeName} when looking for parent`)
+          return undefined
+        }
+        return getRecordSaltoName(rec, typeByName[typeName])
+      }).find(isDefined)
     }
 
-    // Name sub-fields are returned at top level -> move them to the nameField
-    const transformNameValues = (values: SalesforceRecord[]): SalesforceRecord[] => {
+    const saltoName = getSaltoName(type, record[CUSTOM_OBJECT_ID_FIELD])
+    if (saltoName !== undefined) {
+      return saltoName
+    }
+
+    const prefixFields = _.pickBy(type.fields, (field => isPrefixField(type, field)))
+    const prefixNames = Object.entries(prefixFields)
+      .map(([fieldName, field]) => fieldToPrefixName(fieldName, field)).filter(isDefined)
+
+    const fullName = [...prefixNames, record.Name].join(masterDetailNamesSeparator)
+    setSaltoName(type, record[CUSTOM_OBJECT_ID_FIELD], fullName)
+    return fullName
+  }
+
+  const recordToInstance = (
+    record: SalesforceRecord,
+    type: ObjectType,
+    isNameBased: boolean,
+  ): InstanceElement => {
+    const getInstancePath = (instanceName: string): string[] => {
+      const typeNamespace = getNamespace(type)
+      if (typeNamespace) {
+        return [SALESFORCE, INSTALLED_PACKAGES_PATH, typeNamespace, OBJECTS_PATH,
+          type.elemID.typeName, RECORDS_PATH, instanceName]
+      }
+      return [SALESFORCE, OBJECTS_PATH, type.elemID.typeName, RECORDS_PATH, instanceName]
+    }
+    // Name compound sub-fields are returned at top level -> move them to the nameField
+    const transformCompoundNameValues = (recordValue: SalesforceRecord): SalesforceRecord => {
       const nameSubFields = Object.keys(Types.compoundDataTypes.Name.fields)
       // We assume there's only one Name field
-      const nameFieldName = Object.keys(_.pickBy(object.fields, isNameField))[0]
+      const nameFieldName = Object.keys(_.pickBy(type.fields, isNameField))[0]
       return _.isUndefined(nameFieldName)
-        ? values
-        : values.map(value => ({
-          ..._.omit(value, nameSubFields),
-          [nameFieldName]: _.pick(value, nameSubFields),
-          [CUSTOM_OBJECT_ID_FIELD]: value[CUSTOM_OBJECT_ID_FIELD],
-        }))
+        ? recordValue
+        : {
+          ..._.omit(recordValue, nameSubFields),
+          [nameFieldName]: _.pick(recordValue, nameSubFields),
+          [CUSTOM_OBJECT_ID_FIELD]: recordValue[CUSTOM_OBJECT_ID_FIELD],
+        }
     }
-
-    const instanceValues = transformNameValues(makeArray(records))
-    return instanceValues.map(recordToInstance)
+    const suggestedIDName = isNameBased
+      ? getRecordSaltoName(record, type)
+      : record[CUSTOM_OBJECT_ID_FIELD]
+    const { name } = Types.getElemId(
+      suggestedIDName,
+      true,
+      createInstanceServiceIds(_.pick(record, CUSTOM_OBJECT_ID_FIELD), type),
+    )
+    return new InstanceElement(
+      name,
+      type,
+      transformCompoundNameValues(record),
+      getInstancePath(name),
+    )
   }
-  const queryString = buildQueryString(object)
-  const recordsIterable = await client.queryAll(queryString)
-  return (await toArrayAsync(await mapAsync(recordsIterable, recordsToInstances))).flat()
+
+  return Object.entries(recordByIdAndType)
+    .flatMap(([typeName, idsToRecords]) => (
+      Object.values(idsToRecords).map(record => (
+        recordToInstance(
+          record,
+          typeByName[typeName],
+          nameBasedTypes.some(o => o.isEqual(typeByName[typeName])),
+        )
+      ))
+    ))
 }
 
 const getObjectTypesInstances = async (
   client: SalesforceClient,
-  objects: ObjectType[]
-): Promise<InstanceElement[]> =>
-  ((await Promise.all(objects.map(o => getObjectInstances(client, o)))).flat())
+  types: ObjectType[],
+  nameBasedObjects: ObjectType[],
+): Promise<InstanceElement[]> => {
+  const typeByName = _.keyBy(types, type => apiName(type))
+  const recordByIdAndType = await mapValuesAsync(
+    typeByName,
+    type => getTypeRecords(client, type)
+  )
+  return typesRecordsToInstances(recordByIdAndType, typeByName, nameBasedObjects)
+}
 
 const filterObjectTypes = (
   elements: Element[],
@@ -129,14 +229,17 @@ const filterObjectTypes = (
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
+    const dataManagementConfigs = config.dataManagement || []
     const relevantObjectTypes = filterObjectTypes(
       elements,
-      config.dataManagement || []
+      dataManagementConfigs
     )
     if (relevantObjectTypes.length === 0) {
       return
     }
-    const instances = await getObjectTypesInstances(client, relevantObjectTypes)
+    const nameBasedIDConfigs = dataManagementConfigs.filter(dmConfig => dmConfig.isNameBasedID)
+    const nameBasedTypes = filterObjectTypes(relevantObjectTypes, nameBasedIDConfigs)
+    const instances = await getObjectTypesInstances(client, relevantObjectTypes, nameBasedTypes)
     elements.push(...instances)
   },
 })

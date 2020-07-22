@@ -660,6 +660,34 @@
     ]
   },
   {
+    "id": "AuraDefinitionBundle",
+    "fields": [
+      {
+        "name": "type",
+        "type": "STRING",
+        "annotations": {
+          "_required": true,
+          "_values": [
+            "Application",
+            "Component",
+            "Event",
+            "Interface",
+            "Tokens"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "LightningComponentBundle",
+    "fields": [
+      {
+        "name": "targetConfigs",
+        "type": "UNKNOWN"
+      }
+    ]
+  },
+  {
     "id": "AccountSettings",
     "fields": [
       {

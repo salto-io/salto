@@ -65,7 +65,7 @@ describe('XML Transformer', () => {
         const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
-          `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<Package>
            <version>47.0</version>
            <types><members>Instance</members><name>AssignmentRules</name></types>
          </Package>`.replace(/>\s+</gs, '><')
@@ -76,7 +76,7 @@ describe('XML Transformer', () => {
         const instanceXml = (await zip).files[`${PACKAGE}/assignmentRules/Instance.assignmentRules`]
         expect(instanceXml).toBeDefined()
         expect(await instanceXml.async('text')).toMatch(
-          `<AssignmentRules xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<AssignmentRules>
            <str>val</str>
            <lst>1</lst>
            <lst>2</lst>
@@ -135,7 +135,7 @@ describe('XML Transformer', () => {
         const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
-          `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<Package>
            <version>47.0</version>
            <types><members>MyApexClass</members><name>ApexClass</name></types>
          </Package>`.replace(/>\s+</gs, '><')
@@ -153,7 +153,7 @@ describe('XML Transformer', () => {
         const instanceXml = (await zip).files[`${PACKAGE}/classes/MyApexClass.cls-meta.xml`]
         expect(instanceXml).toBeDefined()
         expect(await instanceXml.async('text')).toMatch(
-          `<ApexClass xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<ApexClass>
            <apiVersion>47</apiVersion>
          </ApexClass>`.replace(/>\s+</gs, '><')
         )
@@ -195,7 +195,7 @@ describe('XML Transformer', () => {
         const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
-          `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<Package>
            <version>${API_VERSION}</version>
            <types><members>MyEmailFolder</members><name>EmailTemplate</name></types>
          </Package>`.replace(/>\s+</gs, '><')
@@ -206,7 +206,7 @@ describe('XML Transformer', () => {
         const instanceXml = (await zip).files[`${PACKAGE}/email/MyEmailFolder-meta.xml`]
         expect(instanceXml).toBeDefined()
         expect(await instanceXml.async('text')).toMatch(
-          `<EmailFolder xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<EmailFolder>
            <name>Folder Name</name>
          </EmailFolder>`.replace(/>\s+</gs, '><')
         )
@@ -247,7 +247,7 @@ describe('XML Transformer', () => {
         const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
-          `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<Package>
            <version>${API_VERSION}</version>
          </Package>`.replace(/>\s+</gs, '><')
         )
@@ -257,7 +257,7 @@ describe('XML Transformer', () => {
         const packageXml = (await zip).files[`${PACKAGE}/destructiveChanges.xml`]
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
-          `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<Package>
            <types><members>MyApexClass</members><name>ApexClass</name></types>
          </Package>`.replace(/>\s+</gs, '><')
         )
@@ -292,7 +292,7 @@ describe('XML Transformer', () => {
         const packageXml = (await zip).files[`${PACKAGE}/package.xml`]
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
-          `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<Package>
            <version>${API_VERSION}</version>
          </Package>`.replace(/>\s+</gs, '><')
         )
@@ -302,7 +302,7 @@ describe('XML Transformer', () => {
         const packageXml = (await zip).files[`${PACKAGE}/destructiveChanges.xml`]
         expect(packageXml).toBeDefined()
         expect(await packageXml.async('text')).toMatch(
-          `<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+          `<Package>
            <types><members>MyEmailFolder</members><name>EmailTemplate</name></types>
          </Package>`.replace(/>\s+</gs, '><')
         )

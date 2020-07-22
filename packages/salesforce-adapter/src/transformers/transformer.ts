@@ -23,7 +23,7 @@ import {
   BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter,
   ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, ADAPTER, CORE_ANNOTATIONS,
   isElement, PrimitiveValue,
-  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue,
+  Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -43,11 +43,8 @@ import {
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
-  COMPOUND_FIELDS_SOAP_TYPE_NAMES,
-  FOLDER_TYPE,
-  HAS_META_FILE,
-  IS_FOLDER,
-  CUSTOM_OBJECT_ID_FIELD,
+  COMPOUND_FIELDS_SOAP_TYPE_NAMES, FOLDER_TYPE, HAS_META_FILE, IS_FOLDER, CUSTOM_OBJECT_ID_FIELD,
+  XML_ATTRIBUTE_PREFIX,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
@@ -929,6 +926,14 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
   'xsd:long': Number,
 }
 
+// Salesforce returns nulls in metadata API as objects like { $: { 'xsi:nil': 'true' } }
+// and in retrieve API like <activateRSS xsi:nil="true"/>
+// which is transformed to { `${XML_ATTRIBUTE_PREFIX}xsi:nil`): 'true' }
+const isXsiNil = (value: Value): boolean =>
+  _.isObject(value)
+    && (_.get(value, ['$', 'xsi:nil']) === 'true'
+      || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true')
+
 export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
   if (_.isNull(value)) {
     return undefined
@@ -937,8 +942,7 @@ export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
   if (value === '') {
     return undefined
   }
-  // Salesforce returns nulls as objects like { $: { 'xsi:nil': 'true' } }
-  if ((_.isObject(value) && _.get(value, ['$', 'xsi:nil']) === 'true')) {
+  if (isXsiNil(value)) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
     return undefined

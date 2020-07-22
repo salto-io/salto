@@ -141,10 +141,13 @@ export const deploy = async (
         ? workspace.state().remove(updatedElement.elemID)
         : workspace.state().set(updatedElement)
 
-      if (!isRemovalDiff(change) && !isFieldChange(change)) {
+      if (!isRemovalDiff(change)) {
         const itemChange = item.items.get(`${updatedElement.elemID.getFullName()}/${change.action}`)
         if (itemChange !== undefined && !isRemovalDiff(itemChange)) {
-          const detailedChanges = detailedCompare(itemChange.data.after, updatedElement)
+          const detailedChanges = detailedCompare(
+            itemChange.data.after.clone(),
+            updatedElement.clone()
+          )
           detailedChanges.forEach(detailedChange => {
             if (!isRemovalDiff(detailedChange)) {
               setPath(itemChange.data.after, detailedChange.id, detailedChange.data.after)

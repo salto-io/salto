@@ -804,6 +804,32 @@ describe('Test utils.ts', () => {
       setPath(clonedMockInstance, clonedMockInstance.elemID.createNestedID('str'), 'new val')
       expect(clonedMockInstance.value.str).toEqual('new val')
     })
+
+    it('should unset an instance value path', () => {
+      const clonedMockInstance = mockInstance.clone()
+      setPath(clonedMockInstance, clonedMockInstance.elemID.createNestedID('str'), undefined)
+      expect('str' in clonedMockInstance.value).toBeFalsy()
+    })
+
+    it('should unset an annotation type anno path', () => {
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno', 'testAnno'), undefined)
+      expect('testAnno' in clonedMockType.annotationTypes.testAnno.annotations).toBeFalsy()
+    })
+
+    it('should unset annotation type path', () => {
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('annotation', 'testAnno',), undefined)
+      expect('testAnno' in clonedMockType.annotationTypes).toBeFalsy()
+    })
+
+    it('should unset an annotation path', () => {
+      setPath(clonedMockType, clonedMockType.elemID.createNestedID('attr', 'testAnno'), undefined)
+      expect('testAnno' in clonedMockType.annotations).toBeFalsy()
+    })
+
+    it('should unset a field annotation path', () => {
+      setPath(clonedMockType, clonedMockType.fields.str.elemID.createNestedID('testAnno'), undefined)
+      expect('testAnno' in clonedMockType.fields.str.annotations).toBeFalsy()
+    })
   })
 
   describe('resolve path func', () => {

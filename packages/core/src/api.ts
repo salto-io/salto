@@ -135,6 +135,10 @@ export const deploy = async (
     item: PlanItem,
     appliedChanges: ReadonlyArray<Change>
   ): Promise<void> => {
+    const elemIDtoChangeElement = _.keyBy(
+      [...item.items.values()].map(getChangeElement),
+      changeElement => changeElement.elemID.getFullName()
+    )
     await promises.array.series(appliedChanges.map(change => async () => {
       const updatedElement = await getUpdatedElement(change)
       const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
@@ -142,16 +146,12 @@ export const deploy = async (
         : workspace.state().set(updatedElement)
 
       if (!isRemovalDiff(change)) {
-        const itemChange = item.items.get(`${updatedElement.elemID.getFullName()}/${change.action}`)
-        if (itemChange !== undefined && !isRemovalDiff(itemChange)) {
-          const detailedChanges = detailedCompare(
-            itemChange.data.after.clone(),
-            updatedElement.clone()
-          )
+        const itemChange = elemIDtoChangeElement[change.data.after.elemID.getFullName()]
+        if (itemChange !== undefined) {
+          const detailedChanges = detailedCompare(itemChange, updatedElement)
           detailedChanges.forEach(detailedChange => {
-            if (!isRemovalDiff(detailedChange)) {
-              setPath(itemChange.data.after, detailedChange.id, detailedChange.data.after)
-            }
+            const data = isRemovalDiff(detailedChange) ? undefined : detailedChange.data.after
+            setPath(itemChange, detailedChange.id, data)
           })
         }
       }

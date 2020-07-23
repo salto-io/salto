@@ -131,8 +131,8 @@ const resolveElement = (
   if (isVariable(element)) {
     element.value = _.cloneWith(element.value, referenceCloner)
   }
-  element.annotationTypes = _.cloneDeepWith(element.annotationTypes, referenceCloner)
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
+  element.annotationTypes = _.clone(element.annotationTypes)
 }
 
 export const resolve = (elements: readonly Element[],

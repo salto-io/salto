@@ -144,19 +144,18 @@ export const deploy = async (
       const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
         ? workspace.state().remove(updatedElement.elemID)
         : workspace.state().set(updatedElement)
-
+      await stateUpdate
+      changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
       if (!isRemovalDiff(change)) {
-        const itemChange = elemIDtoChangeElement[change.data.after.elemID.getFullName()]
-        if (itemChange !== undefined) {
-          const detailedChanges = detailedCompare(itemChange, updatedElement)
+        const itemChangeData = elemIDtoChangeElement[change.data.after.elemID.getFullName()]
+        if (itemChangeData !== undefined) {
+          const detailedChanges = detailedCompare(itemChangeData, updatedElement)
           detailedChanges.forEach(detailedChange => {
             const data = isRemovalDiff(detailedChange) ? undefined : detailedChange.data.after
-            setPath(itemChange, detailedChange.id, data)
+            setPath(itemChangeData, detailedChange.id, data)
           })
         }
       }
-      await stateUpdate
-      changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
     }))
   }
   const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)

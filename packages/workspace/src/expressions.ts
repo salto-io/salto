@@ -138,8 +138,7 @@ const resolveElement = (
 export const resolve = (elements: readonly Element[],
   additionalContext: ReadonlyArray<Element> = []): Element[] => {
   const additionalContextElements = _.groupBy(additionalContext, e => e.elemID.getFullName())
-  // intentionally shallow clone because in resolve element we replace only top level properties
-  const clonedElements = elements.map(_.clone)
+  const clonedElements = elements.map(e => e.clone())
   const contextElements = {
     ...additionalContextElements,
     ..._.groupBy(clonedElements, e => e.elemID.getFullName()),

@@ -131,14 +131,15 @@ const resolveElement = (
   if (isVariable(element)) {
     element.value = _.cloneWith(element.value, referenceCloner)
   }
-
+  element.annotationTypes = _.cloneDeepWith(element.annotationTypes, referenceCloner)
   element.annotations = _.cloneDeepWith(element.annotations, referenceCloner)
 }
 
 export const resolve = (elements: readonly Element[],
   additionalContext: ReadonlyArray<Element> = []): Element[] => {
   const additionalContextElements = _.groupBy(additionalContext, e => e.elemID.getFullName())
-  const clonedElements = elements.map(e => e.clone())
+  // intentionally shallow clone because in resolve element we replace only top level properties
+  const clonedElements = elements.map(_.clone)
   const contextElements = {
     ...additionalContextElements,
     ..._.groupBy(clonedElements, e => e.elemID.getFullName()),

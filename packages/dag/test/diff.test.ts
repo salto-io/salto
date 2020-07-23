@@ -16,7 +16,7 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 import { DataNodeMap } from '../src/nodemap'
-import { removeEqualNodes, DiffNode, DiffGraph, mergeNodesToModify, ModificationDiff, removeEdges } from '../src/diff'
+import { removeEqualNodes, DiffNode, DiffGraph, mergeNodesToModify, ModificationDiff } from '../src/diff'
 
 describe('DiffGraph functions', () => {
   const diffNode = <T>(
@@ -161,23 +161,6 @@ describe('DiffGraph functions', () => {
           expect(subject).toEqual(graph)
         })
       })
-    })
-  })
-
-  describe('removeEdges', () => {
-    beforeEach(async () => {
-      graph.addNode(1, [2, 3], diffNode(1, 'add', 'data1'))
-      graph.addNode(2, [3], diffNode(2, 'add', 'data2'))
-      graph.addNode(3, [], diffNode(3, 'add', 'data3'))
-
-      subject = await removeEdges(graph)
-    })
-    it('should remove all edges', () => {
-      expect(subject.edges()).toHaveLength(0)
-    })
-    it('should keep all data', () => {
-      expect(subject.size).toEqual(graph.size)
-      wu(graph.keys()).forEach(key => expect(graph.getData(key)).toEqual(subject.getData(key)))
     })
   })
 })

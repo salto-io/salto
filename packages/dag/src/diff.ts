@@ -90,7 +90,9 @@ const mergeNodes = <T>(
   target.addNode(newId, deps, newData)
 
   // update reverse deps to new node
-  target.deleteNode(...oldIds).forEach(affected => target.get(affected).add(newId))
+  oldIds.forEach(id => {
+    target.deleteNode(id).forEach(affected => target.addEdge(affected, newId))
+  })
 }
 
 const tryCreateModificationNode = <T>(
@@ -159,12 +161,3 @@ export const mergeNodesToModify = <T>(target: DiffGraph<T>): void => {
       target,
     )
 }
-
-export const removeEdges = async <T>(target: DiffGraph<T>): Promise<DiffGraph<T>> => (
-  new DataNodeMap<DiffNode<T>>(
-    wu(target.keys()).map(id => [id, new Set()]),
-    new Map<collections.set.SetId, DiffNode<T>>(
-      wu(target.keys()).map(id => [id, target.getData(id)]),
-    ),
-  )
-)

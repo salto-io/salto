@@ -16,7 +16,7 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { Element, isObjectType, isInstanceElement, ChangeDataType, isField, isPrimitiveType, ChangeValidator, Change, ChangeError, DependencyChanger, ChangeGroupIdFunction, getChangeElement, isAdditionOrRemovalDiff, isFieldChange } from '@salto-io/adapter-api'
-import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, removeEdges, Group } from '@salto-io/dag'
+import { DataNodeMap, GroupedNodeMap, DiffNode, mergeNodesToModify, removeEqualNodes, DiffGraph, Group } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { expressions } from '@salto-io/workspace'
 import { PlanItem, addPlanItemAccessors, PlanItemId } from './plan_item'
@@ -140,7 +140,8 @@ const addModifyNodes = (
       // Some of the nodes were merged, this may enable other nodes to be merged
       // Note that with each iteration that changes the size we merge at least one node pair
       // so if we have N node pairs this recursion will run at most N times
-      return runMergeStep(await removeEdges(mergedGraph))
+      mergedGraph.clearEdges()
+      return runMergeStep(mergedGraph)
     }
     return mergedGraph
   }

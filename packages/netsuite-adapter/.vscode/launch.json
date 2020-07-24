@@ -7,7 +7,6 @@
       "name": "Debug Jest Tests",
       "cwd": "${workspaceFolder}",
       "args": [
-        "--inspect-brk",
         "${workspaceRoot}/node_modules/.bin/jest",
         "--runInBand",
         "--config",
@@ -15,7 +14,6 @@
       ],
       "windows": {
         "args": [
-          "--inspect-brk",
           "${workspaceRoot}/node_modules/jest/bin/jest.js",
           "--runInBand",
           "--config",

@@ -13,11 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
-  AdapterOperations, getChangeElement, Change,
+  AdapterOperations, getChangeElement, Change, isRemovalDiff,
 } from '@salto-io/adapter-api'
+import { setPath } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { Plan, PlanItem, PlanItemId } from './plan'
+import { detailedCompare } from './plan/plan_item'
 
 const deployAction = async (
   planItem: PlanItem,
@@ -52,11 +55,31 @@ export type StepEvents = {
   failed: (errorText?: string) => void
 }
 
+const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
+  const elemIDtoChangeElement = _.keyBy(
+    [...item.items.values()].map(getChangeElement),
+    changeElement => changeElement.elemID.getFullName()
+  )
+  appliedChanges.forEach(change => {
+    const updatedElement = getChangeElement(change)
+    if (!isRemovalDiff(change)) {
+      const itemChangeData = elemIDtoChangeElement[change.data.after.elemID.getFullName()]
+      if (itemChangeData !== undefined) {
+        const detailedChanges = detailedCompare(itemChangeData, updatedElement)
+        detailedChanges.forEach(detailedChange => {
+          const data = isRemovalDiff(detailedChange) ? undefined : detailedChange.data.after
+          setPath(itemChangeData, detailedChange.id, data)
+        })
+      }
+    }
+  })
+}
+
 export const deployActions = async (
   deployPlan: Plan,
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  postDeployAction: (item: PlanItem, appliedChanges: ReadonlyArray<Change>) => Promise<void>
+  postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
 ): Promise<DeployError[]> => {
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
@@ -65,7 +88,8 @@ export const deployActions = async (
       try {
         const appliedChanges = await deployAction(item, adapters)
         reportProgress(item, 'finished')
-        await postDeployAction(item, appliedChanges)
+        updatePlanElement(item, appliedChanges)
+        await postDeployAction(appliedChanges)
       } catch (error) {
         reportProgress(item, 'error', error.message ?? String(error))
         throw error

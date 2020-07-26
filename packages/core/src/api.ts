@@ -26,9 +26,7 @@ import {
   ChangeDataType,
   isFieldChange,
   AdapterInstallResult,
-  isRemovalDiff,
 } from '@salto-io/adapter-api'
-import { setPath } from '@salto-io/adapter-utils'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -54,7 +52,6 @@ import {
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
-import { detailedCompare } from './core/plan/plan_item'
 
 const log = logger(module)
 
@@ -131,14 +128,7 @@ export const deploy = async (
     })
   }
 
-  const postDeployAction = async (
-    item: PlanItem,
-    appliedChanges: ReadonlyArray<Change>
-  ): Promise<void> => {
-    const elemIDtoChangeElement = _.keyBy(
-      [...item.items.values()].map(getChangeElement),
-      changeElement => changeElement.elemID.getFullName()
-    )
+  const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
     await promises.array.series(appliedChanges.map(change => async () => {
       const updatedElement = await getUpdatedElement(change)
       const stateUpdate = (change.action === 'remove' && !isFieldChange(change))
@@ -146,16 +136,6 @@ export const deploy = async (
         : workspace.state().set(updatedElement)
       await stateUpdate
       changedElements.set(updatedElement.elemID.getFullName(), updatedElement)
-      if (!isRemovalDiff(change)) {
-        const itemChangeData = elemIDtoChangeElement[change.data.after.elemID.getFullName()]
-        if (itemChangeData !== undefined) {
-          const detailedChanges = detailedCompare(itemChangeData, updatedElement)
-          detailedChanges.forEach(detailedChange => {
-            const data = isRemovalDiff(detailedChange) ? undefined : detailedChange.data.after
-            setPath(itemChangeData, detailedChange.id, data)
-          })
-        }
-      }
     }))
   }
   const errors = await deployActions(actionPlan, adapters, reportProgress, postDeployAction)

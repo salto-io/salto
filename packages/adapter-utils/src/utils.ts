@@ -377,12 +377,12 @@ const getPath = (
 
 export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value): void => {
   const path = getPath(rootElement, fullElemID)
-  if (_.isUndefined(path)) {
-    log.warn('Failed to set: rootElement is not parent of fullElemID')
+  if (path === undefined) {
+    log.warn(`Failed to set: ${rootElement.elemID.getFullName()} is not parent of ${fullElemID.getFullName()}`)
     return
   }
   if (_.isEmpty(path)) {
-    log.warn('Failed to set: can not set the whole Element')
+    log.warn(`Failed to set: can not set the whole Element - ${rootElement.elemID.getFullName()}`)
     return
   }
   if (value === undefined) {
@@ -394,7 +394,7 @@ export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value):
 
 export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
   const path = getPath(rootElement, fullElemID)
-  if (_.isUndefined(path)) return undefined
+  if (path === undefined) return undefined
   if (_.isEmpty(path)) return rootElement
   return _.get(rootElement, path)
 }

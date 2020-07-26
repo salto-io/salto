@@ -121,8 +121,10 @@ export const writeZipFile = async (
   filename: string,
   contents: Buffer | string,
 ): Promise<void> => {
-  const zipContent = await generateZipBuffer(filename, contents)
-  await writeFile(zipFilename, zipContent)
+  const zip = new JSZip()
+  zip.file(filename, contents)
+  const zipContent = await zip.generateAsync({ type: 'nodebuffer' })
+  writeFile(zipFilename, zipContent)
 }
 
 export const appendTextFile = (

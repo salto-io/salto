@@ -35,6 +35,10 @@ export const createCopyReferenceCommand = (
     editor.document.fileName,
     saltoPos
   )
-  const copyText = ctx.ref?.element.elemID.createNestedID(...ctx.ref.path).getFullName()
-  copyToClipboard(copyText)
+  if (ctx.ref) {
+    const copyText = ctx.ref.path.length > 0
+      ? ctx.ref.element.elemID.createNestedID(...ctx.ref.path).getFullName()
+      : ctx.ref.element.elemID.getFullName()
+    copyToClipboard(copyText)
+  }
 }

@@ -32,6 +32,7 @@
   "dependencies": {
     "@salto-io/lowerdash": "0.1.19",
     "mkdirp": "^0.5.1",
+    "jszip": "^3.5.0",
     "rimraf": "^3.0.0"
   },
   "devDependencies": {

@@ -49,6 +49,7 @@
     "nodemailer": "^6.4.8",
     "simple-git": "^2.6.0",
     "source-map-support": "^0.5.13",
+    "uuid": "^3.3.3",
     "wu": "^2.1.0",
     "yargonaut": "^1.1.4",
     "yargs": "^13.3.0"

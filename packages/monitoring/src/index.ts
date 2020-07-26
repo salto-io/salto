@@ -26,8 +26,9 @@ import _ from 'lodash'
 import { mapTriggerNameToChanges } from './trigger'
 import { createPlanDiff, renderDiffView, PDF } from './diff'
 import { notify, subTitle } from './notification'
-import { readConfigFile, Config, validateConfig, Notification } from './config'
+import { readConfigFile, Config, validateConfig, Notification, getTelemetry } from './config'
 import { out, err } from './logger'
+import { getMonitoringTelemetry } from './telemetry'
 
 sourceMapSupport.install()
 
@@ -115,16 +116,13 @@ const main = async (): Promise<number> => {
     .help()
     .argv
 
-  try {
-    await validateGitRepo(args.workspace as string)
-  } catch (e) {
-    err(e.message)
-    return 1
-  }
+  const config: Config = await readConfigFile(args.config as string)
+  const telemetry = getMonitoringTelemetry(getTelemetry(config))
 
+  telemetry.start()
+  await validateGitRepo(args.workspace as string)
   const git = simpleGit(args.workspace as string)
   try {
-    const config: Config = await readConfigFile(args.config as string)
     validateConfig(config)
 
     out('Loading workspace')
@@ -154,15 +152,22 @@ const main = async (): Promise<number> => {
       .map(notification => notifyTriggered(notification, triggerNameToChanges, config))
     await Promise.all(notifyPromises)
   } catch (e) {
-    err(e.message)
-    return 1
+    telemetry.failure()
+    telemetry.stacktrace({ err: e })
+    throw e
   } finally {
     if (fs.existsSync(path.join(args.workspace as string, stateFilePath(args.env as string)))) {
       await git.checkout(['HEAD', stateFilePath(args.env as string)])
     }
   }
+  telemetry.success()
   out('Finished successfully')
   return 0
 }
 
-main().then(exitCode => process.exit(exitCode))
+main()
+  .then(exitCode => process.exit(exitCode))
+  .catch(e => {
+    err(e)
+    process.exit(1)
+  })

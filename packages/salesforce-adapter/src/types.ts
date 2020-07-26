@@ -45,6 +45,7 @@ export type DataManagementConfig = {
   includeNamespaces?: string[]
   includeObjects?: string[]
   excludeObjects?: string[]
+  allowReferenceTo?: string[]
 }
 
 export type SalesforceConfig = {
@@ -98,6 +99,7 @@ const dataManagementType = new ObjectType({
     includeNamespaces: { type: new ListType(BuiltinTypes.STRING) },
     includeObjects: { type: new ListType(BuiltinTypes.STRING) },
     excludeObjects: { type: new ListType(BuiltinTypes.STRING) },
+    allowReferenceTo: { type: new ListType(BuiltinTypes.STRING) },
   },
 })
 
@@ -149,11 +151,6 @@ export const configType = new ObjectType({
             enabled: false,
             isNameBasedID: true,
             includeNamespaces: ['SBQQ'],
-            includeObjects: [
-              'Product2',
-              'Pricebook2',
-              'PricebookEntry',
-            ],
             excludeObjects: [
               'SBQQ__ContractedPrice__c',
               'SBQQ__Quote__c',
@@ -165,6 +162,11 @@ export const configType = new ObjectType({
               'SBQQ__SubscriptionConsumptionSchedule__c',
               'SBQQ__WebQuote__c',
               'SBQQ__WebQuoteLine__c',
+            ],
+            allowReferenceTo: [
+              'Product2',
+              'Pricebook2',
+              'PricebookEntry',
             ],
           },
         ],

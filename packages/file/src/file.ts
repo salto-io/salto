@@ -15,6 +15,7 @@
 */
 import { promisify } from 'util'
 import fs from 'fs'
+import JSZip from 'jszip'
 import rimRafLib from 'rimraf'
 import mkdirpLib from 'mkdirp'
 import path from 'path'
@@ -83,6 +84,19 @@ export const readTextFile = (
   filename: string,
 ): Promise<string> => readFileP(filename, { encoding: 'utf8' })
 
+export const readZipFile = async (
+  zipFilename: string,
+  filename: string,
+): Promise<string | undefined> => {
+  const data = await readFileP(zipFilename)
+  const zip = await JSZip.loadAsync(data)
+  const zipFile = zip.file(filename)
+  if (zipFile === null) {
+    return undefined
+  }
+  return zipFile.async('string')
+}
+
 readTextFile.notFoundAsUndefined = notFoundAsUndefined(readTextFile)
 
 export const readFile = (filename: string): Promise<Buffer> => readFileP(filename)
@@ -93,6 +107,17 @@ export const writeFile = (
   filename: string,
   contents: Buffer | string,
 ): Promise<void> => writeFileP(filename, contents, { encoding: 'utf8' })
+
+export const writeZipFile = async (
+  zipFilename: string,
+  filename: string,
+  contents: Buffer | string,
+): Promise<void> => {
+  const zip = new JSZip()
+  zip.file(filename, contents)
+  const zipContent = await zip.generateAsync({ type: 'nodebuffer' })
+  writeFile(zipFilename, zipContent)
+}
 
 export const appendTextFile = (
   filename: string,

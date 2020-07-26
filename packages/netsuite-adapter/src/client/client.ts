@@ -25,12 +25,13 @@ import type {
   OperationResult,
 } from '@salto-io/suitecloud-cli'
 
-import { collections, decorators, hash } from '@salto-io/lowerdash'
+import { collections, decorators, hash, promises } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import he from 'he'
+import Bottleneck from 'bottleneck'
 import osPath from 'path'
 import os from 'os'
 import _ from 'lodash'
@@ -41,6 +42,7 @@ import {
 } from '../constants'
 
 const { makeArray } = collections.array
+const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
 let AuthenticationService: typeof AuthenticationServiceType
@@ -78,6 +80,7 @@ export type Credentials = {
 
 export type NetsuiteClientOpts = {
   credentials: Credentials
+  sdfConcurrencyLimit: number
 }
 
 export const COMMANDS = {
@@ -219,8 +222,10 @@ export type ImportFileCabinetResult = {
 export default class NetsuiteClient {
   private readonly credentials: Credentials
   private readonly authId: string
+  private readonly sdfConcurrencyLimit: number
+  private readonly sdfCallsLimiter: Bottleneck
 
-  constructor({ credentials }: NetsuiteClientOpts) {
+  constructor({ credentials, sdfConcurrencyLimit }: NetsuiteClientOpts) {
     this.credentials = {
       ...credentials,
       // accountId must be uppercased as decribed in https://github.com/oracle/netsuite-suitecloud-sdk/issues/140
@@ -228,10 +233,12 @@ export default class NetsuiteClient {
     }
     this.authId = hash
       .toMD5(this.credentials.accountId + this.credentials.tokenId + this.credentials.tokenSecret)
+    this.sdfConcurrencyLimit = sdfConcurrencyLimit
+    this.sdfCallsLimiter = new Bottleneck({ maxConcurrent: sdfConcurrencyLimit })
   }
 
   static async validateCredentials(credentials: Credentials): Promise<AccountId> {
-    const netsuiteClient = new NetsuiteClient({ credentials })
+    const netsuiteClient = new NetsuiteClient({ credentials, sdfConcurrencyLimit: 1 })
     await netsuiteClient.initProject()
     return Promise.resolve(netsuiteClient.credentials.accountId)
   }
@@ -286,13 +293,14 @@ export default class NetsuiteClient {
     }
   }
 
-  private static async executeProjectAction(commandName: string, commandArguments: Values,
+  private async executeProjectAction(commandName: string, commandArguments: Values,
     projectCommandActionExecutor: CommandActionExecutorType): Promise<OperationResult> {
-    const operationResult = await projectCommandActionExecutor.executeAction({
-      commandName,
-      runInInteractiveMode: false,
-      arguments: commandArguments,
-    })
+    const operationResult = await this.sdfCallsLimiter.schedule(() =>
+      projectCommandActionExecutor.executeAction({
+        commandName,
+        runInInteractiveMode: false,
+        arguments: commandArguments,
+      }))
     NetsuiteClient.verifySuccessfulOperation(operationResult)
     return operationResult
   }
@@ -303,12 +311,12 @@ export default class NetsuiteClient {
     // Todo: use the correct implementation and not Salto's temporary solution after:
     //  https://github.com/oracle/netsuite-suitecloud-sdk/issues/81 is resolved
     const setupAccountUsingExistingAuthID = async (): Promise<void> => {
-      await NetsuiteClient.executeProjectAction(COMMANDS.SETUP_ACCOUNT, { authid: this.authId },
+      await this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, { authid: this.authId },
         projectCommandActionExecutor)
     }
 
     const setupAccountUsingNewAuthID = async (): Promise<void> => {
-      await NetsuiteClient.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
+      await this.executeProjectAction(COMMANDS.SETUP_ACCOUNT, {
         authid: this.authId,
         accountid: this.credentials.accountId,
         tokenid: this.credentials.tokenId,
@@ -340,7 +348,7 @@ export default class NetsuiteClient {
   async getCustomObjects(typeNames: string[], fetchAllAtOnce: boolean):
     Promise<GetCustomObjectsResult> {
     const { executor, projectName } = await this.initProject()
-    const { failedToFetchAllAtOnce, failedTypes } = await NetsuiteClient.importObjects(typeNames,
+    const { failedToFetchAllAtOnce, failedTypes } = await this.importObjects(typeNames,
       fetchAllAtOnce, executor)
     const objectsDirPath = NetsuiteClient.getObjectsDirPath(projectName)
     const filenames = await readDir(objectsDirPath)
@@ -362,13 +370,13 @@ export default class NetsuiteClient {
     return { elements, failedTypes, failedToFetchAllAtOnce }
   }
 
-  private static async importObjects(typeNames: string[], fetchAllAtOnce: boolean,
+  private async importObjects(typeNames: string[], fetchAllAtOnce: boolean,
     executor: CommandActionExecutorType):
     Promise<{ failedToFetchAllAtOnce: boolean; failedTypes: string[] }> {
     const importAllAtOnce = async (): Promise<boolean> => {
       log.debug('Fetching all custom objects at once')
       try {
-        await NetsuiteClient.runImportObjectsCommand(ALL, executor)
+        await this.runImportObjectsCommand(ALL, executor)
         return true
       } catch (e) {
         log.warn(`Attempt to fetch all custom objects has failed due to: ${e}`)
@@ -381,33 +389,33 @@ export default class NetsuiteClient {
     }
     return {
       failedToFetchAllAtOnce: fetchAllAtOnce,
-      failedTypes: await NetsuiteClient.importObjectsByTypes(typeNames, executor),
+      failedTypes: await this.importObjectsByTypes(typeNames, executor),
     }
   }
 
-  private static async importObjectsByTypes(typeNames: string[],
+  private async importObjectsByTypes(typeNames: string[],
     executor: CommandActionExecutorType): Promise<string[]> {
     const failedTypes: string[] = []
     log.debug('Fetching custom objects one by one')
-    await typeNames.reduce(
-      (prevRes, typeName) =>
-        prevRes.then(async () => {
-          log.debug(`Fetching objects of type: ${typeName}`)
-          try {
-            await NetsuiteClient.runImportObjectsCommand(typeName, executor)
-          } catch (e) {
-            log.warn(`Failed to fetch objects of type ${typeName} failed due to ${e}`)
-            failedTypes.push(typeName)
-          }
-        }),
-      Promise.resolve(),
+    await withLimitedConcurrency( // limit the number of open promises
+      typeNames.map(typeName => async () => {
+        try {
+          log.debug(`About to objects of type: ${typeName}`)
+          await this.runImportObjectsCommand(typeName, executor)
+          log.debug(`Fetched objects of type: ${typeName}`)
+        } catch (e) {
+          log.warn(`Failed to fetch objects of type ${typeName} failed due to ${e}`)
+          failedTypes.push(typeName)
+        }
+      }),
+      this.sdfConcurrencyLimit
     )
     return failedTypes
   }
 
-  private static async runImportObjectsCommand(type: string, executor: CommandActionExecutorType):
+  private async runImportObjectsCommand(type: string, executor: CommandActionExecutorType):
     Promise<OperationResult> {
-    return NetsuiteClient.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
+    return this.executeProjectAction(COMMANDS.IMPORT_OBJECTS, {
       destinationfolder: `${SDF_PATH_SEPARATOR}${OBJECTS_DIR}`,
       type,
       scriptid: ALL,
@@ -415,20 +423,20 @@ export default class NetsuiteClient {
     }, executor)
   }
 
-  private static async listFilePaths(executor: CommandActionExecutorType): Promise<string[]> {
+  private async listFilePaths(executor: CommandActionExecutorType): Promise<string[]> {
     const TOP_LEVEL_FOLDER_NAMES = [`${SDF_PATH_SEPARATOR}${SUITE_SCRIPTS_FOLDER_NAME}`,
       `${SDF_PATH_SEPARATOR}${TEMPLATES_FOLDER_NAME}`, `${SDF_PATH_SEPARATOR}${WEB_SITE_HOSTING_FILES_FOLDER_NAME}`]
     const operationResults = _.flatten(await Promise.all(
       TOP_LEVEL_FOLDER_NAMES.map(async folderName =>
-        NetsuiteClient.executeProjectAction(COMMANDS.LIST_FILES, { folder: folderName }, executor))
+        this.executeProjectAction(COMMANDS.LIST_FILES, { folder: folderName }, executor))
     ))
     return _.flatten(operationResults.map(operationResult => makeArray(operationResult.data)))
   }
 
-  private static async importFiles(filePaths: string[], executor: CommandActionExecutorType):
+  private async importFiles(filePaths: string[], executor: CommandActionExecutorType):
     Promise<{ importedPaths: string[]; failedPaths: string[] }> {
     try {
-      const operationResult = await NetsuiteClient.executeProjectAction(
+      const operationResult = await this.executeProjectAction(
         COMMANDS.IMPORT_FILES,
         { paths: filePaths },
         executor
@@ -444,25 +452,16 @@ export default class NetsuiteClient {
         log.debug(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
         return { importedPaths: [], failedPaths: filePaths }
       }
-      return _.chunk(filePaths, (filePaths.length + 1) / 2)
-        .filter(chunk => !_.isEmpty(chunk))
-        .reduce(
-          async (prev, paths) => {
-            const prevResult = await prev
-            const newResult = await NetsuiteClient.importFiles(paths, executor)
-            return {
-              importedPaths: prevResult.importedPaths.concat(
-                newResult.importedPaths
-              ),
-              failedPaths: prevResult.failedPaths.concat(
-                newResult.failedPaths
-              ),
-            }
-          },
-          Promise.resolve(
-            { importedPaths: [] as string[], failedPaths: [] as string[] }
-          ),
-        )
+      const importResults = await withLimitedConcurrency( // limit the number of open promises
+        _.chunk(filePaths, (filePaths.length + 1) / 2)
+          .filter(chunk => !_.isEmpty(chunk))
+          .map(paths => () => this.importFiles(paths, executor)),
+        this.sdfConcurrencyLimit,
+      )
+      return {
+        importedPaths: importResults.flatMap(importResult => importResult.importedPaths),
+        failedPaths: importResults.flatMap(importResult => importResult.failedPaths),
+      }
     }
   }
 
@@ -500,9 +499,9 @@ export default class NetsuiteClient {
       }))
 
     const project = await this.initProject()
-    const filePathsToImport = (await NetsuiteClient.listFilePaths(project.executor))
+    const filePathsToImport = (await this.listFilePaths(project.executor))
       .filter(path => filePathRegexSkipList.every(regex => !regex.test(path)))
-    const importFilesResults = await NetsuiteClient.importFiles(filePathsToImport, project.executor)
+    const importFilesResults = await this.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
     const importedPaths = _.uniq(importFilesResults.importedPaths)
     const [attributesPaths, filePaths] = _.partition(importedPaths,
@@ -539,13 +538,13 @@ export default class NetsuiteClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await NetsuiteClient.runDeployCommands(project)
+    await this.runDeployCommands(project)
     await NetsuiteClient.deleteProject(project.projectName)
   }
 
-  private static async runDeployCommands({ executor }: Project): Promise<void> {
-    await NetsuiteClient.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await NetsuiteClient.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {}, executor)
+  private async runDeployCommands({ executor }: Project): Promise<void> {
+    await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
+    await this.executeProjectAction(COMMANDS.DEPLOY_PROJECT, {}, executor)
   }
 
   private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo,

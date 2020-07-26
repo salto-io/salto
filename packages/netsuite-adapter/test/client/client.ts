@@ -27,6 +27,7 @@ export const DUMMY_CREDENTIALS = {
 const mockClient = (): NetsuiteClient =>
   new NetsuiteClient({
     credentials: DUMMY_CREDENTIALS,
+    sdfConcurrencyLimit: 2,
   })
 
 export default mockClient

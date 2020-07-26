@@ -39,6 +39,9 @@ export const BuiltinTypes = {
     elemID: new ElemID(GLOBAL_ADAPTER, 'json'),
     primitive: PrimitiveTypes.STRING,
   }),
+  UNKNOWN: new ObjectType({
+    elemID: new ElemID(GLOBAL_ADAPTER, 'unknown'),
+  }),
 }
 
 export const CORE_ANNOTATIONS = {

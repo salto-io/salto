@@ -21,7 +21,7 @@ import {
   ObjectType, isStaticFile, StaticFile, ElemID, PrimitiveType, Values, Value, isReferenceExpression,
   Element, isInstanceElement, InstanceElement, isPrimitiveType, TypeMap, isField,
   ReferenceExpression, Field, InstanceAnnotationTypes, isType, isObjectType, isListType,
-  CORE_ANNOTATIONS, TypeElement,
+  CORE_ANNOTATIONS, TypeElement, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 
@@ -111,7 +111,7 @@ export const transformValues = (
       return transformed.length === 0 ? undefined : transformed
     }
 
-    if (isObjectType(fieldType)) {
+    if (isObjectType(fieldType) && !fieldType.isEqual(BuiltinTypes.UNKNOWN)) {
       const transformed = _.omitBy(
         transformValues({
           values: newVal,

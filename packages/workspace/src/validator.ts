@@ -19,7 +19,7 @@ import {
   Element, isObjectType, isInstanceElement, TypeElement, InstanceElement, Field, PrimitiveTypes,
   isPrimitiveType, Value, ElemID, CORE_ANNOTATIONS, SaltoElementError, SaltoErrorSeverity,
   ReferenceExpression, Values, isElement, isListType, getRestriction, isVariable, Variable,
-  isReferenceExpression, StaticFile,
+  isReferenceExpression, StaticFile, BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
@@ -366,6 +366,10 @@ const validateValue = (elemID: ElemID, value: Value,
       fieldName: elemID.name,
       expectedValue: 'not a variable',
     })]
+  }
+
+  if (isObjectType(type) && BuiltinTypes.UNKNOWN.isEqual(type)) {
+    return []
   }
 
   if (isObjectType(type)) {

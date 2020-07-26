@@ -80,7 +80,9 @@ const getListTypes = (listTypes: ListType[]): Record<string, ListType> =>
 export const mergeElements = (elements: ReadonlyArray<Element>): MergeResult => {
   const objects = mergeObjectTypes(elements.filter(isObjectType))
   const instances = mergeInstances(elements.filter(isInstanceElement))
-  const primitiveElements = [...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes)]
+  const primitiveElements = [
+    ...elements.filter(isPrimitiveType), ...Object.values(BuiltinTypes).filter(isPrimitiveType),
+  ]
   const primitives = mergePrimitives(primitiveElements)
   const listTypes = getListTypes(elements.filter(isListType))
   const variables = mergeVariables(elements.filter(isVariable))

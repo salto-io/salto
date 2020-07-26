@@ -15,11 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  isObjectType, Field, Values, TypeElement, isType, ElemID,
-  TypeMap,
-  BuiltinTypes,
-  PrimitiveType,
-  ListType,
+  isObjectType, Field, Values, TypeElement, isType, ElemID, TypeMap, BuiltinTypes, ListType,
   ObjectType,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -54,13 +50,13 @@ export type RawMissingFieldData = {
 
 type FieldData = {
   name: string
-  type: ElemID | PrimitiveType
+  type: ElemID | TypeElement
   annotations?: AnnotationData
   isList?: boolean
 }
 
 type MissingFieldData = {
-  id: ElemID | PrimitiveType
+  id: ElemID | TypeElement
   fields: FieldData[]
 }
 
@@ -75,7 +71,7 @@ const isBuiltinTypeName = (name: string): name is keyof typeof BuiltinTypes => (
   name in BuiltinTypes
 )
 
-const generateType = (typeName: string): PrimitiveType | ElemID => {
+const generateType = (typeName: string): TypeElement | ElemID => {
   if (isBuiltinTypeName(typeName)) {
     return BuiltinTypes[typeName]
   }

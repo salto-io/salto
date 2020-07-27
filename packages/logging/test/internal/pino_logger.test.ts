@@ -104,6 +104,18 @@ describe('pino based logger', () => {
           expect(line2).toMatch(TIMESTAMP_REGEX)
           expect(line2).toContain(`warn ${NAMESPACE} hello2 { world: true }`)
         })
+
+        it('should append to file on subsequent runs', async () => {
+          logger = createLogger()
+          logger.error('2nd run')
+          await repo.end()
+
+          const fileContents2 = readFileContent()
+          const lines = fileContents2.split(EOL)
+          expect(lines[0]).toEqual(line)
+          expect(lines[1]).toEqual(line2)
+          expect(lines[2]).toContain('2nd run')
+        })
       })
 
       describe('when not set', () => {

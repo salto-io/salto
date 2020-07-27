@@ -6,22 +6,22 @@
         "name": "operation",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "equals",
-            "notEqual",
-            "lessThan",
-            "greaterThan",
-            "lessOrEqual",
-            "greaterOrEqual",
-            "contains",
-            "notContain",
-            "startsWith",
-            "includes",
-            "excludes",
-            "within"
-          ],
-          "_restrictions": {
-            "enforceValue": true
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "equals",
+              "notEqual",
+              "lessThan",
+              "greaterThan",
+              "lessOrEqual",
+              "greaterOrEqual",
+              "contains",
+              "notContain",
+              "startsWith",
+              "includes",
+              "excludes",
+              "within"
+            ]
           }
         }
       }
@@ -34,22 +34,143 @@
         "name": "operator",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "equals",
-            "notEqual",
-            "lessThan",
-            "greaterThan",
-            "lessOrEqual",
-            "greaterOrEqual",
-            "contains",
-            "notContain",
-            "startsWith",
-            "includes",
-            "excludes",
-            "within"
-          ],
-          "_restrictions": {
-            "enforceValue": true
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "equals",
+              "notEqual",
+              "lessThan",
+              "greaterThan",
+              "lessOrEqual",
+              "greaterOrEqual",
+              "contains",
+              "notContain",
+              "startsWith",
+              "includes",
+              "excludes",
+              "within"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "ReportTimeFrameFilter",
+    "fields": [
+      {
+        "name": "interval",
+        "type": "STRING",
+        "annotations": {
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "INTERVAL_CURRENT",
+              "INTERVAL_CURNEXT1",
+              "INTERVAL_CURPREV1",
+              "INTERVAL_NEXT1",
+              "INTERVAL_PREV1",
+              "INTERVAL_CURNEXT3",
+              "INTERVAL_CURFY",
+              "INTERVAL_PREVFY",
+              "INTERVAL_PREV2FY",
+              "INTERVAL_AGO2FY",
+              "INTERVAL_NEXTFY",
+              "INTERVAL_PREVCURFY",
+              "INTERVAL_PREVCUR2FY",
+              "INTERVAL_CURNEXTFY",
+              "INTERVAL_CUSTOM",
+              "INTERVAL_YESTERDAY",
+              "INTERVAL_TODAY",
+              "INTERVAL_TOMORROW",
+              "INTERVAL_LASTWEEK",
+              "INTERVAL_THISWEEK",
+              "INTERVAL_NEXTWEEK",
+              "INTERVAL_LASTMONTH",
+              "INTERVAL_THISMONTH",
+              "INTERVAL_NEXTMONTH",
+              "INTERVAL_LASTTHISMONTH",
+              "INTERVAL_THISNEXTMONTH",
+              "INTERVAL_CURRENTQ",
+              "INTERVAL_CURNEXTQ",
+              "INTERVAL_CURPREVQ",
+              "INTERVAL_NEXTQ",
+              "INTERVAL_PREVQ",
+              "INTERVAL_CURNEXT3Q",
+              "INTERVAL_CURY",
+              "INTERVAL_PREVY",
+              "INTERVAL_PREV2Y",
+              "INTERVAL_AGO2Y",
+              "INTERVAL_NEXTY",
+              "INTERVAL_PREVCURY",
+              "INTERVAL_PREVCUR2Y",
+              "INTERVAL_CURNEXTY",
+              "INTERVAL_LAST7",
+              "INTERVAL_LAST30",
+              "INTERVAL_LAST60",
+              "INTERVAL_LAST90",
+              "INTERVAL_LAST120",
+              "INTERVAL_NEXT7",
+              "INTERVAL_NEXT30",
+              "INTERVAL_NEXT60",
+              "INTERVAL_NEXT90",
+              "INTERVAL_NEXT120",
+              "LAST_FISCALWEEK",
+              "THIS_FISCALWEEK",
+              "NEXT_FISCALWEEK",
+              "LAST_FISCALPERIOD",
+              "THIS_FISCALPERIOD",
+              "NEXT_FISCALPERIOD",
+              "LASTTHIS_FISCALPERIOD",
+              "THISNEXT_FISCALPERIOD",
+              "CURRENT_ENTITLEMENT_PERIOD",
+              "PREVIOUS_ENTITLEMENT_PERIOD",
+              "PREVIOUS_TWO_ENTITLEMENT_PERIODS",
+              "TWO_ENTITLEMENT_PERIODS_AGO",
+              "CURRENT_AND_PREVIOUS_ENTITLEMENT_PERIOD",
+              "CURRENT_AND_PREVIOUS_TWO_ENTITLEMENT_PERIODS"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  {
+    "id": "DashboardComponent",
+    "fields": [
+      {
+        "name": "componentType",
+        "type": "STRING",
+        "annotations": {
+          "_restriction": {
+            "values": [
+              "Bar",
+              "BarGrouped",
+              "BarStacked",
+              "BarStacked100",
+              "Column",
+              "ColumnGrouped",
+              "ColumnLine",
+              "ColumnLineGrouped",
+              "ColumnLineStacked",
+              "ColumnLineStacked100",
+              "ColumnStacked",
+              "ColumnStacked100",
+              "Donut",
+              "FlexTable",
+              "Funnel",
+              "Gauge",
+              "Line",
+              "lineCumulative",
+              "LineGrouped",
+              "lineGroupedCumulative",
+              "Metric",
+              "Pie",
+              "Scatter",
+              "ScatterGrouped",
+              "Scontrol",
+              "Table"
+            ]
           }
         }
       }
@@ -79,10 +200,12 @@
         "name": "assignedToType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "User",
-            "Queue"
-          ]
+          "_restriction": {
+            "values": [
+              "User",
+              "Queue"
+            ]
+          }
         }
       }
     ]
@@ -94,11 +217,13 @@
         "name": "visibility",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "DefaultOff",
-            "DefaultOn",
-            "Hidden"
-          ]
+          "_restriction": {
+            "values": [
+              "DefaultOff",
+              "DefaultOn",
+              "Hidden"
+            ]
+          }
         }
       }
     ]
@@ -110,12 +235,14 @@
         "name": "style",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "TwoColumnsTopToBottom",
-            "TwoColumnsLeftToRight",
-            "OneColumn",
-            "CustomLinks"
-          ]
+          "_restriction": {
+            "values": [
+              "TwoColumnsTopToBottom",
+              "TwoColumnsLeftToRight",
+              "OneColumn",
+              "CustomLinks"
+            ]
+          }
         }
       }
     ]
@@ -127,11 +254,13 @@
         "name": "behavior",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Edit",
-            "Required",
-            "Readonly"
-          ]
+          "_restriction": {
+            "values": [
+              "Edit",
+              "Required",
+              "Readonly"
+            ]
+          }
         }
       }
     ]
@@ -182,21 +311,23 @@
         "name": "operator",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "EqualTo",
-            "NotEqualTo",
-            "GreaterThan",
-            "LessThan",
-            "GreaterThanOrEqualTo",
-            "LessThanOrEqualTo",
-            "StartsWith",
-            "EndsWith",
-            "Contains",
-            "IsNull",
-            "WasSet",
-            "WasSelected",
-            "WasVisited"
-          ]
+          "_restriction": {
+            "values": [
+              "EqualTo",
+              "NotEqualTo",
+              "GreaterThan",
+              "LessThan",
+              "GreaterThanOrEqualTo",
+              "LessThanOrEqualTo",
+              "StartsWith",
+              "EndsWith",
+              "Contains",
+              "IsNull",
+              "WasSet",
+              "WasSelected",
+              "WasVisited"
+            ]
+          }
         }
       }
     ]
@@ -208,20 +339,22 @@
         "name": "operator",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Add",
-            "AddAtStart",
-            "AddItem",
-            "Assign",
-            "AssignCount",
-            "RemoveAfterFirst",
-            "RemoveAll",
-            "RemoveBeforeFirst",
-            "RemoveFirst",
-            "RemovePosition",
-            "RemoveUncommon",
-            "Subtract"
-          ]
+          "_restriction": {
+            "values": [
+              "Add",
+              "AddAtStart",
+              "AddItem",
+              "Assign",
+              "AssignCount",
+              "RemoveAfterFirst",
+              "RemoveAll",
+              "RemoveBeforeFirst",
+              "RemoveFirst",
+              "RemovePosition",
+              "RemoveUncommon",
+              "Subtract"
+            ]
+          }
         }
       }
     ]
@@ -233,18 +366,20 @@
         "name": "operator",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "EqualTo",
-            "NotEqualTo",
-            "GreaterThan",
-            "LessThan",
-            "GreaterThanOrEqualTo",
-            "LessThanOrEqualTo",
-            "StartsWith",
-            "EndsWith",
-            "Contains",
-            "IsNull"
-          ]
+          "_restriction": {
+            "values": [
+              "EqualTo",
+              "NotEqualTo",
+              "GreaterThan",
+              "LessThan",
+              "GreaterThanOrEqualTo",
+              "LessThanOrEqualTo",
+              "StartsWith",
+              "EndsWith",
+              "Contains",
+              "IsNull"
+            ]
+          }
         }
       }
     ]
@@ -256,15 +391,17 @@
         "name": "dataType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Currency",
-            "Date",
-            "Number",
-            "String",
-            "Boolean",
-            "Picklist",
-            "Multipicklist"
-          ]
+          "_restriction": {
+            "values": [
+              "Currency",
+              "Date",
+              "Number",
+              "String",
+              "Boolean",
+              "Picklist",
+              "Multipicklist"
+            ]
+          }
         }
       }
     ]
@@ -276,33 +413,37 @@
         "name": "dataType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Boolean",
-            "Currency",
-            "Date",
-            "DateTime",
-            "Number",
-            "String"
-          ]
+          "_restriction": {
+            "values": [
+              "Boolean",
+              "Currency",
+              "Date",
+              "DateTime",
+              "Number",
+              "String"
+            ]
+          }
         }
       },
       {
         "name": "fieldType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "DisplayText",
-            "InputField",
-            "LargeTextArea",
-            "PasswordField",
-            "RadioButtons",
-            "DropdownBox",
-            "MultiSelectCheckboxes",
-            "MultiSelectPicklist",
-            "ComponentInstance",
-            "ComponentChoice",
-            "ComponentInput"
-          ]
+          "_restriction": {
+            "values": [
+              "DisplayText",
+              "InputField",
+              "LargeTextArea",
+              "PasswordField",
+              "RadioButtons",
+              "DropdownBox",
+              "MultiSelectCheckboxes",
+              "MultiSelectPicklist",
+              "ComponentInstance",
+              "ComponentChoice",
+              "ComponentInput"
+            ]
+          }
         }
       }
     ]
@@ -314,18 +455,20 @@
         "name": "dataType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Apex",
-            "Boolean",
-            "Currency",
-            "Date",
-            "DateTime",
-            "Number",
-            "Multipicklist",
-            "Picklist",
-            "String",
-            "SObject"
-          ]
+          "_restriction": {
+            "values": [
+              "Apex",
+              "Boolean",
+              "Currency",
+              "Date",
+              "DateTime",
+              "Number",
+              "Multipicklist",
+              "Picklist",
+              "String",
+              "SObject"
+            ]
+          }
         }
       }
     ]
@@ -337,13 +480,15 @@
         "name": "dataType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Boolean",
-            "Currency",
-            "Date",
-            "Number",
-            "String"
-          ]
+          "_restriction": {
+            "values": [
+              "Boolean",
+              "Currency",
+              "Date",
+              "Number",
+              "String"
+            ]
+          }
         }
       }
     ]
@@ -355,13 +500,15 @@
         "name": "dataType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Boolean",
-            "Currency",
-            "Date",
-            "Number",
-            "String"
-          ]
+          "_restriction": {
+            "values": [
+              "Boolean",
+              "Currency",
+              "Date",
+              "Number",
+              "String"
+            ]
+          }
         }
       }
     ]
@@ -373,14 +520,16 @@
         "name": "dataType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Boolean",
-            "Currency",
-            "Date",
-            "DateTime",
-            "Number",
-            "String"
-          ]
+          "_restriction": {
+            "values": [
+              "Boolean",
+              "Currency",
+              "Date",
+              "DateTime",
+              "Number",
+              "String"
+            ]
+          }
         }
       }
     ]
@@ -392,10 +541,12 @@
         "name": "sortOrder",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Asc",
-            "Desc"
-          ]
+          "_restriction": {
+            "values": [
+              "Asc",
+              "Desc"
+            ]
+          }
         }
       }
     ]
@@ -407,10 +558,12 @@
         "name": "iterationOrder",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Asc",
-            "Desc"
-          ]
+          "_restriction": {
+            "values": [
+              "Asc",
+              "Desc"
+            ]
+          }
         }
       }
     ]
@@ -422,86 +575,100 @@
         "name": "customSettingsType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "List",
-            "Hierarchy"
-          ]
+          "_restriction": {
+            "values": [
+              "List",
+              "Hierarchy"
+            ]
+          }
         }
       },
       {
         "name": "deploymentStatus",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "InDevelopment",
-            "Deployed"
-          ]
+          "_restriction": {
+            "values": [
+              "InDevelopment",
+              "Deployed"
+            ]
+          }
         }
       },
       {
         "name": "externalSharingModel",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Private",
-            "Read",
-            "ReadWrite",
-            "ReadWriteTransfer",
-            "FullAccess",
-            "ControlledByParent",
-            "ControlledByCampaign",
-            "ControlledByLeadOrContact"
-          ]
+          "_restriction": {
+            "values": [
+              "Private",
+              "Read",
+              "ReadWrite",
+              "ReadWriteTransfer",
+              "FullAccess",
+              "ControlledByParent",
+              "ControlledByCampaign",
+              "ControlledByLeadOrContact"
+            ]
+          }
         }
       },
       {
         "name": "gender",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Masculine",
-            "Feminine",
-            "Neuter",
-            "AnimateMasculine"
-          ]
+          "_restriction": {
+            "values": [
+              "Masculine",
+              "Feminine",
+              "Neuter",
+              "AnimateMasculine"
+            ]
+          }
         }
       },
       {
         "name": "sharingModel",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Private",
-            "Read",
-            "ReadWrite",
-            "ReadWriteTransfer",
-            "FullAccess",
-            "ControlledByParent",
-            "ControlledByCampaign",
-            "ControlledByLeadOrContact"
-          ]
+          "_restriction": {
+            "values": [
+              "Private",
+              "Read",
+              "ReadWrite",
+              "ReadWriteTransfer",
+              "FullAccess",
+              "ControlledByParent",
+              "ControlledByCampaign",
+              "ControlledByLeadOrContact"
+            ]
+          }
         }
       },
       {
         "name": "startsWith",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Consonant",
-            "Vowel",
-            "Special"
-          ]
+          "_restriction": {
+            "values": [
+              "Consonant",
+              "Vowel",
+              "Special"
+            ]
+          }
         }
       },
       {
         "name": "visibility",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Public",
-            "Protected",
-            "PackageProtected"
-          ]
+          "_restriction": {
+            "values": [
+              "Public",
+              "Protected",
+              "PackageProtected"
+            ]
+          }
         }
       }
     ]
@@ -513,29 +680,31 @@
         "name": "type",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "AutoNumber",
-            "Text",
-            "Number",
-            "Percent",
-            "Checkbox",
-            "Date",
-            "Time",
-            "DateTime",
-            "Currency",
-            "Picklist",
-            "MultiselectPicklist",
-            "Email",
-            "Phone",
-            "LongTextArea",
-            "Html",
-            "TextArea",
-            "EncryptedText",
-            "Url",
-            "Lookup",
-            "MasterDetail",
-            "Summary"
-          ]
+          "_restriction": {
+            "values": [
+              "AutoNumber",
+              "Text",
+              "Number",
+              "Percent",
+              "Checkbox",
+              "Date",
+              "Time",
+              "DateTime",
+              "Currency",
+              "Picklist",
+              "MultiselectPicklist",
+              "Email",
+              "Phone",
+              "LongTextArea",
+              "Html",
+              "TextArea",
+              "EncryptedText",
+              "Url",
+              "Lookup",
+              "MasterDetail",
+              "Summary"
+            ]
+          }
         }
       }
     ]
@@ -547,16 +716,18 @@
         "name": "filterScope",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Everything",
-            "Mine",
-            "MineAndMyGroups",
-            "Queue",
-            "Delegated",
-            "MyTerritory",
-            "MyTeamTerritory",
-            "Team"
-          ]
+          "_restriction": {
+            "values": [
+              "Everything",
+              "Mine",
+              "MineAndMyGroups",
+              "Queue",
+              "Delegated",
+              "MyTerritory",
+              "MyTeamTerritory",
+              "Team"
+            ]
+          }
         }
       }
     ]
@@ -568,20 +739,22 @@
         "name": "operation",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "equals",
-            "notEqual",
-            "lessThan",
-            "greaterThan",
-            "lessOrEqual",
-            "greaterOrEqual",
-            "contains",
-            "notContain",
-            "startsWith",
-            "includes",
-            "excludes",
-            "within"
-          ]
+          "_restriction": {
+            "values": [
+              "equals",
+              "notEqual",
+              "lessThan",
+              "greaterThan",
+              "lessOrEqual",
+              "greaterOrEqual",
+              "contains",
+              "notContain",
+              "startsWith",
+              "includes",
+              "excludes",
+              "within"
+            ]
+          }
         }
       }
     ]
@@ -593,11 +766,13 @@
         "name": "displayType",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "link",
-            "button",
-            "massActionButton"
-          ]
+          "_restriction": {
+            "values": [
+              "link",
+              "button",
+              "massActionButton"
+            ]
+          }
         }
       }
     ]
@@ -609,13 +784,15 @@
         "name": "forecastCategory",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Omitted",
-            "Pipeline",
-            "BestCase",
-            "Forecast",
-            "Closed"
-          ]
+          "_restriction": {
+            "values": [
+              "Omitted",
+              "Pipeline",
+              "BestCase",
+              "Forecast",
+              "Closed"
+            ]
+          }
         }
       }
     ]
@@ -627,34 +804,38 @@
         "name": "gender",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Masculine",
-            "Feminine",
-            "Neuter",
-            "AnimateMasculine",
-            "ClassI",
-            "ClassIII",
-            "ClassV",
-            "ClassVII",
-            "ClassIX",
-            "ClassXI",
-            "ClassXIV",
-            "ClassXV",
-            "ClassXVI",
-            "ClassXVII",
-            "ClassXVIII"
-          ]
+          "_restriction": {
+            "values": [
+              "Masculine",
+              "Feminine",
+              "Neuter",
+              "AnimateMasculine",
+              "ClassI",
+              "ClassIII",
+              "ClassV",
+              "ClassVII",
+              "ClassIX",
+              "ClassXI",
+              "ClassXIV",
+              "ClassXV",
+              "ClassXVI",
+              "ClassXVII",
+              "ClassXVIII"
+            ]
+          }
         }
       },
       {
         "name": "startsWith",
         "type": "STRING",
         "annotations": {
-          "_values": [
-            "Consonant",
-            "Vowel",
-            "Special"
-          ]
+          "_restriction": {
+            "values": [
+              "Consonant",
+              "Vowel",
+              "Special"
+            ]
+          }
         }
       }
     ]

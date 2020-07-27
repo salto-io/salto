@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, ListType } from '@salto-io/adapter-api'
 import { FilterWith } from '../../src/filter'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, METADATA_TYPE, FOREIGN_KEY_DOMAIN } from '../../src/constants'
+import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
 import filterCreator from '../../src/filters/foreign_key_references'
 import mockClient from '../client'
 
@@ -24,6 +25,7 @@ import mockClient from '../client'
 describe('foregin_key_references filter', () => {
   const { client } = mockClient()
 
+  const refAnnotationFilter = referenceAnnotationfilterCreator({ client, config: {} }) as FilterWith<'onFetch'>
   const filter = filterCreator({ client, config: {} }) as FilterWith<'onFetch'>
 
   const parentObjFullName = 'parentFullName'
@@ -125,6 +127,8 @@ describe('foregin_key_references filter', () => {
       ...instanceElements,
     ]
 
+    // run the reference annotation filter to resolve the FOREIGN_KEY_DOMAIN references
+    await refAnnotationFilter.onFetch(elements)
     await filter.onFetch(elements)
   })
 

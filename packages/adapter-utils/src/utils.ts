@@ -343,39 +343,60 @@ export const findInstances = (
   return instances.filter(e => e.type.elemID.isEqual(typeID))
 }
 
-export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+const getPath = (
+  rootElement: Element,
+  fullElemID: ElemID
+): string[] | undefined => {
   const { parent, path } = fullElemID.createTopLevelParentID()
   if (!_.isEqual(parent, rootElement.elemID)) return undefined
-
-  if (_.isEmpty(path)) {
-    return rootElement
-  }
-
+  if (_.isEmpty(path)) return []
   if (isInstanceElement(rootElement) && fullElemID.idType === 'instance') {
-    return (!_.isEmpty(path)) ? _.get(rootElement.value, path) : rootElement
+    return ['value', ...path]
   }
 
   if (isObjectType(rootElement) && fullElemID.idType === 'field') {
     const fieldName = path[0]
     const fieldAnnoPath = path.slice(1)
-    const field = rootElement.fields[fieldName]
-    if (_.isEmpty(fieldAnnoPath)) return field
-    return _.get(field?.annotations, fieldAnnoPath)
+    if (_.isEmpty(fieldAnnoPath)) return ['fields', fieldName]
+    return ['fields', fieldName, 'annotations', ...fieldAnnoPath]
   }
 
   if (isType(rootElement) && fullElemID.idType === 'attr') {
-    return _.get(rootElement.annotations, path)
+    return ['annotations', ...path]
   }
 
   if (isType(rootElement) && fullElemID.idType === 'annotation') {
     const annoTypeName = path[0]
     const annoTypePath = path.slice(1)
-    const anno = rootElement.annotationTypes[annoTypeName]
-    if (_.isEmpty(annoTypePath)) return anno
-    return _.get(anno?.annotations, annoTypePath)
+    if (_.isEmpty(annoTypePath)) return ['annotationTypes', annoTypeName]
+    return ['annotationTypes', annoTypeName, 'annotations', ...annoTypePath]
   }
-
   return undefined
+}
+
+
+export const setPath = (rootElement: Element, fullElemID: ElemID, value: Value): void => {
+  const path = getPath(rootElement, fullElemID)
+  if (path === undefined) {
+    log.warn(`Failed to set: ${rootElement.elemID.getFullName()} is not parent of ${fullElemID.getFullName()}`)
+    return
+  }
+  if (_.isEmpty(path)) {
+    log.warn(`Failed to set: can not set the whole Element - ${rootElement.elemID.getFullName()}`)
+    return
+  }
+  if (value === undefined) {
+    _.unset(rootElement, path)
+  } else {
+    _.set(rootElement, path, value)
+  }
+}
+
+export const resolvePath = (rootElement: Element, fullElemID: ElemID): Value => {
+  const path = getPath(rootElement, fullElemID)
+  if (path === undefined) return undefined
+  if (_.isEmpty(path)) return rootElement
+  return _.get(rootElement, path)
 }
 
 const flatStr = (str: string): string => `${Buffer.from(str).toString()}`

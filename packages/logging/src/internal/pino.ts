@@ -92,7 +92,7 @@ type CreateStreamResponse = {
 }
 
 const filenameToStream = (filename: string): CreateStreamResponse => {
-  const stream = createWriteStream(filename, { encoding: 'utf8' })
+  const stream = createWriteStream(filename, { encoding: 'utf8', flags: 'a' })
   return {
     stream,
     end: promisify(stream.end.bind(stream)),

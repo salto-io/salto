@@ -186,6 +186,8 @@ describe('multi env tests', () => {
     env2CredsLease = await salesforceTestHelpers().credentials('ENV_2')
     env1Creds = env1CredsLease.value
     env2Creds = env2CredsLease.value
+    // eslint-disable-next-line no-console
+    console.log("======>", env1Creds, env2Creds)
     env1Client = new SalesforceClient({ credentials: env1Creds })
     env2Client = new SalesforceClient({ credentials: env2Creds })
 

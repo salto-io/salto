@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, getChangeElement, Change, isRemovalDiff,
+  AdapterOperations, getChangeElement, Change, isRemovalDiff, DetailedChange,
+  ChangeDataType, isAdditionOrModificationDiff,
 } from '@salto-io/adapter-api'
 import { setPath } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -55,24 +56,30 @@ export type StepEvents = {
   failed: (errorText?: string) => void
 }
 
+const applyDetailedChanges = (
+  planElement: ChangeDataType,
+  detailedChanges: DetailedChange[],
+): void => {
+  detailedChanges.forEach(detailedChange => {
+    const data = isRemovalDiff(detailedChange) ? undefined : detailedChange.data.after
+    setPath(planElement, detailedChange.id, data)
+  })
+}
+
 const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>): void => {
-  const elemIDtoChangeElement = _.keyBy(
+  const planElementById = _.keyBy(
     [...item.items.values()].map(getChangeElement),
     changeElement => changeElement.elemID.getFullName()
   )
-  appliedChanges.forEach(change => {
-    const updatedElement = getChangeElement(change)
-    if (!isRemovalDiff(change)) {
-      const itemChangeData = elemIDtoChangeElement[change.data.after.elemID.getFullName()]
-      if (itemChangeData !== undefined) {
-        const detailedChanges = detailedCompare(itemChangeData, updatedElement)
-        detailedChanges.forEach(detailedChange => {
-          const data = isRemovalDiff(detailedChange) ? undefined : detailedChange.data.after
-          setPath(itemChangeData, detailedChange.id, data)
-        })
+  appliedChanges
+    .filter(isAdditionOrModificationDiff)
+    .map(getChangeElement)
+    .forEach(updatedElement => {
+      const planElement = planElementById[updatedElement.elemID.getFullName()]
+      if (planElement !== undefined) {
+        applyDetailedChanges(planElement, detailedCompare(planElement, updatedElement))
       }
-    }
-  })
+    })
 }
 
 export const deployActions = async (
@@ -88,6 +95,8 @@ export const deployActions = async (
       try {
         const appliedChanges = await deployAction(item, adapters)
         reportProgress(item, 'finished')
+        // Update element with changes so references to it
+        // will have an updated version throughout the deploy plan
         updatePlanElement(item, appliedChanges)
         await postDeployAction(appliedChanges)
       } catch (error) {

@@ -17,7 +17,6 @@ import _ from 'lodash'
 import parser from 'fast-xml-parser'
 import { MetadataInfo, RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
 import JSZip from 'jszip'
-import path from 'path'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -240,8 +239,8 @@ const complexTypesMap: ComplexTypesMap = {
     addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values) => {
       Object.entries(fileNameToContent)
         .forEach(([contentFileName, content]) => {
-          const contentFileExt = path.extname(contentFileName)
-          const fieldName = auraFileSuffixToFieldName[contentFileExt]
+          const fieldName = Object.entries(auraFileSuffixToFieldName)
+            .find(([fileSuffix, _fieldName]) => contentFileName.endsWith(fileSuffix))?.[1]
           if (fieldName === undefined) {
             log.warn(`Could not extract field content from ${contentFileName}`)
             return
@@ -334,7 +333,7 @@ export const fromRetrieveResult = async (
       const zipFiles = zip.file(new RegExp(`^${PACKAGE}/${fileName}/.*`))
         .filter(zipFile => zipFile.name.endsWith(METADATA_XML_SUFFIX) === withMetadataSuffix)
       return _.isEmpty(zipFiles)
-        ? Promise.resolve({} as Record<string, Buffer>)
+        ? {}
         : _.fromPairs(await Promise.all(zipFiles.map(async zipFile => [zipFile.name, await zipFile.async('nodebuffer')])))
     }
 

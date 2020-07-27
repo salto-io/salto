@@ -644,9 +644,9 @@ describe('Salesforce adapter E2E with real account', () => {
       } as MetadataInfo)
     }
 
-    const verifyCustomObjectInnerTypesExist = async (): Promise<void[]> => {
+    const verifyCustomObjectInnerTypesExist = async (): Promise<void> => {
       await verifyLeadHasBusinessProcess() // RecordType depends on BusinessProcess
-      return Promise.all([
+      await Promise.all([
         verifyLeadHasValidationRule(),
         verifyLeadHasRecordType(),
         verifyLeadHasWebLink(),
@@ -912,6 +912,85 @@ describe('Salesforce adapter E2E with real account', () => {
       } as MetadataInfo)
     }
 
+    const verifyAuraDefinitionBundleExists = async (): Promise<void> => {
+      await client.deploy(await toMetadataPackageZip(
+        'TestAuraDefinitionBundle',
+        'AuraDefinitionBundle',
+        {
+          [constants.INSTANCE_FULL_NAME_FIELD]: 'TestAuraDefinitionBundle',
+          SVGContent: '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<svg width="120px" height="120px" viewBox="0 0 120 120" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n\t<g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">\n\t\t<path d="M120,108 C120,114.6 114.6,120 108,120 L12,120 C5.4,120 0,114.6 0,108 L0,12 C0,5.4 5.4,0 12,0 L108,0 C114.6,0 120,5.4 120,12 L120,108 L120,108 Z" id="Shape" fill="#2A739E"/>\n\t\t<path d="M77.7383308,20 L61.1640113,20 L44.7300055,63.2000173 L56.0543288,63.2000173 L40,99.623291 L72.7458388,54.5871812 L60.907727,54.5871812 L77.7383308,20 Z" id="Path-1" fill="#FFFFFF"/>\n\t</g>\n</svg>',
+          apiVersion: 49,
+          controllerContent: '({ myAction : function(component, event, helper) {} })',
+          description: 'Test Lightning Component Bundle',
+          designContent: '<design:component/>',
+          documentationContent: '<aura:documentation>\n\t<aura:description>Documentation</aura:description>\n\t<aura:example name="ExampleName" ref="exampleComponentName" label="Label">\n\t\tEdited Example Description\n\t</aura:example>\n</aura:documentation>',
+          helperContent: '({ helperMethod : function() {} })',
+          markup: '<aura:component >\n\t<p>Hello Lightning!</p>\n</aura:component>',
+          rendererContent: '({})',
+          styleContent: '.THIS{\n}',
+          type: 'Component',
+        },
+        false,
+      ) as Buffer)
+    }
+
+    const verifyLightningComponentBundleExists = async (): Promise<void> => {
+      await client.deploy(await toMetadataPackageZip(
+        'testLightningComponentBundle',
+        'LightningComponentBundle',
+        {
+          [constants.INSTANCE_FULL_NAME_FIELD]: 'testLightningComponentBundle',
+          apiVersion: 49,
+          isExposed: true,
+          lwcResources: {
+            lwcResource: [
+              {
+                source: "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }",
+                filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.js',
+              },
+              {
+                source: '<template>\n    <div>\n        <div>Name: {name}</div>\n        <div>Description: {description}</div>\n        <lightning-badge label={material}></lightning-badge>\n        <lightning-badge label={category}></lightning-badge>\n        <div>Price: {price}</div>\n        <div><img src={pictureUrl}/></div>\n    </div>\n</template>',
+                filePath: 'lwc/testLightningComponentBundle/testLightningComponentBundle.html',
+              },
+            ],
+          },
+          targetConfigs: {
+            targetConfig: [
+              {
+                objects: [
+                  {
+                    object: 'Contact',
+                  },
+                ],
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                attr_targets: 'lightning__RecordPage',
+              },
+              {
+                supportedFormFactors: {
+                  supportedFormFactor: [
+                    {
+                      // eslint-disable-next-line @typescript-eslint/camelcase
+                      attr_type: 'Small',
+                    },
+                  ],
+                },
+                // eslint-disable-next-line @typescript-eslint/camelcase
+                attr_targets: 'lightning__AppPage,lightning__HomePage',
+              },
+            ],
+          },
+          targets: {
+            target: [
+              'lightning__AppPage',
+              'lightning__RecordPage',
+              'lightning__HomePage',
+            ],
+          },
+        },
+        false,
+      ) as Buffer)
+    }
+
     await Promise.all([
       addCustomObjectWithVariousFields(),
       verifyEmailTemplateAndFolderExist(),
@@ -922,6 +1001,8 @@ describe('Salesforce adapter E2E with real account', () => {
       verifyRolesExist(),
       verifyApexPageAndClassExist(),
       verifyLeadHasConvertSettings(),
+      verifyAuraDefinitionBundleExists(),
+      verifyLightningComponentBundleExists(),
     ])
     result = (await adapter.fetch()).elements
   })
@@ -1165,6 +1246,28 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(flow.value.status).toEqual('Draft')
       expect(flow.value.variables[0].dataType).toEqual('SObject')
       expect(flow.value.processType).toEqual('Workflow')
+    })
+
+    it('should retrieve AuraDefinitionBundle instance', () => {
+      const aura = findElements(result, 'AuraDefinitionBundle',
+        'TestAuraDefinitionBundle')[0] as InstanceElement
+      expect(aura.value[constants.INSTANCE_FULL_NAME_FIELD])
+        .toEqual('TestAuraDefinitionBundle')
+      expect(isStaticFile(aura.value.styleContent)).toBe(true)
+      expect((aura.value.styleContent as StaticFile).content?.toString()).toEqual('.THIS{\n}')
+    })
+
+    it('should retrieve LightningComponentBundle instance', () => {
+      const lwc = findElements(result, 'LightningComponentBundle',
+        'testLightningComponentBundle')[0] as InstanceElement
+      expect(lwc.value[constants.INSTANCE_FULL_NAME_FIELD])
+        .toEqual('testLightningComponentBundle')
+      const lwcResource = makeArray(lwc.value.lwcResources?.lwcResource)
+        .find(resource => resource.filePath === 'lwc/testLightningComponentBundle/testLightningComponentBundle.js')
+      expect(lwcResource).toBeDefined()
+      expect(isStaticFile(lwcResource.source)).toBe(true)
+      expect((lwcResource.source as StaticFile).content?.toString())
+        .toEqual("import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }")
     })
   })
 
@@ -3622,17 +3725,23 @@ describe('Salesforce adapter E2E with real account', () => {
       })
 
       describe('types that support also CRUD-Based calls', () => {
-        const verifyUpdateInstance = async (instance: InstanceElement, updatedField: string,
+        const updateInstance = async (instance: InstanceElement, updatedFieldPath: string[],
           updatedValue: string): Promise<void> => {
           const after = instance.clone()
-          after.value[updatedField] = updatedValue
+          _.set(after.value, updatedFieldPath, updatedValue)
           await adapter.deploy({
             groupID: instance.elemID.getFullName(),
             changes: [{ action: 'modify', data: { before: instance, after } }],
           })
+        }
+
+        const verifyUpdateInstance = async (instance: InstanceElement, updatedFieldPath: string[],
+          updatedValue: string, expectedUpdatedValue?: string): Promise<void> => {
+          await updateInstance(instance, updatedFieldPath, updatedValue)
           const instanceInfo = await getMetadataFromElement(client, instance)
           expect(instanceInfo).toBeDefined()
-          expect(_.get(instanceInfo, updatedField)).toEqual(updatedValue)
+          expect(_.get(instanceInfo, updatedFieldPath))
+            .toEqual(expectedUpdatedValue ?? updatedValue)
         }
 
         describe('email folder manipulation', () => {
@@ -3650,7 +3759,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update email folder instance', async () => {
-            await verifyUpdateInstance(emailFolderInstance, 'name',
+            await verifyUpdateInstance(emailFolderInstance, ['name'],
               'My Updated Email Folder Name')
           })
 
@@ -3686,7 +3795,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update email template instance', async () => {
-            await verifyUpdateInstance(emailTemplateInstance, 'name',
+            await verifyUpdateInstance(emailTemplateInstance, ['name'],
               'My Updated Email Template Name')
           })
 
@@ -3719,7 +3828,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update report type instance', async () => {
-            await verifyUpdateInstance(reportTypeInstance, 'label',
+            await verifyUpdateInstance(reportTypeInstance, ['label'],
               'My Updated Report Type Label')
           })
 
@@ -3744,7 +3853,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update report folder instance', async () => {
-            await verifyUpdateInstance(reportFolderInstance, 'name',
+            await verifyUpdateInstance(reportFolderInstance, ['name'],
               'My Updated Report Folder Name')
           })
 
@@ -3771,7 +3880,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update report instance', async () => {
-            await verifyUpdateInstance(reportInstance, 'name',
+            await verifyUpdateInstance(reportInstance, ['name'],
               'My Updated Report Name')
           })
 
@@ -3794,7 +3903,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update dashboard folder instance', async () => {
-            await verifyUpdateInstance(dashboardFolderInstance, 'name',
+            await verifyUpdateInstance(dashboardFolderInstance, ['name'],
               'My Updated Dashboard Folder Name')
           })
 
@@ -3833,12 +3942,125 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('should update dashboard instance', async () => {
-            await verifyUpdateInstance(dashboardInstance, 'title',
+            await verifyUpdateInstance(dashboardInstance, ['title'],
               'My Updated Dashboard Title')
           })
 
           it('should remove dashboard instance', async () => {
             await removeElementAndVerify(adapter, client, dashboardInstance)
+          })
+        })
+
+        describe('AuraDefinitionBundle manipulation', () => {
+          let auraInstance: InstanceElement
+
+          beforeAll(async () => {
+            auraInstance = await createInstance(client, {
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAuraDefinitionBundle',
+              SVGContent: '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<svg width="120px" height="120px" viewBox="0 0 120 120" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n\t<g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">\n\t\t<path d="M120,108 C120,114.6 114.6,120 108,120 L12,120 C5.4,120 0,114.6 0,108 L0,12 C0,5.4 5.4,0 12,0 L108,0 C114.6,0 120,5.4 120,12 L120,108 L120,108 Z" id="Shape" fill="#2A739E"/>\n\t\t<path d="M77.7383308,20 L61.1640113,20 L44.7300055,63.2000173 L56.0543288,63.2000173 L40,99.623291 L72.7458388,54.5871812 L60.907727,54.5871812 L77.7383308,20 Z" id="Path-1" fill="#FFFFFF"/>\n\t</g>\n</svg>',
+              apiVersion: 49,
+              controllerContent: '({ myAction : function(component, event, helper) {} })',
+              description: 'My Lightning Component Bundle',
+              designContent: '<design:component/>',
+              documentationContent: '<aura:documentation>\n\t<aura:description>Documentation</aura:description>\n\t<aura:example name="ExampleName" ref="exampleComponentName" label="Label">\n\t\tEdited Example Description\n\t</aura:example>\n</aura:documentation>',
+              helperContent: '({ helperMethod : function() {} })',
+              markup: '<aura:component >\n\t<p>Hello Lightning!</p>\n</aura:component>',
+              rendererContent: '({})',
+              styleContent: '.THIS{\n}',
+              type: 'Component',
+            }, 'AuraDefinitionBundle')
+            await removeElementIfAlreadyExists(client, auraInstance)
+          })
+
+          it('should create AuraDefinitionBundle instance', async () => {
+            await createElementAndVerify(adapter, client, auraInstance)
+          })
+
+          it('should update AuraDefinitionBundle instance', async () => {
+            const updatedValue = '({ helperMethod : function() {\n // Some Comment\n } })'
+            await verifyUpdateInstance(auraInstance, ['helperContent'],
+              updatedValue, Buffer.from(updatedValue).toString('base64'))
+          })
+
+          it('should remove AuraDefinitionBundle instance', async () => {
+            await removeElementAndVerify(adapter, client, auraInstance)
+          })
+        })
+
+        describe('LightningComponentBundle manipulation', () => {
+          let lwcInstance: InstanceElement
+
+          beforeAll(async () => {
+            lwcInstance = await createInstance(client, {
+              [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
+              apiVersion: 49,
+              isExposed: true,
+              lwcResources: {
+                lwcResource: [
+                  {
+                    source: "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }",
+                    filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
+                  },
+                  {
+                    source: '<template>\n    <div>\n        <div>Name: {name}</div>\n        <div>Description: {description}</div>\n        <lightning-badge label={material}></lightning-badge>\n        <lightning-badge label={category}></lightning-badge>\n        <div>Price: {price}</div>\n        <div><img src={pictureUrl}/></div>\n    </div>\n</template>',
+                    filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
+                  },
+                ],
+              },
+              targetConfigs: {
+                targetConfig: [
+                  {
+                    objects: [
+                      {
+                        object: 'Contact',
+                      },
+                    ],
+                    // eslint-disable-next-line @typescript-eslint/camelcase
+                    attr_targets: 'lightning__RecordPage',
+                  },
+                  {
+                    supportedFormFactors: {
+                      supportedFormFactor: [
+                        {
+                          // eslint-disable-next-line @typescript-eslint/camelcase
+                          attr_type: 'Small',
+                        },
+                      ],
+                    },
+                    // eslint-disable-next-line @typescript-eslint/camelcase
+                    attr_targets: 'lightning__AppPage,lightning__HomePage',
+                  },
+                ],
+              },
+              targets: {
+                target: [
+                  'lightning__AppPage',
+                  'lightning__RecordPage',
+                  'lightning__HomePage',
+                ],
+              },
+            }, 'LightningComponentBundle')
+            await removeElementIfAlreadyExists(client, lwcInstance)
+          })
+
+          it('should create LightningComponentBundle instance', async () => {
+            await createElementAndVerify(adapter, client, lwcInstance)
+          })
+
+          it('should update LightningComponentBundle instance', async () => {
+            const updatedValue = '// UPDATED'
+            await updateInstance(lwcInstance, ['lwcResources', 'lwcResource', '0', 'source'],
+              updatedValue)
+            const instanceInfo = await getMetadataFromElement(client, lwcInstance)
+            expect(instanceInfo).toBeDefined()
+            const lwcResources = _.get(instanceInfo, ['lwcResources', 'lwcResource'])
+            const updatedResource = makeArray(lwcResources).find(lwcResource =>
+              lwcResource.filePath === 'lwc/myLightningComponentBundle/myLightningComponentBundle.js')
+            expect(updatedResource.source).toEqual(Buffer.from(updatedValue).toString('base64'))
+          })
+
+          it('should remove LightningComponentBundle instance', async () => {
+            await removeElementAndVerify(adapter, client, lwcInstance)
           })
         })
       })

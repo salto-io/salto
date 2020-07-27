@@ -60,6 +60,8 @@ describe('Salesforce adapter E2E with real account', () => {
   let credLease: CredsLease<Credentials>
   beforeAll(async () => {
     credLease = await testHelpers().credentials()
+    // eslint-disable-next-line no-console
+    console.log('==== WORKFLOW ====>', credLease.value)
     const adapterAttr = realAdapter({ credentials: credLease.value })
     adapter = adapterAttr.adapter
     client = adapterAttr.client

@@ -122,6 +122,8 @@ describe('cli e2e', () => {
 
     process.env[SALTO_HOME_VAR] = homePath
     credsLease = await salesforceTestHelpers().credentials()
+    // eslint-disable-next-line no-console
+    console.log('==== CLI ====>', credsLease.value)
     client = new SalesforceClient({ credentials: credsLease.value })
     await mkdirp(`${fetchOutputDir}/salto.config`)
     await mkdirp(`${fetchOutputDir}/salto.config/adapters`)

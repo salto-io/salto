@@ -53,6 +53,8 @@ describe('workflow filter', () => {
   let credLease: CredsLease<Credentials>
   beforeAll(async () => {
     credLease = await testHelpers().credentials()
+    // eslint-disable-next-line no-console
+    console.log('==== WORKFLOW ====>', credLease.value)
     const adapterParams = realAdapter({ credentials: credLease.value })
     adapter = adapterParams.adapter
     client = adapterParams.client

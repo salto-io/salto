@@ -206,11 +206,11 @@ export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
     const formattedErrors = await formatWorkspaceErrors(ws, errors)
     await printWorkspaceErrors(status, formattedErrors, cliOutput)
     if (status === 'Error') {
+      log.warn(formattedErrors)
       const shouldAbort = await shouldAbortWorkspaceInCaseOfValidationError(errors.length)
       if (!shouldAbort) {
         await ws.flush()
       }
-      log.warn(formattedErrors)
       return false
     }
   }

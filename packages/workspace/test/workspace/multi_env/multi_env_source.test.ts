@@ -18,7 +18,7 @@ import { ElemID, BuiltinTypes, ObjectType, DetailedChange } from '@salto-io/adap
 import _ from 'lodash'
 import * as utils from '@salto-io/adapter-utils'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { multiEnvSource } from '../../../src/workspace/nacl_files/mutil_env/multi_env_source'
+import { multiEnvSource, ENVS_PREFIX } from '../../../src/workspace/nacl_files/mutil_env/multi_env_source'
 import { Errors } from '../../../src/workspace/errors'
 import { ValidationError } from '../../../src/validator'
 import { MergeError } from '../../../src/merger'
@@ -137,8 +137,8 @@ const inactiveSource = createMockNaclFileSource(
   [inactiveSourceRange]
 )
 
-const activePrefix = 'envs/active'
-const inactivePrefix = 'envs/inactive'
+const activePrefix = 'active'
+const inactivePrefix = 'inactive'
 const commonPrefix = ''
 const sources = {
   [commonPrefix]: commonSource,
@@ -151,7 +151,7 @@ describe('multi env source', () => {
   describe('getNaclFile', () => {
     it('should return a Nacl file from an env', async () => {
       const relPath = 'env.nacl'
-      const fullPath = path.join(activePrefix, relPath)
+      const fullPath = path.join(ENVS_PREFIX, activePrefix, relPath)
       const naclFile = await source.getNaclFile(fullPath)
       expect(naclFile).toBeDefined()
       expect(naclFile?.filename).toEqual(fullPath)
@@ -244,14 +244,14 @@ describe('multi env source', () => {
       expect(naclFiles).toHaveLength(4)
       expectToContainAllItems(naclFiles, [
         ..._.keys(commonNaclFiles),
-        ..._.keys(envNaclFiles).map(p => path.join(activePrefix, p)),
+        ..._.keys(envNaclFiles).map(p => path.join(ENVS_PREFIX, activePrefix, p)),
       ])
     })
   })
   describe('setNaclFiles', () => {
     it('should forward the setNaclFile command to the active source', async () => {
       const naclFile = {
-        filename: path.join(activePrefix, 'env.nacl'),
+        filename: path.join(ENVS_PREFIX, activePrefix, 'env.nacl'),
         buffer: '',
       }
       await source.setNaclFiles(naclFile)
@@ -269,7 +269,7 @@ describe('multi env source', () => {
   })
   describe('removeNaclFiles', () => {
     it('should forward the removeNaclFiles command to the active source', async () => {
-      await source.removeNaclFiles(path.join(activePrefix, 'env.nacl'))
+      await source.removeNaclFiles(path.join(ENVS_PREFIX, activePrefix, 'env.nacl'))
       expect(envSource.removeNaclFiles).toHaveBeenCalled()
     })
 
@@ -280,7 +280,7 @@ describe('multi env source', () => {
   })
   describe('getSourceMap', () => {
     it('should forward the getSourceMap command to the active source', async () => {
-      await source.getSourceMap(path.join(activePrefix, 'env.nacl'))
+      await source.getSourceMap(path.join(ENVS_PREFIX, activePrefix, 'env.nacl'))
       expect(envSource.getSourceMap).toHaveBeenCalled()
     })
 
@@ -296,7 +296,7 @@ describe('multi env source', () => {
       expect(filenames).toHaveLength(2)
 
       expectToContainAllItems(filenames, [
-        path.join(activePrefix, 'env.nacl'),
+        path.join(ENVS_PREFIX, activePrefix, 'env.nacl'),
         path.join(commonPrefix, 'common.nacl'),
       ])
     })
@@ -307,14 +307,14 @@ describe('multi env source', () => {
       const filenames = errors.parse.map(e => e.subject.filename)
       expect(filenames).toHaveLength(2)
       expectToContainAllItems(filenames, [
-        path.join(activePrefix, 'env.nacl'),
+        path.join(ENVS_PREFIX, activePrefix, 'env.nacl'),
         path.join(commonPrefix, 'common.nacl'),
       ])
     })
   })
   describe('getElements', () => {
     it('should forward the getElements command to the active source', async () => {
-      await source.getSourceMap(path.join(activePrefix, 'env.nacl'))
+      await source.getSourceMap(path.join(ENVS_PREFIX, activePrefix, 'env.nacl'))
       expect(envSource.getSourceMap).toHaveBeenCalled()
     })
 

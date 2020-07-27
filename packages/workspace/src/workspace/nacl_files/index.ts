@@ -15,3 +15,4 @@
 */
 export { NaclFile, FILE_EXTENSION, NaclFilesSource, naclFilesSource,
   ParsedNaclFile, getParsedNaclFiles } from './nacl_files_source'
+export { ENVS_PREFIX } from './mutil_env/multi_env_source'

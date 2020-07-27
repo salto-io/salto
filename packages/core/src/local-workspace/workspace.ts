@@ -26,12 +26,11 @@ import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 
 const { configSource } = cs
-const { FILE_EXTENSION, naclFilesSource } = nacl
+const { FILE_EXTENSION, naclFilesSource, ENVS_PREFIX } = nacl
 const { parseResultCache } = parseCache
 const { buildStaticFilesSource } = staticFiles
 
 export const COMMON_ENV_PREFIX = ''
-export const ENVS_PREFIX = 'envs'
 export const STATES_DIR_NAME = 'states'
 export const CREDENTIALS_CONFIG_PATH = 'credentials'
 export const CACHE_DIR_NAME = 'cache'

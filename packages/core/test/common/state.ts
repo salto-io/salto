@@ -53,6 +53,7 @@ export const mockState = (
       }
     ),
     flush: mockFunction<wsState.State['flush']>().mockResolvedValue(),
+    getHash: mockFunction<wsState.State['getHash']>().mockResolvedValue('d5ebc45734aca2e8bed1d1ea433bad15'),
     getServicesUpdateDates: mockFunction<wsState.State['getServicesUpdateDates']>()
       .mockResolvedValue(
         Object.assign({}, ...services.map(service => ({ [service]: Date.now() })))

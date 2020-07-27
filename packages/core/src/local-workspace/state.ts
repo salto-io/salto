@@ -21,8 +21,10 @@ import { logger } from '@salto-io/logging'
 import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
+import { hash } from '@salto-io/lowerdash'
 
 const { serialize, deserialize } = serialization
+const { toMD5 } = hash
 
 const log = logger(module)
 
@@ -52,6 +54,15 @@ export const localState = (filePath: string): state.State => {
 
   const inMemState = state.buildInMemState(loadFromFile)
 
+  const getStateText = async (): Promise<string> => {
+    const elements = await inMemState.getAll()
+    const elementsString = serialize(elements)
+    const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
+    const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
+    log.debug(`finished dumping state text [#elements=${elements.length}]`)
+    return [elementsString, dateString, pathIndexString].join(EOL)
+  }
+
   return {
     ...inMemState,
     set: async (element: Element): Promise<void> => {
@@ -79,14 +90,14 @@ export const localState = (filePath: string): state.State => {
       if (!dirty) {
         return
       }
-      const elements = await inMemState.getAll()
-      const elementsString = serialize(elements)
-      const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
-      const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
-      const stateText = [elementsString, dateString, pathIndexString].join(EOL)
+      const stateText = await getStateText()
       await mkdirp(path.dirname(currentFilePath))
       await replaceContents(currentFilePath, stateText)
-      log.debug(`finish flushing state [#elements=${elements.length}]`)
+      log.debug('finish flushing state')
+    },
+    getHash: async (): Promise<string> => {
+      const stateText = await getStateText()
+      return toMD5(stateText)
     },
     clear: async (): Promise<void> => {
       await rm(filePath)

@@ -32,4 +32,5 @@ export interface State extends ElementsSource {
   existingServices(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
+  getHash(): Promise<string>
 }

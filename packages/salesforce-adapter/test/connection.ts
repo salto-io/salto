@@ -43,8 +43,8 @@ export type MockValueTypeFieldInput =
 export const mockValueTypeField = (
   props: MockValueTypeFieldInput,
 ): ValueTypeField => ({
-  foreignKeyDomain: '',
-  isForeignKey: false,
+  foreignKeyDomain: props.foreignKeyDomain ?? '',
+  isForeignKey: props.isForeignKey ?? false,
   isNameField: false,
   minOccurs: 0,
   picklistValues: [],

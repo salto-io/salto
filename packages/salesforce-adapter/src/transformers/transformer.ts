@@ -48,6 +48,7 @@ import {
   HAS_META_FILE,
   IS_FOLDER,
   CUSTOM_OBJECT_ID_FIELD,
+  FOREIGN_KEY_DOMAIN,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
@@ -917,6 +918,11 @@ export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeFie
       annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
     }
   }
+
+  if (field.isForeignKey) {
+    annotations[FOREIGN_KEY_DOMAIN] = makeArray(field.foreignKeyDomain)
+  }
+
   return new Field(parent, field.name, naclFieldType, annotations)
 }
 

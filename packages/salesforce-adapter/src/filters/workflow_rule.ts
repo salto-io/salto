@@ -82,6 +82,7 @@ const isWorkflowRule = (value: Values): value is WorkflowRule => (
  * @param action            The action to update
  * @param parentObjName     The name of the containing workflow rule's parent object
  * @param apiNameToElemIDs  Known element ids, mapped by API name and metadata type
+ * @param workflowRuleName  The name of the rule being processed
  */
 const convertActionToReference = (
   action: WorkflowActionReference,

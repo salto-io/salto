@@ -32,7 +32,7 @@ import {
   FIELD_ANNOTATIONS, FIELD_TYPE_NAMES, LABEL, API_NAME, COMPOUND_FIELD_TYPE_NAMES,
   FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, METADATA_TYPE,
   CUSTOM_OBJECT, VALUE_SET_FIELDS, SUBTYPES_PATH, INSTANCE_FULL_NAME_FIELD, DESCRIPTION,
-  TYPES_PATH, SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+  SALESFORCE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
   WORKFLOW_ACTION_ALERT_METADATA_TYPE,
 } from '../../src/constants'
@@ -1481,50 +1481,6 @@ describe('transformer', () => {
         const elemId: ElemID = Types.getElemId(key, false, undefined)
         expect(elemId.name).toEqual(METADATA_TYPES_TO_RENAME.get(key))
       })
-    })
-  })
-  describe('Parsing missing salesforce types', () => {
-    it('should generate types successfully', () => {
-      const testTypes = {
-        testType1: {
-          booleanField: BuiltinTypes.BOOLEAN,
-          stringField: BuiltinTypes.STRING,
-        },
-        testType2: {
-          numberField: BuiltinTypes.NUMBER,
-          jsonField: BuiltinTypes.JSON,
-          serviceId: BuiltinTypes.SERVICE_ID,
-        },
-      }
-      const [firstType, secondType] = Types.generateMissingTypes(testTypes, false) as ObjectType[]
-      expect(firstType.elemID.typeName).toEqual('testType1')
-      expect(firstType.fields.booleanField.type).toEqual(BuiltinTypes.BOOLEAN)
-      expect(firstType.fields.stringField.type).toEqual(BuiltinTypes.STRING)
-      expect(firstType.path).toEqual(
-        [SALESFORCE, TYPES_PATH, firstType.elemID.typeName]
-      )
-      expect(secondType.elemID.typeName).toEqual('testType2')
-      expect(secondType.fields.numberField.type).toEqual(BuiltinTypes.NUMBER)
-      expect(secondType.fields.jsonField.type).toEqual(BuiltinTypes.JSON)
-      expect(secondType.fields.serviceId.type).toEqual(BuiltinTypes.SERVICE_ID)
-      expect(secondType.path).toEqual(
-        [SALESFORCE, TYPES_PATH, secondType.elemID.typeName]
-      )
-    })
-    it('Should generate missing types successfully', () => {
-      const testTypes = {
-        testType1: {
-          booleanField: BuiltinTypes.BOOLEAN,
-          stringField: BuiltinTypes.STRING,
-        },
-      }
-      const [firstType] = Types.generateMissingTypes(testTypes, true) as ObjectType[]
-      expect(firstType.elemID.typeName).toEqual('testType1')
-      expect(firstType.fields.booleanField.type).toEqual(BuiltinTypes.BOOLEAN)
-      expect(firstType.fields.stringField.type).toEqual(BuiltinTypes.STRING)
-      expect(firstType.path).toEqual(
-        [SALESFORCE, TYPES_PATH, SUBTYPES_PATH, firstType.elemID.typeName]
-      )
     })
   })
 })

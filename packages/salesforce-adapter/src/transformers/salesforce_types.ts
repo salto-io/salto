@@ -14,144 +14,309 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes, CORE_ANNOTATIONS, createRestriction, ElemID, ListType, ObjectType, PrimitiveType,
+  PrimitiveTypes,
+} from '@salto-io/adapter-api'
+import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, XML_ATTRIBUTE_PREFIX } from '../constants'
 
-// Missing Types
-const ACCOUNT_INSIGHT_SETTINGS = {
-  enableAccountInsights: BuiltinTypes.BOOLEAN,
-}
+const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
 
-const ACCOUNT_INTELLIGENCE_SETTINGS = {
-  enableAccountLogos: BuiltinTypes.BOOLEAN,
-  enableAutomatedAccountFields: BuiltinTypes.BOOLEAN,
-  enableNewsStories: BuiltinTypes.BOOLEAN,
-}
+const objectType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'Object'),
+  fields: {
+    object: { type: BuiltinTypes.STRING },
+  },
+  path: [...subTypesPath, 'Object'],
+})
 
-const AUTOMATED_CONTACTS_SETTINGS = {
-  enableAddContactAutomatically: BuiltinTypes.BOOLEAN,
-  enableAddContactRoleAutomatically: BuiltinTypes.BOOLEAN,
-  enableAddContactRoleWithSuggestion: BuiltinTypes.BOOLEAN,
-  enableAddContactWithSuggestion: BuiltinTypes.BOOLEAN,
-}
+const propertyType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'Property'),
+  fields: {
+    [`${XML_ATTRIBUTE_PREFIX}datasource`]: {
+      type: BuiltinTypes.STRING, // todo retrieved as string delimited by ',' but is a list
+    },
+    [`${XML_ATTRIBUTE_PREFIX}default`]: {
+      type: BuiltinTypes.STRING,
+    },
+    [`${XML_ATTRIBUTE_PREFIX}description`]: {
+      type: BuiltinTypes.STRING,
+    },
+    [`${XML_ATTRIBUTE_PREFIX}label`]: {
+      type: BuiltinTypes.STRING,
+    },
+    [`${XML_ATTRIBUTE_PREFIX}max`]: {
+      type: BuiltinTypes.NUMBER,
+    },
+    [`${XML_ATTRIBUTE_PREFIX}min`]: {
+      type: BuiltinTypes.NUMBER,
+    },
+    [`${XML_ATTRIBUTE_PREFIX}name`]: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    [`${XML_ATTRIBUTE_PREFIX}placeholder`]: {
+      type: BuiltinTypes.STRING,
+    },
+    [`${XML_ATTRIBUTE_PREFIX}required`]: {
+      type: BuiltinTypes.BOOLEAN,
+    },
+    [`${XML_ATTRIBUTE_PREFIX}role`]: {
+      type: BuiltinTypes.STRING,
+    },
+    [`${XML_ATTRIBUTE_PREFIX}type`]: {
+      type: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          values: ['Boolean', 'Integer', 'String', 'Color', 'Date', 'DateTime'],
+          // eslint-disable-next-line @typescript-eslint/camelcase
+          enforce_value: false,
+        }),
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  },
+  path: [...subTypesPath, 'Property'],
+})
 
-const IOT_SETTINGS = {
-  enableIoT: BuiltinTypes.BOOLEAN,
-}
+const supportedFormFactorTypeType = new PrimitiveType({
+  elemID: new ElemID(SALESFORCE, 'SupportedFormFactorType'),
+  primitive: PrimitiveTypes.STRING,
+  annotations: {
+    [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['Small', 'Large'] }),
+  },
+  path: [...subTypesPath, 'SupportedFormFactorType'],
+})
 
-const CHATTER_ANSWERS_SETTINGS = {
-  emailFollowersOnBestAnswer: BuiltinTypes.BOOLEAN,
-  emailFollowersOnReply: BuiltinTypes.BOOLEAN,
-  emailOwnerOnPrivateReply: BuiltinTypes.BOOLEAN,
-  emailOwnerOnReply: BuiltinTypes.BOOLEAN,
-  enableAnswerViaEmail: BuiltinTypes.BOOLEAN,
-  enableChatterAnswers: BuiltinTypes.BOOLEAN,
-  enableFacebookSSO: BuiltinTypes.BOOLEAN,
-  enableInlinePublisher: BuiltinTypes.BOOLEAN,
-  enableReputation: BuiltinTypes.BOOLEAN,
-  enableRichTextEditor: BuiltinTypes.BOOLEAN,
-  facebookAuthProvider: BuiltinTypes.STRING,
-  showInPortals: BuiltinTypes.BOOLEAN,
-}
+const supportedFormFactorType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'SupportedFormFactor'),
+  fields: {
+    [`${XML_ATTRIBUTE_PREFIX}type`]: {
+      type: supportedFormFactorTypeType,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  },
+  path: [...subTypesPath, 'SupportedFormFactor'],
+})
 
-const CHATTER_EMAIL_MDSETTINGS = {
-  enableChatterDigestEmailsApiOnly: BuiltinTypes.BOOLEAN,
-  enableChatterEmailAttachment: BuiltinTypes.BOOLEAN,
-  enableCollaborationEmail: BuiltinTypes.BOOLEAN,
-  enableDisplayAppDownloadBadges: BuiltinTypes.BOOLEAN,
-  enableEmailReplyToChatter: BuiltinTypes.BOOLEAN,
-  enableEmailToChatter: BuiltinTypes.BOOLEAN,
-}
+const supportedFormFactorsType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'SupportedFormFactors'),
+  fields: {
+    supportedFormFactor: { type: new ListType(supportedFormFactorType) },
+  },
+  path: [...subTypesPath, 'SupportedFormFactors'],
+})
 
-const MAP_AND_LOCATION_SETTINGS = {
-  enableAddressAutoComplete: BuiltinTypes.BOOLEAN,
-  enableMapsAndLocation: BuiltinTypes.BOOLEAN,
-}
+const targetConfigType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'TargetConfig'),
+  fields: {
+    [`${XML_ATTRIBUTE_PREFIX}targets`]: {
+      type: BuiltinTypes.STRING, // todo retrieved as string delimited by ',' but is a list
+    },
+    [`${XML_ATTRIBUTE_PREFIX}configurationEditor`]: {
+      type: BuiltinTypes.STRING,
+    },
+    objects: { type: new ListType(objectType) },
+    property: { type: propertyType },
+    supportedFormFactors: { type: supportedFormFactorsType },
+  },
+  path: [...subTypesPath, 'TargetConfig'],
+})
 
-const OBJECT_LINKING_SETTINGS = {
-  enableObjectLinking: BuiltinTypes.BOOLEAN,
-}
+const caseSubjectOptionType = new PrimitiveType({
+  elemID: new ElemID(SALESFORCE, 'CaseSubjectOption'),
+  primitive: PrimitiveTypes.STRING,
+  annotations: {
+    [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+      values: ['SocialPostSource', 'SocialPostContent', 'BuildCustom'],
+    }),
+  },
+  path: [...subTypesPath, 'CaseSubjectOption'],
+})
 
-const PREDICTION_BUILDER_SETTINGS = {
-  enablePredictionBuilder: BuiltinTypes.BOOLEAN,
-  isPredictionBuilderStarted: BuiltinTypes.BOOLEAN,
-}
+export const allMissingSubTypes = [
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'BusinessHoursEntry'),
+    fields: {
+      timeZoneId: { type: BuiltinTypes.STRING },
+      name: { type: BuiltinTypes.STRING },
+      default: { type: BuiltinTypes.STRING },
+      mondayStartTime: { type: BuiltinTypes.STRING },
+      mondayEndTime: { type: BuiltinTypes.STRING },
+      tuesdayStartTime: { type: BuiltinTypes.STRING },
+      tuesdayEndTime: { type: BuiltinTypes.STRING },
+      wednesdayStartTime: { type: BuiltinTypes.STRING },
+      wednesdayEndTime: { type: BuiltinTypes.STRING },
+      thursdayStartTime: { type: BuiltinTypes.STRING },
+      thursdayEndTime: { type: BuiltinTypes.STRING },
+      fridayStartTime: { type: BuiltinTypes.STRING },
+      fridayEndTime: { type: BuiltinTypes.STRING },
+      saturdayStartTime: { type: BuiltinTypes.STRING },
+      saturdayEndTime: { type: BuiltinTypes.STRING },
+      sundayStartTime: { type: BuiltinTypes.STRING },
+      sundayEndTime: { type: BuiltinTypes.STRING },
+    },
+    path: [...subTypesPath, 'BusinessHoursEntry'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'Holidays'),
+    fields: {
+      name: { type: BuiltinTypes.STRING },
+      description: { type: BuiltinTypes.STRING },
+      activityDate: { type: BuiltinTypes.STRING },
+      recurrenceStartDate: { type: BuiltinTypes.STRING },
+      recurrenceEndDate: { type: BuiltinTypes.STRING },
+      startTime: { type: BuiltinTypes.STRING },
+      endTime: { type: BuiltinTypes.STRING },
+      recurrenceType: { type: BuiltinTypes.STRING },
+      recurrenceInterval: { type: BuiltinTypes.STRING },
+      recurrenceDayOfWeek: { type: BuiltinTypes.STRING },
+      recurrenceDayOfMonth: { type: BuiltinTypes.STRING },
+      recurrenceInstance: { type: BuiltinTypes.STRING },
+      recurrenceMonthOfYear: { type: BuiltinTypes.STRING },
+      businessHours: { type: BuiltinTypes.STRING },
+    },
+    path: [...subTypesPath, 'Holidays'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'OrganizationSettingsDetail'),
+    fields: {
+      settingName: { type: BuiltinTypes.STRING },
+      settingValue: { type: BuiltinTypes.STRING },
+    },
+    path: [...subTypesPath, 'OrganizationSettingsDetail'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
+    fields: {
+      targetConfig: { type: new ListType(targetConfigType) },
+    },
+    path: [...subTypesPath, 'TargetConfigs'],
+  }),
+  targetConfigType,
+  objectType,
+  propertyType,
+  supportedFormFactorsType,
+  supportedFormFactorType,
+  supportedFormFactorTypeType,
+]
 
-const SOCIAL_CUSTOMER_SERVICE_SETTINGS = {
-  // caseSubjectOption: BuiltinTypes.CASESUBJECTOPTION (ENUMERATION OF TYPE STRING),
-  enableSocialApprovals: BuiltinTypes.BOOLEAN,
-  enableSocialCaseAssignmentRules: BuiltinTypes.BOOLEAN,
-  enableSocialCustomerService: BuiltinTypes.BOOLEAN,
-  enableSocialPersonaHistoryTracking: BuiltinTypes.BOOLEAN,
-  enableSocialPostHistoryTracking: BuiltinTypes.BOOLEAN,
-  enableSocialReceiveParentPost: BuiltinTypes.BOOLEAN,
-}
+const typesPath = [SALESFORCE, TYPES_PATH]
 
-const CASE_CLASSIFICATION_SETTINGS = {
-  caseClassificationRecommendations: BuiltinTypes.BOOLEAN,
-  reRunAttributeBasedRules: BuiltinTypes.BOOLEAN,
-  runAssignmentRules: BuiltinTypes.BOOLEAN,
-}
-
-export const allMissingTypes = {
-  AccountInsightsSettings: ACCOUNT_INSIGHT_SETTINGS,
-  AccountIntelligenceSetings: ACCOUNT_INTELLIGENCE_SETTINGS,
-  AutomatedContacSettings: AUTOMATED_CONTACTS_SETTINGS,
-  ChatterAnswerSettings: CHATTER_ANSWERS_SETTINGS,
-  caseClassificationSettings: CASE_CLASSIFICATION_SETTINGS,
-  ChatterEmailMdSettings: CHATTER_EMAIL_MDSETTINGS,
-  IoTSettings: IOT_SETTINGS,
-  MapAndLocationSettings: MAP_AND_LOCATION_SETTINGS,
-  ObjectLinkingSettings: OBJECT_LINKING_SETTINGS,
-  PredictionBuiderSettings: PREDICTION_BUILDER_SETTINGS,
-  SocialCustomerServiceSettings: SOCIAL_CUSTOMER_SERVICE_SETTINGS,
-}
-
-// Missing SubTypes
-const BUSINESS_HOURS_ENTRY = {
-  TimeZoneId: BuiltinTypes.STRING,
-  name: BuiltinTypes.STRING,
-  default: BuiltinTypes.STRING,
-  mondayStartTime: BuiltinTypes.STRING,
-  mondayEndTime: BuiltinTypes.STRING,
-  TuesdayStartTime: BuiltinTypes.STRING,
-  TuesdayEndTime: BuiltinTypes.STRING,
-  wednesdayStartTime: BuiltinTypes.STRING,
-  wednesdayEndTime: BuiltinTypes.STRING,
-  thursdayStartTime: BuiltinTypes.STRING,
-  thursdayEndTime: BuiltinTypes.STRING,
-  fridayStartTime: BuiltinTypes.STRING,
-  fridayEndTime: BuiltinTypes.STRING,
-  saturdayStartTime: BuiltinTypes.STRING,
-  saturdayEndTime: BuiltinTypes.STRING,
-  sundayStartTime: BuiltinTypes.STRING,
-  sundayEndTime: BuiltinTypes.STRING,
-}
-
-const HOLIDAYS = {
-  name: BuiltinTypes.STRING,
-  DESCRIPTION: BuiltinTypes.STRING,
-  description: BuiltinTypes.STRING,
-  activityDate: BuiltinTypes.STRING,
-  recurrenceStartDate: BuiltinTypes.STRING,
-  recurrenceEndDate: BuiltinTypes.STRING,
-  startTime: BuiltinTypes.STRING,
-  endTime: BuiltinTypes.STRING,
-  recurrenceType: BuiltinTypes.STRING,
-  reccurenceInterval: BuiltinTypes.STRING,
-  recurrenceDayOfWeek: BuiltinTypes.STRING,
-  recurrenceDayOfMonth: BuiltinTypes.STRING,
-  recurrenceInstance: BuiltinTypes.STRING,
-  recurrenceMonthOfYear: BuiltinTypes.STRING,
-  businessHours: BuiltinTypes.STRING,
-}
-
-const ORGANIZATION_SETTINGS_DETAIL = {
-  settingName: BuiltinTypes.STRING,
-  settingValue: BuiltinTypes.STRING,
-}
-
-export const allMissingSubTypes = {
-  BusinessHoursEntry: BUSINESS_HOURS_ENTRY,
-  Holidays: HOLIDAYS,
-  OrganizationSettingsDetail: ORGANIZATION_SETTINGS_DETAIL,
-}
+export const allMissingTypes = [
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'AccountInsightsSettings'),
+    fields: {
+      enableAccountInsights: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'AccountInsightsSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'AccountIntelligenceSettings'),
+    fields: {
+      enableAccountLogos: { type: BuiltinTypes.BOOLEAN },
+      enableAutomatedAccountFields: { type: BuiltinTypes.BOOLEAN },
+      enableNewsStories: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'AccountIntelligenceSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'AutomatedContactSettings'),
+    fields: {
+      enableAddContactAutomatically: { type: BuiltinTypes.BOOLEAN },
+      enableAddContactRoleAutomatically: { type: BuiltinTypes.BOOLEAN },
+      enableAddContactRoleWithSuggestion: { type: BuiltinTypes.BOOLEAN },
+      enableAddContactWithSuggestion: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'AutomatedContactSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'IoTSettings'),
+    fields: {
+      enableIoT: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'IoTSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'ChatterAnswerSettings'),
+    fields: {
+      emailFollowersOnBestAnswer: { type: BuiltinTypes.BOOLEAN },
+      emailFollowersOnReply: { type: BuiltinTypes.BOOLEAN },
+      emailOwnerOnPrivateReply: { type: BuiltinTypes.BOOLEAN },
+      emailOwnerOnReply: { type: BuiltinTypes.BOOLEAN },
+      enableAnswerViaEmail: { type: BuiltinTypes.BOOLEAN },
+      enableChatterAnswers: { type: BuiltinTypes.BOOLEAN },
+      enableFacebookSSO: { type: BuiltinTypes.BOOLEAN },
+      enableInlinePublisher: { type: BuiltinTypes.BOOLEAN },
+      enableReputation: { type: BuiltinTypes.BOOLEAN },
+      enableRichTextEditor: { type: BuiltinTypes.BOOLEAN },
+      facebookAuthProvider: { type: BuiltinTypes.STRING },
+      showInPortals: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'ChatterAnswerSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'ChatterEmailMdSettings'),
+    fields: {
+      enableChatterDigestEmailsApiOnly: { type: BuiltinTypes.BOOLEAN },
+      enableChatterEmailAttachment: { type: BuiltinTypes.BOOLEAN },
+      enableCollaborationEmail: { type: BuiltinTypes.BOOLEAN },
+      enableDisplayAppDownloadBadges: { type: BuiltinTypes.BOOLEAN },
+      enableEmailReplyToChatter: { type: BuiltinTypes.BOOLEAN },
+      enableEmailToChatter: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'ChatterEmailMdSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'MapAndLocationSettings'),
+    fields: {
+      enableAddressAutoComplete: { type: BuiltinTypes.BOOLEAN },
+      enableMapsAndLocation: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'MapAndLocationSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'ObjectLinkingSettings'),
+    fields: {
+      enableObjectLinking: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'ObjectLinkingSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'PredictionBuiderSettings'),
+    fields: {
+      enablePredictionBuilder: { type: BuiltinTypes.BOOLEAN },
+      isPredictionBuilderStarted: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'PredictionBuiderSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'SocialCustomerServiceSettings'),
+    fields: {
+      caseSubjectOption: {
+        type: caseSubjectOptionType,
+        annotations: { [CORE_ANNOTATIONS.REQUIRED]: true },
+      },
+      enableSocialApprovals: { type: BuiltinTypes.BOOLEAN },
+      enableSocialCaseAssignmentRules: { type: BuiltinTypes.BOOLEAN },
+      enableSocialCustomerService: { type: BuiltinTypes.BOOLEAN },
+      enableSocialPersonaHistoryTracking: { type: BuiltinTypes.BOOLEAN },
+      enableSocialPostHistoryTracking: { type: BuiltinTypes.BOOLEAN },
+      enableSocialReceiveParentPost: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'SocialCustomerServiceSettings'],
+  }),
+  new ObjectType({
+    elemID: new ElemID(SALESFORCE, 'CaseClassificationSettings'),
+    fields: {
+      caseClassificationRecommendations: { type: BuiltinTypes.BOOLEAN },
+      reRunAttributeBasedRules: { type: BuiltinTypes.BOOLEAN },
+      runAssignmentRules: { type: BuiltinTypes.BOOLEAN },
+    },
+    path: [...typesPath, 'CaseClassificationSettings'],
+  }),
+]

@@ -683,7 +683,7 @@
     "fields": [
       {
         "name": "targetConfigs",
-        "type": "UNKNOWN"
+        "type": "TargetConfigs"
       }
     ]
   },

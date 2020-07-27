@@ -695,23 +695,8 @@ export class Types {
     })
   }
 
-  static generateMissingTypes = (
-    missingTypes: Record<string, Record<string, PrimitiveType>>, isSubType = false
-  ): ObjectType[] => Object.entries(missingTypes)
-    .map(([typeName, fieldTypes]) => new ObjectType({
-      elemID: new ElemID(SALESFORCE, typeName),
-      fields: Object.assign(
-        {},
-        ...Object.entries(fieldTypes).map(([name, type]) => ({ [name]: { type } }))
-      ),
-      path: [SALESFORCE, TYPES_PATH, ...isSubType ? [SUBTYPES_PATH] : [], typeName],
-    }))
-
   static getAllMissingTypes(): TypeElement[] {
-    return ([] as TypeElement[]).concat(
-      Types.generateMissingTypes(allMissingTypes),
-      Types.generateMissingTypes(allMissingSubTypes, true)
-    )
+    return ([] as TypeElement[]).concat(allMissingTypes, allMissingSubTypes)
   }
 
   static getAnnotationTypes(): TypeElement[] {

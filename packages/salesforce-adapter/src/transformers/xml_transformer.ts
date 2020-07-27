@@ -17,6 +17,7 @@ import _ from 'lodash'
 import parser from 'fast-xml-parser'
 import { MetadataInfo, RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
 import JSZip from 'jszip'
+import path from 'path'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { Values, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -239,9 +240,9 @@ const complexTypesMap: ComplexTypesMap = {
     addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values) => {
       Object.entries(fileNameToContent)
         .forEach(([contentFileName, content]) => {
-          const fieldName = Object.entries(auraFileSuffixToFieldName)
-            .find(([fileSuffix, _fieldName]) => contentFileName.endsWith(fileSuffix))?.[1]
-          if (_.isUndefined(fieldName)) {
+          const contentFileExt = path.extname(contentFileName)
+          const fieldName = auraFileSuffixToFieldName[contentFileExt]
+          if (fieldName === undefined) {
             log.warn(`Could not extract field content from ${contentFileName}`)
             return
           }
@@ -298,7 +299,7 @@ const complexTypesMap: ComplexTypesMap = {
      * Due to SF quirk, TARGET_CONFIGS field must be in the xml after the targets field
      */
     sortMetadataValues: (metadataValues: Values) =>
-      _.fromPairs(Object.entries(metadataValues)
+      Object.fromEntries(Object.entries(metadataValues)
         .filter(([name]) => name !== TARGET_CONFIGS)
         .concat([[TARGET_CONFIGS, metadataValues[TARGET_CONFIGS]]])),
     getMetadataFilePath: (instanceName: string) =>
@@ -327,9 +328,7 @@ export const fromRetrieveResult = async (
       complexType: boolean): Promise<Record<string, Buffer>> => {
       if (!complexType) { // this is a single file
         const zipFile = zip.file(`${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`)
-        return zipFile === null
-          ? Promise.resolve({} as Record<string, Buffer>)
-          : { [zipFile.name]: await zipFile.async('nodebuffer') }
+        return zipFile === null ? {} : { [zipFile.name]: await zipFile.async('nodebuffer') }
       }
       // bring all matching files from the fileName directory
       const zipFiles = zip.file(new RegExp(`^${PACKAGE}/${fileName}/.*`))

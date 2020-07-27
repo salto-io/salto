@@ -1236,6 +1236,52 @@ describe('transformer', () => {
       expect(elements[0].path).not.toContain(SUBTYPES_PATH)
       expect(connection.metadata.describeValueType).toHaveBeenCalledTimes(0)
     })
+
+    it('should add a reference if the field is a foreign key', async () => {
+      const referenceField = mockValueTypeField({
+        name: 'FKRef',
+        soapType: 'FKRefFieldType',
+        isForeignKey: true,
+        foreignKeyDomain: 'ReferencedTypeName',
+      })
+      const fieldWithNestedReference = mockValueTypeField({
+        fields: [referenceField],
+        name: 'FieldWithNestedReference',
+        soapType: 'FieldWithNestedReferenceType',
+      })
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [fieldWithNestedReference],
+        baseTypeNames: new Set(['BaseType']),
+        client,
+      })
+      expect(elements).toHaveLength(2)
+      const fieldWithNestedRef = elements[1]
+      expect(fieldWithNestedRef.fields[referenceField.name].annotations?.foreignKeyDomain).toEqual(['ReferencedTypeName'])
+    })
+
+    it('should add a reference if the field is a foreign key with a few options', async () => {
+      // assinging foreignKeyDomain separately because the salesforce type incorrectly specifies
+      // it as string when it can also be string[]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const referenceField: any = mockValueTypeField({
+        name: 'FKRef',
+        soapType: 'FKRefFieldType',
+        isForeignKey: true,
+      })
+      referenceField.foreignKeyDomain = ['ReferencedTypeName', 'OtherReferencedTypeName']
+      const elements = await createMetadataTypeElements({
+        name: 'BaseType',
+        fields: [referenceField],
+        baseTypeNames: new Set(['BaseType']),
+        client,
+      })
+      expect(elements).toHaveLength(1)
+      const baseField = elements[0]
+      expect(baseField.fields[referenceField.name].annotations?.foreignKeyDomain).toEqual(
+        ['ReferencedTypeName', 'OtherReferencedTypeName']
+      )
+    })
   })
 
   describe('transform references to SF lookup value', () => {

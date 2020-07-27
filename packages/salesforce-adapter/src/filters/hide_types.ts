@@ -28,7 +28,7 @@ import {
 
 const filterCreator: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]): Promise<void> => {
-    //  Skipping on the filter it hide is not enabled
+    //  Skipping on the filter if hide is not enabled
     if (!config[ENABLE_HIDE_TYPES_IN_NACLS]) {
       return
     }

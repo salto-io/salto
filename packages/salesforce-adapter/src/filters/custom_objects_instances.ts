@@ -109,7 +109,9 @@ const typesRecordsToInstances = (
       if (!isReferenceToField(field)) {
         return fieldValue.toString()
       }
-      const referenceToTypeNames = field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] as string[]
+      const referenceToTypeNames = makeArray(
+        field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]
+      ) as string[]
       return referenceToTypeNames.map(typeName => {
         const rec = recordByIdAndType[typeName] !== undefined
           ? recordByIdAndType[typeName][fieldValue] : undefined
@@ -197,7 +199,7 @@ const getFieldsToRefToTypes = (
   const referenceFields = _.pickBy(type.fields, isReferenceToField)
   return _.mapValues(
     referenceFields,
-    field => (field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO] as string[])
+    field => (makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[])
       .filter(refToTypeName => allowedRefToTypeNames.includes(refToTypeName))
   )
 }

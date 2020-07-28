@@ -108,15 +108,21 @@ export const writeFile = (
   contents: Buffer | string,
 ): Promise<void> => writeFileP(filename, contents, { encoding: 'utf8' })
 
+export const generateZipBuffer = async (filename: string, contents: string | Buffer):
+  Promise<Buffer> => {
+  const zip = new JSZip()
+  zip.file(filename, contents)
+  const zipContent = await zip.generateAsync({ type: 'nodebuffer' })
+  return zipContent
+}
+
 export const writeZipFile = async (
   zipFilename: string,
   filename: string,
   contents: Buffer | string,
 ): Promise<void> => {
-  const zip = new JSZip()
-  zip.file(filename, contents)
-  const zipContent = await zip.generateAsync({ type: 'nodebuffer' })
-  writeFile(zipFilename, zipContent)
+  const zipContent = await generateZipBuffer(filename, contents)
+  await writeFile(zipFilename, zipContent)
 }
 
 export const appendTextFile = (
@@ -131,7 +137,7 @@ export const copyFile: (
 
 export const replaceContents = async (
   filename: string,
-  contents: Buffer | string
+  contents: Buffer | string,
 ): Promise<void> => {
   const tempFilename = `${filename}.tmp.${strings.insecureRandomString()}`
   await writeFile(tempFilename, contents)

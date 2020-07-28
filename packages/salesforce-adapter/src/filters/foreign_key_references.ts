@@ -15,7 +15,7 @@
 */
 import {
   ElemID, Element, isObjectType, InstanceElement, ReferenceExpression,
-  isInstanceElement, isReferenceExpression,
+  isInstanceElement, isReferenceExpression, ObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { transformValues, TransformFunc } from '@salto-io/adapter-utils'
@@ -34,7 +34,7 @@ const { makeArray } = collections.array
  * @param typeToElemID  Known element ids by metadata type
  */
 const convertAnnotationsToReferences = (
-  elements: Element[],
+  types: ObjectType[],
   typeToElemID: Record<string, ElemID>,
 ): void => {
   const resolveTypeReference = (ref: string | ReferenceExpression):
@@ -48,9 +48,8 @@ const convertAnnotationsToReferences = (
     return ref
   }
 
-  elements
-    .filter(isObjectType)
-    .flatMap(obj => Object.values(obj.fields))
+  types
+    .flatMap(type => Object.values(type.fields))
     .filter(field => field.annotations[FOREIGN_KEY_DOMAIN] !== undefined)
     .forEach(field => {
       field.annotations[FOREIGN_KEY_DOMAIN] = field.annotations[FOREIGN_KEY_DOMAIN]
@@ -75,9 +74,7 @@ const resolveReferences = (
 
     const refTarget = makeArray(field.annotations[FOREIGN_KEY_DOMAIN])
       .filter(isReferenceExpression)
-      .map((ref: ReferenceExpression) => apiNameToElemIDs[value]?.[
-        ref.elemId.typeName
-      ])
+      .map(ref => apiNameToElemIDs[value]?.[ref.elemId.typeName])
       .find(values.isDefined)
     return refTarget !== undefined ? new ReferenceExpression(refTarget) : value
   }
@@ -91,11 +88,11 @@ const resolveReferences = (
   }) ?? instance.value
 }
 
-export const apiNameToElemID = (elements: Element[]): Record<string, ElemID> => (
+export const apiNameToElemID = (types: ObjectType[]): Record<string, ElemID> => (
   Object.fromEntries(
-    elements
+    types
       .filter(isObjectType)
-      .map(e => [apiName(e), e.elemID])
+      .map(type => [apiName(type), type.elemID])
   )
 )
 
@@ -105,8 +102,9 @@ export const apiNameToElemID = (elements: Element[]): Record<string, ElemID> => 
  */
 const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
-    const typeToElemID = apiNameToElemID(elements)
-    convertAnnotationsToReferences(elements, typeToElemID)
+    const types = elements.filter(isObjectType)
+    const typeToElemID = apiNameToElemID(types)
+    convertAnnotationsToReferences(types, typeToElemID)
 
     const apiNameToElemIDs = groupByAPIName(elements)
     elements.filter(isInstanceElement).forEach(instance => {

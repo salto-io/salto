@@ -22,7 +22,7 @@ import { State, StateData } from './state'
 const { makeArray } = collections.array
 
 export const buildInMemState = (loadData: () => Promise<StateData>):
-Omit<State, 'flush' | 'clear' | 'rename'> => {
+Omit<State, 'flush' | 'clear' | 'rename' | 'getHash'> => {
   let innerStateData: Promise<StateData>
   const stateData = (): Promise<StateData> => {
     if (innerStateData === undefined) {

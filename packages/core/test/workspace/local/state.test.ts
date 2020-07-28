@@ -18,10 +18,12 @@ import { replaceContents, exists, readTextFile, rm, rename } from '@salto-io/fil
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { state as wsState, serialization } from '@salto-io/workspace'
+import { hash } from '@salto-io/lowerdash'
 import { localState } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
 
 const { serialize } = serialization
+const { toMD5 } = hash
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -54,6 +56,13 @@ describe('local state', () => {
     beforeEach(() => {
       state = localState('empty')
     })
+
+    it('should return a hash of an empty string', async () => {
+      const stateHash = await state.getHash()
+      // c642ef3bd1563150551c7acc3e4ed5fb is the md5 digest of an empty state ('[]\n{}\n[]')
+      expect(stateHash).toEqual('c642ef3bd1563150551c7acc3e4ed5fb')
+    })
+
     it('should return an empty array if there is no saved state', async () => {
       const result = await state.getAll()
       expect(result.length).toBe(0)
@@ -241,6 +250,19 @@ describe('local state', () => {
       const state = localState('mutiple_adapters')
       const adapters = await state.existingServices()
       expect(adapters).toEqual(['salto', 'hubspot'])
+    })
+  })
+
+  describe('getHash', () => {
+    it('should call toMd5', async () => {
+      const state = localState('empty-state')
+      await state.set(mockElement)
+      const stateHash = await state.getHash()
+      expect(stateHash).toEqual(toMD5([
+        serialize([mockElement]),
+        safeJsonStringify({}),
+        safeJsonStringify([]),
+      ].join(EOL)))
     })
   })
 })

@@ -137,7 +137,6 @@ describe('file', () => {
     })
   })
 
-
   describe('readFile.notFoundAsUndefined', () => {
     describe('when the file exists', () => {
       it('should return its contents as text', async () => {

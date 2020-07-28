@@ -43,8 +43,8 @@ import {
   VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, LAYOUT_TYPE_ID_METADATA_TYPE,
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
-  COMPOUND_FIELDS_SOAP_TYPE_NAMES, FOLDER_TYPE, HAS_META_FILE, IS_FOLDER, CUSTOM_OBJECT_ID_FIELD,
-  FOREIGN_KEY_DOMAIN, XML_ATTRIBUTE_PREFIX,
+  COMPOUND_FIELDS_SOAP_TYPE_NAMES, FOLDER_TYPE, HAS_META_FILE, FOLDER_CONTENT_TYPE,
+  CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN, XML_ATTRIBUTE_PREFIX,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
@@ -1199,14 +1199,18 @@ type MetadataTypeAnnotations = {
   [METADATA_TYPE]: string
   [HAS_META_FILE]?: boolean
   [FOLDER_TYPE]?: string
-  [IS_FOLDER]?: boolean
+  [FOLDER_CONTENT_TYPE]?: string
+  suffix?: string
+  dirName?: string
 }
 
 const metadataAnnotationTypes = {
   [METADATA_TYPE]: BuiltinTypes.SERVICE_ID,
   [HAS_META_FILE]: BuiltinTypes.BOOLEAN,
   [FOLDER_TYPE]: BuiltinTypes.STRING,
-  [IS_FOLDER]: BuiltinTypes.BOOLEAN,
+  [FOLDER_CONTENT_TYPE]: BuiltinTypes.STRING,
+  suffix: BuiltinTypes.STRING,
+  dirName: BuiltinTypes.STRING,
 }
 
 type CreateMetadataTypeParams = {
@@ -1229,7 +1233,7 @@ export const createMetadataTypeElements = async ({
 
   const element = Types.get(name, false, isSettings) as ObjectType
   knownTypes.set(name, element)
-  const isTopLevelType = baseTypeNames.has(name) || annotations[IS_FOLDER]
+  const isTopLevelType = baseTypeNames.has(name) || annotations.folderContentType !== undefined
   element.annotationTypes = _.clone(metadataAnnotationTypes)
   element.annotate({
     ..._.pickBy(annotations, isDefined),

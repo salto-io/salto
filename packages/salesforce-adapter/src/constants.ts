@@ -116,7 +116,7 @@ export const METADATA_TYPE = 'metadataType'
 export const TOPICS_FOR_OBJECTS_ANNOTATION = 'topicsForObjects'
 export const HAS_META_FILE = 'hasMetaFile'
 export const FOLDER_TYPE = 'folderType'
-export const IS_FOLDER = 'isFolder'
+export const FOLDER_CONTENT_TYPE = 'folderContentType'
 export const FOREIGN_KEY_DOMAIN = 'foreignKeyDomain'
 export const IS_ATTRIBUTE = 'isAttribute'
 

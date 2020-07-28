@@ -18,7 +18,7 @@ import { FileProperties } from 'jsforce-types'
 import { InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import { FetchElements, ConfigChangeSuggestion } from './types'
-import { FOLDER_TYPE, METADATA_CONTENT_FIELD, HAS_META_FILE, IS_FOLDER } from './constants'
+import { FOLDER_TYPE, METADATA_CONTENT_FIELD, HAS_META_FILE, FOLDER_CONTENT_TYPE } from './constants'
 import SalesforceClient from './client/client'
 import { createListMetadataObjectsConfigChange, createRetrieveConfigChange } from './config_change'
 import { apiName, createInstanceElement } from './transformers/transformer'
@@ -73,7 +73,7 @@ export const retrieveMetadataInstances = async ({
   }
 
   const listFilesOfType = async (type: ObjectType): Promise<FileProperties[]> => {
-    if (type.annotations[IS_FOLDER] === true) {
+    if (type.annotations[FOLDER_CONTENT_TYPE] !== undefined) {
       // We get folders as part of getting the records inside them
       return []
     }
@@ -90,11 +90,6 @@ export const retrieveMetadataInstances = async ({
   }
 
   const typesByName = _.keyBy(types, t => apiName(t))
-  const folderToChildType = _(types)
-    .filter(type => FOLDER_TYPE in type.annotations)
-    .map(type => [type.annotations[FOLDER_TYPE], apiName(type)])
-    .fromPairs()
-    .value()
   const typesWithMetaFile = getTypesWithMetaFile(types)
   const typesWithContent = getTypesWithContent(types)
 
@@ -104,9 +99,7 @@ export const retrieveMetadataInstances = async ({
     // Because of a salesforce quirk, in order to get folder instances we actually need to use the
     // "child" type with the folder fullName
     const filesToRetrieve = fileProps.map(inst => (
-      inst.type in folderToChildType
-        ? { ...inst, type: folderToChildType[inst.type] }
-        : inst
+      { ...inst, type: typesByName[inst.type]?.annotations[FOLDER_CONTENT_TYPE] ?? inst.type }
     ))
     const request = toRetrieveRequest(filesToRetrieve)
     const result = await client.retrieve(request)

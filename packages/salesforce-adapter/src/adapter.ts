@@ -73,7 +73,7 @@ import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { id, addApiName, addMetadataType, addLabel } from './filters/utils'
 import { retrieveMetadataInstances } from './fetch'
-import { IS_FOLDER } from './constants'
+import { FOLDER_CONTENT_TYPE } from './constants'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -836,7 +836,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       knownTypes,
       baseTypeNames,
       client: this.client,
-      annotations: { hasMetaFile: typeInfo.metaFile ? true : undefined, folderType },
+      annotations: {
+        hasMetaFile: typeInfo.metaFile ? true : undefined,
+        folderType,
+        suffix: typeInfo.suffix,
+        dirName: typeInfo.directoryName,
+      },
     })
     const folderTypes = folderType === undefined
       ? []
@@ -846,7 +851,11 @@ export default class SalesforceAdapter implements AdapterOperations {
         knownTypes,
         baseTypeNames,
         client: this.client,
-        annotations: { hasMetaFile: true, isFolder: true },
+        annotations: {
+          hasMetaFile: true,
+          folderContentType: typeInfo.xmlName,
+          dirName: typeInfo.directoryName,
+        },
       })
     return [...mainTypes, ...folderTypes]
   }
@@ -879,7 +888,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     const topLevelTypeNames = typeInfos.map(info => info.xmlName)
     const topLevelTypes = (await types)
       .filter(isObjectType)
-      .filter(t => topLevelTypeNames.includes(apiName(t)) || t.annotations[IS_FOLDER] === true)
+      .filter(t => (
+        topLevelTypeNames.includes(apiName(t))
+        || t.annotations[FOLDER_CONTENT_TYPE] !== undefined
+      ))
 
     const [metadataTypesToRetrieve, metadataTypesToRead] = _.partition(
       topLevelTypes,

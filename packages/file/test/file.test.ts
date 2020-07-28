@@ -137,7 +137,6 @@ describe('file', () => {
     })
   })
 
-
   describe('readFile.notFoundAsUndefined', () => {
     describe('when the file exists', () => {
       it('should return its contents as text', async () => {
@@ -461,6 +460,34 @@ describe('file', () => {
 
     it('copies the file', async () => {
       expect(await file.readTextFile(dest)).toEqual(await file.readTextFile(source))
+    })
+  })
+
+  describe('generateZipBuffer', () => {
+    let destTmp: tmp.FileResult
+    let dest: string
+
+    beforeEach(async () => {
+      destTmp = await tmp.file()
+      dest = destTmp.path
+      await file.copyFile(__filename, dest)
+    })
+
+    afterEach(async () => {
+      await destTmp.cleanup()
+    })
+
+    describe('when writing to file and reading as zip', () => {
+      const contents = 'arbitraryText'
+      const innerZipFileName = 'inner.txt'
+      beforeEach(async () => {
+        const buffer = await file.generateZipBuffer(innerZipFileName, contents)
+        await fs.promises.writeFile(dest, buffer)
+      })
+
+      it('can be read as zip file', async () => {
+        expect(contents).toEqual(await file.readZipFile(dest, innerZipFileName))
+      })
     })
   })
 

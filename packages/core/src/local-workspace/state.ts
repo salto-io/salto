@@ -18,7 +18,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
+import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents, generateZipBuffer } from '@salto-io/file'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
@@ -29,14 +29,24 @@ const { toMD5 } = hash
 const log = logger(module)
 
 export const STATE_EXTENSION = '.jsonl'
+export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
+export const INNER_FILENAME = 'state.jsonl'
 
 export const localState = (filePath: string): state.State => {
   let dirty = false
   let currentFilePath = filePath
 
   const loadFromFile = async (): Promise<state.StateData> => {
-    const text = await exists(currentFilePath) ? await readTextFile(currentFilePath) : undefined
+    let text: string | undefined
+    if (await exists(currentFilePath + STATE_EXTENSION)) {
+      currentFilePath += STATE_EXTENSION
+      text = await readTextFile(currentFilePath)
+    } else if (await exists(currentFilePath + ZIPPED_STATE_EXTENSION)) {
+      currentFilePath += ZIPPED_STATE_EXTENSION
+      text = await readZipFile(currentFilePath, INNER_FILENAME)
+    }
     if (text === undefined) {
+      currentFilePath += ZIPPED_STATE_EXTENSION
       return { elements: {}, servicesUpdateDate: {}, pathIndex: new pathIndex.PathIndex() }
     }
     const [elementsData, updateDateData, pathIndexData] = text.split(EOL)
@@ -82,7 +92,7 @@ export const localState = (filePath: string): state.State => {
       dirty = true
     },
     rename: async (name: string): Promise<void> => {
-      const newFilePath = path.join(path.dirname(currentFilePath), `${name}${STATE_EXTENSION}`)
+      const newFilePath = path.join(path.dirname(currentFilePath), `${name}${ZIPPED_STATE_EXTENSION}`)
       await rename(currentFilePath, newFilePath)
       currentFilePath = newFilePath
     },
@@ -90,9 +100,18 @@ export const localState = (filePath: string): state.State => {
       if (!dirty) {
         return
       }
-      const stateText = await getStateText()
+      if (currentFilePath.endsWith(STATE_EXTENSION)) {
+        const newFilePath = currentFilePath.replace(STATE_EXTENSION, ZIPPED_STATE_EXTENSION)
+        await rename(currentFilePath, newFilePath)
+        currentFilePath = newFilePath
+      }
+      const elements = await inMemState.getAll()
+      const elementsString = serialize(elements)
+      const dateString = safeJsonStringify(await inMemState.getServicesUpdateDates())
+      const pathIndexString = pathIndex.serializedPathIndex(await inMemState.getPathIndex())
+      const stateText = [elementsString, dateString, pathIndexString].join(EOL)
       await mkdirp(path.dirname(currentFilePath))
-      await replaceContents(currentFilePath, stateText)
+      await replaceContents(currentFilePath, await generateZipBuffer(INNER_FILENAME, stateText))
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string> => {

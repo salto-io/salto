@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { replaceContents, exists, readTextFile, rm, rename } from '@salto-io/file'
+import { replaceContents, exists, readTextFile, rm, rename, generateZipBuffer } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { state as wsState, serialization } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
-import { localState } from '../../../src/local-workspace/state'
+import { localState, ZIPPED_STATE_EXTENSION, INNER_FILENAME } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
 
 const { serialize } = serialization
@@ -40,10 +40,29 @@ jest.mock('@salto-io/file', () => ({
     }
     return Promise.resolve('[]')
   }),
+  readZipFile: jest.fn().mockImplementation((filename: string) => {
+    if (filename === 'error.jsonl.zip') {
+      return Promise.resolve('blabl{,.')
+    }
+    if (filename === 'full.jsonl.zip') {
+      return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]')
+    }
+    if (filename === 'mutiple_adapters.jsonl.zip') {
+      return Promise.resolve('[{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"hubspot","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "hubspot":"2020-04-21T09:44:20.824Z"}')
+    }
+    // eslint-disable-next-line no-console
+    console.log(`Got: ${filename}`)
+    return Promise.resolve('[]')
+  }),
   rm: jest.fn().mockImplementation(),
   rename: jest.fn().mockImplementation(),
   mkdirp: jest.fn().mockImplementation(),
-  exists: jest.fn().mockImplementation(((filename: string) => Promise.resolve(filename !== 'empty'))),
+  exists: jest.fn().mockImplementation((filename: string) => {
+    const ret = filename !== 'empty' && filename.endsWith('zip')
+    // eslint-disable-next-line no-console
+    console.log(`${filename} will return ${ret}`)
+    return Promise.resolve(ret)
+  }),
 }))
 
 describe('local state', () => {
@@ -137,13 +156,13 @@ describe('local state', () => {
     const state = localState('on-flush')
     await state.set(mockElement)
     await state.flush()
-    const onFlush = findReplaceContentCall('on-flush')
+    const onFlush = findReplaceContentCall('on-flush.jsonl.zip')
     expect(onFlush).toBeDefined()
-    expect(onFlush[1]).toEqual([
+    expect(onFlush[1]).toEqual(await generateZipBuffer(INNER_FILENAME, [
       serialize([mockElement]),
       safeJsonStringify({}),
       safeJsonStringify([]),
-    ].join(EOL))
+    ].join(EOL)))
   })
 
   it('shouldn\'t write file if state was not loaded on flush', async () => {
@@ -236,7 +255,7 @@ describe('local state', () => {
       const state = localState(filePath)
       await state.rename('new')
       expect(mockRename).toHaveBeenCalledTimes(1)
-      expect(mockRename).toHaveBeenCalledWith(filePath, '/base/new.jsonl')
+      expect(mockRename).toHaveBeenCalledWith(filePath, `/base/new${ZIPPED_STATE_EXTENSION}`)
     })
   })
 

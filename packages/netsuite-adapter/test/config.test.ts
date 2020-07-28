@@ -16,13 +16,14 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { configType, getConfigFromConfigChanges } from '../src/config'
 import {
-  FETCH_ALL_TYPES_AT_ONCE, FILE_PATHS_REGEX_SKIP_LIST, TYPES_TO_SKIP,
+  FETCH_ALL_TYPES_AT_ONCE, FILE_PATHS_REGEX_SKIP_LIST, TYPES_TO_SKIP, SDF_CONCURRENCY_LIMIT,
 } from '../src/constants'
 
 describe('config', () => {
   const currentConfig = {
     [TYPES_TO_SKIP]: ['test1'],
     [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*'],
+    [SDF_CONCURRENCY_LIMIT]: 2,
   }
   const newFailedType = 'test2'
   const newFailedFilePath = '/path/to/file.js'
@@ -65,6 +66,7 @@ describe('config', () => {
           [TYPES_TO_SKIP]: ['test1', newFailedType],
           [FILE_PATHS_REGEX_SKIP_LIST]: ['^SomeRegex.*', expectedNewFailedFileRegex],
           [FETCH_ALL_TYPES_AT_ONCE]: false,
+          [SDF_CONCURRENCY_LIMIT]: 2,
         }
       ))
   })

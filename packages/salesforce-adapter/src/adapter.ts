@@ -58,6 +58,7 @@ import topicsForObjectsFilter from './filters/topics_for_objects'
 import globalValueSetFilter from './filters/global_value_sets'
 import instanceReferences from './filters/instance_references'
 import customObjectInstanceReferencesFilter from './filters/custom_object_instances_references'
+import foreignKeyReferences from './filters/foreign_key_references'
 import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
@@ -108,6 +109,7 @@ export const DEFAULT_FILTERS = [
   convertListsFilter,
   convertTypeFilter,
   instanceReferences,
+  foreignKeyReferences,
   // hideTypesFilter should come before customObjectsSplitFilter
   hideTypesFilter,
   customObjectsSplitFilter,

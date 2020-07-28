@@ -111,9 +111,13 @@ describe('Salesforce adapter E2E with real account', () => {
   const lookupFieldName = `Quebec${randomString}__c`
   const masterDetailFieldName = `Romeo${randomString}__c`
   const formulaFieldName = 'Whiskey__c'
+  const summaryFieldName = 'Case.summary__c'
 
   const removeCustomObjectsWithVariousFields = async (): Promise<void> => {
     const deleteCustomObject = async (objectName: string): Promise<void> => {
+      if (await objectExists(client, constants.CUSTOM_FIELD, summaryFieldName)) {
+        await client.delete(constants.CUSTOM_FIELD, summaryFieldName)
+      }
       if (await objectExists(client, constants.CUSTOM_OBJECT, objectName)) {
         await client.delete(constants.CUSTOM_OBJECT, objectName)
       }
@@ -2648,8 +2652,7 @@ describe('Salesforce adapter E2E with real account', () => {
           })
 
           it('rollup summary', async () => {
-            const rollupSummaryFieldName = 'summary'
-            const rollupSummaryFieldApiName = `${rollupSummaryFieldName}__c`
+            const rollupSummaryFieldName = summaryFieldName.split('.')[1]
 
             const findCustomCase = (): ObjectType => {
               const caseObjects = findElements(result, 'Case') as ObjectType[]
@@ -2676,8 +2679,8 @@ describe('Salesforce adapter E2E with real account', () => {
               })
               return caseAfterFieldRemoval
             }
-            if (await objectExists(client, constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldApiName])) {
-              origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldApiName)
+            if (await objectExists(client, constants.CUSTOM_OBJECT, 'Case', [rollupSummaryFieldName])) {
+              origCase = await removeRollupSummaryFieldFromCase(origCase, rollupSummaryFieldName)
             }
 
             const addRollupSummaryField = async (): Promise<ObjectType> => {
@@ -2689,7 +2692,7 @@ describe('Salesforce adapter E2E with real account', () => {
                 {
                   [CORE_ANNOTATIONS.REQUIRED]: false,
                   [constants.LABEL]: 'Summary label',
-                  [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldApiName),
+                  [constants.API_NAME]: apiNameAnno('Case', rollupSummaryFieldName),
                   [constants.FIELD_ANNOTATIONS.SUMMARIZED_FIELD]: `${customObjectAddFieldsName}.${currencyFieldName}`,
                   [constants.FIELD_ANNOTATIONS.SUMMARY_FOREIGN_KEY]: `${customObjectAddFieldsName}.${masterDetailApiName}`,
                   [constants.FIELD_ANNOTATIONS.SUMMARY_OPERATION]: 'max',
@@ -2713,7 +2716,7 @@ describe('Salesforce adapter E2E with real account', () => {
             }
             const verifyRollupSummaryField = async (): Promise<void> => {
               const fetchedRollupSummary = await getMetadata(client, constants.CUSTOM_FIELD,
-                `Case.${rollupSummaryFieldApiName}`) as CustomField
+                `Case.${rollupSummaryFieldName}`) as CustomField
               expect(_.get(fetchedRollupSummary, 'summarizedField'))
                 .toEqual(`${customObjectAddFieldsName}.${currencyFieldName}`)
               expect(_.get(fetchedRollupSummary, 'summaryForeignKey'))

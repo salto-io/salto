@@ -114,6 +114,37 @@ const getGroupAction = (group: Group<Change>): ActionName => {
     : 'modify'
 }
 
+export const detailedCompare = (
+  before: ChangeDataType,
+  after: ChangeDataType
+): DetailedChange[] => {
+  // A special case to handle isList changes in fields.
+  // should only happen if we misidentified the type
+  // in fetch. See SALTO-322
+  if (isField(before)
+    && isField(after)
+    && isListType(after.type) !== isListType(before.type)) {
+    return [{ action: 'modify', data: { before, after }, id: after.elemID }]
+  }
+
+  if (isInstanceElement(before) && isInstanceElement(after)) {
+    return getValuesChanges(after.elemID, before.value, after.value)
+  }
+
+  // A special case to handle changes in annotationType.
+  const annotationTypeChanges = getAnnotationTypeChanges(
+    after.elemID,
+    before,
+    after
+  )
+
+  const annotationChanges = getValuesChanges(
+    after.elemID.isTopLevel() ? after.elemID.createNestedID('attr') : after.elemID,
+    before.annotations, after.annotations
+  )
+  return [...annotationTypeChanges, ...annotationChanges]
+}
+
 export const addPlanItemAccessors = (group: Group<Change>): PlanItem => Object.assign(group, {
   action: getGroupAction(group),
   changes() {
@@ -126,32 +157,7 @@ export const addPlanItemAccessors = (group: Group<Change>): PlanItem => Object.a
         if (change.action !== 'modify') {
           return { ...change, id: elem.elemID }
         }
-
-        // A special case to handle isList changes in fields.
-        // should only happen if we misidentified the type
-        // in fetch. See SALTO-322
-        if (isField(change.data.before)
-          && isField(change.data.after)
-          && isListType(change.data.after.type) !== isListType(change.data.before.type)) {
-          return { ...change, id: elem.elemID }
-        }
-
-        if (isInstanceElement(change.data.before) && isInstanceElement(change.data.after)) {
-          return getValuesChanges(elem.elemID, change.data.before.value, change.data.after.value)
-        }
-
-        // A special case to handle changes in annotationType.
-        const annotationTypeChanges = getAnnotationTypeChanges(
-          elem.elemID,
-          change.data.before,
-          change.data.after
-        )
-
-        const annotationChanges = getValuesChanges(
-          elem.elemID.isTopLevel() ? elem.elemID.createNestedID('attr') : elem.elemID,
-          change.data.before.annotations, change.data.after.annotations
-        )
-        return [...annotationTypeChanges, ...annotationChanges]
+        return detailedCompare(change.data.before, change.data.after)
       })
       .flatten()
   },

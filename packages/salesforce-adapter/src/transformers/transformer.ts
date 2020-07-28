@@ -44,7 +44,7 @@ import {
   LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_RULE_METADATA_TYPE, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, FOLDER_TYPE, HAS_META_FILE, IS_FOLDER, CUSTOM_OBJECT_ID_FIELD,
-  XML_ATTRIBUTE_PREFIX,
+  FOREIGN_KEY_DOMAIN, XML_ATTRIBUTE_PREFIX,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingTypes, allMissingSubTypes } from './salesforce_types'
@@ -899,6 +899,11 @@ export const getValueTypeFieldElement = (parent: ObjectType, field: ValueTypeFie
       annotations[CORE_ANNOTATIONS.DEFAULT] = defaults.pop()
     }
   }
+
+  if (field.isForeignKey) {
+    annotations[FOREIGN_KEY_DOMAIN] = makeArray(field.foreignKeyDomain)
+  }
+
   return new Field(parent, field.name, naclFieldType, annotations)
 }
 

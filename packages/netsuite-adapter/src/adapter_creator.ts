@@ -15,6 +15,7 @@
 */
 import {
   Adapter, BuiltinTypes, ElemID, InstanceElement, ObjectType, AdapterInstallResult,
+  AdapterOperationsContext, AdapterOperations,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -27,10 +28,14 @@ import NetsuiteAdapter from './adapter'
 import { configType, NetsuiteConfig } from './config'
 import {
   NETSUITE, TYPES_TO_SKIP, FILE_PATHS_REGEX_SKIP_LIST, FETCH_ALL_TYPES_AT_ONCE,
+  SDF_CONCURRENCY_LIMIT,
 } from './constants'
 
 const log = logger(module)
 const { makeArray } = collections.array
+
+// in small Netsuite accounts the concurrency limit per integration can be between 1-4
+export const DEFAULT_SDF_CONCURRENCY = 4
 
 const configID = new ElemID(NETSUITE)
 
@@ -69,6 +74,7 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
   const netsuiteConfig = {
     [TYPES_TO_SKIP]: makeArray(config?.value?.[TYPES_TO_SKIP]),
     [FETCH_ALL_TYPES_AT_ONCE]: config?.value?.[FETCH_ALL_TYPES_AT_ONCE],
+    [SDF_CONCURRENCY_LIMIT]: config?.value?.[SDF_CONCURRENCY_LIMIT],
     [FILE_PATHS_REGEX_SKIP_LIST]: filePathsRegexSkipList,
   }
   Object.keys(config?.value ?? {})
@@ -80,17 +86,23 @@ const netsuiteConfigFromConfig = (config: Readonly<InstanceElement> | undefined)
 const netsuiteCredentialsFromCredentials = (credentials: Readonly<InstanceElement>): Credentials =>
   credentials.value as Credentials
 
-const clientFromCredentials = (credentials: InstanceElement): NetsuiteClient =>
+const createClient = (credentials: InstanceElement, sdfConcurrencyLimit?: number): NetsuiteClient =>
   new NetsuiteClient({
     credentials: netsuiteCredentialsFromCredentials(credentials),
+    sdfConcurrencyLimit: sdfConcurrencyLimit ?? DEFAULT_SDF_CONCURRENCY,
   })
 
-export const adapter: Adapter = {
-  operations: context => new NetsuiteAdapter({
-    client: clientFromCredentials(context.credentials),
-    config: netsuiteConfigFromConfig(context.config),
+const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperations => {
+  const adapterConfig = netsuiteConfigFromConfig(context.config)
+  return new NetsuiteAdapter({
+    client: createClient(context.credentials, adapterConfig[SDF_CONCURRENCY_LIMIT]),
+    config: adapterConfig,
     getElemIdFunc: context.getElemIdFunc,
-  }),
+  })
+}
+
+export const adapter: Adapter = {
+  operations: context => getAdapterOperations(context),
   validateCredentials: async config => {
     const credentials = netsuiteCredentialsFromCredentials(config)
     return NetsuiteClient.validateCredentials(credentials)

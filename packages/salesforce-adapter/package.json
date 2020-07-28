@@ -46,7 +46,8 @@
     "lodash": "^4.17.19",
     "requestretry": "^4.0.2",
     "stream": "0.0.2",
-    "wu": "^2.1.0"
+    "wu": "^2.1.0",
+    "mime-types": "^2.1.27"
   },
   "devDependencies": {
     "@salto-io/persistent-pool": "0.1.19",
@@ -54,6 +55,7 @@
     "@types/jszip": "^3.1.6",
     "@types/lodash": "^4.14.133",
     "@types/node": "^12.7.1",
+    "@types/mime-types": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "2.31.0",
     "@typescript-eslint/parser": "2.31.0",
     "eslint": "^6.2.2",

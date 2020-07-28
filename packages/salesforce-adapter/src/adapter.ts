@@ -63,6 +63,7 @@ import valueSetFilter from './filters/value_set'
 import customObjectTranslationFilter from './filters/custom_object_translation'
 import recordTypeFilter from './filters/record_type'
 import hideTypesFilter from './filters/hide_types'
+import staticResourceFileExtFilter from './filters/static_resource_file_ext'
 import { ConfigChangeSuggestion, FetchElements, SalesforceConfig } from './types'
 import { createListMetadataObjectsConfigChange, createSkippedListConfigChange,
   getConfigFromConfigChanges,
@@ -102,6 +103,7 @@ export const DEFAULT_FILTERS = [
   topicsForObjectsFilter,
   valueSetFilter,
   globalValueSetFilter,
+  staticResourceFileExtFilter,
   // customObjectTranslationFilter and recordTypeFilter depends on customObjectsFilter
   customObjectTranslationFilter,
   recordTypeFilter,
@@ -240,6 +242,7 @@ const metadataToRetrieveAndDeploy = [
   'Territory2Rule', // All Territory2 types do not support CRUD
   'Territory2Model', // All Territory2 types do not support CRUD
   'Territory2Type', // All Territory2 types do not support CRUD
+  'StaticResource', // contains encoded zip content
 ]
 
 export default class SalesforceAdapter implements AdapterOperations {
@@ -264,7 +267,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     metadataTypesSkippedList = [
       'CustomField', // We have special treatment for this type
       'Settings',
-      'StaticResource',
       'NetworkBranding',
       'FlowDefinition', // Only has the active flow version but we cant get flow versions anyway
       // readMetadata fails on those and pass on the parents (AssignmentRules and EscalationRules)

@@ -15,6 +15,7 @@
 */
 import { promisify } from 'util'
 import fs from 'fs'
+import pako from 'pako'
 import rimRafLib from 'rimraf'
 import mkdirpLib from 'mkdirp'
 import path from 'path'
@@ -83,6 +84,17 @@ export const readTextFile = (
   filename: string,
 ): Promise<string> => readFileP(filename, { encoding: 'utf8' })
 
+export const readZipFile = async (
+  zipFilename: string,
+): Promise<string | undefined> => {
+  const data = await readFileP(zipFilename, { encoding: 'utf8' })
+  try {
+    return pako.ungzip(data, { to: 'string' })
+  } catch {
+    return undefined
+  }
+}
+
 readTextFile.notFoundAsUndefined = notFoundAsUndefined(readTextFile)
 
 export const readFile = (filename: string): Promise<Buffer> => readFileP(filename)
@@ -93,6 +105,17 @@ export const writeFile = (
   filename: string,
   contents: Buffer | string,
 ): Promise<void> => writeFileP(filename, contents, { encoding: 'utf8' })
+
+export const generateZipString = async (contents: string | Buffer):
+  Promise<string> => pako.gzip(contents, { to: 'string' })
+
+export const writeZipFile = async (
+  zipFilename: string,
+  contents: Buffer | string,
+): Promise<void> => {
+  const zipContent = await generateZipString(contents)
+  await writeFile(zipFilename, zipContent)
+}
 
 export const appendTextFile = (
   filename: string,
@@ -106,7 +129,7 @@ export const copyFile: (
 
 export const replaceContents = async (
   filename: string,
-  contents: Buffer | string
+  contents: Buffer | string,
 ): Promise<void> => {
   const tempFilename = `${filename}.tmp.${strings.insecureRandomString()}`
   await writeFile(tempFilename, contents)

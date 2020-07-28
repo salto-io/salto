@@ -18,7 +18,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { exists, readTextFile, replaceContents, mkdirp, rm, rename } from '@salto-io/file'
+import { exists, readTextFile, mkdirp, rm, rename, readZipFile, replaceContents, generateZipString } from '@salto-io/file'
 import { flattenElementStr, safeJsonStringify } from '@salto-io/adapter-utils'
 import { serialization, pathIndex, state } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
@@ -29,13 +29,21 @@ const { toMD5 } = hash
 const log = logger(module)
 
 export const STATE_EXTENSION = '.jsonl'
+export const ZIPPED_STATE_EXTENSION = '.jsonl.zip'
 
 export const localState = (filePath: string): state.State => {
   let dirty = false
-  let currentFilePath = filePath
+  let pathToClean = ''
+  let currentFilePath = filePath + ZIPPED_STATE_EXTENSION
 
   const loadFromFile = async (): Promise<state.StateData> => {
-    const text = await exists(currentFilePath) ? await readTextFile(currentFilePath) : undefined
+    let text: string | undefined
+    if (await exists(currentFilePath)) {
+      text = await readZipFile(currentFilePath)
+    } else if (await exists(filePath + STATE_EXTENSION)) {
+      pathToClean = filePath + STATE_EXTENSION
+      text = await readTextFile(pathToClean)
+    }
     if (text === undefined) {
       return { elements: {}, servicesUpdateDate: {}, pathIndex: new pathIndex.PathIndex() }
     }
@@ -82,17 +90,20 @@ export const localState = (filePath: string): state.State => {
       dirty = true
     },
     rename: async (name: string): Promise<void> => {
-      const newFilePath = path.join(path.dirname(currentFilePath), `${name}${STATE_EXTENSION}`)
+      const newFilePath = path.join(path.dirname(currentFilePath), `${name}${ZIPPED_STATE_EXTENSION}`)
       await rename(currentFilePath, newFilePath)
       currentFilePath = newFilePath
     },
     flush: async (): Promise<void> => {
-      if (!dirty) {
+      if (!dirty && pathToClean === '') {
         return
       }
       const stateText = await getStateText()
       await mkdirp(path.dirname(currentFilePath))
-      await replaceContents(currentFilePath, stateText)
+      await replaceContents(currentFilePath, await generateZipString(stateText))
+      if (pathToClean !== '') {
+        await rm(pathToClean)
+      }
       log.debug('finish flushing state')
     },
     getHash: async (): Promise<string> => {
@@ -100,7 +111,7 @@ export const localState = (filePath: string): state.State => {
       return toMD5(stateText)
     },
     clear: async (): Promise<void> => {
-      await rm(filePath)
+      await rm(currentFilePath)
     },
   }
 }

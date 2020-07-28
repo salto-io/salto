@@ -21,7 +21,7 @@ import { Workspace, loadWorkspace, EnvironmentsSources, initWorkspace, nacl,
   configSource as cs, parseCache, staticFiles, dirStore } from '@salto-io/workspace'
 import { localDirectoryStore } from './dir_store'
 import { getSaltoHome, CONFIG_DIR_NAME, getConfigDir } from '../app_config'
-import { localState, STATE_EXTENSION } from './state'
+import { localState } from './state'
 import { workspaceConfigSource } from './workspace_config'
 import { buildLocalStaticFilesCache } from './static_files_cache'
 
@@ -114,7 +114,7 @@ export const loadLocalElementsSources = (baseDir: string, localStorage: string,
             path.resolve(baseDir, ENVS_PREFIX, env),
             path.resolve(localStorage, CACHE_DIR_NAME, ENVS_PREFIX, env)
           ),
-          state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, `${env}${STATE_EXTENSION}`)),
+          state: localState(path.join(getConfigDir(baseDir), STATES_DIR_NAME, env)),
         },
       ])),
     [COMMON_ENV_PREFIX]: {

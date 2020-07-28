@@ -31,7 +31,9 @@
   },
   "dependencies": {
     "@salto-io/lowerdash": "0.1.19",
+    "@types/pako": "^1.0.1",
     "mkdirp": "^0.5.1",
+    "pako": "^1.0.11",
     "rimraf": "^3.0.0"
   },
   "devDependencies": {

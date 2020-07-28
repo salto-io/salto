@@ -193,11 +193,14 @@ const addContentFieldAsStaticFile = (values: Values, valuePath: string[], conten
     }))
 }
 
+type FieldName = string
+type FileName = string
+type Content = string
 type ComplexType = {
   addContentFields(fileNameToContent: Record<string, Buffer>, values: Values): void
   getMissingFields?(metadataFileName: string): Values
   mapContentFields(instanceName: string, values: Values):
-    Record</* fieldName */string, Record</* fileName */string, /* content */string>>
+    Record<FieldName, Record<FileName, Content>>
   sortMetadataValues?(metadataValues: Values): Values
   getMetadataFilePath(instanceName: string, values?: Values): string
 }
@@ -265,7 +268,7 @@ const complexTypesMap: ComplexTypesMap = {
       if (!Object.keys(auraTypeToFileSuffix).includes(type)) {
         throw new Error(`${type} is an invalid AuraDefinitionBundle type`)
       }
-      return _.fromPairs(Object.entries(auraFileSuffixToFieldName)
+      return Object.fromEntries(Object.entries(auraFileSuffixToFieldName)
         .filter(([_fileSuffix, fieldName]) => fieldName !== MARKUP)
         .map(([fileSuffix, fieldName]) => [fieldName, { [`${PACKAGE}/aura/${instanceName}/${instanceName}${fileSuffix}`]: values[fieldName] }])
         .concat([[MARKUP, { [`${PACKAGE}/aura/${instanceName}/${instanceName}${auraTypeToFileSuffix[type]}`]: values[MARKUP] }]]))
@@ -291,7 +294,7 @@ const complexTypesMap: ComplexTypesMap = {
         })
     },
     mapContentFields: (_instanceName: string, values: Values) => ({
-      [LWC_RESOURCES]: _.fromPairs(makeArray(values[LWC_RESOURCES]?.[LWC_RESOURCE])
+      [LWC_RESOURCES]: Object.fromEntries(makeArray(values[LWC_RESOURCES]?.[LWC_RESOURCE])
         .map(lwcResource => [`${PACKAGE}/${lwcResource.filePath}`, lwcResource.source])),
     }),
     /**
@@ -314,31 +317,29 @@ const xmlToValues = (xmlAsString: string, type: string): Values => parser.parse(
   { ignoreAttributes: false, attributeNamePrefix: XML_ATTRIBUTE_PREFIX }
 )[type]
 
+const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
+  complexType: boolean): Promise<Record<string, Buffer>> => {
+  if (!complexType) { // this is a single file
+    const zipFile = zip.file(`${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`)
+    return zipFile === null ? {} : { [zipFile.name]: await zipFile.async('nodebuffer') }
+  }
+  // bring all matching files from the fileName directory
+  const zipFiles = zip.file(new RegExp(`^${PACKAGE}/${fileName}/.*`))
+    .filter(zipFile => zipFile.name.endsWith(METADATA_XML_SUFFIX) === withMetadataSuffix)
+  return _.isEmpty(zipFiles)
+    ? {}
+    : Object.fromEntries(await Promise.all(zipFiles.map(async zipFile => [zipFile.name, await zipFile.async('nodebuffer')])))
+}
+
 export const fromRetrieveResult = async (
   result: RetrieveResult,
   fileProps: ReadonlyArray<FileProperties>,
   typesWithMetaFile: Set<string>,
   typesWithContent: Set<string>,
 ): Promise<{ file: FileProperties; values: MetadataValues}[]> => {
-  const fromZip = async (
-    zip: JSZip, file: FileProperties,
-  ): Promise<MetadataValues | undefined> => {
-    const extractFileNameToData = async (fileName: string, withMetadataSuffix: boolean,
-      complexType: boolean): Promise<Record<string, Buffer>> => {
-      if (!complexType) { // this is a single file
-        const zipFile = zip.file(`${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`)
-        return zipFile === null ? {} : { [zipFile.name]: await zipFile.async('nodebuffer') }
-      }
-      // bring all matching files from the fileName directory
-      const zipFiles = zip.file(new RegExp(`^${PACKAGE}/${fileName}/.*`))
-        .filter(zipFile => zipFile.name.endsWith(METADATA_XML_SUFFIX) === withMetadataSuffix)
-      return _.isEmpty(zipFiles)
-        ? {}
-        : _.fromPairs(await Promise.all(zipFiles.map(async zipFile => [zipFile.name, await zipFile.async('nodebuffer')])))
-    }
-
+  const fromZip = async (zip: JSZip, file: FileProperties): Promise<MetadataValues | undefined> => {
     // extract metadata values
-    const fileNameToValuesBuffer = await extractFileNameToData(file.fileName,
+    const fileNameToValuesBuffer = await extractFileNameToData(zip, file.fileName,
       typesWithMetaFile.has(file.type) || isComplexType(file.type), isComplexType(file.type))
     if (Object.values(fileNameToValuesBuffer).length !== 1) {
       log.warn(`Expected to retrieve only single values file for ${file.type}`)
@@ -352,7 +353,7 @@ export const fromRetrieveResult = async (
 
     // add content fields
     if (typesWithContent.has(file.type) || isComplexType(file.type)) {
-      const fileNameToContent = await extractFileNameToData(file.fileName, false,
+      const fileNameToContent = await extractFileNameToData(zip, file.fileName, false,
         isComplexType(file.type))
       if (_.isEmpty(fileNameToContent)) {
         log.warn(`Could not find content files for ${file.type}`)
@@ -414,15 +415,15 @@ const addInstanceFiles = (zip: JSZip, instanceName: string, type: string, values
     }
   } else { // Complex type
     const complexType = complexTypesMap[type as keyof ComplexTypesMap]
-    const contentFieldsMapping = complexType.mapContentFields(instanceName, values)
+    const fieldToFileToContent = complexType.mapContentFields(instanceName, values)
 
     // Add instance metadata
-    const metadataValues = _.omit(values, ...Object.keys(contentFieldsMapping))
+    const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
     zip.file(complexType.getMetadataFilePath(instanceName, values),
       toMetadataXml(type, complexType.sortMetadataValues?.(metadataValues) ?? metadataValues))
 
     // Add instance content fields
-    const fileNameToContentMaps = Object.values(contentFieldsMapping)
+    const fileNameToContentMaps = Object.values(fieldToFileToContent)
     fileNameToContentMaps.forEach(fileNameToContentMap =>
       Object.entries(fileNameToContentMap)
         .forEach(([fileName, content]) => zip.file(fileName, content)))

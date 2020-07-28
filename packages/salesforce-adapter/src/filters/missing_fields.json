@@ -848,13 +848,16 @@
         "type": "STRING",
         "annotations": {
           "_required": true,
-          "_values": [
-            "Application",
-            "Component",
-            "Event",
-            "Interface",
-            "Tokens"
-          ]
+          "_restriction": {
+            "enforceValue": true,
+            "values": [
+              "Application",
+              "Component",
+              "Event",
+              "Interface",
+              "Tokens"
+            ]
+          }
         }
       }
     ]

@@ -22,19 +22,19 @@ import { SALESFORCE, SUBTYPES_PATH, TYPES_PATH, XML_ATTRIBUTE_PREFIX } from '../
 
 const subTypesPath = [SALESFORCE, TYPES_PATH, SUBTYPES_PATH]
 
-const objectType = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'Object'),
+const lightningComponentBundleObjectType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'LightningComponentBundleObject'),
   fields: {
     object: { type: BuiltinTypes.STRING },
   },
-  path: [...subTypesPath, 'Object'],
+  path: [...subTypesPath, 'LightningComponentBundleObject'],
 })
 
-const propertyType = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'Property'),
+const lightningComponentBundlePropertyType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'LightningComponentBundleProperty'),
   fields: {
     [`${XML_ATTRIBUTE_PREFIX}datasource`]: {
-      type: BuiltinTypes.STRING, // todo retrieved as string delimited by ',' but is a list
+      type: BuiltinTypes.STRING, // SALTO-861: retrieved as string delimited by ',' but is a list
     },
     [`${XML_ATTRIBUTE_PREFIX}default`]: {
       type: BuiltinTypes.STRING,
@@ -78,53 +78,53 @@ const propertyType = new ObjectType({
       },
     },
   },
-  path: [...subTypesPath, 'Property'],
+  path: [...subTypesPath, 'LightningComponentBundleProperty'],
 })
 
-const supportedFormFactorTypeType = new PrimitiveType({
-  elemID: new ElemID(SALESFORCE, 'SupportedFormFactorType'),
+const lightningComponentBundleSupportedFormFactorTypeType = new PrimitiveType({
+  elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactorType'),
   primitive: PrimitiveTypes.STRING,
   annotations: {
     [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ values: ['Small', 'Large'] }),
   },
-  path: [...subTypesPath, 'SupportedFormFactorType'],
+  path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactorType'],
 })
 
-const supportedFormFactorType = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'SupportedFormFactor'),
+const lightningComponentBundleSupportedFormFactorType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactor'),
   fields: {
     [`${XML_ATTRIBUTE_PREFIX}type`]: {
-      type: supportedFormFactorTypeType,
+      type: lightningComponentBundleSupportedFormFactorTypeType,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
     },
   },
-  path: [...subTypesPath, 'SupportedFormFactor'],
+  path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactor'],
 })
 
-const supportedFormFactorsType = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'SupportedFormFactors'),
+const lightningComponentBundleSupportedFormFactorsType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'LightningComponentBundleSupportedFormFactors'),
   fields: {
-    supportedFormFactor: { type: new ListType(supportedFormFactorType) },
+    supportedFormFactor: { type: new ListType(lightningComponentBundleSupportedFormFactorType) },
   },
-  path: [...subTypesPath, 'SupportedFormFactors'],
+  path: [...subTypesPath, 'LightningComponentBundleSupportedFormFactors'],
 })
 
-const targetConfigType = new ObjectType({
-  elemID: new ElemID(SALESFORCE, 'TargetConfig'),
+const lightningComponentBundleTargetConfigType = new ObjectType({
+  elemID: new ElemID(SALESFORCE, 'LightningComponentBundleTargetConfig'),
   fields: {
     [`${XML_ATTRIBUTE_PREFIX}targets`]: {
-      type: BuiltinTypes.STRING, // todo retrieved as string delimited by ',' but is a list
+      type: BuiltinTypes.STRING, // SALTO-861: retrieved as string delimited by ',' but is a list
     },
     [`${XML_ATTRIBUTE_PREFIX}configurationEditor`]: {
       type: BuiltinTypes.STRING,
     },
-    objects: { type: new ListType(objectType) },
-    property: { type: propertyType },
-    supportedFormFactors: { type: supportedFormFactorsType },
+    objects: { type: new ListType(lightningComponentBundleObjectType) },
+    property: { type: lightningComponentBundlePropertyType },
+    supportedFormFactors: { type: lightningComponentBundleSupportedFormFactorsType },
   },
-  path: [...subTypesPath, 'TargetConfig'],
+  path: [...subTypesPath, 'LightningComponentBundleTargetConfig'],
 })
 
 const caseSubjectOptionType = new PrimitiveType({
@@ -191,18 +191,19 @@ export const allMissingSubTypes = [
     path: [...subTypesPath, 'OrganizationSettingsDetail'],
   }),
   new ObjectType({
+    // taken from https://developer.salesforce.com/docs/component-library/documentation/en/lwc/lwc.reference_configuration_tags
     elemID: new ElemID(SALESFORCE, 'TargetConfigs'),
     fields: {
-      targetConfig: { type: new ListType(targetConfigType) },
+      targetConfig: { type: new ListType(lightningComponentBundleTargetConfigType) },
     },
     path: [...subTypesPath, 'TargetConfigs'],
   }),
-  targetConfigType,
-  objectType,
-  propertyType,
-  supportedFormFactorsType,
-  supportedFormFactorType,
-  supportedFormFactorTypeType,
+  lightningComponentBundleTargetConfigType,
+  lightningComponentBundleObjectType,
+  lightningComponentBundlePropertyType,
+  lightningComponentBundleSupportedFormFactorsType,
+  lightningComponentBundleSupportedFormFactorType,
+  lightningComponentBundleSupportedFormFactorTypeType,
 ]
 
 const typesPath = [SALESFORCE, TYPES_PATH]

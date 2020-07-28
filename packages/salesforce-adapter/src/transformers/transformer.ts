@@ -696,7 +696,7 @@ export class Types {
   }
 
   static getAllMissingTypes(): TypeElement[] {
-    return ([] as TypeElement[]).concat(allMissingTypes, allMissingSubTypes)
+    return [...allMissingTypes, ...allMissingSubTypes]
   }
 
   static getAnnotationTypes(): TypeElement[] {
@@ -919,20 +919,17 @@ const convertXsdTypeFuncMap: Record<string, ConvertXsdTypeFunc> = {
 // Salesforce returns nulls in metadata API as objects like { $: { 'xsi:nil': 'true' } }
 // and in retrieve API like <activateRSS xsi:nil="true"/>
 // which is transformed to { `${XML_ATTRIBUTE_PREFIX}xsi:nil`): 'true' }
-const isXsiNil = (value: Value): boolean =>
-  _.isObject(value)
+const isNull = (value: Value): boolean =>
+  _.isNull(value) || (_.isObject(value)
     && (_.get(value, ['$', 'xsi:nil']) === 'true'
-      || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true')
+      || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true'))
 
 export const transformPrimitive: TransformFunc = ({ value, path, field }) => {
-  if (_.isNull(value)) {
-    return undefined
-  }
   // We sometimes get empty strings that we want to filter out
   if (value === '') {
     return undefined
   }
-  if (isXsiNil(value)) {
+  if (isNull(value)) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
     return undefined

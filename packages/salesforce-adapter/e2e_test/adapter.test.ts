@@ -54,12 +54,10 @@ import {
 } from './utils'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
-  accountApiName,
-  CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
-  customObjectWithFieldsName,
-  gvsName, lwcHtmlResourceContent, lwcJsResourceContent,
-  removeCustomObjectsWithVariousFields, summaryFieldName,
-  verifyElementsExist,
+  accountApiName, auraInstanceValues, CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
+  customObjectWithFieldsName, gvsName, lightningComponentBundleInstanceValues,
+  lwcHtmlResourceContent, lwcJsResourceContent, removeCustomObjectsWithVariousFields,
+  summaryFieldName, verifyElementsExist,
 } from './setup'
 
 const { makeArray } = collections.array
@@ -3101,20 +3099,11 @@ describe('Salesforce adapter E2E with real account', () => {
           let auraInstance: InstanceElement
 
           beforeAll(async () => {
-            auraInstance = await createInstance(client, {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAuraDefinitionBundle',
-              SVGContent: '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<svg width="120px" height="120px" viewBox="0 0 120 120" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">\n\t<g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">\n\t\t<path d="M120,108 C120,114.6 114.6,120 108,120 L12,120 C5.4,120 0,114.6 0,108 L0,12 C0,5.4 5.4,0 12,0 L108,0 C114.6,0 120,5.4 120,12 L120,108 L120,108 Z" id="Shape" fill="#2A739E"/>\n\t\t<path d="M77.7383308,20 L61.1640113,20 L44.7300055,63.2000173 L56.0543288,63.2000173 L40,99.623291 L72.7458388,54.5871812 L60.907727,54.5871812 L77.7383308,20 Z" id="Path-1" fill="#FFFFFF"/>\n\t</g>\n</svg>',
-              apiVersion: 49,
-              controllerContent: '({ myAction : function(component, event, helper) {} })',
-              description: 'My Lightning Component Bundle',
-              designContent: '<design:component/>',
-              documentationContent: '<aura:documentation>\n\t<aura:description>Documentation</aura:description>\n\t<aura:example name="ExampleName" ref="exampleComponentName" label="Label">\n\t\tEdited Example Description\n\t</aura:example>\n</aura:documentation>',
-              helperContent: '({ helperMethod : function() {} })',
-              markup: '<aura:component >\n\t<p>Hello Lightning!</p>\n</aura:component>',
-              rendererContent: '({})',
-              styleContent: '.THIS{\n}',
-              type: 'Component',
-            }, 'AuraDefinitionBundle')
+            auraInstance = await createInstance(
+              client,
+              { ...auraInstanceValues, [constants.INSTANCE_FULL_NAME_FIELD]: 'MyAuraDefinitionBundle' },
+              'AuraDefinitionBundle'
+            )
             await removeElementIfAlreadyExists(client, auraInstance)
           })
 
@@ -3137,55 +3126,26 @@ describe('Salesforce adapter E2E with real account', () => {
           let lwcInstance: InstanceElement
 
           beforeAll(async () => {
-            lwcInstance = await createInstance(client, {
-              [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
-              apiVersion: 49,
-              isExposed: true,
-              lwcResources: {
-                lwcResource: [
-                  {
-                    source: lwcJsResourceContent,
-                    filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
-                  },
-                  {
-                    source: lwcHtmlResourceContent,
-                    filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
-                  },
-                ],
-              },
-              targetConfigs: {
-                targetConfig: [
-                  {
-                    objects: [
-                      {
-                        object: 'Contact',
-                      },
-                    ],
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    attr_targets: 'lightning__RecordPage',
-                  },
-                  {
-                    supportedFormFactors: {
-                      supportedFormFactor: [
-                        {
-                          // eslint-disable-next-line @typescript-eslint/camelcase
-                          attr_type: 'Small',
-                        },
-                      ],
+            lwcInstance = await createInstance(
+              client,
+              {
+                ...lightningComponentBundleInstanceValues,
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'myLightningComponentBundle',
+                lwcResources: {
+                  lwcResource: [
+                    {
+                      source: lwcJsResourceContent,
+                      filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.js',
                     },
-                    // eslint-disable-next-line @typescript-eslint/camelcase
-                    attr_targets: 'lightning__AppPage,lightning__HomePage',
-                  },
-                ],
+                    {
+                      source: lwcHtmlResourceContent,
+                      filePath: 'lwc/myLightningComponentBundle/myLightningComponentBundle.html',
+                    },
+                  ],
+                },
               },
-              targets: {
-                target: [
-                  'lightning__AppPage',
-                  'lightning__RecordPage',
-                  'lightning__HomePage',
-                ],
-              },
-            }, 'LightningComponentBundle')
+              'LightningComponentBundle'
+            )
             await removeElementIfAlreadyExists(client, lwcInstance)
           })
 

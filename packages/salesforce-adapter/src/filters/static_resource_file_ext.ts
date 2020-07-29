@@ -29,6 +29,7 @@ const log = logger(module)
 export const STATIC_RESOURCE_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'StaticResource')
 export const CONTENT_TYPE = 'contentType'
 export const CONTENT = 'content'
+const RESOURCE_SUFFIX_LENGTH = 'resource'.length
 
 const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
   const staticFile = staticResourceInstance.value[CONTENT]
@@ -50,7 +51,7 @@ const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
   }
   const currentFilepath = staticFile.filepath
   staticResourceInstance.value[CONTENT] = new StaticFile({
-    filepath: `${currentFilepath.split('.')[0]}.${newExtension}`,
+    filepath: `${currentFilepath.slice(0, -RESOURCE_SUFFIX_LENGTH)}${newExtension}`,
     content: staticFile.content,
   })
 }

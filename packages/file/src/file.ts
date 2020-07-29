@@ -79,20 +79,24 @@ export const readTextFileSync = (
   filename: string,
 ): string => fs.readFileSync(filename, 'utf8')
 
+export const { readFileSync } = fs
+
 export const readTextFile = (
   filename: string,
 ): Promise<string> => readFileP(filename, { encoding: 'utf8' })
 
 readTextFile.notFoundAsUndefined = notFoundAsUndefined(readTextFile)
 
-export const readFile = (filename: string): Promise<Buffer> => readFileP(filename)
+export const readFile = (...args: Parameters<typeof readFileP>): ReturnType<typeof readFileP> =>
+  readFileP(...args)
 
 readFile.notFoundAsUndefined = notFoundAsUndefined(readFile)
 
 export const writeFile = (
   filename: string,
   contents: Buffer | string,
-): Promise<void> => writeFileP(filename, contents, { encoding: 'utf8' })
+  encoding = 'utf8',
+): Promise<void> => writeFileP(filename, contents, { encoding })
 
 export const appendTextFile = (
   filename: string,
@@ -106,9 +110,10 @@ export const copyFile: (
 
 export const replaceContents = async (
   filename: string,
-  contents: Buffer | string
+  contents: Buffer | string,
+  encoding?: string,
 ): Promise<void> => {
   const tempFilename = `${filename}.tmp.${strings.insecureRandomString()}`
-  await writeFile(tempFilename, contents)
+  await writeFile(tempFilename, contents, encoding)
   await rename(tempFilename, filename)
 }

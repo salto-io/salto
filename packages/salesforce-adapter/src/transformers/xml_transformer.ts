@@ -201,7 +201,7 @@ const addContentFieldAsStaticFile = (values: Values, valuePath: string[], conten
 
 type FieldName = string
 type FileName = string
-type Content = string
+type Content = Buffer
 type ComplexType = {
   addContentFields(fileNameToContent: Record<string, Buffer>, values: Values): void
   getMissingFields?(metadataFileName: string): Values

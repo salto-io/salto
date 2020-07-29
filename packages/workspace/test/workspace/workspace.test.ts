@@ -83,7 +83,7 @@ const mockCredentialsSource = (): ConfigSource => ({
 })
 
 const createWorkspace = async (
-  dirStore?: DirectoryStore, state?: State,
+  dirStore?: DirectoryStore<string>, state?: State,
   configSource?: WorkspaceConfigSource, credentials?: ConfigSource,
   staticFilesSource?: StaticFilesSource,
   elementSources?: Record<string, EnvironmentSource>,
@@ -779,7 +779,7 @@ describe('workspace', () => {
     it('should flush all data sources', async () => {
       const mockFlush = jest.fn()
       const flushable = { flush: mockFlush }
-      const workspace = await createWorkspace(flushable as unknown as DirectoryStore,
+      const workspace = await createWorkspace(flushable as unknown as DirectoryStore<string>,
         flushable as unknown as State)
       await workspace.flush()
       expect(mockFlush).toHaveBeenCalledTimes(2)

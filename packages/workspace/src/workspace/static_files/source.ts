@@ -23,9 +23,9 @@ import {
 } from './common'
 
 class LazyStaticFile extends StaticFile {
-  private dirStore: SyncDirectoryStore
+  private dirStore: SyncDirectoryStore<Buffer>
 
-  constructor(filepath: string, hash: string, dirStore: SyncDirectoryStore) {
+  constructor(filepath: string, hash: string, dirStore: SyncDirectoryStore<Buffer>) {
     super({ filepath, hash })
     this.dirStore = dirStore
   }
@@ -34,7 +34,7 @@ class LazyStaticFile extends StaticFile {
     if (this.internalContent === undefined) {
       const file = this.dirStore.getSync(this.filepath)
       if (file !== undefined) {
-        this.internalContent = Buffer.from(file.buffer)
+        this.internalContent = file.buffer
       }
     }
     return this.internalContent
@@ -42,7 +42,7 @@ class LazyStaticFile extends StaticFile {
 }
 
 export const buildStaticFilesSource = (
-  staticFilesDirStore: SyncDirectoryStore,
+  staticFilesDirStore: SyncDirectoryStore<Buffer>,
   staticFilesCache: StaticFilesCache,
 ): StaticFilesSource => {
   const staticFilesSource: StaticFilesSource = {
@@ -69,7 +69,7 @@ export const buildStaticFilesSource = (
         if (file === undefined) {
           return new MissingStaticFile(filepath)
         }
-        const staticFileBuffer = Buffer.from(file.buffer)
+        const staticFileBuffer = file.buffer
         const staticFileWithHashAndContent = new StaticFile({
           filepath,
           content: staticFileBuffer,
@@ -94,7 +94,7 @@ export const buildStaticFilesSource = (
       if (file === undefined) {
         throw new Error(`Missing content on static file: ${filepath}`)
       }
-      return Buffer.from(file.buffer)
+      return file.buffer
     },
     persistStaticFile: async (
       staticFile: StaticFile,
@@ -104,7 +104,7 @@ export const buildStaticFilesSource = (
       }
       return staticFilesDirStore.set({
         filename: staticFile.filepath,
-        buffer: staticFile.content.toString(),
+        buffer: staticFile.content,
       })
     },
     flush: async () => {
@@ -121,7 +121,7 @@ export const buildStaticFilesSource = (
     },
     getTotalSize: staticFilesDirStore.getTotalSize,
     clone: (): StaticFilesSource => buildStaticFilesSource(
-      staticFilesDirStore.clone() as SyncDirectoryStore,
+      staticFilesDirStore.clone() as SyncDirectoryStore<Buffer>,
       staticFilesCache.clone(),
     ),
   }

@@ -63,7 +63,7 @@ export const parseResultCache = (
           return _.isUndefined(fileContent)
             ? Promise.resolve(undefined)
             : await parseResultSerializer.deserialize(
-              fileContent,
+              fileContent as string,
               val => staticFilesSource.getStaticFile(val.filepath)
             )
         } catch (err) {

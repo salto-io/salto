@@ -16,8 +16,8 @@
 import * as path from 'path'
 import readdirp from 'readdirp'
 import {
-  stat, exists, readTextFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
-  rename, existsSync, readTextFileSync, statSync,
+  stat, exists, readFile, replaceContents, mkdirp, rm, isEmptyDir, isSubDirectory,
+  rename, existsSync, readFileSync, statSync,
 } from '@salto-io/file'
 import { localDirectoryStore } from '../../../src/local-workspace/dir_store'
 
@@ -28,8 +28,8 @@ jest.mock('@salto-io/file', () => ({
   statSync: jest.fn(),
   exists: jest.fn(),
   existsSync: jest.fn(),
-  readTextFile: jest.fn(),
-  readTextFileSync: jest.fn(),
+  readFile: jest.fn(),
+  readFileSync: jest.fn(),
   promise: jest.fn(),
   replaceContents: jest.fn(),
   mkdirp: jest.fn(),
@@ -48,8 +48,8 @@ describe('localDirectoryStore', () => {
   const mockStatSync = statSync as unknown as jest.Mock
   const mockFileExists = exists as jest.Mock
   const mockFileSyncExists = existsSync as jest.Mock
-  const mockReadFile = readTextFile as unknown as jest.Mock
-  const mockReadFileSync = readTextFileSync as unknown as jest.Mock
+  const mockReadFile = readFile as unknown as jest.Mock
+  const mockReadFileSync = readFileSync as unknown as jest.Mock
   const mockReaddirp = readdirp.promise as jest.Mock
   const mockReplaceContents = replaceContents as jest.Mock
   const mockMkdir = mkdirp as jest.Mock

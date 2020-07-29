@@ -646,7 +646,7 @@ describe('Test utils.ts', () => {
         expect(resolvedInstance.value.arrayValues).toHaveLength(2)
         expect(resolvedInstance.value.arrayValues[0]).toEqual(regValue)
         expect(resolvedInstance.value.arrayValues[1]).toEqual(regValue)
-        expect(resolvedInstance.value.fileValue).toEqual(fileContent)
+        expect(resolvedInstance.value.fileValue).toEqual(Buffer.from(fileContent))
 
         expect(resolvedInstance.annotations[INSTANCE_ANNOTATIONS.DEPENDS_ON]).toEqual(regValue)
       })

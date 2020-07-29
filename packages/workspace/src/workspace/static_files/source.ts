@@ -34,7 +34,7 @@ class LazyStaticFile extends StaticFile {
     if (this.internalContent === undefined) {
       const file = this.dirStore.getSync(this.filepath)
       if (file !== undefined) {
-        this.internalContent = Buffer.from(file.buffer)
+        this.internalContent = file.buffer as Buffer
       }
     }
     return this.internalContent
@@ -69,7 +69,7 @@ export const buildStaticFilesSource = (
         if (file === undefined) {
           return new MissingStaticFile(filepath)
         }
-        const staticFileBuffer = Buffer.from(file.buffer)
+        const staticFileBuffer = file.buffer as Buffer
         const staticFileWithHashAndContent = new StaticFile({
           filepath,
           content: staticFileBuffer,
@@ -94,7 +94,7 @@ export const buildStaticFilesSource = (
       if (file === undefined) {
         throw new Error(`Missing content on static file: ${filepath}`)
       }
-      return Buffer.from(file.buffer)
+      return file.buffer as Buffer
     },
     persistStaticFile: async (
       staticFile: StaticFile,
@@ -104,7 +104,7 @@ export const buildStaticFilesSource = (
       }
       return staticFilesDirStore.set({
         filename: staticFile.filepath,
-        buffer: staticFile.content.toString(),
+        buffer: staticFile.content,
       })
     },
     flush: async () => {

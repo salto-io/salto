@@ -79,6 +79,8 @@ export const readTextFileSync = (
   filename: string,
 ): string => fs.readFileSync(filename, 'utf8')
 
+export const readFileSync = (filename: string): Buffer => fs.readFileSync(filename)
+
 export const readTextFile = (
   filename: string,
 ): Promise<string> => readFileP(filename, { encoding: 'utf8' })

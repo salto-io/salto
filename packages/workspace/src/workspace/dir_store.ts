@@ -15,7 +15,7 @@
 */
 export type File = {
   filename: string
-  buffer: string
+  buffer: string | Buffer
   timestamp?: number
 }
 

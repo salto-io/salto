@@ -30,7 +30,7 @@ import {
 import { parse, SourceRange, ParseError, ParseResult, SourceMap } from '../../parser'
 import { ElementsSource } from '../elements_source'
 import { ParseResultCache, ParseResultKey } from '../cache'
-import { DirectoryStore } from '../dir_store'
+import { DirectoryStore, File } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
@@ -129,15 +129,20 @@ const getFunctions = (staticFileSource: StaticFilesSource): Functions => ({
   ...getStaticFilesFunctions(staticFileSource), // add future functions here
 })
 
+const toNaclFile = (file: File): NaclFile => ({
+  ...file,
+  buffer: String(file.buffer),
+})
+
 export const getParsedNaclFiles = async (
   naclFilesStore: DirectoryStore,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource
 ): Promise<ParsedNaclFile[]> => {
-  const naclFiles = (await naclFilesStore.getFiles(await naclFilesStore.list()))
+  const files = (await naclFilesStore.getFiles(await naclFilesStore.list()))
     .filter(values.isDefined)
   const functions = getFunctions(staticFileSource)
-  return parseNaclFiles(naclFiles, cache, functions)
+  return parseNaclFiles(files.map(toNaclFile), cache, functions)
 }
 
 const buildNaclFilesState = async (newNaclFiles: ParsedNaclFile[], current?: ParsedNaclFileMap):
@@ -206,6 +211,11 @@ const buildNaclFilesSource = (
     return (await getState()).elementsIndex[topLevelID.parent.getFullName()] || []
   }
 
+  const getNaclFile = async (filename: string): Promise<NaclFile | undefined> => {
+    const naclFile = await naclFilesStore.get(filename)
+    return naclFile ? toNaclFile(naclFile) : undefined
+  }
+
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
     const key = cacheResultKey(parsedNaclFile.filename, parsedNaclFile.timestamp)
@@ -213,7 +223,7 @@ const buildNaclFilesSource = (
     if (cachedResult && cachedResult.sourceMap) {
       return cachedResult.sourceMap
     }
-    const naclFile = (await naclFilesStore.get(filename))
+    const naclFile = (await getNaclFile(filename))
     if (_.isUndefined(naclFile)) {
       log.error('failed to find %s in NaCl file store', filename)
       return new SourceMap()
@@ -235,7 +245,7 @@ const buildNaclFilesSource = (
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
     const getNaclFileData = async (filename: string): Promise<string> => {
-      const naclFile = await naclFilesStore.get(filename)
+      const naclFile = await getNaclFile(filename)
       return naclFile ? naclFile.buffer : ''
     }
 
@@ -327,7 +337,7 @@ const buildNaclFilesSource = (
     getTotalSize: async (): Promise<number> =>
       _.sum(await Promise.all([naclFilesStore.getTotalSize(), staticFileSource.getTotalSize()])),
 
-    getNaclFile: filename => naclFilesStore.get(filename),
+    getNaclFile,
 
     getElements: async filename =>
       Object.values((await getState()).parsedNaclFiles[filename]?.elements) || [],

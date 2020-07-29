@@ -262,7 +262,7 @@ export const resolveValues = <T extends Element>(element: T, getLookUpName: GetL
       })
     }
     if (isStaticFile(value)) {
-      return value.content?.toString()
+      return value.content
     }
     return value
   }

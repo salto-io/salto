@@ -55,14 +55,10 @@ const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
   })
 }
 
-/**
- * Create filter that handles flow type/instances corner case.
- */
 const filterCreator = (): FilterWith<'onFetch'> => ({
   /**
-   * Upon fetch remove restriction values from flowMetadataValue.name.
-   *
-   * @param elements the already fetched elements
+   * Upon fetch modify the extension of the StaticResource's static file CONTENT field
+   * from '.resource' to the correct extension based on the CONTENT_TYPE field
    */
   onFetch: async (elements: Element[]): Promise<void> => {
     const staticResourceInstances = findInstances(elements, STATIC_RESOURCE_METADATA_TYPE_ID)

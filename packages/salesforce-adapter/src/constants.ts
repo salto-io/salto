@@ -25,6 +25,7 @@ export const ADMIN_PROFILE = 'Admin'
 export const NAMESPACE_SEPARATOR = '__'
 export const API_NAME_SEPARATOR = '.'
 export const CUSTOM_OBJECT_ID_FIELD = 'Id'
+export const XML_ATTRIBUTE_PREFIX = 'attr_'
 
 export enum FIELD_TYPE_NAMES {
   AUTONUMBER = 'AutoNumber',

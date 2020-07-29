@@ -17,21 +17,30 @@ import _ from 'lodash'
 import parser from 'fast-xml-parser'
 import { MetadataInfo, RetrieveResult, FileProperties, RetrieveRequest } from 'jsforce'
 import JSZip from 'jszip'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { Value, Values, StaticFile } from '@salto-io/adapter-api'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { Values, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { API_VERSION, METADATA_NAMESPACE } from '../client/client'
-import { toMetadataInfo } from './transformer'
-import { MetadataWithContent } from '../client/types'
-import { INSTANCE_FULL_NAME_FIELD, METADATA_CONTENT_FIELD } from '../constants'
+import { API_VERSION } from '../client/client'
+import {
+  INSTANCE_FULL_NAME_FIELD, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
+} from '../constants'
 
 const { isDefined } = lowerDashValues
+const { makeArray } = collections.array
 
 const log = logger(module)
 
 const PACKAGE = 'unpackaged'
 const HIDDEN_CONTENT_VALUE = '(hidden)'
 const METADATA_XML_SUFFIX = '-meta.xml'
+const CONTENT = 'content'
+
+// ComplexTypes used constants
+const TYPE = 'type'
+const MARKUP = 'markup'
+const TARGET_CONFIGS = 'targetConfigs'
+const LWC_RESOURCES = 'lwcResources'
+const LWC_RESOURCE = 'lwcResource'
 
 type ZipProps = {
   folderType?: keyof ZipPropsMap
@@ -157,7 +166,8 @@ const zipPropsMap: ZipPropsMap = {
   },
 }
 
-const isSupportedType = (typeName: string): boolean => Object.keys(zipPropsMap).includes(typeName)
+const hasZipProps = (typeName: string): typeName is keyof ZipPropsMap =>
+  Object.keys(zipPropsMap).includes(typeName)
 
 export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): RetrieveRequest => ({
   apiVersion: API_VERSION,
@@ -173,45 +183,193 @@ export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): Retriev
 
 export type MetadataValues = MetadataInfo & Values
 
+const addContentFieldAsStaticFile = (values: Values, valuePath: string[], content: Buffer,
+  fileName: string): void => {
+  _.set(values, valuePath, content.toString() === HIDDEN_CONTENT_VALUE
+    ? content.toString()
+    : new StaticFile({
+      filepath: fileName.replace(PACKAGE, SALESFORCE),
+      content,
+    }))
+}
+
+type FieldName = string
+type FileName = string
+type Content = string
+type ComplexType = {
+  addContentFields(fileNameToContent: Record<string, Buffer>, values: Values): void
+  getMissingFields?(metadataFileName: string): Values
+  mapContentFields(instanceName: string, values: Values):
+    Record<FieldName, Record<FileName, Content>>
+  sortMetadataValues?(metadataValues: Values): Values
+  getMetadataFilePath(instanceName: string, values?: Values): string
+}
+
+type ComplexTypesMap = {
+  AuraDefinitionBundle: ComplexType
+  LightningComponentBundle: ComplexType
+}
+
+const auraFileSuffixToFieldName: Record<string, string> = {
+  'Controller.js': 'controllerContent',
+  '.design': 'designContent',
+  '.auradoc': 'documentationContent',
+  'Helper.js': 'helperContent',
+  '.app': MARKUP,
+  '.cmp': MARKUP,
+  '.evt': MARKUP,
+  '.intf': MARKUP,
+  '.tokens': MARKUP,
+  'Renderer.js': 'rendererContent',
+  '.css': 'styleContent',
+  '.svg': 'SVGContent',
+}
+
+const auraTypeToFileSuffix: Record<string, string> = {
+  Application: '.app',
+  Component: '.cmp',
+  Event: '.evt',
+  Interface: '.intf',
+  Tokens: '.tokens',
+}
+
+const complexTypesMap: ComplexTypesMap = {
+  /**
+   * AuraDefinitionBundle has several base64Binary content fields. We should use its content fields
+   * suffix in order to set their content to the correct field
+   */
+  AuraDefinitionBundle: {
+    addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values) => {
+      Object.entries(fileNameToContent)
+        .forEach(([contentFileName, content]) => {
+          const fieldName = Object.entries(auraFileSuffixToFieldName)
+            .find(([fileSuffix, _fieldName]) => contentFileName.endsWith(fileSuffix))?.[1]
+          if (fieldName === undefined) {
+            log.warn(`Could not extract field content from ${contentFileName}`)
+            return
+          }
+          addContentFieldAsStaticFile(values, [fieldName], content, contentFileName)
+        })
+    },
+    /**
+     * TYPE field is not returned in the retrieve API and is necessary for future deploys logic
+     */
+    getMissingFields: (metadataFileName: string) => {
+      const fileName = metadataFileName.split(METADATA_XML_SUFFIX)[0]
+      const auraType = Object.entries(auraTypeToFileSuffix)
+        .find(([_typeName, fileSuffix]) => fileName.endsWith(fileSuffix))?.[0]
+      if (auraType === undefined) {
+        throw new Error('failed to extract AuraDefinitionBundle type')
+      }
+      return { [TYPE]: auraType }
+    },
+    mapContentFields: (instanceName: string, values: Values) => {
+      const type = values[TYPE]
+      if (!Object.keys(auraTypeToFileSuffix).includes(type)) {
+        throw new Error(`${type} is an invalid AuraDefinitionBundle type`)
+      }
+      return Object.fromEntries(Object.entries(auraFileSuffixToFieldName)
+        .filter(([_fileSuffix, fieldName]) => fieldName !== MARKUP)
+        .map(([fileSuffix, fieldName]) => [fieldName, { [`${PACKAGE}/aura/${instanceName}/${instanceName}${fileSuffix}`]: values[fieldName] }])
+        .concat([[MARKUP, { [`${PACKAGE}/aura/${instanceName}/${instanceName}${auraTypeToFileSuffix[type]}`]: values[MARKUP] }]]))
+    },
+    getMetadataFilePath: (instanceName: string, values: Values) => {
+      const type = values[TYPE]
+      if (!Object.keys(auraTypeToFileSuffix).includes(type)) {
+        throw new Error(`${type} is an invalid AuraDefinitionBundle type`)
+      }
+      return `${PACKAGE}/aura/${instanceName}/${instanceName}${auraTypeToFileSuffix[type]}${METADATA_XML_SUFFIX}`
+    },
+  },
+  /**
+   * LightningComponentBundle has array of base64Binary content fields under LWC_RESOURCES field.
+   */
+  LightningComponentBundle: {
+    addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values) => {
+      Object.entries(fileNameToContent)
+        .forEach(([contentFileName, content], index) => {
+          const resourcePath = [LWC_RESOURCES, LWC_RESOURCE, String(index)]
+          addContentFieldAsStaticFile(values, [...resourcePath, 'source'], content, contentFileName)
+          _.set(values, [...resourcePath, 'filePath'], contentFileName.split(`${PACKAGE}/`)[1])
+        })
+    },
+    mapContentFields: (_instanceName: string, values: Values) => ({
+      [LWC_RESOURCES]: Object.fromEntries(makeArray(values[LWC_RESOURCES]?.[LWC_RESOURCE])
+        .map(lwcResource => [`${PACKAGE}/${lwcResource.filePath}`, lwcResource.source])),
+    }),
+    /**
+     * Due to SF quirk, TARGET_CONFIGS field must be in the xml after the targets field
+     */
+    sortMetadataValues: (metadataValues: Values) =>
+      Object.fromEntries(Object.entries(metadataValues)
+        .filter(([name]) => name !== TARGET_CONFIGS)
+        .concat([[TARGET_CONFIGS, metadataValues[TARGET_CONFIGS]]])),
+    getMetadataFilePath: (instanceName: string) =>
+      `${PACKAGE}/lwc/${instanceName}/${instanceName}.js${METADATA_XML_SUFFIX}`,
+  },
+}
+
+const isComplexType = (typeName: string): typeName is keyof ComplexTypesMap =>
+  Object.keys(complexTypesMap).includes(typeName)
+
+const xmlToValues = (xmlAsString: string, type: string): Values => parser.parse(
+  xmlAsString,
+  { ignoreAttributes: false, attributeNamePrefix: XML_ATTRIBUTE_PREFIX }
+)[type]
+
+const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
+  complexType: boolean): Promise<Record<string, Buffer>> => {
+  if (!complexType) { // this is a single file
+    const zipFile = zip.file(`${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`)
+    return zipFile === null ? {} : { [zipFile.name]: await zipFile.async('nodebuffer') }
+  }
+  // bring all matching files from the fileName directory
+  const zipFiles = zip.file(new RegExp(`^${PACKAGE}/${fileName}/.*`))
+    .filter(zipFile => zipFile.name.endsWith(METADATA_XML_SUFFIX) === withMetadataSuffix)
+  return _.isEmpty(zipFiles)
+    ? {}
+    : Object.fromEntries(await Promise.all(zipFiles.map(async zipFile => [zipFile.name, await zipFile.async('nodebuffer')])))
+}
+
 export const fromRetrieveResult = async (
   result: RetrieveResult,
   fileProps: ReadonlyArray<FileProperties>,
   typesWithMetaFile: Set<string>,
   typesWithContent: Set<string>,
 ): Promise<{ file: FileProperties; values: MetadataValues}[]> => {
-  const fromZip = async (
-    zip: JSZip, file: FileProperties,
-  ): Promise<MetadataValues | undefined> => {
-    const getFileData = (name: string): Promise<Buffer | undefined> => {
-      const zipFile = zip.file(`${PACKAGE}/${name}`)
-      return zipFile === null
-        ? Promise.resolve(undefined)
-        : zipFile.async('nodebuffer')
-    }
-
-    const instanceFilename = typesWithMetaFile.has(file.type)
-      ? `${file.fileName}${METADATA_XML_SUFFIX}`
-      : file.fileName
-    const instanceData = await getFileData(instanceFilename)
-    if (instanceData === undefined) {
+  const fromZip = async (zip: JSZip, file: FileProperties): Promise<MetadataValues | undefined> => {
+    // extract metadata values
+    const fileNameToValuesBuffer = await extractFileNameToData(zip, file.fileName,
+      typesWithMetaFile.has(file.type) || isComplexType(file.type), isComplexType(file.type))
+    if (Object.values(fileNameToValuesBuffer).length !== 1) {
+      log.warn(`Expected to retrieve only single values file for ${file.type}`)
       return undefined
     }
-    const parsedResult = parser.parse(instanceData.toString())[file.type]
-    const metadataInfo = _.isEmpty(parsedResult) ? {} : parsedResult
-    metadataInfo[INSTANCE_FULL_NAME_FIELD] = file.fullName
-    if (typesWithContent.has(file.type)) {
-      const content = await getFileData(file.fileName)
-      if (content === undefined) {
+    const [[valuesFileName, instanceValuesBuffer]] = Object.entries(fileNameToValuesBuffer)
+    const metadataValues = Object.assign(
+      xmlToValues(instanceValuesBuffer.toString(), file.type) ?? {},
+      { [INSTANCE_FULL_NAME_FIELD]: file.fullName }
+    )
+
+    // add content fields
+    if (typesWithContent.has(file.type) || isComplexType(file.type)) {
+      const fileNameToContent = await extractFileNameToData(zip, file.fileName, false,
+        isComplexType(file.type))
+      if (_.isEmpty(fileNameToContent)) {
+        log.warn(`Could not find content files for ${file.type}`)
         return undefined
       }
-      metadataInfo[METADATA_CONTENT_FIELD] = content.toString() === HIDDEN_CONTENT_VALUE
-        ? content.toString()
-        : new StaticFile({
-          filepath: `salesforce/${file.fileName}`,
-          content,
-        })
+      if (isComplexType(file.type)) {
+        const complexType = complexTypesMap[file.type]
+        Object.assign(metadataValues, complexType.getMissingFields?.(valuesFileName) ?? {})
+        complexType.addContentFields(fileNameToContent, metadataValues)
+      } else {
+        const [contentFileName, content] = Object.entries(fileNameToContent)[0]
+        addContentFieldAsStaticFile(metadataValues, [METADATA_CONTENT_FIELD], content,
+          contentFileName)
+      }
     }
-    return metadataInfo
+    return metadataValues
   }
 
   const zip = await new JSZip().loadAsync(Buffer.from(result.zipFile, 'base64'))
@@ -224,59 +382,62 @@ export const fromRetrieveResult = async (
   return instances.filter(isDefined)
 }
 
-const toMetadataXml = (name: string, val: Value, inner = false): string => {
-  if (_.isArray(val)) {
-    return val.map(v => toMetadataXml(name, v, true)).join('')
-  }
-  const innerXml = _.isObject(val)
-    ? _(val)
-      .entries()
-      .filter(([k]) => inner || k !== 'fullName')
-      .map(([k, v]) => toMetadataXml(k, v, true))
-      .value()
-      .join('')
-    : val
-  const openName = inner ? name : `${name} xmlns="${METADATA_NAMESPACE}"`
-  return `<${openName}>${innerXml}</${name}>`
-}
+const toMetadataXml = (name: string, values: Values): string =>
+  // eslint-disable-next-line new-cap
+  new parser.j2xParser({
+    attributeNamePrefix: XML_ATTRIBUTE_PREFIX,
+    ignoreAttributes: false,
+  }).parse({ [name]: _.omit(values, INSTANCE_FULL_NAME_FIELD) })
 
-const addDeletionFiles = (zip: JSZip, instanceName: string, zipProps: ZipProps,
-  type: keyof ZipPropsMap): void => {
+const addDeletionFiles = (zip: JSZip, instanceName: string, type: string): void => {
+  const zipProps = hasZipProps(type) ? zipPropsMap[type] : undefined
   // describe the instances that are about to be deleted
   zip.file(`${PACKAGE}/destructiveChanges.xml`,
     toMetadataXml('Package',
-      { types: { members: instanceName, name: zipProps.folderType ?? type } }))
+      { types: { members: instanceName, name: zipProps?.folderType ?? type } }))
   // Add package "manifest" that specifies the content of the zip that should be deployed
   zip.file(`${PACKAGE}/package.xml`, toMetadataXml('Package', { version: API_VERSION }))
 }
 
-const addInstanceFiles = (zip: JSZip, instanceName: string, zipProps: ZipProps,
-  type: keyof ZipPropsMap, values: Values): void => {
-  const toMetadataXmlContent = (): string => {
-    const mdWithContent = toMetadataInfo(instanceName, values) as MetadataWithContent
-    delete mdWithContent.fullName
-    delete mdWithContent.content
-    return toMetadataXml(type, mdWithContent)
-  }
+const addInstanceFiles = (zip: JSZip, instanceName: string, type: string, values: Values): void => {
+  const zipProps = hasZipProps(type) ? zipPropsMap[type] : undefined
+  if (zipProps) {
+    const instanceContentPath = `${PACKAGE}/${zipProps.dirName}/${instanceName}${zipProps.fileSuffix}`
+    if (zipProps.isMetadataWithContent) {
+      // Add instance metadata
+      zip.file(`${instanceContentPath}${METADATA_XML_SUFFIX}`,
+        toMetadataXml(type, _.omit(values, CONTENT)))
+      // Add instance content
+      zip.file(instanceContentPath, values[CONTENT])
+    } else {
+      // Add instance content
+      zip.file(instanceContentPath, toMetadataXml(type, values))
+    }
+  } else { // Complex type
+    const complexType = complexTypesMap[type as keyof ComplexTypesMap]
+    const fieldToFileToContent = complexType.mapContentFields(instanceName, values)
 
-  const instanceContentPath = `${PACKAGE}/${zipProps.dirName}/${instanceName}${zipProps.fileSuffix}`
-  if (zipProps.isMetadataWithContent) {
     // Add instance metadata
-    zip.file(`${PACKAGE}/${zipProps.dirName}/${instanceName}${zipProps.fileSuffix}${METADATA_XML_SUFFIX}`,
-      toMetadataXmlContent())
-    // Add instance content
-    zip.file(instanceContentPath, values.content)
-  } else {
-    // Add instance content
-    zip.file(instanceContentPath, toMetadataXml(type, toMetadataInfo(instanceName, values)))
+    const metadataValues = _.omit(values, ...Object.keys(fieldToFileToContent))
+    zip.file(complexType.getMetadataFilePath(instanceName, values),
+      toMetadataXml(type, complexType.sortMetadataValues?.(metadataValues) ?? metadataValues))
+
+    // Add instance content fields
+    const fileNameToContentMaps = Object.values(fieldToFileToContent)
+    fileNameToContentMaps.forEach(fileNameToContentMap =>
+      Object.entries(fileNameToContentMap)
+        .forEach(([fileName, content]) => zip.file(fileName, content)))
   }
   // Add package "manifest" that specifies the content of the zip that should be deployed
   zip.file(`${PACKAGE}/package.xml`,
     toMetadataXml('Package', {
       version: API_VERSION,
-      types: { members: instanceName, name: zipProps.folderType ?? type },
+      types: { members: instanceName, name: zipProps?.folderType ?? type },
     }))
 }
+
+const isSupportedType = (typeName: string): boolean =>
+  hasZipProps(typeName) || isComplexType(typeName)
 
 export const toMetadataPackageZip = async (instanceName: string, typeName: string,
   instanceValues: Values, deletion: boolean): Promise<Buffer | undefined> => {
@@ -285,11 +446,10 @@ export const toMetadataPackageZip = async (instanceName: string, typeName: strin
     return undefined
   }
   const zip = new JSZip()
-  const zipProps = zipPropsMap[typeName as keyof ZipPropsMap]
   if (deletion) {
-    addDeletionFiles(zip, instanceName, zipProps, typeName as keyof ZipPropsMap)
+    addDeletionFiles(zip, instanceName, typeName)
   } else {
-    addInstanceFiles(zip, instanceName, zipProps, typeName as keyof ZipPropsMap, instanceValues)
+    addInstanceFiles(zip, instanceName, typeName, instanceValues)
   }
 
   return zip.generateAsync({ type: 'nodebuffer' })

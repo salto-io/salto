@@ -226,6 +226,8 @@ const metadataToRetrieveAndDeploy = [
   'ApexPage', // contains encoded zip content
   'ApexComponent', // contains encoded zip content
   'AssignmentRules',
+  'AuraDefinitionBundle', // Has several fields with base64Binary encoded content
+  'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'InstalledPackage', // listMetadataObjects of this types returns duplicates
   'EmailTemplate', // contains encoded zip content, is under a folder
   'EmailFolder',

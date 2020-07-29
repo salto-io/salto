@@ -15,7 +15,7 @@
 */
 import { AdditionDiff } from '@salto-io/dag'
 import {
-  Element, ElemID, ObjectType, InstanceElement, getChangeElement, Value,
+  Element, ElemID, ObjectType, InstanceElement, Value,
   isObjectType, isInstanceElement, PrimitiveType, isField, FieldDefinition, Field,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -25,50 +25,56 @@ export type DetailedAddition = AdditionDiff<Value> & {
   path: string[]
 }
 
+type NestedValue = {
+  id: ElemID
+  value: Value
+}
+
 const addToField = (
-  addition: DetailedAddition,
+  nestedValue: NestedValue,
   commonField: Field,
   currentField?: FieldDefinition
 ): Record<string, FieldDefinition> => {
-  if (isField(addition.data.after)) return { [addition.data.after.name]: addition.data.after }
+  if (isField(nestedValue.value)) return { [nestedValue.value.name]: nestedValue.value }
   const { name } = commonField
-  const { path } = addition.id.createTopLevelParentID()
+  const { path } = nestedValue.id.createTopLevelParentID()
   const annotations = { ...currentField?.annotations }
   if (!_.isEmpty(path)) {
-    _.set(annotations, path.slice(1), addition.data.after)
+    _.set(annotations, path.slice(1), nestedValue.value)
   }
   return { [name]: { type: commonField.type, annotations } }
 }
 
 const createObjectTypeFromNestedAdditions = (
-  additions: DetailedAddition[],
+  nestedValues: NestedValue[],
   commonObjectType: ObjectType,
+  path?: string[]
 ): ObjectType =>
-  new ObjectType(additions.reduce((prev, addition) => {
-    switch (addition.id.idType) {
+  new ObjectType(nestedValues.reduce((prev, nestedValue) => {
+    switch (nestedValue.id.idType) {
       case 'field': {
-        const fieldName = addition.id.createTopLevelParentID().path[0]
+        const fieldName = nestedValue.id.createTopLevelParentID().path[0]
         return { ...prev,
           fields: {
             ...prev.fields,
             ...addToField(
-              addition,
+              nestedValue,
               commonObjectType.fields[fieldName],
               prev.fields[fieldName],
             ),
           } }
       }
       case 'attr': {
-        const attrPath = addition.id.createTopLevelParentID().path
+        const attrPath = nestedValue.id.createTopLevelParentID().path
         return { ...prev,
-          annotations: _.set({ ...prev.annotations }, attrPath, addition.data.after) }
+          annotations: _.set({ ...prev.annotations }, attrPath, nestedValue.value) }
       }
       case 'annotation': {
-        const annoName = addition.id.createTopLevelParentID().path[0]
+        const annoName = nestedValue.id.createTopLevelParentID().path[0]
         return { ...prev,
           annotationTypes: {
             ...prev.annotationTypes,
-            [annoName]: addition.data.after,
+            [annoName]: nestedValue.value,
           } }
       }
       default: return prev
@@ -78,42 +84,43 @@ const createObjectTypeFromNestedAdditions = (
     fields: {} as Record<string, FieldDefinition>,
     annotationTypes: {},
     annotations: {},
-    path: additions[0].path,
+    path,
     isSettings: commonObjectType.isSettings,
   }))
 
 const createInstanceElementFromNestedAdditions = (
-  additions: DetailedAddition[],
+  nestedValues: NestedValue[],
   commonInstance: InstanceElement,
+  path?: string[]
 ): InstanceElement => {
   const value = {}
-  additions.forEach(addition => {
-    const inValuePath = addition.id.createTopLevelParentID().path
-    const valueToAdd = getChangeElement(addition)
-    _.set(value, inValuePath, valueToAdd)
+  nestedValues.forEach(nestedValue => {
+    const inValuePath = nestedValue.id.createTopLevelParentID().path
+    _.set(value, inValuePath, nestedValue.value)
   })
   return new InstanceElement(
     commonInstance.elemID.name,
     commonInstance.type,
     value,
-    additions[0].path
+    path
   )
 }
 
 const createPrimitiveTypeFromNestedAdditions = (
-  additions: DetailedAddition[],
+  nestedValues: NestedValue[],
   commonPrimitiveType: PrimitiveType,
-): PrimitiveType => new PrimitiveType(additions.reduce((prev, addition) => {
-  switch (addition.id.idType) {
+  path?: string[]
+): PrimitiveType => new PrimitiveType(nestedValues.reduce((prev, nestedValue) => {
+  switch (nestedValue.id.idType) {
     case 'attr': return { ...prev,
       annotations: {
         ...prev.annotations,
-        [addition.id.name]: addition.data.after,
+        [nestedValue.id.name]: nestedValue.value,
       } }
     case 'annotation': return { ...prev,
       annotationTypes: {
         ...prev.annotationTypes,
-        [addition.id.name]: addition.data.after,
+        [nestedValue.id.name]: nestedValue.value,
       } }
     default: return prev
   }
@@ -122,28 +129,32 @@ const createPrimitiveTypeFromNestedAdditions = (
   primitive: commonPrimitiveType.primitive,
   annotationTypes: {},
   annotations: {},
-  path: additions[0].path,
+  path,
 }))
 
-const wrapAdditionElement = (
-  additions: DetailedAddition[],
+export const wrapNestedValues = (
+  nestedValues: NestedValue[],
   commonElement: Element,
+  path?: string[]
 ): Element => {
   if (isObjectType(commonElement)) {
     return createObjectTypeFromNestedAdditions(
-      additions,
+      nestedValues,
       commonElement,
+      path
     )
   }
   if (isInstanceElement(commonElement)) {
     return createInstanceElementFromNestedAdditions(
-      additions,
+      nestedValues,
       commonElement,
+      path
     )
   }
   return createPrimitiveTypeFromNestedAdditions(
-    additions,
+    nestedValues,
     commonElement as PrimitiveType,
+    path
   )
 }
 
@@ -152,7 +163,12 @@ export const wrapAdditions = (
   commonElement: Element,
 ): DetailedAddition => {
   const refAddition = nestedAdditions[0]
-  const wrapperElement = wrapAdditionElement(nestedAdditions, commonElement)
+  const refPath = nestedAdditions[0].path
+  const wrapperElement = wrapNestedValues(
+    nestedAdditions.map(addition => ({ ...addition, value: addition.data.after })),
+    commonElement,
+    refPath
+  )
   return {
     action: 'add',
     id: wrapperElement.elemID,

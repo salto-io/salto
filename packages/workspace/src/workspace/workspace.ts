@@ -106,6 +106,8 @@ export type Workspace = {
   updateServiceConfig: (service: string, newConfig: Readonly<InstanceElement>) => Promise<void>
 
   getStateRecency(services: string): Promise<StateRecency>
+  track(ids: ElemID[]): Promise<void>
+  untrack(ids: ElemID[]): Promise<void>
 }
 
 // common source has no state
@@ -298,6 +300,8 @@ export const loadWorkspace = async (config: WorkspaceConfigSource, credentials: 
     getTotalSize: naclFilesSource.getTotalSize,
     getNaclFile: naclFilesSource.getNaclFile,
     getElements: naclFilesSource.getElements,
+    track: naclFilesSource.track,
+    untrack: naclFilesSource.untrack,
     transformToWorkspaceError,
     transformError,
     getSourceFragment,

@@ -13,17 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeElement, ElemID, Value, DetailedChange } from '@salto-io/adapter-api'
+import { getChangeElement, ElemID, Value, DetailedChange, ChangeDataType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import path from 'path'
 import { promises } from '@salto-io/lowerdash'
-import { resolvePath, filterByID } from '@salto-io/adapter-utils'
+import { resolvePath, filterByID, detailedCompare } from '@salto-io/adapter-utils'
 import { ElementsSource } from '../../elements_source'
 import {
   projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
 } from './projections'
-import { wrapAdditions, DetailedAddition } from '../addition_wrapper'
+import { wrapAdditions, DetailedAddition, wrapNestedValues } from '../addition_wrapper'
 import { NaclFilesSource, FILE_EXTENSION, RoutingMode } from '../nacl_files_source'
+import { mergeElements } from '../../../merger'
 
 export interface RoutedChanges {
     primarySource?: DetailedChange[]
@@ -342,3 +343,78 @@ export const routeChanges = async (
     ),
   }
 }
+
+const addToSource = async (
+  ids: ElemID[],
+  originSource: NaclFilesSource,
+  targetSource: NaclFilesSource,
+): Promise<DetailedChange[]> => {
+  const idsByParent = _.groupBy(ids, id => id.createTopLevelParentID().parent.getFullName())
+  const fullChanges = _.flatten(await Promise.all(Object.values(idsByParent).map(async gids => {
+    const topLevelElement = await originSource.get(gids[0].createTopLevelParentID().parent)
+    const topLevelIds = gids.filter(id => id.isTopLevel())
+    const wrappedElement = !_.isEmpty(topLevelIds)
+      ? topLevelElement
+      : wrapNestedValues(
+        gids.map(id => ({ id, value: resolvePath(topLevelElement, id) })),
+        topLevelElement
+      )
+    const before = await targetSource.get(topLevelElement.elemID)
+    if (before === undefined) {
+      return [createAddChange(wrappedElement, topLevelElement.elemID)]
+    }
+    const mergeResult = mergeElements([
+      before,
+      wrappedElement,
+    ])
+    if (mergeResult.errors.length > 0) {
+      throw new Error(
+        `Failed to move ${gids.map(id => id.getFullName())} Can not move unmergable element fragments.`
+      )
+    }
+    const after = mergeResult.merged[0] as ChangeDataType
+    return detailedCompare(before, after)
+  })))
+  return _.flatten(
+    await Promise.all(fullChanges.map(change => seperateChangeByFiles(change, originSource)))
+  )
+}
+
+const removeFromSource = async (
+  ids: ElemID[],
+  targetSource: NaclFilesSource
+): Promise<DetailedChange[]> => {
+  const targetTopLevelElement = await targetSource.get(ids[0].createTopLevelParentID().parent)
+  if (targetTopLevelElement === undefined) {
+    return []
+  }
+  return ids.map(id => createRemoveChange(resolvePath(targetTopLevelElement, id), id))
+}
+
+export const routeTrack = async (
+  ids: ElemID[],
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource,
+  secondarySources: Record<string, NaclFilesSource>,
+): Promise<RoutedChanges> => ({
+  primarySource: await removeFromSource(ids, primarySource),
+  commonSource: await addToSource(ids, primarySource, commonSource),
+  secondarySources: await promises.object.mapValuesAsync(
+    secondarySources,
+    (source: NaclFilesSource) => removeFromSource(ids, source)
+  ),
+})
+
+export const routeUntrack = async (
+  ids: ElemID[],
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource,
+  secondarySources: Record<string, NaclFilesSource>,
+): Promise<RoutedChanges> => ({
+  primarySource: await addToSource(ids, commonSource, primarySource),
+  commonSource: await removeFromSource(ids, commonSource),
+  secondarySources: await promises.object.mapValuesAsync(
+    secondarySources,
+    (source: NaclFilesSource) => addToSource(ids, commonSource, source)
+  ),
+})

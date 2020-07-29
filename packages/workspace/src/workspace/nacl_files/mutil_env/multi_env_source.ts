@@ -25,7 +25,7 @@ import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 
 import { mergeElements, MergeError } from '../../../merger'
-import { routeChanges } from './routers'
+import { routeChanges, RoutedChanges, routeTrack, routeUntrack } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
 import { Errors } from '../../errors'
 
@@ -55,6 +55,8 @@ type MultiEnvState = {
 
 type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
   getAll: (env?: string) => Promise<Element[]>
+  track: (ids: ElemID[]) => Promise<void>
+  untrack: (ids: ElemID[]) => Promise<void>
 }
 
 const buildMultiEnvSource = (
@@ -136,6 +138,17 @@ const buildMultiEnvSource = (
     return naclFile ? { ...naclFile, filename } : undefined
   }
 
+  const applyRoutedChanges = async (routedChanges: RoutedChanges): Promise<void> => {
+    const secondaryChanges = routedChanges.secondarySources || {}
+    await Promise.all([
+      primarySource().updateNaclFiles(routedChanges.primarySource || []),
+      commonSource().updateNaclFiles(routedChanges.commonSource || []),
+      ..._.keys(secondaryChanges)
+        .map(srcName => secondarySources()[srcName].updateNaclFiles(secondaryChanges[srcName])),
+    ])
+    state = buildMutiEnvState()
+  }
+
   const updateNaclFiles = async (
     changes: DetailedChange[],
     mode: RoutingMode = 'default'
@@ -147,14 +160,27 @@ const buildMultiEnvSource = (
       secondarySources(),
       mode
     )
-    const secondaryChanges = routedChanges.secondarySources || {}
-    await Promise.all([
-      primarySource().updateNaclFiles(routedChanges.primarySource || []),
-      commonSource().updateNaclFiles(routedChanges.commonSource || []),
-      ..._.keys(secondaryChanges)
-        .map(srcName => secondarySources()[srcName].updateNaclFiles(secondaryChanges[srcName])),
-    ])
-    state = buildMutiEnvState()
+    return applyRoutedChanges(routedChanges)
+  }
+
+  const track = async (ids: ElemID[]): Promise<void> => {
+    const routedChanges = await routeTrack(
+      ids,
+      primarySource(),
+      commonSource(),
+      secondarySources(),
+    )
+    return applyRoutedChanges(routedChanges)
+  }
+
+  const untrack = async (ids: ElemID[]): Promise<void> => {
+    const routedChanges = await routeUntrack(
+      ids,
+      primarySource(),
+      commonSource(),
+      secondarySources(),
+    )
+    return applyRoutedChanges(routedChanges)
   }
 
   const flush = async (): Promise<void> => {
@@ -169,6 +195,8 @@ const buildMultiEnvSource = (
     getNaclFile,
     updateNaclFiles,
     flush,
+    track,
+    untrack,
     list: async (): Promise<ElemID[]> => _.values((await getState()).elements).map(e => e.elemID),
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).elements[id.getFullName()]

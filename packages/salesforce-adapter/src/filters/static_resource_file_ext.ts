@@ -31,7 +31,7 @@ export const CONTENT_TYPE = 'contentType'
 export const CONTENT = 'content'
 
 const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
-  const staticFile = staticResourceInstance.value.content
+  const staticFile = staticResourceInstance.value[CONTENT]
   if (!isStaticFile(staticFile) || staticFile.content === undefined) {
     log.debug(`Could not modify file extension for ${staticResourceInstance.elemID.getFullName()} due to invalid StaticFile`)
     return
@@ -49,7 +49,7 @@ const modifyFileExtension = (staticResourceInstance: InstanceElement): void => {
     return
   }
   const currentFilepath = staticFile.filepath
-  staticResourceInstance.value.content = new StaticFile({
+  staticResourceInstance.value[CONTENT] = new StaticFile({
     filepath: `${currentFilepath.split('.')[0]}.${newExtension}`,
     content: staticFile.content,
   })

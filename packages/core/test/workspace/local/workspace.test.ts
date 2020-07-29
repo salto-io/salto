@@ -18,11 +18,13 @@ import * as ws from '@salto-io/workspace'
 import { exists } from '@salto-io/file'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
-  loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH,
+  loadLocalWorkspace, COMMON_ENV_PREFIX, CREDENTIALS_CONFIG_PATH,
   loadLocalElementsSources,
 } from '../../../src/local-workspace/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
+
+const { ENVS_PREFIX } = ws.nacl
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),

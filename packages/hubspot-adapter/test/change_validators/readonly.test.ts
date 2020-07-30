@@ -64,6 +64,13 @@ describe('readonly change validator', () => {
     })
 
     describe('keep resolved value of name in ContactProperty', () => {
+      it('should not have an error when replacing name with static file with same value', async () => {
+        after.value.name = new StaticFile({ filepath: 'path', content: Buffer.from(contactPropertyMock.name) })
+        changeErrors = await readonlyValidator([
+          toChange({ before: contactPropertyInstance, after }),
+        ])
+      })
+
       it('should not have an error when replacing name with reference to the same value', async () => {
         after.value.name = new ReferenceExpression(new ElemID('hubspot', 'str'), contactPropertyMock.name)
         changeErrors = await readonlyValidator([

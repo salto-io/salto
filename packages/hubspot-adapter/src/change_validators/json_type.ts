@@ -15,8 +15,7 @@
 */
 import _ from 'lodash'
 import { ChangeError, BuiltinTypes, InstanceElement, isPrimitiveType, isInstanceChange, ChangeValidator, isAdditionOrModificationDiff } from '@salto-io/adapter-api'
-import { resolveValues } from '@salto-io/adapter-utils'
-import { getLookUpName } from '../transformers/transformer'
+import { getLookUpName, resolveValues } from '../transformers/transformer'
 
 const getJsonValidationErrorsFromAfter = async (after: InstanceElement):
   Promise<ReadonlyArray<ChangeError>> => {

@@ -35,6 +35,7 @@ import {
   ensureFilesDontExist,
   getNaclFileElements,
   cleanup as workspaceHelpersCleanup,
+  getCurrentEnv,
 } from './helpers/workspace'
 import * as templates from './helpers/templates'
 
@@ -235,8 +236,12 @@ describe('multi env tests', () => {
     beforeAll(async () => {
       await runSetEnv(baseDir, ENV1_NAME)
       await runFetch(baseDir, false) // Fetch in normal mode
-      await runSetEnv(baseDir, ENV2_NAME)
-      await runFetch(baseDir, true) // Fetch in isolated mode
+      await runFetch(baseDir, true, ENV2_NAME) // Fetch in isolated mode without setting env
+    })
+
+    it('should not modify current env when not set', async () => {
+      const currentEnv = await getCurrentEnv(baseDir)
+      expect(currentEnv).toEqual(ENV1_NAME)
     })
 
     describe('create correct file structure', () => {

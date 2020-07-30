@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Plan, telemetrySender, preview } from '@salto-io/core'
+import { Plan, telemetrySender, preview, loadLocalWorkspace } from '@salto-io/core'
 import { parser, Workspace } from '@salto-io/workspace'
 import { readTextFile, writeFile } from '@salto-io/file'
 import _ from 'lodash'
@@ -133,9 +133,15 @@ export const runSetEnv = async (workspaceDir: string, envName: string): Promise<
   await envCommand(workspaceDir, 'set', mockCliOutput(), envName).execute()
 }
 
+export const getCurrentEnv = async (workspaceDir: string): Promise<string> => {
+  const workspace = await loadLocalWorkspace(workspaceDir)
+  return workspace.currentEnv()
+}
+
 export const runFetch = async (
   fetchOutputDir: string,
-  isolated = false
+  isolated = false,
+  inputEnvironment?: string,
 ): Promise<void> => {
   await fetch(
     fetchOutputDir,
@@ -147,6 +153,7 @@ export const runFetch = async (
     isolated,
     true,
     services,
+    inputEnvironment,
   ).execute()
 }
 

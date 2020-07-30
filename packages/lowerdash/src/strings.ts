@@ -24,3 +24,15 @@ export const insecureRandomString = (
 ): string => Array(...Array(length))
   .map(() => alphabet.charAt(Math.floor(Math.random() * alphabet.length)))
   .join('')
+
+const collatorOptions = {
+  locale: 'en',
+  usage: 'sort',
+  sensitivity: 'variant',
+  ignorePunctuation: false,
+  collation: 'default',
+  numeric: false,
+  caseFirst: 'false',
+}
+
+export const stableCollator = Intl.Collator(collatorOptions.locale, collatorOptions)

@@ -13,10 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const isDefined = <T>(val: T | undefined): val is T => val !== undefined
+const resolveSnapshotPath = (testPath, snapshotExtension) => testPath
+  .replace(/\/dist\/test\//, '/test/')
+  .replace(/\.js$/, snapshotExtension)
 
-export const isPrimitive = (
-  value: unknown
-): value is undefined | null | 'string' | 'number' | 'boolean' => (
-  value === undefined || value === null || ['string', 'number', 'boolean'].includes(typeof value)
-)
+const resolveTestPath = (snapshotFilePath, snapshotExtension) => snapshotFilePath
+  .replace(/\/test\//, '/dist/test/')
+  .slice(0, -snapshotExtension.length)
+  + '.js'
+
+module.exports = {
+  resolveSnapshotPath,
+  resolveTestPath,
+  testPathForConsistencyCheck: '/root-path/dist/test/example.test.js',
+}

@@ -37,6 +37,8 @@ const log = logger(module)
 
 type TypeName = string
 type RecordID = string
+type RecordById = Record<RecordID, SalesforceRecord>
+type RecordsByTypeAndId = Record<TypeName, RecordById>
 
 const masterDetailNamesSeparator = '___'
 
@@ -84,7 +86,7 @@ const getRecords = async (
   client: SalesforceClient,
   type: ObjectType,
   ids?: string[],
-): Promise<Record<RecordID, SalesforceRecord>> => {
+): Promise<RecordById> => {
   const queries = buildQueryStrings(type, ids)
   const recordsIterables = await Promise.all(queries.map(async query => client.queryAll(query)))
   const records = (await Promise.all(
@@ -97,7 +99,7 @@ const getRecords = async (
 }
 
 const typesRecordsToInstances = (
-  recordByIdAndType: Record<TypeName, Record<RecordID, SalesforceRecord>>,
+  recordByIdAndType: RecordsByTypeAndId,
   typeByName: Record<TypeName, ObjectType>,
   nameBasedTypeNames: string[],
 ): InstanceElement[] => {
@@ -208,75 +210,67 @@ const typesRecordsToInstances = (
 
 const getFieldsToRefToTypes = (
   type: ObjectType,
-  allowedRefToTypeNames: string[]
+  allowedReferebcedTypeNames: string[]
 ): Record<string, TypeName[]> =>
   Object.fromEntries(
     Object.values(type.fields)
       .filter(isReferenceField)
       .map(field => [
         field.name,
-        getReferenceTo(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
+        getReferenceTo(field).filter(typeName => allowedReferebcedTypeNames.includes(typeName)),
       ])
   )
 
 const getReferencedRecords = async (
   client: SalesforceClient,
   referencedTypes: ObjectType[],
-  baseRecordByIdAndType: Record<TypeName, Record<RecordID, SalesforceRecord>>,
+  baseRecordByIdAndType: RecordsByTypeAndId,
   allTypesByName: Record<TypeName, ObjectType>
-): Promise<Record<TypeName, Record<RecordID, SalesforceRecord>>> => {
-  const referencedRecsByIdAndType = {} as Record<TypeName, Record<RecordID, SalesforceRecord>>
-  const doesRecordAlreadyExist = (typeName: string, id: string): boolean =>
-    referencedRecsByIdAndType[typeName] !== undefined
-    && referencedRecsByIdAndType[typeName][id] !== undefined
-  const addToFetchedRecords = (
-    newReferencedRecords: Record<TypeName, Record<RecordID, SalesforceRecord>>
-  ): Record<TypeName, Record<RecordID, SalesforceRecord>> =>
-    _.merge(referencedRecsByIdAndType, newReferencedRecords)
-
+): Promise<RecordsByTypeAndId> => {
+  const allReferenceRecords = {} as RecordsByTypeAndId
   const allowedRefToTypeNames = referencedTypes.map(type => apiName(type))
-  const referenceTypeToIdsFromRecords = (
-    records: Record<TypeName, Record<RecordID, SalesforceRecord>>
+  const getMissingReferencedIds = (
+    records: RecordsByTypeAndId
   ): Record<TypeName, RecordID[]> => {
-    const typeAndIdsTuples = Object.entries(records).flatMap(([typeName, idToRecords]) => {
-      const type = allTypesByName[typeName]
-      const fieldNameToRefToNames = getFieldsToRefToTypes(type, allowedRefToTypeNames)
-      const sfRecords = Object.values(idToRecords)
-      return sfRecords.flatMap(record =>
-        (Object.entries(fieldNameToRefToNames).flatMap(([fieldName, refToNames]) => {
-          const fieldValue = record[fieldName]
-          return (fieldValue === undefined || _.isNull(fieldValue)) ? undefined
-            : refToNames.map(name => ({ type: name, id: fieldValue }))
-        }))).filter(isDefined)
-    })
-    const typeToTypeAndIds = _.groupBy(
-      typeAndIdsTuples,
-      t => t.type
+    const missingReferencedRecordIds = Object.entries(records)
+      .flatMap(([typeName, idToRecords]) => {
+        const type = allTypesByName[typeName]
+        const fieldNameToRefToNames = getFieldsToRefToTypes(type, allowedRefToTypeNames)
+        const sfRecords = Object.values(idToRecords)
+        return sfRecords.flatMap(record =>
+          (Object.entries(fieldNameToRefToNames).flatMap(([fieldName, refToNames]) => {
+            const fieldValue = record[fieldName]
+            return (fieldValue === undefined || _.isNull(fieldValue)) ? undefined
+              : refToNames.map(name => ({ name, id: fieldValue }))
+          }))).filter(isDefined)
+          .filter(({ name, id }) => allReferenceRecords[name]?.[id] === undefined)
+      })
+    const referencedRecordsById = _.groupBy(
+      missingReferencedRecordIds,
+      t => t.name
     )
     return _.mapValues(
-      typeToTypeAndIds,
-      (tuples, type) => _.uniq(
-        tuples.map(t => t.id).filter(id => !doesRecordAlreadyExist(type, id))
-      )
+      referencedRecordsById,
+      tuples => _.uniq(tuples.map(t => t.id))
     )
   }
 
   const getReferencedRecordsRecursively = async (
-    currentLevelRecords: Record<TypeName, Record<RecordID, SalesforceRecord>>
+    currentLevelRecords: RecordsByTypeAndId
   ): Promise<void> => {
-    const typeToRecordIds = referenceTypeToIdsFromRecords(currentLevelRecords)
-    const referencedRecords = await mapValuesAsync(
-      typeToRecordIds,
+    const typeToMissingIds = getMissingReferencedIds(currentLevelRecords)
+    const newReferencedRecords = await mapValuesAsync(
+      typeToMissingIds,
       (ids, typeName) => getRecords(client, allTypesByName[typeName], ids)
     )
-    if (_.isEmpty(referencedRecords)) {
+    if (_.isEmpty(newReferencedRecords)) {
       return
     }
-    addToFetchedRecords(referencedRecords)
-    getReferencedRecordsRecursively(referencedRecords)
+    _.merge(allReferenceRecords, newReferencedRecords)
+    getReferencedRecordsRecursively(newReferencedRecords)
   }
   await getReferencedRecordsRecursively(baseRecordByIdAndType)
-  return referencedRecsByIdAndType
+  return allReferenceRecords
 }
 
 const getAllInstances = async (

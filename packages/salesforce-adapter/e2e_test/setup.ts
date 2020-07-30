@@ -137,6 +137,14 @@ export const lightningComponentBundleInstanceValues = {
   },
 }
 
+export const staticResourceInstanceValues = {
+  [constants.INSTANCE_FULL_NAME_FIELD]: 'TestStaticResource',
+  cacheControl: 'Private',
+  contentType: 'text/xml',
+  description: 'Test Static Resource Description',
+  content: Buffer.from('<xml/>'),
+}
+
 export const verifyElementsExist = async (client: SalesforceClient): Promise<void> => {
   const verifyObjectsDependentFieldsExist = async (): Promise<void> => {
     await client.upsert('GlobalValueSet', {
@@ -946,6 +954,15 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
     ) as Buffer)
   }
 
+  const verifyStaticResourceExists = async (): Promise<void> => {
+    await client.deploy(await toMetadataPackageZip(
+      'TestStaticResource',
+      'StaticResource',
+      staticResourceInstanceValues,
+      false,
+    ) as Buffer)
+  }
+
   await Promise.all([
     addCustomObjectWithVariousFields(),
     verifyEmailTemplateAndFolderExist(),
@@ -958,5 +975,6 @@ export const verifyElementsExist = async (client: SalesforceClient): Promise<voi
     verifyLeadHasConvertSettings(),
     verifyAuraDefinitionBundleExists(),
     verifyLightningComponentBundleExists(),
+    verifyStaticResourceExists(),
   ])
 }

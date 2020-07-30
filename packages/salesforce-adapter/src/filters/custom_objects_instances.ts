@@ -19,10 +19,13 @@ import { logger } from '@salto-io/logging'
 import { InstanceElement, ObjectType, Element, isObjectType, Field, isPrimitiveType } from '@salto-io/adapter-api'
 import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
-import { SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD, OBJECTS_PATH, FIELD_ANNOTATIONS } from '../constants'
+import {
+  SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
+  OBJECTS_PATH, FIELD_ANNOTATIONS, MAX_IDS_PER_INSTANCES_QUERY,
+} from '../constants'
 import { FilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds } from '../transformers/transformer'
-import { getNamespace } from './utils'
+import { getNamespace, getNamespaceFromString } from './utils'
 import { DataManagementConfig } from '../types'
 
 const { mapValuesAsync } = promises.object
@@ -49,10 +52,13 @@ const isNameField = (field: Field): boolean =>
   (isObjectType(field.type)
     && field.type.elemID.isEqual(Types.compoundDataTypes.Name.elemID))
 
-const isReferenceToField = (field: Field): boolean =>
+const isReferenceField = (field: Field): boolean =>
   (isPrimitiveType(field.type)
   && (Types.primitiveDataTypes.MasterDetail.isEqual(field.type)
   || Types.primitiveDataTypes.Lookup.isEqual(field.type)))
+
+const getReferenceTo = (field: Field): string[] =>
+  makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[]
 
 const buildQueryString = (type: ObjectType, ids?: string[]): string => {
   const selectStr = Object.values(type.fields)
@@ -66,15 +72,26 @@ const buildQueryString = (type: ObjectType, ids?: string[]): string => {
   return `SELECT ${selectStr} FROM ${apiName(type)}${whereStr}`
 }
 
-const getTypeRecords = async (
+const buildQueryStrings = (type: ObjectType, ids?: string[]): string[] => {
+  if (ids === undefined) {
+    return [buildQueryString(type)]
+  }
+  const chunkedIds = _.chunk(ids, MAX_IDS_PER_INSTANCES_QUERY)
+  return chunkedIds.map(idChunk => buildQueryString(type, idChunk))
+}
+
+const getRecords = async (
   client: SalesforceClient,
   type: ObjectType,
   ids?: string[],
 ): Promise<Record<RecordID, SalesforceRecord>> => {
-  const queryString = buildQueryString(type, ids)
-  const recordsIterable = await client.queryAll(queryString)
+  const queries = buildQueryStrings(type, ids)
+  const recordsIterables = await Promise.all(queries.map(async query => client.queryAll(query)))
+  const records = (await Promise.all(
+    recordsIterables.map(async recordsIterable => (await toArrayAsync(recordsIterable)).flat())
+  )).flat()
   return _.keyBy(
-    (await toArrayAsync(recordsIterable)).flat(),
+    records,
     record => record[CUSTOM_OBJECT_ID_FIELD]
   )
 }
@@ -82,7 +99,7 @@ const getTypeRecords = async (
 const typesRecordsToInstances = (
   recordByIdAndType: Record<TypeName, Record<RecordID, SalesforceRecord>>,
   typeByName: Record<TypeName, ObjectType>,
-  nameBasedTypes: ObjectType[],
+  nameBasedTypeNames: string[],
 ): InstanceElement[] => {
   const saltoNameByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
   const setSaltoName = (type: ObjectType, recordId: string, saltoName: string): void => {
@@ -105,14 +122,11 @@ const typesRecordsToInstances = (
   ): string => {
     const fieldToPrefixName = (fieldName: string, field: Field): string | undefined => {
       const fieldValue = record[fieldName]
-      // If it's a special case of using a non-ref field simply use the value
-      if (!isReferenceToField(field)) {
+      if (!isReferenceField(field)) {
         return fieldValue.toString()
       }
-      const referenceToTypeNames = makeArray(
-        field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]
-      ) as string[]
-      return referenceToTypeNames.map(typeName => {
+      const referencedTypeNames = getReferenceTo(field)
+      return referencedTypeNames.map(typeName => {
         const rec = recordByIdAndType[typeName] !== undefined
           ? recordByIdAndType[typeName][fieldValue] : undefined
         if (rec === undefined) {
@@ -185,7 +199,7 @@ const typesRecordsToInstances = (
         recordToInstance(
           record,
           typeByName[typeName],
-          nameBasedTypes.some(o => o.isEqual(typeByName[typeName])),
+          nameBasedTypeNames.includes(typeName),
         )
       ))
     ))
@@ -195,30 +209,32 @@ const typesRecordsToInstances = (
 const getFieldsToRefToTypes = (
   type: ObjectType,
   allowedRefToTypeNames: string[]
-): Record<string, TypeName[]> => {
-  const referenceFields = _.pickBy(type.fields, isReferenceToField)
-  return _.mapValues(
-    referenceFields,
-    field => (makeArray(field.annotations[FIELD_ANNOTATIONS.REFERENCE_TO]) as string[])
-      .filter(refToTypeName => allowedRefToTypeNames.includes(refToTypeName))
+): Record<string, TypeName[]> =>
+  Object.fromEntries(
+    Object.values(type.fields)
+      .filter(isReferenceField)
+      .map(field => [
+        field.name,
+        getReferenceTo(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
+      ])
   )
-}
 
-const getRefToRecords = async (
+const getReferencedRecords = async (
   client: SalesforceClient,
-  referenceToTypes: ObjectType[],
+  referencedTypes: ObjectType[],
   baseRecordByIdAndType: Record<TypeName, Record<RecordID, SalesforceRecord>>,
   allTypesByName: Record<TypeName, ObjectType>
 ): Promise<Record<TypeName, Record<RecordID, SalesforceRecord>>> => {
-  const refToRecsByIdAndType = {} as Record<TypeName, Record<RecordID, SalesforceRecord>>
+  const referencedRecsByIdAndType = {} as Record<TypeName, Record<RecordID, SalesforceRecord>>
   const doesRecordAlreadyExist = (typeName: string, id: string): boolean =>
-    refToRecsByIdAndType[typeName] !== undefined && refToRecsByIdAndType[typeName][id] !== undefined
-  const addNewRecords = (
-    newRecords: Record<TypeName, Record<RecordID, SalesforceRecord>>
+    referencedRecsByIdAndType[typeName] !== undefined
+    && referencedRecsByIdAndType[typeName][id] !== undefined
+  const addToFetchedRecords = (
+    newReferencedRecords: Record<TypeName, Record<RecordID, SalesforceRecord>>
   ): Record<TypeName, Record<RecordID, SalesforceRecord>> =>
-    _.merge(refToRecsByIdAndType, newRecords)
+    _.merge(referencedRecsByIdAndType, newReferencedRecords)
 
-  const allowedRefToTypeNames = referenceToTypes.map(type => apiName(type))
+  const allowedRefToTypeNames = referencedTypes.map(type => apiName(type))
   const referenceTypeToIdsFromRecords = (
     records: Record<TypeName, Record<RecordID, SalesforceRecord>>
   ): Record<TypeName, RecordID[]> => {
@@ -245,119 +261,115 @@ const getRefToRecords = async (
     )
   }
 
-  const getRefToRecordsRecursively = async (
+  const getReferencedRecordsRecursively = async (
     currentLevelRecords: Record<TypeName, Record<RecordID, SalesforceRecord>>
   ): Promise<void> => {
     const typeToRecordIds = referenceTypeToIdsFromRecords(currentLevelRecords)
-    const refToRecords = await mapValuesAsync(
+    const referencedRecords = await mapValuesAsync(
       typeToRecordIds,
-      (ids, typeName) => getTypeRecords(client, allTypesByName[typeName], ids)
+      (ids, typeName) => getRecords(client, allTypesByName[typeName], ids)
     )
-    if (_.isEmpty(refToRecords)) {
+    if (_.isEmpty(referencedRecords)) {
       return
     }
-    addNewRecords(refToRecords)
-    getRefToRecordsRecursively(refToRecords)
+    addToFetchedRecords(referencedRecords)
+    getReferencedRecordsRecursively(referencedRecords)
   }
-  await getRefToRecordsRecursively(baseRecordByIdAndType)
-  return refToRecsByIdAndType
+  await getReferencedRecordsRecursively(baseRecordByIdAndType)
+  return referencedRecsByIdAndType
 }
 
 const getAllInstances = async (
   client: SalesforceClient,
   baseTypes: ObjectType[],
-  referenceToTypes: ObjectType[],
-  nameBasedTypes: ObjectType[],
+  referencedTypes: ObjectType[],
+  nameBasedTypeNames: string[],
 ): Promise<InstanceElement[]> => {
   // Get the base types records
   const baseTypesByName = _.keyBy(baseTypes, type => apiName(type))
-  const baseRecordByIdAndType = await mapValuesAsync(
+  const baseRecordByTypeAndId = await mapValuesAsync(
     baseTypesByName,
-    type => getTypeRecords(client, type)
+    type => getRecords(client, type)
   )
 
   // Get reference to records
-  const refToTypesByName = _.keyBy(referenceToTypes, type => apiName(type))
-  const mergedTypesByName = _.merge(baseTypesByName, refToTypesByName)
-  const refToRecordsByIdAndType = await getRefToRecords(
+  const referencedTypesByName = _.keyBy(referencedTypes, type => apiName(type))
+  const mergedTypesByName = _.merge(baseTypesByName, referencedTypesByName)
+  const referencedRecordsByTypeAndId = await getReferencedRecords(
     client,
-    referenceToTypes,
-    baseRecordByIdAndType,
+    referencedTypes,
+    baseRecordByTypeAndId,
     mergedTypesByName
   )
-  const mergedRecords = _.merge(baseRecordByIdAndType, refToRecordsByIdAndType)
-  return typesRecordsToInstances(mergedRecords, mergedTypesByName, nameBasedTypes)
+  const mergedRecords = _.merge(baseRecordByTypeAndId, referencedRecordsByTypeAndId)
+  return typesRecordsToInstances(mergedRecords, mergedTypesByName, nameBasedTypeNames)
 }
 
-const filterObjectTypes = (
-  elements: Element[],
-  dataManagementConfigs: DataManagementConfig[]
-): ObjectType[] => {
-  const enabledConfigs = dataManagementConfigs
-    .filter(config => config.enabled)
+const getBaseTypesNames = (
+  customObjectNames: string[],
+  configs: DataManagementConfig[]
+): string[] => {
   const groupedIncludeNamespaces = _.flatten(
-    enabledConfigs.map(config => makeArray(config.includeNamespaces))
+    configs.map(config => makeArray(config.includeNamespaces))
   )
   const groupedIncludeObjects = _.flatten(
-    enabledConfigs
-      .map(config => makeArray(config.includeObjects))
+    configs.map(config => makeArray(config.includeObjects))
   )
   const groupedExcludeObjects = _.flatten(
-    enabledConfigs
-      .map(config => makeArray(config.excludeObjects))
+    configs.map(config => makeArray(config.excludeObjects))
   )
-  return elements
-    .filter(isObjectType)
-    .filter(isCustomObject)
-    .filter(e => {
-      const namespace = getNamespace(e)
-      const elementApiName = apiName(e, true)
-      return (
-        (!_.isUndefined(namespace) && groupedIncludeNamespaces.includes(namespace))
-          || groupedIncludeObjects.includes(elementApiName)
-      ) && !groupedExcludeObjects.includes(elementApiName)
-    })
+  return customObjectNames.filter(customObjectName => {
+    const namespace = getNamespaceFromString(customObjectName)
+    return ((namespace !== undefined && groupedIncludeNamespaces.includes(namespace))
+      || groupedIncludeObjects.includes(customObjectName))
+      && !groupedExcludeObjects.includes(customObjectName)
+  })
 }
 
-const getReferenceToObjectTypes = (
-  elements: Element[],
-  baseObjectTypes: ObjectType[],
-  dataManagementConfigs: DataManagementConfig[]
-): ObjectType[] => {
-  const referenceToTypeNames = dataManagementConfigs
+const getAllowReferencedTypesNames = (
+  customObjectNames: string[],
+  configs: DataManagementConfig[]
+): string[] => {
+  const allowReferebcedTypeNames = configs
     .flatMap(conf => conf.allowReferenceTo).filter(isDefined)
-  return elements
-    .filter(isObjectType)
-    .filter(isCustomObject)
-    .filter(e =>
-      referenceToTypeNames.includes(apiName(e, true))
-      && !baseObjectTypes.find(obj => obj.isEqual(e)))
+  const baseObjectNames = getBaseTypesNames(customObjectNames, configs)
+  return customObjectNames.filter(customObjectName =>
+    allowReferebcedTypeNames.includes(customObjectName)
+    && !baseObjectNames.includes(customObjectName))
+}
+
+const getNameBasedObjectNames = (
+  customObjectNames: string[],
+  configs: DataManagementConfig[]
+): string[] => {
+  const nameBasedConfigs = configs.filter(config => config.isNameBasedID)
+  return [
+    ...getBaseTypesNames(customObjectNames, nameBasedConfigs),
+    ...getAllowReferencedTypesNames(customObjectNames, nameBasedConfigs),
+  ]
 }
 
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
+    const customObjects = elements.filter(isObjectType).filter(isCustomObject)
+    const customObjectNames = customObjects.map(customObject => apiName(customObject, true))
     const dataManagementConfigs = config.dataManagement || []
-    const relevantObjectTypes = filterObjectTypes(
-      elements,
-      dataManagementConfigs
-    )
-    if (relevantObjectTypes.length === 0) {
+    const enabledConfigs = dataManagementConfigs
+      .filter(dataManagementConfig => dataManagementConfig.enabled)
+    const baseTypesNames = getBaseTypesNames(customObjectNames, enabledConfigs)
+    if (baseTypesNames.length === 0) {
       return
     }
-    const referenceToObjectTypes = getReferenceToObjectTypes(
-      elements,
-      relevantObjectTypes,
-      dataManagementConfigs
+    const allowReferencedTypesNames = getAllowReferencedTypesNames(
+      customObjectNames,
+      enabledConfigs
     )
-    const nameBasedIDConfigs = dataManagementConfigs.filter(dmConfig => dmConfig.isNameBasedID)
-    const nameBasedTypes = filterObjectTypes(relevantObjectTypes, nameBasedIDConfigs).concat(
-      getReferenceToObjectTypes(referenceToObjectTypes, relevantObjectTypes, nameBasedIDConfigs)
-    )
+    const nameBasedTypesNames = getNameBasedObjectNames(customObjectNames, enabledConfigs)
     const instances = await getAllInstances(
       client,
-      relevantObjectTypes,
-      referenceToObjectTypes,
-      nameBasedTypes
+      customObjects.filter(co => baseTypesNames.includes(apiName(co, true))),
+      customObjects.filter(co => allowReferencedTypesNames.includes(apiName(co, true))),
+      nameBasedTypesNames,
     )
     elements.push(...instances)
   },

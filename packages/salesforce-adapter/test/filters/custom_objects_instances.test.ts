@@ -26,6 +26,11 @@ import {
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
+jest.mock('../../src/constants', () => ({
+  ...jest.requireActual('../../src/constants'),
+  MAX_IDS_PER_INSTANCES_QUERY: 2,
+}))
+
 /* eslint-disable @typescript-eslint/camelcase */
 describe('Custom Object Instances filter', () => {
   let connection: Connection
@@ -517,7 +522,9 @@ describe('Custom Object Instances filter', () => {
     })
 
     it('should query refTo by ids according to references values', () => {
-      expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','badId','abcdefg')`)
+      // The query should be split according to MAX_IDS_PER_INSTANCES_QUERY
+      expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','badId')`)
+      expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToObjectName} WHERE Id IN ('abcdefg')`)
     })
 
     it('should qeuery all namespaced/included objects not by id', () => {

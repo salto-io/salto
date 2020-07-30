@@ -32,10 +32,7 @@ class LazyStaticFile extends StaticFile {
 
   get content(): Buffer | undefined {
     if (this.internalContent === undefined) {
-      const file = this.dirStore.getSync(this.filepath)
-      if (file !== undefined) {
-        this.internalContent = this.dirStore.getSync(this.filepath)?.buffer
-      }
+      this.internalContent = this.dirStore.getSync(this.filepath)?.buffer
     }
     return this.internalContent
   }

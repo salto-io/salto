@@ -54,10 +54,19 @@ import {
 } from './utils'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
-  accountApiName, auraInstanceValues, CUSTOM_FIELD_NAMES, customObjectAddFieldsName,
-  customObjectWithFieldsName, gvsName, lightningComponentBundleInstanceValues,
-  lwcHtmlResourceContent, lwcJsResourceContent, removeCustomObjectsWithVariousFields,
-  summaryFieldName, verifyElementsExist,
+  accountApiName,
+  auraInstanceValues,
+  CUSTOM_FIELD_NAMES,
+  customObjectAddFieldsName,
+  customObjectWithFieldsName,
+  gvsName,
+  lightningComponentBundleInstanceValues,
+  lwcHtmlResourceContent,
+  lwcJsResourceContent,
+  removeCustomObjectsWithVariousFields,
+  staticResourceInstanceValues,
+  summaryFieldName,
+  verifyElementsExist,
 } from './setup'
 
 const { makeArray } = collections.array
@@ -355,6 +364,16 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(lwcResource).toBeDefined()
       expect(isStaticFile(lwcResource.source)).toBe(true)
       expect((lwcResource.source as StaticFile).content?.toString()).toEqual(lwcJsResourceContent)
+    })
+
+    it('should retrieve StaticResource instance', () => {
+      const staticResource = findElements(result, 'StaticResource',
+        'TestStaticResource')[0] as InstanceElement
+      expect(staticResource.value[constants.INSTANCE_FULL_NAME_FIELD])
+        .toEqual('TestStaticResource')
+      expect(staticResource.value.contentType).toBe('text/xml')
+      expect(isStaticFile(staticResource.value.content)).toBe(true)
+      expect((staticResource.value.content as StaticFile).content?.toString()).toEqual('<xml/>')
     })
   })
 
@@ -3167,6 +3186,35 @@ describe('Salesforce adapter E2E with real account', () => {
 
           it('should remove LightningComponentBundle instance', async () => {
             await removeElementAndVerify(adapter, client, lwcInstance)
+          })
+        })
+
+        describe('StaticResource manipulation', () => {
+          let staticResourceInstance: InstanceElement
+
+          beforeAll(async () => {
+            staticResourceInstance = await createInstance(
+              client,
+              {
+                ...staticResourceInstanceValues,
+                [constants.INSTANCE_FULL_NAME_FIELD]: 'MyStaticResource',
+              },
+              'StaticResource'
+            )
+            await removeElementIfAlreadyExists(client, staticResourceInstance)
+          })
+
+          it('should create static resource instance', async () => {
+            await createElementAndVerify(adapter, client, staticResourceInstance)
+          })
+
+          it('should update static resource instance', async () => {
+            await verifyUpdateInstance(staticResourceInstance, ['description'],
+              'My Updated Static Resource Description')
+          })
+
+          it('should remove static resource instance', async () => {
+            await removeElementAndVerify(adapter, client, staticResourceInstance)
           })
         })
       })

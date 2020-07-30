@@ -68,6 +68,7 @@ type ZipPropsMap = {
   Territory2Rule: ZipProps
   Territory2Model: ZipProps
   Territory2Type: ZipProps
+  StaticResource: ZipProps
 }
 
 const zipPropsMap: ZipPropsMap = {
@@ -163,6 +164,11 @@ const zipPropsMap: ZipPropsMap = {
     dirName: 'territory2Types',
     fileSuffix: '.territory2Type',
     isMetadataWithContent: false,
+  },
+  StaticResource: {
+    dirName: 'staticresources',
+    fileSuffix: '.resource',
+    isMetadataWithContent: true,
   },
 }
 

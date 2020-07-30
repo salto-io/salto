@@ -15,12 +15,8 @@
 */
 import readdirp from 'readdirp'
 import path from 'path'
-import { Stats } from 'fs'
 import _ from 'lodash'
-import {
-  stat, readTextFile, exists, rm, mkdirp, replaceContents, isEmptyDir, isSubDirectory,
-  rename, existsSync, readTextFileSync, statSync,
-} from '@salto-io/file'
+import * as fileUtils from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
 import { dirStore } from '@salto-io/workspace'
 
@@ -31,19 +27,18 @@ const WRITE_CONCURRENCY = 100
 const DELETE_CONCURRENCY = 100
 const RENAME_CONCURRENCY = 100
 
-type FileMap = {
-  [key: string]: dirStore.File
-}
+type FileMap<T extends dirStore.ContentType> = Record<string, dirStore.File<T>>
 
-const buildLocalDirectoryStore = (
+const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,
+  encoding?: string,
   fileFilter?: string,
   directoryFilter?: (path: string) => boolean,
-  initUpdated?: FileMap,
+  initUpdated?: FileMap<T>,
   initDeleted? : string[],
-): dirStore.SyncDirectoryStore => {
+): dirStore.SyncDirectoryStore<T> => {
   let currentBaseDir = baseDir
-  let updated: FileMap = initUpdated || {}
+  let updated: FileMap<T> = initUpdated || {}
   let deleted: string[] = initDeleted || []
 
   const getAbsFileName = (filename: string, dir?: string): string =>
@@ -63,7 +58,7 @@ const buildLocalDirectoryStore = (
       : filename
   }
   const listDirFiles = async (listDirectories = false):
-  Promise<string[]> => (await exists(currentBaseDir)
+  Promise<string[]> => (await fileUtils.exists(currentBaseDir)
     ? readdirp.promise(currentBaseDir, {
       fileFilter: fileFilter || (() => true),
       directoryFilter: e => e.basename[0] !== '.'
@@ -72,41 +67,41 @@ const buildLocalDirectoryStore = (
     }).then(entries => entries.map(e => e.fullPath).map(x => getRelativeFileName(x)))
     : [])
 
-  const readFile = async (filename: string): Promise<dirStore.File | undefined> => {
+  const readFile = async (filename: string): Promise<dirStore.File<T> | undefined> => {
     const absFileName = getAbsFileName(filename)
-    return await exists(absFileName)
+    return await fileUtils.exists(absFileName)
       ? {
         filename,
-        buffer: await readTextFile(absFileName),
-        timestamp: (await stat(absFileName) as Stats).mtimeMs,
+        buffer: await fileUtils.readFile(absFileName, { encoding }) as T,
+        timestamp: (await fileUtils.stat(absFileName)).mtimeMs,
       }
       : undefined
   }
 
-  const readFileSync = (filename: string): dirStore.File | undefined => {
+  const readFileSync = (filename: string): dirStore.File<T> | undefined => {
     const absFileName = getAbsFileName(filename)
-    return existsSync(absFileName)
+    return fileUtils.existsSync(absFileName)
       ? {
         filename,
-        buffer: readTextFileSync(absFileName),
-        timestamp: (statSync(absFileName) as Stats).mtimeMs,
+        buffer: fileUtils.readFileSync(absFileName, { encoding }) as T,
+        timestamp: fileUtils.statSync(absFileName).mtimeMs,
       }
       : undefined
   }
 
-  const writeFile = async (file: dirStore.File): Promise<void> => {
+  const writeFile = async (file: dirStore.File<T>): Promise<void> => {
     const absFileName = getAbsFileName(file.filename)
-    if (!await exists(path.dirname(absFileName))) {
-      await mkdirp(path.dirname(absFileName))
+    if (!await fileUtils.exists(path.dirname(absFileName))) {
+      await fileUtils.mkdirp(path.dirname(absFileName))
     }
-    return replaceContents(absFileName, file.buffer)
+    return fileUtils.replaceContents(absFileName, file.buffer, encoding)
   }
 
   const removeDirIfEmpty = async (dirPath: string): Promise<void> => {
-    if (await exists(dirPath)
-      && await isEmptyDir(dirPath)
-      && isSubDirectory(dirPath, currentBaseDir)) {
-      await rm(dirPath)
+    if (await fileUtils.exists(dirPath)
+      && await fileUtils.isEmptyDir(dirPath)
+      && fileUtils.isSubDirectory(dirPath, currentBaseDir)) {
+      await fileUtils.rm(dirPath)
       await removeDirIfEmpty(path.dirname(dirPath))
     }
   }
@@ -119,8 +114,8 @@ const buildLocalDirectoryStore = (
       return Promise.reject(err)
     }
 
-    if (await exists(absFileName)) {
-      await rm(absFileName)
+    if (await fileUtils.exists(absFileName)) {
+      await fileUtils.rm(absFileName)
       if (shouldDeleteEmptyDir) {
         await removeDirIfEmpty(path.dirname(absFileName))
       }
@@ -130,9 +125,9 @@ const buildLocalDirectoryStore = (
 
   const mtimestampFile = async (filename: string): Promise<number | undefined> => (updated[filename]
     ? updated[filename].timestamp
-    : (await stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs)
+    : (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs)
 
-  const get = async (filename: string): Promise<dirStore.File | undefined> => {
+  const get = async (filename: string): Promise<dirStore.File<T> | undefined> => {
     let relFilename: string
     try {
       relFilename = getRelativeFileName(filename)
@@ -142,7 +137,7 @@ const buildLocalDirectoryStore = (
     return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
   }
 
-  const getSync = (filename: string): dirStore.File | undefined => {
+  const getSync = (filename: string): dirStore.File<T> | undefined => {
     const relFilename = getRelativeFileName(filename)
     return (updated[relFilename] ? updated[relFilename] : readFileSync(relFilename))
   }
@@ -172,7 +167,7 @@ const buildLocalDirectoryStore = (
     list,
     get,
     getSync,
-    set: async (file: dirStore.File): Promise<void> => {
+    set: async (file: dirStore.File<T>): Promise<void> => {
       let relFilename: string
       try {
         relFilename = getRelativeFileName(file.filename)
@@ -211,9 +206,9 @@ const buildLocalDirectoryStore = (
       const renameFile = async (file: string): Promise<void> => {
         const newPath = getAbsFileName(file, newBaseDir)
         const currentPath = getAbsFileName(file)
-        if (await exists(currentPath)) {
-          await mkdirp(path.dirname(newPath))
-          await rename(currentPath, newPath)
+        if (await fileUtils.exists(currentPath)) {
+          await fileUtils.mkdirp(path.dirname(newPath))
+          await fileUtils.rename(currentPath, newPath)
         }
       }
       await withLimitedConcurrency(allFiles.map(f => () => renameFile(f)), RENAME_CONCURRENCY)
@@ -223,7 +218,7 @@ const buildLocalDirectoryStore = (
     },
 
     renameFile: async (name: string, newName: string): Promise<void> =>
-      rename(getAbsFileName(name), getAbsFileName(newName)),
+      fileUtils.rename(getAbsFileName(name), getAbsFileName(newName)),
 
     mtimestamp: async (filename: string): Promise<undefined | number> => {
       let relFilename: string
@@ -239,16 +234,18 @@ const buildLocalDirectoryStore = (
 
     flush,
 
-    getFiles: async (filenames: string[]): Promise<(dirStore.File | undefined) []> =>
+    getFiles: async (filenames: string[]): Promise<(dirStore.File<T> | undefined) []> =>
       withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY),
 
     getTotalSize: async (): Promise<number> => {
       const allFiles = (await list()).map(f => getAbsFileName(f))
-      return _.sum(await Promise.all(allFiles.map(async filePath => (await stat(filePath)).size)))
+      return _.sum(await Promise.all(allFiles.map(async filePath =>
+        (await fileUtils.stat(filePath)).size)))
     },
 
-    clone: (): dirStore.SyncDirectoryStore => buildLocalDirectoryStore(
+    clone: (): dirStore.SyncDirectoryStore<T> => buildLocalDirectoryStore(
       currentBaseDir,
+      encoding,
       fileFilter,
       directoryFilter,
       _.cloneDeep(updated),
@@ -257,10 +254,24 @@ const buildLocalDirectoryStore = (
   }
 }
 
-export const localDirectoryStore = (
-  baseDir: string,
-  fileFilter?: string,
-  directoryFilter?: (path: string) => boolean,
-): dirStore.SyncDirectoryStore => buildLocalDirectoryStore(
-  baseDir, fileFilter, directoryFilter,
-)
+type LocalDirectoryStoreParams = {
+  baseDir: string
+  encoding?: 'utf8'
+  fileFilter?: string
+  directoryFilter?: (path: string) => boolean
+}
+
+export function localDirectoryStore(params: Omit<LocalDirectoryStoreParams, 'encoding'>):
+  dirStore.SyncDirectoryStore<Buffer>
+
+export function localDirectoryStore(
+  params: LocalDirectoryStoreParams & Required<Pick<LocalDirectoryStoreParams, 'encoding'>>
+): dirStore.SyncDirectoryStore<string>
+
+export function localDirectoryStore(
+  { baseDir, encoding, fileFilter, directoryFilter }: LocalDirectoryStoreParams
+): dirStore.SyncDirectoryStore<dirStore.ContentType> {
+  return buildLocalDirectoryStore<dirStore.ContentType>(
+    baseDir, encoding, fileFilter, directoryFilter,
+  )
+}

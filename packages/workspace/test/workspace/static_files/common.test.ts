@@ -17,6 +17,7 @@ import { StaticFile, calculateStaticFileHash } from '@salto-io/adapter-api'
 import {
   StaticFilesSource, isInvalidStaticFile, MissingStaticFile, AccessDeniedStaticFile,
 } from '../../../src/workspace/static_files/common'
+import { File } from '../../../src/workspace/dir_store'
 
 export const mockStaticFilesSource = (): StaticFilesSource => ({
   getStaticFile: jest.fn(),
@@ -32,6 +33,8 @@ export const mockStaticFilesSource = (): StaticFilesSource => ({
 export const defaultContent = 'ZOMG'
 const defaultPath = 'path'
 export const defaultBuffer = Buffer.from(defaultContent)
+export const defaultFile: File<Buffer> = { filename: defaultPath, buffer: defaultBuffer }
+
 export const hashedContent = calculateStaticFileHash(defaultBuffer)
 
 export const exampleStaticFileWithHash = new StaticFile({

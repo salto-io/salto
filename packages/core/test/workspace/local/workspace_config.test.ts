@@ -27,7 +27,7 @@ import { NoEnvsConfig, NoWorkspaceConfig } from '../../../src/local-workspace/er
 jest.mock('../../../src/local-workspace/dir_store')
 describe('workspace local config', () => {
   const SALESFORCE = 'adapters/salesforce'
-  const mockDirStoreInstance = (obj: Values): dirStore.DirectoryStore => ({
+  const mockDirStoreInstance = (obj: Values): dirStore.DirectoryStore<string> => ({
     get: jest.fn().mockImplementation(
       (name: string) => {
         if (!Object.keys(obj).includes(name)) return undefined
@@ -45,7 +45,7 @@ describe('workspace local config', () => {
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
     clone: jest.fn(),
-  } as unknown as dirStore.DirectoryStore)
+  } as unknown as dirStore.DirectoryStore<string>)
   const repoDirStore = mockDirStoreInstance({
     [`${WORKSPACE_CONFIG_NAME}.nacl`]: `
     workspace {
@@ -92,8 +92,8 @@ describe('workspace local config', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
     const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
-    mockCreateDirStore.mockImplementation((baseDir: string) =>
-      (baseDir.startsWith(getSaltoHome()) ? prefDirStore : repoDirStore))
+    mockCreateDirStore.mockImplementation(params =>
+      (params.baseDir.startsWith(getSaltoHome()) ? prefDirStore : repoDirStore))
     configSource = await workspaceConfigSource('bla')
   })
 
@@ -164,7 +164,7 @@ describe('workspace local config', () => {
           }
           return undefined
         }),
-      } as unknown as dirStore.DirectoryStore
+      } as unknown as dirStore.DirectoryStore<string>
       mockCreateDirStore.mockImplementation(() => secondWorkspaceError)
       const conf = await workspaceConfigSource('bla')
       await expect(conf.getWorkspaceConfig()).rejects.toThrow(new NoWorkspaceConfig())

@@ -48,7 +48,7 @@ describe('configs', () => {
     delete: mockDelete,
     renameFile: mockRename,
     flush: mockFlush,
-  } as unknown as DirectoryStore
+  } as unknown as DirectoryStore<string>
 
   beforeEach(async () => {
     dumpedConfig = { filename: `${adapter}.nacl`, buffer: await dumpElements([config], {}) }

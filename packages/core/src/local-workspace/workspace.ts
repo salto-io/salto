@@ -59,26 +59,29 @@ export const getNaclFilesSourceParams = (
   cacheDir: string,
   excludeDirs: string[] = []
 ): {
-  naclFilesStore: dirStore.DirectoryStore
+  naclFilesStore: dirStore.DirectoryStore<string>
   cache: parseCache.ParseResultCache
   staticFileSource: staticFiles.StaticFilesSource
 } => {
   const dirPathToIgnore = (dirPath: string): boolean =>
     !(excludeDirs.concat(getConfigDir(sourceBaseDir))).includes(dirPath)
 
-  const naclFilesStore = localDirectoryStore(
-    sourceBaseDir,
-    `*${FILE_EXTENSION}`,
-    dirPathToIgnore,
-  )
+  const naclFilesStore = localDirectoryStore({
+    baseDir: sourceBaseDir,
+    encoding: 'utf8',
+    fileFilter: `*${FILE_EXTENSION}`,
+    directoryFilter: dirPathToIgnore,
+  })
 
-  const naclStaticFilesStore = localDirectoryStore(
-    path.join(sourceBaseDir, STATIC_RESOURCES_FOLDER),
-    undefined,
-    dirPathToIgnore
-  )
+  const naclStaticFilesStore = localDirectoryStore({
+    baseDir: path.join(sourceBaseDir, STATIC_RESOURCES_FOLDER),
+    directoryFilter: dirPathToIgnore,
+  })
 
-  const cacheStore = localDirectoryStore(cacheDir)
+  const cacheStore = localDirectoryStore({
+    baseDir: cacheDir,
+    encoding: 'utf8',
+  })
   const staticFileSource = buildStaticFilesSource(
     naclStaticFilesStore,
     buildLocalStaticFilesCache(cacheDir),
@@ -135,7 +138,10 @@ const locateWorkspaceRoot = async (lookupDir: string): Promise<string|undefined>
 }
 
 const credentialsSource = (localStorage: string): cs.ConfigSource =>
-  configSource(localDirectoryStore(path.join(localStorage, CREDENTIALS_CONFIG_PATH)))
+  configSource(localDirectoryStore({
+    baseDir: path.join(localStorage, CREDENTIALS_CONFIG_PATH),
+    encoding: 'utf8',
+  }))
 
 export const loadLocalWorkspace = async (lookupDir: string):
 Promise<Workspace> => {

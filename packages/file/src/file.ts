@@ -20,15 +20,11 @@ import mkdirpLib from 'mkdirp'
 import path from 'path'
 import { strings } from '@salto-io/lowerdash'
 
-const statP = promisify(fs.stat)
-const readFileP = promisify(fs.readFile)
-const copyFileP = promisify(fs.copyFile)
-const writeFileP = promisify(fs.writeFile)
-const readDirP = promisify(fs.readdir)
-
 export const rm = promisify(rimRafLib)
 export const mkdirp = promisify(mkdirpLib)
-export const rename = promisify(fs.rename)
+
+export const { rename, copyFile, writeFile, readFile, readdir: readDir } = fs.promises
+export const { statSync, existsSync, readFileSync } = fs
 
 export const notFoundAsUndefined = <
   TArgs extends unknown[],
@@ -48,9 +44,7 @@ export const notFoundAsUndefined = <
     }
   }
 
-export const stat = (filename: string): Promise<fs.Stats> => statP(filename)
-export const { statSync } = fs
-
+export const stat = (filename: string): Promise<fs.Stats> => fs.promises.stat(filename)
 stat.notFoundAsUndefined = notFoundAsUndefined(stat)
 
 export const isSubDirectory = (
@@ -61,15 +55,9 @@ export const isSubDirectory = (
   return !relative.startsWith('..') && !path.isAbsolute(relative)
 }
 
-export const readDir = async (
-  dirPath: string
-): Promise<string[]> => readDirP(dirPath)
-
 export const isEmptyDir = async (
   dirPath: string
 ): Promise<boolean> => (await readDir(dirPath)).length === 0
-
-export const { existsSync } = fs
 
 export const exists = async (
   filename: string
@@ -77,38 +65,23 @@ export const exists = async (
 
 export const readTextFileSync = (
   filename: string,
-): string => fs.readFileSync(filename, 'utf8')
+): string => fs.readFileSync(filename, { encoding: 'utf8' })
 
 export const readTextFile = (
   filename: string,
-): Promise<string> => readFileP(filename, { encoding: 'utf8' })
-
-readTextFile.notFoundAsUndefined = notFoundAsUndefined(readTextFile)
-
-export const readFile = (filename: string): Promise<Buffer> => readFileP(filename)
-
-readFile.notFoundAsUndefined = notFoundAsUndefined(readFile)
-
-export const writeFile = (
-  filename: string,
-  contents: Buffer | string,
-): Promise<void> => writeFileP(filename, contents, { encoding: 'utf8' })
+): Promise<string> => readFile(filename, { encoding: 'utf8' })
 
 export const appendTextFile = (
   filename: string,
   contents: string,
-): Promise<void> => writeFileP(filename, contents, { flag: 'a' })
-
-export const copyFile: (
-  sourcePath: string,
-  destPath: string,
-) => Promise<void> = copyFileP
+): Promise<void> => writeFile(filename, contents, { encoding: 'utf8', flag: 'a' })
 
 export const replaceContents = async (
   filename: string,
-  contents: Buffer | string
+  contents: Buffer | string,
+  encoding?: string,
 ): Promise<void> => {
   const tempFilename = `${filename}.tmp.${strings.insecureRandomString()}`
-  await writeFile(tempFilename, contents)
+  await writeFile(tempFilename, contents, { encoding })
   await rename(tempFilename, filename)
 }

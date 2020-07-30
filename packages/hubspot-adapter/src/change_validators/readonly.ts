@@ -16,8 +16,7 @@
 import _ from 'lodash'
 import { ChangeError, isModificationDiff, InstanceElement, ChangeValidator, isInstanceChange } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { resolveValues } from '@salto-io/adapter-utils'
-import { getLookUpName } from '../transformers/transformer'
+import { getLookUpName, resolveValues } from '../transformers/transformer'
 import { OBJECTS_NAMES, FORM_FIELDS, MARKETING_EMAIL_FIELDS, CONTACT_PROPERTY_FIELDS } from '../constants'
 
 const readOnlyTypeToFields = {

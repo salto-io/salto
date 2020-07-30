@@ -31,7 +31,9 @@ export type WorkspaceConfigSource = wcs.WorkspaceConfigSource & {
 
 export const workspaceConfigSource = async (baseDir: string, localStorage?: string):
 Promise<WorkspaceConfigSource> => {
-  const repoCs = configSource.configSource(localDirectoryStore(getConfigDir(baseDir)))
+  const repoCs = configSource.configSource(
+    localDirectoryStore({ baseDir: getConfigDir(baseDir), encoding: 'utf8' })
+  )
   const workspaceConf = (await repoCs.get(WORKSPACE_CONFIG_NAME))?.value
 
   if (_.isUndefined(workspaceConf) && _.isUndefined(localStorage)) {
@@ -40,7 +42,9 @@ Promise<WorkspaceConfigSource> => {
 
   const computedLocalStorage = localStorage
   || path.join(getSaltoHome(), `${workspaceConf?.name}-${workspaceConf?.uid}`)
-  const localCs = configSource.configSource(localDirectoryStore(computedLocalStorage))
+  const localCs = configSource.configSource(
+    localDirectoryStore({ baseDir: computedLocalStorage, encoding: 'utf8' })
+  )
   return {
     localStorage: computedLocalStorage,
     getWorkspaceConfig: async (): Promise<WorkspaceConfig> => {

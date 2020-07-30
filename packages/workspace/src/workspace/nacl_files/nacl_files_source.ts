@@ -130,7 +130,7 @@ const getFunctions = (staticFileSource: StaticFilesSource): Functions => ({
 })
 
 export const getParsedNaclFiles = async (
-  naclFilesStore: DirectoryStore,
+  naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource
 ): Promise<ParsedNaclFile[]> => {
@@ -169,7 +169,7 @@ Promise<NaclFilesState> => {
 }
 
 const buildNaclFilesSource = (
-  naclFilesStore: DirectoryStore,
+  naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
   initState?: Promise<NaclFilesState>
@@ -382,7 +382,7 @@ const buildNaclFilesSource = (
 }
 
 export const naclFilesSource = (
-  naclFilesStore: DirectoryStore,
+  naclFilesStore: DirectoryStore<string>,
   cache: ParseResultCache,
   staticFileSource: StaticFilesSource,
   parsedFiles?: ParsedNaclFile[],

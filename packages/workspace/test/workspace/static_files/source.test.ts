@@ -24,12 +24,12 @@ import {
 
 import {
   hashedContent, exampleStaticFileWithHash,
-  exampleStaticFileWithContent, defaultBuffer,
+  exampleStaticFileWithContent, defaultBuffer, defaultFile,
 } from './common.test'
 
 describe('Static Files Source', () => {
   let staticFilesSource: StaticFilesSource
-  let mockDirStore: SyncDirectoryStore
+  let mockDirStore: SyncDirectoryStore<Buffer>
   let mockCacheStore: StaticFilesCache
   beforeEach(() => {
     mockCacheStore = {
@@ -76,9 +76,7 @@ describe('Static Files Source', () => {
       })
       it('find when matching', async () => {
         const filepathFromCache = 'filepathfromcache'
-        mockDirStore.get = jest.fn().mockResolvedValue({
-          buffer: 'ZOMG',
-        })
+        mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
         mockDirStore.mtimestamp = jest.fn(
           (filepath: string): Promise<number | undefined> =>
             Promise.resolve(
@@ -102,9 +100,7 @@ describe('Static Files Source', () => {
       it('should not hash if in cache and file not modified', async () => {
         const filepathFromCache = 'filepathfromcache'
         mockDirStore.get = jest.fn().mockResolvedValue(undefined)
-        mockDirStore.getSync = jest.fn().mockReturnValue({
-          buffer: 'ZOMG',
-        })
+        mockDirStore.getSync = jest.fn().mockReturnValue(defaultFile)
         mockDirStore.mtimestamp = jest.fn(
           (filepath: string): Promise<number | undefined> =>
             Promise.resolve(
@@ -123,14 +119,12 @@ describe('Static Files Source', () => {
         expect(result).toHaveProperty('hash', 'aaa')
         expect(mockDirStore.getSync).not.toHaveBeenCalled()
         const staticFileRes = result as StaticFile
-        expect(staticFileRes.content).toEqual(Buffer.from('ZOMG'))
+        expect(staticFileRes.content).toEqual(defaultBuffer)
         expect(mockDirStore.getSync).toHaveBeenCalled()
       })
       it('should hash if in cache and file modified is newer', async () => {
         const filepathFromCache = 'filepathfromcache'
-        mockDirStore.get = jest.fn().mockResolvedValue({
-          buffer: 'ZOMG',
-        })
+        mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
         mockDirStore.mtimestamp = jest.fn(
           (filepath: string): Promise<number | undefined> =>
             Promise.resolve(
@@ -149,9 +143,7 @@ describe('Static Files Source', () => {
         return expect(result).toHaveProperty('hash', hashedContent)
       })
       it('should hash if not cache', async () => {
-        mockDirStore.get = jest.fn().mockResolvedValue({
-          buffer: 'ZOMG',
-        })
+        mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
         mockDirStore.mtimestamp = jest.fn(
           (filepath: string): Promise<number | undefined> =>
             Promise.resolve(
@@ -178,9 +170,7 @@ describe('Static Files Source', () => {
   })
   describe('Get Static File For Adapter', () => {
     it('should find buffer if in dir store', async () => {
-      mockDirStore.get = jest.fn().mockResolvedValue({
-        buffer: 'ZOMG',
-      })
+      mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
       return expect(staticFilesSource.getContent(exampleStaticFileWithHash.filepath))
         .resolves.toEqual(defaultBuffer)
     })
@@ -225,9 +215,7 @@ describe('Static Files Source', () => {
         modified: 100,
         hash: 'aaa',
       })
-      mockDirStore.get = jest.fn().mockResolvedValue({
-        buffer: 'ZOMG',
-      })
+      mockDirStore.get = jest.fn().mockResolvedValue(defaultFile)
 
       await expect(staticFilesSource.getContent(exampleStaticFileWithHash.filepath))
         .resolves.toEqual(defaultBuffer)

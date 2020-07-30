@@ -25,7 +25,7 @@ import { parse } from '../../../src/parser'
 
 jest.mock('../../../src/parser')
 describe('Nacl Files Source', () => {
-  let mockDirStore: DirectoryStore
+  let mockDirStore: DirectoryStore<string>
   let mockCache: ParseResultCache
   let mockedStaticFilesSource: StaticFilesSource
   const mockParse = parse as jest.Mock

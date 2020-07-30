@@ -27,9 +27,7 @@ const WRITE_CONCURRENCY = 100
 const DELETE_CONCURRENCY = 100
 const RENAME_CONCURRENCY = 100
 
-type FileMap<T extends dirStore.ContentType> = {
-  [key: string]: dirStore.File<T>
-}
+type FileMap<T extends dirStore.ContentType> = Record<string, dirStore.File<T>>
 
 const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,

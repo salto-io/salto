@@ -206,9 +206,6 @@ const buildNaclFilesSource = (
     return (await getState()).elementsIndex[topLevelID.parent.getFullName()] || []
   }
 
-  const getNaclFile = async (filename: string): Promise<NaclFile | undefined> =>
-    naclFilesStore.get(filename)
-
   const getSourceMap = async (filename: string): Promise<SourceMap> => {
     const parsedNaclFile = (await getState()).parsedNaclFiles[filename]
     const key = cacheResultKey(parsedNaclFile.filename, parsedNaclFile.timestamp)
@@ -216,7 +213,7 @@ const buildNaclFilesSource = (
     if (cachedResult && cachedResult.sourceMap) {
       return cachedResult.sourceMap
     }
-    const naclFile = (await getNaclFile(filename))
+    const naclFile = (await naclFilesStore.get(filename))
     if (_.isUndefined(naclFile)) {
       log.error('failed to find %s in NaCl file store', filename)
       return new SourceMap()
@@ -238,7 +235,7 @@ const buildNaclFilesSource = (
 
   const updateNaclFiles = async (changes: DetailedChange[]): Promise<void> => {
     const getNaclFileData = async (filename: string): Promise<string> => {
-      const naclFile = await getNaclFile(filename)
+      const naclFile = await naclFilesStore.get(filename)
       return naclFile ? naclFile.buffer : ''
     }
 
@@ -330,7 +327,7 @@ const buildNaclFilesSource = (
     getTotalSize: async (): Promise<number> =>
       _.sum(await Promise.all([naclFilesStore.getTotalSize(), staticFileSource.getTotalSize()])),
 
-    getNaclFile,
+    getNaclFile: filename => naclFilesStore.get(filename),
 
     getElements: async filename =>
       Object.values((await getState()).parsedNaclFiles[filename]?.elements) || [],

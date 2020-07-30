@@ -15,7 +15,6 @@
 */
 import readdirp from 'readdirp'
 import path from 'path'
-import { Stats } from 'fs'
 import _ from 'lodash'
 import * as fileUtils from '@salto-io/file'
 import { promises } from '@salto-io/lowerdash'
@@ -32,7 +31,7 @@ type FileMap<T extends dirStore.ContentType> = {
   [key: string]: dirStore.File<T>
 }
 
-const buildLocalDirectoryStore = <T extends dirStore.ContentType> (
+const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
   baseDir: string,
   encoding?: string,
   fileFilter?: string,
@@ -75,10 +74,9 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType> (
     return await fileUtils.exists(absFileName)
       ? {
         filename,
-        buffer: await fileUtils.readFile(absFileName, encoding),
-        timestamp: (await fileUtils.stat(absFileName) as Stats).mtimeMs,
-      } as dirStore.File<T>
-
+        buffer: await fileUtils.readFile(absFileName, { encoding }) as T,
+        timestamp: (await fileUtils.stat(absFileName)).mtimeMs,
+      }
       : undefined
   }
 
@@ -87,9 +85,9 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType> (
     return fileUtils.existsSync(absFileName)
       ? {
         filename,
-        buffer: fileUtils.readFileSync(absFileName, { encoding }),
-        timestamp: (fileUtils.statSync(absFileName) as Stats).mtimeMs,
-      } as dirStore.File<T>
+        buffer: fileUtils.readFileSync(absFileName, { encoding }) as T,
+        timestamp: fileUtils.statSync(absFileName).mtimeMs,
+      }
       : undefined
   }
 

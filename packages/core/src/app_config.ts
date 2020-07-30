@@ -133,7 +133,7 @@ const mergeConfigWithEnv = async (config: AppConfig): Promise<AppConfig> => {
 }
 
 const configFromNaclFile = async (filepath: string): Promise<AppConfig> => {
-  const buf = await readFile(filepath) as Buffer
+  const buf = await readFile(filepath)
   const configInstance = (await parse(buf, filepath)).elements.pop() as InstanceElement
   if (!configInstance) throw new AppConfigParseError()
 

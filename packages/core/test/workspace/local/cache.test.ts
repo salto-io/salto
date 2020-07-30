@@ -107,7 +107,7 @@ describe('localParseResultCache', () => {
       expect(parseResultFromCache).toBeDefined()
       const expectedCacheFileName = path.resolve(mockBaseDirPath, 'blabla/blurprint3.jsonl')
       expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(expectedCacheFileName)
-      expect(readFile).toHaveBeenCalledWith(expectedCacheFileName, 'utf8')
+      expect(readFile).toHaveBeenCalledWith(expectedCacheFileName, { encoding: 'utf8' })
       // hack to make compiler happy :(
       if (parseResultFromCache !== undefined) {
         expect(parseResultFromCache.elements[0].elemID.name).toBe(
@@ -145,7 +145,7 @@ describe('localParseResultCache', () => {
       const parseResultFromCache = await cache.get({ filename: 'blabla/malformed.nacl', lastModified: 0 })
       const mockMalformedCacheLoc = path.resolve(mockBaseDirPath, 'blabla/malformed.jsonl')
       expect(stat.notFoundAsUndefined).toHaveBeenCalledWith(mockMalformedCacheLoc)
-      expect(readFile).toHaveBeenCalledWith(mockMalformedCacheLoc, 'utf8')
+      expect(readFile).toHaveBeenCalledWith(mockMalformedCacheLoc, { encoding: 'utf8' })
       expect(parseResultFromCache).toBeUndefined()
     })
   })

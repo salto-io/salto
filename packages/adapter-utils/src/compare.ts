@@ -95,6 +95,35 @@ export const detailedCompare = (
   before: ChangeDataType,
   after: ChangeDataType
 ): DetailedChange[] => {
+
+  const getFieldsChanges = (before: ObjectType, after: ObjectType): DetailedChange[] => {
+    const removeChanges = Object.keys(before.fields)
+      .filter(fieldName => after.fields[fieldName] === undefined)
+      .map(fieldName => ({
+        action: 'remove', 
+        data: {before: before.fields[fieldName]}, 
+        id: before.fields[fieldName].elemID
+      })) as DetailedChange[]
+    
+    const addChanges = Object.keys(after.fields)
+      .filter(fieldName => before.fields[fieldName] === undefined)
+      .map(fieldName => ({
+        action: 'add', 
+        data: {after: after.fields[fieldName]}, 
+        id: after.fields[fieldName].elemID
+      })) as DetailedChange[]
+  
+    const modifyChanges = Object.keys(after.fields)
+      .filter(fieldName => before.fields[fieldName] !== undefined)
+      .map(fieldName => detailedCompare(before.fields[fieldName], after.fields[fieldName]))
+    
+    return [
+      ... removeChanges,
+      ... addChanges,
+      ..._.flatten(modifyChanges) as DetailedChange[]
+    ]
+  }
+
   // A special case to handle isList changes in fields.
   // should only happen if we misidentified the type
   // in fetch. See SALTO-322
@@ -119,5 +148,9 @@ export const detailedCompare = (
     after.elemID.isTopLevel() ? after.elemID.createNestedID('attr') : after.elemID,
     before.annotations, after.annotations
   )
-  return [...annotationTypeChanges, ...annotationChanges]
+
+  const fieldChanges = isObjectType(before) && isObjectType(after) 
+    ? getFieldsChanges(before, after)
+    : []
+  return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges]
 }

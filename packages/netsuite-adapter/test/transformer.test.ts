@@ -236,7 +236,7 @@ describe('Transformer', () => {
     })
 
     it('should add content value with fileContent as static file', () => {
-      const emailTemplateContent = 'Email template content'
+      const emailTemplateContent = Buffer.from('Email template content')
       const emailTemplateCustomizationInfo = {
         typeName: EMAIL_TEMPLATE,
         scriptId: 'custemailtmpl_my_script_id',
@@ -254,7 +254,7 @@ describe('Transformer', () => {
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         content: new StaticFile({
           filepath: `netsuite/emailtemplate/${NAME_FROM_GET_ELEM_ID}custemailtmpl_my_script_id.html`,
-          content: Buffer.from(emailTemplateContent),
+          content: emailTemplateContent,
         }),
       })
     })
@@ -283,7 +283,7 @@ describe('Transformer', () => {
           description: 'file description',
         },
         path: ['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder', 'content.html'],
-        fileContent: 'dummy file content',
+        fileContent: Buffer.from('dummy file content'),
       }
 
       const folderCustomizationInfo: FolderCustomizationInfo = {
@@ -403,6 +403,19 @@ describe('Transformer', () => {
         + '  <name>elementName</name>\n'
         + '  <addressTemplate><![CDATA[<myCdata><field>whoohoo]]></addressTemplate>\n'
         + '</addressForm>\n'))
+    })
+
+    it('should transform fileContent primitive field', () => {
+      const fileContent = Buffer.from('file content')
+      const fileInstance = new InstanceElement('elementName',
+        fileCabinetTypes[FILE], {
+          name: 'elementName',
+          [PATH]: '/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+          content: fileContent,
+        })
+      const customizationInfo = toCustomizationInfo(fileInstance)
+      expect(isFileCustomizationInfo(customizationInfo)).toEqual(true)
+      expect((customizationInfo as FileCustomizationInfo).fileContent).toEqual(fileContent)
     })
 
     it('should transform when cdata primitive field is undefined', () => {

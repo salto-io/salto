@@ -96,7 +96,7 @@ describe('Adapter', () => {
         values: {
         },
         path: ['a', 'b'],
-        fileContent: 'Dummy content',
+        fileContent: Buffer.from('Dummy content'),
       }
 
       const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'

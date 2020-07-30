@@ -120,7 +120,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
     if (isFileCustomizationInfo(customizationInfo)) {
       valuesWithTransformedAttrs[(fileContentField as Field).name] = new StaticFile({
         filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.join('/')}`,
-        content: Buffer.from(customizationInfo.fileContent),
+        content: customizationInfo.fileContent,
       })
     }
   }
@@ -129,7 +129,7 @@ export const createInstanceElement = (customizationInfo: CustomizationInfo, type
   if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
       filepath: `${NETSUITE}/${type.elemID.name}/${instanceName}.${customizationInfo.fileExtension}`,
-      content: Buffer.from(customizationInfo.fileContent),
+      content: customizationInfo.fileContent,
     })
   }
 
@@ -207,6 +207,9 @@ export const toCustomizationInfo = (instance: InstanceElement): CustomizationInf
     }
     if (fieldType.isEqual(fieldTypes.cdata as PrimitiveType)) {
       return { [CDATA_TAG_NAME]: value }
+    }
+    if (fieldType.isEqual(fieldTypes.fileContent as PrimitiveType)) {
+      return value
     }
     return String(value)
   }

@@ -5,6 +5,7 @@ salesforce {
     "ReportFolder",
     "Dashboard",
     "DashboardFolder",
+    "Profile",
   ]
   instancesRegexSkippedList = [
     "^EmailTemplate.MarketoEmailTemplates",

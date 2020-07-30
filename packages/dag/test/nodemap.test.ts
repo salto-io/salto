@@ -16,7 +16,8 @@
 import wu from 'wu'
 import _ from 'lodash'
 import {
-  NodeMap, NodeId, CircularDependencyError, DataNodeMap, WalkError, NodeSkippedError,
+  NodeId, CircularDependencyError, WalkError, NodeSkippedError,
+  NodeMap, DataNodeMap,
 } from '../src/nodemap'
 
 class MaxCounter {
@@ -40,10 +41,16 @@ class MaxCounter {
 }
 
 describe('NodeMap', () => {
-  let subject: NodeMap
+  class MyNodeMap extends NodeMap {
+    addNode(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
+      super.addNodeBase(id, dependsOn)
+    }
+  }
+
+  let subject: MyNodeMap
 
   beforeEach(() => {
-    subject = new NodeMap()
+    subject = new MyNodeMap()
   })
 
   describe('constructor', () => {
@@ -58,7 +65,7 @@ describe('NodeMap', () => {
       const s2 = new Set([3, 4])
 
       beforeEach(() => {
-        subject = new NodeMap([
+        subject = new MyNodeMap([
           [1, s1],
           [2, s2],
         ])
@@ -77,10 +84,10 @@ describe('NodeMap', () => {
   })
 
   describe('clone', () => {
-    let clone: NodeMap
+    let clone: MyNodeMap
 
     beforeEach(() => {
-      subject = new NodeMap([
+      subject = new MyNodeMap([
         [1, new Set<NodeId>([2, 3])],
         [2, new Set<NodeId>([3, 4])],
       ])
@@ -103,7 +110,7 @@ describe('NodeMap', () => {
 
   describe('keys and has', () => {
     beforeEach(() => {
-      subject = new NodeMap([
+      subject = new MyNodeMap([
         [1, new Set()],
         [1, new Set()],
       ])
@@ -130,7 +137,7 @@ describe('NodeMap', () => {
   describe('get', () => {
     describe('when a node exists and has successors', () => {
       beforeEach(() => {
-        subject = new NodeMap([
+        subject = new MyNodeMap([
           [1, new Set<NodeId>([2, 3])],
         ])
       })
@@ -142,7 +149,7 @@ describe('NodeMap', () => {
 
     describe('when a node exists and has no successors', () => {
       beforeEach(() => {
-        subject = new NodeMap([
+        subject = new MyNodeMap([
           [1, new Set<NodeId>([2])],
         ])
       })
@@ -154,7 +161,7 @@ describe('NodeMap', () => {
 
     describe('when a node does not exist', () => {
       beforeEach(() => {
-        subject = new NodeMap([
+        subject = new MyNodeMap([
           [1, new Set<NodeId>([2])],
         ])
       })
@@ -169,9 +176,42 @@ describe('NodeMap', () => {
     })
   })
 
+  describe('getReverse', () => {
+    beforeEach(() => {
+      subject = new MyNodeMap([
+        [1, new Set<NodeId>([2, 3])],
+        [2, new Set<NodeId>([3])],
+      ])
+    })
+
+    describe('when a node exists and has dependents', () => {
+      it('should return them', () => {
+        expect(subject.getReverse(2)).toEqual(new Set<NodeId>([1]))
+        expect(subject.getReverse(3)).toEqual(new Set<NodeId>([1, 2]))
+      })
+    })
+
+    describe('when a node exists and has no dependents', () => {
+      it('should return an empty set', () => {
+        expect(subject.getReverse(1)).toEqual(new Set<NodeId>())
+      })
+    })
+
+    describe('when a node does not exist', () => {
+      it('should return an empty set', () => {
+        expect(subject.getReverse(4)).toEqual(new Set<NodeId>())
+      })
+
+      it('should not add it to the graph', () => {
+        subject.getReverse(4)
+        expect(subject.edges()).toEqual([[1, 2], [1, 3], [2, 3]])
+      })
+    })
+  })
+
   describe('addNode', () => {
     beforeEach(() => {
-      subject = new NodeMap([
+      subject = new MyNodeMap([
         [1, new Set<NodeId>([2, 3])],
       ])
     })
@@ -233,7 +273,7 @@ describe('NodeMap', () => {
   describe('hasCycle', () => {
     describe('given a NodeMap with a single node with no deps', () => {
       beforeEach(() => {
-        subject = new NodeMap([[1, new Set<NodeId>()]])
+        subject = new MyNodeMap([[1, new Set<NodeId>()]])
       })
 
       it('should return false', () => {
@@ -243,7 +283,7 @@ describe('NodeMap', () => {
 
     describe('given a NodeMap with a single node the points to itself', () => {
       beforeEach(() => {
-        subject = new NodeMap([[1, new Set<NodeId>([1])]])
+        subject = new MyNodeMap([[1, new Set<NodeId>([1])]])
       })
 
       it('should return true', () => {
@@ -253,7 +293,7 @@ describe('NodeMap', () => {
 
     describe('given a NodeMap with a few nodes and a cycle', () => {
       beforeEach(() => {
-        subject = new NodeMap([
+        subject = new MyNodeMap([
           [1, new Set<NodeId>([2])],
           [2, new Set<NodeId>([3, 4])],
           [3, new Set<NodeId>([1])],
@@ -276,7 +316,7 @@ describe('NodeMap', () => {
 
     describe('given a NodeMap with a few nodes and no cycle', () => {
       beforeEach(() => {
-        subject = new NodeMap([
+        subject = new MyNodeMap([
           [1, new Set<NodeId>([2])],
           [2, new Set<NodeId>([3, 4])],
           [3, new Set<NodeId>([4])],
@@ -303,7 +343,7 @@ describe('NodeMap', () => {
   describe('deleteNode', () => {
     let result: NodeId[]
     beforeEach(() => {
-      subject = new NodeMap([
+      subject = new MyNodeMap([
         [1, new Set<NodeId>([2, 3])],
         [2, new Set<NodeId>([2, 3, 4])],
         [3, new Set<NodeId>([1])],
@@ -337,10 +377,10 @@ describe('NodeMap', () => {
   })
 
   describe('cloneWithout', () => {
-    let result: NodeMap
+    let result: MyNodeMap
 
     beforeEach(() => {
-      subject = new NodeMap([
+      subject = new MyNodeMap([
         [1, new Set<NodeId>([2, 3])],
         [2, new Set<NodeId>([2, 3, 4])],
         [3, new Set<NodeId>([1])],
@@ -855,25 +895,6 @@ describe('NodeMap', () => {
     })
   })
 
-  describe('getReverse', () => {
-    describe('for a simple graph', () => {
-      beforeEach(() => {
-        subject.addNode(2, [1, 3])
-        subject.addNode(3)
-        subject.addNode(4, [2])
-        subject.addNode(5, [1])
-      })
-
-      it('should return the nodes that depend on the node in question', () => {
-        expect(subject.getReverse(1)).toEqual(new Set([2, 5]))
-        expect(subject.getReverse(2)).toEqual(new Set([4]))
-        expect(subject.getReverse(3)).toEqual(new Set([2]))
-        expect(subject.getReverse(4)).toEqual(new Set())
-        expect(subject.getReverse(5)).toEqual(new Set())
-      })
-    })
-  })
-
   describe('addEdge', () => {
     describe('when nodes do not exist', () => {
       beforeEach(() => {
@@ -950,7 +971,7 @@ describe('NodeMap', () => {
 
   describe('doesCreateCycle', () => {
     let modificationResult: boolean
-    let origGraph: NodeMap
+    let origGraph: MyNodeMap
 
     beforeEach(() => {
       subject.addNode(1, [2])
@@ -994,6 +1015,7 @@ describe('DataNodeMap', () => {
   let n2d: object
   let n3d: object
   let n4d: object
+  let n5d: object
 
   beforeEach(() => {
     subject = new DataNodeMap<object>()
@@ -1001,6 +1023,7 @@ describe('DataNodeMap', () => {
     n2d = {}
     n3d = {}
     n4d = {}
+    n5d = {}
   })
 
   describe('addNode', () => {
@@ -1029,25 +1052,31 @@ describe('DataNodeMap', () => {
     let result: DataNodeMap<object>
 
     beforeEach(() => {
+      subject = new DataNodeMap<object>()
       subject.addNode(1, [2, 3], n1d)
       subject.addNode(2, [2, 3, 4], n2d)
       subject.addNode(3, [1], n3d)
       subject.addNode(4, [5, 2], n4d)
+      subject.addNode(5, [], n5d)
       result = subject.cloneWithout(new Set([3, 2]))
     })
 
     it('does not modify the original', () => {
       expect(result).not.toBe(subject)
       expect([...subject.get(3)]).toEqual([1])
-      expect(subject.getData(3)).toBe(n3d)
+      expect([...subject.get(2)]).toEqual([2, 3, 4])
+      expect([...subject.get(4)]).toEqual([5, 2])
     })
 
     describe('the result', () => {
       it('should not contain the specified no IDs in the keys', () => {
         expect(result.has(3)).toBeFalsy()
         expect(() => result.getData(3)).toThrow(/Node does not exist/)
+        expect([...result.get(3)]).toEqual([])
+
         expect(result.has(2)).toBeFalsy()
         expect(() => result.getData(2)).toThrow(/Node does not exist/)
+        expect([...result.get(2)]).toEqual([])
       })
 
       it('should not contain the specified node IDs in the deps', () => {

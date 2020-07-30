@@ -21,12 +21,16 @@ export class DefaultMap<K, V> extends Map<K, V> {
   }
 
   get(key: K): V {
-    if (this.has(key)) {
-      return super.get(key) as V
+    let result = super.get(key)
+    if (result === undefined) {
+      result = this.initDefault(key)
+      this.set(key, result)
     }
-    const res = this.initDefault(key)
-    this.set(key, res)
-    return res
+    return result
+  }
+
+  getOrUndefined(key: K): V | undefined {
+    return super.get(key)
   }
 }
 

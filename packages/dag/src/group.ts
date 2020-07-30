@@ -28,8 +28,9 @@ export interface Group<T> {
 
 export type GroupedNodeMap<T> = DataNodeMap<Group<T>>
 
-export const buildGroupedGraph = <T>(source: DataNodeMap<T>, groupKey: (id: NodeId) => string):
-GroupedNodeMap<T> => log.time(() => {
+export const buildGroupedGraph = <T>(
+  source: DataNodeMap<T>, groupKey: (id: NodeId) => string
+): GroupedNodeMap<T> => log.time(() => {
     const mergeCandidates = new Map<string, NodeId>()
     const itemToGroupId = new Map<NodeId, NodeId>()
 

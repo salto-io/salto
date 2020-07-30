@@ -100,16 +100,9 @@ class WalkErrors extends Map<NodeId, Error> {
 // Basic dependency map: nodeId => dependsOnNodeId[]
 // Does not store data other than IDs.
 // Includes logic to walk the graph in evaluation order, while removing each processed node.
-export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<NodeId>> {
-  private reverseNeighbors: collections.map.DefaultMap<NodeId, Set<NodeId>>
-
+export abstract class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<NodeId>> {
   constructor(entries?: Iterable<[NodeId, Set<NodeId>]>) {
-    const defaultInit = (): Set<NodeId> => new Set<NodeId>()
-    super(defaultInit, entries)
-    this.reverseNeighbors = new collections.map.DefaultMap(defaultInit)
-    wu(this).forEach(([id, deps]) => {
-      deps.forEach(dep => this.reverseNeighbors.get(dep).add(id))
-    })
+    super(() => new Set<NodeId>(), entries)
   }
 
   clone(): this {
@@ -131,11 +124,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     this.get(id)
   }
 
-  getReverse(id: NodeId): Set<NodeId> {
-    return this.reverseNeighbors.has(id)
-      ? this.reverseNeighbors.get(id)
-      : new Set()
-  }
+  abstract getReverse(id: NodeId): Set<NodeId>
 
   // returns nodes without dependencies - to be visited next in evaluation order
   freeNodes(source: Iterable<NodeId>): Iterable<NodeId> {
@@ -148,14 +137,9 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
 
   // deletes a node and returns the affected nodes (nodes that depend on the deleted node)
   deleteNode(id: NodeId): Set<NodeId> {
-    const outgoingNeighbors = this.get(id)
-    const incomingNeighbors = this.reverseNeighbors.get(id)
-    // Remove all edges that relate to the deleted node
+    const incomingNeighbors = new Set<NodeId>(this.getReverse(id))
     incomingNeighbors.forEach(n => this.get(n).delete(id))
-    outgoingNeighbors.forEach(n => this.reverseNeighbors.get(n).delete(id))
-    // Remove deleted node
     this.delete(id)
-    this.reverseNeighbors.delete(id)
     return incomingNeighbors
   }
 
@@ -185,12 +169,10 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
       return
     }
     this.get(id).delete(dependsOn)
-    this.reverseNeighbors.get(dependsOn).delete(id)
   }
 
   addEdge(from: NodeId, to: NodeId): void {
     this.get(from).add(to)
-    this.reverseNeighbors.get(to).add(from)
     // create "to" node if missing
     this.get(to)
   }
@@ -198,7 +180,6 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   clearEdges(): void {
     // Clear only values, we need to maintain the keys
     this.forEach(deps => deps.clear())
-    this.reverseNeighbors.clear()
   }
 
   edges(): [NodeId, NodeId][] {
@@ -301,14 +282,62 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 }
 
+const reverseMap = (
+  entries: Iterable<[NodeId, Set<NodeId>]>
+): collections.map.DefaultMap<NodeId, Set<NodeId>> => {
+  const result = new collections.map.DefaultMap<NodeId, Set<NodeId>>(() => new Set<NodeId>())
+  for (const [id, deps] of entries) {
+    for (const dep of deps) {
+      result.get(dep).add(id)
+    }
+  }
+  return result
+}
+
+// implements getReverse using another map
 export class NodeMap extends AbstractNodeMap {
-  addNode(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
-    return super.addNodeBase(id, dependsOn)
+  private readonly reverseMap: collections.map.DefaultMap<NodeId, Set<NodeId>>
+
+  constructor(entries?: Iterable<[NodeId, Set<NodeId>]>) {
+    super(entries)
+    this.reverseMap = reverseMap(this)
+  }
+
+  getReverse(id: NodeId): Set<NodeId> {
+    return this.reverseMap.getOrUndefined(id) ?? new Set()
+  }
+
+  addEdge(from: NodeId, to: NodeId): void {
+    super.addEdge(from, to)
+    this.reverseMap.get(to).add(from)
+  }
+
+  removeEdge(id: NodeId, dependsOn: NodeId): void {
+    super.removeEdge(id, dependsOn)
+    this.reverseMap.get(dependsOn).delete(id)
+  }
+
+  // deletes a node and returns the affected nodes (nodes that depend on the deleted node)
+  deleteNode(id: NodeId): Set<NodeId> {
+    this.get(id).forEach(n => this.reverseMap.get(n).delete(id))
+    const result = super.deleteNode(id)
+    this.reverseMap.delete(id)
+    return result
+  }
+
+  clearEdges(): void {
+    super.clearEdges()
+    this.reverseMap.clear()
+  }
+
+  clear(): void {
+    super.clear()
+    this.reverseMap.clear()
   }
 }
 
 // This class adds storage of node data to NodeMap
-export class DataNodeMap<T> extends AbstractNodeMap {
+export class DataNodeMap<T> extends NodeMap {
   protected readonly nodeData: Map<NodeId, T>
 
   constructor(

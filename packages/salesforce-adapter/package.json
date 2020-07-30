@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/salesforce-adapter",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "license": "Apache-2.0",
   "description": "Salto Salesforce adapter",
   "repository": {
@@ -32,11 +32,11 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.19",
-    "@salto-io/adapter-utils": "0.1.19",
-    "@salto-io/e2e-credentials-store": "0.1.19",
-    "@salto-io/logging": "0.1.19",
-    "@salto-io/lowerdash": "0.1.19",
+    "@salto-io/adapter-api": "0.1.20",
+    "@salto-io/adapter-utils": "0.1.20",
+    "@salto-io/e2e-credentials-store": "0.1.20",
+    "@salto-io/logging": "0.1.20",
+    "@salto-io/lowerdash": "0.1.20",
     "@types/requestretry": "^1.12.5",
     "fast-xml-parser": "^3.15.0",
     "humanize-duration": "^3.22.0",
@@ -44,18 +44,18 @@
     "jsforce-types": "https://github.com/salto-io/jsforce-types.git",
     "jszip": "^3.2.2",
     "lodash": "^4.17.19",
+    "mime-types": "^2.1.27",
     "requestretry": "^4.0.2",
     "stream": "0.0.2",
-    "wu": "^2.1.0",
-    "mime-types": "^2.1.27"
+    "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/persistent-pool": "0.1.19",
+    "@salto-io/persistent-pool": "0.1.20",
     "@types/jest": "^24.0.0",
     "@types/jszip": "^3.1.6",
     "@types/lodash": "^4.14.133",
-    "@types/node": "^12.7.1",
     "@types/mime-types": "^2.1.0",
+    "@types/node": "^12.7.1",
     "@typescript-eslint/eslint-plugin": "2.31.0",
     "@typescript-eslint/parser": "2.31.0",
     "eslint": "^6.2.2",

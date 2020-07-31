@@ -137,23 +137,6 @@ describe('file', () => {
     })
   })
 
-
-  describe('readFile.notFoundAsUndefined', () => {
-    describe('when the file exists', () => {
-      it('should return its contents as text', async () => {
-        const r = await file.readFile.notFoundAsUndefined(__filename)
-        expect(r).toEqual(await fs.promises.readFile(__filename))
-      })
-    })
-
-    describe('when the file does not exist', () => {
-      it('should return undefined', async () => {
-        const r = await file.readFile.notFoundAsUndefined('nosuchfile')
-        expect(r).toBeUndefined()
-      })
-    })
-  })
-
   describe('readTextFile', () => {
     describe('when the file does not exist', () => {
       it('should reject with ErrnoException', () => {
@@ -229,22 +212,6 @@ describe('file', () => {
       it('should return its contents', () => {
         const r = file.readTextFileSync(__filename)
         expect(r).toEqual(fs.readFileSync(__filename, { encoding: 'utf8' }))
-      })
-    })
-  })
-
-  describe('readTextFile.notFoundAsUndefined', () => {
-    describe('when the file exists', () => {
-      it('should return its contents as text', async () => {
-        const r = await file.readTextFile.notFoundAsUndefined(__filename)
-        expect(r).toEqual(await fs.promises.readFile(__filename, { encoding: 'utf8' }))
-      })
-    })
-
-    describe('when the file does not exist', () => {
-      it('should return undefined', async () => {
-        const r = await file.readTextFile.notFoundAsUndefined('nosuchfile')
-        expect(r).toBeUndefined()
       })
     })
   })

@@ -31,6 +31,8 @@ import { Errors } from '../../errors'
 
 const { series } = promises.array
 
+export const ENVS_PREFIX = 'envs'
+
 export class UnknownEnviornmentError extends Error {
   constructor(envName: string) {
     super(`Unknown enviornment ${envName}`)
@@ -96,14 +98,20 @@ const buildMultiEnvSource = (
     }
 
     return Object.keys(sources).filter(srcPrefix => srcPrefix !== commonSourceName)
-      .find(srcPrefix => isContained(fullName, srcPrefix))
+      .find(srcPrefix => isContained(fullName, path.join(ENVS_PREFIX, srcPrefix)))
   }
 
   const getSourceFromPrefix = (prefix?: string): NaclFilesSource =>
     (prefix && sources[prefix] ? sources[prefix] : commonSource())
 
-  const getRelativePath = (fullName: string, prefix?: string): string =>
-    (prefix && sources[prefix] ? fullName.slice(prefix.length + 1) : fullName)
+  const getRelativePath = (fullName: string, envName?: string): string => {
+    if (!envName) {
+      return fullName
+    }
+    const prefix = envName !== commonSourceName ? path.join(ENVS_PREFIX, envName) : envName
+    return (prefix && sources[envName] ? fullName.slice(prefix.length + 1) : fullName)
+  }
+
 
   const getSourceForNaclFile = (
     fullName: string
@@ -112,8 +120,10 @@ const buildMultiEnvSource = (
     return { relPath: getRelativePath(fullName, prefix), source: getSourceFromPrefix(prefix) }
   }
 
-  const buidFullPath = (basePath: string, relPath: string): string => (
-    path.join(basePath, relPath)
+  const buidFullPath = (envName: string, relPath: string): string => (
+    envName === commonSourceName
+      ? path.join(envName, relPath)
+      : path.join(ENVS_PREFIX, envName, relPath)
   )
 
   const getNaclFile = async (filename: string): Promise<NaclFile | undefined> => {

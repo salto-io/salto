@@ -42,7 +42,7 @@ export type ParseResultCache = AsyncCache<ParseResultKey, ParseResult> & {
 }
 
 export const parseResultCache = (
-  dirStore: DirectoryStore, staticFilesSource: StaticFilesSource
+  dirStore: DirectoryStore<string>, staticFilesSource: StaticFilesSource
 ): ParseResultCache => {
   const resolveCacheFileName = (key: ParseResultKey): string =>
     _.replace(key.filename, /.nacl$/, CACHE_EXTENSION)

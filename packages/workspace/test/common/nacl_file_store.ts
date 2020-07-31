@@ -77,27 +77,26 @@ type salesforce.lead {
   'willbempty.nacl': 'type nonempty { a = 2 }',
 }
 
-const naclFiles: Record<string, File> = _.mapValues(workspaceFiles,
+const naclFiles: Record<string, File<string>> = _.mapValues(workspaceFiles,
   (buffer, filename) => ({ filename, buffer }))
 
-export const mockDirStore = (exclude: string[] = ['error.nacl', 'dup.nacl']): DirectoryStore => (
-  {
-    list: jest.fn()
-      .mockResolvedValue(Object.keys(naclFiles).filter(name => !exclude.includes(name))),
-    get: jest.fn().mockImplementation((filename: string) => Promise.resolve(naclFiles[filename])),
-    set: jest.fn().mockImplementation(() => Promise.resolve()),
-    delete: jest.fn().mockImplementation(() => Promise.resolve()),
-    clear: jest.fn().mockImplementation(() => Promise.resolve()),
-    rename: jest.fn().mockImplementation(() => Promise.resolve()),
-    renameFile: jest.fn().mockImplementation(() => Promise.resolve()),
-    flush: jest.fn().mockImplementation(() => Promise.resolve()),
-    mtimestamp: jest.fn(),
-    getFiles: jest.fn().mockImplementation((filenames: string[]) =>
-      Promise.resolve(filenames.map(f => naclFiles[f]))),
-    getTotalSize: jest.fn(),
-    clone: () => mockDirStore(exclude),
-  }
-)
+export const mockDirStore = (exclude: string[] = ['error.nacl', 'dup.nacl']):
+  DirectoryStore<string> => ({
+  list: jest.fn()
+    .mockResolvedValue(Object.keys(naclFiles).filter(name => !exclude.includes(name))),
+  get: jest.fn().mockImplementation((filename: string) => Promise.resolve(naclFiles[filename])),
+  set: jest.fn().mockImplementation(() => Promise.resolve()),
+  delete: jest.fn().mockImplementation(() => Promise.resolve()),
+  clear: jest.fn().mockImplementation(() => Promise.resolve()),
+  rename: jest.fn().mockImplementation(() => Promise.resolve()),
+  renameFile: jest.fn().mockImplementation(() => Promise.resolve()),
+  flush: jest.fn().mockImplementation(() => Promise.resolve()),
+  mtimestamp: jest.fn(),
+  getFiles: jest.fn().mockImplementation((filenames: string[]) =>
+    Promise.resolve(filenames.map(f => naclFiles[f]))),
+  getTotalSize: jest.fn(),
+  clone: () => mockDirStore(exclude),
+})
 
 export const mockParseCache = (): ParseResultCache => ({
   put: () => Promise.resolve(),

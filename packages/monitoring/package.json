@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/monitoring",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "license": "Apache-2.0",
   "description": "monitor changes to salto elements",
   "repository": {
@@ -32,9 +32,9 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.19",
-    "@salto-io/core": "0.1.19",
-    "@salto-io/workspace": "0.1.19",
+    "@salto-io/adapter-api": "0.1.20",
+    "@salto-io/core": "0.1.20",
+    "@salto-io/workspace": "0.1.20",
     "@slack/web-api": "^5.10.0",
     "@types/diff": "^4.0.2",
     "@types/hogan.js": "^3.0.0",

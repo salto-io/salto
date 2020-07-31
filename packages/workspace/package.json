@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/workspace",
-  "version": "0.1.19",
+  "version": "0.1.20",
   "license": "Apache-2.0",
   "description": "Salto workspace",
   "repository": {
@@ -32,10 +32,10 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.1.19",
-    "@salto-io/adapter-utils": "0.1.19",
-    "@salto-io/logging": "0.1.19",
-    "@salto-io/lowerdash": "0.1.19",
+    "@salto-io/adapter-api": "0.1.20",
+    "@salto-io/adapter-utils": "0.1.20",
+    "@salto-io/logging": "0.1.20",
+    "@salto-io/lowerdash": "0.1.20",
     "fuse.js": "^3.4.5",
     "is-promise": "4.0.0",
     "lodash": "^4.17.19",
@@ -44,8 +44,8 @@
     "wu": "^2.1.0"
   },
   "devDependencies": {
-    "@salto-io/dag": "0.1.19",
-    "@salto-io/salesforce-adapter": "0.1.19",
+    "@salto-io/dag": "0.1.20",
+    "@salto-io/salesforce-adapter": "0.1.20",
     "@types/jest": "^24.0.0",
     "@types/lodash": "^4.14.133",
     "@types/moo": "^0.5.0",

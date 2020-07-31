@@ -18,11 +18,13 @@ import * as ws from '@salto-io/workspace'
 import { exists } from '@salto-io/file'
 import {
   initLocalWorkspace, ExistingWorkspaceError, NotAnEmptyWorkspaceError, NotAWorkspaceError,
-  loadLocalWorkspace, COMMON_ENV_PREFIX, ENVS_PREFIX, CREDENTIALS_CONFIG_PATH,
+  loadLocalWorkspace, COMMON_ENV_PREFIX, CREDENTIALS_CONFIG_PATH,
   loadLocalElementsSources,
 } from '../../../src/local-workspace/workspace'
 import { getSaltoHome } from '../../../src/app_config'
 import * as mockDirStore from '../../../src/local-workspace/dir_store'
+
+const { ENVS_PREFIX } = ws.nacl
 
 jest.mock('@salto-io/file', () => ({
   ...jest.requireActual('@salto-io/file'),
@@ -37,7 +39,7 @@ jest.mock('../../../src/local-workspace/dir_store')
 describe('local workspace', () => {
   const mockExists = exists as jest.Mock
   const mockCreateDirStore = mockDirStore.localDirectoryStore as jest.Mock
-  const mockDirStoreInstance = (): ws.dirStore.DirectoryStore => ({
+  const mockDirStoreInstance = (): ws.dirStore.DirectoryStore<string> => ({
     get: jest.fn().mockResolvedValue({ buffer: '', filename: '' }),
     set: jest.fn(),
     flush: jest.fn(),
@@ -46,11 +48,11 @@ describe('local workspace', () => {
     mtimestamp: jest.fn(),
     getFiles: jest.fn(),
     clone: jest.fn(),
-  } as unknown as ws.dirStore.DirectoryStore)
+  } as unknown as ws.dirStore.DirectoryStore<string>)
   const repoDirStore = mockDirStoreInstance()
   const localDirStore = mockDirStoreInstance()
-  mockCreateDirStore.mockImplementation((baseDir: string) =>
-    (baseDir.startsWith(getSaltoHome()) ? localDirStore : repoDirStore))
+  mockCreateDirStore.mockImplementation(params =>
+    (params.baseDir.startsWith(getSaltoHome()) ? localDirStore : repoDirStore))
   const toWorkspaceRelative = (dir: string): string =>
     (dir.startsWith(getSaltoHome())
       ? path.relative(getSaltoHome(), dir)
@@ -65,7 +67,7 @@ describe('local workspace', () => {
       expect(Object.keys(elemSources.sources)).toHaveLength(3)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(9)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
-        .map(toWorkspaceRelative)
+        .map(params => toWorkspaceRelative(params.baseDir))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env1'))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))
     })
@@ -95,7 +97,7 @@ describe('local workspace', () => {
       expect(Object.keys(envSources.sources)).toHaveLength(2)
       expect(envSources.commonSourceName).toBe(COMMON_ENV_PREFIX)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
-        .map(toWorkspaceRelative)
+        .map(params => toWorkspaceRelative(params.baseDir))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, envName))
       const uuid = mockInit.mock.calls[0][1]
       const localStorage = `${wsName}-${uuid}`
@@ -143,7 +145,7 @@ describe('local workspace', () => {
       expect(Object.keys(envSources.sources)).toHaveLength(3)
       expect(mockCreateDirStore).toHaveBeenCalledTimes(12)
       const dirStoresBaseDirs = mockCreateDirStore.mock.calls.map(c => c[0])
-        .map(toWorkspaceRelative)
+        .map(params => toWorkspaceRelative(params.baseDir))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'env2'))
       expect(dirStoresBaseDirs).toContain(path.join(ENVS_PREFIX, 'default'))
     })

@@ -13,27 +13,29 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export type File = {
+export type ContentType = string | Buffer
+
+export type File<T extends ContentType> = {
   filename: string
-  buffer: string
+  buffer: T
   timestamp?: number
 }
 
-export type DirectoryStore = {
+export type DirectoryStore<T extends ContentType> = {
   list(): Promise<string[]>
-  get(filename: string): Promise<File | undefined>
-  set(file: File): Promise<void>
+  get(filename: string): Promise<File<T> | undefined>
+  set(file: File<T>): Promise<void>
   delete(filename: string): Promise<void>
   clear(): Promise<void>
   rename(name: string): Promise<void>
   renameFile(name: string, newName: string): Promise<void>
   flush(): Promise<void>
   mtimestamp(filename: string): Promise<number | undefined>
-  getFiles(filenames: string[]): Promise<(File | undefined) []>
+  getFiles(filenames: string[]): Promise<(File<T> | undefined) []>
   getTotalSize(): Promise<number>
-  clone(): DirectoryStore
+  clone(): DirectoryStore<T>
 }
 
-export type SyncDirectoryStore = DirectoryStore & {
-  getSync(filename: string): File | undefined
+export type SyncDirectoryStore<T extends ContentType> = DirectoryStore<T> & {
+  getSync(filename: string): File<T> | undefined
 }

@@ -37,7 +37,7 @@ class ConfigParseError extends Error {
 }
 
 export const configSource = (
-  dirStore: DirectoryStore,
+  dirStore: DirectoryStore<string>,
 ): ConfigSource => {
   const filename = (name: string): string =>
     (name.endsWith(FILE_EXTENSION) ? name : name.concat(FILE_EXTENSION))

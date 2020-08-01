@@ -217,31 +217,19 @@ ${Prompts.SERVICE_ADD_HELP}`
   ): string => `Finished calculating the difference between ${toEnv} and ${fromEnv}.`
 
   public static readonly DIFF_CALC_DIFF_FAIL = 'Calculating diff failed!'
-  public static readonly TRACK_CALC_CHANGES_START = 'Moving the selected elements to the common folder.'
-  public static readonly TRACK_CALC_CHANGES_FINISH = 'Finished moving the selected elements.'
-  public static readonly TRACK_CALC_CHANGES_FAILED = (
+  public static readonly TRACK_START = 'Moving the selected elements to the common folder.'
+  public static readonly TRACK_FINISHED = 'Done moving the selected elements.'
+  public static readonly TRACK_FAILED = (
     error: string
   ): string => `Failed to move the selected elements to the common folder: ${error}`
-
-  public static readonly TRACK_FLUSH_WORKSPACE_START = 'Applying the changes to the workspace.'
-  public static readonly TRACK_FLUSH_WORKSPACE_FINISH = 'Finished applying the changes.'
-  public static readonly TRACK_FLUSH_WORKSPACE_FAILED = (
-    error: string
-  ): string => `Failed to apply the changes to the workspace: ${error}`
 
   public static readonly INVALID_IDS = (
     invalidIds: string
   ): string => `Failed to created element ID filters for: ${invalidIds}. Invalid Regex provided.`
 
-  public static readonly UNTRACK_CALC_CHANGES_START = 'Moving the selected elements out of the common folder.'
-  public static readonly UNTRACK_CALC_CHANGES_FINISH = 'Finished moving the selected elements.'
-  public static readonly UNTRACK_CALC_CHANGES_FAILED = (
+  public static readonly UNTRACK_START = 'Moving the selected elements out of the common folder.'
+  public static readonly UNTRACK_FINISHED = 'Done moving the selected elements.'
+  public static readonly UNTRACK_FAILED = (
     error: string
   ): string => `Failed to move the selected elements out of the common folder: ${error}`
-
-  public static readonly UNTRACK_FLUSH_WORKSPACE_START = 'Applying the changes to the workspace.'
-  public static readonly UNTRACK_FLUSH_WORKSPACE_FINISH = 'Finished applying the changes.'
-  public static readonly UNTRACK_FLUSH_WORKSPACE_FAILED = (
-    error: string
-  ): string => `Failed to apply the changes to the workspace: ${error}`
 }

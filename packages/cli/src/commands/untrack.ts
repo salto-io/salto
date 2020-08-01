@@ -24,7 +24,7 @@ import { environmentFilter } from '../filters/env'
 import { getCliTelemetry } from '../telemetry'
 import { loadWorkspace, getWorkspaceTelemetryTags } from '../workspace/workspace'
 import Prompts from '../prompts'
-import { formatStepStart, formatStepFailed, formatInvalidID } from '../formatter'
+import { formatStepStart, formatStepFailed, formatInvalidID, formatStepCompleted } from '../formatter'
 import { outputLine } from '../outputer'
 
 const log = logger(module)
@@ -87,23 +87,15 @@ export const command = (
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     cliTelemetry.start(workspaceTags)
     try {
-      outputLine(formatStepStart(Prompts.UNTRACK_CALC_CHANGES_START), output)
+      outputLine(formatStepStart(Prompts.UNTRACK_START), output)
       await workspace.untrack(ids)
-      outputLine(formatStepStart(Prompts.UNTRACK_CALC_CHANGES_FINISH), output)
-    } catch (e) {
-      cliTelemetry.failure()
-      outputLine(formatStepFailed(Prompts.UNTRACK_CALC_CHANGES_FAILED(e.message)), output)
-      return CliExitCode.AppError
-    }
-    try {
-      outputLine(formatStepStart(Prompts.UNTRACK_FLUSH_WORKSPACE_START), output)
       await workspace.flush()
-      outputLine(formatStepStart(Prompts.UNTRACK_FLUSH_WORKSPACE_FINISH), output)
+      outputLine(formatStepCompleted(Prompts.UNTRACK_FINISHED), output)
       cliTelemetry.success(workspaceTags)
       return CliExitCode.Success
     } catch (e) {
       cliTelemetry.failure()
-      outputLine(formatStepFailed(Prompts.UNTRACK_FLUSH_WORKSPACE_FAILED(e.message)), output)
+      outputLine(formatStepFailed(Prompts.UNTRACK_FAILED(e.message)), output)
       return CliExitCode.AppError
     }
   },

@@ -152,7 +152,7 @@ const createMergeableChange = async (
   }
 }
 
-export const routeFetch = async (
+export const routeOveride = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
@@ -185,6 +185,44 @@ export const routeFetch = async (
   }
 }
 
+export const routeAlign = async (
+  change: DetailedChange,
+  primarySource: NaclFilesSource,
+): Promise<RoutedChanges> => {
+  // All add changes to the current active env specific folder
+  if (change.action === 'add') {
+    return { primarySource: [change] }
+  }
+  // We drop the common projection of the change
+  const currentChanges = await projectChange(change, primarySource)
+  return {
+    primarySource: currentChanges,
+    commonSource: [],
+  }
+}
+
+export const routeFetch = async (
+  change: DetailedChange,
+  primarySource: NaclFilesSource,
+  commonSource: NaclFilesSource,
+  secondarySources: Record<string, NaclFilesSource>
+): Promise<RoutedChanges> => {
+  // All add changes to the current active env specific folder unless
+  // sec sources are empty - we only have 1 env so adds should go to common
+  if (change.action === 'add') {
+    return _.isEmpty(secondarySources)
+      ? { commonSource: [change] }
+      : { primarySource: [change] }
+  }
+  // We add to the current defining source.
+  const currentChanges = await projectChange(change, primarySource)
+  const commonChanges = await projectChange(change, commonSource)
+  return {
+    primarySource: currentChanges,
+    commonSource: commonChanges,
+  }
+}
+
 const getChangePathHint = async (
   change: DetailedChange,
   commonSource: NaclFilesSource
@@ -198,7 +236,7 @@ const getChangePathHint = async (
     : undefined
 }
 
-export const routeNewEnv = async (
+export const routeIsolated = async (
   change: DetailedChange,
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
@@ -308,13 +346,19 @@ export const routeChanges = async (
   secondarySources: Record<string, NaclFilesSource>,
   mode?: RoutingMode
 ): Promise<RoutedChanges> => {
-  const isIsolated = mode === 'isolated'
-  const changes = isIsolated
+  const changes = mode === 'isolated'
     ? await toMergeableChanges(rawChanges, primarySource, commonSource)
     : rawChanges
-  const routedChanges = await Promise.all(changes.map(c => (isIsolated
-    ? routeNewEnv(c, primarySource, commonSource, secondarySources)
-    : routeFetch(c, primarySource, commonSource, secondarySources))))
+
+  const routedChanges = await Promise.all(changes.map(c => {
+    switch (mode) {
+      case 'isolated': return routeIsolated(c, primarySource, commonSource, secondarySources)
+      case 'align': return routeAlign(c, primarySource)
+      case 'overide': return routeOveride(c, primarySource, commonSource, secondarySources)
+      default: return routeFetch(c, primarySource, commonSource, secondarySources)
+    }
+  }))
+
   const secondaryEnvsChanges = _.mergeWith(
     {},
     ...routedChanges.map(r => r.secondarySources || {}),

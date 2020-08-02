@@ -165,7 +165,7 @@ export const loggerRepo = (
   const baseChildren = new collections.map.DefaultMap<string, pino.Logger>(
     (namespace: string) => rootPinoLogger.child({ name: namespace })
   )
-  const childrenWithTags = [] as pino.Logger[]
+  const childrenWithTags: pino.Logger[] = []
 
   const loggerMaker: BaseLoggerMaker = (namespace: Namespace, newLogTags?: LogTags) => {
     const pinoLoggerWithoutTags = baseChildren.get(namespace)

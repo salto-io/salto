@@ -105,7 +105,7 @@ export const command = (
       workspace,
       output,
       changesToApply,
-      inputIsolated,
+      inputIsolated ? 'isolated' : 'default',
     )
     if (success) {
       outputLine(formatStepCompleted(Prompts.RESTORE_UPDATE_WORKSPACE_SUCCESS), output)

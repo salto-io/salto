@@ -55,8 +55,8 @@ describe('fetch command', () => {
   const mockUpdateWorkspace = mockCliWorkspace.updateWorkspace as jest.Mock
   const mockUpdateStateOnly = mockCliWorkspace.updateStateOnly as jest.Mock
   mockApplyChangesToWorkspace.mockImplementation(
-    ({ workspace, output, changes, isIsolated }) => (
-      mockUpdateWorkspace(workspace, output, changes, isIsolated)
+    ({ workspace, output, changes, mode }) => (
+      mockUpdateWorkspace(workspace, output, changes, mode)
     )
   )
   mockUpdateWorkspace.mockImplementation(ws =>
@@ -146,7 +146,6 @@ describe('fetch command', () => {
       )
       const mockEmptyApprove = jest.fn().mockResolvedValue([])
       const mockUpdateConfig = jest.fn().mockResolvedValue(true)
-      const mockApproveIsolatedModeTrue = jest.fn().mockResolvedValue(true)
 
       const mockWorkspace = (
         elements?: Element[],
@@ -201,8 +200,9 @@ describe('fetch command', () => {
             inputIsolated: false,
             shouldCalcTotalSize: true,
             inputServices: services,
-            approveIsolatedMode: mockApproveIsolatedModeTrue,
             stateOnly: false,
+            inputAlign: false,
+            inputOveride: false,
           })
         })
         it('should start at least one step', () => {
@@ -233,8 +233,9 @@ describe('fetch command', () => {
             shouldUpdateConfig: mockUpdateConfig,
             inputIsolated: false,
             shouldCalcTotalSize: true,
-            approveIsolatedMode: mockApproveIsolatedModeTrue,
             stateOnly: false,
+            inputAlign: false,
+            inputOveride: false,
           })
         })
         it('should not update workspace', () => {
@@ -277,8 +278,9 @@ describe('fetch command', () => {
             shouldUpdateConfig: mockShouldUpdateConfig,
             inputIsolated: false,
             shouldCalcTotalSize: true,
-            approveIsolatedMode: mockApproveIsolatedModeTrue,
             stateOnly: false,
+            inputAlign: false,
+            inputOveride: false,
           }
         })
 
@@ -325,15 +327,17 @@ describe('fetch command', () => {
               shouldUpdateConfig: mockUpdateConfig,
               inputIsolated: false,
               shouldCalcTotalSize: true,
-              approveIsolatedMode: mockApproveIsolatedModeTrue,
+
               stateOnly: false,
+              inputAlign: false,
+              inputOveride: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
           it('should deploy all changes', () => {
             const calls = findWsUpdateCalls(workspaceName)
             expect(calls).toHaveLength(1)
-            expect(calls[0].slice(2)).toEqual([changes, false])
+            expect(calls[0].slice(2)).toEqual([changes, 'default'])
           })
         })
         describe('when called with strict', () => {
@@ -354,15 +358,17 @@ describe('fetch command', () => {
               inputIsolated: true,
               shouldUpdateConfig: mockUpdateConfig,
               shouldCalcTotalSize: true,
-              approveIsolatedMode: mockApproveIsolatedModeTrue,
+
               stateOnly: false,
+              inputAlign: false,
+              inputOveride: false,
             })
             expect(result).toBe(CliExitCode.Success)
           })
           it('should forward strict mode', () => {
             const calls = findWsUpdateCalls(workspaceName)
             expect(calls).toHaveLength(1)
-            expect(calls[0].slice(2)).toEqual([changes, true])
+            expect(calls[0].slice(2)).toEqual([changes, 'isolated'])
           })
         })
         describe('when called with state only', () => {
@@ -384,8 +390,10 @@ describe('fetch command', () => {
                 inputIsolated: true,
                 shouldUpdateConfig: mockUpdateConfig,
                 shouldCalcTotalSize: true,
-                approveIsolatedMode: mockApproveIsolatedModeTrue,
+
                 stateOnly: true,
+                inputAlign: false,
+                inputOveride: false,
               })
             })
             it('should return OK status when state is updated', () => {
@@ -413,8 +421,10 @@ describe('fetch command', () => {
                 inputIsolated: true,
                 shouldUpdateConfig: mockUpdateConfig,
                 shouldCalcTotalSize: true,
-                approveIsolatedMode: mockApproveIsolatedModeTrue,
+
                 stateOnly: true,
+                inputAlign: false,
+                inputOveride: false,
               })
             })
             it('should return AppError status when state is updated', () => {
@@ -443,14 +453,16 @@ describe('fetch command', () => {
               shouldUpdateConfig: mockUpdateConfig,
               inputIsolated: false,
               shouldCalcTotalSize: true,
-              approveIsolatedMode: mockApproveIsolatedModeTrue,
+
               stateOnly: false,
+              inputAlign: false,
+              inputOveride: false,
             })
           })
           it('should deploy all changes', () => {
             const calls = findWsUpdateCalls(workspaceName)
             expect(calls).toHaveLength(1)
-            expect(calls[0].slice(2)).toEqual([changes, false])
+            expect(calls[0].slice(2)).toEqual([changes, 'default'])
           })
         })
         describe('when initial workspace is not empty', () => {
@@ -474,8 +486,10 @@ describe('fetch command', () => {
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
                 shouldCalcTotalSize: true,
-                approveIsolatedMode: mockApproveIsolatedModeTrue,
+
                 stateOnly: false,
+                inputAlign: false,
+                inputOveride: false,
               })
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls).toHaveLength(1)
@@ -502,8 +516,10 @@ describe('fetch command', () => {
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
                 shouldCalcTotalSize: true,
-                approveIsolatedMode: mockApproveIsolatedModeTrue,
+
                 stateOnly: false,
+                inputAlign: false,
+                inputOveride: false,
               })
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls).toHaveLength(1)
@@ -530,8 +546,10 @@ describe('fetch command', () => {
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
                 shouldCalcTotalSize: true,
-                approveIsolatedMode: mockApproveIsolatedModeTrue,
+
                 stateOnly: false,
+                inputAlign: false,
+                inputOveride: false,
               })
               const calls = findWsUpdateCalls(workspaceName)
               expect(calls).toHaveLength(1)
@@ -556,8 +574,10 @@ describe('fetch command', () => {
                 shouldUpdateConfig: mockUpdateConfig,
                 inputIsolated: false,
                 shouldCalcTotalSize: true,
-                approveIsolatedMode: mockApproveIsolatedModeTrue,
+
                 stateOnly: false,
+                inputAlign: false,
+                inputOveride: false,
               })
               expect(cliOutput.stderr.content).toContain('Error')
               const calls = findWsUpdateCalls(workspaceName)
@@ -601,8 +621,9 @@ describe('fetch command', () => {
             shouldUpdateConfig: mockUpdateConfig,
             inputIsolated: false,
             shouldCalcTotalSize: true,
-            approveIsolatedMode: mockApproveIsolatedModeTrue,
             stateOnly: false,
+            inputAlign: false,
+            inputOveride: false,
           })
         })
         it('should succeed', () => {
@@ -611,146 +632,6 @@ describe('fetch command', () => {
         it('should print merge errors', () => {
           expect(cliOutput.stderr.content).toContain(mocks.elements()[0].elemID.getFullName())
           expect(cliOutput.stderr.content).toContain('test merge error')
-        })
-      })
-      describe('isolated mode recommendations', () => {
-        const mockApproveIsolatedMode = jest.fn()
-
-        const mockFetchEmpty = jest.fn().mockResolvedValue(
-          {
-            changes: [],
-            mergeErrors: [],
-            success: true,
-          }
-        )
-        const runFetchWithExisting = async (
-          inputServices: string[],
-          existingServices: Record<string, string[]>,
-          currentEnv: string,
-          isolated: boolean,
-        ): Promise<void> => {
-          await fetchCommand({
-            workspace: mockWorkspace([], undefined, existingServices, currentEnv),
-            force: false,
-            interactive: false,
-            output: cliOutput,
-            cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
-            fetch: mockFetchEmpty,
-            getApprovedChanges: mockEmptyApprove,
-            shouldUpdateConfig: mockUpdateConfig,
-            inputIsolated: isolated,
-            shouldCalcTotalSize: true,
-            inputServices,
-            approveIsolatedMode: mockApproveIsolatedMode,
-            stateOnly: false,
-          })
-        }
-
-        const verifyUpdateCall = (inputServices: string[], isolated: boolean): boolean => {
-          const invokedServices = mockFetchEmpty.mock.calls[0][2]
-          const invokedIsolated = mockUpdateWorkspace.mock.calls[0][3]
-          return isolated === invokedIsolated
-            && _.isEqual(inputServices, invokedServices)
-        }
-
-        beforeEach(() => {
-          mockUpdateWorkspace.mockClear()
-          mockApproveIsolatedMode.mockReset()
-          mockFetchEmpty.mockClear()
-        })
-
-        describe('when user accept changes', () => {
-          it('should not suggest when no new services exist', async () => {
-            mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(
-              ['salesforce'],
-              { dev: ['salesforce'], prod: ['salesforce'] },
-              'dev',
-              false
-            )
-            expect(mockApproveIsolatedMode).not.toHaveBeenCalled()
-            expect(verifyUpdateCall(['salesforce'], false)).toBeTruthy()
-          })
-          it('should not suggest when no multiple envs exist', async () => {
-            mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(
-              ['salesforce'],
-              { dev: [] },
-              'dev',
-              false
-            )
-            expect(mockApproveIsolatedMode).not.toHaveBeenCalled()
-            expect(verifyUpdateCall(['salesforce'], false)).toBeTruthy()
-          })
-          it('should not suggest when fetching in isolated mode for only for new services', async () => {
-            mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(
-              ['salesforce'],
-              { dev: ['hubspot'], prod: ['salesforce', 'hubspot'] },
-              'dev',
-              true
-            )
-            expect(mockApproveIsolatedMode).not.toHaveBeenCalled()
-            expect(verifyUpdateCall(['salesforce'], true)).toBeTruthy()
-          })
-          it('should not suggest when fetching in isolated mode mode and all services are old', async () => {
-            mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(
-              ['salesforce', 'hubspot'],
-              { dev: ['salesforce', 'hubspot'], prod: ['salesforce', 'hubspot'] },
-              'dev',
-              true
-            )
-            expect(mockApproveIsolatedMode).not.toHaveBeenCalled()
-            expect(verifyUpdateCall(['salesforce', 'hubspot'], true)).toBeTruthy()
-          })
-          it('should suggest isolated mode mode when fetching a new env without isolated mode', async () => {
-            mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(
-              ['salesforce'],
-              { dev: [], prod: ['salesforce'] },
-              'dev',
-              false
-            )
-            expect(mockApproveIsolatedMode).toHaveBeenCalled()
-            expect(verifyUpdateCall(['salesforce'], true)).toBeTruthy()
-          })
-          it('should suggest when fetching in isolated mode with existing services and new services', async () => {
-            mockApproveIsolatedMode.mockResolvedValueOnce(true)
-            await runFetchWithExisting(
-              ['salesforce', 'hubspot'],
-              { dev: ['salesforce'], prod: ['salesforce', 'hubspot'] },
-              'dev',
-              true
-            )
-            expect(mockApproveIsolatedMode).toHaveBeenCalled()
-            expect(verifyUpdateCall(['hubspot'], true)).toBeTruthy()
-          })
-        })
-
-        describe('when the user rejects the recommendation', () => {
-          it('should not modify fetch parameters it the user rejects the recommendation without isolated', async () => {
-            mockApproveIsolatedMode.mockResolvedValueOnce(false)
-            await runFetchWithExisting(
-              ['salesforce'],
-              { dev: [], prod: ['salesforce'] },
-              'dev',
-              false
-            )
-            expect(mockApproveIsolatedMode).toHaveBeenCalled()
-            expect(verifyUpdateCall(['salesforce'], false)).toBeTruthy()
-          })
-          it('should not modify fetch parameters it the user rejects the recommendation with isolated', async () => {
-            mockApproveIsolatedMode.mockResolvedValueOnce(false)
-            await runFetchWithExisting(
-              ['salesforce', 'hubspot'],
-              { dev: [], prod: ['salesforce'] },
-              'dev',
-              true
-            )
-            expect(mockApproveIsolatedMode).toHaveBeenCalled()
-            expect(verifyUpdateCall(['salesforce', 'hubspot'], true)).toBeTruthy()
-          })
         })
       })
     })

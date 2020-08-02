@@ -19,7 +19,7 @@ import wu from 'wu'
 import { FetchChange, Tags, loadLocalWorkspace, StepEmitter } from '@salto-io/core'
 import { SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Workspace } from '@salto-io/workspace'
+import { Workspace, nacl } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
 import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
   formatFinishedLoading, formatWorkspaceAbort } from '../formatter'
@@ -31,6 +31,7 @@ import {
 } from '../callbacks'
 import Prompts from '../prompts'
 import { groupRelatedErrors } from './errors'
+
 
 const log = logger(module)
 
@@ -68,7 +69,7 @@ type ApplyChangesArgs = {
   cliTelemetry: CliTelemetry
   workspaceTags: Tags
   interactive: boolean
-  isIsolated: boolean
+  mode: nacl.RoutingMode
   force: boolean
   shouldCalcTotalSize: boolean
   applyProgress: EventEmitter<ApplyProgressEvents>
@@ -195,12 +196,12 @@ export const updateStateOnly = async (ws: Workspace,
 }
 
 export const updateWorkspace = async (ws: Workspace, cliOutput: CliOutput,
-  changes: readonly FetchChange[], isolated = false): Promise<boolean> => {
+  changes: readonly FetchChange[], mode: nacl.RoutingMode = 'default'): Promise<boolean> => {
   if (changes.length > 0) {
     await logWorkspaceUpdates(ws, changes)
     await ws.updateNaclFiles(
       changes.map(c => c.change),
-      isolated ? 'isolated' : undefined
+      mode
     )
     const { status, errors } = await validateWorkspace(ws)
     const formattedErrors = await formatWorkspaceErrors(ws, errors)
@@ -225,7 +226,7 @@ export const getWorkspaceTelemetryTags = async (ws: Workspace): Promise<Tags> =>
 
 export const applyChangesToWorkspace = async ({
   workspace, changes, cliTelemetry, workspaceTags, interactive, approveChangesCallback,
-  isIsolated, force, shouldCalcTotalSize, applyProgress, output,
+  mode, force, shouldCalcTotalSize, applyProgress, output,
 }: ApplyChangesArgs): Promise<boolean> => {
   // If the workspace starts empty there is no point in showing a huge amount of changes
   const changesToApply = force || (await workspace.isEmpty())
@@ -235,7 +236,7 @@ export const applyChangesToWorkspace = async ({
   cliTelemetry.changesToApply(changesToApply.length, workspaceTags)
   const updatingWsEmitter = new StepEmitter()
   applyProgress.emit('workspaceWillBeUpdated', updatingWsEmitter, changes.length, changesToApply.length)
-  const success = await updateWorkspace(workspace, output, changesToApply, isIsolated)
+  const success = await updateWorkspace(workspace, output, changesToApply, mode)
   if (success) {
     updatingWsEmitter.emit('completed')
     if (shouldCalcTotalSize) {

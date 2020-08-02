@@ -12,6 +12,7 @@
     ],
     "references": [
         { "path": "../lowerdash" },
+	{ "path": "../logging" },
     ]
 
 }

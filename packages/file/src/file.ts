@@ -19,10 +19,12 @@ import pako from 'pako'
 import rimRafLib from 'rimraf'
 import mkdirpLib from 'mkdirp'
 import path from 'path'
+import { logger } from '@salto-io/logging'
 import { strings } from '@salto-io/lowerdash'
 
 export const rm = promisify(rimRafLib)
 export const mkdirp = promisify(mkdirpLib)
+export const log = logger(module)
 
 export const { rename, copyFile, writeFile, readFile, readdir: readDir } = fs.promises
 export const { statSync, existsSync, readFileSync } = fs
@@ -79,6 +81,7 @@ export const readZipFile = async (
   try {
     return pako.ungzip(data, { to: 'string' })
   } catch {
+    log.error(`Couldn't unzip file: ${zipFilename}`)
     return undefined
   }
 }

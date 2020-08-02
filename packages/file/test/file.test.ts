@@ -307,7 +307,6 @@ describe('file', () => {
     describe('when given a string', () => {
       describe('when the file exists', () => {
         beforeEach(async () => {
-          expect(await file.exists(dest)).toBeTruthy()
           await file.writeZipFile(dest, expectedContents)
         })
 

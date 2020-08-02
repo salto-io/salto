@@ -212,7 +212,6 @@ export const routeFetch = async (
   // Howver - if we have only one env and the user moved the top level element to be
   // env specific - we respect that and add the change to the env.
   if (change.action === 'add') {
-
     const primTopLevelElement = await primarySource.get(change.id.createTopLevelParentID().parent)
     return _.isEmpty(secondarySources) && primTopLevelElement === undefined
       ? { commonSource: [change] }

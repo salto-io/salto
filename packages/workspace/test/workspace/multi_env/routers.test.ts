@@ -158,7 +158,7 @@ describe('default fetch routing', () => {
       data: { after: newObj },
       id: newObj.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {sec: secEnv}, 'default')
+    const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'default')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
@@ -256,21 +256,21 @@ describe('default fetch routing', () => {
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
   it('should route add changes of values of env specific elements to the '
-    +'env when there are multiple envs configured', async () => {
+    + 'env when there are multiple envs configured', async () => {
     const newField = new Field(envOnlyObj, 'dreams', BuiltinTypes.STRING)
     const change: DetailedChange = {
       action: 'add',
       data: { after: newField },
       id: newField.elemID,
     }
-    const routedChanges = await routeChanges([change], envSource, commonSource, {sec: secEnv}, 'default')
+    const routedChanges = await routeChanges([change], envSource, commonSource, { sec: secEnv }, 'default')
     expect(routedChanges.primarySource).toHaveLength(1)
     expect(routedChanges.commonSource).toHaveLength(0)
     expect(routedChanges.primarySource && routedChanges.primarySource[0]).toEqual(change)
     expect(_.isEmpty(routedChanges.secondarySources)).toBeTruthy()
   })
   it('should route add changes of values of env specific elements to the '
-    +'env when there is only one env configured', async () => {
+    + 'env when there is only one env configured', async () => {
     const newField = new Field(envOnlyObj, 'dreams', BuiltinTypes.STRING)
     const change: DetailedChange = {
       action: 'add',

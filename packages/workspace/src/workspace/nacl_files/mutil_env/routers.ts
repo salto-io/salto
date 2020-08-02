@@ -391,7 +391,7 @@ const removeFromSource = async (
   return ids.map(id => createRemoveChange(resolvePath(targetTopLevelElement, id), id))
 }
 
-export const routeTrack = async (
+export const routePromote = async (
   ids: ElemID[],
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,
@@ -405,7 +405,7 @@ export const routeTrack = async (
   ),
 })
 
-export const routeUntrack = async (
+export const routeDemote = async (
   ids: ElemID[],
   primarySource: NaclFilesSource,
   commonSource: NaclFilesSource,

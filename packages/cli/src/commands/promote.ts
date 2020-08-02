@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { ElemID } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { convertToIDs } from '../converters'
 import { servicesFilter } from '../filters/services'
 import { EnvironmentArgs } from './env'
 import { ParsedCliInput, CliOutput, SpinnerCreator, CliExitCode, CliCommand, CliTelemetry } from '../types'
@@ -29,28 +29,12 @@ import { outputLine } from '../outputer'
 
 const log = logger(module)
 
-type TrackArgs = {
+type PromoteArgs = {
     force: boolean
     selectors: string[]
   } & EnvironmentArgs
 
-type TrackParsedCliInput = ParsedCliInput<TrackArgs>
-
-// TODO - move to formatter.ts
-
-const createIDsToTack = (
-  selectors: string[]
-): {ids: ElemID[]; invalidIds: string[]} => {
-  const [validIds, invalidIds] = _.partition(selectors, selector => {
-    try {
-      return ElemID.fromFullName(selector)
-    } catch (e) {
-      return false
-    }
-  })
-  const ids = validIds.map(id => ElemID.fromFullName(id))
-  return { ids, invalidIds }
-}
+type PromoteParsedCliInput = ParsedCliInput<PromoteArgs>
 
 export const command = (
   workspaceDir: string,
@@ -62,10 +46,10 @@ export const command = (
   inputEnvironment?: string,
 ): CliCommand => ({
   async execute(): Promise<CliExitCode> {
-    log.debug(`running track command on '${workspaceDir}' [environment=${inputEnvironment}, inputSelectors=${inputSelectors}`)
-    const { ids, invalidIds } = createIDsToTack(inputSelectors)
+    log.debug(`running promote command on '${workspaceDir}' [environment=${inputEnvironment}, inputSelectors=${inputSelectors}`)
+    const { ids, invalidIds } = convertToIDs(inputSelectors)
     if (!_.isEmpty(invalidIds)) {
-      output.stderr.write(formatInvalidID(invalidIds))
+      output.stdout.write(formatStepFailed(formatInvalidID(invalidIds)))
       return CliExitCode.UserInputError
     }
 
@@ -87,28 +71,28 @@ export const command = (
     const workspaceTags = await getWorkspaceTelemetryTags(workspace)
     cliTelemetry.start(workspaceTags)
     try {
-      outputLine(formatStepStart(Prompts.TRACK_START), output)
-      await workspace.track(ids)
+      outputLine(formatStepStart(Prompts.PROMOTE_START), output)
+      await workspace.promote(ids)
       await workspace.flush()
-      outputLine(formatStepCompleted(Prompts.TRACK_FINISHED), output)
+      outputLine(formatStepCompleted(Prompts.PROMOTE_FINISHED), output)
       cliTelemetry.success(workspaceTags)
       return CliExitCode.Success
     } catch (e) {
       cliTelemetry.failure()
-      outputLine(formatStepFailed(Prompts.TRACK_FAILED(e.message)), output)
+      outputLine(formatStepFailed(Prompts.PROMOTE_FAILED(e.message)), output)
       return CliExitCode.AppError
     }
   },
 })
 
-const trackeBuilder = createCommandBuilder({
+const promoteBuilder = createCommandBuilder({
   options: {
-    command: 'track [selectors..]',
-    description: 'Move the selected elements to the common folder - sharing them between all environments',
+    command: 'promote [selectors..]',
+    description: 'promote the selected elements and share them between all envs',
     keyed: {
       force: {
         alias: ['f'],
-        describe: 'Move the elements even if the workspace is invalid.',
+        describe: 'promote the elements even if the workspace is invalid.',
         boolean: true,
         default: false,
         demandOption: false,
@@ -119,13 +103,13 @@ const trackeBuilder = createCommandBuilder({
   filters: [servicesFilter, environmentFilter],
 
   async build(
-    input: TrackParsedCliInput,
+    input: PromoteParsedCliInput,
     output: CliOutput,
     spinnerCreator: SpinnerCreator
   ): Promise<CliCommand> {
     return command(
       '.',
-      getCliTelemetry(input.telemetry, 'track'),
+      getCliTelemetry(input.telemetry, 'promote'),
       output,
       spinnerCreator,
       input.args.force,
@@ -135,4 +119,4 @@ const trackeBuilder = createCommandBuilder({
   },
 })
 
-export default trackeBuilder
+export default promoteBuilder

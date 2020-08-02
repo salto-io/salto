@@ -25,7 +25,7 @@ import { ValidationError } from '../../../validator'
 import { ParseError, SourceRange, SourceMap } from '../../../parser'
 
 import { mergeElements, MergeError } from '../../../merger'
-import { routeChanges, RoutedChanges, routeTrack, routeUntrack } from './routers'
+import { routeChanges, RoutedChanges, routePromote, routeDemote } from './routers'
 import { NaclFilesSource, NaclFile, RoutingMode } from '../nacl_files_source'
 import { Errors } from '../../errors'
 
@@ -55,8 +55,8 @@ type MultiEnvState = {
 
 type MultiEnvSource = Omit<NaclFilesSource, 'getAll'> & {
   getAll: (env?: string) => Promise<Element[]>
-  track: (ids: ElemID[]) => Promise<void>
-  untrack: (ids: ElemID[]) => Promise<void>
+  promote: (ids: ElemID[]) => Promise<void>
+  demote: (ids: ElemID[]) => Promise<void>
 }
 
 const buildMultiEnvSource = (
@@ -163,8 +163,8 @@ const buildMultiEnvSource = (
     return applyRoutedChanges(routedChanges)
   }
 
-  const track = async (ids: ElemID[]): Promise<void> => {
-    const routedChanges = await routeTrack(
+  const promote = async (ids: ElemID[]): Promise<void> => {
+    const routedChanges = await routePromote(
       ids,
       primarySource(),
       commonSource(),
@@ -173,8 +173,8 @@ const buildMultiEnvSource = (
     return applyRoutedChanges(routedChanges)
   }
 
-  const untrack = async (ids: ElemID[]): Promise<void> => {
-    const routedChanges = await routeUntrack(
+  const demote = async (ids: ElemID[]): Promise<void> => {
+    const routedChanges = await routeDemote(
       ids,
       primarySource(),
       commonSource(),
@@ -195,8 +195,8 @@ const buildMultiEnvSource = (
     getNaclFile,
     updateNaclFiles,
     flush,
-    track,
-    untrack,
+    promote,
+    demote,
     list: async (): Promise<ElemID[]> => _.values((await getState()).elements).map(e => e.elemID),
     get: async (id: ElemID): Promise<Element | Value> => (
       (await getState()).elements[id.getFullName()]

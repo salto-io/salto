@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, Field, BuiltinTypes, ObjectType, ListType, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { ModificationDiff, RemovalDiff } from '@salto-io/dag/dist'
 import { createMockNaclFileSource } from '../../common/nacl_file_source'
-import { routeChanges, routeTrack, routeUntrack } from '../../../src/workspace/nacl_files/mutil_env/routers'
+import { routeChanges, routePromote, routeDemote } from '../../../src/workspace/nacl_files/mutil_env/routers'
 
 
 const hasChanges = (
@@ -642,7 +642,7 @@ describe('track', () => {
   }
 
   it('should move an entire element which does not exists in the common', async () => {
-    const changes = await routeTrack(
+    const changes = await routePromote(
       [onlyInEnvObj.elemID],
       primarySrc,
       commonSrc,
@@ -661,7 +661,7 @@ describe('track', () => {
   })
 
   it('should create detailed changes when an element fragment is present in the common source', async () => {
-    const changes = await routeTrack(
+    const changes = await routePromote(
       [splitObjEnv.elemID],
       primarySrc,
       commonSrc,
@@ -679,7 +679,7 @@ describe('track', () => {
   })
 
   it('should wrap nested ids in an object when moving nested ids of an element with no common fragment', async () => {
-    const changes = await routeTrack(
+    const changes = await routePromote(
       [
         onlyInEnvObj.fields.str.elemID,
         onlyInEnvObj.elemID.createNestedID('attr', 'str'),
@@ -696,7 +696,7 @@ describe('track', () => {
   })
 
   it('should create detailed changes without wrappingt the element if the element has fragments in common', async () => {
-    const changes = await routeTrack(
+    const changes = await routePromote(
       [
         splitObjEnv.fields.envField.elemID,
         splitObjEnv.elemID.createNestedID('attr', 'env'),
@@ -714,7 +714,7 @@ describe('track', () => {
   })
 
   it('should maintain file structure when moving an element to common', async () => {
-    const changes = await routeTrack(
+    const changes = await routePromote(
       [multiFileInstace.elemID],
       primarySrc,
       commonSrc,
@@ -735,7 +735,7 @@ describe('track', () => {
   })
 
   it('should delete the elements in all secondrary envs as well', async () => {
-    const changes = await routeTrack(
+    const changes = await routePromote(
       [inSecObject.elemID],
       primarySrc,
       commonSrc,
@@ -866,7 +866,7 @@ describe('untrack', () => {
   }
 
   it('should move add element which is only in common to all envs', async () => {
-    const changes = await routeUntrack(
+    const changes = await routeDemote(
       [onlyInCommon.elemID],
       primarySrc,
       commonSrc,
@@ -882,7 +882,7 @@ describe('untrack', () => {
   })
 
   it('should create detailed changes for elements which are in common and have env fragments', async () => {
-    const changes = await routeUntrack(
+    const changes = await routeDemote(
       [splitObjEnv.elemID],
       primarySrc,
       commonSrc,
@@ -902,7 +902,7 @@ describe('untrack', () => {
   })
 
   it('should create a different set of detailed changes accodrding the data in the actual env', async () => {
-    const changes = await routeUntrack(
+    const changes = await routeDemote(
       [missingFromPrimCommon.elemID],
       primarySrc,
       commonSrc,
@@ -920,7 +920,7 @@ describe('untrack', () => {
   })
 
   it('should wrap nested ids if the target env does not have the top level element', async () => {
-    const changes = await routeUntrack(
+    const changes = await routeDemote(
       [onlyInCommon.elemID.createNestedID('attr', 'str')],
       primarySrc,
       commonSrc,
@@ -936,7 +936,7 @@ describe('untrack', () => {
   })
 
   it('should maitain file structure', async () => {
-    const changes = await routeUntrack(
+    const changes = await routeDemote(
       [multiFileCommon.elemID],
       primarySrc,
       commonSrc,

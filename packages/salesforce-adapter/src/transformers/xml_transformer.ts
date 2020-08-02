@@ -26,6 +26,7 @@ import {
 import { API_VERSION } from '../client/client'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
+  NAMESPACE_SEPARATOR,
 } from '../constants'
 import { apiName, metadataType } from './transformer'
 
@@ -42,6 +43,7 @@ const PACKAGE = 'unpackaged'
 const HIDDEN_CONTENT_VALUE = '(hidden)'
 const METADATA_XML_SUFFIX = '-meta.xml'
 const CONTENT = 'content'
+const UNFILED_PUBLIC_FOLDER = 'unfiled$public'
 
 // ComplexTypes used constants
 const TYPE = 'type'
@@ -332,13 +334,14 @@ const xmlToValues = (xmlAsString: string, type: string): Values => parser.parse(
 )[type]
 
 const extractFileNameToData = async (zip: JSZip, fileName: string, withMetadataSuffix: boolean,
-  complexType: boolean): Promise<Record<string, Buffer>> => {
+  complexType: boolean, namespacePrefix?: string): Promise<Record<string, Buffer>> => {
   if (!complexType) { // this is a single file
     const zipFile = zip.file(`${PACKAGE}/${fileName}${withMetadataSuffix ? METADATA_XML_SUFFIX : ''}`)
     return zipFile === null ? {} : { [zipFile.name]: await zipFile.async('nodebuffer') }
   }
   // bring all matching files from the fileName directory
-  const zipFiles = zip.file(new RegExp(`^${PACKAGE}/${fileName}/.*`))
+  const instanceFolderName = namespacePrefix === undefined ? fileName : fileName.replace(`${namespacePrefix}${NAMESPACE_SEPARATOR}`, '')
+  const zipFiles = zip.file(new RegExp(`^${PACKAGE}/${instanceFolderName}/.*`))
     .filter(zipFile => zipFile.name.endsWith(METADATA_XML_SUFFIX) === withMetadataSuffix)
   return _.isEmpty(zipFiles)
     ? {}
@@ -354,9 +357,12 @@ export const fromRetrieveResult = async (
   const fromZip = async (zip: JSZip, file: FileProperties): Promise<MetadataValues | undefined> => {
     // extract metadata values
     const fileNameToValuesBuffer = await extractFileNameToData(zip, file.fileName,
-      typesWithMetaFile.has(file.type) || isComplexType(file.type), isComplexType(file.type))
+      typesWithMetaFile.has(file.type) || isComplexType(file.type), isComplexType(file.type),
+      file.namespacePrefix)
     if (Object.values(fileNameToValuesBuffer).length !== 1) {
-      log.warn(`Expected to retrieve only single values file for ${file.type}`)
+      if (file.fullName !== UNFILED_PUBLIC_FOLDER) {
+        log.warn(`Expected to retrieve only single values file for instance (type:${file.type}, fullName:${file.fullName}), found ${Object.values(fileNameToValuesBuffer).length}`)
+      }
       return undefined
     }
     const [[valuesFileName, instanceValuesBuffer]] = Object.entries(fileNameToValuesBuffer)
@@ -368,9 +374,9 @@ export const fromRetrieveResult = async (
     // add content fields
     if (typesWithContent.has(file.type) || isComplexType(file.type)) {
       const fileNameToContent = await extractFileNameToData(zip, file.fileName, false,
-        isComplexType(file.type))
+        isComplexType(file.type), file.namespacePrefix)
       if (_.isEmpty(fileNameToContent)) {
-        log.warn(`Could not find content files for ${file.type}`)
+        log.warn(`Could not find content files for instance (type:${file.type}, fullName:${file.fullName})`)
         return undefined
       }
       if (isComplexType(file.type)) {

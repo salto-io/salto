@@ -732,16 +732,18 @@ describe('XML Transformer', () => {
       })
     })
 
-    describe('lightning component bundle', () => {
-      let retrieveResult: RetrieveResult
-      let fileProperties: FileProperties[]
-      beforeAll(async () => {
-        fileProperties = [mockFileProperties({
-          fileName: 'lwc/myLightningComponentBundle',
-          fullName: 'myLightningComponentBundle',
-          type: 'LightningComponentBundle',
-        })]
-        retrieveResult = {
+    describe('complex types', () => {
+      describe('lightning component bundle', () => {
+        const createFileProperties = (namespacePrefix?: string): FileProperties =>
+          mockFileProperties({
+            fileName: 'lwc/myLightningComponentBundle',
+            fullName: 'myLightningComponentBundle',
+            type: 'LightningComponentBundle',
+            namespacePrefix,
+          })
+
+        const createRetrieveResult = async (fileProperties: FileProperties[]):
+          Promise<RetrieveResult> => ({
           fileProperties: toResultProperties(fileProperties),
           id: '09S4J000001dSRcUAM',
           messages: [],
@@ -749,9 +751,9 @@ describe('XML Transformer', () => {
             {
               path: 'unpackaged/lwc/myLightningComponentBundle/myLightningComponentBundle.js-meta.xml',
               content: '<?xml version="1.0" encoding="UTF-8"?>\n'
-              + '<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">\n'
-              + '    <apiVersion>47.0</apiVersion>\n'
-              + '</LightningComponentBundle>\n',
+                + '<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+                + '    <apiVersion>47.0</apiVersion>\n'
+                + '</LightningComponentBundle>\n',
             },
             {
               path: 'unpackaged/lwc/myLightningComponentBundle/myLightningComponentBundle.js',
@@ -762,42 +764,50 @@ describe('XML Transformer', () => {
               content: '// some html content',
             },
           ]),
+        })
+
+        const verifyMetadataValues = (
+          values: { file: FileProperties; values: MetadataValues}[],
+          fileProperties: FileProperties
+        ): void => {
+          expect(values).toHaveLength(1)
+          const [lwc] = values
+          expect(lwc.file).toEqual(fileProperties)
+          const metadataInfo = lwc.values
+          expect(metadataInfo.fullName).toEqual('myLightningComponentBundle')
+          expect(_.get(metadataInfo, 'apiVersion')).toEqual(47)
+          const jsResource = metadataInfo.lwcResources.lwcResource[0]
+          expect(jsResource).toBeDefined()
+          expect(isStaticFile(jsResource.source)).toBe(true)
+          expect((jsResource.source as StaticFile).content?.toString())
+            .toEqual('// some javascript content')
+          const htmlResource = metadataInfo.lwcResources.lwcResource[1]
+          expect(htmlResource).toBeDefined()
+          expect(isStaticFile(htmlResource.source)).toBe(true)
+          expect((htmlResource.source as StaticFile).content?.toString())
+            .toEqual('// some html content')
         }
+
+        it('should transform zip to MetadataInfo', async () => {
+          const fileProperties = createFileProperties()
+          const values = await fromRetrieveResult(
+            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
+          )
+          verifyMetadataValues(values, fileProperties)
+        })
+
+        it('should transform zip to MetadataInfo for instance with namespace', async () => {
+          const fileProperties = createFileProperties('myNamespace')
+          const values = await fromRetrieveResult(
+            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
+          )
+          verifyMetadataValues(values, fileProperties)
+        })
       })
 
-      it('should transform zip to MetadataInfo', async () => {
-        const values = await fromRetrieveResult(
-          retrieveResult, fileProperties, new Set(), new Set(),
-        )
-        expect(values).toHaveLength(1)
-        const [lwc] = values
-        expect(lwc.file).toEqual(fileProperties[0])
-        const metadataInfo = lwc.values
-        expect(metadataInfo.fullName).toEqual('myLightningComponentBundle')
-        expect(_.get(metadataInfo, 'apiVersion')).toEqual(47)
-        const jsResource = metadataInfo.lwcResources.lwcResource[0]
-        expect(jsResource).toBeDefined()
-        expect(isStaticFile(jsResource.source)).toBe(true)
-        expect((jsResource.source as StaticFile).content?.toString())
-          .toEqual('// some javascript content')
-        const htmlResource = metadataInfo.lwcResources.lwcResource[1]
-        expect(htmlResource).toBeDefined()
-        expect(isStaticFile(htmlResource.source)).toBe(true)
-        expect((htmlResource.source as StaticFile).content?.toString())
-          .toEqual('// some html content')
-      })
-    })
-
-    describe('aura definition bundle', () => {
-      let retrieveResult: RetrieveResult
-      let fileProperties: FileProperties[]
-      beforeAll(async () => {
-        fileProperties = [mockFileProperties({
-          fileName: 'aura/myAuraDefinitionBundle',
-          fullName: 'myAuraDefinitionBundle',
-          type: 'AuraDefinitionBundle',
-        })]
-        retrieveResult = {
+      describe('aura definition bundle', () => {
+        const createRetrieveResult = async (fileProperties: FileProperties[]):
+          Promise<RetrieveResult> => ({
           fileProperties: toResultProperties(fileProperties),
           id: '09S4J000001dSRcUAM',
           messages: [],
@@ -805,10 +815,10 @@ describe('XML Transformer', () => {
             {
               path: 'unpackaged/aura/myAuraDefinitionBundle/myAuraDefinitionBundle.cmp-meta.xml',
               content: '<?xml version="1.0" encoding="UTF-8"?>\n'
-              + '<AuraDefinitionBundle xmlns="http://soap.sforce.com/2006/04/metadata">\n'
-              + '    <apiVersion>47.0</apiVersion>\n'
-              + '    <description>myAuraDefinitionBundle description</description>\n'
-              + '</AuraDefinitionBundle>\n',
+                + '<AuraDefinitionBundle xmlns="http://soap.sforce.com/2006/04/metadata">\n'
+                + '    <apiVersion>47.0</apiVersion>\n'
+                + '    <description>myAuraDefinitionBundle description</description>\n'
+                + '</AuraDefinitionBundle>\n',
             },
             {
               path: 'unpackaged/aura/myAuraDefinitionBundle/myAuraDefinitionBundle.cmp',
@@ -843,44 +853,68 @@ describe('XML Transformer', () => {
               content: '// some svg content',
             },
           ]),
-        }
-      })
+        })
 
-      it('should transform zip to MetadataInfo', async () => {
-        const values = await fromRetrieveResult(
-          retrieveResult, fileProperties, new Set(), new Set(),
-        )
-        expect(values).toHaveLength(1)
-        const [aura] = values
-        expect(aura.file).toEqual(fileProperties[0])
-        const metadataInfo = aura.values
-        expect(metadataInfo.fullName).toEqual('myAuraDefinitionBundle')
-        expect(metadataInfo.apiVersion).toEqual(47)
-        expect(metadataInfo.type).toEqual('Component')
-        expect(isStaticFile(metadataInfo.markup)).toBe(true)
-        expect((metadataInfo.markup as StaticFile).content?.toString())
-          .toEqual('// some component content')
-        expect(isStaticFile(metadataInfo.controllerContent)).toBe(true)
-        expect((metadataInfo.controllerContent as StaticFile).content?.toString())
-          .toEqual('// some controller content')
-        expect(isStaticFile(metadataInfo.designContent)).toBe(true)
-        expect((metadataInfo.designContent as StaticFile).content?.toString())
-          .toEqual('// some design content')
-        expect(isStaticFile(metadataInfo.documentationContent)).toBe(true)
-        expect((metadataInfo.documentationContent as StaticFile).content?.toString())
-          .toEqual('// some documentation content')
-        expect(isStaticFile(metadataInfo.helperContent)).toBe(true)
-        expect((metadataInfo.helperContent as StaticFile).content?.toString())
-          .toEqual('// some helper content')
-        expect(isStaticFile(metadataInfo.rendererContent)).toBe(true)
-        expect((metadataInfo.rendererContent as StaticFile).content?.toString())
-          .toEqual('// some renderer content')
-        expect(isStaticFile(metadataInfo.styleContent)).toBe(true)
-        expect((metadataInfo.styleContent as StaticFile).content?.toString())
-          .toEqual('// some style content')
-        expect(isStaticFile(metadataInfo.SVGContent)).toBe(true)
-        expect((metadataInfo.SVGContent as StaticFile).content?.toString())
-          .toEqual('// some svg content')
+        const createFileProperties = (namespacePrefix?: string): FileProperties =>
+          mockFileProperties({
+            fileName: 'aura/myAuraDefinitionBundle',
+            fullName: 'myAuraDefinitionBundle',
+            type: 'AuraDefinitionBundle',
+            namespacePrefix,
+          })
+
+        const verifyMetadataValues = (
+          values: { file: FileProperties; values: MetadataValues}[],
+          fileProperties: FileProperties
+        ): void => {
+          expect(values).toHaveLength(1)
+          const [auraInstance] = values
+          expect(auraInstance.file).toEqual(fileProperties)
+          const metadataInfo = auraInstance.values
+          expect(metadataInfo.fullName).toEqual('myAuraDefinitionBundle')
+          expect(metadataInfo.apiVersion).toEqual(47)
+          expect(metadataInfo.type).toEqual('Component')
+          expect(isStaticFile(metadataInfo.markup)).toBe(true)
+          expect((metadataInfo.markup as StaticFile).content?.toString())
+            .toEqual('// some component content')
+          expect(isStaticFile(metadataInfo.controllerContent)).toBe(true)
+          expect((metadataInfo.controllerContent as StaticFile).content?.toString())
+            .toEqual('// some controller content')
+          expect(isStaticFile(metadataInfo.designContent)).toBe(true)
+          expect((metadataInfo.designContent as StaticFile).content?.toString())
+            .toEqual('// some design content')
+          expect(isStaticFile(metadataInfo.documentationContent)).toBe(true)
+          expect((metadataInfo.documentationContent as StaticFile).content?.toString())
+            .toEqual('// some documentation content')
+          expect(isStaticFile(metadataInfo.helperContent)).toBe(true)
+          expect((metadataInfo.helperContent as StaticFile).content?.toString())
+            .toEqual('// some helper content')
+          expect(isStaticFile(metadataInfo.rendererContent)).toBe(true)
+          expect((metadataInfo.rendererContent as StaticFile).content?.toString())
+            .toEqual('// some renderer content')
+          expect(isStaticFile(metadataInfo.styleContent)).toBe(true)
+          expect((metadataInfo.styleContent as StaticFile).content?.toString())
+            .toEqual('// some style content')
+          expect(isStaticFile(metadataInfo.SVGContent)).toBe(true)
+          expect((metadataInfo.SVGContent as StaticFile).content?.toString())
+            .toEqual('// some svg content')
+        }
+
+        it('should transform zip to MetadataInfo', async () => {
+          const fileProperties = createFileProperties()
+          const values = await fromRetrieveResult(
+            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
+          )
+          verifyMetadataValues(values, fileProperties)
+        })
+
+        it('should transform zip to MetadataInfo for instance with namespace', async () => {
+          const fileProperties = createFileProperties('myNamespace')
+          const values = await fromRetrieveResult(
+            await createRetrieveResult([fileProperties]), [fileProperties], new Set(), new Set(),
+          )
+          verifyMetadataValues(values, fileProperties)
+        })
       })
     })
   })

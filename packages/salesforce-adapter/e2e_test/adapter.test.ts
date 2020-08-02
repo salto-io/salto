@@ -355,7 +355,10 @@ describe('Salesforce adapter E2E with real account', () => {
       expect(aura.value[constants.INSTANCE_FULL_NAME_FIELD])
         .toEqual('TestAuraDefinitionBundle')
       expect(isStaticFile(aura.value.styleContent)).toBe(true)
-      expect((aura.value.styleContent as StaticFile).content?.toString()).toEqual('.THIS{\n}')
+      const styleContentStaticFile = aura.value.styleContent as StaticFile
+      expect(styleContentStaticFile.content).toEqual(Buffer.from('.THIS{\n}'))
+      expect(styleContentStaticFile.filepath)
+        .toEqual('salesforce/Records/AuraDefinitionBundle/TestAuraDefinitionBundle/TestAuraDefinitionBundle.css')
     })
 
     it('should retrieve LightningComponentBundle instance', () => {
@@ -367,7 +370,10 @@ describe('Salesforce adapter E2E with real account', () => {
         .find(resource => resource.filePath === 'lwc/testLightningComponentBundle/testLightningComponentBundle.js')
       expect(lwcResource).toBeDefined()
       expect(isStaticFile(lwcResource.source)).toBe(true)
-      expect((lwcResource.source as StaticFile).content?.toString()).toEqual(lwcJsResourceContent)
+      const lwcResourceStaticFile = lwcResource.source as StaticFile
+      expect(lwcResourceStaticFile.content).toEqual(Buffer.from(lwcJsResourceContent))
+      expect(lwcResourceStaticFile.filepath)
+        .toEqual('salesforce/Records/LightningComponentBundle/testLightningComponentBundle/testLightningComponentBundle.js')
     })
 
     it('should retrieve StaticResource instance', () => {
@@ -377,7 +383,10 @@ describe('Salesforce adapter E2E with real account', () => {
         .toEqual('TestStaticResource')
       expect(staticResource.value.contentType).toBe('text/xml')
       expect(isStaticFile(staticResource.value.content)).toBe(true)
-      expect((staticResource.value.content as StaticFile).content?.toString()).toEqual('<xml/>')
+      const contentStaticFile = staticResource.value.content as StaticFile
+      expect(contentStaticFile.content).toEqual(Buffer.from('<xml/>'))
+      expect(contentStaticFile.filepath)
+        .toEqual('salesforce/Records/StaticResource/TestStaticResource.xml')
     })
   })
 

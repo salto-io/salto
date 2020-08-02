@@ -127,18 +127,6 @@ describe('NodeMap', () => {
     })
   })
 
-  describe('nodes', () => {
-    beforeEach(() => {
-      subject = new NodeMap([
-        [1, new Set<number>([2])],
-      ])
-    })
-
-    it('should include the free dependent nodes', () => {
-      expect(subject.nodes()).toContain(2)
-    })
-  })
-
   describe('get', () => {
     describe('when a node exists and has successors', () => {
       beforeEach(() => {
@@ -331,6 +319,10 @@ describe('NodeMap', () => {
     it('should delete the node from the deps', () => {
       expect([...subject.get(1)]).toEqual([2])
       expect([...subject.get(2)]).toEqual([2, 4])
+    })
+
+    it('should delete the node from reverse deps', () => {
+      expect(subject.getReverse(1)).not.toContain(3)
     })
 
     describe('return value', () => {
@@ -863,13 +855,7 @@ describe('NodeMap', () => {
     })
   })
 
-  describe('reverse', () => {
-    describe('for an empty graph', () => {
-      it('should return an empty graph', () => {
-        expect([...subject.reverse().entries()]).toEqual([])
-      })
-    })
-
+  describe('getReverse', () => {
     describe('for a simple graph', () => {
       beforeEach(() => {
         subject.addNode(2, [1, 3])
@@ -878,43 +864,87 @@ describe('NodeMap', () => {
         subject.addNode(5, [1])
       })
 
-      it('should return the correct result', () => {
-        expect([...subject.reverse().entries()]).toEqual([
-          [1, new Set<NodeId>([2, 5])],
-          [2, new Set<NodeId>([4])],
-          [3, new Set<NodeId>([2])],
-          [4, new Set<NodeId>([])],
-          [5, new Set<NodeId>([])],
-        ])
+      it('should return the nodes that depend on the node in question', () => {
+        expect(subject.getReverse(1)).toEqual(new Set([2, 5]))
+        expect(subject.getReverse(2)).toEqual(new Set([4]))
+        expect(subject.getReverse(3)).toEqual(new Set([2]))
+        expect(subject.getReverse(4)).toEqual(new Set())
+        expect(subject.getReverse(5)).toEqual(new Set())
       })
     })
   })
 
-  describe('removeRedundantEdges', () => {
-    beforeEach(() => {
-      subject.addNode(2, [1])
-      subject.addNode(3, [2])
-      subject.addNode(4, [2])
-      subject.addNode(3, [1])
-      expect(subject.edges().length).toEqual(4)
-      subject.removeRedundantEdges()
-    })
-
-    it('should remove the redundant edge', () => {
-      expect(subject.edges().length).toBe(3)
-      expect(subject.edges()).toEqual([[2, 1], [3, 2], [4, 2]])
-    })
-
-    describe('when there is a circular dependency', () => {
+  describe('addEdge', () => {
+    describe('when nodes do not exist', () => {
       beforeEach(() => {
-        subject.addNode(1, [4])
+        subject.addEdge(10, 11)
       })
+      it('should add both nodes', () => {
+        expect(subject.keys()).toContain(10)
+        expect(subject.keys()).toContain(11)
+      })
+      it('should add edge', () => {
+        expect(subject.get(10)).toContain(11)
+      })
+      it('should add reverse edge', () => {
+        expect(subject.getReverse(11)).toContain(10)
+      })
+    })
+    describe('when nodes exist prior to edge', () => {
+      beforeEach(() => {
+        subject.addNode(1, [2, 3])
+        subject.addNode(2, [4])
+        subject.addEdge(2, 3)
+      })
+      it('should add new edge', () => {
+        expect(subject.get(2)).toContain(3)
+      })
+      it('should add reverse edge', () => {
+        expect(subject.getReverse(3)).toContain(2)
+      })
+      it('should maintain existing edges', () => {
+        expect(subject.get(2)).toContain(4)
+      })
+    })
+  })
 
-      it('throws an exception', () => {
-        expect(() => subject.removeRedundantEdges()).toThrow(
-          CircularDependencyError
-        )
+  describe('removeEdge', () => {
+    beforeEach(() => {
+      subject.addEdge(1, 2)
+    })
+    describe('when edge exists', () => {
+      beforeEach(() => {
+        subject.removeEdge(1, 2)
       })
+      it('should remove the edge', () => {
+        expect(subject.get(1)).not.toContain(2)
+      })
+      it('should remove reverse edge', () => {
+        expect(subject.getReverse(2)).not.toContain(1)
+      })
+    })
+    describe('when edge does not exist', () => {
+      beforeEach(() => {
+        subject.removeEdge(4, 5)
+      })
+      it('should not create nodes', () => {
+        expect(subject.keys()).not.toContain(4)
+        expect(subject.keys()).not.toContain(5)
+      })
+    })
+  })
+
+  describe('clearEdges', () => {
+    beforeEach(() => {
+      subject.addNode(1, [2, 3])
+      subject.addNode(2, [3, 4])
+      subject.clearEdges()
+    })
+    it('should remove all edges', () => {
+      expect(subject.edges()).toHaveLength(0)
+    })
+    it('should keep nodes', () => {
+      expect([...subject.keys()].sort()).toEqual([1, 2, 3, 4])
     })
   })
 

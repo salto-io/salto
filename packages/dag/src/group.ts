@@ -40,12 +40,20 @@ GroupedNodeMap<T> => log.time(() => {
     ): NodeId => {
       const mergeCandidate = mergeCandidates.get(key)
       if (mergeCandidate !== undefined) {
-        const candidateDeps = new Set(
+        const currentDeps = graph.get(mergeCandidate)
+        const filteredNewDeps = wu(newDeps)
+          .filter(dep => !currentDeps.has(dep))
           // Skip edges to mergeCandidate to avoid self reference cycle
-          wu.chain(newDeps, graph.get(mergeCandidate)).filter(dep => dep !== mergeCandidate)
-        )
+          .filter(dep => dep !== mergeCandidate)
+          .toArray()
+        if (filteredNewDeps.length === 0) {
+          // Merging will not add new edges and therefore cannot create a cycle
+          return mergeCandidate
+        }
+        const candidateDeps = new Set(wu.chain(currentDeps, filteredNewDeps))
         if (!graph.doesCreateCycle(new Map([[mergeCandidate, candidateDeps]]), mergeCandidate)) {
-          graph.set(mergeCandidate, candidateDeps)
+          // Safe to add the new edges and merge to candidate node
+          filteredNewDeps.forEach(dep => graph.addEdge(mergeCandidate, dep))
           return mergeCandidate
         }
       }

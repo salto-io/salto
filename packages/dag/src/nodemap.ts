@@ -16,7 +16,7 @@
 import wu from 'wu'
 import { collections } from '@salto-io/lowerdash'
 
-const { update: updateSet, intersection, difference } = collections.set
+const { difference } = collections.set
 
 export type NodeId = collections.set.SetId
 
@@ -25,7 +25,7 @@ export class CircularDependencyError extends Error {
 
   constructor(nodes: AbstractNodeMap) {
     super(`Circular dependencies exist among these items: ${nodes}`)
-    this.causingNodeIds = wu(nodes.nodes().keys()).toArray()
+    this.causingNodeIds = [...nodes.keys()]
   }
 }
 
@@ -70,15 +70,13 @@ const promiseAllToSingle = (promises: Iterable<Promise<void>>): Promise<void> =>
   Promise.all(promises).then(() => undefined)
 
 class WalkErrors extends Map<NodeId, Error> {
-  private reverseNodeMap: AbstractNodeMap | undefined // lazy initialization
   constructor(readonly nodeMap: AbstractNodeMap) {
     super()
   }
 
   set(nodeId: NodeId, value: Error): this {
     super.set(nodeId, value)
-    if (!this.reverseNodeMap) this.reverseNodeMap = this.nodeMap.reverse()
-    this.reverseNodeMap.get(nodeId).forEach(
+    this.nodeMap.getReverse(nodeId).forEach(
       dependentNode => this.set(dependentNode, new NodeSkippedError(nodeId))
     )
     return this
@@ -103,9 +101,15 @@ class WalkErrors extends Map<NodeId, Error> {
 // Does not store data other than IDs.
 // Includes logic to walk the graph in evaluation order, while removing each processed node.
 export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<NodeId>> {
+  private reverseNeighbors: collections.map.DefaultMap<NodeId, Set<NodeId>>
+
   constructor(entries?: Iterable<[NodeId, Set<NodeId>]>) {
     const defaultInit = (): Set<NodeId> => new Set<NodeId>()
     super(defaultInit, entries)
+    this.reverseNeighbors = new collections.map.DefaultMap(defaultInit)
+    wu(this).forEach(([id, deps]) => {
+      deps.forEach(dep => this.reverseNeighbors.get(dep).add(id))
+    })
   }
 
   clone(): this {
@@ -121,15 +125,16 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
       .join(', ')}`
   }
 
-  nodes(): Set<NodeId> {
-    return new Set<NodeId>(wu.chain(this.keys(), wu(this.values()).flatten(true)))
+  protected addNodeBase(id: NodeId, dependsOn: Iterable<NodeId>): void {
+    wu(dependsOn).forEach(dep => this.addEdge(id, dep))
+    // ensure node is created even if there are no dependencies
+    this.get(id)
   }
 
-  protected addNodeBase(id: NodeId, dependsOn: Iterable<NodeId> = []): void {
-    updateSet(this.get(id), dependsOn)
-    wu(dependsOn).forEach(dependency => {
-      this.addNodeBase(dependency)
-    })
+  getReverse(id: NodeId): Set<NodeId> {
+    return this.reverseNeighbors.has(id)
+      ? this.reverseNeighbors.get(id)
+      : new Set()
   }
 
   // returns nodes without dependencies - to be visited next in evaluation order
@@ -142,13 +147,16 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 
   // deletes a node and returns the affected nodes (nodes that depend on the deleted node)
-  deleteNode(...ids: ReadonlyArray<NodeId>): NodeId[] {
-    ids.forEach(id => this.delete(id))
-    return wu(this)
-      .filter(([_n, deps]) => ids.map(id => deps.delete(id)).some(deleted => deleted))
-      .map(([affectedNode]) => affectedNode)
-      // evaluate the iterator, so deps will be deleted even if the return value is disregarded
-      .toArray()
+  deleteNode(id: NodeId): Set<NodeId> {
+    const outgoingNeighbors = this.get(id)
+    const incomingNeighbors = this.reverseNeighbors.get(id)
+    // Remove all edges that relate to the deleted node
+    incomingNeighbors.forEach(n => this.get(n).delete(id))
+    outgoingNeighbors.forEach(n => this.reverseNeighbors.get(n).delete(id))
+    // Remove deleted node
+    this.delete(id)
+    this.reverseNeighbors.delete(id)
+    return incomingNeighbors
   }
 
   protected entriesWithout(ids: Set<NodeId>): Iterable<[NodeId, Set<NodeId>]> {
@@ -157,7 +165,7 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
       .map(([k, v]) => [k, difference(v, ids)])
   }
 
-  // faster bulk alternative to deleteNode which returns a new NodeMap without the specified nodes
+  // bulk alternative to deleteNode which returns a new NodeMap without the specified nodes
   cloneWithout(ids: Set<NodeId>): this {
     return new (this.constructor as new (entries: Iterable<[NodeId, Set<NodeId>]>) => this)(
       this.entriesWithout(ids)
@@ -172,7 +180,25 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
   }
 
   removeEdge(id: NodeId, dependsOn: NodeId): void {
+    if (!this.has(id)) {
+      // Avoid creating a node as a side effect of removing an edge
+      return
+    }
     this.get(id).delete(dependsOn)
+    this.reverseNeighbors.get(dependsOn).delete(id)
+  }
+
+  addEdge(from: NodeId, to: NodeId): void {
+    this.get(from).add(to)
+    this.reverseNeighbors.get(to).add(from)
+    // create "to" node if missing
+    this.get(to)
+  }
+
+  clearEdges(): void {
+    // Clear only values, we need to maintain the keys
+    this.forEach(deps => deps.clear())
+    this.reverseNeighbors.clear()
   }
 
   edges(): [NodeId, NodeId][] {
@@ -261,52 +287,17 @@ export class AbstractNodeMap extends collections.map.DefaultMap<NodeId, Set<Node
     return this.clone().walkSyncDestructive(handler)
   }
 
-  private setMany(newEdges: Map<NodeId, Set<NodeId>>): void {
-    wu(newEdges.entries()).forEach(
-      ([id, deps]) => {
-        this.set(id, deps)
-      }
-    )
-  }
-
   doesCreateCycle(changes: Map<NodeId, Set<NodeId>>, findCycleFrom: NodeId): boolean {
-    const origEdges = new Map(wu(changes.keys()).map(id => [id, this.get(id)]))
-    this.setMany(changes)
-    const createsCycle = this.hasCycle(findCycleFrom)
-    this.setMany(origEdges)
-    return createsCycle
-  }
-
-  reverse(): this {
-    const result = new (this.constructor as new() => this)()
-    wu(this.entries()).forEach(([id, deps]) => {
-      deps.forEach(d => result.addNodeBase(d, [id]))
-    })
-    return result
-  }
-
-  removeRedundantEdges(): this {
-    const indirectReverseDepMap = new AbstractNodeMap()
-    const reverse = this.reverse()
-
-    const removeDups = (id: NodeId): void => {
-      const indirectReverseDep = indirectReverseDepMap.get(id)
-      const directReverseDep = reverse.get(id)
-
-      const dups = intersection(directReverseDep, indirectReverseDep)
-
-      dups.forEach(reverseDep => this.removeEdge(reverseDep, id))
-
-      updateSet(indirectReverseDep, directReverseDep)
-
-      this.get(id).forEach(
-        dependency => updateSet(indirectReverseDepMap.get(dependency), indirectReverseDep)
-      )
+    const setMany = (newEdges: Map<NodeId, Set<NodeId>>): void => {
+      // Note we use "this.set" for efficiency. this is safe to do because we revert
+      // all changes at the end, so this does not break the reverseEdges map
+      wu(newEdges.entries()).forEach(([id, deps]) => { this.set(id, deps) })
     }
-
-    wu(reverse.evaluationOrder()).forEach(removeDups)
-
-    return this
+    const origEdges = new Map(wu(changes.keys()).map(id => [id, this.get(id)]))
+    setMany(changes)
+    const createsCycle = this.hasCycle(findCycleFrom)
+    setMany(origEdges)
+    return createsCycle
   }
 }
 
@@ -333,9 +324,9 @@ export class DataNodeMap<T> extends AbstractNodeMap {
     this.nodeData.set(id, data)
   }
 
-  deleteNode(...ids: ReadonlyArray<NodeId>): NodeId[] {
-    ids.forEach(id => this.nodeData.delete(id))
-    return super.deleteNode(...ids)
+  deleteNode(id: NodeId): Set<NodeId> {
+    this.nodeData.delete(id)
+    return super.deleteNode(id)
   }
 
   cloneWithout(ids: Set<NodeId>): this {
@@ -359,10 +350,6 @@ export class DataNodeMap<T> extends AbstractNodeMap {
 
   setData(id: NodeId, data: T): void {
     this.nodeData.set(id, data)
-  }
-
-  reverse(): this {
-    return super.reverse().setDataFrom(this)
   }
 
   clear(): void {

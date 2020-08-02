@@ -207,19 +207,26 @@ const typesRecordsToInstances = (
     ))
 }
 
-
-const getFieldsToRefToTypes = (
+const getTargetRecordIds = (
   type: ObjectType,
-  allowedReferebcedTypeNames: string[]
-): Record<string, TypeName[]> =>
-  Object.fromEntries(
+  records: SalesforceRecord[],
+  allowedRefToTypeNames: string[],
+): { targetTypeName: string; id: string }[] => {
+  const referenceFieldsToTargets = Object.fromEntries(
     Object.values(type.fields)
       .filter(isReferenceField)
       .map(field => [
         field.name,
-        getReferenceTo(field).filter(typeName => allowedReferebcedTypeNames.includes(typeName)),
+        getReferenceTo(field).filter(typeName => allowedRefToTypeNames.includes(typeName)),
       ])
   )
+  return records.flatMap(record =>
+    Object.entries(referenceFieldsToTargets)
+      .filter(([fieldName]) => _.isString(record[fieldName]))
+      .flatMap(([fieldName, targets]) => (
+        targets.map(targetTypeName => ({ targetTypeName, id: record[fieldName] }))
+      )))
+}
 
 const getReferencedRecords = async (
   client: SalesforceClient,
@@ -235,19 +242,16 @@ const getReferencedRecords = async (
     const missingReferencedRecordIds = Object.entries(records)
       .flatMap(([typeName, idToRecords]) => {
         const type = allTypesByName[typeName]
-        const fieldNameToRefToNames = getFieldsToRefToTypes(type, allowedRefToTypeNames)
         const sfRecords = Object.values(idToRecords)
-        return sfRecords.flatMap(record =>
-          (Object.entries(fieldNameToRefToNames).flatMap(([fieldName, refToNames]) => {
-            const fieldValue = record[fieldName]
-            return (fieldValue === undefined || _.isNull(fieldValue)) ? undefined
-              : refToNames.map(name => ({ name, id: fieldValue }))
-          }))).filter(isDefined)
-          .filter(({ name, id }) => allReferenceRecords[name]?.[id] === undefined)
+        const targetRecordIds = getTargetRecordIds(type, sfRecords, allowedRefToTypeNames)
+        return targetRecordIds
+          // Filter out already fetched target records
+          .filter(({ targetTypeName, id }) =>
+            allReferenceRecords[targetTypeName]?.[id] === undefined)
       })
     const referencedRecordsById = _.groupBy(
       missingReferencedRecordIds,
-      t => t.name
+      t => t.targetTypeName
     )
     return _.mapValues(
       referencedRecordsById,
@@ -303,15 +307,9 @@ const getBaseTypesNames = (
   customObjectNames: string[],
   configs: DataManagementConfig[]
 ): string[] => {
-  const groupedIncludeNamespaces = _.flatten(
-    configs.map(config => makeArray(config.includeNamespaces))
-  )
-  const groupedIncludeObjects = _.flatten(
-    configs.map(config => makeArray(config.includeObjects))
-  )
-  const groupedExcludeObjects = _.flatten(
-    configs.map(config => makeArray(config.excludeObjects))
-  )
+  const groupedIncludeNamespaces = configs.flatMap(config => makeArray(config.includeNamespaces))
+  const groupedIncludeObjects = configs.flatMap(config => makeArray(config.includeObjects))
+  const groupedExcludeObjects = configs.flatMap(config => makeArray(config.excludeObjects))
   return customObjectNames.filter(customObjectName => {
     const namespace = getNamespaceFromString(customObjectName)
     return ((namespace !== undefined && groupedIncludeNamespaces.includes(namespace))
@@ -325,7 +323,7 @@ const getAllowReferencedTypesNames = (
   configs: DataManagementConfig[]
 ): string[] => {
   const allowReferebcedTypeNames = configs
-    .flatMap(conf => conf.allowReferenceTo).filter(isDefined)
+    .flatMap(config => makeArray(config.allowReferenceTo)).filter(isDefined)
   const baseObjectNames = getBaseTypesNames(customObjectNames, configs)
   return customObjectNames.filter(customObjectName =>
     allowReferebcedTypeNames.includes(customObjectName)
@@ -346,7 +344,7 @@ const getNameBasedObjectNames = (
 const filterCreator: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     const customObjects = elements.filter(isObjectType).filter(isCustomObject)
-    const customObjectNames = customObjects.map(customObject => apiName(customObject, true))
+    const customObjectNames = customObjects.map(customObject => apiName(customObject))
     const dataManagementConfigs = config.dataManagement || []
     const enabledConfigs = dataManagementConfigs
       .filter(dataManagementConfig => dataManagementConfig.enabled)
@@ -361,8 +359,8 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const nameBasedTypesNames = getNameBasedObjectNames(customObjectNames, enabledConfigs)
     const instances = await getAllInstances(
       client,
-      customObjects.filter(co => baseTypesNames.includes(apiName(co, true))),
-      customObjects.filter(co => allowReferencedTypesNames.includes(apiName(co, true))),
+      customObjects.filter(co => baseTypesNames.includes(apiName(co))),
+      customObjects.filter(co => allowReferencedTypesNames.includes(apiName(co))),
       nameBasedTypesNames,
     )
     elements.push(...instances)

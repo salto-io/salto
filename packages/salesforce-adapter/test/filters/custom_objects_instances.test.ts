@@ -26,6 +26,11 @@ import {
 } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 
+jest.mock('../../src/constants', () => ({
+  ...jest.requireActual('../../src/constants'),
+  MAX_IDS_PER_INSTANCES_QUERY: 2,
+}))
+
 /* eslint-disable @typescript-eslint/camelcase */
 describe('Custom Object Instances filter', () => {
   let connection: Connection
@@ -127,9 +132,14 @@ describe('Custom Object Instances filter', () => {
   const disabledNamespace = 'DisabledNamespace'
   const anotherNamespace = 'AnotherNamespace'
   const nameBasedNamespace = 'NameBasedNamespace'
+  const refFromNamespace = 'RefFromNamespace'
   const includeObjectName = 'IncludeThisObject'
   const excludeObjectName = 'TestNamespace__ExcludeMe__c'
   const excludeOverrideObjectName = 'ExcludeOverrideObject'
+  const refToObjectName = 'RefTo'
+  const refToFromNamespaceObjectName = 'RefFromNamespace__RefTo__c'
+  const refFromAndToObjectName = 'RefFromAndTo'
+  const emptyRefToObjectName = 'EmptyRefTo'
 
   beforeEach(() => {
     ({ connection, client } = mockAdapter({
@@ -173,6 +183,18 @@ describe('Custom Object Instances filter', () => {
               isNameBasedID: true,
               includeNamespaces: [nameBasedNamespace],
               includeObjects: ['PricebookEntry', 'SBQQ__CustomAction__c'],
+              allowReferenceTo: [refToObjectName],
+            },
+            {
+              name: 'enabledWithReferenceTo',
+              enabled: true,
+              isNameBasedID: false,
+              includeNamespaces: [refFromNamespace],
+              includeObjects: [refFromAndToObjectName],
+              allowReferenceTo: [
+                refToObjectName, refToFromNamespaceObjectName,
+                refFromAndToObjectName, emptyRefToObjectName,
+              ],
             },
           ],
         } }
@@ -433,8 +455,103 @@ describe('Custom Object Instances filter', () => {
     })
   })
 
+  describe('referenceTo fetching logic', () => {
+    let elements: Element[]
+
+    const refToObject = createCustomObject(refToObjectName)
+    const refToFromNamespaceObject = createCustomObject(refToFromNamespaceObjectName)
+    const emptyRefToObject = createCustomObject(emptyRefToObjectName)
+
+    const refFromAndToObject = createCustomObject(
+      refFromAndToObjectName,
+      {
+        Parent: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'parent field',
+            [API_NAME]: 'Parent',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
+          },
+        },
+        Pricebook2Id: {
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [LABEL]: 'Pricebook2Id field',
+            [API_NAME]: 'Pricebook2Id',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToFromNamespaceObjectName],
+          },
+        },
+      }
+    )
+
+    const namespacedRefFromName = `${refFromNamespace}___refFrom__c`
+    const namespacedRefFromObject = createCustomObject(
+      namespacedRefFromName,
+      {
+        Parent: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'parent field',
+            [API_NAME]: 'Parent',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [refFromAndToObjectName],
+          },
+        },
+        Pricebook2Id: {
+          type: Types.primitiveDataTypes.Lookup,
+          annotations: {
+            [LABEL]: 'Pricebook2Id field',
+            [API_NAME]: 'Pricebook2Id',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
+          },
+        },
+      }
+    )
+
+    beforeEach(async () => {
+      elements = [
+        refToObject, refToFromNamespaceObject, refFromAndToObject,
+        namespacedRefFromObject, emptyRefToObject,
+      ]
+      await filter.onFetch(elements)
+    })
+
+    it('should add instances per configured object', () => {
+      // 5 object + 2 new instances per needed instances (all by empty ref)
+      expect(elements.length).toEqual(13)
+      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(8)
+    })
+
+    it('should query refTo by ids according to references values', () => {
+      // The query should be split according to MAX_IDS_PER_INSTANCES_QUERY
+      expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToObjectName} WHERE Id IN ('hijklmn','badId')`)
+      expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToObjectName} WHERE Id IN ('abcdefg')`)
+    })
+
+    it('should qeuery all namespaced/included objects not by id', () => {
+      expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField FROM ${refToFromNamespaceObjectName}`)
+      expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField,Parent,Pricebook2Id FROM ${namespacedRefFromName}`)
+      expect(basicQueryImplementation).toHaveBeenCalledWith(`SELECT Name,TestField,Parent,Pricebook2Id FROM ${refFromAndToObjectName}`)
+    })
+  })
+
   describe('When some CustomObjects are from the nameBasedID namespace', () => {
     let elements: Element[]
+
+    const refToObject = createCustomObject(refToObjectName)
+    const refFromObjectName = `${nameBasedNamespace}__refFrom__c`
+    const refFromObject = createCustomObject(
+      refFromObjectName,
+      {
+        Parent: {
+          type: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [LABEL]: 'master field',
+            [API_NAME]: 'MasterField',
+            [FIELD_ANNOTATIONS.REFERENCE_TO]: [refToObjectName],
+          },
+        },
+      }
+    )
 
     const grandparentObjectName = `${nameBasedNamespace}__grandparent__c`
     const grandparentObject = createCustomObject(grandparentObjectName)
@@ -530,15 +647,15 @@ describe('Custom Object Instances filter', () => {
     beforeEach(async () => {
       elements = [
         grandparentObject, parentObject, grandsonObject, orphanObject,
-        pricebookEntryObject, SBQQCustomActionObject,
+        pricebookEntryObject, SBQQCustomActionObject, refFromObject, refToObject,
       ]
       await filter.onFetch(elements)
     })
 
-    it('should add instances per namespaced object', () => {
-      // 2 new instances per namespaced object because of TestCustomRecords's length
-      expect(elements.length).toEqual(18)
-      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(12)
+    it('should add instances per configured object', () => {
+      // 2 new instances per configured object because of TestCustomRecords's length
+      expect(elements.length).toEqual(24)
+      expect(elements.filter(e => isInstanceElement(e)).length).toEqual(16)
     })
 
     describe('grandparent object (no master)', () => {
@@ -598,6 +715,34 @@ describe('Custom Object Instances filter', () => {
       })
 
       it('should base elemID on record name only', () => {
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
+      })
+    })
+
+    describe('ref from object (with master that is defined as ref to and not "base" object)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === refFromObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on refTo name as "parent" and refFrom as "child"', () => {
+        const refToName = TestCustomRecords[1].Name
+        const refFromName = TestCustomRecords[0].Name
+        expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${refToName}___${refFromName}`)
+      })
+    })
+
+    describe('ref to object (not base object, only fetched cause of ref to it)', () => {
+      let instances: InstanceElement[]
+      beforeEach(() => {
+        instances = elements.filter(
+          e => isInstanceElement(e) && e.type === refToObject
+        ) as InstanceElement[]
+      })
+
+      it('should base elemID on record name', () => {
         expect(instances[0].elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${TestCustomRecords[0].Name}`)
       })
     })

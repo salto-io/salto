@@ -26,7 +26,7 @@ import {
 import { API_VERSION } from '../client/client'
 import {
   INSTANCE_FULL_NAME_FIELD, IS_ATTRIBUTE, METADATA_CONTENT_FIELD, SALESFORCE, XML_ATTRIBUTE_PREFIX,
-  NAMESPACE_SEPARATOR,
+  NAMESPACE_SEPARATOR, INSTALLED_PACKAGES_PATH, RECORDS_PATH,
 } from '../constants'
 import { apiName, metadataType } from './transformer'
 
@@ -200,11 +200,14 @@ export const toRetrieveRequest = (files: ReadonlyArray<FileProperties>): Retriev
 export type MetadataValues = MetadataInfo & Values
 
 const addContentFieldAsStaticFile = (values: Values, valuePath: string[], content: Buffer,
-  fileName: string): void => {
+  fileName: string, type: string, namespacePrefix?: string): void => {
+  const folder = namespacePrefix === undefined
+    ? `${SALESFORCE}/${RECORDS_PATH}/${type}`
+    : `${SALESFORCE}/${INSTALLED_PACKAGES_PATH}/${namespacePrefix}/${RECORDS_PATH}/${type}`
   _.set(values, valuePath, content.toString() === HIDDEN_CONTENT_VALUE
     ? content.toString()
     : new StaticFile({
-      filepath: fileName.replace(PACKAGE, SALESFORCE),
+      filepath: `${folder}/${fileName.split('/').slice(2).join('/')}`,
       content,
     }))
 }
@@ -213,7 +216,8 @@ type FieldName = string
 type FileName = string
 type Content = Buffer
 type ComplexType = {
-  addContentFields(fileNameToContent: Record<string, Buffer>, values: Values): void
+  addContentFields(fileNameToContent: Record<string, Buffer>, values: Values,
+    type: string, namespacePrefix?: string): void
   getMissingFields?(metadataFileName: string): Values
   mapContentFields(instanceName: string, values: Values):
     Record<FieldName, Record<FileName, Content>>
@@ -255,7 +259,8 @@ const complexTypesMap: ComplexTypesMap = {
    * suffix in order to set their content to the correct field
    */
   AuraDefinitionBundle: {
-    addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values) => {
+    addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values, type: string,
+      namespacePrefix?: string) => {
       Object.entries(fileNameToContent)
         .forEach(([contentFileName, content]) => {
           const fieldName = Object.entries(auraFileSuffixToFieldName)
@@ -264,7 +269,8 @@ const complexTypesMap: ComplexTypesMap = {
             log.warn(`Could not extract field content from ${contentFileName}`)
             return
           }
-          addContentFieldAsStaticFile(values, [fieldName], content, contentFileName)
+          addContentFieldAsStaticFile(values, [fieldName], content, contentFileName, type,
+            namespacePrefix)
         })
     },
     /**
@@ -301,11 +307,13 @@ const complexTypesMap: ComplexTypesMap = {
    * LightningComponentBundle has array of base64Binary content fields under LWC_RESOURCES field.
    */
   LightningComponentBundle: {
-    addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values) => {
+    addContentFields: (fileNameToContent: Record<string, Buffer>, values: Values, type: string,
+      namespacePrefix?: string) => {
       Object.entries(fileNameToContent)
         .forEach(([contentFileName, content], index) => {
           const resourcePath = [LWC_RESOURCES, LWC_RESOURCE, String(index)]
-          addContentFieldAsStaticFile(values, [...resourcePath, 'source'], content, contentFileName)
+          addContentFieldAsStaticFile(values, [...resourcePath, 'source'], content, contentFileName,
+            type, namespacePrefix)
           _.set(values, [...resourcePath, 'filePath'], contentFileName.split(`${PACKAGE}/`)[1])
         })
     },
@@ -382,11 +390,12 @@ export const fromRetrieveResult = async (
       if (isComplexType(file.type)) {
         const complexType = complexTypesMap[file.type]
         Object.assign(metadataValues, complexType.getMissingFields?.(valuesFileName) ?? {})
-        complexType.addContentFields(fileNameToContent, metadataValues)
+        complexType.addContentFields(fileNameToContent, metadataValues, file.type,
+          file.namespacePrefix)
       } else {
         const [contentFileName, content] = Object.entries(fileNameToContent)[0]
         addContentFieldAsStaticFile(metadataValues, [METADATA_CONTENT_FIELD], content,
-          contentFileName)
+          contentFileName, file.type, file.namespacePrefix)
       }
     }
     return metadataValues

@@ -27,27 +27,36 @@ import {
   toHexColor as namespaceToHexColor,
   Namespace,
 } from './namespace'
-import { BaseLoggerRepo, BaseLoggerMaker } from './logger'
+import { BaseLoggerRepo, BaseLoggerMaker, BaseLogger } from './logger'
 import { LogLevel, toHexColor as levelToHexColor } from './level'
 import { Config } from './config'
+import { LogTags, formatLogTags, LOG_TAGS_COLOR } from './log-tags'
 
 const toPinoLogLevel = (level: LogLevel | 'none'): LevelWithSilent => (
   level === 'none' ? 'silent' : level
 )
 
+const MESSAGE_KEY = 'message'
+const MIX_LOG_PARAMTER_KEY = 'mix'
+const EXCESS_LOG_ARGS_KEY = 'excessArgs'
+
 type FormatterBaseInput = {
   level: number
-  message: string | Error
+  [MESSAGE_KEY]: string | Error
   time: string
   name: string
   stack?: string
+  [MIX_LOG_PARAMTER_KEY]: unknown
+  [EXCESS_LOG_ARGS_KEY]: {
+    [key: string]: unknown
+  }
   type?: 'Error'
 }
 
 type FormatterInput = FormatterBaseInput & Record<string, unknown>
 
 const formatterBaseKeys: (keyof FormatterBaseInput)[] = [
-  'level', 'message', 'time', 'name', 'stack', 'type',
+  'level', MESSAGE_KEY, 'time', 'name', 'stack', 'type', EXCESS_LOG_ARGS_KEY, MIX_LOG_PARAMTER_KEY,
 ]
 
 type Formatter = (input: FormatterInput) => string
@@ -67,13 +76,14 @@ const textFormat = (
 ): Formatter => input => {
   const { level: levelNumber, name, message, time: timeJson } = input
   const level = pino.levels.labels[levelNumber] as LogLevel
-
+  const formattedLogTags = formatLogTags(input, [...formatterBaseKeys])
   return [
     JSON.parse(timeJson),
     colorize ? chalk.hex(levelToHexColor(level))(level) : level,
     colorize ? chalk.hex(namespaceToHexColor(name))(name) : name,
+    colorize ? chalk.hex(LOG_TAGS_COLOR)(formattedLogTags) : formattedLogTags,
     input.stack ? formatError(input) : message,
-  ].join(' ') + EOL
+  ].filter(x => x).join(' ') + EOL
 }
 
 const numberOfSpecifiers = (s: string): number => s.match(/%[^%]/g)?.length ?? 0
@@ -112,19 +122,29 @@ const toStream = (
     : consoleToStream(consoleStream)
 )
 
+const formatJsonLog = (object: object): object => {
+  const {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    mix, excessArgs, ...logJson
+  } = object as object & { mix: unknown; excessArgs: unknown[]}
+  if (!mix) return logJson
+  const formatMix = typeof mix === 'object' ? mix : { [`${MIX_LOG_PARAMTER_KEY}`]: mix }
+  return { ...logJson, ...formatMix }
+}
+
 export const loggerRepo = (
   { consoleStream }: {
     consoleStream: DestinationStream
   },
-  config: Config
+  config: Config,
+  baseTags?: LogTags
 ): BaseLoggerRepo => {
   const { stream, end: endStream } = toStream(consoleStream, config)
 
   const colorize = config.colorize ?? (stream && streams.hasColors(stream as streams.MaybeTty))
 
   const rootPinoLogger = pino({
-    base: null,
-    messageKey: 'message',
+    base: baseTags,
     timestamp: isoTime,
     level: toPinoLogLevel(config.minLevel),
     prettifier: textFormat,
@@ -133,15 +153,24 @@ export const loggerRepo = (
     } : false,
     formatters: {
       level: (level: string) => ({ level: level.toLowerCase() }),
+      log: (object: object) => {
+        // When config is text leave the formatting for prettifier.
+        if (config.format === 'json') return formatJsonLog(object)
+        return object
+      },
     },
+    messageKey: MESSAGE_KEY,
   }, stream)
 
-  const children = new collections.map.DefaultMap<string, pino.Logger>(
+  const baseChildren = new collections.map.DefaultMap<string, pino.Logger>(
     (namespace: string) => rootPinoLogger.child({ name: namespace })
   )
+  const childrenWithTags = [] as pino.Logger[]
 
-  const loggerMaker: BaseLoggerMaker = (namespace: Namespace) => {
-    const pinoLogger = children.get(namespace)
+  const loggerMaker: BaseLoggerMaker = (namespace: Namespace, newLogTags?: LogTags) => {
+    const pinoLoggerWithoutTags = baseChildren.get(namespace)
+    const pinoLogger = pinoLoggerWithoutTags.child({ ...newLogTags })
+    childrenWithTags.push(pinoLogger)
     return {
       log(level: LogLevel, message: string | Error, ...args: unknown[]): void {
         const [formatted, unconsumedArgs] = typeof message === 'string'
@@ -149,11 +178,20 @@ export const loggerRepo = (
           : [message, args]
 
         const logArgs = unconsumedArgs.length
-          ? [unconsumedArgs[0], formatted, ...unconsumedArgs.slice(1)] // "mix" object
+          ? [
+            // mark "mix" object for optional formatting later
+            { [MIX_LOG_PARAMTER_KEY]: unconsumedArgs[0] },
+            formatted,
+            // mark excessArgs for optional formatting later
+            { [EXCESS_LOG_ARGS_KEY]: unconsumedArgs.slice(1) },
+          ]
           : [formatted]
 
         // @ts-ignore
         pinoLogger[level](...logArgs)
+      },
+      child(childLogTags: LogTags): BaseLogger {
+        return loggerMaker(namespace, { ...newLogTags, ...childLogTags })
       },
     }
   }
@@ -167,7 +205,8 @@ export const loggerRepo = (
     setMinLevel(level: LogLevel): void {
       const pinoLevel = toPinoLogLevel(level)
       rootPinoLogger.level = pinoLevel
-      children.forEach(child => { child.level = pinoLevel })
+      baseChildren.forEach(child => { child.level = pinoLevel })
+      childrenWithTags.forEach(child => { child.level = pinoLevel })
     },
   })
 }

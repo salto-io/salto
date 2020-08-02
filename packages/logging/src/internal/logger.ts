@@ -21,14 +21,16 @@ import {
 } from './namespace'
 import { LOG_LEVELS, LogLevel } from './level'
 import { Config, mergeConfigs, NamespaceFilter, stringToNamespaceFilter } from './config'
+import { LogTags } from './log-tags'
 
 export type LogMethod = (message: string | Error, ...args: unknown[]) => void
 
 export type BaseLogger = {
   log(level: LogLevel, ...rest: Parameters<LogMethod>): ReturnType<LogMethod>
+  child(logTags: LogTags): BaseLogger
 }
 
-export type BaseLoggerMaker = (namespace: Namespace) => BaseLogger
+export type BaseLoggerMaker = (namespace: Namespace, tags? : LogTags) => BaseLogger
 
 export type BaseLoggerRepo = BaseLoggerMaker & {
   setMinLevel(level: LogLevel): void
@@ -90,8 +92,9 @@ export const logger = (
   baseLoggerRepo: BaseLoggerRepo,
   configGetter: () => ResolvedConfig,
   namespace: Namespace,
+  tags?: LogTags,
 ): Logger => {
-  const baseLogger = baseLoggerRepo(namespace)
+  const baseLogger = baseLoggerRepo(namespace, tags)
   const baseLog = baseLogger.log
 
   return addLogMethods(Object.assign(baseLogger, {

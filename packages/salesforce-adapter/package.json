@@ -42,7 +42,7 @@
     "humanize-duration": "^3.22.0",
     "jsforce": "https://github.com/salto-io/jsforce.git",
     "jsforce-types": "https://github.com/salto-io/jsforce-types.git",
-    "jszip": "^3.5.0",
+    "jszip": "^3.2.2",
     "lodash": "^4.17.19",
     "mime-types": "^2.1.27",
     "requestretry": "^4.0.2",

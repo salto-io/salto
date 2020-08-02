@@ -24,7 +24,7 @@ import NetsuiteClient, {
 } from '../../src/client/client'
 
 
-const MOCK_TEMPLATE_CONTENT = 'Template Inner Content'
+const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
 const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
 const MOCK_FILE_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}content.html${ATTRIBUTES_FILE_SUFFIX}`
 const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
@@ -725,13 +725,14 @@ describe('netsuite client', () => {
     describe('deployFile', () => {
       it('should succeed', async () => {
         mockExecuteAction.mockResolvedValue({ status: 'SUCCESS' })
+        const dummyFileContent = Buffer.from('dummy file content')
         const fileCustomizationInfo: FileCustomizationInfo = {
           typeName: 'file',
           values: {
             description: 'file description',
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
-          fileContent: 'dummy file content',
+          fileContent: dummyFileContent,
         }
         await client.deploy([fileCustomizationInfo])
         expect(mkdirpMock).toHaveBeenCalledTimes(2)
@@ -743,7 +744,7 @@ describe('netsuite client', () => {
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
           '<file><description>file description</description></file>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
-          'dummy file content')
+          dummyFileContent)
         expect(rmMock).toHaveBeenCalledTimes(1)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
         expect(mockExecuteAction).toHaveBeenNthCalledWith(2, reuseAuthIdCommandMatcher)

@@ -120,12 +120,12 @@ export interface CustomTypeInfo extends CustomizationInfo {
 
 export interface TemplateCustomTypeInfo extends CustomTypeInfo {
   fileExtension: string
-  fileContent: string
+  fileContent: Buffer
 }
 
 export interface FileCustomizationInfo extends CustomizationInfo {
   path: string[]
-  fileContent: string
+  fileContent: Buffer
 }
 
 export interface FolderCustomizationInfo extends CustomizationInfo {
@@ -150,14 +150,14 @@ export const convertToCustomTypeInfo = (xmlContent: string, scriptId: string): C
   )
 
 export const convertToTemplateCustomTypeInfo = (xmlContent: string, scriptId: string,
-  fileExtension: string, fileContent: string): TemplateCustomTypeInfo =>
+  fileExtension: string, fileContent: Buffer): TemplateCustomTypeInfo =>
   Object.assign(
     convertToCustomizationInfo(xmlContent),
     { fileExtension, fileContent, scriptId }
   )
 
 export const convertToFileCustomizationInfo = (xmlContent: string, path: string[],
-  fileContent: string): FileCustomizationInfo =>
+  fileContent: Buffer): FileCustomizationInfo =>
   Object.assign(
     convertToCustomizationInfo(xmlContent),
     { path, fileContent }
@@ -196,7 +196,7 @@ export const convertToXmlContent = (customizationInfo: CustomizationInfo): strin
     tagValueProcessor: val => he.encode(val, { useNamedReferences: true }),
   }).parse({ [customizationInfo.typeName]: customizationInfo.values })
 
-const writeFileInFolder = async (folderPath: string, filename: string, content: string):
+const writeFileInFolder = async (folderPath: string, filename: string, content: string | Buffer):
   Promise<void> => {
   await mkdirp(folderPath)
   osPath.resolve(folderPath, filename)
@@ -363,7 +363,7 @@ export default class NetsuiteClient {
         }
         const additionalFileContent = readFile(osPath.resolve(objectsDirPath, additionalFilename))
         return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
-          additionalFilename.split(FILE_SEPARATOR)[2], (await additionalFileContent).toString())
+          additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
       })
     )
     await NetsuiteClient.deleteProject(projectName)
@@ -485,7 +485,7 @@ export default class NetsuiteClient {
         const filePathParts = filePath.split(SDF_PATH_SEPARATOR)
         const fileContent = readFile(osPath.resolve(fileCabinetDirPath, ...filePathParts))
         return convertToFileCustomizationInfo((await xmlContent).toString(),
-          filePathParts.slice(1), (await fileContent).toString())
+          filePathParts.slice(1), await fileContent)
       }))
     }
 

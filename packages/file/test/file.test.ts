@@ -152,6 +152,55 @@ describe('file', () => {
     })
   })
 
+  describe('readZipFile', () => {
+    const source = __filename
+    let destTmp: tmp.FileResult
+    let dest: string
+
+    describe('when the file does not exist', () => {
+      it('should reject with ErrnoException', async () => {
+        expectRejectWithErrnoException(() => file.readZipFile('nosuchfile'))
+      })
+    })
+
+    describe('when the zip file exists', () => {
+      const content = 'hello world'
+      beforeEach(async () => {
+        destTmp = await tmp.file()
+        dest = destTmp.path
+        await file.writeZipFile(dest, content)
+      })
+
+      afterEach(async () => {
+        await destTmp.cleanup()
+      })
+
+      describe('when all is well with the file', () => {
+        it('should return its contents', async () => {
+          expect(await file.exists(dest)).toBeTruthy()
+          const r = await file.readZipFile(dest)
+          expect(content).toEqual(r)
+        })
+      })
+    })
+
+    describe('when the file exists, but is not a zip file', () => {
+      beforeEach(async () => {
+        destTmp = await tmp.file()
+        dest = destTmp.path
+        await file.copyFile(source, dest)
+      })
+
+      afterEach(() => {
+        destTmp.cleanup()
+      })
+
+      it('should throw error', async () => {
+        await expect(await file.readZipFile(dest)).toBeUndefined()
+      })
+    })
+  })
+
   describe('readTextFileSync', () => {
     describe('when the file does not exist', () => {
       it('should throw an error', () => {
@@ -239,6 +288,75 @@ describe('file', () => {
     })
   })
 
+  describe('writeZipFile', () => {
+    const source = __filename
+    let destTmp: tmp.FileResult
+    let dest: string
+    const expectedContents = 'abc'
+
+    beforeEach(async () => {
+      destTmp = await tmp.file()
+      dest = destTmp.path
+      await file.copyFile(source, dest)
+    })
+
+    afterEach(async () => {
+      await destTmp.cleanup()
+    })
+
+    describe('when given a string', () => {
+      describe('when the file exists', () => {
+        beforeEach(async () => {
+          await file.writeZipFile(dest, expectedContents)
+        })
+
+        it('overwrites its contents', async () => {
+          const contents = await file.readZipFile(dest)
+          expect(contents).toEqual(expectedContents)
+        })
+      })
+
+      describe('when the file does not exist', () => {
+        beforeEach(async () => {
+          await file.rm(dest)
+          expect(await file.exists(dest)).toBeFalsy()
+          await file.writeZipFile(dest, expectedContents)
+        })
+
+        it('writes the contents to the file', async () => {
+          const contents = await file.readZipFile(dest)
+          expect(contents).toEqual(expectedContents)
+        })
+      })
+    })
+
+    describe('when given a buffer', () => {
+      describe('when the file exists', () => {
+        beforeEach(async () => {
+          expect(await file.exists(dest)).toBeTruthy()
+          await file.writeZipFile(dest, Buffer.from(expectedContents, 'utf8'))
+        })
+
+        it('overwrites its contents', async () => {
+          const contents = await file.readZipFile(dest)
+          expect(contents).toEqual(expectedContents)
+        })
+      })
+
+      describe('when the file does not exist', () => {
+        beforeEach(async () => {
+          await file.rm(dest)
+          await file.writeZipFile(dest, Buffer.from(expectedContents, 'utf8'))
+        })
+
+        it('writes the contents to the file', async () => {
+          const contents = await file.readZipFile(dest)
+          expect(contents).toEqual(expectedContents)
+        })
+      })
+    })
+  })
+
   describe('appendTextFile', () => {
     const source = __filename
     let destTmp: tmp.FileResult
@@ -299,6 +417,33 @@ describe('file', () => {
 
     it('copies the file', async () => {
       expect(await file.readTextFile(dest)).toEqual(await file.readTextFile(source))
+    })
+  })
+
+  describe('generateZipString', () => {
+    let destTmp: tmp.FileResult
+    let dest: string
+
+    beforeEach(async () => {
+      destTmp = await tmp.file()
+      dest = destTmp.path
+      await file.copyFile(__filename, dest)
+    })
+
+    afterEach(async () => {
+      await destTmp.cleanup()
+    })
+
+    describe('when writing to file and reading as zip', () => {
+      const contents = 'arbitraryText'
+      beforeEach(async () => {
+        const str = await file.generateZipString(contents)
+        fs.writeFileSync(dest, str)
+      })
+
+      it('can be read as zip file', async () => {
+        expect(contents).toEqual(await file.readZipFile(dest))
+      })
     })
   })
 

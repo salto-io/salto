@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { replaceContents, exists, readTextFile, rm, rename } from '@salto-io/file'
+import { replaceContents, exists, readZipFile, rm, rename, generateZipString } from '@salto-io/file'
 import { ObjectType, ElemID, isObjectType, BuiltinTypes } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { state as wsState, serialization } from '@salto-io/workspace'
 import { hash } from '@salto-io/lowerdash'
-import { localState } from '../../../src/local-workspace/state'
+import { localState, ZIPPED_STATE_EXTENSION } from '../../../src/local-workspace/state'
 import { getAllElements } from '../../common/elements'
 
 const { serialize } = serialization
@@ -32,7 +32,7 @@ jest.mock('@salto-io/file', () => ({
     if (filename === 'error') {
       return Promise.resolve('blabl{,.')
     }
-    if (filename === 'full') {
+    if (filename === 'full' || filename.startsWith('deprecated_file')) {
       return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]')
     }
     if (filename === 'mutiple_adapters') {
@@ -40,16 +40,36 @@ jest.mock('@salto-io/file', () => ({
     }
     return Promise.resolve('[]')
   }),
+  readZipFile: jest.fn().mockImplementation((filename: string) => {
+    if (filename === 'error.jsonl.zip') {
+      return Promise.resolve('blabl{,.')
+    }
+    if (filename === 'full.jsonl.zip') {
+      return Promise.resolve('[{"elemID":{"adapter":"salesforce","nameParts":["_config"]},"type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"salesforce","nameParts":[]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"value":{"token":"token","sandbox":false,"username":"test@test","password":"pass"},"_salto_class":"InstanceElement"},{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{"metadataType":"Settings"},"elemID":{"adapter":"salesforce","nameParts":["settings"]},"fields":{},"isSettings":true,"_salto_class":"ObjectType"}]')
+    }
+    if (filename === 'mutiple_adapters.jsonl.zip') {
+      return Promise.resolve('[{"annotationTypes":{},"annotations":{"LeadConvertSettings":{"account":[{"input":"bla","output":"foo"}]}},"elemID":{"adapter":"salesforce","nameParts":["test"]},"fields":{"name":{"parentID":{"adapter":"salesforce","nameParts":["test"]},"name":"name","type":{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"","nameParts":["string"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"},"annotations":{"label":"Name","_required":true},"isList":false,"elemID":{"adapter":"salesforce","nameParts":["test","name"]},"_salto_class":"Field"}},"isSettings":false,"_salto_class":"ObjectType"},{"annotationTypes":{},"annotations":{},"elemID":{"adapter":"hubspot","nameParts":["foo"]},"fields":{},"isSettings":false,"_salto_class":"ObjectType"}]\n{ "salto" :"2020-04-21T09:44:20.824Z", "hubspot":"2020-04-21T09:44:20.824Z"}')
+    }
+    return Promise.resolve('[]')
+  }),
   rm: jest.fn().mockImplementation(),
   rename: jest.fn().mockImplementation(),
   mkdirp: jest.fn().mockImplementation(),
-  exists: jest.fn().mockImplementation(((filename: string) => Promise.resolve(filename !== 'empty'))),
+  exists: jest.fn().mockImplementation((filename: string) => {
+    if (filename.startsWith('deprecated_file')) {
+      return Promise.resolve(filename.endsWith('jsonl'))
+    }
+    if (filename.endsWith('zip') && !filename.startsWith('empty')) {
+      return Promise.resolve(true)
+    }
+    return Promise.resolve(false)
+  }),
 }))
 
 describe('local state', () => {
   const mockElement = getAllElements().find(isObjectType) as ObjectType
   const replaceContentMock = replaceContents as jest.Mock
-  const readTextFileMock = readTextFile as unknown as jest.Mock
+  const readZipFileMock = readZipFile as unknown as jest.Mock
 
   describe('empty state', () => {
     let state: wsState.State
@@ -137,13 +157,32 @@ describe('local state', () => {
     const state = localState('on-flush')
     await state.set(mockElement)
     await state.flush()
-    const onFlush = findReplaceContentCall('on-flush')
+    const onFlush = findReplaceContentCall('on-flush.jsonl.zip')
     expect(onFlush).toBeDefined()
-    expect(onFlush[1]).toEqual([
+    expect(onFlush[1]).toEqual(await generateZipString([
       serialize([mockElement]),
       safeJsonStringify({}),
       safeJsonStringify([]),
-    ].join(EOL))
+    ].join(EOL)))
+  })
+
+  describe('deprecated state file', () => {
+    let state: wsState.State
+
+    beforeEach(() => {
+      state = localState('deprecated_file')
+      state.getAll() // force read file
+    })
+
+    it('should read deprecated file and delete it on write', async () => {
+      await state.flush()
+      const mockRm = rm as jest.Mock
+      const onFlush = findReplaceContentCall('deprecated_file.jsonl.zip')
+      expect(onFlush).toBeDefined()
+      expect(mockRm).toHaveBeenCalledTimes(1)
+      expect(mockRm).toHaveBeenCalledWith('deprecated_file.jsonl')
+      mockRm.mockClear()
+    })
   })
 
   it('shouldn\'t write file if state was not loaded on flush', async () => {
@@ -175,7 +214,7 @@ describe('local state', () => {
     })
     it('should return the modification date of the state', async () => {
       mockExists.mockResolvedValueOnce(true)
-      readTextFileMock.mockResolvedValueOnce(mockStateStr)
+      readZipFileMock.mockResolvedValueOnce(mockStateStr)
       const state = localState('filename')
       const date = await state.getServicesUpdateDates()
       expect(date.salto).toEqual(saltoModificationDate)
@@ -183,7 +222,7 @@ describe('local state', () => {
     })
     it('should update modification date on override', async () => {
       mockExists.mockResolvedValueOnce(true)
-      readTextFileMock.mockResolvedValueOnce(mockStateStr)
+      readZipFileMock.mockResolvedValueOnce(mockStateStr)
       const now = new Date(2013, 6, 4).getTime()
       jest.spyOn(Date, 'now').mockImplementationOnce(() => now)
       const state = localState('filename')
@@ -198,7 +237,7 @@ describe('local state', () => {
     })
     it('should not update modification date on set/remove', async () => {
       mockExists.mockResolvedValueOnce(true)
-      readTextFileMock.mockResolvedValueOnce(mockStateStr)
+      readZipFileMock.mockResolvedValueOnce(mockStateStr)
       const state = localState('filename')
 
       await state.set(mockElement)
@@ -224,19 +263,20 @@ describe('local state', () => {
       const state = localState('on-delete')
       await state.clear()
       expect(mockRm).toHaveBeenCalledTimes(1)
-      expect(mockRm).toHaveBeenCalledWith('on-delete')
+      expect(mockRm).toHaveBeenCalledWith(`on-delete${ZIPPED_STATE_EXTENSION}`)
+      mockRm.mockClear()
     })
   })
 
   describe('rename', () => {
     const mockRename = rename as jest.Mock
-    const filePath = '/base/old.jsonl'
+    const filePath = '/base/old'
 
     it('should rename state file', async () => {
       const state = localState(filePath)
       await state.rename('new')
       expect(mockRename).toHaveBeenCalledTimes(1)
-      expect(mockRename).toHaveBeenCalledWith(filePath, '/base/new.jsonl')
+      expect(mockRename).toHaveBeenCalledWith(filePath + ZIPPED_STATE_EXTENSION, `/base/new${ZIPPED_STATE_EXTENSION}`)
     })
   })
 

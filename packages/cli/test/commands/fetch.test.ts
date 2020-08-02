@@ -437,7 +437,7 @@ describe('fetch command', () => {
           it('should throw an error', async () => {
             workspace = mockWorkspace(undefined, workspaceName)
             mockTelemetry = mocks.getMockTelemetry()
-            expect(fetchCommand({
+            return expect(fetchCommand({
               workspace,
               force: true,
               interactive: false,

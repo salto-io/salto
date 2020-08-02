@@ -208,9 +208,13 @@ export const routeFetch = async (
   secondarySources: Record<string, NaclFilesSource>
 ): Promise<RoutedChanges> => {
   // All add changes to the current active env specific folder unless
-  // sec sources are empty - we only have 1 env so adds should go to common
+  // sec sources are empty - we only have 1 env so adds should go to common.
+  // Howver - if we have only one env and the user moved the top level element to be
+  // env specific - we respect that and add the change to the env.
   if (change.action === 'add') {
-    return _.isEmpty(secondarySources)
+
+    const primTopLevelElement = await primarySource.get(change.id.createTopLevelParentID().parent)
+    return _.isEmpty(secondarySources) && primTopLevelElement === undefined
       ? { commonSource: [change] }
       : { primarySource: [change] }
   }

@@ -340,7 +340,7 @@ describe('fetch command', () => {
             expect(calls[0].slice(2)).toEqual([changes, 'default'])
           })
         })
-        describe('when called with strict', () => {
+        describe('when called with isolated', () => {
           const workspaceName = 'with-strict'
           let workspace: Workspace
           beforeEach(async () => {
@@ -369,6 +369,90 @@ describe('fetch command', () => {
             const calls = findWsUpdateCalls(workspaceName)
             expect(calls).toHaveLength(1)
             expect(calls[0].slice(2)).toEqual([changes, 'isolated'])
+          })
+        })
+        describe('when called with align', () => {
+          const workspaceName = 'with-align'
+          let workspace: Workspace
+          beforeEach(async () => {
+            mockTelemetry = mocks.getMockTelemetry()
+            workspace = mockWorkspace(undefined, workspaceName)
+            result = await fetchCommand({
+              workspace,
+              force: true,
+              interactive: false,
+              inputServices: services,
+              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
+              output: cliOutput,
+              fetch: mockFetchWithChanges,
+              getApprovedChanges: mockEmptyApprove,
+              inputIsolated: false,
+              shouldUpdateConfig: mockUpdateConfig,
+              shouldCalcTotalSize: true,
+              stateOnly: false,
+              inputAlign: true,
+              inputOveride: false,
+            })
+            expect(result).toBe(CliExitCode.Success)
+          })
+          it('should forward align mode', () => {
+            const calls = findWsUpdateCalls(workspaceName)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].slice(2)).toEqual([changes, 'align'])
+          })
+        })
+        describe('when called with override', () => {
+          const workspaceName = 'with-override'
+          let workspace: Workspace
+          beforeEach(async () => {
+            mockTelemetry = mocks.getMockTelemetry()
+            workspace = mockWorkspace(undefined, workspaceName)
+            result = await fetchCommand({
+              workspace,
+              force: true,
+              interactive: false,
+              inputServices: services,
+              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
+              output: cliOutput,
+              fetch: mockFetchWithChanges,
+              getApprovedChanges: mockEmptyApprove,
+              inputIsolated: false,
+              shouldUpdateConfig: mockUpdateConfig,
+              shouldCalcTotalSize: true,
+              stateOnly: false,
+              inputAlign: false,
+              inputOveride: true,
+            })
+            expect(result).toBe(CliExitCode.Success)
+          })
+          it('should forward override mode', () => {
+            const calls = findWsUpdateCalls(workspaceName)
+            expect(calls).toHaveLength(1)
+            expect(calls[0].slice(2)).toEqual([changes, 'overide'])
+          })
+        })
+        describe('when called with multiple flags', () => {
+          const workspaceName = 'with-multiple'
+          let workspace: Workspace
+          it('should throw an error', async () => {
+            workspace = mockWorkspace(undefined, workspaceName)
+            mockTelemetry = mocks.getMockTelemetry()
+            expect(fetchCommand({
+              workspace,
+              force: true,
+              interactive: false,
+              inputServices: services,
+              cliTelemetry: getCliTelemetry(mockTelemetry, 'fetch'),
+              output: cliOutput,
+              fetch: mockFetchWithChanges,
+              getApprovedChanges: mockEmptyApprove,
+              inputIsolated: false,
+              shouldUpdateConfig: mockUpdateConfig,
+              shouldCalcTotalSize: true,
+              stateOnly: false,
+              inputAlign: true,
+              inputOveride: true,
+            })).rejects.toThrow()
           })
         })
         describe('when called with state only', () => {

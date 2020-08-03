@@ -327,7 +327,7 @@ describe('salesforce client', () => {
         )
     })
 
-    it('should throw error when returned with errors', async () => {
+    it('should return not throw even when returned with errors', async () => {
       dodoScope
         .get(/.*/)
         .reply(
@@ -341,7 +341,13 @@ describe('salesforce client', () => {
           '<?xml version="1.0" encoding="UTF-8"?><jobInfo\n   xmlns="http://www.force.com/2009/06/asyncapi/dataload">\n <id>7513z00000Wgd6AAAR</id>\n <jobId>7503z00000WDQ4SAAX</jobId>\n <state>Completed</state>\n <createdDate>2020-06-22T07:23:32.000Z</createdDate>\n <systemModstamp>2020-06-22T07:23:33.000Z</systemModstamp>\n <numberRecordsProcessed>1</numberRecordsProcessed>\n <numberRecordsFailed>0</numberRecordsFailed>\n <totalProcessingTime>226</totalProcessingTime>\n <apiActiveProcessingTime>170</apiActiveProcessingTime>\n <apexProcessingTime>120</apexProcessingTime>\n</jobInfo>',
           { 'content-type': 'application/xml' },
         )
-      await expect(client.bulkLoadOperation('SBQQ__ProductRule__c', 'update', [{ Id: 'a0w3z000007qWOLAA2' }])).rejects.toEqual(new Error('error'))
+      const result = await client.bulkLoadOperation('SBQQ__ProductRule__c', 'update', [{ Id: 'a0w3z000007qWOLAA2' }])
+      expect(result.length).toEqual(1)
+      expect(result[0].id).toEqual('a0w3z000007qWOLAA2')
+      expect(result[0].success).toEqual(false)
+      expect(result[0].errors).toBeDefined()
+      expect(result[0].errors).toHaveLength(1)
+      expect((result[0].errors as string[])[0]).toEqual('error')
     })
 
     it('should succeed when returned without errors', async () => {
@@ -357,7 +363,12 @@ describe('salesforce client', () => {
           '<?xml version="1.0" encoding="UTF-8"?><jobInfo\n   xmlns="http://www.force.com/2009/06/asyncapi/dataload">\n <id>7513z00000Wgd6AAAR</id>\n <jobId>7503z00000WDQ4SAAX</jobId>\n <state>Completed</state>\n <createdDate>2020-06-22T07:23:32.000Z</createdDate>\n <systemModstamp>2020-06-22T07:23:33.000Z</systemModstamp>\n <numberRecordsProcessed>1</numberRecordsProcessed>\n <numberRecordsFailed>0</numberRecordsFailed>\n <totalProcessingTime>226</totalProcessingTime>\n <apiActiveProcessingTime>170</apiActiveProcessingTime>\n <apexProcessingTime>120</apexProcessingTime>\n</jobInfo>',
           { 'content-type': 'application/xml' },
         )
-      await expect(client.bulkLoadOperation('SBQQ__ProductRule__c', 'update', [{ Id: 'a0w3z000007qWOLAA2' }])).resolves.not.toThrow()
+      const result = await client.bulkLoadOperation('SBQQ__ProductRule__c', 'update', [{ Id: 'a0w3z000007qWOLAA2' }])
+      expect(result.length).toEqual(1)
+      expect(result[0].id).toEqual('a0w3z000007qWOLAA2')
+      expect(result[0].success).toEqual(true)
+      expect(result[0].errors).toBeDefined()
+      expect(result[0].errors).toHaveLength(0)
     })
 
     afterEach(() => {

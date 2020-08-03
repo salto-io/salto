@@ -228,6 +228,12 @@ describe('SalesforceAdapter CRUD', () => {
                 [constants.FIELD_ANNOTATIONS.CREATABLE]: false,
               },
             },
+            AnotherField: {
+              type: BuiltinTypes.STRING,
+              annotations: {
+                [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+              },
+            },
           },
           annotationTypes: {},
           annotations: { [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT },
